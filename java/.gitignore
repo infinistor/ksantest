@@ -1,0 +1,12 @@
+target/
+.project
+.settings/
+s3tests_*
+.vscode/
+.factorypath
+logs/
+awstests.ini
+s3tests_*
+start_ksan.sh
+start.*
+.classpath

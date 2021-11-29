@@ -1,0 +1,84 @@
+#!/bin/bash
+#Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
+#KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
+#the GNU General Public License as published by the Free Software Foundation, either version 
+#3 of the License.  See LICENSE for details
+
+#본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
+#KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
+#KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
+set -e
+
+virtualenv="virtualenv"
+declare -a packages
+source /etc/os-release
+
+case "$ID" in
+    debian|ubuntu|devuan)
+        packages=(debianutils python3-pip python3-virtualenv python3-dev libevent-dev libffi-dev libxml2-dev libxslt-dev zlib1g-dev)
+        for package in ${packages[@]}; do
+            if [ "$(dpkg --status -- $package 2>/dev/null|sed -n 's/^Status: //p')" != "install ok installed" ]; then
+                # add a space after old values
+                missing="${missing:+$missing }$package"
+            fi
+        done
+
+        if [ -n "$missing" ]; then
+            echo "$0: missing required DEB packages. Installing via sudo." 1>&2
+            sudo apt-get -y install $missing
+        fi
+        ;;
+    centos|fedora|rhel|ol|virtuozzo)
+
+        packages=(which python3-virtualenv python36-devel libevent-devel libffi-devel libxml2-devel libxslt-devel zlib-devel)
+        for package in ${packages[@]}; do
+            # When the package is python36-devel we change it to python3-devel on Fedora
+            if [[ ${package} == "python36-devel" && -f /etc/fedora-release ]]; then
+                package=python36
+            fi
+            if [ "$(rpm -qa $package 2>/dev/null)" == "" ]; then
+                missing="${missing:+$missing }$package"
+            fi
+        done
+
+        if [ -n "$missing" ]; then
+            echo "$0: Missing required RPM packages: ${missing}." 1>&2
+            sudo yum -y install $missing
+        fi
+        ;;
+    opensuse*|suse|sles)
+
+        packages=(which python3-virtualenv python3-devel libev-devel libffi-devel libxml2-devel libxslt-devel zlib-devel)
+        for package in ${packages[@]}; do
+            if [ "$(rpm -qa $package 2>/dev/null)" == "" ]; then
+                missing="${missing:+$missing }$package"
+            fi
+            if [ -n "$missing" ]; then
+                echo "$0: Missing required RPM packages: ${missing}." 1>&2
+                sudo zypper --non-interactive install --no-recommends $missing
+            fi
+        done
+
+        ;;
+    *)
+        echo "Bootstrap script does not support this distro yet, consider adding the packages"
+        exit 1
+esac
+
+
+# s3-tests only works on python 3.6 not newer versions of python3
+${virtualenv} --python=$(which python3.6) virtualenv
+
+# avoid pip bugs
+./virtualenv/bin/pip3 install --upgrade pip
+
+# latest setuptools supporting python 2.7
+./virtualenv/bin/pip install setuptools==44.1.0
+
+./virtualenv/bin/pip3 install -r requirements.txt
+
+# forbid setuptools from using the network because it'll try to use
+# easy_install, and we really wanted pip; next line will fail if pip
+# requirements.txt does not match setup.py requirements -- sucky but
+# good enough for now
+./virtualenv/bin/python3 setup.py develop
