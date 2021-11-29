@@ -1,0 +1,3 @@
+[submodule "xunit-to-html"]
+	path = xunit-to-html
+	url = https://github.com/Zir0-93/xunit-to-html.git
