@@ -10,3 +10,4 @@ s3tests_*
 start_ksan.sh
 start.*
 .classpath
+junit-merger.exe
