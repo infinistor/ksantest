@@ -6,9 +6,9 @@
 
 ## 구동환경
 
-*  Java : 11
-*  maven : 3.6.3
-*  OS : Window 10, Centos 7.5
+*  Java : 11 이상
+*  maven : 3.6.3 이상
+*  OS : Window 10, Centos 7.5 이상
 
 ## 테스트 방법
 
@@ -26,6 +26,7 @@ start Result_java.html
 ```
 
 ## Linux
+
 ``` bash
 #설정파일 경로
 export S3TESTS_INI=sample.ini
