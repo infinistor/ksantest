@@ -10,7 +10,7 @@
     <name>s3tests_java</name>
     
     <properties>
-        <org.springframework-version>5.1.13.RELEASE</org.springframework-version>
+        <org.springframework-version>5.1.14.RELEASE</org.springframework-version>
         <org.apache.httpcomponents-version>4.5.13</org.apache.httpcomponents-version>
         <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>utf-8</project.reporting.outputEncoding>
