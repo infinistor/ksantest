@@ -189,4 +189,14 @@ public class LifeCycle
 	{
         Test.test_lifecycle_delete();
 	}
+    
+	@Test
+	@DisplayName("test_lifecycle_set_and")
+	@Tag("Get")
+	@Tag("KSAN")
+	//@Tag("버킷에 다양한 Lifecycle 설정이 가능한지 확인")
+	public void test_lifecycle_set_and()
+    {
+        Test.test_lifecycle_set_and();
+    }
 }
