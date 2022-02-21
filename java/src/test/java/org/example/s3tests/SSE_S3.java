@@ -232,4 +232,21 @@ public class SSE_S3 {
         Test.test_sse_s3_range_object_many();
     }
 
+    @Test
+	@DisplayName("test_sse_s3_encryption_multipart_copypart_upload") 
+    @Tag( "Multipart") 
+    //@Tag("SSE-S3 설정하여 멀티파트로 업로드한 오브젝트를 mulitcopy 로 복사 가능한지 확인") 
+    public void test_sse_s3_encryption_multipart_copypart_upload()
+    {
+        Test.test_sse_s3_encryption_multipart_copypart_upload();
+    }
+
+    @Test
+	@DisplayName("test_sse_s3_encryption_multipart_copy_many") 
+    @Tag( "Multipart") 
+    //@Tag("SSE-S3 설정하여 Multipart와 Copypart를 모두 사용하여 오브젝트가 업로드 가능한지 확인") 
+    public void test_sse_s3_encryption_multipart_copy_many()
+    {
+        Test.test_sse_s3_encryption_multipart_copy_many();
+    }
 }

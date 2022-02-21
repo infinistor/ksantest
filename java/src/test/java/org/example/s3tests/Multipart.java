@@ -243,5 +243,12 @@ public class Multipart {
     {
         Test.test_abort_multipart_upload_list();
     }
-    
+    @Test
+	@DisplayName("test_multipart_copy_many")
+	@Tag("Copy")
+	//@Tag("멀티파트업로드와 멀티파티 카피로 오브젝트가 업로드 가능한지 확인")
+	public void test_multipart_copy_many()
+    {
+        Test.test_multipart_copy_many();
+    }
 }

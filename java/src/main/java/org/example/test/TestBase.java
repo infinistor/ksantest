@@ -1,13 +1,3 @@
-/*
-* Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
-* KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
-* 3 of the License.  See LICENSE for details
-*
-* 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
-* KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
-* KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
-*/
 package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -1114,85 +1104,194 @@ public class TestBase {
 		return Result;
 	}
 	
-	public MultipartUploadData MultipartUploadTest(String BucketName, String Key, int Size, int PartSize,
-			AmazonS3 Client, ObjectMetadata MetadataList, ArrayList<Integer> ResendParts) {
-		var Data = new MultipartUploadData();
-		if (Client == null)
-			Client = GetClient();
-		if (PartSize <= 0)
-			PartSize = 5 * MainData.MB;
+	public MultipartUploadData MultipartUpload(AmazonS3 Client, String BucketName, String Key, int Size, MultipartUploadData UploadData) {
+		var	PartSize = 5 * MainData.MB;
+		var Parts = GenerateRandomString(Size, PartSize);
+
+		for (var Part : Parts) {
+			UploadData.AppendBody(Part);
+			var PartResPonse = Client.uploadPart(
+					new UploadPartRequest()
+						.withBucketName(BucketName)
+						.withKey(Key)
+						.withUploadId(UploadData.UploadId)
+						.withPartNumber(UploadData.GetPartNumber())
+						.withInputStream(CreateBody(Part))
+						.withPartSize(Part.length()));
+			UploadData.AddPart(PartResPonse.getPartETag());
+		}
+
+		return UploadData;
+	}
+	
+	public MultipartUploadData MultipartUploadTest(AmazonS3 Client, String BucketName, String Key, int Size, ObjectMetadata MetadataList) {
+		var UploadData = new MultipartUploadData();
 		if (MetadataList == null) {
 			MetadataList = new ObjectMetadata();
 			MetadataList.setContentType("text/plain");
 		}
 		MetadataList.setContentLength(Size);
 
-		var InitMultiPartResponse = Client
-				.initiateMultipartUpload(new InitiateMultipartUploadRequest(BucketName, Key, MetadataList));
-		Data.UploadID = InitMultiPartResponse.getUploadId();
+		var InitMultiPartResponse = Client.initiateMultipartUpload(new InitiateMultipartUploadRequest(BucketName, Key, MetadataList));
+		UploadData.UploadId = InitMultiPartResponse.getUploadId();
 
-		var Parts = GenerateRandomString(Size, PartSize);
+		var Parts = GenerateRandomString(Size, UploadData.PartSize);
 
-		int PartNumber = 1;
 		for (var Part : Parts) {
-			Data.Data += Part;
+			UploadData.AppendBody(Part);
+
 			var PartResPonse = Client.uploadPart(
-					new UploadPartRequest().withBucketName(BucketName).withKey(Key).withUploadId(Data.UploadID)
-							.withPartNumber(PartNumber).withInputStream(CreateBody(Part)).withPartSize(Part.length()));
-			Data.Parts.add(PartResPonse.getPartETag());
+					new UploadPartRequest()
+						.withBucketName(BucketName)
+						.withKey(Key)
+						.withUploadId(UploadData.UploadId)
+						.withPartNumber(UploadData.GetPartNumber())
+						.withInputStream(CreateBody(Part))
+						.withPartSize(Part.length()));
+			UploadData.Parts.add(PartResPonse.getPartETag());
+		}
+
+		return UploadData;
+	}
+	
+	public MultipartUploadData MultipartUploadResend(AmazonS3 Client, String BucketName, String Key, int Size, ObjectMetadata MetadataList, ArrayList<Integer> ResendParts) {
+		var UploadData = new MultipartUploadData();
+		if (MetadataList == null) {
+			MetadataList = new ObjectMetadata();
+			MetadataList.setContentType("text/plain");
+		}
+		MetadataList.setContentLength(Size);
+
+		var InitMultiPartResponse = Client.initiateMultipartUpload(new InitiateMultipartUploadRequest(BucketName, Key, MetadataList));
+		UploadData.UploadId = InitMultiPartResponse.getUploadId();
+
+		var Parts = GenerateRandomString(Size, UploadData.PartSize);
+
+		for (var Part : Parts) {
+			UploadData.AppendBody(Part);
+			int PartNumber = UploadData.GetPartNumber();
+
+			var PartResPonse = Client.uploadPart(
+					new UploadPartRequest()
+						.withBucketName(BucketName)
+						.withKey(Key)
+						.withUploadId(UploadData.UploadId)
+						.withPartNumber(PartNumber)
+						.withInputStream(CreateBody(Part))
+						.withPartSize(Part.length()));
+			UploadData.Parts.add(PartResPonse.getPartETag());
 
 			if (ResendParts != null && ResendParts.contains(PartNumber))
-				Client.uploadPart(new UploadPartRequest().withBucketName(BucketName).withKey(Key)
-						.withUploadId(Data.UploadID).withPartNumber(PartNumber).withInputStream(CreateBody(Part))
+				Client.uploadPart(new UploadPartRequest()
+						.withBucketName(BucketName)
+						.withKey(Key)
+						.withUploadId(UploadData.UploadId)
+						.withPartNumber(PartNumber)
+						.withInputStream(CreateBody(Part))
 						.withPartSize(Part.length()));
-			PartNumber++;
 		}
 
-		return Data;
+		return UploadData;
 	}
+	
+	public MultipartUploadData MultipartUploadTest(AmazonS3 Client, String BucketName, String Key, int Size, int PartSize, ObjectMetadata MetadataList) {
+		var UploadData = new MultipartUploadData();
+		if (MetadataList == null) {
+			MetadataList = new ObjectMetadata();
+			MetadataList.setContentType("text/plain");
+		}
+		MetadataList.setContentLength(Size);
 
-	public MultipartUploadData MultipartUploadSSE_C(AmazonS3 Client, String BucketName, String Key, int Size,
-			ObjectMetadata MetadataList, SSECustomerKey SSEC) {
-		var Data = new MultipartUploadData();
-		if (Client == null)
-			Client = GetClient();
-		var PartSize = 5 * MainData.MB;
-
-		var InitMultiPartResponse = Client.initiateMultipartUpload(
-				new InitiateMultipartUploadRequest(BucketName, Key, MetadataList).withSSECustomerKey(SSEC));
-		Data.UploadID = InitMultiPartResponse.getUploadId();
+		var InitMultiPartResponse = Client.initiateMultipartUpload(new InitiateMultipartUploadRequest(BucketName, Key, MetadataList));
+		UploadData.UploadId = InitMultiPartResponse.getUploadId();
 
 		var Parts = GenerateRandomString(Size, PartSize);
 
-		int PartNumber = 1;
 		for (var Part : Parts) {
-			Data.Data += Part;
-			var PartResPonse = Client.uploadPart(new UploadPartRequest().withBucketName(BucketName).withKey(Key)
-					.withUploadId(Data.UploadID).withSSECustomerKey(SSEC).withPartNumber(PartNumber++)
-					.withInputStream(CreateBody(Part)).withPartSize(Part.length()));
-			Data.Parts.add(PartResPonse.getPartETag());
+			UploadData.AppendBody(Part);
+			var PartResPonse = Client.uploadPart(
+					new UploadPartRequest()
+						.withBucketName(BucketName)
+						.withKey(Key)
+						.withUploadId(UploadData.UploadId)
+						.withPartNumber(UploadData.GetPartNumber())
+						.withInputStream(CreateBody(Part))
+						.withPartSize(Part.length()));
+			UploadData.Parts.add(PartResPonse.getPartETag());
 		}
-
-		return Data;
+		return UploadData;
 	}
 
-	public void CheckKeyContent(String SrcBucketName, String SrcKey, String DestBucketName, String DestKey,
-			String VersionID) {
+	public MultipartUploadData MultipartUploadSSE_C(AmazonS3 Client, String BucketName, String Key, int Size, ObjectMetadata MetadataList, SSECustomerKey SSEC) {
+		var UploadData = new MultipartUploadData();
+		if (Client == null) Client = GetClient();
+		var PartSize = 5 * MainData.MB;
+
+		var InitMultiPartResponse = Client.initiateMultipartUpload(new InitiateMultipartUploadRequest(BucketName, Key, MetadataList).withSSECustomerKey(SSEC));
+		UploadData.UploadId = InitMultiPartResponse.getUploadId();
+
+		var Parts = GenerateRandomString(Size, PartSize);
+
+		for (var Part : Parts) {
+			UploadData.AppendBody(Part);
+			var PartResPonse = Client.uploadPart(new UploadPartRequest()
+													.withBucketName(BucketName)
+													.withKey(Key)
+													.withUploadId(UploadData.UploadId)
+													.withSSECustomerKey(SSEC)
+													.withPartNumber(UploadData.GetPartNumber())
+													.withInputStream(CreateBody(Part))
+													.withPartSize(Part.length()));
+			UploadData.Parts.add(PartResPonse.getPartETag());
+		}
+
+		return UploadData;
+	}
+
+	public void CheckCopyContent(String SrcBucketName, String SrcKey, String DestBucketName, String DestKey) {
 		var Client = GetClient();
 
-		var Response = Client.getObject(new GetObjectRequest(SrcBucketName, SrcKey).withVersionId(VersionID));
-		var SrcSize = Response.getObjectMetadata().getContentLength();
+		var HeadResponse = Client.getObjectMetadata(new GetObjectMetadataRequest(SrcBucketName, SrcKey));
+		var SrcSize = HeadResponse.getContentLength();
 
-		Response = Client.getObject(DestBucketName, DestKey);
+		var Response = Client.getObject(DestBucketName, DestKey);
 		var DestSize = Response.getObjectMetadata().getContentLength();
 		var DestData = GetBody(Response.getObjectContent());
 		assertTrue(SrcSize >= DestSize);
 
-		Response = Client.getObject(
-				new GetObjectRequest(SrcBucketName, SrcKey).withRange(0, DestSize - 1).withVersionId(VersionID));
+		Response = Client.getObject(new GetObjectRequest(SrcBucketName, SrcKey).withRange(0, DestSize - 1));
 		var SrcData = GetBody(Response.getObjectContent());
 		assertEquals(SrcData, DestData);
+	}
 
+	public void CheckCopyContentSSEC(AmazonS3 Client, String SrcBucketName, String SrcKey, String DestBucketName, String DestKey, SSECustomerKey SSEC) {
+		var HeadResponse = Client.getObjectMetadata(new GetObjectMetadataRequest(SrcBucketName, SrcKey).withSSECustomerKey(SSEC));
+		var SrcSize = HeadResponse.getContentLength();
+
+		var Response = Client.getObject(new GetObjectRequest(DestBucketName, DestKey).withSSECustomerKey(SSEC));
+		var DestSize = Response.getObjectMetadata().getContentLength();
+		var DestData = GetBody(Response.getObjectContent());
+		assertTrue(SrcSize >= DestSize);
+
+		Response = Client.getObject(new GetObjectRequest(SrcBucketName, SrcKey).withSSECustomerKey(SSEC));
+		var SrcData = GetBody(Response.getObjectContent());
+		assertEquals(SrcData, DestData);
+	}
+
+	public void CheckCopyContent(String SrcBucketName, String SrcKey, String DestBucketName, String DestKey, String VersionID) {
+		var Client = GetClient();
+
+		var HeadResponse = Client.getObjectMetadata(new GetObjectMetadataRequest(SrcBucketName, SrcKey).withVersionId(VersionID));
+		var SrcSize = HeadResponse.getContentLength();
+
+		var Response = Client.getObject(DestBucketName, DestKey);
+		var DestSize = Response.getObjectMetadata().getContentLength();
+		var DestData = GetBody(Response.getObjectContent());
+		assertEquals(SrcSize, DestSize);
+
+		Response = Client.getObject(new GetObjectRequest(SrcBucketName, SrcKey).withVersionId(VersionID));
+		var SrcData = GetBody(Response.getObjectContent());
+		assertEquals(SrcData, DestData);
 	}
 
 	public void CheckUploadMultipartResend(String BucketName, String Key, int Size, ArrayList<Integer> ResendParts) {
@@ -1201,19 +1300,19 @@ public class TestBase {
 		Metadata.addUserMetadata("x-amz-meta-foo", "bar");
 		Metadata.setContentType(ContentType);
 		var Client = GetClient();
-		var UploadData = MultipartUploadTest(BucketName, Key, Size, 0, Client, Metadata, ResendParts);
+		var UploadData = MultipartUploadResend(Client, BucketName, Key, Size, Metadata, ResendParts);
 		Client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadID, UploadData.Parts));
+				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
 
 		var Response = Client.getObject(BucketName, Key);
 		assertEquals(ContentType, Response.getObjectMetadata().getContentType());
 		assertEquals(Metadata.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals(Body.length(), Response.getObjectMetadata().getContentLength());
-		assertEquals(UploadData.Data, Body);
+		assertEquals(UploadData.GetBody(), Body);
 
-		CheckContentUsingRange(BucketName, Key, UploadData.Data, 1000000);
-		CheckContentUsingRange(BucketName, Key, UploadData.Data, 10000000);
+		CheckContentUsingRange(BucketName, Key, UploadData.GetBody(), 1000000);
+		CheckContentUsingRange(BucketName, Key, UploadData.GetBody(), 10000000);
 	}
 
 	public String DoTestMultipartUploadContents(String BucketName, String Key, int NumParts) {
@@ -1250,16 +1349,13 @@ public class TestBase {
 		return AllPayload;
 	}
 
-	public MultipartUploadData MultipartCopy(String SrcBucketName, String SrcKey, String DestBucketName, String DestKey,
-			int Size, AmazonS3 Client, int PartSize, String VersionID) {
+	public MultipartUploadData MultipartCopy(String SrcBucketName, String SrcKey, String DestBucketName, String DestKey, int Size, AmazonS3 Client, int PartSize, String VersionID) {
 		var Data = new MultipartUploadData();
-		if (Client == null)
-			Client = GetClient();
-		if (PartSize <= 0)
-			PartSize = 5 * MainData.MB;
+		if (Client == null) Client = GetClient();
+		if (PartSize <= 0) PartSize = 5 * MainData.MB;
 
 		var Response = Client.initiateMultipartUpload(new InitiateMultipartUploadRequest(DestBucketName, DestKey));
-		Data.UploadID = Response.getUploadId();
+		Data.UploadId = Response.getUploadId();
 
 		int UploadCount = 1;
 		long Start = 0;
@@ -1268,8 +1364,65 @@ public class TestBase {
 
 			var PartResPonse = Client.copyPart(new CopyPartRequest().withSourceBucketName(SrcBucketName)
 					.withSourceKey(SrcKey).withDestinationBucketName(DestBucketName).withDestinationKey(DestKey)
-					.withUploadId(Data.UploadID).withPartNumber(UploadCount).withFirstByte(Start).withLastByte(End)
+					.withUploadId(Data.UploadId).withPartNumber(UploadCount).withFirstByte(Start).withLastByte(End)
 					.withSourceVersionId(VersionID));
+			Data.Parts.add(new PartETag(UploadCount++, PartResPonse.getETag()));
+
+			Start = End + 1;
+		}
+
+		return Data;
+	}
+
+	public MultipartUploadData MultipartCopy(AmazonS3 Client, String SrcBucketName, String SrcKey, String DestBucketName, String DestKey, int Size, ObjectMetadata Metadata) {
+		var Data = new MultipartUploadData();
+		var PartSize = 5 * MainData.MB;
+		if (Metadata == null) Metadata = new ObjectMetadata();
+
+		var Response = Client.initiateMultipartUpload(new InitiateMultipartUploadRequest(DestBucketName, DestKey, Metadata));
+		Data.UploadId = Response.getUploadId();
+
+		int UploadCount = 1;
+		long Start = 0;
+		while (Start < Size) {
+			long End = Math.min(Start + PartSize - 1, Size - 1);
+
+			var PartResPonse = Client.copyPart(new CopyPartRequest().withSourceBucketName(SrcBucketName)
+					.withSourceKey(SrcKey).withDestinationBucketName(DestBucketName).withDestinationKey(DestKey)
+					.withUploadId(Data.UploadId).withPartNumber(UploadCount).withFirstByte(Start).withLastByte(End));
+			Data.Parts.add(new PartETag(UploadCount++, PartResPonse.getETag()));
+
+			Start = End + 1;
+		}
+
+		return Data;
+	}
+
+	public MultipartUploadData MultipartCopySSEC(AmazonS3 Client, String SrcBucketName, String SrcKey,
+										 String DestBucketName, String DestKey, int Size, ObjectMetadata Metadata, SSECustomerKey SSEC) {
+		var Data = new MultipartUploadData();
+		var PartSize = 5 * MainData.MB;
+		if (Metadata == null) Metadata = new ObjectMetadata();
+
+		var Response = Client.initiateMultipartUpload(new InitiateMultipartUploadRequest(DestBucketName, DestKey, Metadata).withSSECustomerKey(SSEC));
+		Data.UploadId = Response.getUploadId();
+
+		int UploadCount = 1;
+		long Start = 0;
+		while (Start < Size) {
+			long End = Math.min(Start + PartSize - 1, Size - 1);
+
+			var PartResPonse = Client.copyPart(new CopyPartRequest()
+												.withSourceBucketName(SrcBucketName)
+												.withSourceKey(SrcKey)
+												.withDestinationBucketName(DestBucketName)
+												.withDestinationKey(DestKey)
+												.withSourceSSECustomerKey(SSEC)
+												.withDestinationSSECustomerKey(SSEC)
+												.withUploadId(Data.UploadId)
+												.withPartNumber(UploadCount)
+												.withFirstByte(Start)
+												.withLastByte(End));
 			Data.Parts.add(new PartETag(UploadCount++, PartResPonse.getETag()));
 
 			Start = End + 1;
@@ -1296,8 +1449,9 @@ public class TestBase {
 
 	public void CheckContentUsingRange(String BucketName, String Key, String Data, long Step) {
 		var Client = GetClient();
-		var GetResponse = Client.getObject(BucketName, Key);
-		var Size = GetResponse.getObjectMetadata().getContentLength();
+		var GetResponse = Client.getObjectMetadata(BucketName, Key);
+		var Size = GetResponse.getContentLength();
+		assertEquals(Data.length(), Size);
 		
 		long StartpPosition = 0;
 		while (StartpPosition <= Size) {
@@ -1315,12 +1469,11 @@ public class TestBase {
 		}
 	}
 
-	public void CheckContentUsingRangeEnc(AmazonS3 Client, String BucketName, String Key, String Data, long Step,
-			SSECustomerKey SSEC) {
+	public void CheckContentUsingRangeEnc(AmazonS3 Client, String BucketName, String Key, String Data, long Step, SSECustomerKey SSEC) {
 		if (Client == null)
 			Client = GetClient();
-		var GetResponse = Client.getObject(new GetObjectRequest(BucketName, Key).withSSECustomerKey(SSEC));
-		var Size = GetResponse.getObjectMetadata().getContentLength();
+		var GetResponse = Client.getObjectMetadata(new GetObjectMetadataRequest(BucketName, Key).withSSECustomerKey(SSEC));
+		var Size = GetResponse.getContentLength();
 
 		long StartpPosition = 0;
 		while (StartpPosition <= Size) {
@@ -1328,8 +1481,7 @@ public class TestBase {
 			if (EndPosition > Size)
 				EndPosition = Size - 1;
 
-			var Response = Client.getObject(new GetObjectRequest(BucketName, Key)
-					.withRange(StartpPosition, EndPosition - 1).withSSECustomerKey(SSEC));
+			var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(StartpPosition, EndPosition - 1).withSSECustomerKey(SSEC));
 			var Body = GetBody(Response.getObjectContent());
 			var Length = EndPosition - StartpPosition;
 
@@ -2056,7 +2208,6 @@ public class TestBase {
 	}
 
 	public String GetMD5(String str) {
-
 		try {
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			md.update(str.getBytes("UTF-8"));

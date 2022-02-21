@@ -114,7 +114,7 @@ public class SSE_S3 extends TestBase
     	var BucketName = GetNewBucket();
         var Client = GetClient();
         var Key = "multipart_enc";
-        var Size = 30 * MainData.MB;
+        var Size = 50 * MainData.MB;
         var ContentType = "text/plain";
         var MetadataList = new ObjectMetadata();
         MetadataList.addUserMetadata("x-amz-meta-foo", "bar");
@@ -546,5 +546,97 @@ public class SSE_S3 extends TestBase
 
         Client.putObject(BucketName, Key, Data);
         CheckContentUsingRandomRange(BucketName, Key, Data, FileSize, 100);
+    }
+
+    @Test
+	@DisplayName("test_sse_s3_encryption_multipart_copypart_upload") 
+    @Tag( "Multipart") 
+    //@Tag("SSE-S3 설정하여 멀티파트로 업로드한 오브젝트를 mulitcopy 로 복사 가능한지 확인") 
+    public void test_sse_s3_encryption_multipart_copypart_upload()
+    {
+    	var BucketName = GetNewBucket();
+        var Client = GetClient();
+        var SrcKey = "multipart_enc";
+        var Size = 50 * MainData.MB;
+        var ContentType = "text/plain";
+        var Metadata = new ObjectMetadata();
+        Metadata.addUserMetadata("x-amz-meta-foo", "bar");
+        Metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        Metadata.setContentType(ContentType);
+        
+		// 멀티파트 업로드
+		var UploadData = MultipartUploadTest(Client, BucketName, SrcKey, Size, Metadata);
+		Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, SrcKey, UploadData.UploadId, UploadData.Parts));
+
+        //올바르게 업로드 되었는지 확인
+        var HeadResponse = Client.listObjectsV2(BucketName);
+        var ObjectCount = HeadResponse.getKeyCount();
+        assertEquals(1, ObjectCount);
+        var BytesUsed = GetBytesUsed(HeadResponse);
+        assertEquals(Size, BytesUsed);
+
+        var GetResponse = Client.getObject(BucketName, SrcKey);
+        assertEquals(Metadata.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
+        assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
+        
+        var Body = GetBody(GetResponse.getObjectContent());
+        assertEquals(Size, GetResponse.getObjectMetadata().getContentLength());
+        assertEquals(UploadData.GetBody(), Body);
+
+
+        // 멀티파트 복사
+        var DestKey = "multipart_enc_copy";
+        UploadData = MultipartCopy(Client, BucketName, SrcKey, BucketName, DestKey, Size, Metadata);
+        Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, DestKey, UploadData.UploadId, UploadData.Parts));
+
+        //올바르게 복사 되었는지 확인
+		CheckCopyContent(BucketName, SrcKey, BucketName, DestKey);
+    }
+
+    @Test
+	@DisplayName("test_sse_s3_encryption_multipart_copy_many") 
+    @Tag( "Multipart") 
+    //@Tag("SSE-S3 설정하여 Multipart와 Copypart를 모두 사용하여 오브젝트가 업로드 가능한지 확인") 
+    public void test_sse_s3_encryption_multipart_copy_many()
+    {
+    	var BucketName = GetNewBucket();
+        var Client = GetClient();
+        var SrcKey = "multipart_enc";
+        var Size = 50 * MainData.MB;
+        var ContentType = "text/plain";
+        var Metadata = new ObjectMetadata();
+        Metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        Metadata.setContentType(ContentType);
+		var Body = new StringBuilder();
+        
+		// 멀티파트 업로드
+		var UploadData = MultipartUploadTest(Client, BucketName, SrcKey, Size, Metadata);
+		Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, SrcKey, UploadData.UploadId, UploadData.Parts));
+
+		// 업로드가 올바르게 되었는지 확인
+		Body.append(UploadData.Body);
+		CheckContentUsingRange(BucketName, SrcKey, Body.toString(), 1000000);
+		
+		// 멀티파트 카피
+		var DestKey1 = "mymultipart1";
+		UploadData = MultipartCopy(Client, BucketName, SrcKey, BucketName, DestKey1, Size, Metadata);
+		// 추가파츠 업로드
+		UploadData = MultipartUpload(Client, BucketName, DestKey1, Size, UploadData);
+		Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, DestKey1, UploadData.UploadId, UploadData.Parts));
+
+		// 업로드가 올바르게 되었는지 확인
+		Body.append(UploadData.Body);
+		CheckContentUsingRange(BucketName, DestKey1, Body.toString(), 1000000);
+		
+		// 멀티파트 카피
+		var DestKey2 = "mymultipart2";
+		UploadData = MultipartCopy(Client, BucketName, DestKey1, BucketName, DestKey2, Size * 2, Metadata);
+		// 추가파츠 업로드
+		UploadData = MultipartUpload(Client, BucketName, DestKey2, Size, UploadData);
+		Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, DestKey2, UploadData.UploadId, UploadData.Parts));
+
+		// 업로드가 올바르게 되었는지 확인
+		Body.append(UploadData.Body);
+		CheckContentUsingRange(BucketName, DestKey2, Body.toString(), 1000000);
     }
 }

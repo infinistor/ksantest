@@ -176,4 +176,14 @@ public class SSE_C {
     {
         Test.test_encryption_sse_c_range_object_many();
     }
+    
+    
+    @Test
+	@DisplayName("test_sse_c_encryption_multipart_copypart_upload") 
+    @Tag( "Multipart") 
+    //@Tag("SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 mulitcopy 로 복사 가능한지 확인") 
+    public void test_sse_c_encryption_multipart_copypart_upload()
+    {
+        Test.test_sse_c_encryption_multipart_copypart_upload();
+    }
 }

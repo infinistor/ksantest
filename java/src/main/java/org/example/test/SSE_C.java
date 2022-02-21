@@ -16,14 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Base64;
 import java.util.HashMap;
 
-import org.example.s3tests.FormFile;
-import org.example.s3tests.MainData;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
@@ -33,6 +25,14 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.SSECustomerKey;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
+import org.example.s3tests.FormFile;
+import org.example.s3tests.MainData;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 public class SSE_C extends TestBase
 {
@@ -273,7 +273,7 @@ public class SSE_C extends TestBase
         var BucketName = GetNewBucket();
         var Client = GetClientHttps();
         var Key = "multipart_enc";
-        var Size = 30 * MainData.MB;
+        var Size = 50 * MainData.MB;
         var ContentType = "text/plain";
         var Metadata = new ObjectMetadata();
         Metadata.addUserMetadata("x-amz-meta-foo", "bar");
@@ -284,7 +284,7 @@ public class SSE_C extends TestBase
 
         var UploadData = MultipartUploadSSE_C(Client, BucketName, Key, Size, Metadata, SSEC);
         
-        Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadID, UploadData.Parts));
+        Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
         
         var HeadResponse = Client.listObjectsV2(BucketName);
         var ObjectCount = HeadResponse.getKeyCount();
@@ -297,12 +297,12 @@ public class SSE_C extends TestBase
         assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
 
         var Body = GetBody(GetResponse.getObjectContent());
-        assertEquals(UploadData.Data, Body);
+        assertEquals(UploadData.GetBody(), Body);
         assertEquals(Size, GetResponse.getObjectMetadata().getContentLength());
 
-        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.Data, 1000000, SSEC);
-        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.Data, 10000000, SSEC);
-        CheckContentUsingRandomRangeEnc(Client, BucketName, Key, UploadData.Data, Size, 100, SSEC);
+        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.GetBody(), 1000000, SSEC);
+        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.GetBody(), 10000000, SSEC);
+        CheckContentUsingRandomRangeEnc(Client, BucketName, Key, UploadData.GetBody(), Size, 100, SSEC);
     }
 
 
@@ -315,7 +315,7 @@ public class SSE_C extends TestBase
         var BucketName = GetNewBucket();
         var Client = GetClientHttps();
         var Key = "multipart_enc";
-        var Size = 30 * MainData.MB;
+        var Size = 50 * MainData.MB;
         var ContentType = "text/plain";
         var Metadata = new ObjectMetadata();
         Metadata.addUserMetadata("x-amz-meta-foo", "bar");
@@ -331,7 +331,7 @@ public class SSE_C extends TestBase
         
         var UploadData = MultipartUploadSSE_C(Client, BucketName, Key, Size, Metadata, SetSSEC);
 
-        Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadID, UploadData.Parts));
+        Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
 
         var HeadResponse = Client.listObjectsV2(BucketName);
         var ObjectCount = HeadResponse.getKeyCount();
@@ -488,5 +488,94 @@ public class SSE_C extends TestBase
 		assertEquals(Data, Body);
 
         CheckContentUsingRandomRangeEnc(Client, BucketName, Key, Data, Size, 50, SSEC);
+    }
+
+    @Test
+	@DisplayName("test_sse_c_encryption_multipart_copypart_upload") 
+    @Tag( "Multipart") 
+    //@Tag("SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 mulitcopy 로 복사 가능한지 확인") 
+    public void test_sse_c_encryption_multipart_copypart_upload()
+    {
+    	var BucketName = GetNewBucket();
+        var Client = GetClientHttps();
+        var SrcKey = "multipart_enc";
+        var Size = 50 * MainData.MB;
+        var ContentType = "text/plain";
+
+		var Metadata = new ObjectMetadata();
+        Metadata.setContentType("text/plain");
+        Metadata.setContentLength(Size);
+
+		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=").
+                       withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION).
+                       withMd5("DWygnHRtgiJ77HCm+1rvHw==");
+
+        
+        var UploadData = MultipartUploadSSE_C(Client, BucketName, SrcKey, Size, Metadata, SSEC);
+
+        Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, SrcKey, UploadData.UploadId, UploadData.Parts));
+		
+        var HeadResponse = Client.listObjectsV2(BucketName);
+        var ObjectCount = HeadResponse.getKeyCount();
+        assertEquals(1, ObjectCount);
+        var BytesUsed = GetBytesUsed(HeadResponse);
+        assertEquals(Size, BytesUsed);
+
+        var GetResponse = Client.getObject(new GetObjectRequest(BucketName, SrcKey).withSSECustomerKey(SSEC));
+        assertEquals(Metadata.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
+        assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
+
+        // 멀티파트 복사
+        var DestKey = "multipart_enc_copy";
+        UploadData = MultipartCopySSEC(Client, BucketName, SrcKey, BucketName, DestKey, Size, Metadata, SSEC);
+        Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, DestKey, UploadData.UploadId, UploadData.Parts));
+        CheckCopyContentSSEC(Client, BucketName, SrcKey, BucketName, DestKey, SSEC);
+    }
+
+    @Test
+	@DisplayName("test_sse_c_encryption_multipart_copy_many") 
+    @Tag( "Multipart") 
+    //@Tag("SSE-C 설정하여 Multipart와 Copypart를 모두 사용하여 오브젝트가 업로드 가능한지 확인") 
+    public void test_sse_c_encryption_multipart_copy_many()
+    {
+    	var BucketName = GetNewBucket();
+        var Client = GetClient();
+        var SrcKey = "multipart_enc";
+        var Size = 50 * MainData.MB;
+        var ContentType = "text/plain";
+        var Metadata = new ObjectMetadata();
+        Metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        Metadata.setContentType(ContentType);
+		var Body = new StringBuilder();
+        
+		// 멀티파트 업로드
+		var UploadData = MultipartUploadTest(Client, BucketName, SrcKey, Size, Metadata);
+		Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, SrcKey, UploadData.UploadId, UploadData.Parts));
+
+		// 업로드가 올바르게 되었는지 확인
+		Body.append(UploadData.Body);
+		CheckContentUsingRange(BucketName, SrcKey, Body.toString(), 1000000);
+		
+		// 멀티파트 카피
+		var DestKey1 = "mymultipart1";
+		UploadData = MultipartCopy(Client, BucketName, SrcKey, BucketName, DestKey1, Size, Metadata);
+		// 추가파츠 업로드
+		UploadData = MultipartUpload(Client, BucketName, DestKey1, Size, UploadData);
+		Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, DestKey1, UploadData.UploadId, UploadData.Parts));
+
+		// 업로드가 올바르게 되었는지 확인
+		Body.append(UploadData.Body);
+		CheckContentUsingRange(BucketName, DestKey1, Body.toString(), 1000000);
+		
+		// 멀티파트 카피
+		var DestKey2 = "mymultipart2";
+		UploadData = MultipartCopy(Client, BucketName, DestKey1, BucketName, DestKey2, Size * 2, Metadata);
+		// 추가파츠 업로드
+		UploadData = MultipartUpload(Client, BucketName, DestKey2, Size, UploadData);
+		Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, DestKey2, UploadData.UploadId, UploadData.Parts));
+
+		// 업로드가 올바르게 되었는지 확인
+		Body.append(UploadData.Body);
+		CheckContentUsingRange(BucketName, DestKey2, Body.toString(), 1000000);
     }
 }
