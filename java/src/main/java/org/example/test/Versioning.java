@@ -728,7 +728,7 @@ public class Versioning extends TestBase
 	//@Tag("버킷의 버저닝 설정이 멀티파트 업로드시 올바르게 동작하는지 확인")
 	public void test_versioning_bucket_multipart_upload_return_version_id() {
 		var ContentType = "text/bla";
-		var Size = 30 * MainData.MB;
+		var Size = 50 * MainData.MB;
 
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -739,10 +739,10 @@ public class Versioning extends TestBase
 
 		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
 
-		var UploadData = MultipartUploadTest(BucketName, Key, Size, 0, Client, Metadata, null);
+		var UploadData = MultipartUploadTest(Client, BucketName, Key, Size, Metadata);
 
 		var CompResponse = Client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadID, UploadData.Parts));
+				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
 		var VersionID = CompResponse.getVersionId();
 
 		var ListResponse = Client.listVersions(BucketName, "");
@@ -753,18 +753,18 @@ public class Versioning extends TestBase
 		BucketName = GetNewBucket();
 		Key = "baz";
 
-		UploadData = MultipartUploadTest(BucketName, Key, Size, 0, Client, Metadata, null);
+		UploadData = MultipartUploadTest(Client, BucketName, Key, Size, Metadata);
 		CompResponse = Client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadID, UploadData.Parts));
+				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
 		assertNull(CompResponse.getVersionId());
 
 		BucketName = GetNewBucket();
 		Key = "foo";
 
-		UploadData = MultipartUploadTest(BucketName, Key, Size, 0, Client, Metadata, null);
+		UploadData = MultipartUploadTest(Client, BucketName, Key, Size, Metadata);
 		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.SUSPENDED);
 		CompResponse = Client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadID, UploadData.Parts));
+				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
 		assertNull(CompResponse.getVersionId());
 	}
 	
@@ -772,7 +772,7 @@ public class Versioning extends TestBase
 	@DisplayName("test_versioning_get_object_head")
 	@Tag("Metadata")
 	// @Tag("업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인")
-	public void test_get_object_head()
+	public void test_versioning_get_object_head()
 	{
 		var BucketName = GetNewBucket();
 		var Client = GetClient();

@@ -208,8 +208,8 @@ public class Versioning
     @DisplayName("test_versioning_get_object_head")
     @Tag("Metadata")
     // @Tag("업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인")
-    public void test_get_object_head()
+    public void test_versioning_get_object_head()
     {
-        Test.test_get_object_head();
+        Test.test_versioning_get_object_head();
     }
 }

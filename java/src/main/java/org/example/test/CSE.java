@@ -202,7 +202,7 @@ public class CSE extends TestBase
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
 		var Key = "multipart_enc";
-		var Size = 30 * MainData.MB;
+		var Size = 50 * MainData.MB;
 		var ContentType = "text/plain";
 		var Data = RandomTextToLong(Size);
 

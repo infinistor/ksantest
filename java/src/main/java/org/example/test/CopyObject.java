@@ -454,7 +454,7 @@ public class CopyObject extends TestBase
         var BucketName = GetNewBucket();
         var Client = GetClient();
         CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
-        var Size = 30 * MainData.MB;
+        var Size = 50 * MainData.MB;
         var Key1 = "srcmultipart";
         var ContentType = "text/bla";
 
@@ -462,8 +462,8 @@ public class CopyObject extends TestBase
         Key1MetaData.addUserMetadata("x-amz-meta-foo", "bar");
         Key1MetaData.setContentType(ContentType);
 
-        var UploadData = MultipartUploadTest(BucketName, Key1, Size, 0, Client, Key1MetaData, null);
-        Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, Key1, UploadData.UploadID, UploadData.Parts));
+        var UploadData = MultipartUploadTest(Client, BucketName, Key1, Size, Key1MetaData);
+        Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, Key1, UploadData.UploadId, UploadData.Parts));
 
         var Response = Client.getObject(BucketName, Key1);
         var Key1Size = Response.getObjectMetadata().getContentLength();
@@ -474,7 +474,7 @@ public class CopyObject extends TestBase
         Response = Client.getObject(BucketName, Key2);
         var VersionID2 = Response.getObjectMetadata().getVersionId();
         var Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.Data, Body);
+        assertEquals(UploadData.GetBody(), Body);
         assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
         assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
         assertEquals(ContentType, Response.getObjectMetadata().getContentType());
@@ -484,7 +484,7 @@ public class CopyObject extends TestBase
         Client.copyObject(new CopyObjectRequest(BucketName, Key2, BucketName, Key3).withSourceVersionId(VersionID2));
         Response = Client.getObject(BucketName, Key3);
         Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.Data, Body);
+        assertEquals(UploadData.GetBody(), Body);
         assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
         assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
         assertEquals(ContentType, Response.getObjectMetadata().getContentType());
@@ -495,7 +495,7 @@ public class CopyObject extends TestBase
         Client.copyObject(new CopyObjectRequest(BucketName, Key1, BucketName2, Key4).withSourceVersionId(VersionID));
         Response = Client.getObject(BucketName2, Key4);
         Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.Data, Body);
+        assertEquals(UploadData.GetBody(), Body);
         assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
         assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
         assertEquals(ContentType, Response.getObjectMetadata().getContentType());
@@ -506,7 +506,7 @@ public class CopyObject extends TestBase
         Client.copyObject(new CopyObjectRequest(BucketName, Key1, BucketName3, Key5).withSourceVersionId(VersionID));
         Response = Client.getObject(BucketName3, Key5);
         Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.Data, Body);
+        assertEquals(UploadData.GetBody(), Body);
         assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
         assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
         assertEquals(ContentType, Response.getObjectMetadata().getContentType());
@@ -515,7 +515,7 @@ public class CopyObject extends TestBase
         Client.copyObject(BucketName3, Key5, BucketName, Key6);
         Response = Client.getObject(BucketName, Key6);
         Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.Data, Body);
+        assertEquals(UploadData.GetBody(), Body);
         assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
         assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
         assertEquals(ContentType, Response.getObjectMetadata().getContentType());
