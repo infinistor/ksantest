@@ -335,6 +335,34 @@ public class PutObject extends TestBase
 			assertEquals(Name, Body);
 			Client.setObjectAcl(BucketName, Name, CannedAccessControlList.Private);
 		}
+
+		// try (BufferedReader reader = new BufferedReader(new FileReader("test.txt")))
+		// {
+		// 	var KeyNames = new ArrayList<String>();
+
+		// 	while (reader.ready())
+		// 	{
+		// 		var KeyName = reader.readLine();
+		// 		KeyNames.add(KeyName);
+		// 	}
+	
+		// 	var BucketName = CreateObjects(KeyNames);
+	
+		// 	var ObjectList = GetObjectList(BucketName, null);
+	
+		// 	var Client = GetClient();
+	
+		// 	for (var Name : KeyNames) {
+		// 		assertTrue(ObjectList.contains(Name));
+		// 		var Response = Client.getObject(BucketName, Name);
+		// 		var Body = GetBody(Response.getObjectContent());
+		// 		assertEquals(Name, Body);
+		// 		Client.setObjectAcl(BucketName, Name, CannedAccessControlList.Private);
+		// 	}
+
+		// } catch (IOException e) {
+		// 	e.printStackTrace();
+		// }
 	}
 
 	@Test
