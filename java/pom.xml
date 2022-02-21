@@ -117,6 +117,7 @@
                         <include>Taggings.java</include>
                         <include>Versioning.java</include>
                         <include>Website.java</include>
+                        <include>Replication.java</include>
                     </includes>
                 </configuration>
             </plugin>
