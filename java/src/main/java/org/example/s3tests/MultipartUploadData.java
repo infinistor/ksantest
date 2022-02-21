@@ -15,10 +15,11 @@ import java.util.ArrayList;
 import com.amazonaws.services.s3.model.PartETag;
 
 public class MultipartUploadData {
-    public String UploadID;
+    public String UploadId;
     public ArrayList<PartETag> Parts;
-    public String Data;
-   
+    public StringBuilder Body;
+    public int PartSize;
+    
     public MultipartUploadData()
     {
         Init();
@@ -26,8 +27,16 @@ public class MultipartUploadData {
 
     public void Init()
     {
-        UploadID = "";
-        Data = "";
+        UploadId = "";
+        Body = new StringBuilder();
         Parts = new ArrayList<PartETag>();
+        PartSize = 5 * MainData.MB;
     }
+
+    public int GetPartNumber() { return Parts.size() + 1; }
+    public String GetBody() { return Body.toString(); }
+
+    public void AddPart(int PartNumber, String ETag) { Parts.add(new PartETag(PartNumber, ETag)); }
+    public void AddPart(PartETag Part) { Parts.add(Part); }
+    public void AppendBody(String Data) { Body.append(Data); }
 }
