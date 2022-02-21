@@ -29,7 +29,8 @@ public class MainData
     public static final String S3TESTS_INI = "S3TESTS_INI";
 
     public static final int KB = 1024;
-    public static final int MB = 1024 * 1024;
+    public static final int MB = 1024 * KB;
+    public static final int GB = 1024 * MB;
 
     public static final String HTTP = "http://";
     public static final String HTTPS = "https://";
