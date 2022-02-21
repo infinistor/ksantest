@@ -1,4 +1,6 @@
 target/
+.svn/
+junit-merger/
 .project
 .settings/
 s3tests_*
@@ -7,7 +9,9 @@ s3tests_*
 logs/
 awstests.ini
 s3tests_*
+s3tests.ini
 start_ksan.sh
 start.*
 .classpath
 junit-merger.exe
+xunit-to-html-master/
