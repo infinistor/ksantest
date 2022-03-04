@@ -18,20 +18,21 @@
 ## 테스트 환경 구성
 
 ### Centos7에 virtualenv 설치
-1. pip 설치
-    ```
-    sudo yum install epel-release
-    yum -y update
-    yum -y install python-pip
-    ```
-2. virtualenv 설치 및 활성화
-    ```
-    sudo pip install virtualenv
-    cd home
-    mkdir env1
-    virtualenv env1
-    source ./env1/bin/activate
-    ```
+
+``` bash
+# pip 설치
+sudo yum install epel-release
+yum -y update
+yum -y install python-pip
+# virtualenv 설치
+sudo pip install virtualenv
+# python module 설치
+./bootstrap
+# virtualenv 환경 설정
+mkdir virtualenv
+virtualenv virtualenv
+source ./virtualenv/bin/activate
+```
 
 ## 테스트 
 
