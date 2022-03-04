@@ -18,10 +18,10 @@ results/
 
 config.yaml
 
-s3tests_227.ini
-s3tests_229.ini
+s3tests_227.conf
+s3tests_229.conf
 s3tests_gw.conf
 s3tests_s3proxy.conf
-run_jenkins.sh
+*.sh
 test_s3_backup.py
 awstests.conf

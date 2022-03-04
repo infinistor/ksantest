@@ -10,8 +10,8 @@ logs/
 awstests.ini
 s3tests_*
 s3tests.ini
-start_ksan.sh
-start.*
+*.sh
+*.bat
 .classpath
 junit-merger.exe
 xunit-to-html-master/
