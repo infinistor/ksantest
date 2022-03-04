@@ -12,7 +12,6 @@ package org.example.s3tests;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 
 public class Website
@@ -25,7 +24,6 @@ public class Website
 	}
 
     @Test
-	@DisplayName("test_webiste_get_buckets")
     @Tag("Check")
     @Tag("KSAN")
     //@Tag("버킷의 Websize 설정 조회 확인")
@@ -35,7 +33,6 @@ public class Website
     }
 
     @Test
-	@DisplayName("test_webiste_put_buckets")
     @Tag("Check")
     @Tag("KSAN")
     //@Tag("버킷의 Websize 설정이 가능한지 확인")
@@ -45,7 +42,6 @@ public class Website
     }
 
     @Test
-	@DisplayName("test_webiste_delete_buckets")
     @Tag("Delete")
     @Tag("KSAN")
     //@Tag("버킷의 Websize 설정이 삭제가능한지 확인")

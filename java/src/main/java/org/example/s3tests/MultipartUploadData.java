@@ -33,7 +33,7 @@ public class MultipartUploadData {
         PartSize = 5 * MainData.MB;
     }
 
-    public int GetPartNumber() { return Parts.size() + 1; }
+    public int NextPartNumber() { return Parts.size() + 1; }
     public String GetBody() { return Body.toString(); }
 
     public void AddPart(int PartNumber, String ETag) { Parts.add(new PartETag(PartNumber, ETag)); }

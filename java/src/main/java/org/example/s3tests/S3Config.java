@@ -24,8 +24,8 @@ public class S3Config
     private final String STR_PORT = "Port";
     private final String STR_SIGNATUREVERSION = "SignatureVersion";
     private final String STR_ISSECURE = "IsSecure";
-    // private final String STR_FILENAME = "awstests.ini";
-    private final String STR_FILENAME = "s3tests.ini";
+    private final String STR_FILENAME = "awstests.ini";
+    // private final String STR_FILENAME = "s3tests_227.ini";
  
     /////////////////////////////////////Fixtures///////////////////////////////////////////
     private final String STR_FIXTURES = "Fixtures";

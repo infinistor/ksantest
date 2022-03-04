@@ -18,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.ArrayList;
 
 import org.example.s3tests.MainData;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +39,6 @@ public class ListBuckets extends TestBase
 	}
 
 	@Test
-	@DisplayName("test_buckets_create_then_list")
     @Tag("Get")
     @Tag("KSAN")
     //@Tag("여러개의 버킷 생성해서 목록 조회 확인")
@@ -66,7 +64,6 @@ public class ListBuckets extends TestBase
     }
 
     @Test
-	@DisplayName("test_list_buckets_invalid_auth")
     @Tag("ERROR")
     @Tag("KSAN")
     //@Tag("존재하지 않는 사용자가 버킷목록 조회시 에러 확인")
@@ -83,7 +80,6 @@ public class ListBuckets extends TestBase
     }
 
     @Test
-	@DisplayName("test_list_buckets_bad_auth")
     @Tag("ERROR")
     @Tag("KSAN")
     //@Tag("로그인정보를 잘못입력한 사용자가 버킷목록 조회시 에러 확인")
@@ -100,7 +96,6 @@ public class ListBuckets extends TestBase
     }
     
     @Test
-    @DisplayName("test_head_bucket")
     @Tag("Metadata")
     @Tag("KSAN")
     //Tag("버킷의 메타데이터를 가져올 수 있는지 확인")
