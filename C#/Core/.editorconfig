@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# IDE1006: 명명 스타일
+dotnet_diagnostic.IDE1006.severity = none
