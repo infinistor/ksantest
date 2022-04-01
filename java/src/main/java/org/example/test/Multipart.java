@@ -101,7 +101,7 @@ public class Multipart extends TestBase
 
 		var Response = Client.getObject(TargetBucketName, TargetKey);
 		assertEquals(Size, Response.getObjectMetadata().getContentLength());
-		CheckCopyContent(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey, MainData.MB);
 	}
 
 	@Test
@@ -150,7 +150,7 @@ public class Multipart extends TestBase
 
 		var Response = Client.getObject(TargetBucketName, TargetKey);
 		assertEquals(10, Response.getObjectMetadata().getContentLength());
-		CheckCopyContent(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
 	}
 
 	@Test
@@ -172,7 +172,7 @@ public class Multipart extends TestBase
 					new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadData.UploadId, UploadData.Parts));
 			var Response = Client.getObject(TargetBucketName, TargetKey);
 			assertEquals(Size, Response.getObjectMetadata().getContentLength());
-			CheckCopyContent(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+			CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey, MainData.MB);
 		}
 	}
 

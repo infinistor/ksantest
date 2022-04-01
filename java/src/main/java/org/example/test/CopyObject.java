@@ -448,60 +448,55 @@ public class CopyObject extends TestBase
         var UploadData = SetupMultipartUpload(Client, BucketName, Key1, Size, Key1MetaData);
         Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, Key1, UploadData.UploadId, UploadData.Parts));
 
-        var Response = Client.getObject(BucketName, Key1);
-        var Key1Size = Response.getObjectMetadata().getContentLength();
-        var VersionID = Response.getObjectMetadata().getVersionId();
+        var Response = Client.getObjectMetadata(BucketName, Key1);
+        var Key1Size = Response.getContentLength();
+        var VersionID = Response.getVersionId();
 
         var Key2 = "dstmultipart";
         Client.copyObject(new CopyObjectRequest(BucketName, Key1, BucketName, Key2).withSourceVersionId(VersionID));
-        Response = Client.getObject(BucketName, Key2);
-        var VersionID2 = Response.getObjectMetadata().getVersionId();
-        var Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.GetBody(), Body);
-        assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
-        assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
-        assertEquals(ContentType, Response.getObjectMetadata().getContentType());
+        Response = Client.getObjectMetadata(BucketName, Key2);
+        var VersionID2 = Response.getVersionId();
+        assertEquals(Key1Size, Response.getContentLength());
+        assertEquals(Key1MetaData.getUserMetadata(), Response.getUserMetadata());
+        assertEquals(ContentType, Response.getContentType());
+        CheckContentUsingRange(BucketName, Key2, UploadData.GetBody(), MainData.MB);
 
 
         var Key3 = "dstmultipart2";
         Client.copyObject(new CopyObjectRequest(BucketName, Key2, BucketName, Key3).withSourceVersionId(VersionID2));
-        Response = Client.getObject(BucketName, Key3);
-        Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.GetBody(), Body);
-        assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
-        assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
-        assertEquals(ContentType, Response.getObjectMetadata().getContentType());
+        Response = Client.getObjectMetadata(BucketName, Key3);
+        assertEquals(Key1Size, Response.getContentLength());
+        assertEquals(Key1MetaData.getUserMetadata(), Response.getUserMetadata());
+        assertEquals(ContentType, Response.getContentType());
+        CheckContentUsingRange(BucketName, Key3, UploadData.GetBody(), MainData.MB);
 
         var BucketName2 = GetNewBucket();
         CheckConfigureVersioningRetry(BucketName2, BucketVersioningConfiguration.ENABLED);
         var Key4 = "dstmultipart3";
         Client.copyObject(new CopyObjectRequest(BucketName, Key1, BucketName2, Key4).withSourceVersionId(VersionID));
-        Response = Client.getObject(BucketName2, Key4);
-        Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.GetBody(), Body);
-        assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
-        assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
-        assertEquals(ContentType, Response.getObjectMetadata().getContentType());
+        Response = Client.getObjectMetadata(BucketName2, Key4);
+        assertEquals(Key1Size, Response.getContentLength());
+        assertEquals(Key1MetaData.getUserMetadata(), Response.getUserMetadata());
+        assertEquals(ContentType, Response.getContentType());
+        CheckContentUsingRange(BucketName, Key4, UploadData.GetBody(), MainData.MB);
 
         var BucketName3 = GetNewBucket();
         CheckConfigureVersioningRetry(BucketName3, BucketVersioningConfiguration.ENABLED);
         var Key5 = "dstmultipart4";
         Client.copyObject(new CopyObjectRequest(BucketName, Key1, BucketName3, Key5).withSourceVersionId(VersionID));
-        Response = Client.getObject(BucketName3, Key5);
-        Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.GetBody(), Body);
-        assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
-        assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
-        assertEquals(ContentType, Response.getObjectMetadata().getContentType());
+        Response = Client.getObjectMetadata(BucketName3, Key5);
+        assertEquals(Key1Size, Response.getContentLength());
+        assertEquals(Key1MetaData.getUserMetadata(), Response.getUserMetadata());
+        assertEquals(ContentType, Response.getContentType());
+        CheckContentUsingRange(BucketName, Key5, UploadData.GetBody(), MainData.MB);
 
         var Key6 = "dstmultipart5";
         Client.copyObject(BucketName3, Key5, BucketName, Key6);
-        Response = Client.getObject(BucketName, Key6);
-        Body = GetBody(Response.getObjectContent());
-        assertEquals(UploadData.GetBody(), Body);
-        assertEquals(Key1Size, Response.getObjectMetadata().getContentLength());
-        assertEquals(Key1MetaData.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
-        assertEquals(ContentType, Response.getObjectMetadata().getContentType());
+        Response = Client.getObjectMetadata(BucketName3, Key6);
+        assertEquals(Key1Size, Response.getContentLength());
+        assertEquals(Key1MetaData.getUserMetadata(), Response.getUserMetadata());
+        assertEquals(ContentType, Response.getContentType());
+        CheckContentUsingRange(BucketName, Key6, UploadData.GetBody(), MainData.MB);
     }
 
     @Test

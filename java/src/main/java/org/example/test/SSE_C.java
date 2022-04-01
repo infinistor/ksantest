@@ -274,12 +274,8 @@ public class SSE_C extends TestBase
         assertEquals(Metadata.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
         assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
 
-        var Body = GetBody(GetResponse.getObjectContent());
-        assertEquals(UploadData.GetBody(), Body);
-        assertEquals(Size, GetResponse.getObjectMetadata().getContentLength());
-
-        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.GetBody(), 1000000, SSEC);
-        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.GetBody(), 10000000, SSEC);
+        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.GetBody(), MainData.MB, SSEC);
+        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.GetBody(), 10 * MainData.MB, SSEC);
         CheckContentUsingRandomRangeEnc(Client, BucketName, Key, UploadData.GetBody(), Size, 100, SSEC);
     }
 
@@ -525,7 +521,7 @@ public class SSE_C extends TestBase
 
 		// 업로드가 올바르게 되었는지 확인
 		Body.append(UploadData.Body);
-		CheckContentUsingRange(BucketName, SourceKey, Body.toString(), 1000000);
+		CheckContentUsingRange(BucketName, SourceKey, Body.toString(), MainData.MB);
 		
 		// 멀티파트 카피
 		var TargetKey1 = "mymultipart1";
@@ -536,7 +532,7 @@ public class SSE_C extends TestBase
 
 		// 업로드가 올바르게 되었는지 확인
 		Body.append(UploadData.Body);
-		CheckContentUsingRange(BucketName, TargetKey1, Body.toString(), 1000000);
+		CheckContentUsingRange(BucketName, TargetKey1, Body.toString(), MainData.MB);
 		
 		// 멀티파트 카피
 		var TargetKey2 = "mymultipart2";
@@ -547,6 +543,6 @@ public class SSE_C extends TestBase
 
 		// 업로드가 올바르게 되었는지 확인
 		Body.append(UploadData.Body);
-		CheckContentUsingRange(BucketName, TargetKey2, Body.toString(), 1000000);
+		CheckContentUsingRange(BucketName, TargetKey2, Body.toString(), MainData.MB);
     }
 }

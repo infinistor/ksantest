@@ -137,14 +137,10 @@ public class SSE_S3 extends TestBase
         var BytesUsed = GetBytesUsed(HeadResponse);
         assertEquals(Size, BytesUsed);
 
-        var GetResponse = Client.getObject(BucketName, Key);
-        assertEquals(MetadataList.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
-        assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
+        var GetResponse = Client.getObjectMetadata(BucketName, Key);
+        assertEquals(MetadataList.getUserMetadata(), GetResponse.getUserMetadata());
+        assertEquals(ContentType, GetResponse.getContentType());
         
-        var Body = GetBody(GetResponse.getObjectContent());
-        assertEquals(Data, Body);
-        assertEquals(Size, GetResponse.getObjectMetadata().getContentLength());
-
         CheckContentUsingRange(BucketName, Key, Data, MainData.MB);
         CheckContentUsingRange(BucketName, Key, Data, 10 * MainData.MB);
 		CheckContentUsingRandomRange(BucketName, Key, Data, 100);
@@ -224,9 +220,6 @@ public class SSE_S3 extends TestBase
 
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "for/bar", "test/" }));
 		CreateObjectsToBody(BucketName, KeyNames, "");
-
-        var GetResponse = Client.getObject(BucketName, KeyNames.get(0));
-        assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
 
         var GetHeadResponse = Client.getObjectMetadata(BucketName, KeyNames.get(1));
         assertEquals(SSEAlgorithm.AES256.toString(), GetHeadResponse.getSSEAlgorithm());
@@ -550,14 +543,11 @@ public class SSE_S3 extends TestBase
         var BytesUsed = GetBytesUsed(HeadResponse);
         assertEquals(Size, BytesUsed);
 
-        var GetResponse = Client.getObject(BucketName, SourceKey);
-        assertEquals(Metadata.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
-        assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
+        var GetResponse = Client.getObjectMetadata(BucketName, SourceKey);
+        assertEquals(Metadata.getUserMetadata(), GetResponse.getUserMetadata());
+        assertEquals(ContentType, GetResponse.getContentType());
         
-        var Body = GetBody(GetResponse.getObjectContent());
-        assertEquals(Size, GetResponse.getObjectMetadata().getContentLength());
-        assertEquals(UploadData.GetBody(), Body);
-
+		CheckContentUsingRange(BucketName, SourceKey, UploadData.GetBody(), MainData.MB);
 
         // 멀티파트 복사
         var TargetKey = "multipart_enc_copy";
@@ -565,7 +555,7 @@ public class SSE_S3 extends TestBase
         Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, TargetKey, UploadData.UploadId, UploadData.Parts));
 
         //올바르게 복사 되었는지 확인
-		CheckCopyContent(BucketName, SourceKey, BucketName, TargetKey);
+		CheckCopyContentUsingRange(BucketName, SourceKey, BucketName, TargetKey, MainData.MB);
     }
 
     @Test
@@ -589,7 +579,7 @@ public class SSE_S3 extends TestBase
 
 		// 업로드가 올바르게 되었는지 확인
 		Body.append(UploadData.Body);
-		CheckContentUsingRange(BucketName, SourceKey, Body.toString(), 1000000);
+		CheckContentUsingRange(BucketName, SourceKey, Body.toString(), MainData.MB);
 		
 		// 멀티파트 카피
 		var TargetKey1 = "mymultipart1";
@@ -600,7 +590,7 @@ public class SSE_S3 extends TestBase
 
 		// 업로드가 올바르게 되었는지 확인
 		Body.append(UploadData.Body);
-		CheckContentUsingRange(BucketName, TargetKey1, Body.toString(), 1000000);
+		CheckContentUsingRange(BucketName, TargetKey1, Body.toString(), MainData.MB);
 		
 		// 멀티파트 카피
 		var TargetKey2 = "mymultipart2";
@@ -611,6 +601,6 @@ public class SSE_S3 extends TestBase
 
 		// 업로드가 올바르게 되었는지 확인
 		Body.append(UploadData.Body);
-		CheckContentUsingRange(BucketName, TargetKey2, Body.toString(), 1000000);
+		CheckContentUsingRange(BucketName, TargetKey2, Body.toString(), MainData.MB);
     }
 }

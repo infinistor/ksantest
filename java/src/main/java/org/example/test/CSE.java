@@ -226,17 +226,12 @@ public class CSE extends TestBase
 			assertEquals(1, ObjectCount);
 			assertEquals(EncodingData.length(), GetBytesUsed(HeadResponse));
 
-			var GetResponse = Client.getObject(BucketName, Key);
-			assertEquals(MetadataList.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
-			assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
+			var GetResponse = Client.getObjectMetadata(BucketName, Key);
+			assertEquals(MetadataList.getUserMetadata(), GetResponse.getUserMetadata());
+			assertEquals(ContentType, GetResponse.getContentType());
 
-			var EncodingBody = GetBody(GetResponse.getObjectContent());
-			var Body = AES256.decryptAES256(EncodingBody, AESKey);
-			assertEquals(Size, Body.length());
-			assertEquals(Data, Body);
-
-			CheckContentUsingRange(BucketName, Key, EncodingData, 1000000);
-			CheckContentUsingRange(BucketName, Key, EncodingData, 10000000);
+			CheckContentUsingRange(BucketName, Key, EncodingData, MainData.MB);
+			CheckContentUsingRange(BucketName, Key, EncodingData, 10 * MainData.MB);
 			CheckContentUsingRandomRange(BucketName, Key, EncodingData, 100);
 	} catch (Exception e) {
 			fail(e.getMessage());
