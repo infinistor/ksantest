@@ -26,7 +26,6 @@ import org.example.s3tests.S3Config;
 import org.example.s3tests.UserData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.platform.commons.util.StringUtils;
-import org.springframework.util.StreamUtils;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
@@ -49,6 +48,7 @@ import com.google.gson.JsonObject;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -57,7 +57,6 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -723,9 +722,12 @@ public class TestBase {
 		String Body = "";
 		if (Data != null) {
 			try {
-				InputStream Reader = Data.getDelegateStream();
-				Body = StreamUtils.copyToString(Reader, StandardCharsets.UTF_8);
-				Reader.close();
+				ByteArrayOutputStream result = new ByteArrayOutputStream();
+				byte[] buffer = new byte[1024];
+				for (int length; (length = Data.read(buffer)) != -1; ) {
+					result.write(buffer, 0, length);
+				}
+				return result.toString("UTF-8");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -1277,6 +1279,28 @@ public class TestBase {
 		assertEquals(SourceSize, TargetSize);
 		assertEquals(SourceData, TargetData);
 	}
+	
+	public void CheckCopyContentUsingRange(String SourceBucketName, String SourceKey, String TargetBucketName, String TargetKey, int Step) {
+		var Client = GetClient();
+
+		var Response = Client.getObjectMetadata(SourceBucketName, SourceKey);
+		var Size = Response.getContentLength();
+		
+		long StartpPosition = 0;
+		while (StartpPosition < Size) {
+			var EndPosition = StartpPosition + Step;
+			if (EndPosition > Size) EndPosition = Size - 1;
+
+			var SourceResponse = Client.getObject(new GetObjectRequest(SourceBucketName, SourceKey).withRange(StartpPosition, EndPosition - 1));
+			var SourceBody = GetBody(SourceResponse.getObjectContent());
+			var TargetResponse = Client.getObject(new GetObjectRequest(SourceBucketName, SourceKey).withRange(StartpPosition, EndPosition - 1));
+			var TargetBody = GetBody(TargetResponse.getObjectContent());
+
+			assertEquals(SourceResponse.getObjectMetadata().getContentLength(), TargetResponse.getObjectMetadata().getContentLength());
+			assertEquals(SourceBody, TargetBody);
+			StartpPosition += Step;
+		}
+	}
 
 	public void CheckUploadMultipartResend(String BucketName, String Key, int Size, ArrayList<Integer> ResendParts) {
 		var ContentType = "text/bla";
@@ -1288,15 +1312,12 @@ public class TestBase {
 		Client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
 
-		var Response = Client.getObject(BucketName, Key);
-		assertEquals(ContentType, Response.getObjectMetadata().getContentType());
-		assertEquals(Metadata.getUserMetadata(), Response.getObjectMetadata().getUserMetadata());
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals(Body.length(), Response.getObjectMetadata().getContentLength());
-		assertEquals(UploadData.GetBody(), Body);
+		var Response = Client.getObjectMetadata(BucketName, Key);
+		assertEquals(ContentType, Response.getContentType());
+		assertEquals(Metadata.getUserMetadata(), Response.getUserMetadata());
 
-		CheckContentUsingRange(BucketName, Key, UploadData.GetBody(), 1000000);
-		CheckContentUsingRange(BucketName, Key, UploadData.GetBody(), 10000000);
+		CheckContentUsingRange(BucketName, Key, UploadData.GetBody(), MainData.MB);
+		CheckContentUsingRange(BucketName, Key, UploadData.GetBody(), 10 * MainData.MB);
 	}
 
 	public String DoTestMultipartUploadContents(String BucketName, String Key, int NumParts) {
