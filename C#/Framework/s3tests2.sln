@@ -1,0 +1,34 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30225.117
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "s3tests2", "s3tests2.csproj", "{F803F8B3-DADE-4EAD-873C-E3587D2A0091}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9457D1B0-00FB-4E64-BE25-E1734548CA7E}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F803F8B3-DADE-4EAD-873C-E3587D2A0091}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F803F8B3-DADE-4EAD-873C-E3587D2A0091}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F803F8B3-DADE-4EAD-873C-E3587D2A0091}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F803F8B3-DADE-4EAD-873C-E3587D2A0091}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0CBB47C8-8B82-4EFB-A0CF-94BB148B147F}
+	EndGlobalSection
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN2019 - Subversion Support for Visual Studio
+	EndGlobalSection
+EndGlobal
