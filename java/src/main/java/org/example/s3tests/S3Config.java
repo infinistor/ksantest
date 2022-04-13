@@ -18,13 +18,14 @@ import org.ini4j.InvalidFileFormatException;
 
 public class S3Config
 {
-    /////////////////////////////////////Default///////////////////////////////////////////
-    private final String STR_GLOBAL = "Global";
+    private final String STR_FILENAME = "awstests.ini";
+    /////////////////////////////////////S3///////////////////////////////////////////
+    private final String STR_S3 = "S3";
     private final String STR_URL = "URL";
     private final String STR_PORT = "Port";
     private final String STR_SIGNATUREVERSION = "SignatureVersion";
     private final String STR_ISSECURE = "IsSecure";
-    private final String STR_FILENAME = "awstests.ini";
+    private final String STR_REGION = "Region";
     // private final String STR_FILENAME = "s3tests_227.ini";
  
     /////////////////////////////////////Fixtures///////////////////////////////////////////
@@ -39,7 +40,6 @@ public class S3Config
     private final String STR_EMAIL = "Email";
     private final String STR_ACCESSKEY = "AccessKey";
     private final String STR_SECRETKEY = "SecretKey";
-    private final String STR_APINAME = "APIName";
     private final String STR_KMS = "KMS";
 
     /*********************************************************************************************************/
@@ -48,6 +48,7 @@ public class S3Config
     /*********************************************************************************************************/
     public String URL;
     public int Port;
+    public String RegionName;
     public String SignatureVersion;
     public boolean IsSecure;
     public String BucketPrefix;
@@ -67,11 +68,12 @@ public class S3Config
     	try {
 			ini.load(new FileReader(file));
 		   	
-			URL = ReadKeyToString(STR_GLOBAL, STR_URL);
-			Port = ReadKeyToInt(STR_GLOBAL, STR_PORT);
-            SignatureVersion = ReadKeyToString(STR_GLOBAL, STR_SIGNATUREVERSION);
-            IsSecure = ReadKeyToBoolean(STR_GLOBAL, STR_ISSECURE);
-
+			URL = ReadKeyToString(STR_S3, STR_URL);
+			Port = ReadKeyToInt(STR_S3, STR_PORT);
+            RegionName = ReadKeyToString(STR_S3, STR_REGION);
+            SignatureVersion = ReadKeyToString(STR_S3, STR_SIGNATUREVERSION);
+            IsSecure = ReadKeyToBoolean(STR_S3, STR_ISSECURE);
+            
             BucketPrefix = ReadKeyToString(STR_FIXTURES, STR_BUCKETPREFIX);
 
             MainUser = ReadUser(STR_MAINUSER);
@@ -108,7 +110,6 @@ public class S3Config
         Item.Email 		 = ReadKeyToString(Section, STR_EMAIL);
         Item.AccessKey 	 = ReadKeyToString(Section, STR_ACCESSKEY);
         Item.SecretKey 	 = ReadKeyToString(Section, STR_SECRETKEY);
-        Item.APIName 	 = ReadKeyToString(Section, STR_APINAME);
         Item.KMS 		 = ReadKeyToString(Section, STR_KMS);
         
         return Item;
