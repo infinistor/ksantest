@@ -16,7 +16,6 @@ public class UserData {
     public String Email       ;
     public String AccessKey   ;
     public String SecretKey   ;
-    public String APIName     ;
     public String KMS         ;
  
     public UserData()
@@ -31,7 +30,6 @@ public class UserData {
         Email       = "";
         AccessKey   = "";
         SecretKey   = "";
-        APIName     = "";
         KMS         = "";
     }
 
@@ -43,7 +41,6 @@ public class UserData {
         if (!Email      .isBlank()) return true;
         if (!AccessKey  .isBlank()) return true;
         if (!SecretKey  .isBlank()) return true;
-        if (!APIName    .isBlank()) return true;
         return false;
     }
 }

@@ -18,7 +18,8 @@ import org.ini4j.InvalidFileFormatException;
 
 public class S3Config
 {
-    private final String STR_FILENAME = "awstests.ini";
+    // private final String STR_FILENAME = "awstests.ini";
+    private final String STR_FILENAME = "s3tests_229.ini";
     /////////////////////////////////////S3///////////////////////////////////////////
     private final String STR_S3 = "S3";
     private final String STR_URL = "URL";
@@ -26,7 +27,6 @@ public class S3Config
     private final String STR_SIGNATUREVERSION = "SignatureVersion";
     private final String STR_ISSECURE = "IsSecure";
     private final String STR_REGION = "Region";
-    // private final String STR_FILENAME = "s3tests_227.ini";
  
     /////////////////////////////////////Fixtures///////////////////////////////////////////
     private final String STR_FIXTURES = "Fixtures";
