@@ -35,7 +35,6 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
@@ -111,7 +110,7 @@ public class TestBase {
 		Config.GetConfig();
 	}
 
-	public static AmazonS3 CreateClient(String URL, int Port, boolean IsSecure, UserData User, Boolean UseChunkEncoding, Boolean PayloadSigning, String SignatureVersion) {
+	public static AmazonS3 CreateClient(String URL, int Port, String RegionName, boolean IsSecure, UserData User, Boolean UseChunkEncoding, Boolean PayloadSigning, String SignatureVersion) {
 		String Address = "";
 		ClientConfiguration config;
 
@@ -132,7 +131,7 @@ public class TestBase {
 		if (User == null)	ClientBuilder.setCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()));
 		else				ClientBuilder.setCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(User.AccessKey, User.SecretKey)));
 		
-		if (StringUtils.isBlank(URL))	ClientBuilder.setRegion(Regions.AP_NORTHEAST_2.getName());
+		if (StringUtils.isBlank(URL))	ClientBuilder.setRegion(RegionName);
 		else				ClientBuilder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(Address, ""));
 
 		ClientBuilder.setClientConfiguration(config);
@@ -143,25 +142,25 @@ public class TestBase {
 	}
 
 	public AmazonS3 GetClient() {
-		return CreateClient(Config.URL, Config.Port, Config.IsSecure, Config.MainUser, true, true, "AWSS3V4SignerType");
+		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, Config.MainUser, true, true, "AWSS3V4SignerType");
 	}
 	public AmazonS3 GetClientV2() {
-		return CreateClient(Config.URL, Config.Port, Config.IsSecure, Config.MainUser, true, true, "S3SignerType");
+		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, Config.MainUser, true, true, "S3SignerType");
 	}
 	public AmazonS3 GetClientV4(Boolean UseChunkEncoding) {
-		return CreateClient(Config.URL, Config.Port, Config.IsSecure, Config.MainUser, UseChunkEncoding, true, "AWSS3V4SignerType");
+		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, Config.MainUser, UseChunkEncoding, true, "AWSS3V4SignerType");
 	}
 	public AmazonS3 GetClientHttps() {
-		return CreateClient(Config.URL, Config.Port, true, Config.MainUser, true, true, "AWSS3V4SignerType");
+		return CreateClient(Config.URL, Config.Port, Config.RegionName, true, Config.MainUser, true, true, "AWSS3V4SignerType");
 	}
 	public AmazonS3 GetClientHttpsV4(Boolean UseChunkEncoding, Boolean PayloadSigning) {
-		return CreateClient(Config.URL, Config.Port, true, Config.MainUser, UseChunkEncoding, PayloadSigning, "AWSS3V4SignerType");
+		return CreateClient(Config.URL, Config.Port, Config.RegionName, true, Config.MainUser, UseChunkEncoding, PayloadSigning, "AWSS3V4SignerType");
 	}
 	public AmazonS3 GetAltClient() {
-		return CreateClient(Config.URL, Config.Port, Config.IsSecure, Config.AltUser, true, true, "AWSS3V4SignerType");
+		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, Config.AltUser, true, true, "AWSS3V4SignerType");
 	}
 	public AmazonS3 GetUnauthenticatedClient() {
-		return CreateClient(Config.URL, Config.Port, Config.IsSecure, null, true, true, "AWSS3V4SignerType");
+		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, null, true, true, "AWSS3V4SignerType");
 	}
 	public AmazonS3 GetBadAuthClient(String AccessKey, String SecretKey) {
 		if (StringUtils.isBlank(AccessKey)) AccessKey = "aaaaaaaaaaaaaaa";
@@ -171,7 +170,7 @@ public class TestBase {
 		DummyUser.AccessKey = AccessKey;
 		DummyUser.SecretKey = SecretKey;
 
-		return CreateClient(Config.URL, Config.Port, Config.IsSecure, DummyUser, true, true, "AWSS3V4SignerType");
+		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, DummyUser, true, true, "AWSS3V4SignerType");
 	}
 
 	public AccessControlList GetGrantList(String UserID, Permission[] Perms) {
@@ -385,7 +384,7 @@ public class TestBase {
 
 	public String GetHost(String BucketName) {
 		if (StringUtils.isBlank(Config.URL))
-			return String.format("%s.s3-%s.amazonaws.com", BucketName, Config.MainUser.APIName);
+			return String.format("%s.s3-%s.amazonaws.com", BucketName, Config.RegionName);
 		return String.format("%s:%d/%s", Config.URL, Config.Port, BucketName);
 	}
 
@@ -1263,7 +1262,7 @@ public class TestBase {
 		var TargetData = GetBody(TargetResponse.getObjectContent());
 
 		assertEquals(SourceSize, TargetSize);
-		assertEquals(SourceData, TargetData);
+		assertTrue(SourceData.equals(TargetData), "Source does not match target");
 	}
 
 	public void CheckCopyContentUsingRange(String SourceBucketName, String SourceKey, String TargetBucketName, String TargetKey) {
@@ -1467,9 +1466,10 @@ public class TestBase {
 			var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(StartpPosition, EndPosition - 1));
 			var Body = GetBody(Response.getObjectContent());
 			var Length = EndPosition - StartpPosition;
+			var PartBody = Data.substring((int) StartpPosition, (int) EndPosition);
 
 			assertEquals(Length, Response.getObjectMetadata().getContentLength());
-			assertEquals(Data.substring((int) StartpPosition, (int) EndPosition), Body);
+			assertTrue(PartBody.equals(Body), "Source does not match target");
 			StartpPosition += Step;
 		}
 	}
@@ -1489,9 +1489,10 @@ public class TestBase {
 			var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(StartpPosition, EndPosition - 1).withSSECustomerKey(SSEC));
 			var Body = GetBody(Response.getObjectContent());
 			var Length = EndPosition - StartpPosition;
+			var PartBody = Data.substring((int) StartpPosition, (int) EndPosition);
 
 			assertEquals(Length, Response.getObjectMetadata().getContentLength());
-			assertEquals(Data.substring((int) StartpPosition, (int) EndPosition), Body);
+			assertTrue(PartBody.equals(Body), "Source does not match target");
 			StartpPosition += Step;
 		}
 	}
@@ -1541,12 +1542,13 @@ public class TestBase {
 		for (int i = 0; i < LoopCount; i++)
 		{
 			var Range = GetRandomRange(FileSize);
+			var RangeBody = Data.substring(Range.Start, Range.End + 1);
 
 			var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(Range.Start, Range.End));
 			var Body = GetBody(Response.getObjectContent());
 
 			assertEquals(Range.Length, Response.getObjectMetadata().getContentLength() - 1);
-			assertEquals(Data.substring(Range.Start, Range.End + 1), Body);
+			assertTrue(RangeBody.equals(Body), "Source does not match target");
 		}
 	}
 
@@ -1557,9 +1559,10 @@ public class TestBase {
 
 			var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(Range.Start, Range.End - 1).withSSECustomerKey(SSEC));
 			var Body = GetBody(Response.getObjectContent());
+			var RangeBody = Data.substring(Range.Start, Range.End + 1);
 
 			assertEquals(Range.Length, Response.getObjectMetadata().getContentLength());
-			assertEquals(Data.substring(Range.Start, Range.End), Body);
+			assertTrue(RangeBody.equals(Body), "Source does not match target");
 		}
 	}
 
