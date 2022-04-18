@@ -53,11 +53,13 @@ java -jar saxon9he.jar -o:Result_java.html -s:Result_java.xml -xsl:xunit_to_html
 
 #### Windows
 ``` shell
+SET S3TESTS_INI=sample.ini
 java -jar s3tests-java
 ```
 
 #### Linux
 ``` shell
+export S3TESTS_INI=sample.ini
 ./s3tests-java
 ```
 
