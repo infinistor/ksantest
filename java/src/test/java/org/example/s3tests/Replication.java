@@ -10,6 +10,7 @@
 */
 package org.example.s3tests;
 
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -29,46 +30,6 @@ public class Replication {
     public void test_replication_set()
     {
         Test.test_replication_set();
-    }
-
-    @Test
-    @Tag("Check")
-    // @Tag("복제설정중 role이 없어도 설정되는지 확인")
-    public void test_replication_no_rule()
-    {
-        Test.test_replication_no_rule();
-    }
-
-    @Test
-    @Tag("Check")
-    // @Tag("버킷의 복제설정이 올바르게 동작하는지 확인")
-    public void test_replication_full_copy()
-    {
-        Test.test_replication_full_copy();
-    }
-
-    @Test
-    @Tag("Check")
-    // @Tag("버킷에 복제 설정이 되어 있을때 태그가 복제되는지 확인")
-    public void test_replication_tagging()
-    {
-        Test.test_replication_tagging();
-    }
-
-    @Test
-    @Tag("Check")
-    // @Tag("버킷의 복제 설정중 prefix가 올바르게 동작하는지 확인")
-    public void test_replication_prefix_copy()
-    {
-        Test.test_replication_prefix_copy();
-    }
-
-    @Test
-    @Tag("Check")
-    // @Tag("버킷의 복제 설정중 DeleteMarker가 올바르게 동작하는지 확인")
-    public void test_replication_deletemarker_copy()
-    {
-        Test.test_replication_deletemarker_copy();
     }
 
     @Test
