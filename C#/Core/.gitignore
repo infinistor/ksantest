@@ -4,3 +4,5 @@ obj/
 *.bat
 s3tests_*
 awstests.ini
+*.sh
+suwon*

@@ -24,13 +24,14 @@ namespace s3tests
         private const string STR_URL = "URL";
         private const string STR_PORT = "Port";
         private const string STR_SSL_PORT = "SSLPort";
+        private const string STR_SIGNATURE_VERSION = "SignatureVersion";
         private const string STR_REGION_NAME = "RegionName";
 #endregion
 
         #region Fixtures Define
         private const string STR_FIXTURES = "Fixtures";
-        private const string STR_SIGNATURE_VERSION = "SignatureVersion";
         private const string STR_SECURE = "IsSecure";
+        private const string STR_KMS = "KMS";
         private const string STR_BUCKETPREFIX = "BucketPrefix";
 #endregion
 
@@ -82,7 +83,7 @@ namespace s3tests
             
             S3 = ReadS3Config();
             SignatureVersion = ReadKeyToString(STR_S3, STR_SIGNATURE_VERSION);
-            KMS = ReadKeyToString(STR_S3, STR_SECURE);
+            KMS = ReadKeyToString(STR_S3, STR_KMS);
             IsSecure = ReadKeyToBoolean(STR_S3, STR_SECURE);
 
             BucketPrefix = ReadKeyToString(STR_FIXTURES, STR_BUCKETPREFIX);
