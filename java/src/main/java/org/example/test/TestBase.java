@@ -110,19 +110,19 @@ public class TestBase {
 		Config.GetConfig();
 	}
 
-	public static AmazonS3 CreateClient(String URL, int Port, String RegionName, boolean IsSecure, UserData User, Boolean UseChunkEncoding, Boolean PayloadSigning, String SignatureVersion) {
+	public AmazonS3 CreateClient(boolean IsSecure, UserData User, Boolean UseChunkEncoding, Boolean PayloadSigning, String SignatureVersion) {
 		String Address = "";
 		ClientConfiguration config;
 
 		if (IsSecure)
 		{
-			Address = CreateURLToHTTPS(URL, 8443);
+			Address = CreateURLToHTTPS(Config.URL, Config.SSLPort);
 			System.setProperty(SDKGlobalConfiguration.DISABLE_CERT_CHECKING_SYSTEM_PROPERTY, "true");
 			config = new ClientConfiguration().withProtocol(Protocol.HTTPS).withSignerOverride(SignatureVersion);
 		}
 		else
 		{
-			Address = CreateURLToHTTP(URL, Port);
+			Address = CreateURLToHTTP(Config.URL, Config.Port);
 			config = new ClientConfiguration().withProtocol(Protocol.HTTP);
 		}
 		config.setSignerOverride(SignatureVersion);
@@ -131,7 +131,7 @@ public class TestBase {
 		if (User == null)	ClientBuilder.setCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()));
 		else				ClientBuilder.setCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(User.AccessKey, User.SecretKey)));
 		
-		if (StringUtils.isBlank(URL))	ClientBuilder.setRegion(RegionName);
+		if (StringUtils.isBlank(Config.URL))	ClientBuilder.setRegion(Config.RegionName);
 		else				ClientBuilder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(Address, ""));
 
 		ClientBuilder.setClientConfiguration(config);
@@ -142,25 +142,25 @@ public class TestBase {
 	}
 
 	public AmazonS3 GetClient() {
-		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, Config.MainUser, true, true, "AWSS3V4SignerType");
+		return CreateClient(Config.IsSecure, Config.MainUser, true, true, Config.GetSignatureVersion());
 	}
 	public AmazonS3 GetClientV2() {
-		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, Config.MainUser, true, true, "S3SignerType");
+		return CreateClient(Config.IsSecure, Config.MainUser, true, true, S3Config.STR_SIGNATUREVERSION_V2);
 	}
 	public AmazonS3 GetClientV4(Boolean UseChunkEncoding) {
-		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, Config.MainUser, UseChunkEncoding, true, "AWSS3V4SignerType");
+		return CreateClient(Config.IsSecure, Config.MainUser, UseChunkEncoding, true, S3Config.STR_SIGNATUREVERSION_V4);
 	}
 	public AmazonS3 GetClientHttps() {
-		return CreateClient(Config.URL, Config.Port, Config.RegionName, true, Config.MainUser, true, true, "AWSS3V4SignerType");
+		return CreateClient(true, Config.MainUser, true, true, Config.GetSignatureVersion());
 	}
 	public AmazonS3 GetClientHttpsV4(Boolean UseChunkEncoding, Boolean PayloadSigning) {
-		return CreateClient(Config.URL, Config.Port, Config.RegionName, true, Config.MainUser, UseChunkEncoding, PayloadSigning, "AWSS3V4SignerType");
+		return CreateClient(true, Config.MainUser, UseChunkEncoding, PayloadSigning, S3Config.STR_SIGNATUREVERSION_V4);
 	}
 	public AmazonS3 GetAltClient() {
-		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, Config.AltUser, true, true, "AWSS3V4SignerType");
+		return CreateClient(Config.IsSecure, Config.AltUser, true, true, Config.GetSignatureVersion());
 	}
 	public AmazonS3 GetUnauthenticatedClient() {
-		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, null, true, true, "AWSS3V4SignerType");
+		return CreateClient(Config.IsSecure, null, true, true, Config.GetSignatureVersion());
 	}
 	public AmazonS3 GetBadAuthClient(String AccessKey, String SecretKey) {
 		if (StringUtils.isBlank(AccessKey)) AccessKey = "aaaaaaaaaaaaaaa";
@@ -170,7 +170,7 @@ public class TestBase {
 		DummyUser.AccessKey = AccessKey;
 		DummyUser.SecretKey = SecretKey;
 
-		return CreateClient(Config.URL, Config.Port, Config.RegionName, Config.IsSecure, DummyUser, true, true, "AWSS3V4SignerType");
+		return CreateClient(Config.IsSecure, DummyUser, true, true, Config.GetSignatureVersion());
 	}
 
 	public AccessControlList GetGrantList(String UserID, Permission[] Perms) {
