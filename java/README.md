@@ -28,7 +28,7 @@ mvn clean package -DskipTests
 SET S3TESTS_INI=sample.ini
 call mvn clean
 call mvn test surefire-report:report
-.\junit-merger.exe target/surefire-reports > xunit-to-html-master\Result_java.xml
+.\junit-merger.exe target/results > xunit-to-html-master\Result_java.xml
 cd xunit-to-html-master
 java -jar saxon9he.jar -o:Result_java.html -s:Result_java.xml -xsl:xunit_to_html.xsl
 start Result_java.html
@@ -41,7 +41,7 @@ start Result_java.html
 export S3TESTS_INI=sample.ini
 mvn clean
 mvn test surefire-report:report
-python ./merge_junit_results.py ./target/surefire-reports/*.xml > ../xunit-to-html-master/Result_java.xml
+python ./merge_junit_results.py ./target/results/*.xml > ../xunit-to-html-master/Result_java.xml
 cd ../xunit-to-html-master
 java -jar saxon9he.jar -o:Result_java.html -s:Result_java.xml -xsl:xunit_to_html.xsl
 ```
