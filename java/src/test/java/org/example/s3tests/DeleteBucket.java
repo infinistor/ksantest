@@ -24,8 +24,8 @@ public class DeleteBucket {
 	}
     
 	@Test
-	@Tag("ERROR")
 	@Tag("KSAN")
+	@Tag("ERROR")
 	//@Tag("존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인")
 	public void test_bucket_delete_notexist()
     {
@@ -33,8 +33,8 @@ public class DeleteBucket {
 	}
 
 	@Test
-	@Tag("ERROR")
 	@Tag("KSAN")
+	@Tag("ERROR")
 	//@Tag("내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인")
 	public void test_bucket_delete_nonempty()
     {
@@ -42,8 +42,8 @@ public class DeleteBucket {
 	}
 
 	@Test
-	@Tag("ERROR")
 	@Tag("KSAN")
+	@Tag("ERROR")
 	//@Tag("이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인")
 	public void test_bucket_create_delete()
     {

@@ -24,8 +24,8 @@ public class Website
 	}
 
     @Test
-    @Tag("Check")
     @Tag("KSAN")
+    @Tag("Check")
     //@Tag("버킷의 Websize 설정 조회 확인")
     public void test_webiste_get_buckets()
     {
@@ -33,8 +33,8 @@ public class Website
     }
 
     @Test
-    @Tag("Check")
     @Tag("KSAN")
+    @Tag("Check")
     //@Tag("버킷의 Websize 설정이 가능한지 확인")
     public void test_webiste_put_buckets()
     {
@@ -42,8 +42,8 @@ public class Website
     }
 
     @Test
-    @Tag("Delete")
     @Tag("KSAN")
+    @Tag("Delete")
     //@Tag("버킷의 Websize 설정이 삭제가능한지 확인")
     public void test_webiste_delete_buckets()
     {

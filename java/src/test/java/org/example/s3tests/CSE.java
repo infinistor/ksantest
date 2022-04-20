@@ -24,6 +24,7 @@ public class CSE {
 	}
 
     @Test
+    @Tag("KSAN")
     @Tag("PutGet")
     // @Tag("[AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인")
     public void test_cse_encrypted_transfer_1b()
@@ -32,6 +33,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("PutGet")
     // @Tag("[AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인")
     public void test_cse_encrypted_transfer_1kb()
@@ -40,6 +42,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("PutGet")
     // @Tag("[AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인")
     public void test_cse_encrypted_transfer_1MB()
@@ -48,6 +51,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("PutGet")
     // @Tag("[AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인")
     public void test_cse_encrypted_transfer_13b()
@@ -56,6 +60,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("Metadata")
     // @Tag("[AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인 ")
     public void test_cse_encryption_method_head()
@@ -64,6 +69,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("ERROR")
     // @Tag("[AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치")
     public void test_cse_encryption_non_decryption()
@@ -72,6 +78,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("ERROR")
     // @Tag("[AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인")
     public void test_cse_non_encryption_decryption()
@@ -80,6 +87,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("RangeRead")
     // @Tag("[AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공")
     public void test_cse_encryption_range_read()
@@ -88,6 +96,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("Multipart")
     // @Tag("[AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인")
     public void test_cse_encryption_multipart_upload()
@@ -96,6 +105,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("Get")
     // @Tag("CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인")
     public void test_cse_get_object_many()
@@ -104,6 +114,7 @@ public class CSE {
     }
 
     @Test
+    @Tag("KSAN")
     @Tag("Get")
     // @Tag("CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인")
     public void test_cse_range_object_many()

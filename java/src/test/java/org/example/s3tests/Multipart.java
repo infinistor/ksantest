@@ -24,8 +24,8 @@ public class Multipart {
 	}
 
     @Test
-    @Tag("ERROR")
     @Tag("KSAN")
+    @Tag("ERROR")
     // @Tag("비어있는 오브젝트를 멀티파트로 업로드 실패 확인")
     public void test_multipart_upload_empty()
     {
@@ -33,8 +33,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Check")
     @Tag("KSAN")
+    @Tag("Check")
     // @Tag("파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인")
     public void test_multipart_upload_small()
     {
@@ -42,8 +42,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Copy")
     @Tag("KSAN")
+    @Tag("Copy")
     // @Tag("버킷a에서 버킷b로 멀티파트 복사 성공확인")
     public void test_multipart_copy_small()
     {
@@ -51,8 +51,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("ERROR")
     @Tag("KSAN")
+    @Tag("ERROR")
     // @Tag("범위설정을 잘못한 멀티파트 복사 실패 확인")
     public void test_multipart_copy_invalid_range()
     {
@@ -60,8 +60,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Range")
     @Tag("KSAN")
+    @Tag("Range")
     // @Tag("범위를 지정한 멀티파트 복사 성공확인")
     public void test_multipart_copy_without_range()
     {
@@ -69,8 +69,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("SpecialNames")
     @Tag("KSAN")
+    @Tag("SpecialNames")
     // @Tag("특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인")
     public void test_multipart_copy_special_names()
     {
@@ -78,8 +78,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Put")
     @Tag("KSAN")
+    @Tag("Put")
     // @Tag("멀티파트 업로드 확인")
     public void test_multipart_upload()
     {
@@ -88,6 +88,7 @@ public class Multipart {
     
 
     @Test
+    @Tag("KSAN")
     @Tag("Copy")
     // @Tag("버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인")
     public void test_multipart_copy_versioned()
@@ -96,8 +97,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Duplicate")
     @Tag("KSAN")
+    @Tag("Duplicate")
     // @Tag("멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인")
     public void test_multipart_upload_resend_part()
     {
@@ -105,8 +106,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Put")
     @Tag("KSAN")
+    @Tag("Put")
     // @Tag("한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인")
     public void test_multipart_upload_multiple_sizes()
     {
@@ -115,6 +116,7 @@ public class Multipart {
     
 
     @Test
+    @Tag("KSAN")
     @Tag("Copy")
     // @Tag("한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인")
     public void test_multipart_copy_multiple_sizes()
@@ -123,8 +125,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("ERROR")
     @Tag("KSAN")
+    @Tag("ERROR")
     // @Tag("멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인")
     public void test_multipart_upload_size_too_small()
     {
@@ -132,8 +134,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Check")
     @Tag("KSAN")
+    @Tag("Check")
     // @Tag("내용물을 채운 멀티파트 업로드 성공 확인")
     public void test_multipart_upload_contents()
     {
@@ -141,8 +143,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("OverWrite")
     @Tag("KSAN")
+    @Tag("OverWrite")
     // @Tag("업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인")
     public void test_multipart_upload_overwrite_existing_object()
     {
@@ -150,8 +152,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Cancel")
     @Tag("KSAN")
+    @Tag("Cancel")
     // @Tag("멀티파트 업로드하는 도중 중단 성공 확인")
     public void test_abort_multipart_upload()
     {
@@ -159,8 +161,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("ERROR")
     @Tag("KSAN")
+    @Tag("ERROR")
     // @Tag("존재하지 않은 멀티파트 업로드 중단 실패 확인")
     public void test_abort_multipart_upload_not_found()
     {
@@ -168,8 +170,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("List")
     @Tag("KSAN")
+    @Tag("List")
     // @Tag("멀티파트 업로드 중인 목록 확인")
     public void test_list_multipart_upload()
     {
@@ -178,6 +180,7 @@ public class Multipart {
     
 
     @Test
+    @Tag("KSAN")
     @Tag("ERROR")
     // @Tag("업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인")
     public void test_multipart_upload_missing_part()
@@ -187,6 +190,7 @@ public class Multipart {
     
 
     @Test
+    @Tag("KSAN")
     @Tag("ERROR")
     // @Tag("잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인")
     public void test_multipart_upload_incorrect_etag()
@@ -195,8 +199,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Overwrite")
     @Tag("KSAN")
+    @Tag("Overwrite")
     // @Tag("버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인")
     public void test_atomic_multipart_upload_write()
     {
@@ -204,8 +208,8 @@ public class Multipart {
     }
     
     @Test
-    @Tag("List")
     @Tag("KSAN")
+    @Tag("List")
     // @Tag("멀티파트 업로드 목록 확인")
     public void test_multipart_upload_list()
     {
@@ -213,14 +217,15 @@ public class Multipart {
     }
     
     @Test
-    @Tag("Cancel")
     @Tag("KSAN")
+    @Tag("Cancel")
     // @Tag("멀티파트 업로드하는 도중 중단 성공 확인")
     public void test_abort_multipart_upload_list()
     {
         Test.test_abort_multipart_upload_list();
     }
     @Test
+    @Tag("KSAN")
 	@Tag("Copy")
 	//@Tag("멀티파트업로드와 멀티파티 카피로 오브젝트가 업로드 가능한지 확인")
 	public void test_multipart_copy_many()
