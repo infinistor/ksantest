@@ -560,11 +560,11 @@ public class Policy extends TestBase
         assertEquals(public_foo, Body);
 
         var new_foo2 = "new_foo2";
-//        AltClient.copyObject(SourceBucketName, public_bar, TargetBucketName, new_foo2);
-//
-//        Response = AltClient.getObject(TargetBucketName, new_foo2);
-//        Body = GetBody(Response.getObjectContent());
-//        assertEquals(public_bar, Body);
+       AltClient.copyObject(SourceBucketName, public_bar, TargetBucketName, new_foo2);
+
+       Response = AltClient.getObject(TargetBucketName, new_foo2);
+       Body = GetBody(Response.getObjectContent());
+       assertEquals(public_bar, Body);
 
         assertThrows(AmazonServiceException.class, () -> AltClient.copyObject(new CopyObjectRequest(SourceBucketName, public_bar, TargetBucketName, new_foo2).withMetadataDirective(MetadataDirective.REPLACE)));
     }

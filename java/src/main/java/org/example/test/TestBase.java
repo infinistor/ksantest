@@ -606,14 +606,12 @@ public class TestBase {
 		return BucketName;
 	}
 
-	public String SetupAccessTest(String Key1, String Key2, String NewKey, CannedAccessControlList BucketACL,
-			CannedAccessControlList ObjectACL) {
+	public String SetupAccessTest(String Key1, String Key2, CannedAccessControlList BucketACL, CannedAccessControlList ObjectACL) {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
 
 		Key1 = "foo";
 		Key2 = "bar";
-		NewKey = "new";
 
 		Client.setBucketAcl(BucketName, BucketACL);
 		Client.putObject(BucketName, Key1, "foocontent");
@@ -627,7 +625,7 @@ public class TestBase {
 		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withVersionId(VersionID));
 		if (Content != null) {
 			var Body = GetBody(Response.getObjectContent());
-			assertEquals(Content, Body);
+			assertTrue(Content.equals(Body), "Source does not match target");
 		} else
 			assertNull(Response);
 	}
@@ -1234,7 +1232,7 @@ public class TestBase {
 		var TargetSize = Response.getObjectMetadata().getContentLength();
 		var TargetData = GetBody(Response.getObjectContent());
 		assertEquals(SourceSize, TargetSize);
-		assertEquals(SourceData, TargetData);
+		assertTrue(SourceData.equals(TargetData), "Source does not match target");
 	}
 
 	public void CheckCopyContent(String SourceBucketName, String SourceKey, String TargetBucketName, String TargetKey, String VersionID) {
@@ -1248,7 +1246,7 @@ public class TestBase {
 		var TargetSize = Response.getObjectMetadata().getContentLength();
 		var TargetData = GetBody(Response.getObjectContent());
 		assertEquals(SourceSize, TargetSize);
-		assertEquals(SourceData, TargetData);
+		assertTrue(SourceData.equals(TargetData), "Source does not match target");
 	}
 
 	public void CheckCopyContentSSEC(AmazonS3 Client, String SourceBucketName, String SourceKey, String TargetBucketName, String TargetKey, SSECustomerKey SSEC) {
@@ -1276,7 +1274,7 @@ public class TestBase {
 		var SourceSize = Response.getObjectMetadata().getContentLength();
 		var SourceData = GetBody(Response.getObjectContent());
 		assertEquals(SourceSize, TargetSize);
-		assertEquals(SourceData, TargetData);
+		assertTrue(SourceData.equals(TargetData), "Source does not match target");
 	}
 	
 	public void CheckCopyContentUsingRange(String SourceBucketName, String SourceKey, String TargetBucketName, String TargetKey, int Step) {
@@ -1296,7 +1294,7 @@ public class TestBase {
 			var TargetBody = GetBody(TargetResponse.getObjectContent());
 
 			assertEquals(SourceResponse.getObjectMetadata().getContentLength(), TargetResponse.getObjectMetadata().getContentLength());
-			assertEquals(SourceBody, TargetBody);
+			assertTrue(SourceBody.equals(TargetBody), "Source does not match target");
 			StartpPosition += Step;
 		}
 	}
@@ -1314,9 +1312,10 @@ public class TestBase {
 		var Response = Client.getObjectMetadata(BucketName, Key);
 		assertEquals(ContentType, Response.getContentType());
 		assertEquals(Metadata.getUserMetadata(), Response.getUserMetadata());
-
-		CheckContentUsingRange(BucketName, Key, UploadData.GetBody(), MainData.MB);
-		CheckContentUsingRange(BucketName, Key, UploadData.GetBody(), 10 * MainData.MB);
+		
+		var Body = UploadData.GetBody();
+		CheckContentUsingRange(BucketName, Key, Body, MainData.MB);
+		CheckContentUsingRange(BucketName, Key, Body, 10 * MainData.MB);
 	}
 
 	public String DoTestMultipartUploadContents(String BucketName, String Key, int NumParts) {
@@ -1348,7 +1347,7 @@ public class TestBase {
 		var Response = Client.getObject(BucketName, Key);
 		var Text = GetBody(Response.getObjectContent());
 
-		assertEquals(AllPayload, Text);
+		assertTrue(AllPayload.equals(Text), "Source does not match target");
 
 		return AllPayload;
 	}
@@ -1520,7 +1519,7 @@ public class TestBase {
 		{
 			var Response = Client.getObject(BucketName, Key);
 			var Body = GetBody(Response.getObjectContent());
-			assertEquals(Data, Body);
+			assertTrue(Data.equals(Body), "Source does not match target");
 		}
 	}
 
@@ -1531,7 +1530,7 @@ public class TestBase {
 		{
 			var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withSSECustomerKey(SSEC));
 			var Body = GetBody(Response.getObjectContent());
-			assertEquals(Data, Body);
+			assertTrue(Data.equals(Body), "Source does not match target");
 		}
 	}
 	
@@ -1606,7 +1605,7 @@ public class TestBase {
 			var Response = Client.getObject(BucketName, Key);
 			var EncodingBody = GetBody(Response.getObjectContent());
 			var Body = AES256.decryptAES256(EncodingBody, AESKey);
-			assertEquals(Data, Body);
+			assertTrue(Data.equals(Body), "Source does not match target");
 
 		} catch (Exception e) {
 			fail(e.getMessage());
@@ -1628,7 +1627,7 @@ public class TestBase {
 
 		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withSSECustomerKey(SSEC));
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals(Data, Body);
+		assertTrue(Data.equals(Body), "Source does not match target");
 	}
 
 	public void TestEncryptionSSES3ustomerWrite(int FileSize) {
@@ -1646,7 +1645,7 @@ public class TestBase {
 
 		var Response = Client.getObject(BucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals(Data, Body);
+		assertTrue(Data.equals(Body), "Source does not match target");
 	}
 
 	public void TestEncryptionSSES3Copy(int FileSize) {
@@ -1677,7 +1676,7 @@ public class TestBase {
         assertEquals(SSEAlgorithm.AES256.toString(), TargetResponse.getObjectMetadata().getSSEAlgorithm());
 
         var TargetBody = GetBody(TargetResponse.getObjectContent());
-        assertEquals(SourceBody, TargetBody);
+		assertTrue(SourceBody.equals(TargetBody), "Source does not match target");
 	}
 
 	public void TestObjectCopy(Boolean SourceObjectEncryption, Boolean SourceBucketEncryption, Boolean TargetBucketEncryption, Boolean TargetObjectEncryption, int FileSize)
@@ -1709,8 +1708,11 @@ public class TestBase {
 	
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 		.withRules(new ServerSideEncryptionRule()
-				.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-						withSSEAlgorithm(SSEAlgorithm.AES256)));
+				.withApplyServerSideEncryptionByDefault
+					(new ServerSideEncryptionByDefault()
+					.withSSEAlgorithm(SSEAlgorithm.AES256))
+					.withBucketKeyEnabled(false)
+				);
 
 		//Source Bucket Encryption
 		if (SourceBucketEncryption)
@@ -1739,7 +1741,7 @@ public class TestBase {
 		var TargetBody = GetBody(TargetResponse.getObjectContent());
 		if (TargetBucketEncryption || TargetObjectEncryption) assertEquals(SSEAlgorithm.AES256.toString(), TargetResponse.getObjectMetadata().getSSEAlgorithm());
 		else 											  assertNull(TargetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertEquals(SourceBody, TargetBody);
+		assertTrue(SourceBody.equals(TargetBody), "Source does not match target");
 	}
 
 	public void TestObjectCopy(EncryptionType Source, EncryptionType Target, int FileSize)
@@ -1803,7 +1805,7 @@ public class TestBase {
 		//Source Get Object
 		var SourceResponse = Client.getObject(SourceGetRequest);
 		var SourceBody = GetBody(SourceResponse.getObjectContent());
-		assertEquals(Data, SourceBody);
+		assertTrue(Data.equals(SourceBody), "Source does not match target");
 		
 		//Copy Object
 		Client.copyObject(CopyRequest);
@@ -1811,7 +1813,7 @@ public class TestBase {
 		//Target Object Check
 		var TargetResponse = Client.getObject(TargetGetRequest);
 		var TargetBody = GetBody(TargetResponse.getObjectContent());
-		assertEquals(SourceBody, TargetBody);
+		assertTrue(SourceBody.equals(TargetBody), "Source does not match target");
 	}
 
 

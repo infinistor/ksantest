@@ -478,7 +478,7 @@ public class CopyObject extends TestBase
         assertEquals(Key1Size, Response.getContentLength());
         assertEquals(Key1MetaData.getUserMetadata(), Response.getUserMetadata());
         assertEquals(ContentType, Response.getContentType());
-        CheckContentUsingRange(BucketName, Key4, UploadData.GetBody(), MainData.MB);
+        CheckContentUsingRange(BucketName2, Key4, UploadData.GetBody(), MainData.MB);
 
         var BucketName3 = GetNewBucket();
         CheckConfigureVersioningRetry(BucketName3, BucketVersioningConfiguration.ENABLED);
@@ -488,11 +488,11 @@ public class CopyObject extends TestBase
         assertEquals(Key1Size, Response.getContentLength());
         assertEquals(Key1MetaData.getUserMetadata(), Response.getUserMetadata());
         assertEquals(ContentType, Response.getContentType());
-        CheckContentUsingRange(BucketName, Key5, UploadData.GetBody(), MainData.MB);
+        CheckContentUsingRange(BucketName3, Key5, UploadData.GetBody(), MainData.MB);
 
         var Key6 = "dstmultipart5";
         Client.copyObject(BucketName3, Key5, BucketName, Key6);
-        Response = Client.getObjectMetadata(BucketName3, Key6);
+        Response = Client.getObjectMetadata(BucketName, Key6);
         assertEquals(Key1Size, Response.getContentLength());
         assertEquals(Key1MetaData.getUserMetadata(), Response.getUserMetadata());
         assertEquals(ContentType, Response.getContentType());

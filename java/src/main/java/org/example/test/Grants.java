@@ -761,7 +761,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.Private, CannedAccessControlList.Private);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.Private, CannedAccessControlList.Private);
 
         var AltClient = GetAltClient();
 
@@ -783,7 +783,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.Private, CannedAccessControlList.Private);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.Private, CannedAccessControlList.Private);
 
         var AltClient = GetAltClient();
 
@@ -806,7 +806,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.Private, CannedAccessControlList.PublicRead);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.Private, CannedAccessControlList.PublicRead);
         var AltClient = GetAltClient();
         var Response = AltClient.getObject(BucketName, Key1);
         
@@ -832,7 +832,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.Private, CannedAccessControlList.PublicRead);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.Private, CannedAccessControlList.PublicRead);
         var AltClient = GetAltClient();
         var Response = AltClient.getObject(BucketName, Key1);
 
@@ -858,7 +858,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.Private, CannedAccessControlList.PublicReadWrite);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.Private, CannedAccessControlList.PublicReadWrite);
         var AltClient = GetAltClient();
         var Response = AltClient.getObject(BucketName, Key1);
 
@@ -884,7 +884,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.Private, CannedAccessControlList.PublicReadWrite);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.Private, CannedAccessControlList.PublicReadWrite);
         var AltClient = GetAltClient();
         var Response = AltClient.getObject(BucketName, Key1);
 
@@ -910,7 +910,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.PublicRead, CannedAccessControlList.Private);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.PublicRead, CannedAccessControlList.Private);
         var AltClient = GetAltClient();
 
         assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, Key1));
@@ -934,7 +934,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead);
         var AltClient = GetAltClient();
 
         var Response = AltClient.getObject(BucketName, Key1);
@@ -961,7 +961,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.PublicRead, CannedAccessControlList.PublicReadWrite);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.PublicRead, CannedAccessControlList.PublicReadWrite);
         var AltClient = GetAltClient();
 
         var Response = AltClient.getObject(BucketName, Key1);
@@ -988,7 +988,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.PublicReadWrite, CannedAccessControlList.Private);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.PublicReadWrite, CannedAccessControlList.Private);
         var AltClient = GetAltClient();
 
         
@@ -1011,7 +1011,7 @@ public class Grants extends TestBase
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.PublicReadWrite, CannedAccessControlList.PublicRead);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.PublicReadWrite, CannedAccessControlList.PublicRead);
         var AltClient = GetAltClient();
 
         var Response = AltClient.getObject(BucketName, Key1);
@@ -1029,13 +1029,14 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:public-read-write, object_acl:public-read-write, private] 메인유저가 public-read-write권한으로 생성한 버킷에서 public-read-write권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 읽거나 업로드, 다운로드 모두 가능함을 확인")
+    //@Tag("[bucket_acl:public-read-write, object_acl:public-read-write, private] 메인유저가 public-read-write권한으로 생성한 버킷에서
+    // public-read-write권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 읽거나 업로드, 다운로드 모두 가능함을 확인")
     public void test_access_bucket_publicreadwrite_object_publicreadwrite()
     {
         var Key1 = "foo";
         var Key2 = "bar";
         var NewKey = "new";
-        var BucketName = SetupAccessTest(Key1, Key2, NewKey, CannedAccessControlList.PublicReadWrite, CannedAccessControlList.PublicReadWrite);
+        var BucketName = SetupAccessTest(Key1, Key2, CannedAccessControlList.PublicReadWrite, CannedAccessControlList.PublicReadWrite);
         var AltClient = GetAltClient();
 
         var Response = AltClient.getObject(BucketName, Key1);
@@ -1044,6 +1045,7 @@ public class Grants extends TestBase
         AltClient.putObject(BucketName, Key1, "foooverwrite");
 
         assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, Key2));
+        // assertThrows(AmazonServiceException.class, () -> AltClient.putObject(BucketName, Key2, "baroverwrite"));
         AltClient.putObject(BucketName, Key2, "baroverwrite");
 
         var ObjList = GetKeys(AltClient.listObjects(BucketName).getObjectSummaries());
