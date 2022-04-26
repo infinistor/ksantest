@@ -408,8 +408,8 @@ public class Multipart extends TestBase
 		Client.completeMultipartUpload(new CompleteMultipartUploadRequest(BucketName, Key, UploadID, Parts));
 
 		var Response = Client.getObject(BucketName, Key);
-		var Text = GetBody(Response.getObjectContent());
-		assertEquals(AllPayload, Text);
+		var Body = GetBody(Response.getObjectContent());
+		assertTrue(AllPayload.equals(Body), "Source does not match target");
 	}
 
 	@Test

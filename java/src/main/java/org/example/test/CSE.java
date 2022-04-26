@@ -13,6 +13,7 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
@@ -179,7 +180,7 @@ public class CSE extends TestBase
 			var Response = Client
 					.getObject(new GetObjectRequest(BucketName, Key).withRange(StartPoint, StartPoint + 1000 - 1));
 			var EncodingBody = GetBody(Response.getObjectContent());
-			assertEquals(EncodingData.substring(StartPoint, StartPoint + 1000), EncodingBody);
+			assertTrue(EncodingData.substring(StartPoint, StartPoint + 1000).equals(EncodingBody), "Source does not match target");
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
@@ -262,7 +263,7 @@ public class CSE extends TestBase
 			var Response = Client.getObject(BucketName, Key);
 			var EncodingBody = GetBody(Response.getObjectContent());
 			var Body = AES256.decryptAES256(EncodingBody, AESKey);
-			assertEquals(Data, Body);
+			assertTrue(Data.equals(Body), "Source does not match target");
 			CheckContent(BucketName, Key, EncodingData, 50);
 
 		} catch (Exception e) {
@@ -296,7 +297,7 @@ public class CSE extends TestBase
 			var Response = Client.getObject(BucketName, Key);
 			var EncodingBody = GetBody(Response.getObjectContent());
 			var Body = AES256.decryptAES256(EncodingBody, AESKey);
-			assertEquals(Data, Body);
+			assertTrue(Data.equals(Body), "Source does not match target");
 
 			CheckContentUsingRandomRange(BucketName, Key, EncodingData, 50);
 

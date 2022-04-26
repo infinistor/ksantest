@@ -13,6 +13,7 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Calendar;
 
@@ -228,7 +229,7 @@ public class GetObject extends TestBase
         var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(3145728, 5242880));
 
         var FetchedContent = GetBody(Response.getObjectContent());
-        assertEquals(Content.substring(3145728, 5242881), FetchedContent);
+        assertTrue(Content.substring(3145728, 5242881).equals(FetchedContent), "Source does not match target");
         assertEquals("bytes 3145728-5242880/8388608", Response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
     }
 

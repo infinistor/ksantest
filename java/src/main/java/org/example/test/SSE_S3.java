@@ -12,6 +12,7 @@ package org.example.test;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -274,7 +275,7 @@ public class SSE_S3 extends TestBase
         var GetResponse = Client.getObject(BucketName, Key);
         var Body = GetBody(GetResponse.getObjectContent());
         assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-        assertEquals(Data, Body);
+        assertTrue(Data.equals(Body), "Source does not match target");
     }
     
     @Test
@@ -302,7 +303,7 @@ public class SSE_S3 extends TestBase
         var GetResponse = Client.getObject(BucketName, Key);
         var Body = GetBody(GetResponse.getObjectContent());
         assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-        assertEquals(Data, Body);
+        assertTrue(Data.equals(Body), "Source does not match target");
     }
     
     @Test
@@ -330,7 +331,7 @@ public class SSE_S3 extends TestBase
         var GetResponse = Client.getObject(BucketName, Key);
         var Body = GetBody(GetResponse.getObjectContent());
         assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-        assertEquals(Data, Body);
+        assertTrue(Data.equals(Body), "Source does not match target");
     }
     
     @Test
@@ -358,7 +359,7 @@ public class SSE_S3 extends TestBase
         var GetResponse = Client.getObject(BucketName, Key);
         var Body = GetBody(GetResponse.getObjectContent());
         assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-        assertEquals(Data, Body);
+        assertTrue(Data.equals(Body), "Source does not match target");
     }
     
     @Test
@@ -386,7 +387,7 @@ public class SSE_S3 extends TestBase
         var GetResponse = Client.getObject(BucketName, Key);
         var Body = GetBody(GetResponse.getObjectContent());
         assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-        assertEquals(Data, Body);
+        assertTrue(Data.equals(Body), "Source does not match target");
     }
     
     @Test
@@ -414,7 +415,7 @@ public class SSE_S3 extends TestBase
         var GetResponse = Client.getObject(BucketName, Key);
         var Body = GetBody(GetResponse.getObjectContent());
         assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-        assertEquals(Data, Body);
+        assertTrue(Data.equals(Body), "Source does not match target");
     }
 
     @Test

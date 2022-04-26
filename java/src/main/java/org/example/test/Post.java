@@ -11,6 +11,7 @@
 package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Base64;
 import java.util.HashMap;
@@ -370,7 +371,7 @@ public class Post extends TestBase
 
         var Response = Client.getObject(BucketName, Key);
         var Body = GetBody(Response.getObjectContent());
-        assertEquals(Data, Body);
+        assertTrue(Data.equals(Body), "Source does not match target");
     }
 
     @Test

@@ -12,6 +12,7 @@ package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Base64;
 import java.util.HashMap;
@@ -273,10 +274,11 @@ public class SSE_C extends TestBase
         var GetResponse = Client.getObject(new GetObjectRequest(BucketName, Key).withSSECustomerKey(SSEC));
         assertEquals(Metadata.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
         assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
-
-        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.GetBody(), MainData.MB, SSEC);
-        CheckContentUsingRangeEnc(Client, BucketName, Key, UploadData.GetBody(), 10 * MainData.MB, SSEC);
-        CheckContentUsingRandomRangeEnc(Client, BucketName, Key, UploadData.GetBody(), Size, 100, SSEC);
+        
+        var Body = UploadData.GetBody();
+        CheckContentUsingRangeEnc(Client, BucketName, Key, Body, MainData.MB, SSEC);
+        CheckContentUsingRangeEnc(Client, BucketName, Key, Body, 10 * MainData.MB, SSEC);
+        CheckContentUsingRandomRangeEnc(Client, BucketName, Key, Body, Size, 100, SSEC);
     }
 
 
@@ -455,7 +457,7 @@ public class SSE_C extends TestBase
 
 		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withSSECustomerKey(SSEC));
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals(Data, Body);
+		assertTrue(Data.equals(Body), "Source does not match target");
 
         CheckContentUsingRandomRangeEnc(Client, BucketName, Key, Data, Size, 50, SSEC);
     }
