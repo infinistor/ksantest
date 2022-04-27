@@ -10,7 +10,6 @@
 */
 package org.example.s3tests;
 
-import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -187,13 +186,13 @@ public class LifeCycle
 		Test.test_lifecycle_delete();
 	}
 
-	@Test
-	@Ignore // 테스트 규격이 확정되지 않음
-	@Tag("KSAN")
-	@Tag("Get")
-	//버킷에 다양한 Lifecycle 설정이 가능한지 확인
-	public void test_lifecycle_set_and()
-	{
-		Test.test_lifecycle_set_and();
-	}
+	// 테스트 규격이 확정되지 않음
+	// @Test
+	// @Tag("KSAN")
+	// @Tag("Get")
+	// //버킷에 다양한 Lifecycle 설정이 가능한지 확인
+	// public void test_lifecycle_set_and()
+	// {
+	// 	Test.test_lifecycle_set_and();
+	// }
 }
