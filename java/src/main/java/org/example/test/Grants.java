@@ -50,7 +50,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Bucket")
     @Tag("KSAN")
-    //@Tag("[bucket_acl : default] 권한을 설정하지 않고 생성한 버킷의 default acl정보가 올바른지 확인")
+    // [bucket_acl : default] 권한을 설정하지 않고 생성한 버킷의 default acl정보가 올바른지 확인")
     public void test_bucket_acl_default()
     {
         var BucketName = GetNewBucket();
@@ -75,7 +75,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Bucket")
     @Tag("KSAN")
-    //@Tag("[bucket_acl : public-read] 권한을 public-read로 생성한 버킷의 acl정보가 올바른지 확인")
+    // [bucket_acl : public-read] 권한을 public-read로 생성한 버킷의 acl정보가 올바른지 확인")
     public void test_bucket_acl_canned_during_create()
     {
         var BucketName = GetNewBucketName();
@@ -99,7 +99,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Bucket")
     @Tag("KSAN")
-    //@Tag("[bucket_acl : public-read => bucket_acl : private] 권한을 public-read로 생성한 버킷을 private로 변경할경우 올바르게 적용되는지 확인")
+    // [bucket_acl : public-read => bucket_acl : private] 권한을 public-read로 생성한 버킷을 private로 변경할경우 올바르게 적용되는지 확인")
     public void test_bucket_acl_canned()
     {
         var BucketName = GetNewBucketName();
@@ -131,7 +131,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Bucket")
     @Tag("KSAN")
-    //@Tag("[bucket_acl : public-read-write] 권한을 public-read-write로 생성한 버킷의 acl정보가 올바른지 확인")
+    // [bucket_acl : public-read-write] 권한을 public-read-write로 생성한 버킷의 acl정보가 올바른지 확인")
     public void test_bucket_acl_canned_publicreadwrite()
     {
         var BucketName = GetNewBucketName();
@@ -156,7 +156,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Bucket")
     @Tag("KSAN")
-    //@Tag("[bucket_acl : authenticated-read] 권한을 authenticated-read로 생성한 버킷의 acl정보가 올바른지 확인")
+    // [bucket_acl : authenticated-read] 권한을 authenticated-read로 생성한 버킷의 acl정보가 올바른지 확인")
     public void test_bucket_acl_canned_authenticatedread()
     {
         var BucketName = GetNewBucketName();
@@ -180,7 +180,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Object")
     @Tag("KSAN")
-    //@Tag("[object_acl : default] 권한을 설정하지 않고 생성한 오브젝트의 default acl정보가 올바른지 확인")
+    // [object_acl : default] 권한을 설정하지 않고 생성한 오브젝트의 default acl정보가 올바른지 확인")
     public void test_object_acl_default()
     {
         var BucketName = GetNewBucket();
@@ -205,7 +205,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Object")
     @Tag("KSAN")
-    //@Tag("[object_acl : public-read] 권한을 public-read로 생성한 오브젝트의 acl정보가 올바른지 확인")
+    // [object_acl : public-read] 권한을 public-read로 생성한 오브젝트의 acl정보가 올바른지 확인")
     public void test_object_acl_canned_during_create()
     {
         var BucketName = GetNewBucket();
@@ -235,7 +235,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Object")
     @Tag("KSAN")
-    //@Tag("[object_acl : public-read => object_acl : private] 권한을 public-read로 생성한 오브젝트를 private로 변경할경우 올바르게 적용되는지 확인")
+    // [object_acl : public-read => object_acl : private] 권한을 public-read로 생성한 오브젝트를 private로 변경할경우 올바르게 적용되는지 확인")
     public void test_object_acl_canned()
     {
         var BucketName = GetNewBucket();
@@ -273,7 +273,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Object")
     @Tag("KSAN")
-    //@Tag("[object_acl : public-read-write] 권한을 public-read-write로 생성한 오브젝트의 acl정보가 올바른지 확인")
+    // [object_acl : public-read-write] 권한을 public-read-write로 생성한 오브젝트의 acl정보가 올바른지 확인")
     public void test_object_acl_canned_publicreadwrite()
     {
         var BucketName = GetNewBucket();
@@ -304,7 +304,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Object")
     @Tag("KSAN")
-    //@Tag("[object_acl : authenticated-read] 권한을 authenticated-read로 생성한 오브젝트의 acl정보가 올바른지 확인")
+    // [object_acl : authenticated-read] 권한을 authenticated-read로 생성한 오브젝트의 acl정보가 올바른지 확인")
     public void test_object_acl_canned_authenticatedread()
     {
         var BucketName = GetNewBucket();
@@ -334,7 +334,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Object")
     @Tag("KSAN")
-    //@Tag("[bucket_acl: public-read-write] [object_acl : public-read-write => object_acl : bucket-owner-read]" +  
+    // [bucket_acl: public-read-write] [object_acl : public-read-write => object_acl : bucket-owner-read]" +  
     //"메인 유저가 권한을 public-read-write로 생성한 버켓에서 서브유저가 업로드한 오브젝트를 서브 유저가 권한을 bucket-owner-read로 변경하였을때 올바르게 적용되는지 확인")
     public void test_object_acl_canned_bucketownerread()
     {
@@ -374,7 +374,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Object")
     @Tag("KSAN")
-    //@Tag("[bucket_acl: public-read-write] [object_acl : public-read-write => object_acl : bucket-owner-full-control] " +
+    // [bucket_acl: public-read-write] [object_acl : public-read-write => object_acl : bucket-owner-full-control] " +
     //"메인 유저가 권한을 public-read-write로 생성한 버켓에서 서브유저가 업로드한 오브젝트를 서브 유저가 권한을 bucket-owner-full-control로 변경하였을때 올바르게 적용되는지 확인")
     public void test_object_acl_canned_bucketownerfullcontrol()
     {
@@ -413,7 +413,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Object")
-    //@Tag("[bucket_acl: public-read-write] " + 
+    // [bucket_acl: public-read-write] " + 
     //"메인 유저가 권한을 public-read-write로 생성한 버켓에서 메인유저가 생성한 오브젝트의 권한을 서브유저에게 FULL_CONTROL, 소유주를 메인유저로 설정한뒤 서브 유저가 권한을 READ_ACP, 소유주를 메인유저로 설정하였을때 오브젝트의 소유자가 유지되는지 확인")
     public void test_object_acl_full_control_verify_owner()
     {
@@ -453,7 +453,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("ETag")
-    //@Tag("[bucket_acl: public-read-write] 권한정보를 추가한 오브젝트의 eTag값이 변경되지 않는지 확인")
+    // [bucket_acl: public-read-write] 권한정보를 추가한 오브젝트의 eTag값이 변경되지 않는지 확인")
     public void test_object_acl_full_control_verify_attributes()
     {
         var BucketName = GetNewBucketName();
@@ -489,7 +489,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Permission")
-    //@Tag("[bucket_acl:private] 기본생성한 버킷에 priavte 설정이 가능한지 확인")
+    // [bucket_acl:private] 기본생성한 버킷에 priavte 설정이 가능한지 확인")
     public void test_bucket_acl_canned_private_to_private()
     {
         var BucketName = GetNewBucket();
@@ -501,7 +501,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL")
+    // 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL")
     public void test_object_acl()
     {
         CheckObjectACL(Permission.FullControl);
@@ -510,7 +510,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE")
+    // 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE")
     public void test_object_acl_write()
     {
         CheckObjectACL(Permission.Write);
@@ -519,7 +519,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP")
+    // 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP")
     public void test_object_acl_writeacp()
     {
         CheckObjectACL(Permission.WriteAcp);
@@ -528,7 +528,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ")
+    // 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ")
     public void test_object_acl_read()
     {
         CheckObjectACL(Permission.Read);
@@ -537,7 +537,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP")
+    // 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP")
     public void test_object_acl_readacp()
     {
         CheckObjectACL(Permission.ReadAcp);
@@ -546,7 +546,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : FULL_CONTROL")
+    // 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : FULL_CONTROL")
     public void test_bucket_acl_grant_userid_fullcontrol()
     {
         var BucketName = BucketACLGrantUserid(Permission.FullControl);
@@ -572,7 +572,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ")
+    // 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ")
     public void test_bucket_acl_grant_userid_read()
     {
         var BucketName = BucketACLGrantUserid(Permission.Read);
@@ -586,7 +586,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ_ACP")
+    // 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ_ACP")
     public void test_bucket_acl_grant_userid_readacp()
     {
         var BucketName = BucketACLGrantUserid(Permission.ReadAcp);
@@ -600,7 +600,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE")
+    // 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE")
     public void test_bucket_acl_grant_userid_write()
     {
         var BucketName = BucketACLGrantUserid(Permission.Write);
@@ -614,7 +614,7 @@ public class Grants extends TestBase
     @Test
     @Tag("Permission")
     @Tag("KSAN")
-    //@Tag("메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE_ACP")
+    // 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE_ACP")
     public void test_bucket_acl_grant_userid_writeacp()
     {
         var BucketName = BucketACLGrantUserid(Permission.WriteAcp);
@@ -627,7 +627,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("ERROR")
-    //@Tag("버킷에 존재하지 않는 유저를 추가하려고 하면 에러 발생 확인")
+    // 버킷에 존재하지 않는 유저를 추가하려고 하면 에러 발생 확인")
     public void test_bucket_acl_grant_nonexist_user()
     {
         var BucketName = GetNewBucket();
@@ -645,7 +645,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("ERROR")
-    //@Tag("버킷에 권한정보를 모두 제거했을때 오브젝트를 업데이트 하면 실패 확인")
+    // 버킷에 권한정보를 모두 제거했을때 오브젝트를 업데이트 하면 실패 확인")
     public void test_bucket_acl_no_grants()
     {
         var BucketName = GetNewBucket();
@@ -674,7 +674,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Header")
-    //@Tag("오브젝트를 생성하면서 권한정보를 여러개보낼때 모두 올바르게 적용되었는지 확인")
+    // 오브젝트를 생성하면서 권한정보를 여러개보낼때 모두 올바르게 적용되었는지 확인")
     public void test_object_header_acl_grants()
     {
         var BucketName = GetNewBucket();
@@ -705,7 +705,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Header")
-    //@Tag("버킷 생성하면서 권한정보를 여러개 보낼때 모두 올바르게 적용되었는지 확인")
+    // 버킷 생성하면서 권한정보를 여러개 보낼때 모두 올바르게 적용되었는지 확인")
     public void test_bucket_header_acl_grants()
     {
         var BucketName = GetNewBucketName();
@@ -731,7 +731,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Delete")
-    //@Tag("버킷의 소유자정보를 포함한 모든 acl정보를 삭제할 경우 올바르게 적용되는지 확인")
+    // 버킷의 소유자정보를 포함한 모든 acl정보를 삭제할 경우 올바르게 적용되는지 확인")
     public void test_bucket_acl_revoke_all()
     {
         var BucketName = GetNewBucket();
@@ -755,7 +755,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:private, object_acl:private] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트를 서브유저가 오브젝트 목록을 보거나 다운로드 할 수 없음을 확인")
+    // [bucket_acl:private, object_acl:private] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트를 서브유저가 오브젝트 목록을 보거나 다운로드 할 수 없음을 확인")
     public void test_access_bucket_private_object_private()
     {
         var Key1 = "foo";
@@ -777,7 +777,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:private, object_acl:private] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트를 서브유저가 오브젝트 목록을 보거나 다운로드 할 수 없음을 확인(ListObjects_v2)")
+    // [bucket_acl:private, object_acl:private] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트를 서브유저가 오브젝트 목록을 보거나 다운로드 할 수 없음을 확인(ListObjects_v2)")
     public void test_access_bucket_private_objectv2_private()
     {
         var Key1 = "foo";
@@ -800,7 +800,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:private, object_acl:private, public-read] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 public-read로 설정한 오브젝트는 다운로드 할 수 있음을 확인")
+    // [bucket_acl:private, object_acl:private, public-read] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 public-read로 설정한 오브젝트는 다운로드 할 수 있음을 확인")
     public void test_access_bucket_private_object_publicread()
     {
         var Key1 = "foo";
@@ -826,7 +826,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:private, object_acl:private, public-read] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 public-read로 설정한 오브젝트는 다운로드 할 수 있음을 확인(ListObjects_v2)")
+    // [bucket_acl:private, object_acl:private, public-read] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 public-read로 설정한 오브젝트는 다운로드 할 수 있음을 확인(ListObjects_v2)")
     public void test_access_bucket_private_objectv2_publicread()
     {
         var Key1 = "foo";
@@ -852,7 +852,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:private, object_acl:private, public-read-write] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 public-read-write로 설정한 오브젝트는 다운로드만 할 수 있음을 확인 (버킷의 권한이 private이기 때문에 오브젝트의 권한이 public-read-write로 설정되어있어도 업로드불가)")
+    // [bucket_acl:private, object_acl:private, public-read-write] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 public-read-write로 설정한 오브젝트는 다운로드만 할 수 있음을 확인 (버킷의 권한이 private이기 때문에 오브젝트의 권한이 public-read-write로 설정되어있어도 업로드불가)")
     public void test_access_bucket_private_object_publicreadwrite()
     {
         var Key1 = "foo";
@@ -878,7 +878,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:private, object_acl:private, public-read-write] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 public-read-write로 설정한 오브젝트는 다운로드만 할 수 있음을 확인(ListObjects_v2) (버킷의 권한이 private이기 때문에 오브젝트의 권한이 public-read-write로 설정되어있어도 업로드불가)")
+    // [bucket_acl:private, object_acl:private, public-read-write] 메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 public-read-write로 설정한 오브젝트는 다운로드만 할 수 있음을 확인(ListObjects_v2) (버킷의 권한이 private이기 때문에 오브젝트의 권한이 public-read-write로 설정되어있어도 업로드불가)")
     public void test_access_bucket_private_objectv2_publicreadwrite()
     {
         var Key1 = "foo";
@@ -904,7 +904,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:public-read, object_acl:private] 메인유저가 public-read권한으로 생성한 버킷에서 private권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록만 볼 수 있음을 확인")
+    // [bucket_acl:public-read, object_acl:private] 메인유저가 public-read권한으로 생성한 버킷에서 private권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록만 볼 수 있음을 확인")
     public void test_access_bucket_publicread_object_private()
     {
         var Key1 = "foo";
@@ -928,7 +928,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:public-read, object_acl:public-read, private] 메인유저가 public-read권한으로 생성한 버킷에서 public-read권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 보거나 다운로드 할 수 있음을 확인")
+    // [bucket_acl:public-read, object_acl:public-read, private] 메인유저가 public-read권한으로 생성한 버킷에서 public-read권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 보거나 다운로드 할 수 있음을 확인")
     public void test_access_bucket_publicread_object_publicread()
     {
         var Key1 = "foo";
@@ -955,7 +955,7 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:public-read, object_acl:public-read-wirte, private] 메인유저가 public-read권한으로 생성한 버킷에서 public-read-write권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 보거나 다운로드 할 수 있음을 확인 (버킷의 권한이 public-read이기 때문에 오브젝트의 권한이 public-read-write로 설정되어있어도 수정불가)")
+    // [bucket_acl:public-read, object_acl:public-read-wirte, private] 메인유저가 public-read권한으로 생성한 버킷에서 public-read-write권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 보거나 다운로드 할 수 있음을 확인 (버킷의 권한이 public-read이기 때문에 오브젝트의 권한이 public-read-write로 설정되어있어도 수정불가)")
     public void test_access_bucket_publicread_object_publicreadwrite()
     {
         var Key1 = "foo";
@@ -982,7 +982,8 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:public-read-write, object_acl:private] 메인유저가 public-read-write권한으로 생성한 버킷에서 private권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 읽거나 업로드는 가능하지만 다운로드 할 수 없음을 확인")
+    // [bucket_acl:public-read-write, object_acl:private] 메인유저가 public-read-write권한으로 생성한 버킷에서
+    // private권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록 조회는 가능하나 다운로드 할 수 없음을 확인
     public void test_access_bucket_publicreadwrite_object_private()
     {
         var Key1 = "foo";
@@ -993,10 +994,10 @@ public class Grants extends TestBase
 
         
         assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, Key1));
-        AltClient.putObject(BucketName, Key1, "barcontent");
+        assertThrows(AmazonServiceException.class, () -> AltClient.putObject(BucketName, Key1, "foooverwrite"));
 
         assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, Key2));
-        AltClient.putObject(BucketName, Key2, "baroverwrite");
+        assertThrows(AmazonServiceException.class, () -> AltClient.putObject(BucketName, Key2, "baroverwrite"));
 
         var ObjList = GetKeys(AltClient.listObjects(BucketName).getObjectSummaries());
         assertEquals(new ArrayList<>(Arrays.asList(new String[] { Key2, Key1 })), ObjList);
@@ -1005,7 +1006,8 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:public-read-write, object_acl:public-read, private] 메인유저가 public-read-write권한으로 생성한 버킷에서 public-read권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 읽거나 업로드, 다운로드 모두 가능함을 확인")
+    // [bucket_acl:public-read-write, object_acl:public-read, private] 메인유저가 public-read-write권한으로 생성한 버킷에서
+    // public-read권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록 조회, 다운로드 가능함을 확인")
     public void test_access_bucket_publicreadwrite_object_publicread()
     {
         var Key1 = "foo";
@@ -1017,10 +1019,10 @@ public class Grants extends TestBase
         var Response = AltClient.getObject(BucketName, Key1);
         var Body = GetBody(Response.getObjectContent());
         assertEquals("foocontent", Body);
-        AltClient.putObject(BucketName, Key1, "barcontent");
+        assertThrows(AmazonServiceException.class, () -> AltClient.putObject(BucketName, Key1, "foooverwrite"));
 
         assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, Key2));
-        AltClient.putObject(BucketName, Key2, "baroverwrite");
+        assertThrows(AmazonServiceException.class, () -> AltClient.putObject(BucketName, Key2, "baroverwrite"));
 
         var ObjList = GetKeys(AltClient.listObjects(BucketName).getObjectSummaries());
         assertEquals(new ArrayList<>(Arrays.asList(new String[] { Key2, Key1 })), ObjList);
@@ -1029,8 +1031,8 @@ public class Grants extends TestBase
 
     @Test
     @Tag("Access")
-    //@Tag("[bucket_acl:public-read-write, object_acl:public-read-write, private] 메인유저가 public-read-write권한으로 생성한 버킷에서
-    // public-read-write권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 읽거나 업로드, 다운로드 모두 가능함을 확인")
+    // [bucket_acl:public-read-write, object_acl:public-read-write, private] 메인유저가 public-read-write권한으로 생성한 버킷에서
+    // public-read-write권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 읽거나 다운로드 가능함을 확인")
     public void test_access_bucket_publicreadwrite_object_publicreadwrite()
     {
         var Key1 = "foo";
@@ -1042,11 +1044,10 @@ public class Grants extends TestBase
         var Response = AltClient.getObject(BucketName, Key1);
         var Body = GetBody(Response.getObjectContent());
         assertEquals("foocontent", Body);
-        AltClient.putObject(BucketName, Key1, "foooverwrite");
-
+        assertThrows(AmazonServiceException.class, () -> AltClient.putObject(BucketName, Key1, "foooverwrite"));
+        
         assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, Key2));
-        // assertThrows(AmazonServiceException.class, () -> AltClient.putObject(BucketName, Key2, "baroverwrite"));
-        AltClient.putObject(BucketName, Key2, "baroverwrite");
+        assertThrows(AmazonServiceException.class, () -> AltClient.putObject(BucketName, Key2, "baroverwrite"));
 
         var ObjList = GetKeys(AltClient.listObjects(BucketName).getObjectSummaries());
         assertEquals(new ArrayList<>(Arrays.asList(new String[] { Key2, Key1 })), ObjList);
