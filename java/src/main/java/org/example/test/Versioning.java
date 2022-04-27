@@ -757,13 +757,14 @@ public class Versioning extends TestBase
 		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
 
 		var KeyName = "foo";
+		var VersionList = new ArrayList<String>();
 
 		for (int i = 1; i <= 5; i++)
-			Client.putObject(BucketName, KeyName, RandomTextToLong(i));
+		{
+			var Response = Client.putObject(BucketName, KeyName, RandomTextToLong(i));
+			VersionList.add(Response.getVersionId());
+		}
 
-		var VersionResponse = Client.listVersions(BucketName, "");
-		var VersionList = GetVersionIDs(VersionResponse.getVersionSummaries());
-		Collections.sort(VersionList);
 		for (int i = 0; i < 5; i++)
 		{
 			var Response = Client.getObjectMetadata(new GetObjectMetadataRequest(BucketName, KeyName, VersionList.get(i)));
