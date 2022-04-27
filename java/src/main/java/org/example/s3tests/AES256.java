@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -24,57 +24,57 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class AES256 {
 	public static String encryptAES256(String msg, String key) throws Exception {
-  
-	    SecureRandom random = new SecureRandom();
-	    byte bytes[] = new byte[20];
-	    random.nextBytes(bytes);
-	    byte[] saltBytes = bytes;
 
-	    // Password-Based Key Derivation function 2
-	    SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+		SecureRandom random = new SecureRandom();
+		byte bytes[] = new byte[20];
+		random.nextBytes(bytes);
+		byte[] saltBytes = bytes;
 
-	    PBEKeySpec spec = new PBEKeySpec(key.toCharArray(), saltBytes, 70000, 256);
+		// Password-Based Key Derivation function 2
+		SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
 
-	    SecretKey secretKey = factory.generateSecret(spec);
-	    SecretKeySpec secret = new SecretKeySpec(secretKey.getEncoded(), "AES");
+		PBEKeySpec spec = new PBEKeySpec(key.toCharArray(), saltBytes, 70000, 256);
 
-	    // CBC : Cipher Block Chaining Mode
-	    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-	    cipher.init(Cipher.ENCRYPT_MODE, secret);
-	    
-	    AlgorithmParameters params = cipher.getParameters();
+		SecretKey secretKey = factory.generateSecret(spec);
+		SecretKeySpec secret = new SecretKeySpec(secretKey.getEncoded(), "AES");
 
-	    byte[] ivBytes = params.getParameterSpec(IvParameterSpec.class).getIV();
-	    byte[] encryptedTextBytes = cipher.doFinal(msg.getBytes("UTF-8"));
-	    byte[] buffer = new byte[saltBytes.length + ivBytes.length + encryptedTextBytes.length];
-	    System.arraycopy(saltBytes, 0, buffer, 0, saltBytes.length);
-	    System.arraycopy(ivBytes, 0, buffer, saltBytes.length, ivBytes.length);
-	    System.arraycopy(encryptedTextBytes, 0, buffer, saltBytes.length + ivBytes.length, encryptedTextBytes.length);
+		// CBC : Cipher Block Chaining Mode
+		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+		cipher.init(Cipher.ENCRYPT_MODE, secret);
 
-	    return Base64.getEncoder().encodeToString(buffer);
+		AlgorithmParameters params = cipher.getParameters();
+
+		byte[] ivBytes = params.getParameterSpec(IvParameterSpec.class).getIV();
+		byte[] encryptedTextBytes = cipher.doFinal(msg.getBytes("UTF-8"));
+		byte[] buffer = new byte[saltBytes.length + ivBytes.length + encryptedTextBytes.length];
+		System.arraycopy(saltBytes, 0, buffer, 0, saltBytes.length);
+		System.arraycopy(ivBytes, 0, buffer, saltBytes.length, ivBytes.length);
+		System.arraycopy(encryptedTextBytes, 0, buffer, saltBytes.length + ivBytes.length, encryptedTextBytes.length);
+
+		return Base64.getEncoder().encodeToString(buffer);
 	}
-	
+
 	public static String decryptAES256(String msg, String key) throws Exception {
 
-	    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-	    ByteBuffer buffer = ByteBuffer.wrap(Base64.getDecoder().decode(msg));
+		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+		ByteBuffer buffer = ByteBuffer.wrap(Base64.getDecoder().decode(msg));
 
-	    byte[] saltBytes = new byte[20];
-	    buffer.get(saltBytes, 0, saltBytes.length);
-	    byte[] ivBytes = new byte[cipher.getBlockSize()];
-	    buffer.get(ivBytes, 0, ivBytes.length);
-	    byte[] encryoptedTextBytes = new byte[buffer.capacity() - saltBytes.length - ivBytes.length];
-	    buffer.get(encryoptedTextBytes);
+		byte[] saltBytes = new byte[20];
+		buffer.get(saltBytes, 0, saltBytes.length);
+		byte[] ivBytes = new byte[cipher.getBlockSize()];
+		buffer.get(ivBytes, 0, ivBytes.length);
+		byte[] encryoptedTextBytes = new byte[buffer.capacity() - saltBytes.length - ivBytes.length];
+		buffer.get(encryoptedTextBytes);
 
-	    SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-	    PBEKeySpec spec = new PBEKeySpec(key.toCharArray(), saltBytes, 70000, 256);
+		SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+		PBEKeySpec spec = new PBEKeySpec(key.toCharArray(), saltBytes, 70000, 256);
 
-	    SecretKey secretKey = factory.generateSecret(spec);
-	    SecretKeySpec secret = new SecretKeySpec(secretKey.getEncoded(), "AES");
+		SecretKey secretKey = factory.generateSecret(spec);
+		SecretKeySpec secret = new SecretKeySpec(secretKey.getEncoded(), "AES");
 
-	    cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(ivBytes));
+		cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(ivBytes));
 
-	    byte[] decryptedTextBytes = cipher.doFinal(encryoptedTextBytes);
-	    return new String(decryptedTextBytes);
+		byte[] decryptedTextBytes = cipher.doFinal(encryoptedTextBytes);
+		return new String(decryptedTextBytes);
 	}
 }

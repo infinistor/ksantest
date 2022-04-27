@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -40,7 +40,7 @@ public class ListObjectsVersions extends TestBase
 	@Test
 	@Tag("Metadata")
 	@Tag("KSAN")
-	//@Tag("Version정보를 가질 수 있는 버킷에서 ListObjectsVersions로 가져온 Metadata와 HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인")
+	//Version정보를 가질 수 있는 버킷에서 ListObjectsVersions로 가져온 Metadata와 HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
 	public void test_bucket_list_return_data_versioning() {
 		var BucketName = GetNewBucket();
 		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);

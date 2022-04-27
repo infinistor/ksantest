@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -35,11 +35,11 @@ public class DeleteBucket extends TestBase
 	{
 		System.out.println("DeleteBucket End");
 	}
-	
+
 	@Test
 	@Tag("ERROR")
 	@Tag("KSAN")
-	//@Tag("존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인")
+	//존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인
 	public void test_bucket_delete_notexist() {
 		var BucketName = GetNewBucketName();
 		var Client = GetClient();
@@ -57,7 +57,7 @@ public class DeleteBucket extends TestBase
 	@Test
 	@Tag("ERROR")
 	@Tag("KSAN")
-	//@Tag("내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인")
+	//내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인
 	public void test_bucket_delete_nonempty() {
 		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "foo" })));
 		var Client = GetClient();
@@ -74,7 +74,7 @@ public class DeleteBucket extends TestBase
 	@Test
 	@Tag("ERROR")
 	@Tag("KSAN")
-	//@Tag("이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인")
+	//이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인
 	public void test_bucket_create_delete() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();

@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -15,28 +15,28 @@ import java.util.ArrayList;
 import com.amazonaws.services.s3.model.PartETag;
 
 public class MultipartUploadData {
-    public String UploadId;
-    public ArrayList<PartETag> Parts;
-    public StringBuilder Body;
-    public int PartSize;
-    
-    public MultipartUploadData()
-    {
-        Init();
-    }
+	public String UploadId;
+	public ArrayList<PartETag> Parts;
+	public StringBuilder Body;
+	public int PartSize;
 
-    public void Init()
-    {
-        UploadId = "";
-        Body = new StringBuilder();
-        Parts = new ArrayList<PartETag>();
-        PartSize = 5 * MainData.MB;
-    }
+	public MultipartUploadData()
+	{
+		Init();
+	}
 
-    public int NextPartNumber() { return Parts.size() + 1; }
-    public String GetBody() { return Body.toString(); }
+	public void Init()
+	{
+		UploadId = "";
+		Body = new StringBuilder();
+		Parts = new ArrayList<PartETag>();
+		PartSize = 5 * MainData.MB;
+	}
 
-    public void AddPart(int PartNumber, String ETag) { Parts.add(new PartETag(PartNumber, ETag)); }
-    public void AddPart(PartETag Part) { Parts.add(Part); }
-    public void AppendBody(String Data) { Body.append(Data); }
+	public int NextPartNumber() { return Parts.size() + 1; }
+	public String GetBody() { return Body.toString(); }
+
+	public void AddPart(int PartNumber, String ETag) { Parts.add(new PartETag(PartNumber, ETag)); }
+	public void AddPart(PartETag Part) { Parts.add(Part); }
+	public void AppendBody(String Data) { Body.append(Data); }
 }

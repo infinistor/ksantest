@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -21,35 +21,34 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 public class Main {
-    public static void main(String[] args) {
+	public static void main(String[] args) {
 
-        LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
-        .selectors(DiscoverySelectors.selectPackage("org.example.test"))
-        .build();
+		LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
+			.selectors(DiscoverySelectors.selectPackage("org.example.test"))
+			.build();
 
-        Launcher launcher = LauncherFactory.create();
+		Launcher launcher = LauncherFactory.create();
 
-        System.out.println("Test Start!");
-        SummaryGeneratingListener listener = new SummaryGeneratingListener();
-        launcher.registerTestExecutionListeners(listener);
-        launcher.execute(request);
-        listener.getSummary().printTo(new PrintWriter(System.out));
-        printReport(listener.getSummary());
-    }
+		System.out.println("Test Start!");
+		SummaryGeneratingListener listener = new SummaryGeneratingListener();
+		launcher.registerTestExecutionListeners(listener);
+		launcher.execute(request);
+		listener.getSummary().printTo(new PrintWriter(System.out));
+		printReport(listener.getSummary());
+	}
 
-    private static void printReport(TestExecutionSummary summary) {
-        System.out.println(
-                "\n------------------------------------------" +
-                "\nTests started: " + summary.getTestsStartedCount() +
-                "\nTests failed: " + summary.getTestsFailedCount() +
-                "\nTests succeeded: " + summary.getTestsSucceededCount() +
-                "\n------------------------------------------"
-        );
+	private static void printReport(TestExecutionSummary summary) {
+		System.out.println(
+			"\n------------------------------------------" +
+			"\nTests started: " + summary.getTestsStartedCount() +
+			"\nTests failed: " + summary.getTestsFailedCount() +
+			"\nTests succeeded: " + summary.getTestsSucceededCount() +
+			"\n------------------------------------------");
 
-        if(summary.getTestsFailedCount() > 0) {
-            for(TestExecutionSummary.Failure f: summary.getFailures()){
-                System.out.println(f.getTestIdentifier().getSource() + "\n\nException " + f.getException());
-            }
-        }
-    }
+		if (summary.getTestsFailedCount() > 0) {
+			for (TestExecutionSummary.Failure f : summary.getFailures()) {
+				System.out.println(f.getTestIdentifier().getSource() + "\n\nException " + f.getException());
+			}
+		}
+	}
 }

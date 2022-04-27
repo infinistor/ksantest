@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -31,51 +31,48 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 
-public class CSE extends TestBase
-{
+public class CSE extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
-	{
+	static public void BeforeAll() {
 		System.out.println("CSE Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
-	{
+	static public void AfterAll() {
 		System.out.println("CSE End");
 	}
 
 	@Test
 	@Tag("PutGet")
-	//@Tag("[AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인")
+	// @Tag("[AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	public void test_cse_encrypted_transfer_1b() {
 		TestEncryptionCSEWrite(1);
 	}
 
 	@Test
 	@Tag("PutGet")
-	//@Tag("[AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인")
+	// @Tag("[AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	public void test_cse_encrypted_transfer_1kb() {
 		TestEncryptionCSEWrite(1024);
 	}
 
 	@Test
 	@Tag("PutGet")
-	//@Tag("[AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인")
+	// @Tag("[AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	public void test_cse_encrypted_transfer_1MB() {
 		TestEncryptionCSEWrite(1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
-	//@Tag("[AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인")
+	// @Tag("[AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	public void test_cse_encrypted_transfer_13b() {
 		TestEncryptionCSEWrite(13);
 	}
 
 	@Test
 	@Tag("Metadata")
-	//@Tag("[AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인 ")
+	// @Tag("[AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인 
 	public void test_cse_encryption_method_head() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -103,7 +100,7 @@ public class CSE extends TestBase
 
 	@Test
 	@Tag("ERROR")
-	//@Tag("[AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치")
+	// @Tag("[AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치
 	public void test_cse_encryption_non_decryption() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -133,7 +130,7 @@ public class CSE extends TestBase
 
 	@Test
 	@Tag("ERROR")
-	//@Tag("[AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인")
+	// @Tag("[AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인
 	public void test_cse_non_encryption_decryption() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -157,7 +154,7 @@ public class CSE extends TestBase
 
 	@Test
 	@Tag("RangeRead")
-	//@Tag("[AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공")
+	// @Tag("[AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공
 	public void test_cse_encryption_range_read() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -180,7 +177,8 @@ public class CSE extends TestBase
 			var Response = Client
 					.getObject(new GetObjectRequest(BucketName, Key).withRange(StartPoint, StartPoint + 1000 - 1));
 			var EncodingBody = GetBody(Response.getObjectContent());
-			assertTrue(EncodingData.substring(StartPoint, StartPoint + 1000).equals(EncodingBody), "Source does not match target");
+			assertTrue(EncodingData.substring(StartPoint, StartPoint + 1000).equals(EncodingBody),
+					"Source does not match target");
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
@@ -188,7 +186,7 @@ public class CSE extends TestBase
 
 	@Test
 	@Tag("Multipart")
-	//@Tag("[AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인")
+	// @Tag("[AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인
 	public void test_cse_encryption_multipart_upload() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -234,23 +232,22 @@ public class CSE extends TestBase
 			CheckContentUsingRange(BucketName, Key, EncodingData, MainData.MB);
 			CheckContentUsingRange(BucketName, Key, EncodingData, 10 * MainData.MB);
 			CheckContentUsingRandomRange(BucketName, Key, EncodingData, 100);
-	} catch (Exception e) {
+		} catch (Exception e) {
 			fail(e.getMessage());
 		}
 	}
-    
-    @Test
-    @Tag("Get")
-    //@Tag("CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인")
-    public void test_cse_get_object_many()
-    {
-        var BucketName = GetNewBucket();
-        var Client = GetClient();
-        var Key = "foo";
+
+	@Test
+	@Tag("Get")
+	// @Tag("CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
+	public void test_cse_get_object_many() {
+		var BucketName = GetNewBucket();
+		var Client = GetClient();
+		var Key = "foo";
 		// AES
 		var AESKey = RandomTextToLong(32);
-        var Data = RandomTextToLong(15 * MainData.MB);
-		
+		var Data = RandomTextToLong(15 * MainData.MB);
+
 		try {
 			var EncodingData = AES256.encryptAES256(Data, AESKey);
 			var MetadataList = new ObjectMetadata();
@@ -269,22 +266,21 @@ public class CSE extends TestBase
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
-    }
-    
-    @Test
-    @Tag("Get")
-    //@Tag("CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인")
-    public void test_cse_range_object_many()
-    {
-        var BucketName = GetNewBucket();
-        var Client = GetClient();
-        var Key = "foo";
+	}
+
+	@Test
+	@Tag("Get")
+	// @Tag("CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+	public void test_cse_range_object_many() {
+		var BucketName = GetNewBucket();
+		var Client = GetClient();
+		var Key = "foo";
 
 		// AES
 		var AESKey = RandomTextToLong(32);
-        var FileSize = 15 * 1024 * 1024;
-        var Data = RandomTextToLong(FileSize);
-		
+		var FileSize = 15 * 1024 * 1024;
+		var Data = RandomTextToLong(FileSize);
+
 		try {
 			var EncodingData = AES256.encryptAES256(Data, AESKey);
 			var MetadataList = new ObjectMetadata();
@@ -304,5 +300,5 @@ public class CSE extends TestBase
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
-    }
+	}
 }

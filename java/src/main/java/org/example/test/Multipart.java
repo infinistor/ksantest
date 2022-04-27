@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -50,7 +50,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("ERROR")
 	@Tag("KSAN")
-	//@Tag("비어있는 오브젝트를 멀티파트로 업로드 실패 확인")
+	//비어있는 오브젝트를 멀티파트로 업로드 실패 확인
 	public void test_multipart_upload_empty() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -69,7 +69,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("Check")
 	@Tag("KSAN")
-	//@Tag("파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인")
+	//파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인
 	public void test_multipart_upload_small() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -86,7 +86,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("Copy")
 	@Tag("KSAN")
-	//@Tag("버킷a에서 버킷b로 멀티파트 복사 성공확인")
+	//버킷a에서 버킷b로 멀티파트 복사 성공확인
 	public void test_multipart_copy_small() {
 		var SourceKey = "foo";
 		var SourceBucketName = CreateKeyWithRandomContent(SourceKey, 0, null, null);
@@ -107,7 +107,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("ERROR")
 	@Tag("KSAN")
-	//@Tag("범위설정을 잘못한 멀티파트 복사 실패 확인")
+	//범위설정을 잘못한 멀티파트 복사 실패 확인
 	public void test_multipart_copy_invalid_range() {
 		var Client = GetClient();
 		var SourceKey = "source";
@@ -130,7 +130,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("Range")
 	@Tag("KSAN")
-	//@Tag("범위를 지정한 멀티파트 복사 성공확인")
+	//범위를 지정한 멀티파트 복사 성공확인
 	public void test_multipart_copy_without_range() {
 		var Client = GetClient();
 		var SourceKey = "source";
@@ -156,7 +156,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("SpecialNames")
 	@Tag("KSAN")
-	//@Tag("특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인")
+	//특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인
 	public void test_multipart_copy_special_names() {
 		var SourceBucketName = GetNewBucket();
 		var TargetBucketName = GetNewBucket();
@@ -179,7 +179,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("Put")
 	@Tag("KSAN")
-	//@Tag("멀티파트 업로드 확인")
+	//멀티파트 업로드 확인
 	public void test_multipart_upload() {
 		var BucketName = GetNewBucket();
 		var Key = "mymultipart";
@@ -213,7 +213,7 @@ public class Multipart extends TestBase
 
 	@Test
 	@Tag("Copy")
-	//@Tag("버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인")
+	//버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인
 	public void test_multipart_copy_versioned() {
 		var SourceBucketName = GetNewBucket();
 		var TargetBucketName = GetNewBucket();
@@ -247,7 +247,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("Duplicate")
 	@Tag("KSAN")
-	//@Tag("멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인")
+	//멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
 	public void test_multipart_upload_resend_part() {
 		var BucketName = GetNewBucket();
 		var Key = "mymultipart";
@@ -264,7 +264,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("Put")
 	@Tag("KSAN")
-	//@Tag("한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인")
+	//한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
 	public void test_multipart_upload_multiple_sizes() {
 		var BucketName = GetNewBucket();
 		var Key = "mymultipart";
@@ -304,7 +304,7 @@ public class Multipart extends TestBase
 
 	@Test
 	@Tag("Copy")
-	//@Tag("한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인")
+	//한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인
 	public void test_multipart_copy_multiple_sizes() {
 		var SourceKey = "foo";
 		var SourceBucketName = CreateKeyWithRandomContent(SourceKey, 12 * MainData.MB, null, null);
@@ -353,7 +353,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("ERROR")
 	@Tag("KSAN")
-	//@Tag("멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인")
+	//멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
 	public void test_multipart_upload_size_too_small() {
 		var BucketName = GetNewBucket();
 		var Key = "mymultipart";
@@ -372,7 +372,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("Check")
 	@Tag("KSAN")
-	//@Tag("내용물을 채운 멀티파트 업로드 성공 확인")
+	//내용물을 채운 멀티파트 업로드 성공 확인
 	public void test_multipart_upload_contents() {
 		var BucketName = GetNewBucket();
 		DoTestMultipartUploadContents(BucketName, "mymultipart", 3);
@@ -381,7 +381,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("OverWrite")
 	@Tag("KSAN")
-	//@Tag("업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인")
+	//업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
 	public void test_multipart_upload_overwrite_existing_object() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -415,7 +415,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("Cancel")
 	@Tag("KSAN")
-	//@Tag("멀티파트 업로드하는 도중 중단 성공 확인")
+	//멀티파트 업로드하는 도중 중단 성공 확인
 	public void test_abort_multipart_upload() {
 		var BucketName = GetNewBucket();
 		var Key = "mymultipart";
@@ -435,7 +435,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("ERROR")
 	@Tag("KSAN")
-	//@Tag("존재하지 않은 멀티파트 업로드 중단 실패 확인")
+	//존재하지 않은 멀티파트 업로드 중단 실패 확인
 	public void test_abort_multipart_upload_not_found() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -453,7 +453,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("List")
 	@Tag("KSAN")
-	//@Tag("멀티파트 업로드 중인 목록 확인")
+	//멀티파트 업로드 중인 목록 확인
 	public void test_list_multipart_upload() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -481,7 +481,7 @@ public class Multipart extends TestBase
 
 	@Test
 	@Tag("ERROR")
-	//@Tag("업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인")
+	//업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인
 	public void test_multipart_upload_missing_part() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -508,7 +508,7 @@ public class Multipart extends TestBase
 
 	@Test
 	@Tag("ERROR")
-	//@Tag("잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인")
+	//잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인
 	public void test_multipart_upload_incorrect_etag() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -534,7 +534,7 @@ public class Multipart extends TestBase
 	@Test
 	@Tag("Overwrite")
 	@Tag("KSAN")
-	//@Tag("버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인")
+	//버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인
 	public void test_atomic_multipart_upload_write() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -554,13 +554,13 @@ public class Multipart extends TestBase
 		Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
-	
+
 	@Test
-    @Tag("List")
+	@Tag("List")
 	@Tag("KSAN")
-    //@Tag("멀티파트 업로드 목록 확인")
-    public void test_multipart_upload_list()
-    {
+	//멀티파트 업로드 목록 확인
+	public void test_multipart_upload_list()
+	{
 		var BucketName = GetNewBucket();
 		var Key = "mymultipart";
 		var ContentType = "text/bla";
@@ -572,16 +572,16 @@ public class Multipart extends TestBase
 
 		var UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, MetadataList);
 
-        var Response = Client.listParts(new ListPartsRequest(BucketName, Key, UploadData.UploadId));
-        PartsETagCompare(UploadData.Parts, Response.getParts());
-		
+		var Response = Client.listParts(new ListPartsRequest(BucketName, Key, UploadData.UploadId));
+		PartsETagCompare(UploadData.Parts, Response.getParts());
+
 		Client.abortMultipartUpload(new AbortMultipartUploadRequest(BucketName, Key, UploadData.UploadId));
-    }
+	}
 
 	@Test
 	@Tag("Cancel")
 	@Tag("KSAN")
-	//@Tag("멀티파트 업로드하는 도중 중단 성공 확인")
+	//멀티파트 업로드하는 도중 중단 성공 확인
 	public void test_abort_multipart_upload_list() {
 		var BucketName = GetNewBucket();
 		var Key = "mymultipart";
@@ -597,7 +597,7 @@ public class Multipart extends TestBase
 
 	@Test
 	@Tag("Copy")
-	//@Tag("멀티파트업로드와 멀티파티 카피로 오브젝트가 업로드 가능한지 확인")
+	//멀티파트업로드와 멀티파티 카피로 오브젝트가 업로드 가능한지 확인
 	public void test_multipart_copy_many() {
 		var BucketName = GetNewBucket();
 		var SourceKey = "mymultipart";
@@ -612,7 +612,7 @@ public class Multipart extends TestBase
 		// 업로드가 올바르게 되었는지 확인
 		Body.append(UploadData.Body);
 		CheckContentUsingRange(BucketName, SourceKey, Body.toString(), MainData.MB);
-		
+
 		// 멀티파트 카피
 		var TargetKey1 = "mymultipart1";
 		UploadData = MultipartCopy(BucketName, SourceKey, BucketName, TargetKey1, Size, Client, 0, null);
@@ -623,7 +623,7 @@ public class Multipart extends TestBase
 		// 업로드가 올바르게 되었는지 확인
 		Body.append(UploadData.Body);
 		CheckContentUsingRange(BucketName, TargetKey1, Body.toString(), MainData.MB);
-		
+
 		// 멀티파트 카피
 		var TargetKey2 = "mymultipart2";
 		UploadData = MultipartCopy(BucketName, TargetKey1, BucketName, TargetKey2, Size * 2, Client, 0, null);

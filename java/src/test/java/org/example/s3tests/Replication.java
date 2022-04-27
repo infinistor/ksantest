@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -10,58 +10,57 @@
 */
 package org.example.s3tests;
 
-import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class Replication {
 
-    org.example.test.Replication Test = new org.example.test.Replication();
+	org.example.test.Replication Test = new org.example.test.Replication();
 
-    @AfterEach
+	@AfterEach
 	public void Clear() {
 		Test.Clear();
 	}
 
-    @Test
-    @Tag("Check")
-    // @Tag("버킷의 Replication 설정이 되는지 확인(put/get/delete)")
-    public void test_replication_set()
-    {
-        Test.test_replication_set();
-    }
+	@Test
+	@Tag("Check")
+	// @Tag("버킷의 Replication 설정이 되는지 확인(put/get/delete)
+	public void test_replication_set()
+	{
+		Test.test_replication_set();
+	}
 
-    @Test
-    @Tag("ERROR")
-    // @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
-    public void test_replication_invalid_source_bucket_name()
-    {
-        Test.test_replication_invalid_source_bucket_name();
-    }
+	@Test
+	@Tag("ERROR")
+	// @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
+	public void test_replication_invalid_source_bucket_name()
+	{
+		Test.test_replication_invalid_source_bucket_name();
+	}
 
-    @Test
-    @Tag("ERROR")
-    // @Tag("원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
-    public void test_replication_invalid_source_bucket_versioning()
-    {
-        Test.test_replication_invalid_source_bucket_versioning();
-    }
+	@Test
+	@Tag("ERROR")
+	// @Tag("원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
+	public void test_replication_invalid_source_bucket_versioning()
+	{
+		Test.test_replication_invalid_source_bucket_versioning();
+	}
 
-    @Test
-    @Tag("ERROR")
-    // @Tag("대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
-    public void test_replication_invalid_target_bucket_name()
-    {
-        Test.test_replication_invalid_target_bucket_name();
-    }
+	@Test
+	@Tag("ERROR")
+	// @Tag("대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
+	public void test_replication_invalid_target_bucket_name()
+	{
+		Test.test_replication_invalid_target_bucket_name();
+	}
 
-    @Test
-    @Tag("ERROR")
-    // @Tag("대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
-    public void test_replication_invalid_target_bucket_versioning()
-    {
-        Test.test_replication_invalid_target_bucket_versioning();
-    }
+	@Test
+	@Tag("ERROR")
+	// @Tag("대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
+	public void test_replication_invalid_target_bucket_versioning()
+	{
+		Test.test_replication_invalid_target_bucket_versioning();
+	}
 
 }

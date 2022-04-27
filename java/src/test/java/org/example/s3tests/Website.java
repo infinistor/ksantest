@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -16,37 +16,37 @@ import org.junit.jupiter.api.Tag;
 
 public class Website
 {
-    org.example.test.Website Test = new org.example.test.Website();
+	org.example.test.Website Test = new org.example.test.Website();
 
-    @AfterEach
+	@AfterEach
 	public void Clear() {
 		Test.Clear();
 	}
 
-    @Test
-    @Tag("KSAN")
-    @Tag("Check")
-    //@Tag("버킷의 Websize 설정 조회 확인")
-    public void test_webiste_get_buckets()
-    {
-        Test.test_webiste_get_buckets();
-    }
+	@Test
+	@Tag("KSAN")
+	@Tag("Check")
+	//버킷의 Websize 설정 조회 확인
+	public void test_webiste_get_buckets()
+	{
+		Test.test_webiste_get_buckets();
+	}
 
-    @Test
-    @Tag("KSAN")
-    @Tag("Check")
-    //@Tag("버킷의 Websize 설정이 가능한지 확인")
-    public void test_webiste_put_buckets()
-    {
-        Test.test_webiste_put_buckets();
-    }
+	@Test
+	@Tag("KSAN")
+	@Tag("Check")
+	//버킷의 Websize 설정이 가능한지 확인
+	public void test_webiste_put_buckets()
+	{
+		Test.test_webiste_put_buckets();
+	}
 
-    @Test
-    @Tag("KSAN")
-    @Tag("Delete")
-    //@Tag("버킷의 Websize 설정이 삭제가능한지 확인")
-    public void test_webiste_delete_buckets()
-    {
-        Test.test_webiste_delete_buckets();
-    }
+	@Test
+	@Tag("KSAN")
+	@Tag("Delete")
+	//버킷의 Websize 설정이 삭제가능한지 확인
+	public void test_webiste_delete_buckets()
+	{
+		Test.test_webiste_delete_buckets();
+	}
 }

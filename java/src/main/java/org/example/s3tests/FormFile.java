@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -14,19 +14,18 @@ public class FormFile {
 	public String Name;
 	public String ContentType;
 	public String Body;
-	 
-	public FormFile(String Name, String ContentType, String Body)
-	{
+
+	public FormFile(String Name, String ContentType, String Body) {
 		this.Name = Name;
 		this.ContentType = ContentType;
 		this.Body = Body;
 	}
-	
-	public String getName() {return Name;}
-	public String getContentType() {return ContentType;}
-	public String getBody() {return Body;}
-	
-	public void setName(String Name) {this.Name= Name;}
-	public void setContentType(String ContentType) {this.ContentType= ContentType;}
-	public void setBody(String Body) {this.Body= Body;}
+
+	public String getName() { return Name; }
+	public String getContentType() { return ContentType; }
+	public String getBody() { return Body; }
+
+	public void setName(String Name) { this.Name = Name; }
+	public void setContentType(String ContentType) { this.ContentType = ContentType; }
+	public void setBody(String Body) { this.Body = Body; }
 }

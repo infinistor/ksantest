@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -18,32 +18,32 @@ import java.util.Map;
 import com.amazonaws.services.s3.model.Tag;
 
 public class ObjectVersionsData {
-    public String BucketName;
-    public String Key;
-    public List<Tag> TagSet;
-    public Map<String, String> VersionsBody;
+	public String BucketName;
+	public String Key;
+	public List<Tag> TagSet;
+	public Map<String, String> VersionsBody;
 
-    public ObjectVersionsData()
-    {
-        Init();
-    }
-    public ObjectVersionsData(String BucketName, String Key, List<Tag> TagSet)
-    {
-        this.BucketName = BucketName;
-        this.Key = Key;
-        this.TagSet = TagSet;
-        VersionsBody = new HashMap<String, String>();
-    }
+	public ObjectVersionsData()
+	{
+		Init();
+	}
+	public ObjectVersionsData(String BucketName, String Key, List<Tag> TagSet)
+	{
+		this.BucketName = BucketName;
+		this.Key = Key;
+		this.TagSet = TagSet;
+		VersionsBody = new HashMap<String, String>();
+	}
 
-    public void Init()
-    {
-        BucketName = "";
-        Key = "";
-        TagSet = new ArrayList<Tag>();
-        VersionsBody = new HashMap<String, String>();
-    }
+	public void Init()
+	{
+		BucketName = "";
+		Key = "";
+		TagSet = new ArrayList<Tag>();
+		VersionsBody = new HashMap<String, String>();
+	}
 
-    public void addVersion(String VersionId, String Body){
-        VersionsBody.put(VersionId, Body);
-    }
+	public void addVersion(String VersionId, String Body){
+		VersionsBody.put(VersionId, Body);
+	}
 }
