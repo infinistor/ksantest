@@ -14,16 +14,15 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
-import org.example.s3tests.AES256;
-import org.example.s3tests.BucketResourceData;
-import org.example.s3tests.FormFile;
-import org.example.s3tests.MainData;
-import org.example.s3tests.MultipartUploadData;
-import org.example.s3tests.MyResult;
-import org.example.s3tests.ObjectData;
-import org.example.s3tests.RangeSet;
+import org.example.Data.AES256;
+import org.example.Data.FormFile;
+import org.example.Data.MainData;
+import org.example.Data.MultipartUploadData;
+import org.example.Data.MyResult;
+import org.example.Data.ObjectData;
+import org.example.Data.RangeSet;
+import org.example.Data.UserData;
 import org.example.s3tests.S3Config;
-import org.example.s3tests.UserData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.platform.commons.util.StringUtils;
 
@@ -55,6 +54,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
@@ -390,41 +390,27 @@ public class TestBase {
 
 		return String.format("%s%s", Protocol, Address);
 	}
-
+	
 	public String GetHost(String BucketName) {
 		if (StringUtils.isBlank(Config.URL))
 			return String.format("%s.s3-%s.amazonaws.com", BucketName, Config.RegionName);
 		return String.format("%s:%d/%s", Config.URL, Config.Port, BucketName);
 	}
+	
+	public URL GetEndPoint(String BucketName, String Key) throws MalformedURLException {
+		String Protocol;
+		String EndPoint;
 
-	public BucketResourceData GetNewBucketResource() {
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
+		if (Config.IsSecure)
+			Protocol = MainData.HTTPS;
+		else
+			Protocol = MainData.HTTP;
+		if (StringUtils.isBlank(Config.URL))
+			EndPoint = String.format("%s%s.s3-%s.amazonaws.com/%s", Protocol, BucketName, Config.RegionName, Key);
+		else 
+			EndPoint =  String.format("%s%s:%d/%s/%s", Protocol, Config.URL, Config.Port, BucketName, Key);
 
-		Client.createBucket(BucketName);
-
-		return new BucketResourceData(Client, BucketName);
-	}
-
-	public BucketResourceData GetNewBucketResource(String BucketName) {
-		var Client = GetClient();
-
-		Client.createBucket(BucketName);
-
-		return new BucketResourceData(Client, BucketName);
-	}
-
-	public boolean BucketIsEmpty(BucketResourceData Resource) {
-		if (BucketResourceData.IsEmpty(Resource))
-			return true;
-		var Response = Resource.Client.listObjects(Resource.BucketName);
-
-		if (Response == null)
-			return true;
-		if (Response.getObjectSummaries().size() > 0)
-			return false;
-
-		return true;
+		return new URL(EndPoint);
 	}
 
 	public String MakeArnResource(String Path) {
@@ -702,18 +688,6 @@ public class TestBase {
 		return GetKeys(Response.getObjectSummaries());
 	}
 
-	public static ArrayList<String> GetKeys(ArrayList<ObjectVersionsData> ObjectList) {
-		if (ObjectList != null) {
-			var Temp = new ArrayList<String>();
-
-			for (var S3Object : ObjectList)
-				Temp.add(S3Object.Key);
-
-			return Temp;
-		}
-		return null;
-	}
-
 	public static ArrayList<String> GetKeys(List<S3ObjectSummary> ObjectList) {
 		if (ObjectList != null) {
 			var Temp = new ArrayList<String>();
@@ -985,9 +959,7 @@ public class TestBase {
 
 			Result.StatusCode = connection.getResponseCode();
 			Result.URL = connection.getURL().toString();
-			if (Result.StatusCode != HttpURLConnection.HTTP_NO_CONTENT
-					&& Result.StatusCode != HttpURLConnection.HTTP_CREATED
-					&& Result.StatusCode != HttpURLConnection.HTTP_OK) {
+			if (Result.StatusCode != HttpURLConnection.HTTP_NO_CONTENT && Result.StatusCode != HttpURLConnection.HTTP_CREATED && Result.StatusCode != HttpURLConnection.HTTP_OK) {
 				BufferedReader in = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
 				String inputLine;
 				StringBuffer response = new StringBuffer();
@@ -1521,7 +1493,7 @@ public class TestBase {
 		var Size = GetResponse.getContentLength();
 
 		long StartpPosition = 0;
-		while (StartpPosition <= Size) {
+		while (StartpPosition < Size) {
 			var EndPosition = StartpPosition + Step;
 			if (EndPosition > Size)
 				EndPosition = Size - 1;
@@ -1599,7 +1571,7 @@ public class TestBase {
 			var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(Range.Start, Range.End - 1)
 					.withSSECustomerKey(SSEC));
 			var Body = GetBody(Response.getObjectContent());
-			var RangeBody = Data.substring(Range.Start, Range.End + 1);
+			var RangeBody = Data.substring(Range.Start, Range.End);
 
 			assertEquals(Range.Length, Response.getObjectMetadata().getContentLength());
 			assertTrue(RangeBody.equals(Body), "Source does not match target");
@@ -1696,9 +1668,9 @@ public class TestBase {
 		var Data = RandomTextToLong(FileSize);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(
-								new ServerSideEncryptionByDefault().withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName)
 				.withServerSideEncryptionConfiguration(SSES3Config));
@@ -2392,12 +2364,27 @@ public class TestBase {
 
 		return StringList;
 	}
+	static byte[] HmacSHA256(String data, byte[] key) throws Exception {
+		String algorithm="HmacSHA256";
+		Mac mac = Mac.getInstance(algorithm);
+		mac.init(new SecretKeySpec(key, algorithm));
+		return mac.doFinal(data.getBytes("UTF-8"));
+	}
+	
+	static byte[] getSignatureKey(String key, String dateStamp, String regionName, String serviceName) throws Exception {
+		byte[] kSecret = ("AWS4" + key).getBytes("UTF-8");
+		byte[] kDate = HmacSHA256(dateStamp, kSecret);
+		byte[] kRegion = HmacSHA256(regionName, kDate);
+		byte[] kService = HmacSHA256(serviceName, kRegion);
+		byte[] kSigning = HmacSHA256("aws4_request", kService);
+		return kSigning;
+	}
 
 	public String GetBase64EncodedSHA1Hash(String Policy, String SecretKey) {
-		var signingKey = new SecretKeySpec(SecretKey.getBytes(), "HmacSHA256");
+		var signingKey = new SecretKeySpec(SecretKey.getBytes(), "HmacSHA1");
 		Mac mac;
 		try {
-			mac = Mac.getInstance("HmacSHA256");
+			mac = Mac.getInstance("HmacSHA1");
 			mac.init(signingKey);
 		} catch (NoSuchAlgorithmException e) {
 			fail(e.getMessage());

@@ -18,8 +18,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 
-import org.example.s3tests.FormFile;
-import org.example.s3tests.MainData;
+import org.example.Data.FormFile;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -360,7 +360,7 @@ public class Taggings extends TestBase
 		Payload.put( "Content-Type", ContentType );
 
 		var Result = PostUpload(BucketName, Payload, FileData);
-		assertEquals(204, Result.StatusCode);
+		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
 		var Body = GetBody(Response.getObjectContent());

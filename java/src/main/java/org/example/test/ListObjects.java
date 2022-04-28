@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.example.s3tests.MainData;
-import org.example.s3tests.ObjectData;
+import org.example.Data.MainData;
+import org.example.Data.ObjectData;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

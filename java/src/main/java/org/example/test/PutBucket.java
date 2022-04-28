@@ -12,9 +12,8 @@ package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.example.s3tests.MainData;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -41,10 +40,12 @@ public class PutBucket extends TestBase
 	@Tag("KSAN")
 	//생성한 버킷이 비어있는지 확인
 	public void test_bucket_list_empty() {
-		var Bucket = GetNewBucketResource();
-		var IsEmpty = BucketIsEmpty(Bucket);
+		var BucketName = GetNewBucket();
+		var Client = GetClient();
 
-		assertTrue(IsEmpty);
+		var Response = Client.listObjects(BucketName);
+
+		assertEquals(0, Response.getObjectSummaries().size());
 	}
 
 	@Test
@@ -111,9 +112,11 @@ public class PutBucket extends TestBase
 	//버킷이름의 길이 긴 경우 버킷 목록을 읽어올 수 있는지 확인
 	public void test_bucket_list_long_name() {
 		var BucketName = GetNewBucketName(61);
-		var Bucket = GetNewBucketResource(BucketName);
-		var IsEmpty = BucketIsEmpty(Bucket);
-		assertTrue(IsEmpty);
+		var Client = GetClient();
+		Client.createBucket(BucketName);
+		var Response = Client.listObjects(BucketName);
+
+		assertEquals(0, Response.getObjectSummaries().size());
 	}
 
 	@Test

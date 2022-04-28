@@ -16,8 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.example.s3tests.MainData;
 import org.junit.jupiter.api.Tag;
+import org.example.Data.MainData;
 import org.junit.Test;
 import org.junit.platform.commons.util.StringUtils;
 

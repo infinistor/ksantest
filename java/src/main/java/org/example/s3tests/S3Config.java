@@ -13,13 +13,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+
+import org.example.Data.UserData;
 import org.ini4j.Ini;
 import org.ini4j.InvalidFileFormatException;
 
 public class S3Config
 {
-	private final String STR_FILENAME = "awstests.ini";
-	// private final String STR_FILENAME = "s3tests_227.ini";
+	// private final String STR_FILENAME = "awstests.ini";
+	private final String STR_FILENAME = "s3tests_227.ini";
 	//////////////////////////////SIGNATUREVERSION////////////////////////////////////
 	public final static String STR_SIGNATUREVERSION_V2 = "S3SignerType";
 	public final static String STR_SIGNATUREVERSION_V4 = "AWSS3V4SignerType";

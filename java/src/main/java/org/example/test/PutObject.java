@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 
-import org.example.s3tests.MainData;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -54,13 +54,14 @@ public class PutObject extends TestBase
 	@Tag("KSAN")
 	// @Tag("오브젝트가 올바르게 생성되는지 확인
 	public void test_bucket_list_distinct() {
-		var Bucket1 = GetNewBucketResource();
-		var Bucket2 = GetNewBucketResource();
+		var BucketName1 = GetNewBucket();
+		var BucketName2 = GetNewBucket();
+		var Client = GetClient();
 
-		Bucket1.PutObject("asdf", "str");
+		Client.putObject(BucketName1, "asdf", "str");
 
-		var is_empty = BucketIsEmpty(Bucket2);
-		assertTrue(is_empty);
+		var Response = Client.listObjects(BucketName2);
+		assertEquals(0, Response.getObjectSummaries().size());
 	}
 
 	@Test

@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.example.s3tests.MainData;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -168,9 +168,9 @@ public class SSE_S3 extends TestBase
 		var Client = GetClient();
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -187,9 +187,9 @@ public class SSE_S3 extends TestBase
 		var Client = GetClient();
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -210,9 +210,9 @@ public class SSE_S3 extends TestBase
 		var Client = GetClient();
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -260,9 +260,9 @@ public class SSE_S3 extends TestBase
 		var Data = RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -288,9 +288,9 @@ public class SSE_S3 extends TestBase
 		var Data = RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -316,9 +316,9 @@ public class SSE_S3 extends TestBase
 		var Data = RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -344,9 +344,9 @@ public class SSE_S3 extends TestBase
 		var Data = RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -372,9 +372,9 @@ public class SSE_S3 extends TestBase
 		var Data = RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -400,9 +400,9 @@ public class SSE_S3 extends TestBase
 		var Data = RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -428,9 +428,9 @@ public class SSE_S3 extends TestBase
 		var Key = "foo";
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -457,9 +457,9 @@ public class SSE_S3 extends TestBase
 		var Key = "foo";
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -486,9 +486,9 @@ public class SSE_S3 extends TestBase
 		var Data = RandomTextToLong(15 * MainData.MB);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
@@ -508,9 +508,9 @@ public class SSE_S3 extends TestBase
 		var Data = RandomTextToLong(FileSize);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
-				.withRules(new ServerSideEncryptionRule()
-						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault().
-								withSSEAlgorithm(SSEAlgorithm.AES256)));
+			.withRules(new ServerSideEncryptionRule()
+			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
 		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(BucketName).withServerSideEncryptionConfiguration(SSES3Config));
 

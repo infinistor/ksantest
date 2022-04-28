@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.example.s3tests.ObjectData;
+import org.example.Data.ObjectData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 

@@ -26,8 +26,8 @@ import com.amazonaws.services.s3.model.SSECustomerKey;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import org.example.s3tests.FormFile;
-import org.example.s3tests.MainData;
+import org.example.Data.FormFile;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

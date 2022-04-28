@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-import org.example.s3tests.MainData;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.StringUtils;
