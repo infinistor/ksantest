@@ -21,6 +21,7 @@ import java.util.Random;
 
 import org.example.Data.AES256;
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -78,10 +79,10 @@ public class CSE extends TestBase {
 		var Client = GetClient();
 		var Key = "testobj";
 		var Size = 1000;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		// AES
-		var AESKey = RandomTextToLong(32);
+		var AESKey = Utils.RandomTextToLong(32);
 		try {
 			var EncodingData = AES256.encryptAES256(Data, AESKey);
 			var MetadataList = new ObjectMetadata();
@@ -106,10 +107,10 @@ public class CSE extends TestBase {
 		var Client = GetClient();
 		var Key = "testobj";
 		var Size = 1000;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		// AES
-		var AESKey = RandomTextToLong(32);
+		var AESKey = Utils.RandomTextToLong(32);
 
 		try {
 			var EncodingData = AES256.encryptAES256(Data, AESKey);
@@ -136,10 +137,10 @@ public class CSE extends TestBase {
 		var Client = GetClient();
 		var Key = "testobj";
 		var Size = 1000;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		// AES
-		var AESKey = RandomTextToLong(32);
+		var AESKey = Utils.RandomTextToLong(32);
 
 		var MetadataList = new ObjectMetadata();
 		MetadataList.addUserMetadata("x-amz-meta-key", AESKey);
@@ -161,10 +162,10 @@ public class CSE extends TestBase {
 		var Key = "testobj";
 
 		// AES
-		var AESKey = RandomTextToLong(32);
+		var AESKey = Utils.RandomTextToLong(32);
 
 		try {
-			var Data = RandomTextToLong(1024 * 1024);
+			var Data = Utils.RandomTextToLong(1024 * 1024);
 			var EncodingData = AES256.encryptAES256(Data, AESKey);
 			var MetadataList = new ObjectMetadata();
 			MetadataList.addUserMetadata("x-amz-meta-key", AESKey);
@@ -193,10 +194,10 @@ public class CSE extends TestBase {
 		var Key = "multipart_enc";
 		var Size = 50 * MainData.MB;
 		var ContentType = "text/plain";
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		// AES
-		var AESKey = RandomTextToLong(32);
+		var AESKey = Utils.RandomTextToLong(32);
 
 		try {
 			var EncodingData = AES256.encryptAES256(Data, AESKey);
@@ -245,8 +246,8 @@ public class CSE extends TestBase {
 		var Client = GetClient();
 		var Key = "foo";
 		// AES
-		var AESKey = RandomTextToLong(32);
-		var Data = RandomTextToLong(15 * MainData.MB);
+		var AESKey = Utils.RandomTextToLong(32);
+		var Data = Utils.RandomTextToLong(15 * MainData.MB);
 
 		try {
 			var EncodingData = AES256.encryptAES256(Data, AESKey);
@@ -277,9 +278,9 @@ public class CSE extends TestBase {
 		var Key = "foo";
 
 		// AES
-		var AESKey = RandomTextToLong(32);
+		var AESKey = Utils.RandomTextToLong(32);
 		var FileSize = 15 * 1024 * 1024;
-		var Data = RandomTextToLong(FileSize);
+		var Data = Utils.RandomTextToLong(FileSize);
 
 		try {
 			var EncodingData = AES256.encryptAES256(Data, AESKey);

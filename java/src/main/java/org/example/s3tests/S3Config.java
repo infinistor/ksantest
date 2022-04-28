@@ -103,19 +103,12 @@ public class S3Config
 		if (SignatureVersion.equals("2")) return STR_SIGNATUREVERSION_V2;
 		return STR_SIGNATUREVERSION_V4;
 	}
+	public boolean isAWS()
+	{
+		if (URL == null || URL.length() == 0) return true;
+		return false;
+	}
 
-	private String ReadKeyToString(String Section, String Key)
-	{
-		return ini.get(Section, Key);
-	}
-	private int ReadKeyToInt(String Section, String Key)
-	{
-		return Integer.parseInt(ini.get(Section, Key));
-	}
-	private boolean ReadKeyToBoolean(String Section, String Key)
-	{
-		return Boolean.parseBoolean(ini.get(Section, Key));
-	}
 	private UserData ReadUser(String Section)
 	{
 		UserData Item = new UserData();
@@ -129,4 +122,8 @@ public class S3Config
 
 		return Item;
 	}
+
+	private String ReadKeyToString(String Section, String Key) { return ini.get(Section, Key); }
+	private int ReadKeyToInt(String Section, String Key) { return Integer.parseInt(ini.get(Section, Key)); }
+	private boolean ReadKeyToBoolean(String Section, String Key) { return Boolean.parseBoolean(ini.get(Section, Key)); }
 }

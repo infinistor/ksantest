@@ -27,8 +27,7 @@ public class DeleteObjects {
 	@Tag("KSAN")
 	@Tag("ListObject")
 	// @Tag("버킷에 존재하는 오브젝트 여러개를 한번에 삭제
-	public void test_multi_object_delete()
-	{
+	public void test_multi_object_delete() {
 		Test.test_multi_object_delete();
 	}
 
@@ -36,8 +35,7 @@ public class DeleteObjects {
 	@Tag("KSAN")
 	@Tag("ListObjectsV2")
 	// @Tag("버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
-	public void test_multi_objectv2_delete()
-	{
+	public void test_multi_objectv2_delete() {
 		Test.test_multi_objectv2_delete();
 	}
 
@@ -45,8 +43,7 @@ public class DeleteObjects {
 	@Tag("KSAN")
 	@Tag("quiet")
 	// @Tag("quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
-	public void test_multi_object_delete_quiet()
-	{
+	public void test_multi_object_delete_quiet() {
 		Test.test_multi_object_delete_quiet();
 	}
 
@@ -54,8 +51,7 @@ public class DeleteObjects {
 	@Tag("KSAN")
 	@Tag("Directory")
 	// @Tag("업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
-	public void test_directory_delete()
-	{
+	public void test_directory_delete() {
 		Test.test_directory_delete();
 	}
 }

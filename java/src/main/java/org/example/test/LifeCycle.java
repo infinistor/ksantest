@@ -20,6 +20,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.StringUtils;
@@ -159,7 +160,7 @@ public class LifeCycle extends TestBase
 		var Client = GetClient();
 
 		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId(RandomTextToLong(256)).withExpirationInDays(2)
+		Rules.add(new Rule().withId(Utils.RandomTextToLong(256)).withExpirationInDays(2)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("tset1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 

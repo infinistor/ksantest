@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -276,7 +277,7 @@ public class CopyObject extends TestBase
 			MetaData.setContentType(ContentType);
 			MetaData.setContentLength(size);
 
-			Client.putObject(new PutObjectRequest(BucketName, Key1, CreateBody(RandomTextToLong(size)), MetaData));
+			Client.putObject(new PutObjectRequest(BucketName, Key1, CreateBody(Utils.RandomTextToLong(size)), MetaData));
 			Client.copyObject(BucketName, Key1, BucketName, Key2);
 
 			var Response = Client.getObject(BucketName, Key2);
@@ -307,7 +308,7 @@ public class CopyObject extends TestBase
 			MetaData.setContentType(ContentType);
 			MetaData.setContentLength(size);
 
-			Client.putObject(new PutObjectRequest(BucketName, Key1, CreateBody(RandomTextToLong(size)), MetaData));
+			Client.putObject(new PutObjectRequest(BucketName, Key1, CreateBody(Utils.RandomTextToLong(size)), MetaData));
 
 			MetaData = new ObjectMetadata();
 			MetaData.addUserMetadata("x-amz-meta-key1", "value1");
@@ -361,7 +362,7 @@ public class CopyObject extends TestBase
 		var Client = GetClient();
 		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
 		var Size = 1 * 5;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 		var Key1 = "foo123bar";
 		var Key2 = "bar321foo";
 		var Key3 = "bar321foo2";

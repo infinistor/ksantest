@@ -26,9 +26,9 @@ public class ListObjectsVersions {
 	@Test
 	@Tag("KSAN")
 	@Tag("Metadata")
-	//Version정보를 가질 수 있는 버킷에서 ListObjectsVersions로 가져온 Metadata와 HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
-	public void test_bucket_list_return_data_versioning()
-	{
+	// Version정보를 가질 수 있는 버킷에서 ListObjectsVersions로 가져온 Metadata와 HeadObject,
+	// GetObjectAcl로 가져온 Metadata 일치 확인
+	public void test_bucket_list_return_data_versioning() {
 		Test.test_bucket_list_return_data_versioning();
 	}
 }

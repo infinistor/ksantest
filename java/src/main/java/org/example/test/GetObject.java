@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Calendar;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -220,7 +221,7 @@ public class GetObject extends TestBase
 	public void test_ranged_big_request_response_code()
 	{
 		var Key = "testobj";
-		var Content = RandomTextToLong(8 * MainData.MB);
+		var Content = Utils.RandomTextToLong(8 * MainData.MB);
 
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -322,7 +323,7 @@ public class GetObject extends TestBase
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
 		var Key = "foo";
-		var Data = RandomTextToLong(15 * MainData.MB);
+		var Data = Utils.RandomTextToLong(15 * MainData.MB);
 
 		Client.putObject(BucketName, Key, Data);
 		CheckContent(BucketName, Key, Data, 50);
@@ -338,7 +339,7 @@ public class GetObject extends TestBase
 		var Client = GetClient();
 		var Key = "foo";
 		var FileSize = 1024 * 1024 * 15;
-		var Data = RandomTextToLong(FileSize);
+		var Data = Utils.RandomTextToLong(FileSize);
 
 		Client.putObject(BucketName, Key, Data);
 		CheckContentUsingRandomRange(BucketName, Key, Data, 50);

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -386,7 +387,7 @@ public class Multipart extends TestBase
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
 		var Key = "mymultipart";
-		var Payload = RandomTextToLong(5 * MainData.MB);
+		var Payload = Utils.RandomTextToLong(5 * MainData.MB);
 		var NumParts = 2;
 
 		Client.putObject(BucketName, Key, Payload);

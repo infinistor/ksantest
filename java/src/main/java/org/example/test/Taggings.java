@@ -14,12 +14,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 
 import org.example.Data.FormFile;
 import org.example.Data.MainData;
+import org.example.Utility.HttpUtils;
+import org.example.Utility.Utils;
+import org.example.auth.AWS2SignerBase;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -273,7 +277,7 @@ public class Taggings extends TestBase
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
 		var Key = "testtagobj1";
-		var Data = RandomTextToLong(100);
+		var Data = Utils.RandomTextToLong(100);
 
 		var TagSets = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("bar", ""));
@@ -294,7 +298,7 @@ public class Taggings extends TestBase
 	@Test
 	@Tag("Post")
 	//로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
-	public void test_post_object_tags_authenticated_request()
+	public void test_post_object_tags_authenticated_request() throws MalformedURLException
 	{
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
@@ -347,7 +351,7 @@ public class Taggings extends TestBase
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put( "key", Key );
@@ -359,7 +363,7 @@ public class Taggings extends TestBase
 		Payload.put( "x-ignore-foo" , "bar" );
 		Payload.put( "Content-Type", ContentType );
 
-		var Result = PostUpload(BucketName, Payload, FileData);
+		var Result = HttpUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);

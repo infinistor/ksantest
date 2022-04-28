@@ -17,6 +17,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -397,7 +398,7 @@ public class Lock extends TestBase
 		var Key = "file1";
 		var Body = "abc";
 		var Metadata = new ObjectMetadata();
-		Metadata.setContentMD5(GetMD5(Body));
+		Metadata.setContentMD5(Utils.GetMD5(Body));
 		Metadata.setContentType("text/plain");
 		Metadata.setContentLength(Body.length());
 

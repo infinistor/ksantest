@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -761,7 +762,7 @@ public class Versioning extends TestBase
 
 		for (int i = 1; i <= 5; i++)
 		{
-			var Response = Client.putObject(BucketName, KeyName, RandomTextToLong(i));
+			var Response = Client.putObject(BucketName, KeyName, Utils.RandomTextToLong(i));
 			VersionList.add(Response.getVersionId());
 		}
 
