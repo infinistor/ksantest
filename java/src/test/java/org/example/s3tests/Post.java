@@ -268,14 +268,21 @@ public class Post {
 	@Test
 	@Tag("signV4")
 	// SignatureVersion4로 오브젝트 업로드 성공 확인
-	public void test_post_object_v4() throws MalformedURLException {
-		Test.test_post_object_v4();
+	public void test_put_object_v4() throws MalformedURLException {
+		Test.test_put_object_v4();
 	}
 
 	@Test
 	@Tag("signV4")
-	// SignatureVersion4로 오브젝트 업로드 성공 확인
-	public void test_post_object_chunked_v4() throws MalformedURLException {
-		Test.test_post_object_chunked_v4();
+	// [SignatureVersion4] post 방식으로 내용을 암호화 하여 오브젝트 업로드 성공 확인
+	public void test_put_object_chunked_v4() throws MalformedURLException {
+		Test.test_put_object_chunked_v4();
+	}
+
+	@Test
+	@Tag("signV4")
+	// [SignatureVersion4] post 방식으로 오브젝트 다운로드 성공 확인
+	public void test_get_object_v4() throws MalformedURLException {
+		Test.test_get_object_v4();
 	}
 }
