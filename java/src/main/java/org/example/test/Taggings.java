@@ -13,6 +13,7 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ import java.util.HashMap;
 
 import org.example.Data.FormFile;
 import org.example.Data.MainData;
-import org.example.Utility.HttpUtils;
+import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
 import org.example.auth.AWS2SignerBase;
 import org.junit.jupiter.api.Tag;
@@ -38,29 +39,24 @@ import com.amazonaws.services.s3.model.TagSet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-public class Taggings extends TestBase
-{
+public class Taggings extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
-	{
+	static public void BeforeAll() {
 		System.out.println("Taggings Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
-	{
+	static public void AfterAll() {
 		System.out.println("Taggings End");
 	}
 
 	@Test
 	@Tag("Check")
 	@Tag("KSAN")
-	//버킷에 사용자 추가 태그값을 설정할경우 성공확인
-	public void test_set_tagging()
-	{
+	// 버킷에 사용자 추가 태그값을 설정할경우 성공확인
+	public void test_set_tagging() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
-
 
 		var TagSets = new ArrayList<TagSet>();
 		var Tag1 = new TagSet();
@@ -83,17 +79,17 @@ public class Taggings extends TestBase
 		assertNull(Response);
 
 	}
+
 	@Test
 	@Tag("Check")
 	@Tag("KSAN")
-	//오브젝트에 태그 설정이 올바르게 적용되는지 확인
-	public void test_get_obj_tagging()
-	{
+	// 오브젝트에 태그 설정이 올바르게 적용되는지 확인
+	public void test_get_obj_tagging() {
 		var Key = "testputtags";
 		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
 		var Client = GetClient();
 
-		var InputTagSet =  new ObjectTagging(CreateSimpleTagset(2));
+		var InputTagSet = new ObjectTagging(CreateSimpleTagset(2));
 
 		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagSet));
 
@@ -103,15 +99,14 @@ public class Taggings extends TestBase
 
 	@Test
 	@Tag("Check")
-	//오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
-	public void test_get_obj_head_tagging()
-	{
+	// 오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
+	public void test_get_obj_head_tagging() {
 		var Key = "testputtags";
 		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
 		var Client = GetClient();
 		var Count = 2;
 
-		var InputTagSet =  new ObjectTagging(CreateSimpleTagset(Count));
+		var InputTagSet = new ObjectTagging(CreateSimpleTagset(Count));
 
 		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagSet));
 
@@ -122,14 +117,13 @@ public class Taggings extends TestBase
 	@Test
 	@Tag("Max")
 	@Tag("KSAN")
-	//추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)
-	public void test_put_max_tags()
-	{
+	// 추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)
+	public void test_put_max_tags() {
 		var Key = "testputmaxtags";
 		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
 		var Client = GetClient();
 
-		var InputTagSet =  new ObjectTagging(CreateSimpleTagset(10));
+		var InputTagSet = new ObjectTagging(CreateSimpleTagset(10));
 
 		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagSet));
 
@@ -140,17 +134,16 @@ public class Taggings extends TestBase
 	@Test
 	@Tag("Overflow")
 	@Tag("KSAN")
-	//추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인
-	public void test_put_excess_tags()
-	{
+	// 추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인
+	public void test_put_excess_tags() {
 		var Key = "testputmaxtags";
 		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
 		var Client = GetClient();
 
+		var InputTagSet = new ObjectTagging(CreateSimpleTagset(11));
 
-		var InputTagSet =  new ObjectTagging(CreateSimpleTagset(11));
-
-		var e = assertThrows(AmazonServiceException.class, ()-> Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagSet)));
+		var e = assertThrows(AmazonServiceException.class,
+				() -> Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagSet)));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 		assertEquals(400, StatusCode);
@@ -163,9 +156,8 @@ public class Taggings extends TestBase
 	@Test
 	@Tag("Max")
 	@Tag("KSAN")
-	//태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인
-	public void test_put_max_kvsize_tags()
-	{
+	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인
+	public void test_put_max_kvsize_tags() {
 		var Key = "testputmaxkeysize";
 		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
 		var Client = GetClient();
@@ -180,16 +172,16 @@ public class Taggings extends TestBase
 	@Test
 	@Tag("Overflow")
 	@Tag("KSAN")
-	//태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인
-	public void test_put_excess_key_tags()
-	{
+	// 태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인
+	public void test_put_excess_key_tags() {
 		var Key = "testputexcesskeytags";
 		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
 		var Client = GetClient();
 
 		var InputTagSet = new ObjectTagging(CreateDetailTagset(10, 129, 256));
 
-		var e = assertThrows(AmazonServiceException.class, ()-> Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagSet)));
+		var e = assertThrows(AmazonServiceException.class,
+				() -> Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagSet)));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 		assertEquals(400, StatusCode);
@@ -202,16 +194,16 @@ public class Taggings extends TestBase
 	@Test
 	@Tag("Overflow")
 	@Tag("KSAN")
-	//태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인
-	public void test_put_excess_val_tags()
-	{
+	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인
+	public void test_put_excess_val_tags() {
 		var Key = "testputexcesskeytags";
 		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
 		var Client = GetClient();
 
 		var InputTagSet = new ObjectTagging(CreateDetailTagset(10, 128, 259));
 
-		var e = assertThrows(AmazonServiceException.class, ()-> Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagSet)));
+		var e = assertThrows(AmazonServiceException.class,
+				() -> Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagSet)));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 		assertEquals(400, StatusCode);
@@ -224,9 +216,8 @@ public class Taggings extends TestBase
 	@Test
 	@Tag("Overwrite")
 	@Tag("KSAN")
-	//오브젝트의 태그목록을 덮어쓰기 가능한지 확인
-	public void test_put_modify_tags()
-	{
+	// 오브젝트의 태그목록을 덮어쓰기 가능한지 확인
+	public void test_put_modify_tags() {
 		var Key = "testputmodifytags";
 		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
 		var Client = GetClient();
@@ -249,9 +240,8 @@ public class Taggings extends TestBase
 	@Test
 	@Tag("Delete")
 	@Tag("KSAN")
-	//오브젝트의 태그를 삭제 가능한지 확인
-	public void test_put_delete_tags()
-	{
+	// 오브젝트의 태그를 삭제 가능한지 확인
+	public void test_put_delete_tags() {
 		var Key = "testputmodifytags";
 		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
 		var Client = GetClient();
@@ -271,9 +261,8 @@ public class Taggings extends TestBase
 
 	@Test
 	@Tag("PutObject")
-	//헤더에 태그정보를 포함한 오브젝트 업로드 성공 확인
-	public void test_put_obj_with_tags()
-	{
+	// 헤더에 태그정보를 포함한 오브젝트 업로드 성공 확인
+	public void test_put_obj_with_tags() {
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
 		var Key = "testtagobj1";
@@ -297,9 +286,9 @@ public class Taggings extends TestBase
 
 	@Test
 	@Tag("Post")
-	//로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
-	public void test_post_object_tags_authenticated_request() throws MalformedURLException
-	{
+	// 로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
+	public void test_post_object_tags_authenticated_request() throws MalformedURLException {
+		assumeFalse(Config.isAWS());
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
 		var ContentType = "text/plain";
@@ -354,16 +343,16 @@ public class Taggings extends TestBase
 		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
-		Payload.put( "key", Key );
-		Payload.put( "AWSAccessKeyId", Config.MainUser.AccessKey );
-		Payload.put( "acl", "private" );
-		Payload.put( "signature", Signature );
-		Payload.put( "policy", Policy );
-		Payload.put( "tagging", XmlInputTagset );
-		Payload.put( "x-ignore-foo" , "bar" );
-		Payload.put( "Content-Type", ContentType );
+		Payload.put("key", Key);
+		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("acl", "private");
+		Payload.put("signature", Signature);
+		Payload.put("policy", Policy);
+		Payload.put("tagging", XmlInputTagset);
+		Payload.put("x-ignore-foo", "bar");
+		Payload.put("Content-Type", ContentType);
 
-		var Result = HttpUtils.PostUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);

@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -142,7 +143,7 @@ public class PutBucket extends TestBase
 	public void test_bucket_create_naming_dns_long() {
 		var Prefix = GetPrefix();
 		var AddLength = 63 - Prefix.length();
-		Prefix = RandomText(AddLength);
+		Prefix = Utils.RandomText(AddLength);
 		CheckGoodBucketName(Prefix, null);
 	}
 

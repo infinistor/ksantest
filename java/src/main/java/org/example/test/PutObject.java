@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -348,7 +349,7 @@ public class PutObject extends TestBase
 
 		var Key = "file1";
 		var Body = "abc";
-		var MD5 = GetMD5(Body);
+		var MD5 = Utils.GetMD5(Body);
 		var MyDay = Calendar.getInstance();
 		MyDay.set(2030, 1, 1, 0, 0, 0);
 

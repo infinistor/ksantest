@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.MalformedURLException;
 import java.util.Base64;
 import java.util.HashMap;
 
@@ -28,6 +29,9 @@ import com.google.gson.JsonObject;
 
 import org.example.Data.FormFile;
 import org.example.Data.MainData;
+import org.example.Utility.NetUtils;
+import org.example.Utility.Utils;
+import org.example.auth.AWS2SignerBase;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -87,7 +91,7 @@ public class SSE_C extends TestBase
 		var Client = GetClientHttps();
 		var Key = "testobj";
 		var Size = 1000;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		var Metadata = new ObjectMetadata();
 		Metadata.setContentType("text/plain");
@@ -115,7 +119,7 @@ public class SSE_C extends TestBase
 		var Client = GetClientHttps();
 		var Key = "testobj";
 		var Size = 1000;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		var Metadata = new ObjectMetadata();
 		Metadata.setContentType("text/plain");
@@ -141,7 +145,7 @@ public class SSE_C extends TestBase
 		var Client = GetClientHttps();
 		var Key = "testobj";
 		var Size = 100;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		var Metadata = new ObjectMetadata();
 		Metadata.setContentType("text/plain");
@@ -171,7 +175,7 @@ public class SSE_C extends TestBase
 		var Client = GetClientHttps();
 		var Key = "testobj";
 		var Size = 100;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		var Metadata = new ObjectMetadata();
 		Metadata.setContentType("text/plain");
@@ -197,7 +201,7 @@ public class SSE_C extends TestBase
 		var Client = GetClientHttps();
 		var Key = "testobj";
 		var Size = 100;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		var Metadata = new ObjectMetadata();
 		Metadata.setContentType("text/plain");
@@ -230,7 +234,7 @@ public class SSE_C extends TestBase
 		var Client = GetClientHttps();
 		var Key = "testobj";
 		var Size = 100;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		var Metadata = new ObjectMetadata();
 		Metadata.setContentType("text/plain");
@@ -327,7 +331,7 @@ public class SSE_C extends TestBase
 	@Test
 	@Tag( "Post")
 	//Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인
-	public void test_encryption_sse_c_post_object_authenticated_request()
+	public void test_encryption_sse_c_post_object_authenticated_request() throws MalformedURLException
 	{
 		var BucketName = GetNewBucket();
 		var Client = GetClientHttps();
@@ -390,7 +394,7 @@ public class SSE_C extends TestBase
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put( "key", Key );
@@ -403,7 +407,8 @@ public class SSE_C extends TestBase
 		Payload.put( "x-amz-server-side-encryption-customer-key", "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=" );
 		Payload.put( "x-amz-server-side-encryption-customer-key-md5", "DWygnHRtgiJ77HCm+1rvHw==" );
 
-		var Result = PostUploadHttps(BucketName, Payload, FileData);
+		var SendURL = GetURL(BucketName);
+		var Result = NetUtils.PutUpload(SendURL, Payload, FileData);
 		assertEquals(204, Result.StatusCode);
 
 		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withSSECustomerKey(new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")));
@@ -420,7 +425,7 @@ public class SSE_C extends TestBase
 		var Client = GetClientHttps();
 		var Key = "testobj";
 		var Size = 15 * 1024 * 1024;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		var Metadata = new ObjectMetadata();
 		Metadata.setContentType("text/plain");
@@ -443,7 +448,7 @@ public class SSE_C extends TestBase
 		var Client = GetClientHttps();
 		var Key = "testobj";
 		var Size = 15 * 1024 * 1024;
-		var Data = RandomTextToLong(Size);
+		var Data = Utils.RandomTextToLong(Size);
 
 		var Metadata = new ObjectMetadata();
 		Metadata.setContentType("text/plain");
@@ -457,7 +462,7 @@ public class SSE_C extends TestBase
 
 		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withSSECustomerKey(SSEC));
 		var Body = GetBody(Response.getObjectContent());
-		assertTrue(Data.equals(Body), "Source does not match target");
+		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 
 		CheckContentUsingRandomRangeEnc(Client, BucketName, Key, Data, Size, 50, SSEC);
 	}

@@ -410,7 +410,7 @@ public class Multipart extends TestBase
 
 		var Response = Client.getObject(BucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
-		assertTrue(AllPayload.equals(Body), "Source does not match target");
+		assertTrue(AllPayload.equals(Body), MainData.NOT_MATCHED);
 	}
 
 	@Test

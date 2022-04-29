@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -88,7 +89,7 @@ public class SSE_S3 extends TestBase
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
 		var Key = "testobj";
-		var Data = RandomTextToLong(1000);
+		var Data = Utils.RandomTextToLong(1000);
 		var Metadata = new ObjectMetadata();
 		Metadata.addUserMetadata("x-amz-meta-foo", "bar");
 
@@ -119,7 +120,7 @@ public class SSE_S3 extends TestBase
 				.initiateMultipartUpload(new InitiateMultipartUploadRequest(BucketName, Key, MetadataList));
 		var UploadID = InitMultiPartResponse.getUploadId();
 
-		var Parts = GenerateRandomString(Size, 5 * MainData.MB);
+		var Parts = Utils.GenerateRandomString(Size, 5 * MainData.MB);
 		var PartETag = new ArrayList<PartETag>();
 		int PartNumber = 1;
 		var Data = "";
@@ -257,7 +258,7 @@ public class SSE_S3 extends TestBase
 	{
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
-		var Data = RandomTextToLong(1000);
+		var Data = Utils.RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
@@ -275,7 +276,7 @@ public class SSE_S3 extends TestBase
 		var GetResponse = Client.getObject(BucketName, Key);
 		var Body = GetBody(GetResponse.getObjectContent());
 		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), "Source does not match target");
+		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -285,7 +286,7 @@ public class SSE_S3 extends TestBase
 	{
 		var BucketName = GetNewBucket();
 		var Client = GetClientV4(true);
-		var Data = RandomTextToLong(1000);
+		var Data = Utils.RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
@@ -303,7 +304,7 @@ public class SSE_S3 extends TestBase
 		var GetResponse = Client.getObject(BucketName, Key);
 		var Body = GetBody(GetResponse.getObjectContent());
 		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), "Source does not match target");
+		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -313,7 +314,7 @@ public class SSE_S3 extends TestBase
 	{
 		var BucketName = GetNewBucket();
 		var Client = GetClientHttpsV4(true, false);
-		var Data = RandomTextToLong(1000);
+		var Data = Utils.RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
@@ -331,7 +332,7 @@ public class SSE_S3 extends TestBase
 		var GetResponse = Client.getObject(BucketName, Key);
 		var Body = GetBody(GetResponse.getObjectContent());
 		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), "Source does not match target");
+		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -341,7 +342,7 @@ public class SSE_S3 extends TestBase
 	{
 		var BucketName = GetNewBucket();
 		var Client = GetClientHttpsV4(true, true);
-		var Data = RandomTextToLong(1000);
+		var Data = Utils.RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
@@ -359,7 +360,7 @@ public class SSE_S3 extends TestBase
 		var GetResponse = Client.getObject(BucketName, Key);
 		var Body = GetBody(GetResponse.getObjectContent());
 		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), "Source does not match target");
+		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -369,7 +370,7 @@ public class SSE_S3 extends TestBase
 	{
 		var BucketName = GetNewBucket();
 		var Client = GetClientHttpsV4(false, false);
-		var Data = RandomTextToLong(1000);
+		var Data = Utils.RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
@@ -387,7 +388,7 @@ public class SSE_S3 extends TestBase
 		var GetResponse = Client.getObject(BucketName, Key);
 		var Body = GetBody(GetResponse.getObjectContent());
 		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), "Source does not match target");
+		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -397,7 +398,7 @@ public class SSE_S3 extends TestBase
 	{
 		var BucketName = GetNewBucket();
 		var Client = GetClientHttpsV4(false, true);
-		var Data = RandomTextToLong(1000);
+		var Data = Utils.RandomTextToLong(1000);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
@@ -415,7 +416,7 @@ public class SSE_S3 extends TestBase
 		var GetResponse = Client.getObject(BucketName, Key);
 		var Body = GetBody(GetResponse.getObjectContent());
 		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), "Source does not match target");
+		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -483,7 +484,7 @@ public class SSE_S3 extends TestBase
 		var BucketName = GetNewBucket();
 		var Client = GetClient();
 		var Key = "foo";
-		var Data = RandomTextToLong(15 * MainData.MB);
+		var Data = Utils.RandomTextToLong(15 * MainData.MB);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
@@ -505,7 +506,7 @@ public class SSE_S3 extends TestBase
 		var Client = GetClient();
 		var Key = "foo";
 		var FileSize = 15 * 1024 * 1024;
-		var Data = RandomTextToLong(FileSize);
+		var Data = Utils.RandomTextToLong(FileSize);
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()

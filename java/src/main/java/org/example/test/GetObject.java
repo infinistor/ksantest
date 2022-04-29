@@ -230,7 +230,7 @@ public class GetObject extends TestBase
 		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(3145728, 5242880));
 
 		var FetchedContent = GetBody(Response.getObjectContent());
-		assertTrue(Content.substring(3145728, 5242881).equals(FetchedContent), "Source does not match target");
+		assertTrue(Content.substring(3145728, 5242881).equals(FetchedContent), MainData.NOT_MATCHED);
 		assertEquals("bytes 3145728-5242880/8388608", Response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
 	}
 

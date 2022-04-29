@@ -179,7 +179,7 @@ public class CSE extends TestBase {
 					.getObject(new GetObjectRequest(BucketName, Key).withRange(StartPoint, StartPoint + 1000 - 1));
 			var EncodingBody = GetBody(Response.getObjectContent());
 			assertTrue(EncodingData.substring(StartPoint, StartPoint + 1000).equals(EncodingBody),
-					"Source does not match target");
+					MainData.NOT_MATCHED);
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
@@ -261,7 +261,7 @@ public class CSE extends TestBase {
 			var Response = Client.getObject(BucketName, Key);
 			var EncodingBody = GetBody(Response.getObjectContent());
 			var Body = AES256.decryptAES256(EncodingBody, AESKey);
-			assertTrue(Data.equals(Body), "Source does not match target");
+			assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 			CheckContent(BucketName, Key, EncodingData, 50);
 
 		} catch (Exception e) {
@@ -294,7 +294,7 @@ public class CSE extends TestBase {
 			var Response = Client.getObject(BucketName, Key);
 			var EncodingBody = GetBody(Response.getObjectContent());
 			var Body = AES256.decryptAES256(EncodingBody, AESKey);
-			assertTrue(Data.equals(Body), "Source does not match target");
+			assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 
 			CheckContentUsingRandomRange(BucketName, Key, EncodingData, 50);
 
