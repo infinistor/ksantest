@@ -352,7 +352,7 @@ public class Taggings extends TestBase {
 		Payload.put("x-ignore-foo", "bar");
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);

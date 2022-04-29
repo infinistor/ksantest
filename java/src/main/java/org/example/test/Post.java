@@ -63,7 +63,7 @@ public class Post extends TestBase {
 		Payload.put("acl", "public-read");
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
@@ -102,6 +102,7 @@ public class Post extends TestBase {
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
+		starts2.add("$Content-Length");
 		starts2.add(ContentType);
 		Conditions.add(starts2);
 
@@ -125,10 +126,11 @@ public class Post extends TestBase {
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
+		Payload.put("Content-Length", String.format("%d", FileData.Body.length()));
 		Payload.put("Content-Type", ContentType);
 		Payload.put("x-amz-content-sha256", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD");
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
@@ -187,7 +189,7 @@ public class Post extends TestBase {
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 		var Response = Client.getObject(BucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
@@ -253,7 +255,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -274,7 +276,7 @@ public class Post extends TestBase {
 		Payload.put("Content-Type", ContentType);
 		Payload.put("success_action_status", "201");
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(201, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
@@ -300,7 +302,7 @@ public class Post extends TestBase {
 		Payload.put("Content-Type", ContentType);
 		Payload.put("success_action_status", "404");
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
@@ -368,7 +370,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
@@ -434,7 +436,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
@@ -499,7 +501,7 @@ public class Post extends TestBase {
 		Payload.put("x-ignore-foo", "bar");
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -559,7 +561,7 @@ public class Post extends TestBase {
 		Payload.put("pOLICy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -621,7 +623,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
@@ -696,7 +698,7 @@ public class Post extends TestBase {
 		Payload.put("Content-Type", ContentType);
 		Payload.put("success_action_redirect", RedirectURL.toString());
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(200, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
@@ -760,7 +762,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -821,7 +823,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -882,7 +884,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -935,7 +937,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -994,7 +996,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1051,7 +1053,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(403, Result.StatusCode, Result.Message);
 	}
 
@@ -1119,7 +1121,7 @@ public class Post extends TestBase {
 		Payload.put("x-amz-meta-foo", "barclamp");
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
 
 		var Response = Client.getObject(BucketName, Key);
@@ -1190,7 +1192,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1252,7 +1254,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1314,7 +1316,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1375,7 +1377,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1443,7 +1445,7 @@ public class Post extends TestBase {
 		Payload.put("x-amz-meta-foo", "barclamp");
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1501,7 +1503,7 @@ public class Post extends TestBase {
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1530,7 +1532,7 @@ public class Post extends TestBase {
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1591,7 +1593,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1651,7 +1653,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1712,7 +1714,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1773,7 +1775,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 
@@ -1805,7 +1807,7 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PutUpload(GetURL(BucketName), Payload, FileData);
+		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
 		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
 	}
 

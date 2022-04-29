@@ -75,7 +75,7 @@ public class NetUtils {
 		return new URL(String.format("%s%s.s3-%s.amazonaws.com/%s", Protocol, BucketName, RegionName, Key));
 	}
 
-	public static MyResult PutUpload(URL SendURL, Map<String, String> Headers, FormFile myFile) {
+	public static MyResult PostUpload(URL SendURL, Map<String, String> Headers, FormFile FileData) {
 		var Result = new MyResult();
 
 		try {
@@ -104,11 +104,10 @@ public class NetUtils {
 			}
 
 			writer.append("--" + boundary).append(LINE_FEED);
-			writer.append(String.format("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"", myFile.Name))
-					.append(LINE_FEED);
-			writer.append(String.format("Content-Type: %s", myFile.ContentType)).append(LINE_FEED);
+			writer.append(String.format("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"", FileData.Name)).append(LINE_FEED);
+			writer.append(String.format("Content-Type: %s", FileData.ContentType)).append(LINE_FEED);
 			writer.append(LINE_FEED);
-			writer.append(myFile.Body).append(LINE_FEED);
+			writer.append(FileData.Body).append(LINE_FEED);
 			writer.append("--" + boundary + "--").append(LINE_FEED);
 			writer.close();
 

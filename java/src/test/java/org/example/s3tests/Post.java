@@ -35,7 +35,7 @@ public class Post {
 	@Test
 	@Tag("Upload")
 	// @Tag("post 방식으로 로그인 정보를 포함한 파일 업로드할 경우 성공 확인
-	public void test_post_object_authenticated_request() throws MalformedURLException {
+ 	public void test_post_object_authenticated_request() throws MalformedURLException {
 		Test.test_post_object_authenticated_request();
 	}
 
