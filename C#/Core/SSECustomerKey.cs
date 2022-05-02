@@ -1,7 +1,7 @@
 ﻿/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -12,24 +12,24 @@ using Amazon.S3;
 
 namespace s3tests
 {
-    public class SSECustomerKey
-    {
-        public ServerSideEncryptionCustomerMethod Method;
-        public string ProvidedKey;
-        public string MD5;
+	public class SSECustomerKey
+	{
+		public ServerSideEncryptionCustomerMethod Method;
+		public string ProvidedKey;
+		public string MD5;
 
-        public SSECustomerKey()
-        {
-            Method = ServerSideEncryptionCustomerMethod.None;
-            ProvidedKey = "";
-            MD5 = "";
-        }
-        
-        public SSECustomerKey(ServerSideEncryptionCustomerMethod Method, string ProviderKey, string MD5)
-        {
-            this.Method = Method;
-            this.ProvidedKey = ProviderKey;
-            this.MD5 = MD5;
-        }
-    }
+		public SSECustomerKey()
+		{
+			Method = ServerSideEncryptionCustomerMethod.None;
+			ProvidedKey = "";
+			MD5 = "";
+		}
+
+		public SSECustomerKey(ServerSideEncryptionCustomerMethod Method, string ProviderKey, string MD5)
+		{
+			this.Method = Method;
+			this.ProvidedKey = ProviderKey;
+			this.MD5 = MD5;
+		}
+	}
 }

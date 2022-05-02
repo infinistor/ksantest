@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -12,16 +12,16 @@ using System.Globalization;
 
 namespace s3tests
 {
-    public class S3Headers
-    {
-        private const string AWSHeader = "x-amz-meta-";
+	public class S3Headers
+	{
+		private const string AWSHeader = "x-amz-meta-";
 
-        public const string CacheControl = AWSHeader + "cache-control";
-        public const string Expires = AWSHeader + "expires";
+		public const string CacheControl = AWSHeader + "cache-control";
+		public const string Expires = AWSHeader + "expires";
 
 
-        public const string TimeFormat = "r";
-        public const string StrTimeCulture = "en-US";
-        public static CultureInfo TimeCulture = CultureInfo.CreateSpecificCulture(StrTimeCulture);
-    }
+		public const string TimeFormat = "r";
+		public const string StrTimeCulture = "en-US";
+		public static CultureInfo TimeCulture = CultureInfo.CreateSpecificCulture(StrTimeCulture);
+	}
 }

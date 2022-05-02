@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -10,117 +10,117 @@
 */
 namespace s3tests
 {
-    public class MainConfig
-    {
-        #region Default Define
-        public const string STR_DEF_FILENAME = "awstests.ini";
-        // public const string STR_DEF_FILENAME = "s3tests_227.ini";
-        public const string STR_SIGNATURE_VERSION_2 = "2";
-        public const string STR_SIGNATURE_VERSION_4 = "4";
-#endregion
+	public class MainConfig
+	{
+		#region Default Define
+		public const string STR_DEF_FILENAME = "awstests.ini";
+		// public const string STR_DEF_FILENAME = "s3tests_227.ini";
+		public const string STR_SIGNATURE_VERSION_2 = "2";
+		public const string STR_SIGNATURE_VERSION_4 = "4";
+		#endregion
 
-#region S3 Define
-        private const string STR_S3 = "S3";
-        private const string STR_URL = "URL";
-        private const string STR_PORT = "Port";
-        private const string STR_SSL_PORT = "SSLPort";
-        private const string STR_SIGNATURE_VERSION = "SignatureVersion";
-        private const string STR_REGION_NAME = "RegionName";
-#endregion
+		#region S3 Define
+		private const string STR_S3 = "S3";
+		private const string STR_URL = "URL";
+		private const string STR_PORT = "Port";
+		private const string STR_SSL_PORT = "SSLPort";
+		private const string STR_SIGNATURE_VERSION = "SignatureVersion";
+		private const string STR_REGION_NAME = "RegionName";
+		#endregion
 
-        #region Fixtures Define
-        private const string STR_FIXTURES = "Fixtures";
-        private const string STR_SECURE = "IsSecure";
-        private const string STR_KMS = "KMS";
-        private const string STR_BUCKETPREFIX = "BucketPrefix";
-#endregion
+		#region Fixtures Define
+		private const string STR_FIXTURES = "Fixtures";
+		private const string STR_SECURE = "IsSecure";
+		private const string STR_KMS = "KMS";
+		private const string STR_BUCKETPREFIX = "BucketPrefix";
+		#endregion
 
-#region User Data Define
-        private const string STR_MAINUSER = "Main User";
-        private const string STR_ALTUSER = "Alt User";
+		#region User Data Define
+		private const string STR_MAINUSER = "Main User";
+		private const string STR_ALTUSER = "Alt User";
 
-        private const string STR_DISPLAYNAME = "DisplayName";
-        private const string STR_USERID = "UserId";
-        private const string STR_EMAIL = "Email";
-        private const string STR_ACCESSKEY = "AccessKey";
-        private const string STR_SECRETKEY = "SecretKey";
-#endregion
+		private const string STR_DISPLAYNAME = "DisplayName";
+		private const string STR_USERID = "UserId";
+		private const string STR_EMAIL = "Email";
+		private const string STR_ACCESSKEY = "AccessKey";
+		private const string STR_SECRETKEY = "SecretKey";
+		#endregion
 
-#region 설정 변수 선언
-        public S3Config S3;
-        public string SignatureVersion;
-        public string KMS;
-        public bool IsSecure;
+		#region 설정 변수 선언
+		public S3Config S3;
+		public string SignatureVersion;
+		public string KMS;
+		public bool IsSecure;
 
-        public string BucketPrefix;
+		public string BucketPrefix;
 
-        public UserData MainUser;
-        public UserData AltUser;
-#endregion
+		public UserData MainUser;
+		public UserData AltUser;
+		#endregion
 
-        public readonly string FileName = "";
-        public readonly IniFile Ini = new IniFile();
+		public readonly string FileName = "";
+		public readonly IniFile Ini = new IniFile();
 
-        public MainConfig(string FileName)
-        {
-            Init();
-            this.FileName = FileName.Trim();
-        }
-        public void Init()
-        {
-            S3 = null;
-            SignatureVersion = "";
-            KMS = "";
-            IsSecure = false;
-            BucketPrefix = string.Empty;
-            MainUser = null;
-            AltUser = null;
-        }
+		public MainConfig(string FileName)
+		{
+			Init();
+			this.FileName = FileName.Trim();
+		}
+		public void Init()
+		{
+			S3 = null;
+			SignatureVersion = "";
+			KMS = "";
+			IsSecure = false;
+			BucketPrefix = string.Empty;
+			MainUser = null;
+			AltUser = null;
+		}
 
-        public void GetConfig()
-        {
-            Ini.Load(FileName);
-            
-            S3 = ReadS3Config();
-            SignatureVersion = ReadKeyToString(STR_S3, STR_SIGNATURE_VERSION);
-            KMS = ReadKeyToString(STR_S3, STR_KMS);
-            IsSecure = ReadKeyToBoolean(STR_S3, STR_SECURE);
+		public void GetConfig()
+		{
+			Ini.Load(FileName);
 
-            BucketPrefix = ReadKeyToString(STR_FIXTURES, STR_BUCKETPREFIX);
+			S3 = ReadS3Config();
+			SignatureVersion = ReadKeyToString(STR_S3, STR_SIGNATURE_VERSION);
+			KMS = ReadKeyToString(STR_S3, STR_KMS);
+			IsSecure = ReadKeyToBoolean(STR_S3, STR_SECURE);
 
-            MainUser = ReadUser(STR_MAINUSER);
-            AltUser = ReadUser(STR_ALTUSER);
-        }
+			BucketPrefix = ReadKeyToString(STR_FIXTURES, STR_BUCKETPREFIX);
 
-        #region Read Config Utility
+			MainUser = ReadUser(STR_MAINUSER);
+			AltUser = ReadUser(STR_ALTUSER);
+		}
 
-        private S3Config ReadS3Config()
-        {
-            return new S3Config()
-            {
-                Address = ReadKeyToString(STR_S3, STR_URL),
-                Port = ReadKeyToInt(STR_S3, STR_PORT),
-                SSLPort = ReadKeyToInt(STR_S3, STR_SSL_PORT),
-                RegionName = ReadKeyToString(STR_S3, STR_REGION_NAME),
-            };
-        }
+		#region Read Config Utility
 
-        private UserData ReadUser(string Section)
-        {
-            
-            return new UserData
-            {
-                DisplayName = ReadKeyToString(Section, STR_DISPLAYNAME),
-                UserId = ReadKeyToString(Section, STR_USERID),
-                Email = ReadKeyToString(Section, STR_EMAIL),
-                AccessKey = ReadKeyToString(Section, STR_ACCESSKEY),
-                SecretKey = ReadKeyToString(Section, STR_SECRETKEY),
-            };
-        }
+		private S3Config ReadS3Config()
+		{
+			return new S3Config()
+			{
+				Address = ReadKeyToString(STR_S3, STR_URL),
+				Port = ReadKeyToInt(STR_S3, STR_PORT),
+				SSLPort = ReadKeyToInt(STR_S3, STR_SSL_PORT),
+				RegionName = ReadKeyToString(STR_S3, STR_REGION_NAME),
+			};
+		}
 
-        private string ReadKeyToString(string Section, string Key) => Ini[Section][Key].ToString();
-        private int ReadKeyToInt(string Section, string Key) => int.TryParse(Ini[Section][Key].ToString(), out int Value) ? Value : -1;
-        private bool ReadKeyToBoolean(string Section, string Key) => bool.TryParse(Ini[Section][Key].ToString(), out bool Value) && Value;
-        #endregion
-    }
+		private UserData ReadUser(string Section)
+		{
+
+			return new UserData
+			{
+				DisplayName = ReadKeyToString(Section, STR_DISPLAYNAME),
+				UserId = ReadKeyToString(Section, STR_USERID),
+				Email = ReadKeyToString(Section, STR_EMAIL),
+				AccessKey = ReadKeyToString(Section, STR_ACCESSKEY),
+				SecretKey = ReadKeyToString(Section, STR_SECRETKEY),
+			};
+		}
+
+		private string ReadKeyToString(string Section, string Key) => Ini[Section][Key].ToString();
+		private int ReadKeyToInt(string Section, string Key) => int.TryParse(Ini[Section][Key].ToString(), out int Value) ? Value : -1;
+		private bool ReadKeyToBoolean(string Section, string Key) => bool.TryParse(Ini[Section][Key].ToString(), out bool Value) && Value;
+		#endregion
+	}
 }

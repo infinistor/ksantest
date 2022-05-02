@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -13,30 +13,30 @@ using System.Collections.Generic;
 
 namespace s3tests
 {
-    public class ObjectVersionsData
-    {
-        public string BucketName { get; set; }
-        public string Key { get; set; }
-        public string Body { get; set; }
-        public string ETag { get; set; }
-        public long ContentLength { get; set; }
-        public List<Tag> TagSet { get; set; }
-        public List<string> VersionId { get; set; }
+	public class ObjectVersionsData
+	{
+		public string BucketName { get; set; }
+		public string Key { get; set; }
+		public string Body { get; set; }
+		public string ETag { get; set; }
+		public long ContentLength { get; set; }
+		public List<Tag> TagSet { get; set; }
+		public List<string> VersionId { get; set; }
 
-        public ObjectVersionsData()
-        {
-            Init();
-        }
+		public ObjectVersionsData()
+		{
+			Init();
+		}
 
-        public void Init()
-        {
-            BucketName = "";
-            Key = "";
-            Body = "";
-            ETag = "";
-            ContentLength = 0;
-            TagSet = new List<Tag>();
-            VersionId = new List<string>();
-        }
-    }
+		public void Init()
+		{
+			BucketName = "";
+			Key = "";
+			Body = "";
+			ETag = "";
+			ContentLength = 0;
+			TagSet = new List<Tag>();
+			VersionId = new List<string>();
+		}
+	}
 }

@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -12,44 +12,45 @@ using Amazon;
 
 namespace s3tests
 {
-    public class S3Config
-    {
-        public string Address;
-        public int Port;
-        public int SSLPort;
-        public string RegionName;
+	public class S3Config
+	{
+		public string Address;
+		public int Port;
+		public int SSLPort;
+		public string RegionName;
 
-        public S3Config()
-        {
-            Init();
-        }
-        public S3Config(string Address, int Port, int SSLPort, string RegionName)
-        {
-            this.Address = Address;
-            this.Port = Port;
-            this.SSLPort = SSLPort;
-            this.RegionName = RegionName;
-        }
+		public S3Config()
+		{
+			Init();
+		}
+		public S3Config(string Address, int Port, int SSLPort, string RegionName)
+		{
+			this.Address = Address;
+			this.Port = Port;
+			this.SSLPort = SSLPort;
+			this.RegionName = RegionName;
+		}
 
-        public void Init()
-        {
-            Address = "";
-            Port = 0;
-            SSLPort = 0;
-            RegionName = "";
-        }
+		public void Init()
+		{
+			Address = "";
+			Port = 0;
+			SSLPort = 0;
+			RegionName = "";
+		}
 
-        public bool IsAWS {
-            get
-            {
-                if (string.IsNullOrWhiteSpace(Address)) return true;
-                else return false;
-            }
-        }
+		public bool IsAWS
+		{
+			get
+			{
+				if (string.IsNullOrWhiteSpace(Address)) return true;
+				else return false;
+			}
+		}
 
-        public string GetHttpURL() => $"{MainData.HTTP}{Address}:{Port}";
-        public string GetHttpsURL() => $"{MainData.HTTPS}{Address}:{SSLPort}";
+		public string GetHttpURL() => $"{MainData.HTTP}{Address}:{Port}";
+		public string GetHttpsURL() => $"{MainData.HTTPS}{Address}:{SSLPort}";
 
-        public RegionEndpoint GetRegion() => RegionEndpoint.GetBySystemName(RegionName);
-    }
+		public RegionEndpoint GetRegion() => RegionEndpoint.GetBySystemName(RegionName);
+	}
 }

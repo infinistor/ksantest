@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -14,68 +14,68 @@ using Xunit;
 
 namespace s3tests
 {
-    public class Website : TestBase
-    {
-        public Website(Xunit.Abstractions.ITestOutputHelper Output) => this.Output = Output;
+	public class Website : TestBase
+	{
+		public Website(Xunit.Abstractions.ITestOutputHelper Output) => this.Output = Output;
 
-        [Fact(DisplayName = "test_webiste_get_buckets")]
-        [Trait(MainData.Major, "Website")]
-        [Trait(MainData.Minor, "Check")]
-        [Trait(MainData.Explanation, "버킷의 Websize 설정 조회 확인")]
-        [Trait(MainData.Result, MainData.ResultFailure)]
-        public void test_webiste_get_buckets()
-        {
-            var BucketName = GetNewBucket();
-            var Client = GetClient();
+		[Fact(DisplayName = "test_webiste_get_buckets")]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "버킷의 Websize 설정 조회 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void test_webiste_get_buckets()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
 
-            var Response = Client.GetBucketWebsite(BucketName);
-            Assert.Equal(HttpStatusCode.NotFound, Response.HttpStatusCode);
-        }
+			var Response = Client.GetBucketWebsite(BucketName);
+			Assert.Equal(HttpStatusCode.NotFound, Response.HttpStatusCode);
+		}
 
-        [Fact(DisplayName = "test_webiste_put_buckets")]
-        [Trait(MainData.Major, "Website")]
-        [Trait(MainData.Minor, "Check")]
-        [Trait(MainData.Explanation, "버킷의 Websize 설정이 가능한지 확인")]
-        [Trait(MainData.Result, MainData.ResultSuccess)]
-        public void test_webiste_put_buckets()
-        {
-            var BucketName = GetNewBucket();
-            var Client = GetClient();
+		[Fact(DisplayName = "test_webiste_put_buckets")]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "버킷의 Websize 설정이 가능한지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_webiste_put_buckets()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
 
-            var WebConfig = new WebsiteConfiguration()
-            {
-                ErrorDocument = "400",
-                IndexDocumentSuffix = "a"
-            };
+			var WebConfig = new WebsiteConfiguration()
+			{
+				ErrorDocument = "400",
+				IndexDocumentSuffix = "a"
+			};
 
-            var Response = Client.PutBucketWebsite(BucketName, WebConfig);
-            Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
+			var Response = Client.PutBucketWebsite(BucketName, WebConfig);
+			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
-            var GetResponse = Client.GetBucketWebsite(BucketName);
-            Assert.Equal(WebConfig.ErrorDocument, GetResponse.WebsiteConfiguration.ErrorDocument);
-        }
+			var GetResponse = Client.GetBucketWebsite(BucketName);
+			Assert.Equal(WebConfig.ErrorDocument, GetResponse.WebsiteConfiguration.ErrorDocument);
+		}
 
-        [Fact(DisplayName = "test_webiste_delete_buckets")]
-        [Trait(MainData.Major, "Website")]
-        [Trait(MainData.Minor, "Delete")]
-        [Trait(MainData.Explanation, "버킷의 Websize 설정이 삭제가능한지 확인")]
-        [Trait(MainData.Result, MainData.ResultSuccess)]
-        public void test_webiste_delete_buckets()
-        {
-            var BucketName = GetNewBucket();
-            var Client = GetClient();
+		[Fact(DisplayName = "test_webiste_delete_buckets")]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "버킷의 Websize 설정이 삭제가능한지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_webiste_delete_buckets()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
 
-            var WebConfig = new WebsiteConfiguration()
-            {
-                ErrorDocument = "400",
-                IndexDocumentSuffix = "a"
-            };
+			var WebConfig = new WebsiteConfiguration()
+			{
+				ErrorDocument = "400",
+				IndexDocumentSuffix = "a"
+			};
 
-            var Response = Client.PutBucketWebsite(BucketName, WebConfig);
-            Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
+			var Response = Client.PutBucketWebsite(BucketName, WebConfig);
+			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
-            var DelResponse = Client.DeleteBucketWebsite(BucketName);
-            Assert.Equal(HttpStatusCode.NoContent, DelResponse.HttpStatusCode);
-        }
-    }
+			var DelResponse = Client.DeleteBucketWebsite(BucketName);
+			Assert.Equal(HttpStatusCode.NoContent, DelResponse.HttpStatusCode);
+		}
+	}
 }

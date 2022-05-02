@@ -6,3 +6,4 @@ s3tests_*
 awstests.ini
 *.sh
 suwon*
+TestResults/
