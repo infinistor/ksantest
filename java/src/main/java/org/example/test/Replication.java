@@ -50,21 +50,18 @@ public class Replication extends TestBase {
 		String TargetBucketARN = "arn:aws:s3:::" + TargetBucketName;
 
 		ReplicationDestinationConfig destination = new ReplicationDestinationConfig().withBucketARN(TargetBucketARN);
-		ReplicationRule rule = new ReplicationRule().withStatus("Enabled").withDestinationConfig(destination)
-				.withPrefix("");
-		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/awsreplicationtest");
-		config.addRule("rule1", rule);
+		ReplicationRule rule = new ReplicationRule().withStatus("Enabled").withDestinationConfig(destination);
+		BucketReplicationConfiguration Config = new BucketReplicationConfiguration();
+		Config.setRoleARN("arn:aws:iam::635518764071:role/awsreplicationtest");
+		Config.addRule("rule1", rule);
 
-		Client.setBucketReplicationConfiguration(SourceBucketName, config);
-		BucketReplicationConfiguration getconfig = Client.getBucketReplicationConfiguration(
-				SourceBucketName);
-		assertEquals(config.toString(), getconfig.toString());
+		Client.setBucketReplicationConfiguration(SourceBucketName, Config);
+		BucketReplicationConfiguration GetConfig = Client.getBucketReplicationConfiguration(SourceBucketName);
+		ReplicationConfigCompare(Config, GetConfig);
 
 		Client.deleteBucketReplicationConfiguration(SourceBucketName);
 
-		var e = assertThrows(AmazonServiceException.class,
-				() -> Client.getBucketReplicationConfiguration(SourceBucketName));
+		var e = assertThrows(AmazonServiceException.class, () -> Client.getBucketReplicationConfiguration(SourceBucketName));
 		var StatusCode = e.getStatusCode();
 		assertEquals(404, StatusCode);
 	}
