@@ -102,7 +102,6 @@ public class Post extends TestBase {
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add("$Content-Length");
 		starts2.add(ContentType);
 		Conditions.add(starts2);
 
