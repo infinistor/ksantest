@@ -260,4 +260,12 @@ public class PutObject {
 		Test.test_put_object_dir_and_file();
 	}
 
+	
+	@Test
+	@Tag("PUT")
+	@Tag("KSAN")
+	// 오브젝트를 여러번 업로드 했을때 올바르게 반영되는지 확인
+	public void test_object_twice() {
+		Test.test_object_twice();
+	}
 }
