@@ -38,6 +38,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
+import com.amazonaws.services.s3.model.BucketReplicationConfiguration;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule;
 import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -1864,6 +1865,25 @@ public class TestBase {
 		assertEquals(Expected.getMode(), Actual.getMode());
 		assertEquals(Expected.getRetainUntilDate(), Actual.getRetainUntilDate());
 
+	}
+
+	public void ReplicationConfigCompare(BucketReplicationConfiguration Expected, BucketReplicationConfiguration Actual) {
+		assertEquals(Expected.getRoleARN(), Actual.getRoleARN());
+		var ExpectedRules = Expected.getRules();
+		var ActualRules = Actual.getRules();
+		var GetKeys = ExpectedRules.keySet();
+
+		for (var Key : GetKeys)
+		{
+			var ExpectedRule = ExpectedRules.get(Key);
+			var ActualRule = ActualRules.get(Key);
+			assertEquals(ExpectedRule.getDeleteMarkerReplication(), ActualRule.getDeleteMarkerReplication());
+			assertEquals(ExpectedRule.getDestinationConfig().toString(), ActualRule.getDestinationConfig().toString());
+			assertEquals(ExpectedRule.getExistingObjectReplication(), ActualRule.getExistingObjectReplication());
+			assertEquals(ExpectedRule.getFilter(), ActualRule.getFilter());
+			assertEquals(ExpectedRule.getSourceSelectionCriteria(), ActualRule.getSourceSelectionCriteria());
+			assertEquals(ExpectedRule.getStatus(), ActualRule.getStatus());
+		}
 	}
 
 	public List<Tag> TaggingSort(List<Tag> TagList) {
