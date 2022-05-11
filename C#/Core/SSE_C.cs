@@ -325,7 +325,6 @@ namespace s3tests
 
 			var e = Assert.Throws<AggregateException>(() => Client.GetObject(BucketName, Key, SSEC: GetSSEC));
 			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
-
 		}
 
 		[Fact(DisplayName = "test_encryption_sse_c_post_object_authenticated_request")]

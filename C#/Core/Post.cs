@@ -1394,27 +1394,6 @@ namespace s3tests
 			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
 		}
 
-		//[Fact(DisplayName = "test_100_continue")]
-		//[Trait(MainData.Major, "Post")]
-		//[Trait(MainData.Minor, "100-continue")]
-		//[Trait(MainData.Explanation, "로그인 정보없이 응답코드 성공확인")]
-		//[Trait(MainData.Result, MainData.ResultSuccess)]
-		//public void test_100_continue()
-		//{
-		//    var BucketName = GetNewBucket();
-		//    var Client = GetClient();
-		//    var ObjectName = "testobj";
-
-		//    var StatusCode = SimpleHttpReq100Cont(ObjectName, ObjectName);
-		//    Assert.Equal(HttpStatusCode.Forbidden, StatusCode);
-
-		//    Client.PutBucketACL(BucketName, ACL: S3CannedACL.PublicReadWrite);
-
-		//    StatusCode = SimpleHttpReq100Cont(ObjectName, ObjectName);
-		//    Assert.Equal(HttpStatusCode.Continue, StatusCode);
-		//}
-
-
 		[Fact(DisplayName = "test_presignedurl_put_get")]
 		[Trait(MainData.Major, "Post")]
 		[Trait(MainData.Minor, "PresignedURL")]
