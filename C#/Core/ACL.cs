@@ -283,8 +283,8 @@ namespace s3tests
 
 			var e = Assert.Throws<WebException>(() => GetObject(URL));
 			var Response = e.Response as HttpWebResponse;
-
-			Assert.Equal(HttpStatusCode.Forbidden, Response.StatusCode);
+			var Message = GetResponseErrorCode(Response.GetResponseStream());
+			Assert.Equal(MainData.AuthorizationQueryParametersError, Message);
 		}
 
 		[Fact(DisplayName = "test_object_raw_get_x_amz_expires_out_positive_range")]
@@ -302,7 +302,8 @@ namespace s3tests
 			var URL = Client.GeneratePresignedURL(BucketName, Key, DateTime.Now.AddDays(-1), HttpVerb.GET);
 			var e = Assert.Throws<WebException>(() => GetObject(URL));
 			var Response = e.Response as HttpWebResponse;
-			Assert.Equal(HttpStatusCode.Forbidden, Response.StatusCode);
+			var Message = GetResponseErrorCode(Response.GetResponseStream());
+			Assert.Equal(MainData.AuthorizationQueryParametersError, Message);
 		}
 
 		[Fact(DisplayName = "test_object_anon_put")]
@@ -375,7 +376,8 @@ namespace s3tests
 			var URL = Client.GeneratePresignedURL(BucketName, Key, DateTime.Now.AddDays(-1), HttpVerb.PUT);
 			var e = Assert.Throws<WebException>(() => PutObject(URL));
 			var Response = e.Response as HttpWebResponse;
-			Assert.Equal(HttpStatusCode.Forbidden, Response.StatusCode);
+			var Message = GetResponseErrorCode(Response.GetResponseStream());
+			Assert.Equal(MainData.AuthorizationQueryParametersError, Message);
 		}
 
 		[Fact(DisplayName = "test_acl_private_bucket_public_read_object")]

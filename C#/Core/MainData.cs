@@ -77,6 +77,7 @@ namespace s3tests
 		public const string SignatureDoesNotMatch = "SignatureDoesNotMatch";
 		public const string PermanentRedirect = "PermanentRedirect";
 		public const string NoSuchPublicAccessBlockConfiguration = "NoSuchPublicAccessBlockConfiguration";
+		public const string AuthorizationQueryParametersError = "AuthorizationQueryParametersError";
 
 	}
 }
