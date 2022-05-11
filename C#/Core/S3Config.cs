@@ -39,14 +39,7 @@ namespace s3tests
 			RegionName = "";
 		}
 
-		public bool IsAWS
-		{
-			get
-			{
-				if (string.IsNullOrWhiteSpace(Address)) return true;
-				else return false;
-			}
-		}
+		public bool IsAWS { get => string.IsNullOrEmpty(Address); }
 
 		public string GetHttpURL() => $"{MainData.HTTP}{Address}:{Port}";
 		public string GetHttpsURL() => $"{MainData.HTTPS}{Address}:{SSLPort}";
