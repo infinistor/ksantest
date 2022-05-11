@@ -790,7 +790,7 @@ namespace s3tests
 		[Trait(MainData.Minor, "Metadata")]
 		[Trait(MainData.Explanation, "업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_get_object_head()
+		public void test_versioning_get_object_head()
 		{
 			var BucketName = GetNewBucket();
 			var Client = GetClient();
@@ -798,13 +798,13 @@ namespace s3tests
 			CheckConfigureVersioningRetry(BucketName, VersionStatus.Enabled);
 
 			var KeyName = "foo";
+			var VersionList = new List<string>();
 
 			for (int i = 1; i <= 5; i++)
-				Client.PutObject(BucketName, Key: KeyName, RandomTextToLong(i));
-
-			var VersionResponse = Client.ListVersions(BucketName);
-			var VersionList = GetVersionIds(VersionResponse.Versions);
-			VersionList.Sort();
+			{
+				var Response = Client.PutObject(BucketName, Key: KeyName, RandomTextToLong(i));
+				VersionList.Add(Response.VersionId);
+			}
 
 			for (int i = 0; i < 5; i++)
 			{
