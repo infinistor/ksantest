@@ -51,8 +51,7 @@ namespace s3tests
 			{
 				string temp = Environment.GetEnvironmentVariable(MainData.S3TESTS_INI);
 				if (string.IsNullOrWhiteSpace(temp)) ConfigFilePath = MainConfig.STR_DEF_FILENAME;
-				else
-					ConfigFilePath = temp.Trim();
+				else 								 ConfigFilePath = temp.Trim();
 			}
 			catch (Exception)
 			{
@@ -891,6 +890,23 @@ namespace s3tests
 
 			return newList;
 		}
+
+		public string GetResponseBody(Stream Data)
+        {
+			StreamReader reader = new StreamReader(Data, Encoding.UTF8);
+			return reader.ReadToEnd();
+		}
+		public string GetResponseErrorCode(Stream Data)
+		{
+			StreamReader reader = new StreamReader(Data, Encoding.UTF8);
+			var Result = reader.ReadToEnd();
+
+			int Start = Result.IndexOf("<Code>") + 6;
+			int End = Result.IndexOf("</Code>");
+
+			return Result[Start..End];
+		}
+
 
 		#endregion
 
