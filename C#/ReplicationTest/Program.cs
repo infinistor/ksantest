@@ -1,7 +1,7 @@
 ﻿/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -16,43 +16,43 @@ using System.Reflection;
 
 namespace ReplicationTest
 {
-    class Program
-    {
-        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        static void Main(string[] args)
-        {
-            MainConfig Config = new MainConfig();
-            Config.GetConfig();
+	class Program
+	{
+		private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+		static void Main(string[] args)
+		{
+			MainConfig Config = new MainConfig();
+			Config.GetConfig();
 
-            log.Info("Get Config!");
+			log.Info("Get Config!");
 
-            int BuildID = 0;
+			int BuildID = 0;
 
-            if (args.Length == 0)
-            {
-                log.Error("is Not Build id");
-                return;
-            }
-            else if (!int.TryParse(args[0], out BuildID))
-            {
-                log.Error("is Not Build id");
-                return;
-            }
-
-
-            //DB 연결
-            var DB = new DBManager(Config.DB);
-            if(!DB.Connect())
-            {
-                log.Error("DB is not connected");
-                return;
-            }
-                log.Error("DB is connected!");
+			if (args.Length == 0)
+			{
+				log.Error("is Not Build id");
+				return;
+			}
+			else if (!int.TryParse(args[0], out BuildID))
+			{
+				log.Error("is Not Build id");
+				return;
+			}
 
 
-            var Test = new S3Test(Config, DB, BuildID);
-            Test.Start();
+			//DB 연결
+			var DB = new DBManager(Config.DB);
+			if (!DB.Connect())
+			{
+				log.Error("DB is not connected");
+				return;
+			}
+			log.Error("DB is connected!");
 
-        }
-    }
+
+			var Test = new S3Test(Config, DB, BuildID);
+			Test.Start();
+
+		}
+	}
 }

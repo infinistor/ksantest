@@ -1,7 +1,7 @@
 ﻿/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -10,39 +10,39 @@
 */
 namespace ReplicationTest
 {
-    public class DBInfo
-    {
-        public string Host;
-        public int Port;
-        public string Name;
-        public string UserName;
-        public string Password;
+	public class DBInfo
+	{
+		public string Host;
+		public int Port;
+		public string Name;
+		public string UserName;
+		public string Password;
 
-        public DBInfo()
-        {
-            Init();
-        }
-        public DBInfo(string Host, int Port, string Name, string UserName, string Password)
-        {
-            this.Host = Host;
-            this.Port = Port;
-            this.Name = Name;
-            this.UserName = UserName;
-            this.Password = Password;
-        }
+		public DBInfo()
+		{
+			Init();
+		}
+		public DBInfo(string Host, int Port, string Name, string UserName, string Password)
+		{
+			this.Host = Host;
+			this.Port = Port;
+			this.Name = Name;
+			this.UserName = UserName;
+			this.Password = Password;
+		}
 
-        public void Init()
-        {
-            Host = "";
-            Port = 0;
-            Name = "";
-            UserName = "";
-            Password = "";
-        }
+		public void Init()
+		{
+			Host = "";
+			Port = 0;
+			Name = "";
+			UserName = "";
+			Password = "";
+		}
 
-        public string GetaccessCode()
-        {
-            return string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4}", Host, Port, Name, UserName, Password);
-        }
-    }
+		public string GetaccessCode()
+		{
+			return string.Format("Server={0};Port={1};Database={2};Uid={3};Pwd={4}", Host, Port, Name, UserName, Password);
+		}
+	}
 }

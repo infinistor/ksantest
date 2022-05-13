@@ -1,22 +1,22 @@
 ﻿<log4net>
-  <appender name="Console" type="log4net.Appender.ConsoleAppender">
-    <layout type="log4net.Layout.PatternLayout">
-      <conversionPattern value="%-5p %d{yyyy-MM-dd HH:mm:ss} [%t][%l] : %m%n" />
-    </layout>
-  </appender>
-  <appender name="RollingFile" type="log4net.Appender.RollingFileAppender">
-    <file value="Log/"/>
-    <appendtofile value="true"/>
-    <datepattern value="yyyy-MM-dd HH-mm-ss'.log'"/>
-    <staticlogfilename value="false"/>
-    <rollingstyle value="Date"/>
-    <layout type="log4net.Layout.PatternLayout">
-      <conversionpattern value="%-5p %d{yyyy-MM-dd HH:mm:ss} [%t][%l] : %m%n"/>
-    </layout>
-  </appender>
-  <root>
-    <level value="ALL"/>
-    <appender-ref ref="Console"/>
-    <appender-ref ref="RollingFile"/>
-  </root>
+	<appender name="Console" type="log4net.Appender.ConsoleAppender">
+		<layout type="log4net.Layout.PatternLayout">
+			<conversionPattern value="%-5p %d{yyyy-MM-dd HH:mm:ss} [%t][%l] : %m%n" />
+		</layout>
+	</appender>
+	<appender name="RollingFile" type="log4net.Appender.RollingFileAppender">
+		<file value="Log/"/>
+		<appendtofile value="true"/>
+		<datepattern value="yyyy-MM-dd HH-mm-ss'.log'"/>
+		<staticlogfilename value="false"/>
+		<rollingstyle value="Date"/>
+		<layout type="log4net.Layout.PatternLayout">
+			<conversionpattern value="%-5p %d{yyyy-MM-dd HH:mm:ss} [%t][%l] : %m%n"/>
+		</layout>
+	</appender>
+	<root>
+		<level value="ALL"/>
+		<appender-ref ref="Console"/>
+		<appender-ref ref="RollingFile"/>
+	</root>
 </log4net>
