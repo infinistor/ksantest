@@ -8,41 +8,45 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using System.Text.Json;
+
 namespace s3tests2
 {
-    public class UserData
-    {
-        public string DisplayName { set; get; }
-        public string UserId { set; get; }
-        public string Email { set; get; }
-        public string AccessKey { set; get; }
-        public string SecretKey { set; get; }
-        public string RegionName { set; get; }
+	public class UserData
+	{
+		public string DisplayName { set; get; }
+		public string UserId { set; get; }
+		public string Email { set; get; }
+		public string AccessKey { set; get; }
+		public string SecretKey { set; get; }
+		public string RegionName { set; get; }
 
-        public UserData()
-        {
-            Init();
-        }
+		public UserData()
+		{
+			Init();
+		}
 
-        public void Init()
-        {
-            DisplayName = string.Empty;
-            UserId = string.Empty;
-            Email = string.Empty;
-            AccessKey = string.Empty;
-            SecretKey = string.Empty;
-            RegionName = string.Empty;
-        }
+		public void Init()
+		{
+			DisplayName = string.Empty;
+			UserId = string.Empty;
+			Email = string.Empty;
+			AccessKey = string.Empty;
+			SecretKey = string.Empty;
+			RegionName = string.Empty;
+		}
 
-        public bool IsEmpty()
-        {
-            if (string.IsNullOrWhiteSpace(DisplayName)) return true;
-            if (string.IsNullOrWhiteSpace(UserId)) return true;
-            if (string.IsNullOrWhiteSpace(Email)) return true;
-            if (string.IsNullOrWhiteSpace(AccessKey)) return true;
-            if (string.IsNullOrWhiteSpace(SecretKey)) return true;
-            if (string.IsNullOrWhiteSpace(RegionName)) return true;
-            return false;
-        }
-    }
+		public bool IsEmpty()
+		{
+			if (string.IsNullOrWhiteSpace(DisplayName)) return true;
+			if (string.IsNullOrWhiteSpace(UserId)) return true;
+			if (string.IsNullOrWhiteSpace(Email)) return true;
+			if (string.IsNullOrWhiteSpace(AccessKey)) return true;
+			if (string.IsNullOrWhiteSpace(SecretKey)) return true;
+			if (string.IsNullOrWhiteSpace(RegionName)) return true;
+			return false;
+		}
+
+		public override string ToString() => $"MainConfig {JsonSerializer.Serialize(this)}";
+	}
 }

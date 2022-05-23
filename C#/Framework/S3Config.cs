@@ -8,48 +8,45 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using System.Text.Json;
 using Amazon;
 
 namespace s3tests2
 {
-    public class S3Config
-    {
-        public string Address;
-        public int Port;
-        public int SSLPort;
-        public string RegionName;
+	public class S3Config
+	{
+		public string Address { get; set; }
+		public int Port { get; set; }
+		public int SSLPort { get; set; }
+		public string RegionName { get; set; }
 
-        public S3Config()
-        {
-            Init();
-        }
-        public S3Config(string Address, int Port, int SSLPort, string RegionName)
-        {
-            this.Address = Address;
-            this.Port = Port;
-            this.SSLPort = SSLPort;
-            this.RegionName = RegionName;
-        }
+		public S3Config()
+		{
+			Init();
+		}
+		public S3Config(string Address, int Port, int SSLPort, string RegionName)
+		{
+			this.Address = Address;
+			this.Port = Port;
+			this.SSLPort = SSLPort;
+			this.RegionName = RegionName;
+		}
 
-        public void Init()
-        {
-            Address = "";
-            Port = 0;
-            SSLPort = 0;
-            RegionName = "";
-        }
+		public void Init()
+		{
+			Address = "";
+			Port = 0;
+			SSLPort = 0;
+			RegionName = "";
+		}
 
-        public bool IsAWS {
-            get
-            {
-                if (string.IsNullOrWhiteSpace(Address)) return true;
-                else return false;
-            }
-        }
+		public bool IsAWS { get => string.IsNullOrEmpty(Address); }
 
-        public string GetHttpURL() => $"{MainData.HTTP}{Address}:{Port}";
-        public string GetHttpsURL() => $"{MainData.HTTPS}{Address}:{SSLPort}";
+		public override string ToString() => $"MainConfig {JsonSerializer.Serialize(this)}";
 
-        public RegionEndpoint GetRegion() => RegionEndpoint.GetBySystemName(RegionName);
-    }
+		public string GetHttpURL() => $"{MainData.HTTP}{Address}:{Port}";
+		public string GetHttpsURL() => $"{MainData.HTTPS}{Address}:{SSLPort}";
+
+		public RegionEndpoint GetRegion() => RegionEndpoint.GetBySystemName(RegionName);
+	}
 }
