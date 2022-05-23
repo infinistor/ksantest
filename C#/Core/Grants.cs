@@ -1405,19 +1405,18 @@ namespace s3tests
 		[Trait(MainData.Minor, "Access")]
 		[Trait(MainData.Explanation, "[bucket_acl:public-read-write, object_acl:private] " +
 			"메인유저가 public-read-write권한으로 생성한 버킷에서 private권한으로 생성한 오브젝트에 대해 " +
-			"서브유저는 오브젝트 목록을 읽거나 업로드는 가능하지만 다운로드 할 수 없음을 확인")]
+			"서브유저는 오브젝트 목록조회는 가능하지만 다운로드 할 수 없음을 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void test_access_bucket_publicreadwrite_object_private()
 		{
 			var BucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.PublicReadWrite, S3CannedACL.Private);
 			var AltClient = GetAltClient();
 
-
 			Assert.Throws<AggregateException>(() => AltClient.GetObject(BucketName, Key1));
-			AltClient.PutObject(BucketName, Key1, Body: "barcontent");
+			Assert.Throws<AggregateException>(() =>AltClient.PutObject(BucketName, Key1, Body: "foooverwrite"));
 
 			Assert.Throws<AggregateException>(() => AltClient.GetObject(BucketName, Key2));
-			AltClient.PutObject(BucketName, Key2, Body: "baroverwrite");
+			Assert.Throws<AggregateException>(() => AltClient.PutObject(BucketName, Key2, Body: "baroverwrite"));
 
 			var ObjList = GetKeys(AltClient.ListObjects(BucketName));
 			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);
@@ -1429,7 +1428,7 @@ namespace s3tests
 		[Trait(MainData.Minor, "Access")]
 		[Trait(MainData.Explanation, "[bucket_acl:public-read-write, object_acl:public-read, private] " +
 									 "메인유저가 public-read-write권한으로 생성한 버킷에서 public-read권한으로 생성한 오브젝트에 대해 " +
-									 "서브유저는 오브젝트 목록을 읽거나 업로드, 다운로드 모두 가능함을 확인")]
+									 "서브유저는 오브젝트 목록을 읽거나 다운로드 가능함을 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void test_access_bucket_publicreadwrite_object_publicread()
 		{
@@ -1439,10 +1438,10 @@ namespace s3tests
 			var Response = AltClient.GetObject(BucketName, Key1);
 			var Body = GetBody(Response);
 			Assert.Equal("foocontent", Body);
-			AltClient.PutObject(BucketName, Key1, Body: "barcontent");
+			Assert.Throws<AggregateException>(() =>AltClient.PutObject(BucketName, Key1, Body: "foooverwrite"));
 
 			Assert.Throws<AggregateException>(() => AltClient.GetObject(BucketName, Key2));
-			AltClient.PutObject(BucketName, Key2, Body: "baroverwrite");
+			Assert.Throws<AggregateException>(() => AltClient.PutObject(BucketName, Key2, Body: "baroverwrite"));
 
 			var ObjList = GetKeys(AltClient.ListObjects(BucketName));
 			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);
@@ -1454,7 +1453,7 @@ namespace s3tests
 		[Trait(MainData.Minor, "Access")]
 		[Trait(MainData.Explanation, "[bucket_acl:public-read-write, object_acl:public-read-write, private] " +
 									 "메인유저가 public-read-write권한으로 생성한 버킷에서 public-read-write권한으로 생성한 오브젝트에 대해 " +
-									 "서브유저는 오브젝트 목록을 읽거나 업로드, 다운로드 모두 가능함을 확인")]
+									 "서브유저는 오브젝트 목록을 읽거나 다운로드 가능함을 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void test_access_bucket_publicreadwrite_object_publicreadwrite()
 		{
@@ -1464,10 +1463,10 @@ namespace s3tests
 			var Response = AltClient.GetObject(BucketName, Key1);
 			var Body = GetBody(Response);
 			Assert.Equal("foocontent", Body);
-			AltClient.PutObject(BucketName, Key1, Body: "foooverwrite");
+			Assert.Throws<AggregateException>(() =>AltClient.PutObject(BucketName, Key1, Body: "foooverwrite"));
 
 			Assert.Throws<AggregateException>(() => AltClient.GetObject(BucketName, Key2));
-			AltClient.PutObject(BucketName, Key2, Body: "baroverwrite");
+			Assert.Throws<AggregateException>(() => AltClient.PutObject(BucketName, Key2, Body: "baroverwrite"));
 
 			var ObjList = GetKeys(AltClient.ListObjects(BucketName));
 			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);

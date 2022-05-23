@@ -44,7 +44,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(BucketName, "foo.txt");
 			var Body = GetBody(Response);
@@ -93,7 +93,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(BucketName, Key);
 			var Body = GetBody(Response);
@@ -141,7 +141,8 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
+			
 			var Response = Client.GetObject(BucketName, Key);
 			var Body = GetBody(Response);
 			Assert.Equal("bar", Body);
@@ -191,7 +192,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.Forbidden, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_set_success_code")]
@@ -217,7 +218,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.Created, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Created, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(BucketName, "foo.txt");
 			var Body = GetBody(Response);
@@ -246,7 +247,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(BucketName, "foo.txt");
 			var Body = GetBody(Response);
@@ -298,7 +299,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(BucketName, Key);
 			var Body = GetBody(Response);
@@ -349,7 +350,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(BucketName, Key);
 			var Body = GetBody(Response);
@@ -399,7 +400,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_case_insensitive_condition_fields")]
@@ -445,7 +446,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_escaped_field_values")]
@@ -492,7 +493,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(BucketName, Key);
 			var Body = GetBody(Response);
@@ -546,7 +547,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.OK, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.OK, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(BucketName, Key);
 			Assert.Equal(string.Format("{0}?bucket={1}&key={2}&etag=%22{3}%22", RedirectURL, BucketName, Key, Response.ETag.Replace("\"", "")), Result.URL);
@@ -594,7 +595,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.Forbidden, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_invalid_access_key")]
@@ -639,7 +640,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.Forbidden, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_invalid_date_format")]
@@ -684,7 +685,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_no_key_specified")]
@@ -726,7 +727,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_missing_signature")]
@@ -770,7 +771,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_missing_policy_condition")]
@@ -814,7 +815,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.Forbidden, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_user_specified_header")]
@@ -862,7 +863,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(BucketName, Key);
 			Assert.Equal("barclamp", Response.Metadata["foo"]);
@@ -911,7 +912,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.Forbidden, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_condition_is_case_sensitive")]
@@ -956,7 +957,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_expires_is_case_sensitive")]
@@ -1001,7 +1002,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_expired_policy")]
@@ -1046,7 +1047,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.Forbidden, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_invalid_request_field_value")]
@@ -1093,7 +1094,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.Forbidden, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_missing_expires_condition")]
@@ -1137,7 +1138,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_missing_conditions_list")]
@@ -1173,7 +1174,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_upload_size_limit_exceeded")]
@@ -1218,7 +1219,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_missing_content_length_argument")]
@@ -1263,7 +1264,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_invalid_content_length_argument")]
@@ -1308,7 +1309,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_upload_size_below_minimum")]
@@ -1353,7 +1354,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_post_object_empty_conditions")]
@@ -1391,7 +1392,7 @@ namespace s3tests
 			};
 
 			var Result = PostUpload(BucketName, Payload);
-			Assert.Equal(HttpStatusCode.BadRequest, Result.StatusCode);
+			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
 		}
 
 		[Fact(DisplayName = "test_presignedurl_put_get")]
@@ -1443,6 +1444,16 @@ namespace s3tests
 
 			Assert.Equal(HttpStatusCode.OK, GetResponse.StatusCode);
 			GetResponse.Close();
+		}
+
+		
+		[Fact(DisplayName = "test_put_object_v4")]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "signV4")]
+		[Trait(MainData.Explanation, "[SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_put_object_v4()
+		{
 		}
 	}
 }

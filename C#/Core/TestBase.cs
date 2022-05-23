@@ -103,11 +103,11 @@ namespace s3tests
 		}
 
 		public string GetPrefix() => Config.BucketPrefix.Replace(STR_RANDOM, RandomText(RANDOM_PREFIX_TEXT_LENGTH));
-		public string GetNewBucketName()
+		public string GetNewBucketName(bool Create = true)
 		{
 			string BucketName = GetPrefix() + RandomText(RANDOM_SUFFIX_TEXT_LENGTH);
 			if (BucketName.Length > BUCKET_MAX_LENGTH) BucketName = BucketName.Substring(0, BUCKET_MAX_LENGTH - 1);
-			BucketList.Add(BucketName);
+			if (Create) BucketList.Add(BucketName);
 			return BucketName;
 		}
 		public string GetNewBucketName(int Length)
@@ -1578,7 +1578,9 @@ namespace s3tests
 
 					Client.DeleteBucket(BucketName);
 				}
-				catch { }
+				catch(Exception)
+				{
+				}
 			}
 		}
 		#endregion
