@@ -21,38 +21,48 @@ namespace ReplicationTest
 		private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 		static void Main(string[] args)
 		{
-			MainConfig Config = new MainConfig();
-			Config.GetConfig();
+			DBManager DB = null;
+			int BuildID = 0;
+			string ConfigPath = null;
 
+			// Config 설정
+			if (args.Length > 1)
+			{
+				ConfigPath = args[1];
+				if (string.IsNullOrEmpty(ConfigPath))
+				{
+					log.Error("config path is empty!");
+					return;
+				}
+			}
+
+			MainConfig Config = new MainConfig(ConfigPath);
+			Config.GetConfig();
 			log.Info("Get Config!");
 
-			int BuildID = 0;
-
-			if (args.Length == 0)
+			// DB 설정
+			if (args.Length > 0)
 			{
-				log.Error("is Not Build id");
-				return;
+				if (!int.TryParse(args[0], out BuildID))
+				{
+					log.Error("is Not Build id");
+					return;
+				}
+				if (BuildID > 0)
+				{
+					//DB 연결
+					DB = new DBManager(Config.DB);
+					if (!DB.Connect())
+					{
+						log.Error("DB is not connected");
+						return;
+					}
+					log.Info("DB is connected!");
+				}
 			}
-			else if (!int.TryParse(args[0], out BuildID))
-			{
-				log.Error("is Not Build id");
-				return;
-			}
-
-
-			//DB 연결
-			var DB = new DBManager(Config.DB);
-			if (!DB.Connect())
-			{
-				log.Error("DB is not connected");
-				return;
-			}
-			log.Error("DB is connected!");
-
 
 			var Test = new S3Test(Config, DB, BuildID);
 			Test.Start();
-
 		}
 	}
 }
