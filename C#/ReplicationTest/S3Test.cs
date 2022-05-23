@@ -92,7 +92,6 @@ namespace ReplicationTest
 			CreateBucket(MainClient, MainBucket);
 			BucketVersioning(MainClient, MainBucket, VersionStatus.Enabled);
 
-
 			//동일 시스템 타깃 버킷 생성 및 버저닝 설정
 			foreach (var Bucket in MainTargetList)
 			{
@@ -110,7 +109,7 @@ namespace ReplicationTest
 
 			//룰 생성
 			var MainRuleList = CreateRelicationRules(MainTargetList, 1);
-			var AltRuleList = CreateRelicationRules(AltTargetList, 5, Config.AltUser);
+			var AltRuleList = Config.AltUser.IsRegion? CreateRelicationRules(AltTargetList, 5, Config.AltUser.RegionName) : CreateRelicationRules(AltTargetList, 5, Config.AltUser);
 
 			ReplicationConfiguration Replication = new ReplicationConfiguration { Role = "" };
 			Replication.Rules.AddRange(MainRuleList);
@@ -150,7 +149,7 @@ namespace ReplicationTest
 		{
 			var config = new AmazonS3Config
 			{
-				ServiceURL = $"http://{User.URL}:8080",
+				ServiceURL = $"http://{User.URL}:{User.Port}",
 				Timeout = TimeSpan.FromSeconds(3600),
 				MaxErrorRetry = 2,
 				ForcePathStyle = true,
@@ -172,6 +171,26 @@ namespace ReplicationTest
 					Priority = Index++,
 					Status = ReplicationRuleStatus.Enabled,
 					Destination = new ReplicationDestination() { BucketArn = $"{BucketArnPrefix}{Bucket.BucketName}" },
+					Filter = new ReplicationRuleFilter() { Prefix = Bucket.Prefix, },
+				};
+
+				Rules.Add(Rule);
+			}
+
+			return Rules;
+		}
+		static List<ReplicationRule> CreateRelicationRules(List<BucketData> Buckets, int Index, string RegionName)
+		{
+			var Rules = new List<ReplicationRule>();
+
+			foreach (var Bucket in Buckets)
+			{
+				var Rule = new ReplicationRule
+				{
+					Id = $"Rule{Index}",
+					Priority = Index++,
+					Status = ReplicationRuleStatus.Enabled,
+					Destination = new ReplicationDestination() { BucketArn = $"arn:aws:s3:{RegionName}::{Bucket.BucketName}" },
 					Filter = new ReplicationRuleFilter() { Prefix = Bucket.Prefix, },
 				};
 
@@ -211,12 +230,12 @@ namespace ReplicationTest
 				if (string.IsNullOrWhiteSpace(Result))
 				{
 					log.Info($"{SubTestCaseName} is match!");
-					DB.Insert(BuildId, SubTestCaseName, "Pass", "");
+					if (DB != null) DB.Insert(BuildId, SubTestCaseName, "Pass", "");
 				}
 				else
 				{
 					log.Error($"{SubTestCaseName} is not match! -> {Result}");
-					DB.Insert(BuildId, SubTestCaseName, "Failed", Result);
+					if (DB != null) DB.Insert(BuildId, SubTestCaseName, "Failed", Result);
 				}
 			}
 		}

@@ -1,4 +1,6 @@
 bin/
 obj/
+.vscode/
 config.ini
 *.sh
+*.ps1

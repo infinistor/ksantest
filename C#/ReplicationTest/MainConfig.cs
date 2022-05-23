@@ -13,28 +13,35 @@ namespace ReplicationTest
 	class MainConfig
 	{
 		private const string STR_DEF_FILENAME = "config.ini";
-		/******************************** Default ********************************/
+		#region Default
 		private const string STR_DEFAULT = "Default";
 		private const string STR_DELAY = "Delay";
-		/****************************** S3 Setting *******************************/
+		private const string STR_LOCAL_ONLY = "LocalOnly";
+		#endregion
+		#region  User Data
 		private const string STR_MAINUSER = "Main User";
 		private const string STR_ALTUSER = "Alt User";
 		private const string STR_URL = "URL";
+		private const string STR_PORT = "Port";
+		private const string STR_REGION_NAME = "RegionName";
 		private const string STR_ACCESSKEY = "AccessKey";
 		private const string STR_SECRETKEY = "SecretKey";
-		/***************************** DB Setting ********************************/
+		#endregion
+		#region DB
 		private const string STR_DB = "DB";
 		private const string STR_DB_HOST = "host";
 		private const string STR_DB_PORT = "port";
 		private const string STR_DB_NAME = "name";
 		private const string STR_DB_USERNAME = "username";
 		private const string STR_DB_PASSWORD = "password";
+		#endregion
 
 		private readonly IniFile Ini = new IniFile();
 
 		public readonly string FileName;
 
 		public int Delay;
+		public bool LocalOnly;
 		public DBInfo DB;
 		public UserData MainUser;
 		public UserData AltUser;
@@ -50,7 +57,7 @@ namespace ReplicationTest
 			Ini.Load(FileName);
 
 			Delay = ReadKeyToInt(STR_DEFAULT, STR_DELAY);
-
+			LocalOnly = ReadKeyToBoolean(STR_DEFAULT, STR_LOCAL_ONLY);
 			DB = GetDBInfo();
 
 			MainUser = GetUser(STR_MAINUSER);
@@ -69,18 +76,14 @@ namespace ReplicationTest
 		}
 
 		private UserData GetUser(string Section)
+		=> new UserData()
 		{
-			string URL = ReadKeyToString(Section, STR_URL);
-			string AccessKey = ReadKeyToString(Section, STR_ACCESSKEY);
-			string SecretKey = ReadKeyToString(Section, STR_SECRETKEY);
-
-			return new UserData()
-			{
-				URL = URL,
-				AccessKey = AccessKey,
-				SecretKey = SecretKey
-			};
-		}
+			URL = ReadKeyToString(Section, STR_URL),
+			Port = ReadKeyToInt(Section, STR_PORT),
+			RegionName = ReadKeyToString(Section, STR_REGION_NAME),
+			AccessKey = ReadKeyToString(Section, STR_ACCESSKEY),
+			SecretKey = ReadKeyToString(Section, STR_SECRETKEY)
+		};
 
 		private string ReadKeyToString(string Section, string Key) => Ini[Section][Key].ToString();
 		private int ReadKeyToInt(string Section, string Key) => int.TryParse(Ini[Section][Key].ToString(), out int Value) ? Value : -1;

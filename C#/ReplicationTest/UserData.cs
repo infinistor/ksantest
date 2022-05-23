@@ -8,12 +8,20 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using System.Text.Json;
+
 namespace ReplicationTest
 {
 	class UserData
 	{
-		public string URL;
-		public string AccessKey;
-		public string SecretKey;
+		public string URL { get; set; }
+		public int Port { get; set; }
+		public string AccessKey { get; set; }
+		public string SecretKey { get; set; }
+		public string RegionName { get; set; }
+
+		public bool IsRegion { get => !string.IsNullOrEmpty(RegionName); }
+
+		public override string ToString() => $"UserData : {JsonSerializer.Serialize(this)}";
 	}
 }
