@@ -20,7 +20,7 @@ import org.ini4j.InvalidFileFormatException;
 
 public class S3Config
 {
-	private final String STR_FILENAME = "awstests.ini";
+	private final String STR_FILENAME = "config.ini";
 	// private final String STR_FILENAME = "s3tests_227.ini";
 	//////////////////////////////SIGNATUREVERSION////////////////////////////////////
 	public final static String STR_SIGNATUREVERSION_V2 = "S3SignerType";
