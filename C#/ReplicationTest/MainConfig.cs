@@ -17,6 +17,7 @@ namespace ReplicationTest
 		private const string STR_DEFAULT = "Default";
 		private const string STR_DELAY = "Delay";
 		private const string STR_LOCAL_ONLY = "LocalOnly";
+		private const string STR_CHECK_VERSION_ID = "CheckVersionId";
 		#endregion
 		#region  User Data
 		private const string STR_MAINUSER = "Main User";
@@ -42,6 +43,7 @@ namespace ReplicationTest
 
 		public int Delay;
 		public bool LocalOnly;
+		public bool CheckVersionId;
 		public DBInfo DB;
 		public UserData MainUser;
 		public UserData AltUser;
@@ -58,6 +60,7 @@ namespace ReplicationTest
 
 			Delay = ReadKeyToInt(STR_DEFAULT, STR_DELAY);
 			LocalOnly = ReadKeyToBoolean(STR_DEFAULT, STR_LOCAL_ONLY);
+			CheckVersionId = ReadKeyToBoolean(STR_DEFAULT, STR_CHECK_VERSION_ID);
 			DB = GetDBInfo();
 
 			MainUser = GetUser(STR_MAINUSER);

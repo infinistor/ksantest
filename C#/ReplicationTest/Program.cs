@@ -62,7 +62,8 @@ namespace ReplicationTest
 			}
 
 			var Test = new S3Test(Config, DB, BuildID);
-			Test.Start();
+			if (Config.LocalOnly) Test.StartLocalOnly();
+			else Test.Start();
 		}
 	}
 }

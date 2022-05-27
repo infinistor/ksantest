@@ -80,8 +80,53 @@ namespace ReplicationTest
 			};
 		}
 
+		public void StartLocalOnly()
+		{
+			// 클라이언트 선언
+			AmazonS3Client MainClient = CreateClient(Config.MainUser);
 
-		/************************************************ Init **********************************************/
+			//원본 버킷 생성 및 버저닝 설정
+			CreateBucket(MainClient, MainBucket);
+			BucketVersioning(MainClient, MainBucket, VersionStatus.Enabled);
+
+			//로컬 시스템 타깃 버킷 생성 및 버저닝 설정
+			foreach (var Bucket in MainTargetList)
+			{
+				CreateBucket(MainClient, Bucket.BucketName);
+				BucketVersioning(MainClient, Bucket.BucketName, VersionStatus.Enabled);
+			}
+			log.Info("Create Bucket!");
+
+			//룰 생성
+			var MainRuleList = CreateRelicationRules(MainTargetList, 1);
+			ReplicationConfiguration Replication = new ReplicationConfiguration { Role = "" };
+			Replication.Rules.AddRange(MainRuleList);
+
+			// 복제 설정
+			if (PutBucketReplication(MainClient, MainBucket, Replication))
+			{
+				log.Info("Bucket Replication!");
+
+				// 파일 업로드
+				var ObjectList = new List<string>() { "aaa", "bbb", "ccc", "1/ddd", "2/eee" };
+				foreach (var ObjectName in ObjectList) PutObject(MainClient, MainBucket, ObjectName);
+
+				Thread.Sleep(Config.Delay * 1000);
+
+				// 버저닝 정보를 포함한 비교
+				Compare2Target(MainClient, MainBucket, "Init", MainClient, MainTargetList);
+				log.Info("Target Check!");
+			}
+			else
+				log.Info("Bucket Replication Failed!");
+
+
+			// 버킷 삭제
+			BucketClear(MainClient, MainBucket);
+			foreach (var Bucket in MainTargetList) BucketClear(MainClient, Bucket.BucketName);
+			log.Info("Bucket Clear!");
+		}
+
 		public void Start()
 		{
 			// 클라이언트 선언
@@ -109,7 +154,7 @@ namespace ReplicationTest
 
 			//룰 생성
 			var MainRuleList = CreateRelicationRules(MainTargetList, 1);
-			var AltRuleList = Config.AltUser.IsRegion? CreateRelicationRules(AltTargetList, 5, Config.AltUser.RegionName) : CreateRelicationRules(AltTargetList, 5, Config.AltUser);
+			var AltRuleList = Config.AltUser.IsRegion ? CreateRelicationRules(AltTargetList, 5, Config.AltUser.RegionName) : CreateRelicationRules(AltTargetList, 5, Config.AltUser);
 
 			ReplicationConfiguration Replication = new ReplicationConfiguration { Role = "" };
 			Replication.Rules.AddRange(MainRuleList);
@@ -143,21 +188,7 @@ namespace ReplicationTest
 		}
 
 
-		/********************************************** Utility *********************************************/
-
-		private AmazonS3Client CreateClient(UserData User)
-		{
-			var config = new AmazonS3Config
-			{
-				ServiceURL = $"http://{User.URL}:{User.Port}",
-				Timeout = TimeSpan.FromSeconds(3600),
-				MaxErrorRetry = 2,
-				ForcePathStyle = true,
-			};
-
-			return new AmazonS3Client(User.AccessKey, User.SecretKey, config);
-		}
-
+		#region Utility
 		static List<ReplicationRule> CreateRelicationRules(List<BucketData> Buckets, int Index, UserData User = null)
 		{
 			var BucketArnPrefix = User == null ? "arn:aws:s3:::" : $"arn:aws:s3:{User.URL}:{User.AccessKey}-{User.SecretKey}:";
@@ -200,21 +231,6 @@ namespace ReplicationTest
 			return Rules;
 		}
 
-		static string CompareMain2Alt(List<S3ObjectVersion> Main, List<S3ObjectVersion> Alt)
-		{
-			if (Main.Count != Alt.Count) return $"{Main.Count} != {Alt.Count}";
-
-			for (int i = 0; i < Main.Count; i++)
-			{
-				if (Main[i].Key != Alt[i].Key) return $"{Main[i].Key} != {Alt[i].Key}";
-				if (Main[i].Size != Alt[i].Size) return $"{Main[i].Key} Size does not match! {Main[i].Size} != {Alt[i].Size}";
-				if (Main[i].ETag != Alt[i].ETag) return $"{Main[i].Key} ETag does not match! {Main[i].ETag} != {Alt[i].ETag}";
-				if (Main[i].IsDeleteMarker != Alt[i].IsDeleteMarker) return $"{Main[i].Key} DeleteMarker does not match! {Main[i].IsDeleteMarker} != {Alt[i].IsDeleteMarker}";
-				//if (Main[i].VersionId != Alt[i].VersionId) { log.Error($"{Main[i].Key} VersionId does not match! {Main[i].VersionId} != {Alt[i].VersionId}"); return false; }
-			}
-			return "";
-		}
-
 		void Compare2Target(AmazonS3Client Main, string MainBucket, string TestCase, AmazonS3Client Alt, List<BucketData> Buckets)
 		{
 			foreach (var Bucket in Buckets)
@@ -239,6 +255,22 @@ namespace ReplicationTest
 				}
 			}
 		}
+
+		string CompareMain2Alt(List<S3ObjectVersion> Main, List<S3ObjectVersion> Alt)
+		{
+			if (Main.Count != Alt.Count) return $"{Main.Count} != {Alt.Count}";
+
+			for (int i = 0; i < Main.Count; i++)
+			{
+				if (Main[i].Key != Alt[i].Key) return $"{Main[i].Key} != {Alt[i].Key}";
+				if (Main[i].Size != Alt[i].Size) return $"{Main[i].Key} Size does not match! {Main[i].Size} != {Alt[i].Size}";
+				if (Main[i].ETag != Alt[i].ETag) return $"{Main[i].Key} ETag does not match! {Main[i].ETag} != {Alt[i].ETag}";
+				if (Main[i].IsDeleteMarker != Alt[i].IsDeleteMarker) return $"{Main[i].Key} DeleteMarker does not match! {Main[i].IsDeleteMarker} != {Alt[i].IsDeleteMarker}";
+				if (Config.CheckVersionId && Main[i].VersionId != Alt[i].VersionId) return $"{Main[i].Key} VersionId does not match! {Main[i].VersionId} != {Alt[i].VersionId}";
+			}
+			return "";
+		}
+
 		static void BucketClear(AmazonS3Client Client, string BucketName)
 		{
 			try
@@ -253,7 +285,20 @@ namespace ReplicationTest
 			catch (AggregateException e) { log.Error($"StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}", e); }
 			catch (Exception e) { log.Error(e); }
 		}
-		/************************************************ S3 **********************************************/
+		#endregion
+		#region S3 API
+		private AmazonS3Client CreateClient(UserData User)
+		{
+			var Config = new AmazonS3Config
+			{
+				ServiceURL = $"http://{User.URL}:{User.Port}",
+				Timeout = TimeSpan.FromSeconds(3600),
+				MaxErrorRetry = 2,
+				ForcePathStyle = true,
+			};
+
+			return new AmazonS3Client(User.AccessKey, User.SecretKey, Config);
+		}
 		static void CreateBucket(AmazonS3Client Client, string BucketName)
 		{
 			try
@@ -289,7 +334,6 @@ namespace ReplicationTest
 			catch (AggregateException e) { log.Error($"StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}", e); }
 			catch (Exception e) { log.Error(e); }
 		}
-
 		static bool PutBucketReplication(AmazonS3Client Client, string BucketName, ReplicationConfiguration Config)
 		{
 			if (Client == null) return false;
@@ -343,5 +387,6 @@ namespace ReplicationTest
 			catch (Exception e) { log.Error(e); }
 			return null;
 		}
+		#endregion
 	}
 }
