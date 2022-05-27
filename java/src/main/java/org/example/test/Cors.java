@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 
 import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
@@ -39,7 +41,7 @@ public class Cors extends TestBase
 		System.out.println("Cors End");
 	}
 
-	// @Test
+	@Test
 	@Tag("Check")
 	@Tag("KSAN")
 	//버킷의 cors정보 세팅 성공 확인
@@ -65,7 +67,8 @@ public class Cors extends TestBase
 		assertNull(Response);
 	}
 
-	// @Test
+	@Test
+	@Ignore
 	@Tag("Post")
 	@Tag("KSAN")
 	//버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인
@@ -169,7 +172,8 @@ public class Cors extends TestBase
 		CorsRequestAndCheck("OPTIONS", BucketName, Headers, 200, "foo.put", "PUT", null);
 	}
 
-	// @Test
+	@Test
+	@Ignore
 	@Tag("Post")
 	@Tag("KSAN")
 	//와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인
@@ -195,7 +199,8 @@ public class Cors extends TestBase
 		CorsRequestAndCheck("GET", BucketName, Headers, 200, "*", "GET", null);
 	}
 
-	// @Test
+	@Test
+	@Ignore
 	@Tag("Post")
 	@Tag("KSAN")
 	// @Tag("cors옵션에서 사용자 추가 헤더를 설정하고 존재하지 않는 헤더를 request 설정한 채로 cors호출하면 실패하는지 확인

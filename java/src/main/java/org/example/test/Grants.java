@@ -18,6 +18,7 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Tag;
 import org.example.Data.MainData;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.platform.commons.util.StringUtils;
 
@@ -1030,6 +1031,7 @@ public class Grants extends TestBase
 	}
 
 	@Test
+	@Ignore
 	@Tag("Access")
 	// [bucket_acl:public-read-write, object_acl:public-read-write, private] 메인유저가 public-read-write권한으로 생성한 버킷에서
 	// public-read-write권한으로 생성한 오브젝트에 대해 서브유저는 오브젝트 목록을 읽거나 다운로드 가능함을 확인
