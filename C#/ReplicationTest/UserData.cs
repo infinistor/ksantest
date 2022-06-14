@@ -16,6 +16,7 @@ namespace ReplicationTest
 	{
 		public string URL { get; set; }
 		public int Port { get; set; }
+		public int SSLPort { get; set; }
 		public string AccessKey { get; set; }
 		public string SecretKey { get; set; }
 		public string RegionName { get; set; }

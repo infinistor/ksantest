@@ -13,17 +13,22 @@ namespace ReplicationTest
 	class MainConfig
 	{
 		private const string STR_DEF_FILENAME = "config.ini";
-		#region Default
-		private const string STR_DEFAULT = "Default";
+		#region Global
+		private const string STR_GLOBAL = "Global";
 		private const string STR_DELAY = "Delay";
-		private const string STR_LOCAL_ONLY = "LocalOnly";
 		private const string STR_CHECK_VERSION_ID = "CheckVersionId";
+		private const string STR_NORMAL_BUCKET_NAME = "NormalBucket";
+		private const string STR_ENCRYPTION_BUCKET_NAME = "EncryptionBucket";
+		private const string STR_TARGET_BUCKET_PREFIX = "TargetBucketPrefix";
+		private const string STR_TEST_OPTION = "TestOption";
+		private const string STR_CHECK_SSL = "SSL";
 		#endregion
 		#region  User Data
 		private const string STR_MAINUSER = "Main User";
 		private const string STR_ALTUSER = "Alt User";
 		private const string STR_URL = "URL";
 		private const string STR_PORT = "Port";
+		private const string STR_SSL_PORT = "SSLPort";
 		private const string STR_REGION_NAME = "RegionName";
 		private const string STR_ACCESSKEY = "AccessKey";
 		private const string STR_SECRETKEY = "SecretKey";
@@ -42,11 +47,19 @@ namespace ReplicationTest
 		public readonly string FileName;
 
 		public int Delay;
-		public bool LocalOnly;
 		public bool CheckVersionId;
+		public string NormalBucket;
+		public string EncryptionBucket;
+		public string TargetBucketPrefix;
+		public int TestOption;
+		public int SSL;
+
 		public DBInfo DB;
 		public UserData MainUser;
 		public UserData AltUser;
+
+		public BucketData Normal { get => new BucketData(){BucketName = NormalBucket, Encryption = false};}
+		public BucketData Encryption { get => new BucketData(){BucketName = EncryptionBucket, Encryption = true};}
 
 		public MainConfig(string FileName = null)
 		{
@@ -58,9 +71,13 @@ namespace ReplicationTest
 		{
 			Ini.Load(FileName);
 
-			Delay = ReadKeyToInt(STR_DEFAULT, STR_DELAY);
-			LocalOnly = ReadKeyToBoolean(STR_DEFAULT, STR_LOCAL_ONLY);
-			CheckVersionId = ReadKeyToBoolean(STR_DEFAULT, STR_CHECK_VERSION_ID);
+			Delay = ReadKeyToInt(STR_GLOBAL, STR_DELAY);
+			CheckVersionId = ReadKeyToBoolean(STR_GLOBAL, STR_CHECK_VERSION_ID);
+			NormalBucket = ReadKeyToString(STR_GLOBAL, STR_NORMAL_BUCKET_NAME);
+			EncryptionBucket = ReadKeyToString(STR_GLOBAL, STR_ENCRYPTION_BUCKET_NAME);
+			TargetBucketPrefix = ReadKeyToString(STR_GLOBAL, STR_TARGET_BUCKET_PREFIX);
+			TestOption = ReadKeyToInt(STR_GLOBAL, STR_TEST_OPTION);
+			SSL = ReadKeyToInt(STR_GLOBAL, STR_CHECK_SSL);
 			DB = GetDBInfo();
 
 			MainUser = GetUser(STR_MAINUSER);
@@ -68,26 +85,26 @@ namespace ReplicationTest
 		}
 
 		private DBInfo GetDBInfo()
+		=> new DBInfo()
 		{
-			string Host = ReadKeyToString(STR_DB, STR_DB_HOST);
-			int Port = ReadKeyToInt(STR_DB, STR_DB_PORT);
-			string Name = ReadKeyToString(STR_DB, STR_DB_NAME);
-			string UserName = ReadKeyToString(STR_DB, STR_DB_USERNAME);
-			string Password = ReadKeyToString(STR_DB, STR_DB_PASSWORD);
-
-			return new DBInfo(Host, Port, Name, UserName, Password);
-		}
+			Host = ReadKeyToString(STR_DB, STR_DB_HOST),
+			Port = ReadKeyToInt(STR_DB, STR_DB_PORT),
+			Name = ReadKeyToString(STR_DB, STR_DB_NAME),
+			UserName = ReadKeyToString(STR_DB, STR_DB_USERNAME),
+			Password = ReadKeyToString(STR_DB, STR_DB_PASSWORD)
+		};
 
 		private UserData GetUser(string Section)
 		=> new UserData()
 		{
 			URL = ReadKeyToString(Section, STR_URL),
 			Port = ReadKeyToInt(Section, STR_PORT),
+			SSLPort = ReadKeyToInt(Section, STR_SSL_PORT),
 			RegionName = ReadKeyToString(Section, STR_REGION_NAME),
 			AccessKey = ReadKeyToString(Section, STR_ACCESSKEY),
 			SecretKey = ReadKeyToString(Section, STR_SECRETKEY)
 		};
-
+		
 		private string ReadKeyToString(string Section, string Key) => Ini[Section][Key].ToString();
 		private int ReadKeyToInt(string Section, string Key) => int.TryParse(Ini[Section][Key].ToString(), out int Value) ? Value : -1;
 		private bool ReadKeyToBoolean(string Section, string Key) => bool.TryParse(Ini[Section][Key].ToString(), out bool Value) && Value;

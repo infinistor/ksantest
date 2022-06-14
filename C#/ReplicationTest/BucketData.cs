@@ -15,6 +15,22 @@ namespace ReplicationTest
 		public string BucketName;
 		public string Prefix;
 		public bool DeleteMarker;
+		public bool Encryption;
+		public bool Create;
+
+		public BucketData()
+		{
+			Init();
+		}
+
+		public void Init()
+		{
+			BucketName = "";
+			Prefix = "";
+			DeleteMarker = false;
+			Encryption = false;
+			Create = false;
+		}
 
 		public bool Filtering { get { return !string.IsNullOrWhiteSpace(Prefix); } }
 	}

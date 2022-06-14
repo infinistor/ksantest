@@ -51,7 +51,7 @@ namespace ReplicationTest
 				if (BuildID > 0)
 				{
 					//DB 연결
-					DB = new DBManager(Config.DB);
+					DB = new DBManager(Config.DB, BuildID);
 					if (!DB.Connect())
 					{
 						log.Error("DB is not connected");
@@ -61,9 +61,8 @@ namespace ReplicationTest
 				}
 			}
 
-			var Test = new S3Test(Config, DB, BuildID);
-			if (Config.LocalOnly) Test.StartLocalOnly();
-			else Test.Start();
+			var Test = new ReplicationTest(Config, DB);
+			Test.Test();
 		}
 	}
 }

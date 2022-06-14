@@ -2,5 +2,7 @@ bin/
 obj/
 .vscode/
 config.ini
+gw2gw.ini
+gw2proxy.ini
 *.sh
 *.ps1

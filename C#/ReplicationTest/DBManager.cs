@@ -18,13 +18,30 @@ namespace ReplicationTest
 	class DBManager
 	{
 		private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+		private const string DB_ID = "id";
+		private const string DB_TEST_DATE = "test_date";
+		private const string DB_BUILD_ID = "build_id";
+		private const string DB_SOURCE_URL = "source_url";
+		private const string DB_SOURCE_BUCKET = "source_bucket";
+		private const string DB_SOURCE_ENCRYPTION = "source_encryption";
+		private const string DB_TARGET_URL = "target_url";
+		private const string DB_TARGET_REGION = "target_region";
+		private const string DB_TARGET_BUCKET = "target_bucket";
+		private const string DB_TARGET_ENCRYPTION = "target_encryption";
+		private const string DB_TARGET_FILTERING = "target_filtering";
+		private const string DB_TARGET_DELETEMARKER = "target_deletemarker";
+		private const string DB_RESULT = "result";
+		private const string DB_MESSAGE = "message";
+
 
 		public DBInfo DB;
+		public int BuildId;
 
 		public MySqlConnection Conn = null;
-		public DBManager(DBInfo DB)
+		public DBManager(DBInfo DB, int BuildId)
 		{
 			this.DB = DB;
+			this.BuildId = BuildId;
 		}
 
 		public bool Connect()
@@ -42,13 +59,13 @@ namespace ReplicationTest
 			}
 		}
 
-		public bool Insert(int BuildID, string TestCase, string Result, string Message)
+		public bool Insert(BucketData Source, BucketData Target, string MainUrl, UserData Alt, string Result, string Message)
 		{
 			if (Conn == null) return false;
-			if (BuildID == 0) return false;
+				string Query = $"insert into replication_test({DB_BUILD_ID}, {DB_SOURCE_URL}, {DB_SOURCE_BUCKET}, {DB_SOURCE_ENCRYPTION}, {DB_TARGET_URL}, {DB_TARGET_REGION}, {DB_TARGET_BUCKET}, {DB_TARGET_ENCRYPTION}, {DB_TARGET_FILTERING}, {DB_TARGET_DELETEMARKER}, {DB_RESULT}, {DB_MESSAGE})"
+							 + $" values({BuildId}, '{MainUrl}', '{Source.BucketName}', {Source.Encryption}, '{Alt.URL}', '{Alt.RegionName}', '{Target.BucketName}', {Target.Encryption}, {Target.Filtering}, {Target.DeleteMarker}, '{Result}', '{Message}');";
 			try
 			{
-				string Query = $"insert into replication_test(build_id, test_case, result, message) values({BuildID},'{TestCase}','{Result}','{Message}')";
 
 				MySqlCommand command = new MySqlCommand(Query, Conn);
 				if (command.ExecuteNonQuery() != 1)
@@ -60,7 +77,7 @@ namespace ReplicationTest
 			}
 			catch (Exception e)
 			{
-				log.Error(e);
+				log.Error(Query, e);
 				return false;
 			}
 		}

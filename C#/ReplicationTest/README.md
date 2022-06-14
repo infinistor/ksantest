@@ -44,11 +44,11 @@ dotnet build -c Release
 
 ### Config 설정
 ``` ini
-[Default]
+[Global]
 # replication이 완료될때까지 대기하는 시간 (단위 : sec)
 Delay = 30
-
-[Global]
+# 버전 정보 동기화 체크 여부
+CheckVersionId = true
 # 기본 설정 버킷 명
 MainNormalBucket = bucket-normal-bucket
 # SSE-S3 설정 버킷 명
@@ -69,12 +69,16 @@ SSL = 0
 # 원본 유저 및 시스템
 [Main User]
 URL = 0.0.0.0
+Port = 80
+SSLPort = 443
 AccessKey = accesskey
 SecretKey = secretkey
 
 # 대상 유저 및 시스템
 [Alt User]
 URL = 0.0.0.0
+Port = 80
+SSLPort = 443
 AccessKey = accesskey
 SecretKey = secretkey
 
