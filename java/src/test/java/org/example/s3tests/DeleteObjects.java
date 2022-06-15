@@ -41,6 +41,14 @@ public class DeleteObjects {
 
 	@Test
 	@Tag("KSAN")
+	@Tag("Versioning")
+	//버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제
+	public void test_multi_object_delete_versions() {
+		Test.test_multi_object_delete_versions();
+	}
+
+	@Test
+	@Tag("KSAN")
 	@Tag("quiet")
 	// @Tag("quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 	public void test_multi_object_delete_quiet() {
@@ -53,5 +61,13 @@ public class DeleteObjects {
 	// @Tag("업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 	public void test_directory_delete() {
 		Test.test_directory_delete();
+	}
+
+	@Test
+	@Tag("versioning")
+	@Tag("KSAN")
+	//버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
+	public void test_directory_delete_versions() {
+		Test.test_directory_delete_versions();
 	}
 }
