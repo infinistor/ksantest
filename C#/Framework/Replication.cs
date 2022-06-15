@@ -344,8 +344,8 @@ namespace s3tests2
         [TestProperty(MainData.Result, MainData.ResultFailure)]
         public void trest_replication_invalid_source_bucket_name()
         {
-            var SourceBucketName = GetNewBucketName();
-            var TargetBucketName = GetNewBucketName();
+            var SourceBucketName = GetNewBucketName(false);
+            var TargetBucketName = GetNewBucketName(false);
             var Client = GetClient();
 
             //룰 생성
@@ -380,7 +380,7 @@ namespace s3tests2
         public void trest_replication_invalid_source_bucket_versioning()
         {
             var SourceBucketName = GetNewBucket();
-            var TargetBucketName = GetNewBucketName();
+            var TargetBucketName = GetNewBucketName(false);
             var Client = GetClient();
 
             //룰 생성
@@ -415,7 +415,7 @@ namespace s3tests2
         public void trest_replication_invalid_target_bucket_name()
         {
             var SourceBucketName = GetNewBucket();
-            var TargetBucketName = GetNewBucketName();
+            var TargetBucketName = GetNewBucketName(false);
             var Client = GetClient();
 
             //룰 생성

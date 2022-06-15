@@ -29,7 +29,7 @@ namespace s3tests2
             var BucketNames = new List<string>();
             for (int i = 0; i < 5; i++)
             {
-                var BucketName = GetNewBucketName();
+                var BucketName = GetNewBucketName(false);
                 Client.PutBucket(BucketName);
                 BucketNames.Add(BucketName);
             }

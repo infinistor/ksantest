@@ -25,7 +25,7 @@ namespace s3tests2
         [TestProperty(MainData.Result, MainData.ResultFailure)]
         public void test_bucket_delete_notexist()
         {
-            var BucketName = GetNewBucketName();
+            var BucketName = GetNewBucketName(false);
             var Client = GetClient();
 
             var e = Assert.ThrowsException<AmazonS3Exception>(() => Client.DeleteBucket(BucketName));
