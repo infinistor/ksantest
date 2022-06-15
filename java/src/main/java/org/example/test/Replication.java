@@ -71,8 +71,8 @@ public class Replication extends TestBase {
 	// @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
 	public void test_replication_invalid_source_bucket_name() {
 
-		var SourceBucketName = GetNewBucketName();
-		var TargetBucketName = GetNewBucketName();
+		var SourceBucketName = GetNewBucketNameOnly();
+		var TargetBucketName = GetNewBucketNameOnly();
 		var Client = GetClient();
 		var Prefix = "test1";
 
@@ -101,7 +101,7 @@ public class Replication extends TestBase {
 	public void test_replication_invalid_source_bucket_versioning() {
 
 		var SourceBucketName = GetNewBucket();
-		var TargetBucketName = GetNewBucketName();
+		var TargetBucketName = GetNewBucket();
 		var Client = GetClient();
 		var Prefix = "test1";
 
@@ -132,7 +132,7 @@ public class Replication extends TestBase {
 	public void test_replication_invalid_target_bucket_name() {
 
 		var SourceBucketName = GetNewBucket();
-		var TargetBucketName = GetNewBucketName();
+		var TargetBucketName = GetNewBucketNameOnly();
 		var Client = GetClient();
 		var Prefix = "test1";
 

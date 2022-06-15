@@ -805,7 +805,7 @@ public class ListObjects extends TestBase
 	@Tag("KSAN")
 	//존재하지 않는 버킷 내 오브젝트들을 가져오려 했을 경우 실패 확인
 	public void test_bucket_notexist() {
-		var BucketName = GetNewBucketName();
+		var BucketName = GetNewBucketNameOnly();
 		var Client = GetClient();
 
 		var e = assertThrows(AmazonServiceException.class, () -> Client.listObjects(BucketName));

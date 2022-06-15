@@ -41,7 +41,7 @@ public class DeleteBucket extends TestBase
 	@Tag("KSAN")
 	//존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인
 	public void test_bucket_delete_notexist() {
-		var BucketName = GetNewBucketName();
+		var BucketName = GetNewBucketNameOnly();
 		var Client = GetClient();
 
 		var e = assertThrows(AmazonServiceException.class, () -> Client.deleteBucket(BucketName));

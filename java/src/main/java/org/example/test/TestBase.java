@@ -242,6 +242,13 @@ public class TestBase {
 		return Config.BucketPrefix.replace(STR_RANDOM, Utils.RandomText(RANDOM_PREFIX_TEXT_LENGTH));
 	}
 
+	public String GetNewBucketNameOnly() {
+		String BucketName = GetPrefix() + Utils.RandomText(RANDOM_SUFFIX_TEXT_LENGTH);
+		if (BucketName.length() > BUCKET_MAX_LENGTH)
+			BucketName = BucketName.substring(0, BUCKET_MAX_LENGTH - 1);
+		return BucketName;
+	}
+
 	public String GetNewBucketName() {
 		String BucketName = GetPrefix() + Utils.RandomText(RANDOM_SUFFIX_TEXT_LENGTH);
 		if (BucketName.length() > BUCKET_MAX_LENGTH)
@@ -660,7 +667,6 @@ public class TestBase {
 
 		if (CheckVersion)
 			CheckObjVersions(Client, BucketName, Key, VersionIDs, Contents);
-
 	}
 
 	public List<Tag> CreateSimpleTagset(int Count) {
@@ -1984,8 +1990,7 @@ public class TestBase {
 
 	}
 
-	public void CreateMultipleVersion(AmazonS3 Client, String BucketName, String Key, int NumVersions,
-			boolean CheckVersion) {
+	public void CreateMultipleVersion(AmazonS3 Client, String BucketName, String Key, int NumVersions, boolean CheckVersion) {
 		var VersionIDs = new ArrayList<String>();
 		var Contents = new ArrayList<String>();
 
@@ -2000,7 +2005,21 @@ public class TestBase {
 
 		if (CheckVersion)
 			CheckObjVersions(Client, BucketName, Key, VersionIDs, Contents);
+	}
+	public void CreateMultipleVersion(AmazonS3 Client, String BucketName, String Key, int NumVersions, boolean CheckVersion, String Body) {
+		var VersionIDs = new ArrayList<String>();
+		var Contents = new ArrayList<String>();
 
+		for (int i = 0; i < NumVersions; i++) {
+			var Response = Client.putObject(BucketName, Key, Body);
+			var VersionID = Response.getVersionId();
+
+			Contents.add(Body);
+			VersionIDs.add(VersionID);
+		}
+
+		if (CheckVersion)
+			CheckObjVersions(Client, BucketName, Key, VersionIDs, Contents);
 	}
 
 	public void DoTestCreateRemoveVersions(AmazonS3 Client, String BucketName, String Key, int Numversions,
