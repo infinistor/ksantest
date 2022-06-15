@@ -1,7 +1,7 @@
 /*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
-* the GNU General Public License as published by the Free Software Foundation, either version 
+* the GNU General Public License as published by the Free Software Foundation, either version
 * 3 of the License.  See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
@@ -13,59 +13,59 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace s3tests2
 {
-    [TestClass]
-    public class ListObjectsVersions : TestBase
-    {
-        [TestMethod("test_bucket_list_return_data_versioning")]
-        [TestProperty(MainData.Major, "ListObjectsVersions")]
-        [TestProperty(MainData.Minor, "Metadata")]
-        [TestProperty(MainData.Explanation, "Version정보를 가질 수 있는 버킷에서 ListObjectsVersions로 가져온 Metadata와 " +
-                                     "HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인")]
-        [TestProperty(MainData.Result, MainData.ResultSuccess)]
-        public void test_bucket_list_return_data_versioning()
-        {
-            var BucketName = GetNewBucket();
-            CheckConfigureVersioningRetry(BucketName, Amazon.S3.VersionStatus.Enabled);
-            var KeyNames = new List<string>() { "bar", "baz", "foo" };
-            BucketName = SetupObjects(KeyNames, BucketName: BucketName);
+	[TestClass]
+	public class ListObjectsVersions : TestBase
+	{
+		[TestMethod("test_bucket_list_return_data_versioning")]
+		[TestProperty(MainData.Major, "ListObjectsVersions")]
+		[TestProperty(MainData.Minor, "Metadata")]
+		[TestProperty(MainData.Explanation, "Version정보를 가질 수 있는 버킷에서 ListObjectsVersions로 가져온 Metadata와 " +
+									 "HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인")]
+		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		public void test_bucket_list_return_data_versioning()
+		{
+			var BucketName = GetNewBucket();
+			CheckConfigureVersioningRetry(BucketName, Amazon.S3.VersionStatus.Enabled);
+			var KeyNames = new List<string>() { "bar", "baz", "foo" };
+			BucketName = SetupObjects(KeyNames, BucketName: BucketName);
 
-            var Client = GetClient();
-            var Data = new List<ObjectData>();
+			var Client = GetClient();
+			var Data = new List<ObjectData>();
 
 
-            foreach (var Key in KeyNames)
-            {
-                var ObjResponse = Client.GetObjectMetadata(BucketName, Key);
-                var ACLResponse = Client.GetObjectACL(BucketName, Key);
+			foreach (var Key in KeyNames)
+			{
+				var ObjResponse = Client.GetObjectMetadata(BucketName, Key);
+				var ACLResponse = Client.GetObjectACL(BucketName, Key);
 
-                Data.Add(new ObjectData()
-                {
-                    Key = Key,
-                    DisplayName = ACLResponse.AccessControlList.Owner.DisplayName,
-                    Id = ACLResponse.AccessControlList.Owner.Id,
-                    ETag = ObjResponse.ETag,
-                    LastModified = ObjResponse.LastModified,
-                    ContentLength = ObjResponse.ContentLength,
-                    VersionId = ObjResponse.VersionId
-                });
-            }
+				Data.Add(new ObjectData()
+				{
+					Key = Key,
+					DisplayName = ACLResponse.AccessControlList.Owner.DisplayName,
+					Id = ACLResponse.AccessControlList.Owner.Id,
+					ETag = ObjResponse.ETag,
+					LastModified = ObjResponse.LastModified,
+					ContentLength = ObjResponse.ContentLength,
+					VersionId = ObjResponse.VersionId
+				});
+			}
 
-            var Response = Client.ListVersions(BucketName);
-            var ObjList = Response.Versions;
+			var Response = Client.ListVersions(BucketName);
+			var ObjList = Response.Versions;
 
-            foreach (var Object in ObjList)
-            {
-                var KeyName = Object.Key;
-                var KeyData = GetObjectToKey(KeyName, Data);
+			foreach (var Object in ObjList)
+			{
+				var KeyName = Object.Key;
+				var KeyData = GetObjectToKey(KeyName, Data);
 
-                Assert.IsNotNull(KeyData);
-                Assert.AreEqual(KeyData.ETag, Object.ETag);
-                Assert.AreEqual(KeyData.ContentLength, Object.Size);
-                Assert.AreEqual(KeyData.DisplayName, Object.Owner.DisplayName);
-                Assert.AreEqual(KeyData.Id, Object.Owner.Id);
-                Assert.AreEqual(KeyData.VersionId, Object.VersionId);
-                Assert.AreEqual(KeyData.LastModified, Object.LastModified.ToUniversalTime());
-            }
-        }
-    }
+				Assert.IsNotNull(KeyData);
+				Assert.AreEqual(KeyData.ETag, Object.ETag);
+				Assert.AreEqual(KeyData.ContentLength, Object.Size);
+				Assert.AreEqual(KeyData.DisplayName, Object.Owner.DisplayName);
+				Assert.AreEqual(KeyData.Id, Object.Owner.Id);
+				Assert.AreEqual(KeyData.VersionId, Object.VersionId);
+				Assert.AreEqual(KeyData.LastModified, Object.LastModified.ToUniversalTime());
+			}
+		}
+	}
 }

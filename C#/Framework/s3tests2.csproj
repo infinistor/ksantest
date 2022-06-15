@@ -141,7 +141,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
-    <None Include="app.config" />
     <None Include="awstests2.ini">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
