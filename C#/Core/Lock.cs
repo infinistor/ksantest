@@ -27,7 +27,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_object_lock_put_obj_lock()
 		{
-			var BucketName = GetNewBucketName();
+			var BucketName = GetNewBucketName(false);
 			var Client = GetClient();
 			Client.PutBucket(BucketName, ObjectLockEnabledForBucket: true);
 

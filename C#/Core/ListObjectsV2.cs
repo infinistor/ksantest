@@ -837,7 +837,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void test_bucketv2_notexist()
 		{
-			var BucketName = GetNewBucketName();
+			var BucketName = GetNewBucketName(false);
 			var Client = GetClient();
 
 			var e = Assert.Throws<AggregateException>(() => Client.ListObjectsV2(BucketName));
