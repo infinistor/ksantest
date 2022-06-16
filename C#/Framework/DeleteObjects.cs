@@ -9,6 +9,7 @@
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
 using System.Collections.Generic;
+using Amazon.S3;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace s3tests2
@@ -100,17 +101,17 @@ namespace s3tests2
 			var DelResponse = Client.DeleteObjects(BucketName, ObjectList);
 
 			Assert.AreEqual(KeyNames.Count, DelResponse.DeletedObjects.Count);
-			Assert.Empty(DelResponse.DeleteErrors);
+			Assert.AreEqual(0, DelResponse.DeleteErrors);
 
 			ListResponse = Client.ListObjectsV2(BucketName);
-			Assert.Empty(ListResponse.S3Objects);
+			Assert.AreEqual(0, ListResponse.S3Objects);
 
 			DelResponse = Client.DeleteObjects(BucketName, ObjectList);
 			Assert.AreEqual(KeyNames.Count, DelResponse.DeletedObjects.Count);
-			Assert.Empty(DelResponse.DeleteErrors);
+			Assert.AreEqual(0, DelResponse.DeleteErrors);
 
 			ListResponse = Client.ListObjectsV2(BucketName);
-			Assert.Empty(ListResponse.S3Objects);
+			Assert.AreEqual(0, ListResponse.S3Objects);
 		}
 
 		[TestMethod("test_multi_object_delete_quiet")]
