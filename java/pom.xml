@@ -104,6 +104,7 @@
 						<include>ListObjectsV2.java</include>
 						<include>ListObjectsVersions.java</include>
 						<include>Lock.java</include>
+						<include>Logging.java</include>
 						<include>Multipart.java</include>
 						<include>Policy.java</include>
 						<include>Post.java</include>

@@ -22,6 +22,8 @@ public class S3Config
 {
 	private final String STR_FILENAME = "config.ini";
 	// private final String STR_FILENAME = "s3tests_227.ini";
+	// private final String STR_FILENAME = "suwon_gw.ini";
+	// private final String STR_FILENAME = "awstests.ini";
 	//////////////////////////////SIGNATUREVERSION////////////////////////////////////
 	public final static String STR_SIGNATUREVERSION_V2 = "S3SignerType";
 	public final static String STR_SIGNATUREVERSION_V4 = "AWSS3V4SignerType";
