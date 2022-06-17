@@ -708,6 +708,17 @@ namespace s3tests
 			}
 		}
 
+		public void LoggingConfigCompare(S3BucketLoggingConfig Expected, S3BucketLoggingConfig Actual)
+		{
+			Assert.Equal(Expected.TargetBucketName, Actual.TargetBucketName);
+			
+			if(Expected.TargetPrefix == null) Assert.Null(Actual.TargetPrefix);
+			else Assert.Equal(Expected.TargetPrefix, Actual.TargetPrefix);
+
+			if (Expected.Grants == null && Actual.Grants == null) return;
+			CheckGrants(Expected.Grants, Actual.Grants);
+		}
+
 		#endregion
 
 		#region Get Data

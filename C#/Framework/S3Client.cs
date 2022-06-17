@@ -115,6 +115,17 @@ namespace s3tests2
 			var Request = new GetBucketLocationRequest() { BucketName = BucketName };
 			return Client.GetBucketLocation(Request);
 		}
+		
+		public PutBucketLoggingResponse PutBucketLogging(string BucketName, S3BucketLoggingConfig Config)
+		{
+			var Request = new PutBucketLoggingRequest() { BucketName = BucketName, LoggingConfig = Config };
+			return Client.PutBucketLogging(Request);
+		}
+		public GetBucketLoggingResponse GetBucketLogging(string BucketName)
+		{
+			var Request = new GetBucketLoggingRequest() { BucketName = BucketName };
+			return Client.GetBucketLogging(Request);
+		}
 
 		public PutBucketVersioningResponse PutBucketVersioning(string BucketName, bool? EnableMfaDelete = null, VersionStatus Status = null)
 		{

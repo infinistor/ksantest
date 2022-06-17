@@ -131,6 +131,31 @@ namespace s3tests
 			return GetBucketLocation(Request);
 		}
 
+		private PutBucketLoggingResponse PutBucketLogging(PutBucketLoggingRequest Request)
+		{
+			if (Client == null) return null;
+			Task<PutBucketLoggingResponse> Response = Client.PutBucketLoggingAsync(Request);
+			Response.Wait();
+			return Response.Result;
+		}
+		public PutBucketLoggingResponse PutBucketLogging(string BucketName, S3BucketLoggingConfig Config)
+		{
+			var Request = new PutBucketLoggingRequest() { BucketName = BucketName, LoggingConfig = Config };
+			return PutBucketLogging(Request);
+		}
+		private GetBucketLoggingResponse GetBucketLogging(GetBucketLoggingRequest Request)
+		{
+			if (Client == null) return null;
+			Task<GetBucketLoggingResponse> Response = Client.GetBucketLoggingAsync(Request);
+			Response.Wait();
+			return Response.Result;
+		}
+		public GetBucketLoggingResponse GetBucketLogging(string BucketName)
+		{
+			var Request = new GetBucketLoggingRequest() { BucketName = BucketName };
+			return GetBucketLogging(Request);
+		}
+
 		private PutBucketVersioningResponse PutBucketVersioning(PutBucketVersioningRequest Request)
 		{
 			if (Client == null) return null;

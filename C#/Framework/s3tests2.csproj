@@ -115,6 +115,7 @@
     <Compile Include="ListObjectsV2.cs" />
     <Compile Include="ListObjectsVersions.cs" />
     <Compile Include="Lock.cs" />
+    <Compile Include="Logging.cs" />
     <Compile Include="MainConfig.cs" />
     <Compile Include="MainData.cs" />
     <Compile Include="Multipart.cs" />
