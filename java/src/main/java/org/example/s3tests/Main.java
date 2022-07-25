@@ -23,9 +23,29 @@ import org.junit.platform.launcher.listeners.TestExecutionSummary;
 public class Main {
 	public static void main(String[] args) {
 
-		LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
-			.selectors(DiscoverySelectors.selectPackage("org.example.test"))
-			.build();
+		LauncherDiscoveryRequest request = null;
+
+		if (args.length == 1) {
+			String ClassName = args[0];
+			System.out.println("Class Test " + ClassName);
+
+			request = LauncherDiscoveryRequestBuilder.request()
+					.selectors(DiscoverySelectors.selectClass(GetTestPackageName(ClassName, null)))
+					.build();
+		} else if (args.length == 2) {
+			String ClassName = args[0];
+			String MethodName = args[1];
+			System.out.printf("Method Test %s.%s\n", ClassName, MethodName);
+
+			request = LauncherDiscoveryRequestBuilder.request()
+					.selectors(DiscoverySelectors.selectMethod(GetTestPackageName(ClassName, MethodName)))
+					.build();
+		} else {
+			System.out.println("Full Test");
+			request = LauncherDiscoveryRequestBuilder.request()
+					.selectors(DiscoverySelectors.selectPackage(GetTestPackageName(null,null)))
+					.build();
+		}
 
 		Launcher launcher = LauncherFactory.create();
 
@@ -39,16 +59,27 @@ public class Main {
 
 	private static void printReport(TestExecutionSummary summary) {
 		System.out.println(
-			"\n------------------------------------------" +
-			"\nTests started: " + summary.getTestsStartedCount() +
-			"\nTests failed: " + summary.getTestsFailedCount() +
-			"\nTests succeeded: " + summary.getTestsSucceededCount() +
-			"\n------------------------------------------");
+				"\n------------------------------------------" +
+						"\nTests started: " + summary.getTestsStartedCount() +
+						"\nTests failed: " + summary.getTestsFailedCount() +
+						"\nTests succeeded: " + summary.getTestsSucceededCount() +
+						"\n------------------------------------------");
 
 		if (summary.getTestsFailedCount() > 0) {
 			for (TestExecutionSummary.Failure f : summary.getFailures()) {
 				System.out.println(f.getTestIdentifier().getSource() + "\n\nException " + f.getException());
 			}
 		}
+	}
+
+	private static String PackageName = "org.example.test";
+
+	private static String GetTestPackageName(String ClassName, String MethodName) {
+		if (ClassName == null)
+			return PackageName;
+		else if (MethodName == null)
+			return String.format("%s.%s", PackageName, ClassName);
+		else
+			return String.format("%s.%s#%s", PackageName, ClassName, MethodName);
 	}
 }
