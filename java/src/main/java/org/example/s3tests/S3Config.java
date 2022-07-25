@@ -20,9 +20,9 @@ import org.ini4j.InvalidFileFormatException;
 
 public class S3Config
 {
-	private final String STR_FILENAME = "config.ini";
-	// private final String STR_FILENAME = "s3tests_227.ini";
-	// private final String STR_FILENAME = "suwon_gw.ini";
+	// private final String STR_FILENAME = "config.ini";
+	// private final String STR_FILENAME = "s3tests_229.ini";
+	private final String STR_FILENAME = "suwon_gw.ini";
 	// private final String STR_FILENAME = "awstests.ini";
 	//////////////////////////////SIGNATUREVERSION////////////////////////////////////
 	public final static String STR_SIGNATUREVERSION_V2 = "S3SignerType";
@@ -39,7 +39,8 @@ public class S3Config
 
 	/////////////////////////////////////Fixtures///////////////////////////////////////////
 	private final String STR_FIXTURES = "Fixtures";
-	private final String STR_BUCKETPREFIX = "BucketPrefix";
+	private final String STR_BUCKET_PREFIX = "BucketPrefix";
+	private final String STR_BUCKET_DELETE = "NotDelete";
 	/////////////////////////////////////User Data///////////////////////////////////////////
 	private final String STR_MAINUSER = "Main User";
 	private final String STR_ALTUSER = "Alt User";
@@ -62,6 +63,7 @@ public class S3Config
 	public String SignatureVersion;
 	public boolean IsSecure;
 	public String BucketPrefix;
+	public boolean NotDelete;
 	public UserData MainUser;
 	public UserData AltUser;
 
@@ -69,7 +71,7 @@ public class S3Config
 	{
 		if(_FileName == null) FileName = STR_FILENAME;
 		else if(_FileName.isBlank()) FileName = STR_FILENAME;
-		else                 	FileName = _FileName;
+		else FileName = _FileName;
 	}
 
 	public boolean GetConfig()
@@ -85,7 +87,8 @@ public class S3Config
 			SignatureVersion = ReadKeyToString(STR_S3, STR_SIGNATUREVERSION);
 			IsSecure = ReadKeyToBoolean(STR_S3, STR_ISSECURE);
 
-			BucketPrefix = ReadKeyToString(STR_FIXTURES, STR_BUCKETPREFIX);
+			BucketPrefix = ReadKeyToString(STR_FIXTURES, STR_BUCKET_PREFIX);
+			NotDelete = ReadKeyToBoolean(STR_FIXTURES, STR_BUCKET_DELETE);
 
 			MainUser = ReadUser(STR_MAINUSER);
 			AltUser = ReadUser(STR_ALTUSER);

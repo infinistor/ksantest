@@ -2114,7 +2114,7 @@ public class TestBase {
 
 	@AfterEach
 	public void Clear() {
-		BucketClear();
+		if (!Config.NotDelete) BucketClear();
 	}
 
 	public void BucketClear(AmazonS3 Client, String BucketName) {
