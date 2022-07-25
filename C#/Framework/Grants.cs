@@ -1140,29 +1140,57 @@ namespace s3tests2
 		}
 
 		[TestMethod("test_bucket_acl_revoke_all")]
-		[Ignore("c#에서는 Grants가 비어있는 정보로 전송 할 수 없음")]
 		[TestProperty(MainData.Major, "Grants")]
 		[TestProperty(MainData.Minor, "Delete")]
-		[TestProperty(MainData.Explanation, "버킷의 소유자정보를 포함한 모든 acl정보를 삭제할 경우 올바르게 적용되는지 확인")]
-		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		[TestProperty(MainData.Explanation, "버킷의 acl 설정이 누락될 경우 실패함을 확인")]
+		[TestProperty(MainData.Result, MainData.ResultFailure)]
 		public void test_bucket_acl_revoke_all()
 		{
 			var BucketName = GetNewBucket();
 			var Client = GetClient();
 
-			Client.PutObject(BucketName, Key: "foo", Body: "bar");
 			var Response = Client.GetBucketACL(BucketName);
-			var OldGrants = Response.AccessControlList.Grants;
 
-			var Policy = new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = new List<S3Grant>() };
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = null, Grants = Response.AccessControlList.Grants }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = new Owner(), Grants = Response.AccessControlList.Grants }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = null }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = new List<S3Grant>() }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = null, Grants = null }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = new Owner(), Grants = new List<S3Grant>() }));
+		}
 
-			Client.PutBucketACL(BucketName, AccessControlPolicy: Policy);
-			Response = Client.GetBucketACL(BucketName);
+		[TestMethod("test_object_acl_revoke_all")]
+		[TestProperty(MainData.Major, "Grants")]
+		[TestProperty(MainData.Minor, "Delete")]
+		[TestProperty(MainData.Explanation, "오브젝트의 acl 설정이 누락될 경우 실패함을 확인")]
+		[TestProperty(MainData.Result, MainData.ResultFailure)]
+		public void test_object_acl_revoke_all()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var Key = "foo";
 
-			Assert.AreEqual(0, Response.AccessControlList.Grants.Count);
+			Client.PutObject(BucketName, Key: Key, Body: "bar");
+			var Response = Client.GetObjectACL(BucketName, Key);
 
-			Policy.Grants = OldGrants;
-			Client.PutBucketACL(BucketName, AccessControlPolicy: Policy);
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = null, Grants = Response.AccessControlList.Grants }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = new Owner(), Grants = Response.AccessControlList.Grants }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = null }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = new List<S3Grant>() }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = null, Grants = null }));
+			Assert.ThrowsException<AmazonS3Exception>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = new Owner(), Grants = new List<S3Grant>() }));
 		}
 
 		[TestMethod("test_access_bucket_private_object_private")]

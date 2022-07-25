@@ -732,7 +732,7 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Delete")
-	// 버킷의 소유자정보를 포함한 모든 acl정보를 삭제할 경우 올바르게 적용되는지 확인
+	// 버킷의 acl 설정이 누락될 경우 실패함을 확인
 	public void test_bucket_acl_revoke_all()
 	{
 		var BucketName = GetNewBucket();
@@ -740,18 +740,53 @@ public class Grants extends TestBase
 
 		Client.putObject(BucketName, "foo", "bar");
 		var Response = Client.getBucketAcl(BucketName);
-		var OldGrants = Response.getGrantsAsList();
 
-		var Policy = new AccessControlList();
-		Policy.setOwner(Response.getOwner());
+		var ACL1 = new AccessControlList();
+		ACL1.setOwner(new Owner());
+		for (var Item : Response.getGrantsAsList()) ACL1.grantAllPermissions(Item);
 
-		Client.setBucketAcl(BucketName, Policy);
-		Response = Client.getBucketAcl(BucketName);
+		assertThrows(AmazonServiceException.class, () -> Client.setBucketAcl(BucketName, ACL1));
 
-		assertEquals(0, Response.getGrantsAsList().size());
+		var ACL2 = new AccessControlList();
+		ACL2.setOwner(Response.getOwner());
 
-		for (var Item : OldGrants) Policy.grantAllPermissions(Item);
-		Client.setBucketAcl(BucketName, Policy);
+		Client.setBucketAcl(BucketName, ACL2);
+
+		var ACL3 = new AccessControlList();
+		ACL3.setOwner(new Owner());
+
+		assertThrows(AmazonServiceException.class, () -> Client.setBucketAcl(BucketName, ACL3));
+	}
+
+	@Test
+	@Tag("Delete")
+	// 오브젝트의 acl 설정이 누락될 경우 실패함을 확인
+	public void test_object_acl_revoke_all()
+	{
+		var BucketName = GetNewBucket();
+		var Client = GetClient();
+		var Key = "foo";
+
+		Client.putObject(BucketName, Key, "bar");
+
+		var Response = Client.getObjectAcl(BucketName, Key);
+
+		var ACL1 = new AccessControlList();
+		ACL1.setOwner(new Owner());
+		for (var Item : Response.getGrantsAsList()) ACL1.grantAllPermissions(Item);
+
+		assertThrows(AmazonServiceException.class, () -> Client.setObjectAcl(BucketName, Key, ACL1));
+
+		var ACL2 = new AccessControlList();
+		ACL2.setOwner(Response.getOwner());
+		
+		Client.setObjectAcl(BucketName, Key, ACL2);
+
+		var ACL3 = new AccessControlList();
+		ACL3.setOwner(new Owner());
+
+		assertThrows(AmazonServiceException.class, () -> Client.setObjectAcl(BucketName, Key, ACL3));
+		
 	}
 
 	@Test

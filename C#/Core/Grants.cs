@@ -1138,29 +1138,137 @@ namespace s3tests
 			GetGrants);
 		}
 
-		[Fact(DisplayName = "test_bucket_acl_revoke_all", Skip = "c#에서는 Grants가 비어있는 정보로 전송 할 수 없음")]
+		[Fact(DisplayName = "test_bucket_acl_revoke_all")]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Delete")]
-		[Trait(MainData.Explanation, "버킷의 소유자정보를 포함한 모든 acl정보를 삭제할 경우 올바르게 적용되는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
+		[Trait(MainData.Explanation, "버킷의 acl 설정이 누락될 경우 실패함을 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void test_bucket_acl_revoke_all()
 		{
 			var BucketName = GetNewBucket();
 			var Client = GetClient();
 
-			Client.PutObject(BucketName, Key: "foo", Body: "bar");
 			var Response = Client.GetBucketACL(BucketName);
-			var OldGrants = Response.AccessControlList.Grants;
 
-			var Policy = new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = new List<S3Grant>() };
+			Assert.Throws<AggregateException>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = null, Grants = Response.AccessControlList.Grants }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = new Owner(), Grants = Response.AccessControlList.Grants }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = null }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = new List<S3Grant>() }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = null, Grants = null }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutBucketACL(BucketName, AccessControlPolicy: new S3AccessControlList() { Owner = new Owner(), Grants = new List<S3Grant>() }));
+		}
 
-			Client.PutBucketACL(BucketName, AccessControlPolicy: Policy);
-			Response = Client.GetBucketACL(BucketName);
+		[Fact(DisplayName = "test_object_acl_revoke_all")]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "오브젝트의 acl 설정이 누락될 경우 실패함을 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_acl_revoke_all()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var Key = "foo";
 
-			Assert.Empty(Response.AccessControlList.Grants);
+			Client.PutObject(BucketName, Key: Key, Body: "bar");
+			var Response = Client.GetObjectACL(BucketName, Key);
 
-			Policy.Grants = OldGrants;
-			Client.PutBucketACL(BucketName, AccessControlPolicy: Policy);
+			Assert.Throws<AggregateException>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = null, Grants = Response.AccessControlList.Grants }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = new Owner(), Grants = Response.AccessControlList.Grants }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = null }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = Response.AccessControlList.Owner, Grants = new List<S3Grant>() }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = null, Grants = null }));
+			Assert.Throws<AggregateException>(()
+				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = new Owner(), Grants = new List<S3Grant>() }));
+		}
+
+		[Fact(DisplayName = "test_object_acl_many")]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "오브젝트의 다양한 acl 설정이 정상적임을 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_acl_many()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var Key = "foo";
+
+			Client.PutObject(BucketName, Key: Key, Body: "bar");
+			var Response = Client.GetObjectACL(BucketName, Key);
+			
+			Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList()
+			{
+				Owner = null,
+				Grants = new List<S3Grant>(){ new S3Grant()
+				{
+					Permission = S3Permission.FULL_CONTROL,
+					Grantee = new S3Grantee()
+					{
+						CanonicalUser = Config.MainUser.UserId,
+						DisplayName = Config.MainUser.DisplayName,
+						URI = null,
+						EmailAddress = null,
+					}
+				}}
+			});
+			Client.GetObjectACL(BucketName, Key);
+
+			Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList()
+			{
+				Owner = null,
+				Grants = new List<S3Grant>(){ new S3Grant()
+				{
+					Permission = S3Permission.FULL_CONTROL,
+					Grantee = new S3Grantee()
+					{
+						DisplayName = Config.MainUser.DisplayName,
+						URI = null,
+						EmailAddress = null,
+					}
+				}}
+			});
+			Client.GetObjectACL(BucketName, Key);
+
+			Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList()
+			{
+				Owner = null,
+				Grants = new List<S3Grant>(){ new S3Grant()
+				{
+					Permission = S3Permission.FULL_CONTROL,
+					Grantee = new S3Grantee()
+					{
+						CanonicalUser = Config.MainUser.UserId,
+						URI = null,
+						EmailAddress = null,
+					}
+				}}
+			});
+			Client.GetObjectACL(BucketName, Key);
+
+			Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList()
+			{
+				Owner = null,
+				Grants = new List<S3Grant>(){ new S3Grant()
+				{
+					Permission = S3Permission.FULL_CONTROL,
+					Grantee = new S3Grantee()
+					{
+						URI = null,
+						EmailAddress = null,
+					}
+				}}
+			});
+			Client.GetObjectACL(BucketName, Key);
 		}
 
 		[Fact(DisplayName = "test_access_bucket_private_object_private")]
@@ -1413,7 +1521,7 @@ namespace s3tests
 			var AltClient = GetAltClient();
 
 			Assert.Throws<AggregateException>(() => AltClient.GetObject(BucketName, Key1));
-			Assert.Throws<AggregateException>(() =>AltClient.PutObject(BucketName, Key1, Body: "foooverwrite"));
+			Assert.Throws<AggregateException>(() => AltClient.PutObject(BucketName, Key1, Body: "foooverwrite"));
 
 			Assert.Throws<AggregateException>(() => AltClient.GetObject(BucketName, Key2));
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(BucketName, Key2, Body: "baroverwrite"));
@@ -1438,7 +1546,7 @@ namespace s3tests
 			var Response = AltClient.GetObject(BucketName, Key1);
 			var Body = GetBody(Response);
 			Assert.Equal("foocontent", Body);
-			Assert.Throws<AggregateException>(() =>AltClient.PutObject(BucketName, Key1, Body: "foooverwrite"));
+			Assert.Throws<AggregateException>(() => AltClient.PutObject(BucketName, Key1, Body: "foooverwrite"));
 
 			Assert.Throws<AggregateException>(() => AltClient.GetObject(BucketName, Key2));
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(BucketName, Key2, Body: "baroverwrite"));
@@ -1463,7 +1571,7 @@ namespace s3tests
 			var Response = AltClient.GetObject(BucketName, Key1);
 			var Body = GetBody(Response);
 			Assert.Equal("foocontent", Body);
-			Assert.Throws<AggregateException>(() =>AltClient.PutObject(BucketName, Key1, Body: "foooverwrite"));
+			Assert.Throws<AggregateException>(() => AltClient.PutObject(BucketName, Key1, Body: "foooverwrite"));
 
 			Assert.Throws<AggregateException>(() => AltClient.GetObject(BucketName, Key2));
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(BucketName, Key2, Body: "baroverwrite"));

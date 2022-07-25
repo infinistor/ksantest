@@ -14,7 +14,7 @@ namespace s3tests
 	{
 		#region Default Define
 		public const string STR_DEF_FILENAME = "awstests.ini";
-		// public const string STR_DEF_FILENAME = "s3tests_227.ini";
+		// public const string STR_DEF_FILENAME = "s3tests_229.ini";
 		public const string STR_SIGNATURE_VERSION_2 = "2";
 		public const string STR_SIGNATURE_VERSION_4 = "4";
 		#endregion
