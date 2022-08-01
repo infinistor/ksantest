@@ -595,5 +595,22 @@ namespace s3tests
 			Keys = GetKeys(Response);
 			Assert.Equal(2, Keys.Count);
 		}
+
+		[Fact(DisplayName = "test_object_emoji")]
+		[Trait(MainData.Major, "Bucket")]
+		[Trait(MainData.Minor, "PUT")]
+		[Trait(MainData.Explanation, "오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_emoji()
+		{
+			var Bucket = GetNewBucket();
+			var Client = GetClient();
+			var Key = "test❤🍕🍔🚗";
+
+			Client.PutObject(Bucket, Key);
+
+			var Response1 = Client.ListObjects(Bucket);
+			Assert.Single(Response1.S3Objects);
+		}
 	}
 }

@@ -585,5 +585,22 @@ namespace s3tests2
 			Keys = GetKeys(Response);
 			Assert.AreEqual(2, Keys.Count);
 		}
+		
+		[TestMethod("test_object_emoji")]
+		[TestProperty(MainData.Major, "Bucket")]
+		[TestProperty(MainData.Minor, "PUT")]
+		[TestProperty(MainData.Explanation, "오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인")]
+		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_emoji()
+		{
+			var Bucket = GetNewBucket();
+			var Client = GetClient();
+			var Key = "test❤🍕🍔🚗";
+
+			Client.PutObject(Bucket, Key);
+
+			var Response1 = Client.ListObjects(Bucket);
+			Assert.AreEqual(1, Response1.S3Objects.Count);
+		}
 	}
 }

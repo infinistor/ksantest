@@ -260,12 +260,19 @@ public class PutObject {
 		Test.test_put_object_dir_and_file();
 	}
 
-	
 	@Test
 	@Tag("PUT")
 	@Tag("KSAN")
 	// 오브젝트를 여러번 업로드 했을때 올바르게 반영되는지 확인
 	public void test_object_twice() {
 		Test.test_object_twice();
+	}
+	
+	@Test
+	@Tag("PUT")
+	@Tag("KSAN")
+	// 오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인
+	public void test_object_emoji() {
+		Test.test_object_emoji();
 	}
 }

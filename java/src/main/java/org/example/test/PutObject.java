@@ -592,4 +592,20 @@ public class PutObject extends TestBase
 		assertEquals(Dummy2.length(), Body.length());
 		assertTrue(Dummy2.equals(Body), MainData.NOT_MATCHED);
 	}
+
+	
+	@Test
+	@Tag("PUT")
+	@Tag("KSAN")
+	// 오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인
+	public void test_object_emoji() {
+		var BucketName = GetNewBucket();
+		var Client = GetClient();
+		var Key = "test❤🍕🍔🚗";
+
+		Client.putObject(BucketName, "asdf", Key);
+
+		var Response = Client.listObjects(BucketName);
+		assertEquals(1, Response.getObjectSummaries().size());
+	}
 }
