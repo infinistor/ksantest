@@ -275,4 +275,11 @@ public class PutObject {
 	public void test_object_emoji() {
 		Test.test_object_emoji();
 	}
+	
+	@Test
+	@Tag("ACL")
+	// acl 정보를 포함하여 업로드 가능한지 확인
+	public void test_object_in_acl() {
+		Test.test_object_in_acl();
+	}
 }

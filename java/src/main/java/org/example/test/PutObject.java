@@ -26,27 +26,28 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.CanonicalGrantee;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.DeleteVersionRequest;
 import com.amazonaws.services.s3.model.ObjectLockLegalHold;
 import com.amazonaws.services.s3.model.ObjectLockLegalHoldStatus;
 import com.amazonaws.services.s3.model.ObjectLockMode;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.Owner;
+import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.SetObjectLegalHoldRequest;
 
-public class PutObject extends TestBase
-{
+public class PutObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
-	{
+	static public void BeforeAll() {
 		System.out.println("PutObject Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
-	{
+	static public void AfterAll() {
 		System.out.println("PutObject End");
 	}
 
@@ -341,7 +342,8 @@ public class PutObject extends TestBase
 	@Test
 	@Tag("Lock")
 	@Tag("KSAN")
-	// [버킷의 Lock옵션을 활성화] LegalHold와 Lock유지기한을 설정하여 오브젝트 업로드할 경우 설정이 적용되는지 메타데이터를 통해 확인
+	// [버킷의 Lock옵션을 활성화] LegalHold와 Lock유지기한을 설정하여 오브젝트 업로드할 경우 설정이 적용되는지 메타데이터를 통해
+	// 확인
 	public void test_object_lock_uploading_obj() {
 		var BucketName = GetNewBucketName();
 		var Client = GetClient();
@@ -410,7 +412,7 @@ public class PutObject extends TestBase
 	// [SignatureVersion2] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인
 	public void test_put_empty_object_signature_version_2() {
 		var KeyNames = new ArrayList<>(
-				Arrays.asList(new String[] { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" }));
+				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
 		var BucketName = CreateObjectsToBodyV2(KeyNames, "");
 		var Client = GetClientV2();
 
@@ -426,7 +428,7 @@ public class PutObject extends TestBase
 	// [SignatureVersion4] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인
 	public void test_put_empty_object_signature_version_4() {
 		var KeyNames = new ArrayList<>(
-				Arrays.asList(new String[] { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" }));
+				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
 		var BucketName = CreateObjectsToBodyV4(KeyNames, "", true);
 		var Client = GetClientV4(true);
 
@@ -442,7 +444,7 @@ public class PutObject extends TestBase
 	// [SignatureVersion2] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void test_put_object_signature_version_2() {
 		var KeyNames = new ArrayList<>(
-				Arrays.asList(new String[] { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" }));
+				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
 		var BucketName = CreateObjectsV2(KeyNames);
 		var Client = GetClientV2();
 
@@ -458,7 +460,7 @@ public class PutObject extends TestBase
 	// [SignatureVersion4] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void test_put_object_signature_version_4() {
 		var KeyNames = new ArrayList<>(
-				Arrays.asList(new String[] { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" }));
+				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
 		var BucketName = CreateObjectsV4(KeyNames, true);
 		var Client = GetClientV4(true);
 
@@ -474,7 +476,7 @@ public class PutObject extends TestBase
 	// [SignatureVersion4, UseChunkEncoding = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void test_put_object_use_chunk_encoding() {
 		var KeyNames = new ArrayList<>(
-				Arrays.asList(new String[] { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" }));
+				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
 		var BucketName = CreateObjectsV4(KeyNames, true);
 		var Client = GetClientV4(true);
 
@@ -487,10 +489,11 @@ public class PutObject extends TestBase
 	@Test
 	@Tag("Encoding")
 	@Tag("KSAN")
-	// [SignatureVersion4, UseChunkEncoding = true, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	// [SignatureVersion4, UseChunkEncoding = true, DisablePayloadSigning = true]
+	// 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void test_put_object_use_chunk_encoding_and_disable_payload_signing() {
 		var KeyNames = new ArrayList<>(
-				Arrays.asList(new String[] { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" }));
+				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
 		var BucketName = CreateObjectsHttps(KeyNames, true, true);
 		var Client = GetClientV4(true);
 
@@ -506,7 +509,7 @@ public class PutObject extends TestBase
 	// [SignatureVersion4, UseChunkEncoding = false] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void test_put_object_not_chunk_encoding() {
 		var KeyNames = new ArrayList<>(
-				Arrays.asList(new String[] { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" }));
+				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
 		var BucketName = CreateObjectsV4(KeyNames, false);
 		var Client = GetClientV4(false);
 
@@ -519,10 +522,11 @@ public class PutObject extends TestBase
 	@Test
 	@Tag("Encoding")
 	@Tag("KSAN")
-	// [SignatureVersion4, UseChunkEncoding = false, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	// [SignatureVersion4, UseChunkEncoding = false, DisablePayloadSigning = true]
+	// 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void test_put_object_not_chunk_encoding_and_disable_payload_signing() {
 		var KeyNames = new ArrayList<>(
-				Arrays.asList(new String[] { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" }));
+				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
 		var BucketName = CreateObjectsHttps(KeyNames, false, true);
 		var Client = GetClientV4(false);
 
@@ -571,7 +575,7 @@ public class PutObject extends TestBase
 		Keys = GetKeys(Response.getObjectSummaries());
 		assertEquals(2, Keys.size());
 	}
-	
+
 	@Test
 	@Tag("PUT")
 	@Tag("KSAN")
@@ -593,7 +597,6 @@ public class PutObject extends TestBase
 		assertTrue(Dummy2.equals(Body), MainData.NOT_MATCHED);
 	}
 
-	
 	@Test
 	@Tag("PUT")
 	@Tag("KSAN")
@@ -607,5 +610,31 @@ public class PutObject extends TestBase
 
 		var Response = Client.listObjects(BucketName);
 		assertEquals(1, Response.getObjectSummaries().size());
+	}
+
+	@Test
+	@Tag("ACL")
+	// acl 정보를 포함하여 업로드 가능한지 확인
+	public void test_object_in_acl() {
+		var BucketName = GetNewBucket();
+		var Client = GetClient();
+		var Key = "foo";
+		var Metadata = new ObjectMetadata();
+		Metadata.setContentType("text/plain");
+		
+		var AltUserID = Config.AltUser.UserID;
+		var AltDisplayName = Config.AltUser.DisplayName;
+
+		var ACL = new AccessControlList();
+		ACL.setOwner(new Owner(AltUserID, AltDisplayName));
+
+		var AltUser = new CanonicalGrantee(AltUserID);
+		AltUser.setDisplayName(AltDisplayName);
+		ACL.grantPermission(AltUser, Permission.FullControl);
+
+		var Request = new PutObjectRequest(BucketName, Key, CreateBody(Key), Metadata);
+		Request.setAccessControlList(ACL);
+
+		Client.putObject(Request);
 	}
 }
