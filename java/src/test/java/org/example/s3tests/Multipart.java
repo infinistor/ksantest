@@ -206,4 +206,12 @@ public class Multipart {
 	public void test_multipart_copy_many() {
 		Test.test_multipart_copy_many();
 	}
+
+	@Test
+	@Tag("List")
+	@Tag("KSAN")
+	// 멀티파트 목록 확인
+	public void test_multipart_list_parts() {
+		Test.test_multipart_list_parts();
+	}
 }

@@ -622,5 +622,28 @@ namespace s3tests2
 			Body += UploadData.Body;
 			CheckContent(Client, BucketName, DestKey2, Body);
 		}
+		
+		[TestMethod("test_multipart_list_parts")]
+		[TestProperty(MainData.Major, "Multipart")]
+		[TestProperty(MainData.Minor, "List")]
+		[TestProperty(MainData.Explanation, "멀티파트 목록 확인")]
+		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		public void test_multipart_list_parts()
+		{
+			var BucketName = GetNewBucket();
+			var Key = "mymultipart";
+			var ContentType = "text/bla";
+			var Size = 50 * MainData.MB;
+			var Client = GetClient();
+
+			var UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, PartSize: MainData.MB, ContentType: ContentType);
+
+			for (var i = 0; i < 41; i += 10)
+			{
+				var Response = Client.ListParts(BucketName, Key, UploadData.UploadId, MaxParts: 10, PartNumberMarker: i);
+				Assert.AreEqual(10, Response.Parts.Count);
+				PartsETagCompare(UploadData.Parts.GetRange(i, 10), Response.Parts);
+			}
+		}
 	}
 }

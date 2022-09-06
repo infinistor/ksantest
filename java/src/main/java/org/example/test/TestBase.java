@@ -953,8 +953,7 @@ public class TestBase {
 		return UploadData;
 	}
 
-	public MultipartUploadData SetupMultipartUpload(AmazonS3 Client, String BucketName, String Key, int Size,
-			ObjectMetadata MetadataList) {
+	public MultipartUploadData SetupMultipartUpload(AmazonS3 Client, String BucketName, String Key, int Size, ObjectMetadata MetadataList) {
 		var UploadData = new MultipartUploadData();
 		if (MetadataList == null) {
 			MetadataList = new ObjectMetadata();

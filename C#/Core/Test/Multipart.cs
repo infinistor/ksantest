@@ -549,9 +549,8 @@ namespace s3tests
 
 			var Response = Client.ListParts(BucketName, Key, UploadData.UploadId);
 			Assert.Equal(UploadData.Parts.Count, Response.Parts.Count);
-			Assert.Equal(UploadData.Parts, Response.Parts);
+			PartsETagCompare(UploadData.Parts, Response.Parts);
 		}
-
 
 		[Fact(DisplayName = "test_abort_multipart_upload_list")]
 		[Trait(MainData.Major, "Multipart")]
@@ -613,6 +612,29 @@ namespace s3tests
 			// 업로드가 올바르게 되었는지 확인
 			Body += UploadData.Body;
 			CheckContent(Client, BucketName, DestKey2, Body);
+		}
+
+		[Fact(DisplayName = "test_multipart_list_parts")]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "멀티파트 목록 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_multipart_list_parts()
+		{
+			var BucketName = GetNewBucket();
+			var Key = "mymultipart";
+			var ContentType = "text/bla";
+			var Size = 50 * MainData.MB;
+			var Client = GetClient();
+
+			var UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, PartSize: MainData.MB, ContentType: ContentType);
+
+			for (var i = 0; i < 41; i += 10)
+			{
+				var Response = Client.ListParts(BucketName, Key, UploadData.UploadId, MaxParts: 10, PartNumberMarker: i);
+				Assert.Equal(10, Response.Parts.Count);
+				PartsETagCompare(UploadData.Parts.GetRange(i, 10), Response.Parts);
+			}
 		}
 	}
 }

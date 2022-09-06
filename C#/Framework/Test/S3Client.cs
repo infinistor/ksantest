@@ -898,13 +898,15 @@ namespace s3tests2
 			return Client.ListMultipartUploads(Request);
 		}
 
-		public ListPartsResponse ListParts(string BucketNume, string Key, string UploadId)
+		public ListPartsResponse ListParts(string BucketNume, string Key, string UploadId, int MaxParts = 1000, int PartNumberMarker = 0)
 		{
 			var Request = new ListPartsRequest()
 			{
 				BucketName = BucketNume,
 				Key = Key,
 				UploadId = UploadId,
+				MaxParts = MaxParts,
+				PartNumberMarker = PartNumberMarker.ToString(),
 			};
 
 			return Client.ListParts(Request);

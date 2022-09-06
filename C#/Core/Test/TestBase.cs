@@ -719,6 +719,16 @@ namespace s3tests
 			CheckGrants(Expected.Grants, Actual.Grants);
 		}
 
+		public void PartsETagCompare(List<PartETag> Expected, List<PartDetail> Actual)
+		{
+			Assert.Equal(Expected.Count, Actual.Count);
+			for (int i = 0; i < Expected.Count; i++)
+			{
+				Assert.Equal(Expected[i].ETag, Actual[i].ETag);
+				Assert.Equal(Expected[i].PartNumber, Actual[i].PartNumber);
+			}
+		}
+
 		#endregion
 
 		#region Get Data
