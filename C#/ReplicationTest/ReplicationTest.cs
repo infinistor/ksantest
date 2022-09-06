@@ -215,7 +215,7 @@ namespace ReplicationTest
 			{
 				if (Main[i].Key != Alt[i].Key) return $"{Main[i].Key} != {Alt[i].Key}";
 				if (Main[i].Size != Alt[i].Size) return $"{Main[i].Key} Size does not match! {Main[i].Size} != {Alt[i].Size}";
-				if (Main[i].ETag != Alt[i].ETag) return $"{Main[i].Key} ETag does not match! {Main[i].ETag} != {Alt[i].ETag}";
+				if (Config.CheckEtag && Main[i].ETag != Alt[i].ETag) return $"{Main[i].Key} ETag does not match! {Main[i].ETag} != {Alt[i].ETag}";
 				if (Main[i].IsDeleteMarker != Alt[i].IsDeleteMarker) return $"{Main[i].Key} DeleteMarker does not match! {Main[i].IsDeleteMarker} != {Alt[i].IsDeleteMarker}";
 				if (Config.CheckVersionId && Main[i].VersionId != Alt[i].VersionId) return $"{Main[i].Key} VersionId does not match! {Main[i].VersionId} != {Alt[i].VersionId}";
 			}

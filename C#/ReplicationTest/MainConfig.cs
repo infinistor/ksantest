@@ -17,6 +17,7 @@ namespace ReplicationTest
 		private const string STR_GLOBAL = "Global";
 		private const string STR_DELAY = "Delay";
 		private const string STR_CHECK_VERSION_ID = "CheckVersionId";
+		private const string STR_CHECK_ETAG = "CheckEtag";
 		private const string STR_NORMAL_BUCKET_NAME = "NormalBucket";
 		private const string STR_ENCRYPTION_BUCKET_NAME = "EncryptionBucket";
 		private const string STR_TARGET_BUCKET_PREFIX = "TargetBucketPrefix";
@@ -48,6 +49,7 @@ namespace ReplicationTest
 
 		public int Delay;
 		public bool CheckVersionId;
+		public bool CheckEtag;
 		public string NormalBucket;
 		public string EncryptionBucket;
 		public string TargetBucketPrefix;
@@ -73,6 +75,7 @@ namespace ReplicationTest
 
 			Delay = ReadKeyToInt(STR_GLOBAL, STR_DELAY);
 			CheckVersionId = ReadKeyToBoolean(STR_GLOBAL, STR_CHECK_VERSION_ID);
+			CheckEtag = ReadKeyToBoolean(STR_GLOBAL, STR_CHECK_ETAG);
 			NormalBucket = ReadKeyToString(STR_GLOBAL, STR_NORMAL_BUCKET_NAME);
 			EncryptionBucket = ReadKeyToString(STR_GLOBAL, STR_ENCRYPTION_BUCKET_NAME);
 			TargetBucketPrefix = ReadKeyToString(STR_GLOBAL, STR_TARGET_BUCKET_PREFIX);
