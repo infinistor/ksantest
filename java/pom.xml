@@ -110,12 +110,12 @@
 						<include>Post.java</include>
 						<include>PutBucket.java</include>
 						<include>PutObject.java</include>
+						<include>Replication.java</include>
 						<include>SSE_C.java</include>
 						<include>SSE_S3.java</include>
 						<include>Taggings.java</include>
 						<include>Versioning.java</include>
 						<include>Website.java</include>
-						<include>Replication.java</include>
 					</includes>
 				</configuration>
 			</plugin>
