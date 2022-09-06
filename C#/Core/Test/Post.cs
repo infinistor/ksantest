@@ -82,7 +82,7 @@ namespace s3tests
 
 			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
-			var Payload = new Dictionary<string, object>() {
+			var Payload  = new Dictionary<string, object>() {
 					{ "key", Key },
 					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
