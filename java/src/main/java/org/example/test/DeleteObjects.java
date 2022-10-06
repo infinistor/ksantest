@@ -209,6 +209,5 @@ public class DeleteObjects extends TestBase
 		
 		VersResponse = Client.listVersions(BucketName, "");
 		assertEquals(18, VersResponse.getVersionSummaries().size());
-
 	}
 }
