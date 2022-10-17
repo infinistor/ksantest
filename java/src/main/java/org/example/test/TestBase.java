@@ -345,7 +345,7 @@ public class TestBase {
 
 		if (KeyList != null && Client != null) {
 			for (var Key : KeyList)
-				Client.putObject(BucketName, Key, Key);
+				Client.putObject(BucketName, Key, "");
 		}
 
 		return BucketName;
