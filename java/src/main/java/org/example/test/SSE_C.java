@@ -52,7 +52,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//1Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_encrypted_transfer_1b()
 	{
@@ -60,7 +60,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//1KB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_encrypted_transfer_1kb()
 	{
@@ -68,7 +68,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//1MB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_encrypted_transfer_1MB()
 	{
@@ -76,7 +76,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_encrypted_transfer_13b()
 	{
@@ -84,7 +84,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "Metadata")
+	@Tag("Metadata")
 	//SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인
 	public void test_encryption_sse_c_method_head()
 	{
@@ -112,7 +112,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "ERROR")
+	@Tag("ERROR")
 	//SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인
 	public void test_encryption_sse_c_present()
 	{
@@ -138,7 +138,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "ERROR")
+	@Tag("ERROR")
 	//SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 	public void test_encryption_sse_c_other_key()
 	{
@@ -168,7 +168,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "ERROR")
+	@Tag("ERROR")
 	//SSE-C 설정값중 key-md5값이 올바르지 않을 경우 업로드 실패 확인
 	public void test_encryption_sse_c_invalid_md5()
 	{
@@ -194,7 +194,7 @@ public class SSE_C extends TestBase
 
 
 	@Test
-	@Tag( "ERROR")
+	@Tag("ERROR")
 	//SSE-C 설정값중 key-md5값을 누락했을 경우 업로드 성공 확인
 	public void test_encryption_sse_c_no_md5()
 	{
@@ -218,7 +218,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "ERROR")
+	@Tag("ERROR")
 	//SSE-C 설정값중 key값을 누락했을 경우 업로드 실패 확인
 	public void test_encryption_sse_c_no_key()
 	{
@@ -227,7 +227,7 @@ public class SSE_C extends TestBase
 
 	@Test
 	@Disabled("JAVA 에서는 algorithm값을 누락해도 기본값이 지정되어 있어 에러가 발생하지 않음")
-	@Tag( "ERROR")
+	@Tag("ERROR")
 	// @Tag("SSE-C 설정값중 algorithm값을 누락했을 경우 업로드 실패 확인
 	public void test_encryption_key_no_sse_c()
 	{
@@ -250,7 +250,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "Multipart")
+	@Tag("Multipart")
 	//멀티파트업로드를 SSE-C 설정하여 업로드 가능 확인
 	public void test_encryption_sse_c_multipart_upload()
 	{
@@ -288,7 +288,7 @@ public class SSE_C extends TestBase
 
 
 	@Test
-	@Tag( "Multipart")
+	@Tag("Multipart")
 	//SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 	public void test_encryption_sse_c_multipart_bad_download()
 	{
@@ -330,7 +330,7 @@ public class SSE_C extends TestBase
 
 
 	@Test
-	@Tag( "Post")
+	@Tag("Post")
 	//Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인
 	public void test_encryption_sse_c_post_object_authenticated_request() throws MalformedURLException
 	{
@@ -470,7 +470,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "Multipart")
+	@Tag("Multipart")
 	//SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 mulitcopy 로 복사 가능한지 확인
 	public void test_sse_c_encryption_multipart_copypart_upload()
 	{
@@ -510,7 +510,7 @@ public class SSE_C extends TestBase
 	}
 
 	@Test
-	@Tag( "Multipart")
+	@Tag("Multipart")
 	//SSE-C 설정하여 Multipart와 Copypart를 모두 사용하여 오브젝트가 업로드 가능한지 확인
 	public void test_sse_c_encryption_multipart_copy_many()
 	{

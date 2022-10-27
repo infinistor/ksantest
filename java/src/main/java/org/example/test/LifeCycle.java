@@ -52,7 +52,6 @@ public class LifeCycle extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//버킷의 Lifecycle 규칙을 추가 가능한지 확인
 	public void test_lifecycle_set() {
 		var BucketName = GetNewBucket();
@@ -72,7 +71,6 @@ public class LifeCycle extends TestBase
 
 	@Test
 	@Tag("Get")
-	@Tag("KSAN")
 	//버킷에 설정한 Lifecycle 규칙을 가져올 수 있는지 확인
 	public void test_lifecycle_get() {
 		var BucketName = GetNewBucket();
@@ -438,7 +436,6 @@ public class LifeCycle extends TestBase
 	
 	@Test
 	@Tag("Delete")
-	@Tag("KSAN")
 	// @Tag("버킷의 Lifecycle 규칙을 삭제 가능한지 확인
 	public void test_lifecycle_delete()
 	{
@@ -462,7 +459,6 @@ public class LifeCycle extends TestBase
 	// 테스트 규격이 확정되지 않음
 	// @Test
 	// @Tag("Get")
-	// @Tag("KSAN")
 	// //버킷에 다양한 Lifecycle 설정이 가능한지 확인
 	// public void test_lifecycle_set_and() {
 	// 	var BucketName = GetNewBucket();

@@ -50,7 +50,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Bucket")
-	@Tag("KSAN")
 	// [bucket_acl : default] 권한을 설정하지 않고 생성한 버킷의 default acl정보가 올바른지 확인
 	public void test_bucket_acl_default()
 	{
@@ -75,7 +74,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Bucket")
-	@Tag("KSAN")
 	// [bucket_acl : public-read] 권한을 public-read로 생성한 버킷의 acl정보가 올바른지 확인
 	public void test_bucket_acl_canned_during_create()
 	{
@@ -99,7 +97,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Bucket")
-	@Tag("KSAN")
 	// [bucket_acl : public-read => bucket_acl : private] 권한을 public-read로 생성한 버킷을 private로 변경할경우 올바르게 적용되는지 확인
 	public void test_bucket_acl_canned()
 	{
@@ -131,7 +128,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Bucket")
-	@Tag("KSAN")
 	// [bucket_acl : public-read-write] 권한을 public-read-write로 생성한 버킷의 acl정보가 올바른지 확인
 	public void test_bucket_acl_canned_publicreadwrite()
 	{
@@ -156,7 +152,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Bucket")
-	@Tag("KSAN")
 	// [bucket_acl : authenticated-read] 권한을 authenticated-read로 생성한 버킷의 acl정보가 올바른지 확인
 	public void test_bucket_acl_canned_authenticatedread()
 	{
@@ -180,7 +175,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Object")
-	@Tag("KSAN")
 	// [object_acl : default] 권한을 설정하지 않고 생성한 오브젝트의 default acl정보가 올바른지 확인
 	public void test_object_acl_default()
 	{
@@ -205,7 +199,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Object")
-	@Tag("KSAN")
 	// [object_acl : public-read] 권한을 public-read로 생성한 오브젝트의 acl정보가 올바른지 확인
 	public void test_object_acl_canned_during_create()
 	{
@@ -235,7 +228,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Object")
-	@Tag("KSAN")
 	// [object_acl : public-read => object_acl : private] 권한을 public-read로 생성한 오브젝트를 private로 변경할경우 올바르게 적용되는지 확인
 	public void test_object_acl_canned()
 	{
@@ -273,7 +265,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Object")
-	@Tag("KSAN")
 	// [object_acl : public-read-write] 권한을 public-read-write로 생성한 오브젝트의 acl정보가 올바른지 확인
 	public void test_object_acl_canned_publicreadwrite()
 	{
@@ -304,7 +295,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Object")
-	@Tag("KSAN")
 	// [object_acl : authenticated-read] 권한을 authenticated-read로 생성한 오브젝트의 acl정보가 올바른지 확인
 	public void test_object_acl_canned_authenticatedread()
 	{
@@ -334,7 +324,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Object")
-	@Tag("KSAN")
 	// [bucket_acl: public-read-write] [object_acl : public-read-write => object_acl : bucket-owner-read]" +
 	//"메인 유저가 권한을 public-read-write로 생성한 버켓에서 서브유저가 업로드한 오브젝트를 서브 유저가 권한을 bucket-owner-read로 변경하였을때 올바르게 적용되는지 확인
 	public void test_object_acl_canned_bucketownerread()
@@ -374,7 +363,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Object")
-	@Tag("KSAN")
 	// [bucket_acl: public-read-write] [object_acl : public-read-write => object_acl : bucket-owner-full-control] " +
 	//"메인 유저가 권한을 public-read-write로 생성한 버켓에서 서브유저가 업로드한 오브젝트를 서브 유저가 권한을 bucket-owner-full-control로 변경하였을때 올바르게 적용되는지 확인
 	public void test_object_acl_canned_bucketownerfullcontrol()
@@ -501,7 +489,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
 	public void test_object_acl()
 	{
@@ -510,7 +497,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
 	public void test_object_acl_write()
 	{
@@ -519,7 +505,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
 	public void test_object_acl_writeacp()
 	{
@@ -528,7 +513,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
 	public void test_object_acl_read()
 	{
@@ -537,7 +521,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
 	public void test_object_acl_readacp()
 	{
@@ -546,7 +529,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : FULL_CONTROL
 	public void test_bucket_acl_grant_userid_fullcontrol()
 	{
@@ -572,7 +554,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ
 	public void test_bucket_acl_grant_userid_read()
 	{
@@ -586,7 +567,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ_ACP
 	public void test_bucket_acl_grant_userid_readacp()
 	{
@@ -600,7 +580,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE
 	public void test_bucket_acl_grant_userid_write()
 	{
@@ -614,7 +593,6 @@ public class Grants extends TestBase
 
 	@Test
 	@Tag("Permission")
-	@Tag("KSAN")
 	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE_ACP
 	public void test_bucket_acl_grant_userid_writeacp()
 	{

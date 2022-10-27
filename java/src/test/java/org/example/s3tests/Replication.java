@@ -24,6 +24,7 @@ public class Replication {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("Check")
 	// @Tag("버킷의 Replication 설정이 되는지 확인(put/get/delete)
 	public void test_replication_set() {
@@ -31,6 +32,7 @@ public class Replication {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
 	public void test_replication_invalid_source_bucket_name() {
@@ -38,6 +40,7 @@ public class Replication {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
 	public void test_replication_invalid_source_bucket_versioning() {
@@ -45,6 +48,7 @@ public class Replication {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
 	public void test_replication_invalid_target_bucket_name() {
@@ -52,6 +56,7 @@ public class Replication {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
 	public void test_replication_invalid_target_bucket_versioning() {

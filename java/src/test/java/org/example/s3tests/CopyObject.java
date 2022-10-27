@@ -153,6 +153,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("Imatch")
 	// ifmatch 값을 추가하여 오브젝트를 복사할 경우 성공확인
 	public void test_copy_object_ifmatch_good() {
@@ -160,6 +161,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("Imatch")
 	// ifmatch에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패 확인
 	public void test_copy_object_ifmatch_failed() {
@@ -167,6 +169,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인
 	public void test_copy_nor_src_to_nor_bucket_and_obj() {
@@ -174,6 +177,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공
 	// 확인
@@ -182,6 +186,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공
 	// 확인
@@ -190,6 +195,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
 	// 복사 성공 확인
@@ -198,6 +204,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공
 	// 확인
@@ -206,6 +213,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
 	// 복사 성공 확인
@@ -214,6 +222,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
 	// 복사 성공 확인
@@ -222,6 +231,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : encryption, dest bucket : encryption, dest obj : encryption]
 	// 오브젝트 복사 성공 확인
@@ -230,6 +240,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source bucket : encryption, source obj : normal, dest bucket : normal, dest
 	// obj : normal] 오브젝트 복사 성공 확인
@@ -238,6 +249,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공
 	// 확인
@@ -246,6 +258,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공
 	// 확인
@@ -254,6 +267,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
 	// 복사 성공 확인
@@ -262,6 +276,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공
 	// 확인
@@ -270,6 +285,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
 	// 복사 성공 확인
@@ -278,6 +294,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
 	// 복사 성공 확인
@@ -286,6 +303,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// [source obj : encryption, dest bucket : encryption, dest obj : encryption]
 	// 오브젝트 복사 성공 확인
@@ -294,6 +312,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// 일반 오브젝트에서 다양한 방식으로 복사 성공 확인
 	public void test_copy_to_normal_source() {
@@ -301,6 +320,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// SSE-S3암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
 	public void test_copy_to_sse_s3_source() {
@@ -308,6 +328,7 @@ public class CopyObject {
 	}
 
 	@Test
+	@Tag("KSAN")
 	@Tag("encryption")
 	// SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
 	public void test_copy_to_sse_c_source() {

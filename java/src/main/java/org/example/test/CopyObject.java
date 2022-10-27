@@ -50,7 +50,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//오브젝트의 크기가 0일때 복사가 가능한지 확인
 	public void test_object_copy_zero_size()
 	{
@@ -69,7 +68,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//동일한 버킷에서 오브젝트 복사가 가능한지 확인
 	public void test_object_copy_same_bucket()
 	{
@@ -89,7 +87,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("ContentType")
-	@Tag("KSAN")
 	//ContentType을 설정한 오브젝트를 복사할 경우 복사된 오브젝트도 ContentType값이 일치하는지 확인
 	public void test_object_copy_verify_contenttype()
 	{
@@ -114,7 +111,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("OverWrite")
-	@Tag("KSAN")
 	//복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러 확인
 	public void test_object_copy_to_itself()
 	{
@@ -134,7 +130,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("OverWrite")
-	@Tag("KSAN")
 	//복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
 	public void test_object_copy_to_itself_with_metadata()
 	{
@@ -155,7 +150,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//다른 버킷으로 오브젝트 복사가 가능한지 확인
 	public void test_object_copy_diff_bucket()
 	{
@@ -177,7 +171,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//[bucket1:created main user, object:created main user / bucket2:created sub user] 메인유저가 만든 버킷, 오브젝트를 서브유저가 만든 버킷으로 오브젝트 복사가 불가능한지 확인
 	public void test_object_copy_not_owned_bucket()
 	{
@@ -204,7 +197,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//[bucket_acl = main:full control,sub : full control | object_acl = default] 서브유저가 접근권한이 있는 버킷에 들어있는 접근권한이 있는 오브젝트를 복사가 가능한지 확인
 	public void test_object_copy_not_owned_object_bucket()
 	{
@@ -233,7 +225,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("OverWrite")
-	@Tag("KSAN")
 	//권한정보를 포함하여 복사할때 올바르게 적용되는지 확인 메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인
 	public void test_object_copy_canned_acl()
 	{
@@ -258,7 +249,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//크고 작은 용량의 오브젝트가 복사되는지 확인
 	public void test_object_copy_retaining_metadata()
 	{
@@ -289,7 +279,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//크고 작은 용량의 오브젝트및 메타데이터가 복사되는지 확인
 	public void test_object_copy_replacing_metadata()
 	{
@@ -326,7 +315,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("ERROR")
-	@Tag("KSAN")
 	//존재하지 않는 버킷에서 존재하지 않는 오브젝트 복사 실패 확인
 	public void test_object_copy_bucket_not_found()
 	{
@@ -340,7 +328,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("ERROR")
-	@Tag("KSAN")
 	//존재하지않는 오브젝트 복사 실패 확인
 	public void test_object_copy_key_not_found()
 	{
@@ -354,7 +341,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Version")
-	@Tag("KSAN")
 	//버저닝된 오브젝트 복사 확인
 	public void test_object_copy_versioned_bucket()
 	{
@@ -412,7 +398,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Version")
-	@Tag("KSAN")
 	//[버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공 확인
 	public void test_object_copy_versioned_url_encoding()
 	{
@@ -431,7 +416,6 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Multipart")
-	@Tag("KSAN")
 	//[버킷에 버저닝 설정] 멀티파트로 업로드된 오브젝트 복사 확인
 	public void test_object_copy_versioning_multipart_upload()
 	{

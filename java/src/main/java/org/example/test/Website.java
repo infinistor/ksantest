@@ -34,7 +34,6 @@ public class Website extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//버킷의 Websize 설정 조회 확인
 	public void test_webiste_get_buckets()
 	{
@@ -47,7 +46,6 @@ public class Website extends TestBase
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	//버킷의 Websize 설정이 가능한지 확인
 	public void test_webiste_put_buckets()
 	{
@@ -66,7 +64,6 @@ public class Website extends TestBase
 
 	@Test
 	@Tag("Delete")
-	@Tag("KSAN")
 	//버킷의 Websize 설정이 삭제가능한지 확인
 	public void test_webiste_delete_buckets()
 	{

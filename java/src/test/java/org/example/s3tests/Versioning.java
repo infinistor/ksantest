@@ -185,4 +185,12 @@ public class Versioning {
 	public void test_versioning_get_object_head() {
 		Test.test_versioning_get_object_head();
 	}
+
+	@Test
+	@Tag("KSAN")
+	@Tag("Delete")
+	// 버전이 여러개인 오브젝트의 최신 버전을 삭제 했을때 이전버전이 최신버전으로 변경되는지 확인
+	public void test_versioning_latest() {
+		Test.test_versioning_latest();
+	}
 }

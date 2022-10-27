@@ -47,7 +47,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	@Tag("KSAN")
 	// 비어있는 오브젝트를 멀티파트로 업로드 실패 확인
 	public void test_multipart_upload_empty() {
 		var BucketName = GetNewBucket();
@@ -66,7 +65,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	// 파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인
 	public void test_multipart_upload_small() {
 		var BucketName = GetNewBucket();
@@ -83,7 +81,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Copy")
-	@Tag("KSAN")
 	// 버킷a에서 버킷b로 멀티파트 복사 성공확인
 	public void test_multipart_copy_small() {
 		var SourceKey = "foo";
@@ -105,7 +102,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	@Tag("KSAN")
 	// 범위설정을 잘못한 멀티파트 복사 실패 확인
 	public void test_multipart_copy_invalid_range() {
 		var Client = GetClient();
@@ -129,7 +125,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Range")
-	@Tag("KSAN")
 	// 범위를 지정한 멀티파트 복사 성공확인
 	public void test_multipart_copy_without_range() {
 		var Client = GetClient();
@@ -157,7 +152,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("SpecialNames")
-	@Tag("KSAN")
 	// 특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인
 	public void test_multipart_copy_special_names() {
 		var SourceBucketName = GetNewBucket();
@@ -182,7 +176,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Put")
-	@Tag("KSAN")
 	// 멀티파트 업로드 확인
 	public void test_multipart_upload() {
 		var BucketName = GetNewBucket();
@@ -252,7 +245,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Duplicate")
-	@Tag("KSAN")
 	// 멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
 	public void test_multipart_upload_resend_part() {
 		var BucketName = GetNewBucket();
@@ -269,7 +261,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Put")
-	@Tag("KSAN")
 	// 한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
 	public void test_multipart_upload_multiple_sizes() {
 		var BucketName = GetNewBucket();
@@ -358,7 +349,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	@Tag("KSAN")
 	// 멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
 	public void test_multipart_upload_size_too_small() {
 		var BucketName = GetNewBucket();
@@ -377,7 +367,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	// 내용물을 채운 멀티파트 업로드 성공 확인
 	public void test_multipart_upload_contents() {
 		var BucketName = GetNewBucket();
@@ -386,7 +375,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("OverWrite")
-	@Tag("KSAN")
 	// 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
 	public void test_multipart_upload_overwrite_existing_object() {
 		var BucketName = GetNewBucket();
@@ -420,7 +408,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Cancel")
-	@Tag("KSAN")
 	// 멀티파트 업로드하는 도중 중단 성공 확인
 	public void test_abort_multipart_upload() {
 		var BucketName = GetNewBucket();
@@ -440,7 +427,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	@Tag("KSAN")
 	// 존재하지 않은 멀티파트 업로드 중단 실패 확인
 	public void test_abort_multipart_upload_not_found() {
 		var BucketName = GetNewBucket();
@@ -458,7 +444,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("List")
-	@Tag("KSAN")
 	// 멀티파트 업로드 중인 목록 확인
 	public void test_list_multipart_upload() {
 		var BucketName = GetNewBucket();
@@ -539,7 +524,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	@Tag("KSAN")
 	// 버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인
 	public void test_atomic_multipart_upload_write() {
 		var BucketName = GetNewBucket();
@@ -563,7 +547,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("List")
-	@Tag("KSAN")
 	// 멀티파트 업로드 목록 확인
 	public void test_multipart_upload_list() {
 		var BucketName = GetNewBucket();
@@ -585,7 +568,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("Cancel")
-	@Tag("KSAN")
 	// 멀티파트 업로드하는 도중 중단 성공 확인
 	public void test_abort_multipart_upload_list() {
 		var BucketName = GetNewBucket();
@@ -646,7 +628,6 @@ public class Multipart extends TestBase {
 
 	@Test
 	@Tag("List")
-	@Tag("KSAN")
 	// 멀티파트 목록 확인
 	public void test_multipart_list_parts() {
 		var BucketName = GetNewBucket();

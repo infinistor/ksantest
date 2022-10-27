@@ -196,7 +196,6 @@ public class GetObject extends TestBase
 
 	@Test
 	@Tag("Range")
-	@Tag("KSAN")
 	// 지정한 범위로 오브젝트 다운로드가 가능한지 확인
 	public void test_ranged_request_response_code()
 	{
@@ -216,7 +215,6 @@ public class GetObject extends TestBase
 
 	@Test
 	@Tag("Range")
-	@Tag("KSAN")
 	// 지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
 	public void test_ranged_big_request_response_code()
 	{
@@ -236,7 +234,6 @@ public class GetObject extends TestBase
 
 	@Test
 	@Tag("Range")
-	@Tag("KSAN")
 	// 특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
 	public void test_ranged_request_skip_leading_bytes_response_code()
 	{
@@ -256,7 +253,6 @@ public class GetObject extends TestBase
 
 	@Test
 	@Tag("Range")
-	@Tag("KSAN")
 	// 끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
 	public void test_ranged_request_return_trailing_bytes_response_code()
 	{
@@ -276,7 +272,6 @@ public class GetObject extends TestBase
 
 	@Test
 	@Tag("Range")
-	@Tag("KSAN")
 	// 오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
 	public void test_ranged_request_invalid_range()
 	{
@@ -296,7 +291,6 @@ public class GetObject extends TestBase
 
 	@Test
 	@Tag("Range")
-	@Tag("KSAN")
 	// 비어있는 오브젝트를 범위를 지정하여 다운로드 실패 확인
 	public void test_ranged_request_empty_object()
 	{
@@ -316,7 +310,6 @@ public class GetObject extends TestBase
 
 	@Test
 	@Tag("Get")
-	@Tag("KSAN")
 	// 같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	public void test_get_object_many()
 	{
@@ -331,7 +324,6 @@ public class GetObject extends TestBase
 
 	@Test
 	@Tag("Get")
-	@Tag("KSAN")
 	// 같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	public void test_range_object_many()
 	{

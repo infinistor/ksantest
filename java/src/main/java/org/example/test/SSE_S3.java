@@ -50,7 +50,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//1Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_sse_s3_encrypted_transfer_1b()
 	{
@@ -58,7 +58,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//1KB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_sse_s3_encrypted_transfer_1kb()
 	{
@@ -66,7 +66,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//1MB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_sse_s3_encrypted_transfer_1MB()
 	{
@@ -74,7 +74,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//13Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_sse_s3_encrypted_transfer_13b()
 	{
@@ -82,7 +82,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "Metadata")
+	@Tag("Metadata")
 	//SSE-S3 설정하여 업로드한 오브젝트의 헤더정보읽기가 가능한지 확인
 	public void test_sse_s3_encryption_method_head()
 	{
@@ -102,7 +102,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "Multipart")
+	@Tag("Multipart")
 	//멀티파트업로드를 SSE-S3 설정하여 업로드 가능 확인
 	public void test_sse_s3_encryption_multipart_upload()
 	{
@@ -228,7 +228,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "CopyObject")
+	@Tag("CopyObject")
 	//버킷에 SSE-S3 설정하여 업로드한 1kb 오브젝트를 복사 가능한지 확인
 	public void test_copy_object_encryption_1kb()
 	{
@@ -236,7 +236,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "CopyObject")
+	@Tag("CopyObject")
 	//버킷에 SSE-S3 설정하여 업로드한 256kb 오브젝트를 복사 가능한지 확인
 	public void test_copy_object_encryption_256kb()
 	{
@@ -244,7 +244,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "CopyObject")
+	@Tag("CopyObject")
 	//버킷에 SSE-S3 설정하여 업로드한 1mb 오브젝트를 복사 가능한지 확인
 	public void test_copy_object_encryption_1mb()
 	{
@@ -252,7 +252,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//[버킷에 SSE-S3 설정] 업로드, 다운로드 성공 확인
 	public void test_sse_s3_bucket_put_get()
 	{
@@ -280,7 +280,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//[버킷에 SSE-S3 설정, SignatureVersion4] 업로드, 다운로드 성공 확인
 	public void test_sse_s3_bucket_put_get_v4()
 	{
@@ -308,7 +308,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true] 업로드, 다운로드 성공 확인
 	public void test_sse_s3_bucket_put_get_use_chunk_encoding()
 	{
@@ -336,7 +336,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true, DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	public void test_sse_s3_bucket_put_get_use_chunk_encoding_and_disable_payload_signing()
 	{
@@ -364,7 +364,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false] 업로드, 다운로드 성공 확인
 	public void test_sse_s3_bucket_put_get_not_chunk_encoding()
 	{
@@ -392,7 +392,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "PutGet")
+	@Tag("PutGet")
 	//[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false, DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	public void test_sse_s3_bucket_put_get_not_chunk_encoding_and_disable_payload_signing()
 	{
@@ -520,7 +520,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "Multipart")
+	@Tag("Multipart")
 	//SSE-S3 설정하여 멀티파트로 업로드한 오브젝트를 mulitcopy 로 복사 가능한지 확인
 	public void test_sse_s3_encryption_multipart_copypart_upload()
 	{
@@ -561,7 +561,7 @@ public class SSE_S3 extends TestBase
 	}
 
 	@Test
-	@Tag( "Multipart")
+	@Tag("Multipart")
 	//SSE-S3 설정하여 Multipart와 Copypart를 모두 사용하여 오브젝트가 업로드 가능한지 확인
 	public void test_sse_s3_encryption_multipart_copy_many()
 	{
