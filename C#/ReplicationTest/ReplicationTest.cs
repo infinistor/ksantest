@@ -14,6 +14,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -114,9 +115,27 @@ namespace ReplicationTest
 					log.Info("Bucket Replication!");
 
 					// 파일 업로드
-					var ObjectList = new List<string>() { "aaa", "bbb", "ccc", "1/ddd", "2/eee" };
+					var ObjectList = new List<string>() { "aaa", "bbb", "ccc", "1/ddd", "1/eee", "2/fff" };
+
+					// Put
 					foreach (var ObjectName in ObjectList) PutObject(MainClient, MainBucket.BucketName, ObjectName);
+
+					// Delete
+					DeleteObject(MainClient, MainBucket.BucketName, "1/eee");
+
+					// Copy
+					CopyObject(MainClient, MainBucket.BucketName, ObjectList[0], MainBucket.BucketName, "copy");
+
+					// another copy
+					var AntherBucket = MainBucket.BucketName + "-anther";
+					var CopyKey = "source-copy";
+					CreateBucket(MainClient, AntherBucket);
+					PutObject(MainClient, AntherBucket, CopyKey);
+					CopyObject(MainClient, AntherBucket, CopyKey, MainBucket.BucketName, "another-copy");
+
+					// multipart
 					MultipartUpload(MainClient, MainBucket.BucketName, "multi");
+					log.Info("Upload End!");
 
 					Thread.Sleep(Config.Delay * 1000);
 
@@ -124,6 +143,7 @@ namespace ReplicationTest
 					if (Config.TestOption != TEST_OPTION_ANOTHER_ONLY) Compare2Target(MainClient, MainBucket, MainClient, MainTargetList);
 					if (Config.TestOption != TEST_OPTION_LOCAL_ONLY) Compare2Target(MainClient, MainBucket, AltClient, AltTargetList);
 					log.Info("Replication Check End!");
+					BucketClear(MainClient, AntherBucket);
 				}
 				else
 					log.Info("Bucket Replication Failed!");
@@ -155,6 +175,7 @@ namespace ReplicationTest
 					Status = ReplicationRuleStatus.Enabled,
 					Destination = new ReplicationDestination() { BucketArn = $"{BucketArnPrefix}{Bucket.BucketName}" },
 					Filter = new ReplicationRuleFilter() { Prefix = Bucket.Prefix, },
+					DeleteMarkerReplication = new DeleteMarkerReplication() { Status = Bucket.DeleteMarker ? DeleteMarkerReplicationStatus.Enabled : DeleteMarkerReplicationStatus.Disabled }
 				};
 
 				Rules.Add(Rule);
@@ -188,8 +209,10 @@ namespace ReplicationTest
 			foreach (var Bucket in Buckets)
 			{
 				log.Info($"[{Bucket.BucketName}] Compare Check!");
-				var SourceData = GetListVersions(Main, MainBucket.BucketName, Bucket.Filtering ? Bucket.Prefix : null);
-				var TargetData = GetListVersions(Alt, Bucket.BucketName, Bucket.Filtering ? Bucket.Prefix : null);
+				var SourceData = GetListVersions(Main, MainBucket.BucketName, Bucket.Filtering ? Bucket.Prefix : null).OrderBy(x=> x.Key).ThenByDescending(x=> x.VersionId).ToList();
+				var TargetData = GetListVersions(Alt, Bucket.BucketName, Bucket.Filtering ? Bucket.Prefix : null).OrderBy(x=> x.Key).ThenByDescending(x=> x.VersionId).ToList();
+
+				if (!Bucket.DeleteMarker) SourceData.RemoveAll(i => i.IsDeleteMarker);
 
 				var Message = CompareMain2Alt(SourceData, TargetData);
 				var Result = "";
@@ -200,6 +223,11 @@ namespace ReplicationTest
 				}
 				else
 				{
+					Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+					foreach (var Version in SourceData) Console.WriteLine($"[{Version.Key:10}\t{Version.Size}\t{Version.ETag}\t{Version.IsDeleteMarker}\t{Version.VersionId}]");
+					Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+					foreach (var Version in TargetData) Console.WriteLine($"[{Version.Key:10}\t{Version.Size}\t{Version.ETag}\t{Version.IsDeleteMarker}\t{Version.VersionId}]");
+					Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 					log.Error($"[{Bucket.BucketName}] is not match! -> {Message}");
 					Result = "Failed";
 				}
@@ -210,14 +238,13 @@ namespace ReplicationTest
 		string CompareMain2Alt(List<S3ObjectVersion> Main, List<S3ObjectVersion> Alt)
 		{
 			if (Main.Count != Alt.Count) return $"{Main.Count} != {Alt.Count}";
-
-			for (int i = 0; i < Main.Count; i++)
+			for (int Index = 0; Index < Main.Count; Index++)
 			{
-				if (Main[i].Key != Alt[i].Key) return $"{Main[i].Key} != {Alt[i].Key}";
-				if (Main[i].Size != Alt[i].Size) return $"{Main[i].Key} Size does not match! {Main[i].Size} != {Alt[i].Size}";
-				if (Config.CheckEtag && Main[i].ETag != Alt[i].ETag) return $"{Main[i].Key} ETag does not match! {Main[i].ETag} != {Alt[i].ETag}";
-				if (Main[i].IsDeleteMarker != Alt[i].IsDeleteMarker) return $"{Main[i].Key} DeleteMarker does not match! {Main[i].IsDeleteMarker} != {Alt[i].IsDeleteMarker}";
-				if (Config.CheckVersionId && Main[i].VersionId != Alt[i].VersionId) return $"{Main[i].Key} VersionId does not match! {Main[i].VersionId} != {Alt[i].VersionId}";
+				if (Main[Index].Key != Alt[Index].Key) return $"{Main[Index].Key} != {Alt[Index].Key}";
+				if (Main[Index].Size != Alt[Index].Size) return $"{Main[Index].Key} Size does not match! {Main[Index].Size} != {Alt[Index].Size}";
+				if (Config.CheckEtag && Main[Index].ETag != Alt[Index].ETag) return $"{Main[Index].Key} ETag does not match! {Main[Index].ETag} != {Alt[Index].ETag}";
+				if (Main[Index].IsDeleteMarker != Alt[Index].IsDeleteMarker) return $"{Main[Index].Key} DeleteMarker does not match! {Main[Index].IsDeleteMarker} != {Alt[Index].IsDeleteMarker}";
+				if (!Main[Index].IsDeleteMarker && Config.CheckVersionId && Main[Index].VersionId != Alt[Index].VersionId) return $"{Main[Index].Key} VersionId does not match! {Main[Index].VersionId} != {Alt[Index].VersionId}";
 			}
 			return "";
 		}
@@ -389,6 +416,42 @@ namespace ReplicationTest
 				};
 
 				var TaskResponse = Client.PutObjectAsync(Request);
+				TaskResponse.Wait();
+				var Response = TaskResponse.Result;
+			}
+			catch (AggregateException e) { log.Error($"StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}", e); }
+			catch (Exception e) { log.Error(e); }
+		}
+		static void DeleteObject(AmazonS3Client Client, string BucketName, string ObjectName)
+		{
+			try
+			{
+				var Request = new DeleteObjectRequest
+				{
+					BucketName = BucketName,
+					Key = ObjectName,
+				};
+
+				var TaskResponse = Client.DeleteObjectAsync(Request);
+				TaskResponse.Wait();
+				var Response = TaskResponse.Result;
+			}
+			catch (AggregateException e) { log.Error($"StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}", e); }
+			catch (Exception e) { log.Error(e); }
+		}
+		static void CopyObject(AmazonS3Client Client, string SourceBucket, string SourceKey, string DestinationBucket, string DestinationKey)
+		{
+			try
+			{
+				var Request = new CopyObjectRequest
+				{
+					SourceBucket = SourceBucket,
+					SourceKey = SourceKey,
+					DestinationBucket = DestinationBucket,
+					DestinationKey = DestinationKey,
+				};
+
+				var TaskResponse = Client.CopyObjectAsync(Request);
 				TaskResponse.Wait();
 				var Response = TaskResponse.Result;
 			}

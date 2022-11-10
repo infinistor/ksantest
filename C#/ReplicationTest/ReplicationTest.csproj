@@ -3,6 +3,7 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<AssemblyVersion>1.1.0.0</AssemblyVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -14,10 +15,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AWSSDK.Core" Version="3.5.3.9" />
-		<PackageReference Include="AWSSDK.S3" Version="3.5.10.2" />
-		<PackageReference Include="log4net" Version="2.0.14" />
-		<PackageReference Include="MySql.Data" Version="8.0.28" />
+		<PackageReference Include="AWSSDK.Core" Version="3.7.100.13" />
+		<PackageReference Include="AWSSDK.S3" Version="3.7.101.13" />
+		<PackageReference Include="log4net" Version="2.0.15" />
+		<PackageReference Include="MySql.Data" Version="8.0.31" />
 	</ItemGroup>
 
 	<ItemGroup>
