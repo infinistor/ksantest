@@ -160,4 +160,20 @@ public class GetObject {
 	public void test_range_object_many() {
 		Test.test_range_object_many();
 	}
+
+	@Test
+	@Tag("KSAN")
+	@Tag("location")
+	// 버킷의 location 정보 조회
+	public void test_get_bucket_location() {
+		Test.test_get_bucket_location();
+	}
+
+	@Test
+	@Tag("KSAN")
+	@Tag("Restore")
+	//오브젝트 복구 명령이 성공하는지 확인
+	public void test_restore_object() {
+		Test.test_restore_object();
+	}
 }
