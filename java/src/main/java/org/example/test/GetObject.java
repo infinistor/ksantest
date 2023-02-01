@@ -327,16 +327,6 @@ public class GetObject extends TestBase {
 	}
 
 	@Test
-	@Tag("location")
-	// 버킷의 location 정보 조회
-	public void test_get_bucket_location()
-	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		Client.getBucketLocation(BucketName);
-	}
-
-	@Test
 	@Tag("Restore")
 	//오브젝트 복구 명령이 성공하는지 확인
 	public void test_restore_object() {

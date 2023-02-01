@@ -245,4 +245,14 @@ public class PutBucket extends TestBase
 		ObjectList = GetObjectList(BucketName, null);
 		assertEquals(KeyNames, ObjectList);
 	}
+
+	@Test
+	@Tag("location")
+	// 버킷의 location 정보 조회
+	public void test_get_bucket_location()
+	{
+		var BucketName = GetNewBucket();
+		var Client = GetClient();
+		Client.getBucketLocation(BucketName);
+	}
 }

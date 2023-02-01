@@ -207,4 +207,11 @@ public class PutBucket {
 		Test.test_bucket_recreate_not_overriding();
 	}
 
+	@Test
+	@Tag("KSAN")
+	@Tag("location")
+	// 버킷의 location 정보 조회
+	public void test_get_bucket_location() {
+		Test.test_get_bucket_location();
+	}
 }
