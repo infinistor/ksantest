@@ -485,7 +485,7 @@ public class CopyObject extends TestBase
 	}
 
 	@Test
-	@Tag("Imatch")
+	@Tag("If Match")
 	//ifmatch 값을 추가하여 오브젝트를 복사할 경우 성공확인
 	public void test_copy_object_ifmatch_good()
 	{
@@ -501,7 +501,7 @@ public class CopyObject extends TestBase
 	}
 
 	@Test
-	@Tag("Imatch")
+	@Tag("If Match")
 	//ifmatch에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패 확인
 	public void test_copy_object_ifmatch_failed()
 	{
@@ -510,7 +510,7 @@ public class CopyObject extends TestBase
 
 		Client.putObject(BucketName, "foo", "bar");
 
-		var Result = Client.copyObject(new CopyObjectRequest(BucketName, "foo", BucketName, "bar").withMatchingETagConstraint("ABCORZ"));
+		var Result = Client.copyObject(new CopyObjectRequest(BucketName, "foo", BucketName, "bar").withMatchingETagConstraint("ABC"));
 		assertNull(Result);
 	}
 
@@ -728,13 +728,13 @@ public class CopyObject extends TestBase
 		var Size2 = 256 * 1024;
 		var Size3 = 1024 * 1024;
 
-		// TestObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, Size1);
-		// TestObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, Size2);
-		// TestObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, Size3);
+		TestObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, Size1);
+		TestObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, Size2);
+		TestObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, Size3);
 
-		// TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, Size1);
-		// TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, Size2);
-		// TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, Size3);
+		TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, Size1);
+		TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, Size2);
+		TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, Size3);
 
 		TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, Size1);
 		TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, Size2);
