@@ -2,7 +2,7 @@
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
-* 3 of the License.  See LICENSE for details
+* 3 of the License. See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
@@ -88,7 +88,7 @@ namespace s3tests
 
 		[Fact(DisplayName = "test_object_copy_to_itself")]
 		[Trait(MainData.Major, "CopyObject")]
-		[Trait(MainData.Minor, "OverWrite")]
+		[Trait(MainData.Minor, "Overwrite")]
 		[Trait(MainData.Explanation, "복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void test_object_copy_to_itself()
@@ -107,7 +107,7 @@ namespace s3tests
 
 		[Fact(DisplayName = "test_object_copy_to_itself_with_metadata")]
 		[Trait(MainData.Major, "CopyObject")]
-		[Trait(MainData.Minor, "OverWrite")]
+		[Trait(MainData.Minor, "Overwrite")]
 		[Trait(MainData.Explanation, "복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 " +
 									 "모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
@@ -208,7 +208,7 @@ namespace s3tests
 
 		[Fact(DisplayName = "test_object_copy_canned_acl")]
 		[Trait(MainData.Major, "CopyObject")]
-		[Trait(MainData.Minor, "OverWrite")]
+		[Trait(MainData.Minor, "Overwrite")]
 		[Trait(MainData.Explanation, "권한정보를 포함하여 복사할때 올바르게 적용되는지 확인 " +
 									 "메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]

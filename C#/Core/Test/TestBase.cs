@@ -119,6 +119,7 @@ namespace s3tests
 		}
 
 		public string GetURL(string BucketName) => $"{MainData.HTTP}{GetHost(BucketName)}";
+		public string GetURL(string BucketName, string Key) => $"{MainData.HTTP}{GetHost(BucketName)}/{Key}";
 		public string GetHost(string BucketName)
 			=> Config.S3.IsAWS ? $"{BucketName}.s3-{Config.S3.RegionName}.amazonaws.com" : $"{Config.S3.Address}:{Config.S3.Port}/{BucketName}";
 

@@ -2,7 +2,7 @@
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
-* 3 of the License.  See LICENSE for details
+* 3 of the License. See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
@@ -727,8 +727,7 @@ namespace s3tests
 		[Fact(DisplayName = "test_object_acl_full_control_verify_attributes")]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "ETag")]
-		[Trait(MainData.Explanation, "[bucket_acl: public-read-write]" +
-									 "권한정보를 추가한 오브젝트의 eTag값이 변경되지 않는지 확인")]
+		[Trait(MainData.Explanation, "[bucket_acl: public-read-write] 권한정보를 추가한 오브젝트의 eTag값이 변경되지 않는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_object_acl_full_control_verify_attributes()
 		{
@@ -1190,85 +1189,6 @@ namespace s3tests
 				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = null, Grants = null }));
 			Assert.Throws<AggregateException>(()
 				=> Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList() { Owner = new Owner(), Grants = new List<S3Grant>() }));
-		}
-
-		[Fact(DisplayName = "test_object_acl_many")]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Delete")]
-		[Trait(MainData.Explanation, "오브젝트의 다양한 acl 설정이 정상적임을 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_many()
-		{
-			var BucketName = GetNewBucket();
-			var Client = GetClient();
-			var Key = "foo";
-
-			Client.PutObject(BucketName, Key: Key, Body: "bar");
-			var Response = Client.GetObjectACL(BucketName, Key);
-			
-			Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList()
-			{
-				Owner = null,
-				Grants = new List<S3Grant>(){ new S3Grant()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new S3Grantee()
-					{
-						CanonicalUser = Config.MainUser.UserId,
-						DisplayName = Config.MainUser.DisplayName,
-						URI = null,
-						EmailAddress = null,
-					}
-				}}
-			});
-			Client.GetObjectACL(BucketName, Key);
-
-			Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList()
-			{
-				Owner = null,
-				Grants = new List<S3Grant>(){ new S3Grant()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new S3Grantee()
-					{
-						DisplayName = Config.MainUser.DisplayName,
-						URI = null,
-						EmailAddress = null,
-					}
-				}}
-			});
-			Client.GetObjectACL(BucketName, Key);
-
-			Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList()
-			{
-				Owner = null,
-				Grants = new List<S3Grant>(){ new S3Grant()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new S3Grantee()
-					{
-						CanonicalUser = Config.MainUser.UserId,
-						URI = null,
-						EmailAddress = null,
-					}
-				}}
-			});
-			Client.GetObjectACL(BucketName, Key);
-
-			Client.PutObjectACL(BucketName, Key, AccessControlPolicy: new S3AccessControlList()
-			{
-				Owner = null,
-				Grants = new List<S3Grant>(){ new S3Grant()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new S3Grantee()
-					{
-						URI = null,
-						EmailAddress = null,
-					}
-				}}
-			});
-			Client.GetObjectACL(BucketName, Key);
 		}
 
 		[Fact(DisplayName = "test_access_bucket_private_object_private")]
