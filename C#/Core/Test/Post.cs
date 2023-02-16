@@ -2,7 +2,7 @@
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
-* 3 of the License.  See LICENSE for details
+* 3 of the License. See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
@@ -10,6 +10,8 @@
 */
 using Amazon.S3;
 using Newtonsoft.Json.Linq;
+using s3tests.Client;
+using s3tests.Signers;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -82,7 +84,7 @@ namespace s3tests
 
 			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
-			var Payload  = new Dictionary<string, object>() {
+			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
 					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
@@ -142,7 +144,7 @@ namespace s3tests
 
 			var Result = PostUpload(BucketName, Payload);
 			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
-			
+
 			var Response = Client.GetObject(BucketName, Key);
 			var Body = GetBody(Response);
 			Assert.Equal("bar", Body);
@@ -1446,14 +1448,45 @@ namespace s3tests
 			GetResponse.Close();
 		}
 
-		
 		[Fact(DisplayName = "test_put_object_v4")]
 		[Trait(MainData.Major, "Post")]
 		[Trait(MainData.Minor, "signV4")]
-		[Trait(MainData.Explanation, "[SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] post 방식으로 오브젝트 업로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_put_object_v4()
 		{
+			var BucketName = GetNewBucket();
+			var ContentType = "text/plain";
+			var Key = "foo";
+			var Size = 100;
+			var Content = RandomTextToLong(Size);
+
+			var Client = new MyHttpClient(GetURL(BucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey);
+
+			var Response = Client.PutObject(Key, Content, ContentType: ContentType);
+			Assert.Equal(HttpStatusCode.OK, Response.StatusCode);
+		}
+
+		[Fact(DisplayName = "test_get_object_v4")]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "signV4")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] post 방식으로 오브젝트 다운로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_get_object_v4()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var Key = "foo";
+			var Size = 100;
+			var Content = RandomTextToLong(Size);
+
+			Client.PutObject(BucketName, Key, Content);
+
+			var MyClient = new MyHttpClient(GetURL(BucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey);
+			var Response = MyClient.GetObject(Key, out string Body);
+			Assert.Equal(HttpStatusCode.OK, Response.StatusCode);
+			Assert.Equal(Size, Body.Length);
+			Assert.Equal(Content, Body);
 		}
 	}
 }
