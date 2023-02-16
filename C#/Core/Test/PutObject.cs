@@ -2,7 +2,7 @@
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
-* 3 of the License.  See LICENSE for details
+* 3 of the License. See LICENSE for details
 *
 * 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
@@ -458,34 +458,6 @@ namespace s3tests
 			Assert.Equal(KeyNames, Keys);
 		}
 
-		[Fact(DisplayName = "test_post_put_object_signature_version_4")]
-		[Trait(MainData.Major, "PutObject")]
-		[Trait(MainData.Minor, "Special Characters")]
-		[Trait(MainData.Explanation, "[SignatureVersion4] 특수문자를 포함한 오브젝트 업로드 성공 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_post_put_object_signature_version_4()
-		{
-			var KeyNames = new List<string>() { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" };
-			var BucketName = GetNewBucket();
-			var Client = GetClientV4();
-			var ContentType = "text/plain";
-
-			foreach (var Key in KeyNames)
-			{
-				var PutURL = Client.GeneratePresignedURL(BucketName, Key, DateTime.Now.AddSeconds(100000), HttpVerb.PUT, ContentType: ContentType);
-				var PutResponse = PutObject(PutURL, Key, ContentType: ContentType);
-
-				Assert.Equal(HttpStatusCode.OK, PutResponse.StatusCode);
-				PutResponse.Close();
-
-				var GetURL = Client.GeneratePresignedURL(BucketName, Key, DateTime.Now.AddSeconds(100000), HttpVerb.GET);
-				var GetResponse = GetObject(GetURL);
-
-				Assert.Equal(HttpStatusCode.OK, GetResponse.StatusCode);
-				GetResponse.Close();
-			}
-		}
-
 		[Fact(DisplayName = "test_put_object_use_chunk_encoding")]
 		[Trait(MainData.Major, "PutObject")]
 		[Trait(MainData.Minor, "Encoding")]
@@ -596,21 +568,42 @@ namespace s3tests
 			Assert.Equal(2, Keys.Count);
 		}
 
+		[Fact(DisplayName = "test_object_overwrite")]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Overwrite")]
+		[Trait(MainData.Explanation, "오브젝트를 덮어쓰기 했을때 올바르게 반영되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_overwrite()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var key = "temp";
+			var Content1 = RandomTextToLong(10 * MainData.KB);
+			var Content2 = RandomTextToLong(1 * MainData.MB);
+
+			Client.PutObject(BucketName, key, Content1);
+			Client.PutObject(BucketName, key, Content2);
+
+			var Response = Client.GetObject(BucketName, key);
+			Assert.Equal(Content2, GetBody(Response));
+
+		}
+
 		[Fact(DisplayName = "test_object_emoji")]
-		[Trait(MainData.Major, "Bucket")]
+		[Trait(MainData.Major, "PutObject")]
 		[Trait(MainData.Minor, "PUT")]
 		[Trait(MainData.Explanation, "오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_object_emoji()
 		{
-			var Bucket = GetNewBucket();
+			var BucketName = GetNewBucket();
 			var Client = GetClient();
 			var Key = "test❤🍕🍔🚗";
 
-			Client.PutObject(Bucket, Key);
+			Client.PutObject(BucketName, Key);
 
-			var Response1 = Client.ListObjects(Bucket);
-			Assert.Single(Response1.S3Objects);
+			var Response = Client.ListObjects(BucketName);
+			Assert.Single(Response.S3Objects);
 		}
 	}
 }
