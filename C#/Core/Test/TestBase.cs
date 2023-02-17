@@ -44,6 +44,11 @@ namespace s3tests
 		private List<string> BucketList { get; set; }
 		#endregion
 
+		public enum EncryptionType
+		{
+			NORMAL, SSE_S3, SSE_C
+		};
+
 		public TestBase()
 		{
 			string ConfigFilePath;
@@ -51,7 +56,7 @@ namespace s3tests
 			{
 				string temp = Environment.GetEnvironmentVariable(MainData.S3TESTS_INI);
 				if (string.IsNullOrWhiteSpace(temp)) ConfigFilePath = MainConfig.STR_DEF_FILENAME;
-				else 								 ConfigFilePath = temp.Trim();
+				else ConfigFilePath = temp.Trim();
 			}
 			catch (Exception)
 			{
@@ -357,17 +362,17 @@ namespace s3tests
 			Assert.Equal(Status, ReadStatus);
 		}
 
-		public void CheckContent(S3Client Client, string BucketName, string Key, string Data, int LoopCount = 1, SSECustomerKey SSEC = null)
+		public void CheckContent(S3Client Client, string BucketName, string Key, string Data, int LoopCount = 1, SSECustomerKey SSE_C = null)
 		{
 			for (int i = 0; i < LoopCount; i++)
 			{
-				var Response = Client.GetObject(BucketName, Key, SSEC: SSEC);
+				var Response = Client.GetObject(BucketName, Key, SSE_C: SSE_C);
 				var Body = GetBody(Response);
 				Assert.Equal(Data, Body);
 			}
 		}
 
-		public void CheckContentUsingRange(S3Client Client, string BucketName, string Key, string Data, long Step, SSECustomerKey SSEC = null)
+		public void CheckContentUsingRange(S3Client Client, string BucketName, string Key, string Data, long Step, SSECustomerKey SSE_C = null)
 		{
 			var Size = Data.Length;
 			long StartpPosition = 0;
@@ -380,7 +385,7 @@ namespace s3tests
 
 
 				var Range = new ByteRange(StartpPosition, EndPosition);
-				var Response = Client.GetObject(BucketName, Key: Key, Range: Range, SSEC: SSEC);
+				var Response = Client.GetObject(BucketName, Key: Key, Range: Range, SSE_C: SSE_C);
 				var Body = GetBody(Response);
 				var Length = EndPosition - StartpPosition + 1;
 
@@ -389,14 +394,14 @@ namespace s3tests
 				StartpPosition += Step;
 			}
 		}
-		public void CheckContentUsingRandomRange(S3Client Client, string BucketName, string Key, string Data, int LoopCount, SSECustomerKey SSEC = null)
+		public void CheckContentUsingRandomRange(S3Client Client, string BucketName, string Key, string Data, int LoopCount, SSECustomerKey SSE_C = null)
 		{
 			for (int i = 0; i < LoopCount; i++)
 			{
 				var Range = MakeRandomRange(Data.Length);
 				var Length = Range.End - Range.Start;
 
-				var Response = Client.GetObject(BucketName, Key: Key, Range: Range, SSEC: SSEC);
+				var Response = Client.GetObject(BucketName, Key: Key, Range: Range, SSE_C: SSE_C);
 				var Body = GetBody(Response);
 
 				Assert.Equal(Length, Response.ContentLength - 1);
@@ -531,11 +536,11 @@ namespace s3tests
 									string SrcVersionId = null, SSECustomerKey SrcSSEC = null,
 									string DestVersionId = null, SSECustomerKey DestSSEC = null)
 		{
-			var SrcResponse = Client.GetObject(SrcBucketName, SrcKey, VersionId: SrcVersionId, SSEC: SrcSSEC);
+			var SrcResponse = Client.GetObject(SrcBucketName, SrcKey, VersionId: SrcVersionId, SSE_C: SrcSSEC);
 			var SrcSize = SrcResponse.ContentLength;
 			var SrcData = GetBody(SrcResponse);
 
-			var DestResponse = Client.GetObject(DestBucketName, DestKey, VersionId: DestVersionId, SSEC: DestSSEC);
+			var DestResponse = Client.GetObject(DestBucketName, DestKey, VersionId: DestVersionId, SSE_C: DestSSEC);
 			var DestSize = DestResponse.ContentLength;
 			var DestData = GetBody(DestResponse);
 
@@ -712,8 +717,8 @@ namespace s3tests
 		public void LoggingConfigCompare(S3BucketLoggingConfig Expected, S3BucketLoggingConfig Actual)
 		{
 			Assert.Equal(Expected.TargetBucketName, Actual.TargetBucketName);
-			
-			if(Expected.TargetPrefix == null) Assert.Null(Actual.TargetPrefix);
+
+			if (Expected.TargetPrefix == null) Assert.Null(Actual.TargetPrefix);
 			else Assert.Equal(Expected.TargetPrefix, Actual.TargetPrefix);
 
 			if (Expected.Grants == null && Actual.Grants == null) return;
@@ -914,7 +919,7 @@ namespace s3tests
 		}
 
 		public string GetResponseBody(Stream Data)
-        {
+		{
 			StreamReader reader = new StreamReader(Data, Encoding.UTF8);
 			return reader.ReadToEnd();
 		}
@@ -1044,7 +1049,7 @@ namespace s3tests
 		{
 			var UploadData = new MultipartUploadData();
 
-			var Response = Client.InitiateMultipartUpload(DestBucketName, DestKey, SSEC: SrcSSEC, SSE_S3: SSE_S3);
+			var Response = Client.InitiateMultipartUpload(DestBucketName, DestKey, SSE_C: SrcSSEC, SSE_S3: SSE_S3);
 			UploadData.UploadId = Response.UploadId;
 
 			int Start = 0;
@@ -1065,12 +1070,12 @@ namespace s3tests
 
 		public MultipartUploadData SetupMultipartUpload(S3Client Client, string BucketName, string Key, int Size, MultipartUploadData UploadData = null,
 			int PartSize = 5 * MainData.MB, List<KeyValuePair<string, string>> MetadataList = null, string ContentType = null,
-			List<int> ResendParts = null, SSECustomerKey SSEC = null, ServerSideEncryptionMethod SSE_S3 = null)
+			List<int> ResendParts = null, SSECustomerKey SSE_C = null, ServerSideEncryptionMethod SSE_S3 = null)
 		{
 			if (UploadData == null)
 			{
 				UploadData = new MultipartUploadData();
-				var InitResponse = Client.InitiateMultipartUpload(BucketName, Key, MetadataList: MetadataList, ContentType: ContentType, SSEC: SSEC, SSE_S3: SSE_S3);
+				var InitResponse = Client.InitiateMultipartUpload(BucketName, Key, MetadataList: MetadataList, ContentType: ContentType, SSE_C: SSE_C, SSE_S3: SSE_S3);
 				UploadData.UploadId = InitResponse.UploadId;
 			}
 
@@ -1080,7 +1085,7 @@ namespace s3tests
 			{
 				UploadData.AppendBody(Part);
 				var PartNumber = UploadData.NextPartNumber;
-				var PartResPonse = Client.UploadPart(BucketName, Key, UploadData.UploadId, Part, PartNumber, SSEC: SSEC);
+				var PartResPonse = Client.UploadPart(BucketName, Key, UploadData.UploadId, Part, PartNumber, SSE_C: SSE_C);
 				UploadData.Parts.Add(new PartETag(PartResPonse.PartNumber, PartResPonse.ETag));
 
 				if (ResendParts != null && ResendParts.Contains(PartNumber)) Client.UploadPart(BucketName, Key, UploadData.UploadId, Part, PartNumber);
@@ -1412,15 +1417,15 @@ namespace s3tests
 			var Client = GetClientHttps();
 			var Key = "testobj";
 			var Data = new string('A', FileSize);
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
-			Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC);
+			Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C);
 
-			var Response = Client.GetObject(BucketName, Key: Key, SSEC: SSEC);
+			var Response = Client.GetObject(BucketName, Key: Key, SSE_C: SSE_C);
 			var Body = GetBody(Response);
 			Assert.Equal(Data, Body);
 		}
@@ -1479,8 +1484,7 @@ namespace s3tests
 			Assert.Equal(SourceBody, DestBody);
 		}
 
-		public void TestObjectCopy(bool SourceObjectEncryption, bool SourceBucketEncryption,
-								   bool DestBucketEncryption, bool DestObjectEncryption, int FileSize)
+		public void TestObjectCopy(bool SourceObjectEncryption, bool SourceBucketEncryption, bool DestBucketEncryption, bool DestObjectEncryption, int FileSize)
 		{
 			var SourceKey = "SourceKey";
 			var DestKey = "DestKey";
@@ -1544,6 +1548,47 @@ namespace s3tests
 			else Assert.Null(DestResponse.ServerSideEncryptionMethod);
 			Assert.Equal(SourceBody, DestBody);
 		}
+		public void TestObjectCopy(EncryptionType Source, EncryptionType Target, int FileSize)
+		{
+			var SourceKey = "SourceKey";
+			var TargetKey = "TargetKey";
+			var BucketName = GetNewBucket();
+			var Client = GetClientHttps();
+			var Content = RandomTextToLong(FileSize);
+
+			var SSE_C = new SSECustomerKey()
+			{
+				Method = ServerSideEncryptionCustomerMethod.AES256,
+				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
+				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
+			};
+
+			switch (Source)
+			{
+				case EncryptionType.NORMAL:
+					Client.PutObject(BucketName, SourceKey, Content);
+					break;
+				case EncryptionType.SSE_S3:
+					Client.PutObject(BucketName, SourceKey, Content, SSE_S3_Method: ServerSideEncryptionMethod.AES256);
+					break;
+				case EncryptionType.SSE_C:
+					Client.PutObject(BucketName, SourceKey, Content, SSE_C: SSE_C);
+					break;
+			}
+
+			Client.CopyObject(BucketName, SourceKey, BucketName, TargetKey,
+								MetadataDirective: S3MetadataDirective.REPLACE,
+								SSE_C_Source: Source == EncryptionType.SSE_C ? SSE_C : null,
+								SSE_S3_Method: Target == EncryptionType.SSE_S3 ? ServerSideEncryptionMethod.AES256 : null,
+								SSE_C: Target == EncryptionType.SSE_C ? SSE_C : null);
+
+			var SourceResponse = Client.GetObject(BucketName, SourceKey, SSE_C: Source == EncryptionType.SSE_C ? SSE_C : null);
+			Assert.Equal(Content, GetBody(SourceResponse));
+			
+			var TargetResponse = Client.GetObject(BucketName, TargetKey, SSE_C: SSE_C);
+			Assert.Equal(Content, GetBody(TargetResponse));
+			
+		}
 
 		public string TestMultipartUploadContents(string BucketName, string Key, int NumParts)
 		{
@@ -1600,7 +1645,7 @@ namespace s3tests
 
 					Client.DeleteBucket(BucketName);
 				}
-				catch(Exception)
+				catch (Exception)
 				{
 				}
 			}
