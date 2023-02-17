@@ -89,34 +89,32 @@ namespace s3tests.Signers
 
 			// canonicalize the headers; we need the set of header names as well as the
 			// names and values to go into the signature process
-			var canonicalizedHeaderNames = CanonicalizeHeaderNames(Headers);
-			var canonicalizedHeaders = CanonicalizeHeaders(Headers);
+			var CanonicalizedHeaderNames = CanonicalizeHeaderNames(Headers);
+			var CanonicalizedHeaders = CanonicalizeHeaders(Headers);
 
 			// if any query string parameters have been supplied, canonicalize them
 			// (note this sample assumes any required url encoding has been done already)
-			var canonicalizedQueryParameters = string.Empty;
+			var CanonicalizedQueryParameters = string.Empty;
 			if (!string.IsNullOrEmpty(QueryParameters))
 			{
-				var paramDictionary = QueryParameters.Split('&').Select(p => p.Split('='))
-													 .ToDictionary(nameval => nameval[0],
-																   nameval => nameval.Length > 1
-																		? nameval[1] : "");
+				var ParamDictionary = QueryParameters.Split("&").Select(p => p.Split("="))
+										.ToDictionary(nameval => nameval[0],
+										nameval => nameval.Length > 1 ? nameval[1] : "");
 
 				var sb = new StringBuilder();
-				var paramKeys = new List<string>(paramDictionary.Keys);
-				paramKeys.Sort(StringComparer.Ordinal);
-				foreach (var p in paramKeys)
+				var ParamKeys = new List<string>(ParamDictionary.Keys);
+				ParamKeys.Sort(StringComparer.Ordinal);
+				foreach (var p in ParamKeys)
 				{
-					if (sb.Length > 0)
-						sb.Append("&");
-					sb.AppendFormat("{0}={1}", p, paramDictionary[p]);
+					if (sb.Length > 0) sb.Append("&");
+					sb.AppendFormat("{0}={1}", p, ParamDictionary[p]);
 				}
 
-				canonicalizedQueryParameters = sb.ToString();
+				CanonicalizedQueryParameters = sb.ToString();
 			}
 
 			// canonicalize the various components of the request
-			var CanonicalRequest = CanonicalizeRequest(EndpointUri, HttpMethod, canonicalizedQueryParameters, canonicalizedHeaderNames, canonicalizedHeaders, BodyHash);
+			var CanonicalRequest = CanonicalizeRequest(EndpointUri, HttpMethod, CanonicalizedQueryParameters, CanonicalizedHeaderNames, CanonicalizedHeaders, BodyHash);
 			// Console.WriteLine("\nCanonicalRequest:\n{0}", canonicalRequest);
 
 			// generate a hash of the canonical request, to go into signature computation
@@ -150,7 +148,7 @@ namespace s3tests.Signers
 			var authString = new StringBuilder();
 			authString.Append($"{SCHEME}-{ALGORITHM} ");
 			authString.Append($"Credential={AccessKey}/{Scope}, ");
-			authString.Append($"SignedHeaders={canonicalizedHeaderNames}, ");
+			authString.Append($"SignedHeaders={CanonicalizedHeaderNames}, ");
 			authString.Append($"Signature={signatureString}");
 
 			var authorization = authString.ToString();

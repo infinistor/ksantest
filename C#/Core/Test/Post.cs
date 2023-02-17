@@ -1467,6 +1467,25 @@ namespace s3tests
 			Assert.Equal(HttpStatusCode.OK, Response.StatusCode);
 		}
 
+		[Fact(DisplayName = "test_put_object_chunked_v4")]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "signV4")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] post 방식으로 오브젝트 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_put_object_chunked_v4()
+		{
+			var BucketName = GetNewBucket();
+			var ContentType = "text/plain";
+			var Key = "foo";
+			var Size = 100;
+			var Content = RandomTextToLong(Size);
+
+			var Client = new MyHttpClient(GetURL(BucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey);
+
+			var Response = Client.PutObjectChunked(Key, Content, ContentType: ContentType);
+			Assert.Equal(HttpStatusCode.OK, Response.StatusCode);
+		}
+
 		[Fact(DisplayName = "test_get_object_v4")]
 		[Trait(MainData.Major, "Post")]
 		[Trait(MainData.Minor, "signV4")]

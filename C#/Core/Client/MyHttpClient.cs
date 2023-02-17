@@ -31,6 +31,8 @@ namespace s3tests.Client
 		public static string HEADER_REPLICATION = "x-ifs-replication";
 		public static string HEADER_VERSION_ID = "x-ifs-version-id";
 
+		public const int UserDataBlockSize = 65536;
+
 		private string URL;
 		private string AccessKey;
 		private string SecretKey;
@@ -45,7 +47,7 @@ namespace s3tests.Client
 		public MyResult PutObject(string Key, string Content, string ContentType = "text/plain")
 		{
 			byte[] contentHash = AWS4SignerBase.CanonicalRequestHashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(Content));
-			String ContentHashString = AWS4SignerBase.ToHexString(contentHash, true); ;
+			String ContentHashString = AWS4SignerBase.ToHexString(contentHash, true);
 
 			var Headers = new Dictionary<string, string>()
 			{
@@ -66,6 +68,55 @@ namespace s3tests.Client
 			// make the call to Amazon S3
 
 			return Put(URI, Headers, Content);
+		}
+		public MyResult PutObjectChunked(string Key, string Content, string ContentType = "text/plain")
+		{
+			var Headers = new Dictionary<string, string>
+			{
+				{AWS4SignerBase.X_Amz_Content_SHA256, AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256},
+				{"content-encoding", "aws-chunked"},
+				{"content-type", "text/plain"},
+				{AWS4SignerBase.X_Amz_Decoded_Content_Length, Content.Length.ToString()}
+			};
+
+			var URI = new Uri($"{URL}/{Key}");
+
+			var Signer = new AWS4SignerForChunkedUpload { EndpointUri = URI, HttpMethod = "PUT", Service = "s3", Region = "us-west-2" };
+			var TotalLength = Signer.CalculateChunkedContentLength(Content.Length, UserDataBlockSize);
+
+			var Authorization = Signer.ComputeSignature(Headers, "", AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256, AccessKey, SecretKey);
+			Headers.Add("Authorization", Authorization);
+
+			try
+			{
+
+				var Request = HttpHelpers.ConstructWebRequest(URI, "PUT", Headers);
+				var buffer = new byte[UserDataBlockSize];
+				var requestStream = Request.GetRequestStream();
+				using (var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(Content)))
+				{
+					var bytesRead = 0;
+					while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
+					{
+						// process into a chunk
+						var chunk = Signer.ConstructSignedChunk(bytesRead, buffer);
+
+						// send the chunk
+						requestStream.Write(chunk, 0, chunk.Length);
+					}
+
+					// last step is to send a signed zero-length chunk to complete the upload
+					var FinalChunk = Signer.ConstructSignedChunk(0, buffer);
+					requestStream.Write(FinalChunk, 0, FinalChunk.Length);
+
+					using (var Response = (HttpWebResponse)Request.GetResponse())
+					{
+						var Msg = HttpHelpers.ReadResponseBody(Response);
+						return new MyResult() { StatusCode = Response.StatusCode, Message = Msg };
+					}
+				}
+			}
+			catch (WebException ex) { throw GetError(ex); }
 		}
 
 		public MyResult GetObject(string Key, out string Content)

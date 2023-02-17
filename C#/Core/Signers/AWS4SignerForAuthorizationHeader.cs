@@ -64,45 +64,46 @@ namespace s3tests.Signers
 			var CanonicalizedQueryParameters = string.Empty;
 			if (!string.IsNullOrEmpty(QueryParameters))
 			{
-				var paramDictionary = QueryParameters.Split("&").Select(p => p.Split('=')).ToDictionary(nameval => nameval[0], nameval => nameval.Length > 1 ? nameval[1] : "");
+				var ParamDictionary = QueryParameters.Split("&").Select(p => p.Split("="))
+										.ToDictionary(nameval => nameval[0],
+										nameval => nameval.Length > 1 ? nameval[1] : "");
 
 				var sb = new StringBuilder();
-				var ParamKeys = new List<string>(paramDictionary.Keys);
+				var ParamKeys = new List<string>(ParamDictionary.Keys);
 				ParamKeys.Sort(StringComparer.Ordinal);
 				foreach (var p in ParamKeys)
 				{
 					if (sb.Length > 0) sb.Append("&");
-					sb.AppendFormat("{0}={1}", p, paramDictionary[p]);
+					sb.AppendFormat("{0}={1}", p, ParamDictionary[p]);
 				}
 
 				CanonicalizedQueryParameters = sb.ToString();
 			}
 
 			// canonicalize the various components of the request
-			var canonicalRequest = CanonicalizeRequest(EndpointUri, HttpMethod, CanonicalizedQueryParameters, CanonicalizedHeaderNames, CanonicalizedHeaders, BodyHash);
+			var CanonicalRequest = CanonicalizeRequest(EndpointUri, HttpMethod, CanonicalizedQueryParameters, CanonicalizedHeaderNames, CanonicalizedHeaders, BodyHash);
 			// Console.WriteLine("\nCanonicalRequest:\n{0}", canonicalRequest);
 
 			// generate a hash of the canonical request, to go into signature computation
-			var canonicalRequestHashBytes
-				= CanonicalRequestHashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(canonicalRequest));
+			var CanonicalRequestHashBytes = CanonicalRequestHashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(CanonicalRequest));
 
 			// construct the string to be signed
-			var stringToSign = new StringBuilder();
+			var StringToSign = new StringBuilder();
 
-			var dateStamp = RequestDateTime.ToString(DateStringFormat, CultureInfo.InvariantCulture);
-			var Scope = $"{dateStamp}/{Region}/{Service}/{TERMINATOR}";
+			var DateStamp = RequestDateTime.ToString(DateStringFormat, CultureInfo.InvariantCulture);
+			var Scope = $"{DateStamp}/{Region}/{Service}/{TERMINATOR}";
 
-			stringToSign.Append($"{SCHEME}-{ALGORITHM}\n{DateTimeStamp}\n{Scope}\n");
-			stringToSign.Append(ToHexString(canonicalRequestHashBytes, true));
+			StringToSign.Append($"{SCHEME}-{ALGORITHM}\n{DateTimeStamp}\n{Scope}\n");
+			StringToSign.Append(ToHexString(CanonicalRequestHashBytes, true));
 
 			// Console.WriteLine("\nStringToSign:\n{0}", stringToSign);
 
 			// compute the signing key
 			var kha = KeyedHashAlgorithm.Create(HMACSHA256);
-			kha.Key = DeriveSigningKey(HMACSHA256, SecretKey, Region, dateStamp, Service);
+			kha.Key = DeriveSigningKey(HMACSHA256, SecretKey, Region, DateStamp, Service);
 
 			// compute the AWS4 signature and return it
-			var signature = kha.ComputeHash(Encoding.UTF8.GetBytes(stringToSign.ToString()));
+			var signature = kha.ComputeHash(Encoding.UTF8.GetBytes(StringToSign.ToString()));
 			var signatureString = ToHexString(signature, true);
 			// Console.WriteLine("\nSignature:\n{0}", signatureString);
 
