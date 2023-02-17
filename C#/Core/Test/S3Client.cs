@@ -70,7 +70,7 @@ namespace s3tests
 		public ListBucketsResponse ListBuckets()
 		{
 			if (Client == null) return null;
-			Task<ListBucketsResponse> Response = Client.ListBucketsAsync();
+			var Response = Client.ListBucketsAsync();
 			Response.Wait();
 			return Response.Result;
 		}
@@ -78,7 +78,7 @@ namespace s3tests
 		private PutBucketResponse PutBucket(PutBucketRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutBucketResponse> Response = Client.PutBucketAsync(Request);
+			var Response = Client.PutBucketAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -108,7 +108,7 @@ namespace s3tests
 		private DeleteBucketResponse DeleteBucket(DeleteBucketRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteBucketResponse> Response = Client.DeleteBucketAsync(Request);
+			var Response = Client.DeleteBucketAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -121,7 +121,7 @@ namespace s3tests
 		private GetBucketLocationResponse GetBucketLocation(GetBucketLocationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetBucketLocationResponse> Response = Client.GetBucketLocationAsync(Request);
+			var Response = Client.GetBucketLocationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -134,7 +134,7 @@ namespace s3tests
 		private PutBucketLoggingResponse PutBucketLogging(PutBucketLoggingRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutBucketLoggingResponse> Response = Client.PutBucketLoggingAsync(Request);
+			var Response = Client.PutBucketLoggingAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -146,7 +146,7 @@ namespace s3tests
 		private GetBucketLoggingResponse GetBucketLogging(GetBucketLoggingRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetBucketLoggingResponse> Response = Client.GetBucketLoggingAsync(Request);
+			var Response = Client.GetBucketLoggingAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -159,7 +159,7 @@ namespace s3tests
 		private PutBucketVersioningResponse PutBucketVersioning(PutBucketVersioningRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutBucketVersioningResponse> Response = Client.PutBucketVersioningAsync(Request);
+			var Response = Client.PutBucketVersioningAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -176,7 +176,7 @@ namespace s3tests
 		private GetBucketVersioningResponse GetBucketVersioning(GetBucketVersioningRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetBucketVersioningResponse> Response = Client.GetBucketVersioningAsync(Request);
+			var Response = Client.GetBucketVersioningAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -190,7 +190,7 @@ namespace s3tests
 		private GetACLResponse GetBucketACL(GetACLRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetACLResponse> Response = Client.GetACLAsync(Request);
+			var Response = Client.GetACLAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -206,7 +206,7 @@ namespace s3tests
 		private PutACLResponse PutBucketACL(PutACLRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutACLResponse> Response = Client.PutACLAsync(Request);
+			var Response = Client.PutACLAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -226,7 +226,7 @@ namespace s3tests
 		private PutCORSConfigurationResponse PutCORSConfiguration(PutCORSConfigurationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutCORSConfigurationResponse> Response = Client.PutCORSConfigurationAsync(Request);
+			var Response = Client.PutCORSConfigurationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -244,7 +244,7 @@ namespace s3tests
 		private GetCORSConfigurationResponse GetCORSConfiguration(GetCORSConfigurationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetCORSConfigurationResponse> Response = Client.GetCORSConfigurationAsync(Request);
+			var Response = Client.GetCORSConfigurationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -261,7 +261,7 @@ namespace s3tests
 		private DeleteCORSConfigurationResponse DeleteCORSConfiguration(DeleteCORSConfigurationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteCORSConfigurationResponse> Response = Client.DeleteCORSConfigurationAsync(Request);
+			var Response = Client.DeleteCORSConfigurationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -278,7 +278,7 @@ namespace s3tests
 		private GetBucketTaggingResponse GetBucketTagging(GetBucketTaggingRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetBucketTaggingResponse> Response = Client.GetBucketTaggingAsync(Request);
+			var Response = Client.GetBucketTaggingAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -295,7 +295,7 @@ namespace s3tests
 		private PutBucketTaggingResponse PutBucketTagging(PutBucketTaggingRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutBucketTaggingResponse> Response = Client.PutBucketTaggingAsync(Request);
+			var Response = Client.PutBucketTaggingAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -313,7 +313,7 @@ namespace s3tests
 		private DeleteBucketTaggingResponse DeleteBucketTagging(DeleteBucketTaggingRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteBucketTaggingResponse> Response = Client.DeleteBucketTaggingAsync(Request);
+			var Response = Client.DeleteBucketTaggingAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -330,7 +330,7 @@ namespace s3tests
 		private PutLifecycleConfigurationResponse PutLifecycleConfiguration(PutLifecycleConfigurationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutLifecycleConfigurationResponse> Response = Client.PutLifecycleConfigurationAsync(Request);
+			var Response = Client.PutLifecycleConfigurationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -348,7 +348,7 @@ namespace s3tests
 		private GetLifecycleConfigurationResponse GetLifecycleConfiguration(GetLifecycleConfigurationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetLifecycleConfigurationResponse> Response = Client.GetLifecycleConfigurationAsync(Request);
+			var Response = Client.GetLifecycleConfigurationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -365,7 +365,7 @@ namespace s3tests
 		private DeleteLifecycleConfigurationResponse DeleteLifecycleConfiguration(DeleteLifecycleConfigurationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteLifecycleConfigurationResponse> Response = Client.DeleteLifecycleConfigurationAsync(Request);
+			var Response = Client.DeleteLifecycleConfigurationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -382,7 +382,7 @@ namespace s3tests
 		private PutBucketPolicyResponse PutBucketPolicy(PutBucketPolicyRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutBucketPolicyResponse> Response = Client.PutBucketPolicyAsync(Request);
+			var Response = Client.PutBucketPolicyAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -400,7 +400,7 @@ namespace s3tests
 		private GetBucketPolicyResponse GetBucketPolicy(GetBucketPolicyRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetBucketPolicyResponse> Response = Client.GetBucketPolicyAsync(Request);
+			var Response = Client.GetBucketPolicyAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -417,7 +417,7 @@ namespace s3tests
 		private DeleteBucketPolicyResponse DeleteBucketPolicy(DeleteBucketPolicyRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteBucketPolicyResponse> Response = Client.DeleteBucketPolicyAsync(Request);
+			var Response = Client.DeleteBucketPolicyAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -434,7 +434,7 @@ namespace s3tests
 		private GetBucketPolicyStatusResponse GetBucketPolicyStatus(GetBucketPolicyStatusRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetBucketPolicyStatusResponse> Response = Client.GetBucketPolicyStatusAsync(Request);
+			var Response = Client.GetBucketPolicyStatusAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -451,7 +451,7 @@ namespace s3tests
 		private PutObjectLockConfigurationResponse PutObjectLockConfiguration(PutObjectLockConfigurationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutObjectLockConfigurationResponse> Response = Client.PutObjectLockConfigurationAsync(Request);
+			var Response = Client.PutObjectLockConfigurationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -469,7 +469,7 @@ namespace s3tests
 		private GetObjectLockConfigurationResponse GetObjectLockConfiguration(GetObjectLockConfigurationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetObjectLockConfigurationResponse> Response = Client.GetObjectLockConfigurationAsync(Request);
+			var Response = Client.GetObjectLockConfigurationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -486,7 +486,7 @@ namespace s3tests
 		private PutPublicAccessBlockResponse PutPublicAccessBlock(PutPublicAccessBlockRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutPublicAccessBlockResponse> Response = Client.PutPublicAccessBlockAsync(Request);
+			var Response = Client.PutPublicAccessBlockAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -504,7 +504,7 @@ namespace s3tests
 		private GetPublicAccessBlockResponse GetPublicAccessBlock(GetPublicAccessBlockRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetPublicAccessBlockResponse> Response = Client.GetPublicAccessBlockAsync(Request);
+			var Response = Client.GetPublicAccessBlockAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -521,7 +521,7 @@ namespace s3tests
 		private DeletePublicAccessBlockResponse DeletePublicAccessBlock(DeletePublicAccessBlockRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeletePublicAccessBlockResponse> Response = Client.DeletePublicAccessBlockAsync(Request);
+			var Response = Client.DeletePublicAccessBlockAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -538,7 +538,7 @@ namespace s3tests
 		private GetBucketEncryptionResponse GetBucketEncryption(GetBucketEncryptionRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetBucketEncryptionResponse> Response = Client.GetBucketEncryptionAsync(Request);
+			var Response = Client.GetBucketEncryptionAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -555,7 +555,7 @@ namespace s3tests
 		private PutBucketEncryptionResponse PutBucketEncryption(PutBucketEncryptionRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutBucketEncryptionResponse> Response = Client.PutBucketEncryptionAsync(Request);
+			var Response = Client.PutBucketEncryptionAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -573,7 +573,7 @@ namespace s3tests
 		private DeleteBucketEncryptionResponse DeleteBucketEncryption(DeleteBucketEncryptionRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteBucketEncryptionResponse> Response = Client.DeleteBucketEncryptionAsync(Request);
+			var Response = Client.DeleteBucketEncryptionAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -590,7 +590,7 @@ namespace s3tests
 		private GetBucketWebsiteResponse GetBucketWebsite(GetBucketWebsiteRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetBucketWebsiteResponse> Response = Client.GetBucketWebsiteAsync(Request);
+			var Response = Client.GetBucketWebsiteAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -607,7 +607,7 @@ namespace s3tests
 		private PutBucketWebsiteResponse PutBucketWebsite(PutBucketWebsiteRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutBucketWebsiteResponse> Response = Client.PutBucketWebsiteAsync(Request);
+			var Response = Client.PutBucketWebsiteAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -625,7 +625,7 @@ namespace s3tests
 		private DeleteBucketWebsiteResponse DeleteBucketWebsite(DeleteBucketWebsiteRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteBucketWebsiteResponse> Response = Client.DeleteBucketWebsiteAsync(Request);
+			var Response = Client.DeleteBucketWebsiteAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -644,13 +644,13 @@ namespace s3tests
 		private PutObjectResponse PutObject(PutObjectRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutObjectResponse> Response = Client.PutObjectAsync(Request);
+			var Response = Client.PutObjectAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
 		public PutObjectResponse PutObject(string BucketName, string Key, string Body = null, byte[] ByteBody = null, string ContentType = null,
 			string CacheControl = null, DateTime? Expires = null, string IfMatch = null, string IfNoneMatch = null,
-			string MD5Digest = null, List<Tag> TagSet = null, SSECustomerKey SSEC = null,
+			string MD5Digest = null, List<Tag> TagSet = null, SSECustomerKey SSE_C = null,
 			List<KeyValuePair<string, string>> MetadataList = null, List<KeyValuePair<string, string>> HeaderList = null,
 			S3CannedACL ACL = null, List<S3Grant> Grants = null, ServerSideEncryptionMethod SSE_S3_Method = null,
 			ObjectLockLegalHoldStatus ObjectLockLegalHoldStatus = null, DateTime? ObjectLockRetainUntilDate = null,
@@ -699,11 +699,11 @@ namespace s3tests
 			if (SSE_S3_Method != null) Request.ServerSideEncryptionMethod = SSE_S3_Method;
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 
 			//ChunkEncoding Payload
@@ -718,12 +718,12 @@ namespace s3tests
 		private GetObjectResponse GetObject(GetObjectRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetObjectResponse> Response = Client.GetObjectAsync(Request);
+			var Response = Client.GetObjectAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
 		public GetObjectResponse GetObject(
-			string BucketName, string Key, string IfMatch = null, string IfNoneMatch = null, ByteRange Range = null, string VersionId = null, SSECustomerKey SSEC = null,
+			string BucketName, string Key, string IfMatch = null, string IfNoneMatch = null, ByteRange Range = null, string VersionId = null, SSECustomerKey SSE_C = null,
 			string IfModifiedSince = null, DateTime? IfModifiedSinceDateTime = null, string IfUnmodifiedSince = null, DateTime? IfUnmodifiedSinceDateTime = null,
 			string ResponseContentType = null, string ResponseContentLanguage = null, string ResponseExpires = null, string ResponseCacheControl = null,
 			string ResponseContentDisposition = null, string ResponseContentEncoding = null)
@@ -740,11 +740,11 @@ namespace s3tests
 			if (Range != null) Request.ByteRange = Range;
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 
 			if (IfModifiedSince != null) Request.ModifiedSinceDateUtc = DateTime.Parse(IfModifiedSince);
@@ -766,12 +766,13 @@ namespace s3tests
 		private CopyObjectResponse CopyObject(CopyObjectRequest Request)
 		{
 			if (Client == null) return null;
-			Task<CopyObjectResponse> Response = Client.CopyObjectAsync(Request);
+			var Response = Client.CopyObjectAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
 		public CopyObjectResponse CopyObject(string SourceBucket, string SourceKey, string BucketName, string Key,
-			List<KeyValuePair<string, string>> MetadataList = null, S3MetadataDirective? MetadataDirective = null, ServerSideEncryptionMethod SSE_S3_Method = null,
+			List<KeyValuePair<string, string>> MetadataList = null, S3MetadataDirective? MetadataDirective = null,
+			ServerSideEncryptionMethod SSE_S3_Method = null, SSECustomerKey SSE_C = null, SSECustomerKey SSE_C_Source = null,
 			string VersionId = null, S3CannedACL ACL = null, string ETagToMatch = null, string ETagToNotMatch = null, string ContentType = null)
 		{
 			var Request = new CopyObjectRequest()
@@ -796,13 +797,26 @@ namespace s3tests
 			//SSE-S3
 			if (SSE_S3_Method != null) Request.ServerSideEncryptionMethod = SSE_S3_Method;
 
+			if (SSE_C != null)
+			{
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
+			}
+			if (SSE_C_Source != null)
+			{
+				Request.CopySourceServerSideEncryptionCustomerMethod = SSE_C_Source.Method;
+				Request.CopySourceServerSideEncryptionCustomerProvidedKey = SSE_C_Source.ProvidedKey;
+				Request.CopySourceServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C_Source.MD5;
+			}
+			
 			return CopyObject(Request);
 		}
 
 		private ListObjectsResponse ListObjects(ListObjectsRequest Request)
 		{
 			if (Client == null) return null;
-			Task<ListObjectsResponse> Response = Client.ListObjectsAsync(Request);
+			var Response = Client.ListObjectsAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -825,7 +839,7 @@ namespace s3tests
 		private ListObjectsV2Response ListObjectsV2(ListObjectsV2Request Request)
 		{
 			if (Client == null) return null;
-			Task<ListObjectsV2Response> Response = Client.ListObjectsV2Async(Request);
+			var Response = Client.ListObjectsV2Async(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -851,7 +865,7 @@ namespace s3tests
 		private ListVersionsResponse ListVersions(ListVersionsRequest Request)
 		{
 			if (Client == null) return null;
-			Task<ListVersionsResponse> Response = Client.ListVersionsAsync(Request);
+			var Response = Client.ListVersionsAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -870,7 +884,7 @@ namespace s3tests
 		private DeleteObjectResponse DeleteObject(DeleteObjectRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteObjectResponse> Response = Client.DeleteObjectAsync(Request);
+			var Response = Client.DeleteObjectAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -892,7 +906,7 @@ namespace s3tests
 		private DeleteObjectsResponse DeleteObjects(DeleteObjectsRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteObjectsResponse> Response = Client.DeleteObjectsAsync(Request);
+			var Response = Client.DeleteObjectsAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -912,11 +926,11 @@ namespace s3tests
 		private GetObjectMetadataResponse GetObjectMetadata(GetObjectMetadataRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetObjectMetadataResponse> Response = Client.GetObjectMetadataAsync(Request);
+			var Response = Client.GetObjectMetadataAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
-		public GetObjectMetadataResponse GetObjectMetadata(string BucketName, string Key, string VersionId = null, SSECustomerKey SSEC = null)
+		public GetObjectMetadataResponse GetObjectMetadata(string BucketName, string Key, string VersionId = null, SSECustomerKey SSE_C = null)
 		{
 			var Request = new GetObjectMetadataRequest()
 			{
@@ -928,11 +942,11 @@ namespace s3tests
 			if (VersionId != null) Request.VersionId = VersionId;
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 
 			return GetObjectMetadata(Request);
@@ -941,7 +955,7 @@ namespace s3tests
 		private GetACLResponse GetObjectACL(GetACLRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetACLResponse> Response = Client.GetACLAsync(Request);
+			var Response = Client.GetACLAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -961,7 +975,7 @@ namespace s3tests
 		private PutACLResponse PutObjectACL(PutACLRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutACLResponse> Response = Client.PutACLAsync(Request);
+			var Response = Client.PutACLAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -981,7 +995,7 @@ namespace s3tests
 		private GetObjectTaggingResponse GetObjectTagging(GetObjectTaggingRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetObjectTaggingResponse> Response = Client.GetObjectTaggingAsync(Request);
+			var Response = Client.GetObjectTaggingAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -999,7 +1013,7 @@ namespace s3tests
 		private PutObjectTaggingResponse PutObjectTagging(PutObjectTaggingRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutObjectTaggingResponse> Response = Client.PutObjectTaggingAsync(Request);
+			var Response = Client.PutObjectTaggingAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1018,7 +1032,7 @@ namespace s3tests
 		private DeleteObjectTaggingResponse DeleteObjectTagging(DeleteObjectTaggingRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteObjectTaggingResponse> Response = Client.DeleteObjectTaggingAsync(Request);
+			var Response = Client.DeleteObjectTaggingAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1036,7 +1050,7 @@ namespace s3tests
 		private GetObjectRetentionResponse GetObjectRetention(GetObjectRetentionRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetObjectRetentionResponse> Response = Client.GetObjectRetentionAsync(Request);
+			var Response = Client.GetObjectRetentionAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1054,7 +1068,7 @@ namespace s3tests
 		private PutObjectRetentionResponse PutObjectRetention(PutObjectRetentionRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutObjectRetentionResponse> Response = Client.PutObjectRetentionAsync(Request);
+			var Response = Client.PutObjectRetentionAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1078,7 +1092,7 @@ namespace s3tests
 		private PutObjectLegalHoldResponse PutObjectLegalHold(PutObjectLegalHoldRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutObjectLegalHoldResponse> Response = Client.PutObjectLegalHoldAsync(Request);
+			var Response = Client.PutObjectLegalHoldAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1097,7 +1111,7 @@ namespace s3tests
 		private GetObjectLegalHoldResponse GetObjectLegalHold(GetObjectLegalHoldRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetObjectLegalHoldResponse> Response = Client.GetObjectLegalHoldAsync(Request);
+			var Response = Client.GetObjectLegalHoldAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1116,7 +1130,7 @@ namespace s3tests
 		private GetBucketReplicationResponse GetBucketReplication(GetBucketReplicationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<GetBucketReplicationResponse> Response = Client.GetBucketReplicationAsync(Request);
+			var Response = Client.GetBucketReplicationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1133,7 +1147,7 @@ namespace s3tests
 		private PutBucketReplicationResponse PutBucketReplication(PutBucketReplicationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<PutBucketReplicationResponse> Response = Client.PutBucketReplicationAsync(Request);
+			var Response = Client.PutBucketReplicationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1154,7 +1168,7 @@ namespace s3tests
 		private DeleteBucketReplicationResponse DeleteBucketReplication(DeleteBucketReplicationRequest Request)
 		{
 			if (Client == null) return null;
-			Task<DeleteBucketReplicationResponse> Response = Client.DeleteBucketReplicationAsync(Request);
+			var Response = Client.DeleteBucketReplicationAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1167,18 +1181,36 @@ namespace s3tests
 
 			return DeleteBucketReplication(Request);
 		}
+
+		public RestoreObjectResponse RestoreObject(RestoreObjectRequest Request)
+		{
+			if (Client == null) return null;
+			var Response = Client.RestoreObjectAsync(Request);
+			Response.Wait();
+			return Response.Result;
+		}
+
+		public RestoreObjectResponse RestoreObject(string BucketName, string Key)
+		{
+			var Request = new RestoreObjectRequest()
+			{
+				BucketName = BucketName,
+				Key = Key,
+			};
+			return RestoreObject(Request);
+		}
 		#endregion
 
 		#region Multipart Function
 		private InitiateMultipartUploadResponse InitiateMultipartUpload(InitiateMultipartUploadRequest Request)
 		{
 			if (Client == null) return null;
-			Task<InitiateMultipartUploadResponse> Response = Client.InitiateMultipartUploadAsync(Request);
+			var Response = Client.InitiateMultipartUploadAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
 		public InitiateMultipartUploadResponse InitiateMultipartUpload(string BucketName, string Key, string ContentType = null,
-			List<KeyValuePair<string, string>> MetadataList = null, ServerSideEncryptionMethod SSE_S3 = null, SSECustomerKey SSEC = null)
+			List<KeyValuePair<string, string>> MetadataList = null, ServerSideEncryptionMethod SSE_S3 = null, SSECustomerKey SSE_C = null)
 		{
 			var Request = new InitiateMultipartUploadRequest()
 			{
@@ -1196,11 +1228,11 @@ namespace s3tests
 			if (SSE_S3 != null) Request.ServerSideEncryptionMethod = SSE_S3;
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 
 			return InitiateMultipartUpload(Request);
@@ -1209,11 +1241,11 @@ namespace s3tests
 		private UploadPartResponse UploadPart(UploadPartRequest Request)
 		{
 			if (Client == null) return null;
-			Task<UploadPartResponse> Response = Client.UploadPartAsync(Request);
+			var Response = Client.UploadPartAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
-		public UploadPartResponse UploadPart(string BucketName, string Key, string UploadId, string Body, int PartNumber, SSECustomerKey SSEC = null)
+		public UploadPartResponse UploadPart(string BucketName, string Key, string UploadId, string Body, int PartNumber, SSECustomerKey SSE_C = null)
 		{
 			var Request = new UploadPartRequest()
 			{
@@ -1225,11 +1257,11 @@ namespace s3tests
 			};
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 
 			return UploadPart(Request);
@@ -1238,7 +1270,7 @@ namespace s3tests
 		private CopyPartResponse CopyPart(CopyPartRequest Request)
 		{
 			if (Client == null) return null;
-			Task<CopyPartResponse> Response = Client.CopyPartAsync(Request);
+			var Response = Client.CopyPartAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1278,7 +1310,7 @@ namespace s3tests
 		private CompleteMultipartUploadResponse CompleteMultipartUpload(CompleteMultipartUploadRequest Request)
 		{
 			if (Client == null) return null;
-			Task<CompleteMultipartUploadResponse> Response = Client.CompleteMultipartUploadAsync(Request);
+			var Response = Client.CompleteMultipartUploadAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1298,7 +1330,7 @@ namespace s3tests
 		private AbortMultipartUploadResponse AbortMultipartUpload(AbortMultipartUploadRequest Request)
 		{
 			if (Client == null) return null;
-			Task<AbortMultipartUploadResponse> Response = Client.AbortMultipartUploadAsync(Request);
+			var Response = Client.AbortMultipartUploadAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1317,7 +1349,7 @@ namespace s3tests
 		private ListMultipartUploadsResponse ListMultipartUploads(ListMultipartUploadsRequest Request)
 		{
 			if (Client == null) return null;
-			Task<ListMultipartUploadsResponse> Response = Client.ListMultipartUploadsAsync(Request);
+			var Response = Client.ListMultipartUploadsAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}
@@ -1334,7 +1366,7 @@ namespace s3tests
 		private ListPartsResponse ListParts(ListPartsRequest Request)
 		{
 			if (Client == null) return null;
-			Task<ListPartsResponse> Response = Client.ListPartsAsync(Request);
+			var Response = Client.ListPartsAsync(Request);
 			Response.Wait();
 			return Response.Result;
 		}

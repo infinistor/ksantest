@@ -74,19 +74,19 @@ namespace s3tests
 			var Key = "testobj";
 			var Data = new string('A', 1000);
 
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
 
-			Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC);
+			Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C);
 
 			var e = Assert.Throws<AggregateException>(() => Client.GetObjectMetadata(BucketName, Key));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 
-			var Response = Client.GetObjectMetadata(BucketName, Key, SSEC: SSEC);
+			var Response = Client.GetObjectMetadata(BucketName, Key, SSE_C: SSE_C);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 		}
 
@@ -102,14 +102,14 @@ namespace s3tests
 			var Key = "testobj";
 			var Data = new string('A', 1000);
 
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
 
-			Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC);
+			Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C);
 
 			var e = Assert.Throws<AggregateException>(() => Client.GetObject(BucketName, Key));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
@@ -127,7 +127,7 @@ namespace s3tests
 			var Key = "testobj";
 			var Data = new string('A', 100);
 
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
@@ -141,9 +141,9 @@ namespace s3tests
 				MD5 = "arxBvwY2V4SiOne6yppVPQ==",
 			};
 
-			Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC);
+			Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C);
 
-			var e = Assert.Throws<AggregateException>(() => Client.GetObject(BucketName, Key, SSEC: SSEC2));
+			var e = Assert.Throws<AggregateException>(() => Client.GetObject(BucketName, Key, SSE_C: SSEC2));
 			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
 		}
 
@@ -159,14 +159,14 @@ namespace s3tests
 			var Key = "testobj";
 			var Data = new string('A', 100);
 
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 				MD5 = "AAAAAAAAAAAAAAAAAAAAAA==",
 			};
 
-			var e = Assert.Throws<AggregateException>(() => Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC));
+			var e = Assert.Throws<AggregateException>(() => Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C));
 
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 		}
@@ -184,14 +184,14 @@ namespace s3tests
 			var Key = "testobj";
 			var Data = new string('A', 100);
 
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 			};
 
-			Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC);
-			var Response = Client.GetObject(BucketName, Key: Key, SSEC: SSEC);
+			Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C);
+			var Response = Client.GetObject(BucketName, Key: Key, SSE_C: SSE_C);
 			var Body = GetBody(Response);
 			Assert.Equal(Data, Body);
 		}
@@ -209,12 +209,12 @@ namespace s3tests
 			var Data = new string('A', 100);
 
 
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 			};
 
-			var e = Assert.Throws<AggregateException>(() => Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC));
+			var e = Assert.Throws<AggregateException>(() => Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 		}
 
@@ -229,14 +229,14 @@ namespace s3tests
 			var Client = GetClientHttps();
 			var Key = "testobj";
 			var Data = new string('A', 100);
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = null,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
 
-			var e = Assert.Throws<AggregateException>(() => Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC));
+			var e = Assert.Throws<AggregateException>(() => Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 		}
 
@@ -253,14 +253,14 @@ namespace s3tests
 			var Size = 50 * MainData.MB;
 			var Metadata = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("x-amz-meta-foo", "bar"), };
 			var ContentType = "text/plain";
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
 
-			var UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, MetadataList: Metadata, ContentType: ContentType, SSEC: SSEC);
+			var UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, MetadataList: Metadata, ContentType: ContentType, SSE_C: SSE_C);
 
 			Client.CompleteMultipartUpload(BucketName, Key, UploadData.UploadId, UploadData.Parts);
 
@@ -270,7 +270,7 @@ namespace s3tests
 			var BytesUsed = GetBytesUsed(HeadResponse);
 			Assert.Equal(Size, BytesUsed);
 
-			var GetResponse = Client.GetObject(BucketName, Key, SSEC: SSEC);
+			var GetResponse = Client.GetObject(BucketName, Key, SSE_C: SSE_C);
 			Assert.Equal(Metadata, GetMetaData(GetResponse.Metadata));
 			Assert.Equal(ContentType, GetResponse.Headers["content-type"]);
 
@@ -278,9 +278,9 @@ namespace s3tests
 			Assert.Equal(UploadData.Body, Body);
 			Assert.Equal(Size, GetResponse.ContentLength);
 
-			CheckContentUsingRange(Client, BucketName, Key, UploadData.Body, 1000000, SSEC: SSEC);
-			CheckContentUsingRange(Client, BucketName, Key, UploadData.Body, 10000000, SSEC: SSEC);
-			CheckContentUsingRandomRange(Client, BucketName, Key, UploadData.Body, 100, SSEC: SSEC);
+			CheckContentUsingRange(Client, BucketName, Key, UploadData.Body, 1000000, SSE_C: SSE_C);
+			CheckContentUsingRange(Client, BucketName, Key, UploadData.Body, 10000000, SSE_C: SSE_C);
+			CheckContentUsingRandomRange(Client, BucketName, Key, UploadData.Body, 100, SSE_C: SSE_C);
 		}
 
 		[Fact(DisplayName = "test_encryption_sse_c_multipart_bad_download")]
@@ -309,7 +309,7 @@ namespace s3tests
 				MD5 = "arxBvwY2V4SiOne6yppVPQ==",
 			};
 
-			var UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, MetadataList: Metadata, ContentType: ContentType, SSEC: PutSSEC);
+			var UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, MetadataList: Metadata, ContentType: ContentType, SSE_C: PutSSEC);
 
 			Client.CompleteMultipartUpload(BucketName, Key, UploadData.UploadId, UploadData.Parts);
 
@@ -319,11 +319,11 @@ namespace s3tests
 			var BytesUsed = GetBytesUsed(HeadResponse);
 			Assert.Equal(Size, BytesUsed);
 
-			var GetResponse = Client.GetObject(BucketName, Key, SSEC: PutSSEC);
+			var GetResponse = Client.GetObject(BucketName, Key, SSE_C: PutSSEC);
 			Assert.Equal(Metadata, GetMetaData(GetResponse.Metadata));
 			Assert.Equal(ContentType, GetResponse.Headers["content-type"]);
 
-			var e = Assert.Throws<AggregateException>(() => Client.GetObject(BucketName, Key, SSEC: GetSSEC));
+			var e = Assert.Throws<AggregateException>(() => Client.GetObject(BucketName, Key, SSE_C: GetSSEC));
 			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
 		}
 
@@ -340,7 +340,7 @@ namespace s3tests
 			var ContentType = "text/plain";
 			var Key = "foo.txt";
 
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
@@ -377,15 +377,15 @@ namespace s3tests
 					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "x-amz-server-side-encryption-customer-algorithm", "AES256" },
-					{ "x-amz-server-side-encryption-customer-key", SSEC.ProvidedKey },
-					{ "x-amz-server-side-encryption-customer-key-md5", SSEC.MD5 },
+					{ "x-amz-server-side-encryption-customer-key", SSE_C.ProvidedKey },
+					{ "x-amz-server-side-encryption-customer-key-md5", SSE_C.MD5 },
 					{ "file", FileData },
 			};
 
 			var Result = PostUpload(BucketName, Payload);
 			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
 
-			var Response = Client.GetObject(BucketName, Key, SSEC: SSEC);
+			var Response = Client.GetObject(BucketName, Key, SSE_C: SSE_C);
 			var Body = GetBody(Response);
 			Assert.Equal("bar", Body);
 		}
@@ -401,15 +401,15 @@ namespace s3tests
 			var Client = GetClientHttps();
 			var Key = "foo";
 			var Data = RandomTextToLong(15 * 1024 * 1024);
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
 
-			Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC);
-			CheckContent(Client, BucketName, Key, Data, LoopCount: 100, SSEC: SSEC);
+			Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C);
+			CheckContent(Client, BucketName, Key, Data, LoopCount: 100, SSE_C: SSE_C);
 		}
 
 		[Fact(DisplayName = "test_encryption_sse_c_range_object_many")]
@@ -424,15 +424,15 @@ namespace s3tests
 			var Key = "foo";
 			var Size = 15 * 1024 * 1024;
 			var Data = RandomTextToLong(Size);
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
 
-			Client.PutObject(BucketName, Key: Key, Body: Data, SSEC: SSEC);
-			CheckContentUsingRandomRange(Client, BucketName, Key, Data, 100, SSEC: SSEC);
+			Client.PutObject(BucketName, Key: Key, Body: Data, SSE_C: SSE_C);
+			CheckContentUsingRandomRange(Client, BucketName, Key, Data, 100, SSE_C: SSE_C);
 		}
 
 		[Fact(DisplayName = "test_sse_c_encryption_multipart_copypart_upload")]
@@ -448,14 +448,14 @@ namespace s3tests
 			var Size = 50 * MainData.MB;
 			var Metadata = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("x-amz-meta-foo", "bar"), };
 			var ContentType = "text/plain";
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
 
-			var UploadData = SetupMultipartUpload(Client, BucketName, SrcKey, Size, MetadataList: Metadata, ContentType: ContentType, SSEC: SSEC);
+			var UploadData = SetupMultipartUpload(Client, BucketName, SrcKey, Size, MetadataList: Metadata, ContentType: ContentType, SSE_C: SSE_C);
 
 			Client.CompleteMultipartUpload(BucketName, SrcKey, UploadData.UploadId, UploadData.Parts);
 
@@ -465,7 +465,7 @@ namespace s3tests
 			var BytesUsed = GetBytesUsed(HeadResponse);
 			Assert.Equal(Size, BytesUsed);
 
-			var GetResponse = Client.GetObject(BucketName, SrcKey, SSEC: SSEC);
+			var GetResponse = Client.GetObject(BucketName, SrcKey, SSE_C: SSE_C);
 			Assert.Equal(Metadata, GetMetaData(GetResponse.Metadata));
 			Assert.Equal(ContentType, GetResponse.Headers["content-type"]);
 
@@ -475,9 +475,9 @@ namespace s3tests
 
 			// 멀티파트 복사
 			var DestKey = "multipart_enc_copy";
-			UploadData = SetupMultipartCopy(Client, BucketName, SrcKey, BucketName, DestKey, Size, SrcSSEC: SSEC, DestSSEC: SSEC);
+			UploadData = SetupMultipartCopy(Client, BucketName, SrcKey, BucketName, DestKey, Size, SrcSSEC: SSE_C, DestSSEC: SSE_C);
 			Client.CompleteMultipartUpload(BucketName, DestKey, UploadData.UploadId, UploadData.Parts);
-			CheckCopyContent(Client, BucketName, SrcKey, BucketName, DestKey, SrcSSEC: SSEC, DestSSEC: SSEC);
+			CheckCopyContent(Client, BucketName, SrcKey, BucketName, DestKey, SrcSSEC: SSE_C, DestSSEC: SSE_C);
 		}
 
 		[Fact(DisplayName = "test_sse_c_encryption_multipart_copy_many")]
@@ -492,7 +492,7 @@ namespace s3tests
 			var Size = 10 * MainData.MB;
 			var Client = GetClientHttps();
 			var Body = "";
-			var SSEC = new SSECustomerKey()
+			var SSE_C = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
 				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
@@ -500,34 +500,34 @@ namespace s3tests
 			};
 
 			// 멀티파트 업로드
-			var UploadData = SetupMultipartUpload(Client, BucketName, SrcKey, Size, SSEC: SSEC);
+			var UploadData = SetupMultipartUpload(Client, BucketName, SrcKey, Size, SSE_C: SSE_C);
 			Client.CompleteMultipartUpload(BucketName, SrcKey, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
 			Body += UploadData.Body;
-			CheckContent(Client, BucketName, SrcKey, Body, SSEC: SSEC);
+			CheckContent(Client, BucketName, SrcKey, Body, SSE_C: SSE_C);
 
 			// 멀티파트 카피
 			var DestKey1 = "mymultipart1_enc";
-			UploadData = SetupMultipartCopy(Client, BucketName, SrcKey, BucketName, DestKey1, Size, SrcSSEC: SSEC, DestSSEC: SSEC);
+			UploadData = SetupMultipartCopy(Client, BucketName, SrcKey, BucketName, DestKey1, Size, SrcSSEC: SSE_C, DestSSEC: SSE_C);
 			// 추가파츠 업로드
-			UploadData = SetupMultipartUpload(Client, BucketName, DestKey1, Size, UploadData: UploadData, SSEC: SSEC);
+			UploadData = SetupMultipartUpload(Client, BucketName, DestKey1, Size, UploadData: UploadData, SSE_C: SSE_C);
 			Client.CompleteMultipartUpload(BucketName, DestKey1, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
 			Body += UploadData.Body;
-			CheckContent(Client, BucketName, DestKey1, Body, SSEC: SSEC);
+			CheckContent(Client, BucketName, DestKey1, Body, SSE_C: SSE_C);
 
 			// 멀티파트 카피
 			var DestKey2 = "mymultipart2_enc";
-			UploadData = SetupMultipartCopy(Client, BucketName, DestKey1, BucketName, DestKey2, Size * 2, SrcSSEC: SSEC, DestSSEC: SSEC);
+			UploadData = SetupMultipartCopy(Client, BucketName, DestKey1, BucketName, DestKey2, Size * 2, SrcSSEC: SSE_C, DestSSEC: SSE_C);
 			// 추가파츠 업로드
-			UploadData = SetupMultipartUpload(Client, BucketName, DestKey2, Size, UploadData: UploadData, SSEC: SSEC);
+			UploadData = SetupMultipartUpload(Client, BucketName, DestKey2, Size, UploadData: UploadData, SSE_C: SSE_C);
 			Client.CompleteMultipartUpload(BucketName, DestKey2, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
 			Body += UploadData.Body;
-			CheckContent(Client, BucketName, DestKey2, Body, SSEC: SSEC);
+			CheckContent(Client, BucketName, DestKey2, Body, SSE_C: SSE_C);
 		}
 	}
 }
