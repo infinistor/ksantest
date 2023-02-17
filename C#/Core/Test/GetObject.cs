@@ -353,5 +353,22 @@ namespace s3tests
 			Client.PutObject(BucketName, Key, Body: Data);
 			CheckContentUsingRandomRange(Client, BucketName, Key, Data, 100);
 		}
+
+		[Fact(DisplayName = "test_restore_object")]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Restore")]
+		[Trait(MainData.Explanation, "오브젝트 복구 명령이 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_restore_object()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var Key = "foo";
+
+			Client.PutObject(BucketName, Key, Key);
+
+			Client.RestoreObject(BucketName, Key);
+			
+		}
 	}
 }
