@@ -224,9 +224,9 @@ namespace ReplicationTest
 				else
 				{
 					Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-					foreach (var Version in SourceData) Console.WriteLine($"[{Version.Key:10}\t{Version.Size}\t{Version.ETag}\t{Version.IsDeleteMarker}\t{Version.VersionId}]");
+					foreach (var Version in SourceData) Console.WriteLine($"[{Version.Key:10}\t{Version.Size}\t{Version.ETag}\t{Version.IsDeleteMarker} {Version.VersionId.Trim()}]");
 					Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-					foreach (var Version in TargetData) Console.WriteLine($"[{Version.Key:10}\t{Version.Size}\t{Version.ETag}\t{Version.IsDeleteMarker}\t{Version.VersionId}]");
+					foreach (var Version in TargetData) Console.WriteLine($"[{Version.Key:10}\t{Version.Size}\t{Version.ETag}\t{Version.IsDeleteMarker} {Version.VersionId.Trim()}]");
 					Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 					log.Error($"[{Bucket.BucketName}] is not match! -> {Message}");
 					Result = "Failed";
