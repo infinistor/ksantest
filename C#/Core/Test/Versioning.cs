@@ -786,7 +786,7 @@ namespace s3tests
 		}
 
 		[Fact(DisplayName = "test_versioning_get_object_head")]
-		[Trait(MainData.Major, "Verioning")]
+		[Trait(MainData.Major, "Versioning")]
 		[Trait(MainData.Minor, "Metadata")]
 		[Trait(MainData.Explanation, "업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
@@ -810,6 +810,38 @@ namespace s3tests
 			{
 				var Response = Client.GetObjectMetadata(BucketName, Key: KeyName, VersionId: VersionList[i]);
 				Assert.Equal(i + 1, Response.ContentLength);
+			}
+		}
+
+		// 버전이 여러개인 오브젝트의 최신 버전을 삭제 했을때 이전버전이 최신버전으로 변경되는지 확인
+		[Fact(DisplayName = "test_versioning_latest")]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_versioning_latest()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			CheckConfigureVersioningRetry(BucketName, VersionStatus.Enabled);
+
+			var KeyName = "foo";
+			var VersionStack = new Stack<string>();
+
+			for (int i = 1; i <= 5; i++)
+			{
+				var Response = Client.PutObject(BucketName, KeyName, RandomTextToLong(i));
+				VersionStack.Push(Response.VersionId);
+			}
+
+			var LastVersionId = VersionStack.Pop();
+			while (VersionStack.Count > 1)
+			{
+				Client.DeleteObject(BucketName, KeyName, LastVersionId);
+				LastVersionId = VersionStack.Pop();
+				
+				var Response = Client.GetObjectMetadata(BucketName, KeyName);
+				Assert.Equal(LastVersionId, Response.VersionId);
 			}
 		}
 	}
