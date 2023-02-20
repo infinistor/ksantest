@@ -633,5 +633,16 @@ public class SSE_S3 extends TestBase
 		var Body = GetBody(GetResponse.getObjectContent());
 		assertNull(GetResponse.getObjectMetadata().getSSEAlgorithm());
 		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+
+		
+		var Key2 = "bar2";
+		var Data2 = Utils.randomTextToLong(1000);
+		client.putObject(bucketName, Key2, Data2);
+		client.deleteBucketEncryption(bucketName);
+
+		GetResponse = client.getObject(bucketName, Key2);
+		Body = GetBody(GetResponse.getObjectContent());
+		assertNull(GetResponse.getObjectMetadata().getSSEAlgorithm());
+		assertTrue(Data2.equals(Body), MainData.NOT_MATCHED);
 	}
 }
