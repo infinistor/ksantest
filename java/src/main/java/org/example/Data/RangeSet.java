@@ -11,15 +11,15 @@
 package org.example.Data;
 
 public class RangeSet {
-	public int Start;
-	public int End;
-	public int Length;
+	public int start;
+	public int end;
+	public int length;
 
-	public RangeSet(int Start, int Length)
+	public RangeSet(int start, int length)
 	{
-		this.Start = Start;
-		this.Length = Length;
-		End = Start + Length;
+		this.start = start;
+		this.length = length;
+		end = start + length;
 	}
 
 }

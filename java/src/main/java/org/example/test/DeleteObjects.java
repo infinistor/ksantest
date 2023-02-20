@@ -41,24 +41,24 @@ public class DeleteObjects extends TestBase
 	public void test_multi_object_delete()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "key0", "key1", "key2" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var ListResponse = Client.listObjects(BucketName);
+		var ListResponse = client.listObjects(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 
 		var ObjectList = GetKeyVersions(KeyNames);
-		var DelResponse = Client.deleteObjects(new DeleteObjectsRequest(BucketName).withKeys(ObjectList));
+		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 
 		assertEquals(KeyNames.size(), DelResponse.getDeletedObjects().size());
 
-		ListResponse = Client.listObjects(BucketName);
+		ListResponse = client.listObjects(bucketName);
 		assertEquals(0, ListResponse.getObjectSummaries().size());
 
-		DelResponse = Client.deleteObjects(new DeleteObjectsRequest(BucketName).withKeys(ObjectList));
+		DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 		assertEquals(KeyNames.size(), DelResponse.getDeletedObjects().size());
 
-		ListResponse = Client.listObjects(BucketName);
+		ListResponse = client.listObjects(bucketName);
 		assertEquals(0, ListResponse.getObjectSummaries().size());
 	}
 
@@ -68,24 +68,24 @@ public class DeleteObjects extends TestBase
 	public void test_multi_objectv2_delete()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "key0", "key1", "key2" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var ListResponse = Client.listObjectsV2(BucketName);
+		var ListResponse = client.listObjectsV2(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 
 		var ObjectList = GetKeyVersions(KeyNames);
-		var DelResponse = Client.deleteObjects(new DeleteObjectsRequest(BucketName).withKeys(ObjectList));
+		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 
 		assertEquals(KeyNames.size(), DelResponse.getDeletedObjects().size());
 
-		ListResponse = Client.listObjectsV2(BucketName);
+		ListResponse = client.listObjectsV2(bucketName);
 		assertEquals(0, ListResponse.getObjectSummaries().size());
 
-		DelResponse = Client.deleteObjects(new DeleteObjectsRequest(BucketName).withKeys(ObjectList));
+		DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 		assertEquals(KeyNames.size(), DelResponse.getDeletedObjects().size());
 
-		ListResponse = Client.listObjectsV2(BucketName);
+		ListResponse = client.listObjectsV2(bucketName);
 		assertEquals(0, ListResponse.getObjectSummaries().size());
 	}
 
@@ -95,28 +95,28 @@ public class DeleteObjects extends TestBase
 	public void test_multi_object_delete_versions()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "key0", "key1", "key2" }));
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		for (var Key : KeyNames)
-			CreateMultipleVersion(Client, BucketName, Key, 3, false);
+			CreateMultipleVersion(client, bucketName, Key, 3, false);
 
-		var ListResponse = Client.listObjectsV2(BucketName);
+		var ListResponse = client.listObjectsV2(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 
 		var ObjectList = GetKeyVersions(KeyNames);
-		var DelResponse = Client.deleteObjects(new DeleteObjectsRequest(BucketName).withKeys(ObjectList));
+		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 
 		assertEquals(KeyNames.size(), DelResponse.getDeletedObjects().size());
 
-		ListResponse = Client.listObjectsV2(BucketName);
+		ListResponse = client.listObjectsV2(bucketName);
 		assertEquals(0, ListResponse.getObjectSummaries().size());
 
-		DelResponse = Client.deleteObjects(new DeleteObjectsRequest(BucketName).withKeys(ObjectList));
+		DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 		assertEquals(KeyNames.size(), DelResponse.getDeletedObjects().size());
 
-		ListResponse = Client.listObjectsV2(BucketName);
+		ListResponse = client.listObjectsV2(bucketName);
 		assertEquals(0, ListResponse.getObjectSummaries().size());
 	}
 
@@ -126,18 +126,18 @@ public class DeleteObjects extends TestBase
 	public void test_multi_object_delete_quiet()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "key0", "key1", "key2" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var ListResponse = Client.listObjects(BucketName);
+		var ListResponse = client.listObjects(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 
 		var ObjectList = GetKeyVersions(KeyNames);
-		var DelResponse = Client.deleteObjects(new DeleteObjectsRequest(BucketName).withKeys(ObjectList).withQuiet(true));
+		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList).withQuiet(true));
 
 		assertEquals(0, DelResponse.getDeletedObjects().size());
 
-		ListResponse = Client.listObjects(BucketName);
+		ListResponse = client.listObjects(bucketName);
 		assertEquals(0, ListResponse.getObjectSummaries().size());
 	}
 
@@ -147,24 +147,24 @@ public class DeleteObjects extends TestBase
 	public void test_directory_delete()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "a/b/", "a/b/c/d/obj1", "a/b/c/d/obj2", "1/2/", "1/2/3/4/obj1", "q/w/e/r/obj" }));
-		var BucketName = CreateObjectsToBody(KeyNames, "");
-		var Client = GetClient();
+		var bucketName = createObjectsToBody(KeyNames, "");
+		var client = getClient();
 
-		var ListResponse = Client.listObjects(BucketName);
+		var ListResponse = client.listObjects(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 
-		Client.deleteObject(BucketName, "a/b/");
-		Client.deleteObject(BucketName, "1/2/");
-		Client.deleteObject(BucketName, "q/w/");
+		client.deleteObject(bucketName, "a/b/");
+		client.deleteObject(bucketName, "1/2/");
+		client.deleteObject(bucketName, "q/w/");
 
-		ListResponse = Client.listObjects(BucketName);
+		ListResponse = client.listObjects(bucketName);
 		assertEquals(4, ListResponse.getObjectSummaries().size());
 
-		Client.deleteObject(BucketName, "a/b/");
-		Client.deleteObject(BucketName, "1/2/");
-		Client.deleteObject(BucketName, "q/w/");
+		client.deleteObject(bucketName, "a/b/");
+		client.deleteObject(bucketName, "1/2/");
+		client.deleteObject(bucketName, "q/w/");
 
-		ListResponse = Client.listObjects(BucketName);
+		ListResponse = client.listObjects(bucketName);
 		assertEquals(4, ListResponse.getObjectSummaries().size());
 	}
 
@@ -174,34 +174,34 @@ public class DeleteObjects extends TestBase
 	public void test_directory_delete_versions()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "a/", "a/obj1", "a/obj2", "b/", "b/obj1" }));
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		for (var Key : KeyNames)
-			CreateMultipleVersion(Client, BucketName, Key, 3, false, "");
+			CreateMultipleVersion(client, bucketName, Key, 3, false, "");
 
-		var ListResponse = Client.listObjects(BucketName);
+		var ListResponse = client.listObjects(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 		
-		var VersResponse = Client.listVersions(BucketName, "");
+		var VersResponse = client.listVersions(bucketName, "");
 		assertEquals(15, VersResponse.getVersionSummaries().size());
 
-		Client.deleteObject(BucketName, "a/");
+		client.deleteObject(bucketName, "a/");
 
-		ListResponse = Client.listObjects(BucketName);
+		ListResponse = client.listObjects(bucketName);
 		assertEquals(4, ListResponse.getObjectSummaries().size());
 
-		VersResponse = Client.listVersions(BucketName, "");
+		VersResponse = client.listVersions(bucketName, "");
 		assertEquals(16, VersResponse.getVersionSummaries().size());
 
 		var DeleteList = new ArrayList<>(Arrays.asList(new String[] {"a/obj1", "a/obj2" }));
 		var ObjectList = GetKeyVersions(DeleteList);
 
-		var DelResponse = Client.deleteObjects(new DeleteObjectsRequest(BucketName).withKeys(ObjectList));
+		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 		assertEquals(2, DelResponse.getDeletedObjects().size());
 		
-		VersResponse = Client.listVersions(BucketName, "");
+		VersResponse = client.listVersions(bucketName, "");
 		assertEquals(18, VersResponse.getVersionSummaries().size());
 	}
 }

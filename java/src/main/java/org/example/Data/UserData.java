@@ -11,36 +11,38 @@
 package org.example.Data;
 
 public class UserData {
-	public String DisplayName ;
-	public String UserID      ;
-	public String Email       ;
-	public String AccessKey   ;
-	public String SecretKey   ;
-	public String KMS         ;
+	public String displayName;
+	public String userId;
+	public String email;
+	public String accessKey;
+	public String secretKey;
+	public String KMS;
 
-	public UserData()
-	{
+	public UserData() {
 		Init();
 	}
 
-	public void Init()
-	{
-		DisplayName = "";
-		UserID      = "";
-		Email       = "";
-		AccessKey   = "";
-		SecretKey   = "";
-		KMS         = "";
+	public void Init() {
+		displayName = "";
+		userId = "";
+		email = "";
+		accessKey = "";
+		secretKey = "";
+		KMS = "";
 	}
 
-	public boolean IsEmpty()
-	{
+	public boolean IsEmpty() {
 
-		if (!DisplayName.isBlank()) return true;
-		if (!UserID     .isBlank()) return true;
-		if (!Email      .isBlank()) return true;
-		if (!AccessKey  .isBlank()) return true;
-		if (!SecretKey  .isBlank()) return true;
+		if (!displayName.isBlank())
+			return true;
+		if (!userId.isBlank())
+			return true;
+		if (!email.isBlank())
+			return true;
+		if (!accessKey.isBlank())
+			return true;
+		if (!secretKey.isBlank())
+			return true;
 		return false;
 	}
 }

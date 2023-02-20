@@ -47,10 +47,10 @@ public class Logging extends TestBase
 	// 버킷에 로깅 설정 조회 가능한지 확인
 	public void test_logging_get()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		var Response = Client.getBucketLoggingConfiguration(BucketName);
+		var Response = client.getBucketLoggingConfiguration(bucketName);
 		assertNull(Response.getLogFilePrefix());
 		assertNull(Response.getDestinationBucketName());
 	}
@@ -60,12 +60,12 @@ public class Logging extends TestBase
 	// 버킷에 로깅 설정 가능한지 확인
 	public void test_logging_set()
 	{
-		var SourceBucketName = GetNewBucket();
-		var TargetBucketName = GetNewBucket();
-		var Client = GetClient();
+		var SourceBucketName = getNewBucket();
+		var TargetBucketName = getNewBucket();
+		var client = getClient();
 
 		var Request = new SetBucketLoggingConfigurationRequest(SourceBucketName, new BucketLoggingConfiguration(TargetBucketName, ""));
-		Client.setBucketLoggingConfiguration(Request);
+		client.setBucketLoggingConfiguration(Request);
 	}
 
 	@Test
@@ -73,14 +73,14 @@ public class Logging extends TestBase
 	// 버킷에 설정한 로깅 정보 조회가 가능한지 확인
 	public void test_logging_set_get()
 	{
-		var SourceBucketName = GetNewBucket();
-		var TargetBucketName = GetNewBucket();
-		var Client = GetClient();
+		var SourceBucketName = getNewBucket();
+		var TargetBucketName = getNewBucket();
+		var client = getClient();
 
 		var Request = new SetBucketLoggingConfigurationRequest(SourceBucketName, new BucketLoggingConfiguration(TargetBucketName, ""));
-		Client.setBucketLoggingConfiguration(Request);
+		client.setBucketLoggingConfiguration(Request);
 
-		var Response = Client.getBucketLoggingConfiguration(SourceBucketName);
+		var Response = client.getBucketLoggingConfiguration(SourceBucketName);
 		assertEquals("", Response.getLogFilePrefix());
 		assertEquals(TargetBucketName, Response.getDestinationBucketName());
 	}
@@ -90,15 +90,15 @@ public class Logging extends TestBase
 	// 버킷의 로깅에 Prefix가 설정되는지 확인
 	public void test_logging_prefix()
 	{
-		var SourceBucketName = GetNewBucket();
-		var TargetBucketName = GetNewBucket();
+		var SourceBucketName = getNewBucket();
+		var TargetBucketName = getNewBucket();
 		var Prefix = "logs/";
-		var Client = GetClient();
+		var client = getClient();
 
 		var Request = new SetBucketLoggingConfigurationRequest(SourceBucketName, new BucketLoggingConfiguration(TargetBucketName, Prefix));
-		Client.setBucketLoggingConfiguration(Request);
+		client.setBucketLoggingConfiguration(Request);
 
-		var Response = Client.getBucketLoggingConfiguration(SourceBucketName);
+		var Response = client.getBucketLoggingConfiguration(SourceBucketName);
 		assertEquals(Prefix, Response.getLogFilePrefix());
 		assertEquals(TargetBucketName, Response.getDestinationBucketName());
 	}
@@ -108,17 +108,17 @@ public class Logging extends TestBase
 	// 버저닝 설정된 버킷의 로깅이 설정되는지 확인
 	public void test_logging_versioning()
 	{
-		var SourceBucketName = GetNewBucket();
-		var TargetBucketName = GetNewBucket();
+		var SourceBucketName = getNewBucket();
+		var TargetBucketName = getNewBucket();
 		var Prefix = "logs/";
-		var Client = GetClient();
+		var client = getClient();
 		
-		CheckConfigureVersioningRetry(SourceBucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(SourceBucketName, BucketVersioningConfiguration.ENABLED);
 
 		var Request = new SetBucketLoggingConfigurationRequest(SourceBucketName, new BucketLoggingConfiguration(TargetBucketName, Prefix));
-		Client.setBucketLoggingConfiguration(Request);
+		client.setBucketLoggingConfiguration(Request);
 
-		var Response = Client.getBucketLoggingConfiguration(SourceBucketName);
+		var Response = client.getBucketLoggingConfiguration(SourceBucketName);
 		assertEquals(Prefix, Response.getLogFilePrefix());
 		assertEquals(TargetBucketName, Response.getDestinationBucketName());
 	}
@@ -128,21 +128,21 @@ public class Logging extends TestBase
 	// SSE-s3설정된 버킷의 로깅이 설정되는지 확인
 	public void test_logging_encryption()
 	{
-		var SourceBucketName = GetNewBucket();
-		var TargetBucketName = GetNewBucket();
+		var SourceBucketName = getNewBucket();
+		var TargetBucketName = getNewBucket();
 		var Prefix = "logs/";
-		var Client = GetClient();
+		var client = getClient();
 
 		var SSES3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
-		Client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(SourceBucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(SourceBucketName).withServerSideEncryptionConfiguration(SSES3Config));
 
 		var Request = new SetBucketLoggingConfigurationRequest(SourceBucketName, new BucketLoggingConfiguration(TargetBucketName, Prefix));
-		Client.setBucketLoggingConfiguration(Request);
+		client.setBucketLoggingConfiguration(Request);
 
-		var Response = Client.getBucketLoggingConfiguration(SourceBucketName);
+		var Response = client.getBucketLoggingConfiguration(SourceBucketName);
 		assertEquals(Prefix, Response.getLogFilePrefix());
 		assertEquals(TargetBucketName, Response.getDestinationBucketName());
 	}
@@ -152,13 +152,13 @@ public class Logging extends TestBase
 	// 존재하지 않는 버킷에 로깅 설정 실패 확인
 	public void test_logging_bucket_not_found()
 	{
-		var SourceBucketName = GetNewBucketNameOnly();
-		var TargetBucketName = GetNewBucketNameOnly();
+		var SourceBucketName = getNewBucketNameOnly();
+		var TargetBucketName = getNewBucketNameOnly();
 		var Prefix = "logs/";
-		var Client = GetClient();
+		var client = getClient();
 
 		var Request = new SetBucketLoggingConfigurationRequest(SourceBucketName, new BucketLoggingConfiguration(TargetBucketName, Prefix));
-		var e = assertThrows(AmazonServiceException.class, () -> Client.setBucketLoggingConfiguration(Request));
+		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLoggingConfiguration(Request));
 
 		assertEquals(404, e.getStatusCode());
 		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
@@ -169,13 +169,13 @@ public class Logging extends TestBase
 	// 타깃 버킷이 존재하지 않을때 로깅 설정 실패 확인
 	public void test_logging_target_bucket_not_found()
 	{
-		var SourceBucketName = GetNewBucket();
-		var TargetBucketName = GetNewBucketNameOnly();
+		var SourceBucketName = getNewBucket();
+		var TargetBucketName = getNewBucketNameOnly();
 		var Prefix = "logs/";
-		var Client = GetClient();
+		var client = getClient();
 
 		var Request = new SetBucketLoggingConfigurationRequest(SourceBucketName, new BucketLoggingConfiguration(TargetBucketName, Prefix));
-		var e = assertThrows(AmazonServiceException.class, () -> Client.setBucketLoggingConfiguration(Request));
+		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLoggingConfiguration(Request));
 
 		assertEquals(400, e.getStatusCode());
 		assertEquals(MainData.InvalidTargetBucketForLogging, e.getErrorCode());

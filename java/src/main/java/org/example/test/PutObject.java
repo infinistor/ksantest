@@ -10,8 +10,8 @@
 */
 package org.example.test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -26,17 +26,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.CanonicalGrantee;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.DeleteVersionRequest;
 import com.amazonaws.services.s3.model.ObjectLockLegalHold;
 import com.amazonaws.services.s3.model.ObjectLockLegalHoldStatus;
 import com.amazonaws.services.s3.model.ObjectLockMode;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.Owner;
-import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.SetObjectLegalHoldRequest;
 
@@ -55,13 +51,13 @@ public class PutObject extends TestBase {
 	@Tag("PUT")
 	// 오브젝트가 올바르게 생성되는지 확인
 	public void test_bucket_list_distinct() {
-		var BucketName1 = GetNewBucket();
-		var BucketName2 = GetNewBucket();
-		var Client = GetClient();
+		var BucketName1 = getNewBucket();
+		var BucketName2 = getNewBucket();
+		var client = getClient();
 
-		Client.putObject(BucketName1, "asdf", "str");
+		client.putObject(BucketName1, "asdf", "str");
 
-		var Response = Client.listObjects(BucketName2);
+		var Response = client.listObjects(BucketName2);
 		assertEquals(0, Response.getObjectSummaries().size());
 	}
 
@@ -70,10 +66,10 @@ public class PutObject extends TestBase {
 	// 존재하지 않는 버킷에 오브젝트 업로드할 경우 실패 확인
 	public void test_object_write_to_nonexist_bucket() {
 		var KeyName = "foo";
-		var BucketName = "whatchutalkinboutwillis";
-		var Client = GetClient();
+		var bucketName = "whatchutalkinboutwillis";
+		var client = getClient();
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.putObject(BucketName, KeyName, KeyName));
+		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, KeyName, KeyName));
 
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
@@ -86,13 +82,13 @@ public class PutObject extends TestBase {
 	@Tag("Metadata")
 	// 0바이트로 업로드한 오브젝트가 실제로 0바이트인지 확인
 	public void test_object_head_zero_bytes() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		var KeyName = "foo";
-		Client.putObject(BucketName, KeyName, "");
+		client.putObject(bucketName, KeyName, "");
 
-		var Response = Client.getObjectMetadata(BucketName, KeyName);
+		var Response = client.getObjectMetadata(bucketName, KeyName);
 		assertEquals(0, Response.getContentLength());
 	}
 
@@ -100,10 +96,10 @@ public class PutObject extends TestBase {
 	@Tag("Metadata")
 	// 업로드한 오브젝트의 ETag가 올바른지 확인
 	public void test_object_write_check_etag() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		var Response = Client.putObject(BucketName, "foo", "bar");
+		var Response = client.putObject(bucketName, "foo", "bar");
 		assertEquals("37b51d194a7513e45b56f6524f2d51f2", Response.getETag());
 	}
 
@@ -111,8 +107,8 @@ public class PutObject extends TestBase {
 	@Tag(" CacheControl")
 	// 캐시(시간)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
 	public void test_object_write_cache_control() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		var KeyName = "foo";
 		var Body = "bar";
@@ -122,12 +118,12 @@ public class PutObject extends TestBase {
 		Metadata.setContentType("text/plain");
 		Metadata.setContentLength(Body.length());
 
-		Client.putObject(BucketName, KeyName, CreateBody(Body), Metadata);
+		client.putObject(bucketName, KeyName, createBody(Body), Metadata);
 
-		var Response = Client.getObjectMetadata(BucketName, KeyName);
+		var Response = client.getObjectMetadata(bucketName, KeyName);
 		assertEquals(CacheControl, Response.getCacheControl());
 
-		var Result = Client.getObject(BucketName, KeyName);
+		var Result = client.getObject(bucketName, KeyName);
 		assertEquals(Body, GetBody(Result.getObjectContent()));
 	}
 
@@ -136,20 +132,20 @@ public class PutObject extends TestBase {
 	@Tag("Expires")
 	// 캐시(날짜)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
 	public void test_object_write_expires() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		var KeyName = "foo";
 		var Body = "bar";
-		var Expires = GetTimeToAddSeconds(6000);
+		var Expires = getTimeToAddSeconds(6000);
 		var Metadata = new ObjectMetadata();
 		Metadata.setExpirationTime(Expires);
 		Metadata.setContentType("text/plain");
 		Metadata.setContentLength(Body.length());
 
-		Client.putObject(BucketName, KeyName, CreateBody(Body), Metadata);
+		client.putObject(bucketName, KeyName, createBody(Body), Metadata);
 
-		var Response = Client.getObjectMetadata(BucketName, KeyName);
+		var Response = client.getObjectMetadata(bucketName, KeyName);
 		assertEquals(Expires, Response.getExpirationTime());
 	}
 
@@ -157,31 +153,31 @@ public class PutObject extends TestBase {
 	@Tag("Update")
 	// 오브젝트의 기본 작업을 모드 올바르게 할 수 있는지 확인(read, write, update, delete)
 	public void test_object_write_read_update_read_delete() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		var KeyName = "foo";
 		var Body = "bar";
 
 		// Write
-		Client.putObject(BucketName, KeyName, Body);
+		client.putObject(bucketName, KeyName, Body);
 
 		// Read
-		var GetResponse = Client.getObject(BucketName, KeyName);
+		var GetResponse = client.getObject(bucketName, KeyName);
 		var ResponseBody = GetBody(GetResponse.getObjectContent());
 		assertEquals(Body, ResponseBody);
 
 		// Update
 		var Body2 = "soup";
-		Client.putObject(BucketName, KeyName, Body2);
+		client.putObject(bucketName, KeyName, Body2);
 
 		// Read
-		GetResponse = Client.getObject(BucketName, KeyName);
+		GetResponse = client.getObject(bucketName, KeyName);
 		ResponseBody = GetBody(GetResponse.getObjectContent());
 		assertEquals(Body2, ResponseBody);
 
 		// Delete
-		Client.deleteObject(BucketName, KeyName);
+		client.deleteObject(bucketName, KeyName);
 	}
 
 	@Test
@@ -189,7 +185,7 @@ public class PutObject extends TestBase {
 	// 오브젝트에 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
 	public void test_object_set_get_metadata_none_to_good() {
 		var MyMeta = "mymeta";
-		var got = SetGetMetadata(MyMeta, null);
+		var got = setGetMetadata(MyMeta, null);
 		assertEquals(MyMeta, got);
 	}
 
@@ -197,7 +193,7 @@ public class PutObject extends TestBase {
 	@Tag("Metadata")
 	// 오브젝트에 빈 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
 	public void test_object_set_get_metadata_none_to_empty() {
-		var got = SetGetMetadata("", null);
+		var got = setGetMetadata("", null);
 		assertEquals("", got);
 	}
 
@@ -205,13 +201,13 @@ public class PutObject extends TestBase {
 	@Tag("Metadata")
 	// 메타 데이터 업데이트가 올바르게 적용되었는지 확인
 	public void test_object_set_get_metadata_overwrite_to_empty() {
-		var BucketName = GetNewBucket();
+		var bucketName = getNewBucket();
 
 		var MyMeta = "oldmata";
-		var got = SetGetMetadata(MyMeta, BucketName);
+		var got = setGetMetadata(MyMeta, bucketName);
 		assertEquals(MyMeta, got);
 
-		got = SetGetMetadata("", BucketName);
+		got = setGetMetadata("", bucketName);
 		assertEquals("", got);
 	}
 
@@ -249,8 +245,8 @@ public class PutObject extends TestBase {
 	@Tag("Metadata")
 	// 오브젝트를 메타데이타 없이 덮어쓰기 했을 때, 메타데이타 값이 비어있는지 확인
 	public void test_object_metadata_replaced_on_put() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 		var Body = "bar";
 
@@ -259,10 +255,10 @@ public class PutObject extends TestBase {
 		MetadataList.setContentType("text/plain");
 		MetadataList.setContentLength(Body.length());
 
-		Client.putObject(BucketName, KeyName, CreateBody(Body), MetadataList);
-		Client.putObject(BucketName, KeyName, Body);
+		client.putObject(bucketName, KeyName, createBody(Body), MetadataList);
+		client.putObject(bucketName, KeyName, Body);
 
-		var Response = Client.getObject(BucketName, KeyName);
+		var Response = client.getObject(bucketName, KeyName);
 		var got = Response.getObjectMetadata().getUserMetadata();
 		assertEquals(0, got.size());
 	}
@@ -271,15 +267,15 @@ public class PutObject extends TestBase {
 	@Tag("Incoding")
 	// body의 내용을utf-8로 인코딩한 오브젝트를 업로드 했을때 올바르게 업로드 되었는지 확인
 	public void test_object_write_file() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 		var Data_str = "bar";
 		var Data = new String(Data_str.getBytes(), StandardCharsets.US_ASCII);
 
-		Client.putObject(BucketName, KeyName, Data);
+		client.putObject(bucketName, KeyName, Data);
 
-		var Response = Client.getObject(BucketName, KeyName);
+		var Response = client.getObject(bucketName, KeyName);
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals(Data_str, Body);
 	}
@@ -291,18 +287,18 @@ public class PutObject extends TestBase {
 		var KeyNames = new ArrayList<>(
 				Arrays.asList(new String[] { " ", "\"", "$", "%", "&", "'", "<", ">", "_", "_ ", "_ _", "__", }));
 
-		var BucketName = CreateObjects(KeyNames);
+		var bucketName = createObjects(KeyNames);
 
-		var ObjectList = GetObjectList(BucketName, null);
+		var ObjectList = GetObjectList(bucketName, null);
 
-		var Client = GetClient();
+		var client = getClient();
 
 		for (var Name : KeyNames) {
 			assertTrue(ObjectList.contains(Name));
-			var Response = Client.getObject(BucketName, Name);
+			var Response = client.getObject(bucketName, Name);
 			var Body = GetBody(Response.getObjectContent());
 			assertEquals(Name, Body);
-			Client.setObjectAcl(BucketName, Name, CannedAccessControlList.Private);
+			client.setObjectAcl(bucketName, Name, CannedAccessControlList.Private);
 		}
 	}
 
@@ -312,12 +308,12 @@ public class PutObject extends TestBase {
 	public void test_bucket_list_special_prefix() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "_bla/1", "_bla/2", "_bla/3", "_bla/4", "abcd" }));
 
-		var BucketName = CreateObjects(KeyNames);
+		var bucketName = createObjects(KeyNames);
 
-		var ObjectList = GetObjectList(BucketName, null);
+		var ObjectList = GetObjectList(bucketName, null);
 		assertEquals(5, ObjectList.size());
 
-		ObjectList = GetObjectList(BucketName, "_bla/");
+		ObjectList = GetObjectList(bucketName, "_bla/");
 		assertEquals(4, ObjectList.size());
 	}
 
@@ -326,13 +322,13 @@ public class PutObject extends TestBase {
 	// [버킷의 Lock옵션을 활성화] LegalHold와 Lock유지기한을 설정하여 오브젝트 업로드할 경우 설정이 적용되는지 메타데이터를 통해
 	// 확인
 	public void test_object_lock_uploading_obj() {
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
-		Client.createBucket(new CreateBucketRequest(BucketName).withObjectLockEnabledForBucket(true));
+		var bucketName = getNewBucketName();
+		var client = getClient();
+		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var Key = "file1";
 		var Body = "abc";
-		var MD5 = Utils.GetMD5(Body);
+		var MD5 = Utils.getMD5(Body);
 		var MyDay = Calendar.getInstance();
 		MyDay.set(2030, 1, 1, 0, 0, 0);
 
@@ -341,19 +337,19 @@ public class PutObject extends TestBase {
 		Metadata.setContentType("text/plain");
 		Metadata.setContentLength(Body.length());
 
-		var PutResponse = Client.putObject(new PutObjectRequest(BucketName, Key, CreateBody(Body), Metadata)
+		var PutResponse = client.putObject(new PutObjectRequest(bucketName, Key, createBody(Body), Metadata)
 				.withObjectLockMode(ObjectLockMode.GOVERNANCE).withObjectLockRetainUntilDate(MyDay.getTime())
 				.withObjectLockLegalHoldStatus(ObjectLockLegalHoldStatus.ON));
 
-		var Response = Client.getObjectMetadata(BucketName, Key);
+		var Response = client.getObjectMetadata(bucketName, Key);
 		assertEquals(ObjectLockMode.GOVERNANCE.toString(), Response.getObjectLockMode());
 		assertEquals(MyDay.getTime(), Response.getObjectLockRetainUntilDate());
 		assertEquals(ObjectLockLegalHoldStatus.ON.toString(), Response.getObjectLockLegalHoldStatus());
 
 		var LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
-		Client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(BucketName).withKey(Key).withLegalHold(LegalHold));
-		Client.deleteVersion(new DeleteVersionRequest(BucketName, Key, PutResponse.getVersionId())
+		client.setObjectLegalHold(
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
+		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, PutResponse.getVersionId())
 				.withBypassGovernanceRetention(true));
 	}
 
@@ -362,10 +358,10 @@ public class PutObject extends TestBase {
 	// 오브젝트의 중간에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
 	public void test_object_infix_space() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "a a/", "b b/f1", "c/f 2", "d d/f 3" }));
-		var BucketName = CreateObjectsToBody(KeyNames, "");
-		var Client = GetClient();
+		var bucketName = createObjectsToBody(KeyNames, "");
+		var client = getClient();
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -376,10 +372,10 @@ public class PutObject extends TestBase {
 	// 오브젝트의 마지막에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
 	public void test_object_suffix_space() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "a /", "b /f1", "c/f2 ", "d /f3 " }));
-		var BucketName = CreateObjectsToBody(KeyNames, "");
-		var Client = GetClient();
+		var bucketName = createObjectsToBody(KeyNames, "");
+		var client = getClient();
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -391,10 +387,10 @@ public class PutObject extends TestBase {
 	public void test_put_empty_object_signature_version_2() {
 		var KeyNames = new ArrayList<>(
 				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
-		var BucketName = CreateObjectsToBodyV2(KeyNames, "");
-		var Client = GetClientV2();
+		var bucketName = createObjectsToBodyV2(KeyNames, "");
+		var client = getClientV2();
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -406,10 +402,10 @@ public class PutObject extends TestBase {
 	public void test_put_empty_object_signature_version_4() {
 		var KeyNames = new ArrayList<>(
 				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
-		var BucketName = CreateObjectsToBodyV4(KeyNames, "", true);
-		var Client = GetClientV4(true);
+		var bucketName = createObjectsToBodyV4(KeyNames, "", true);
+		var client = getClientV4(true);
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -421,10 +417,10 @@ public class PutObject extends TestBase {
 	public void test_put_object_signature_version_2() {
 		var KeyNames = new ArrayList<>(
 				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
-		var BucketName = CreateObjectsV2(KeyNames);
-		var Client = GetClientV2();
+		var bucketName = createObjectsV2(KeyNames);
+		var client = getClientV2();
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -436,10 +432,10 @@ public class PutObject extends TestBase {
 	public void test_put_object_signature_version_4() {
 		var KeyNames = new ArrayList<>(
 				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
-		var BucketName = CreateObjectsV4(KeyNames, true);
-		var Client = GetClientV4(true);
+		var bucketName = createObjectsV4(KeyNames, true);
+		var client = getClientV4(true);
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -451,10 +447,10 @@ public class PutObject extends TestBase {
 	public void test_put_object_use_chunk_encoding() {
 		var KeyNames = new ArrayList<>(
 				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
-		var BucketName = CreateObjectsV4(KeyNames, true);
-		var Client = GetClientV4(true);
+		var bucketName = createObjectsV4(KeyNames, true);
+		var client = getClientV4(true);
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -467,10 +463,10 @@ public class PutObject extends TestBase {
 	public void test_put_object_use_chunk_encoding_and_disable_payload_signing() {
 		var KeyNames = new ArrayList<>(
 				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
-		var BucketName = CreateObjectsHttps(KeyNames, true, true);
-		var Client = GetClientV4(true);
+		var bucketName = createObjectsHttps(KeyNames, true, true);
+		var client = getClientV4(true);
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -482,10 +478,10 @@ public class PutObject extends TestBase {
 	public void test_put_object_not_chunk_encoding() {
 		var KeyNames = new ArrayList<>(
 				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
-		var BucketName = CreateObjectsV4(KeyNames, false);
-		var Client = GetClientV4(false);
+		var bucketName = createObjectsV4(KeyNames, false);
+		var client = getClientV4(false);
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -498,10 +494,10 @@ public class PutObject extends TestBase {
 	public void test_put_object_not_chunk_encoding_and_disable_payload_signing() {
 		var KeyNames = new ArrayList<>(
 				Arrays.asList(new String[] { "!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(","(/","(/(", ")",")/",")/)", "*","*/","*/*", ":",":/",":/:", "[","[/","[/[", "]", "]/", "]/]" }));
-		var BucketName = CreateObjectsHttps(KeyNames, false, true);
-		var Client = GetClientV4(false);
+		var bucketName = createObjectsHttps(KeyNames, false, true);
+		var client = getClientV4(false);
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 
 		assertEquals(KeyNames, Keys);
@@ -512,97 +508,71 @@ public class PutObject extends TestBase {
 	// 폴더의 이름과 동일한 오브젝트 업로드가 가능한지 확인
 	public void test_put_object_dir_and_file() {
 		// file first
-		var BucketName = GetNewBucket();
+		var bucketName = getNewBucket();
 		var ObjectName = "aaa";
 		var DirectoryName = "aaa/";
-		var Client = GetClient();
+		var client = getClient();
 
-		Client.putObject(BucketName, ObjectName, ObjectName);
-		Client.putObject(BucketName, DirectoryName, "");
+		client.putObject(bucketName, ObjectName, ObjectName);
+		client.putObject(bucketName, DirectoryName, "");
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var Keys = GetKeys(Response.getObjectSummaries());
 		assertEquals(2, Keys.size());
 
 		// dir first
-		var BucketName2 = GetNewBucket();
+		var BucketName2 = getNewBucket();
 
-		Client.putObject(BucketName2, DirectoryName, "");
-		Client.putObject(BucketName2, ObjectName, ObjectName);
+		client.putObject(BucketName2, DirectoryName, "");
+		client.putObject(BucketName2, ObjectName, ObjectName);
 
-		Response = Client.listObjects(BucketName2);
+		Response = client.listObjects(BucketName2);
 		Keys = GetKeys(Response.getObjectSummaries());
 		assertEquals(2, Keys.size());
 
 		// etc
-		var BucketName3 = GetNewBucket();
+		var BucketName3 = getNewBucket();
 		var NewObjectName = "aaa/bbb/ccc";
 
-		Client.putObject(BucketName3, ObjectName, ObjectName);
-		Client.putObject(BucketName3, NewObjectName, NewObjectName);
+		client.putObject(BucketName3, ObjectName, ObjectName);
+		client.putObject(BucketName3, NewObjectName, NewObjectName);
 
-		Response = Client.listObjects(BucketName3);
+		Response = client.listObjects(BucketName3);
 		Keys = GetKeys(Response.getObjectSummaries());
 		assertEquals(2, Keys.size());
 	}
 
 	@Test
-	@Tag("PUT")
-	// 오브젝트를 여러번 업로드 했을때 올바르게 반영되는지 확인
-	public void test_object_twice() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		var KeyName = "temp";
-		var Dummy1 = Utils.RandomTextToLong(10 * MainData.KB);
-		var Dummy2 = Utils.RandomTextToLong(1 * MainData.MB);
+	@Tag("Overwrite")
+	// 오브젝트를 덮어쓰기 했을때 올바르게 반영되는지 확인
+	public void test_object_overwrite() {
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "temp";
+		var content1 = Utils.randomTextToLong(10 * MainData.KB);
+		var content2 = Utils.randomTextToLong(1 * MainData.MB);
 
-		Client.putObject(BucketName, KeyName, Dummy1);
-		Client.putObject(BucketName, KeyName, Dummy2);
+		client.putObject(bucketName, key, content1);
+		client.putObject(bucketName, key, content2);
 
-		var Response = Client.getObject(BucketName, KeyName);
+		var Response = client.getObject(bucketName, key);
 		var Body = GetBody(Response.getObjectContent());
 
-		assertEquals(Dummy2.length(), Body.length());
-		assertTrue(Dummy2.equals(Body), MainData.NOT_MATCHED);
+		assertEquals(content2.length(), Body.length());
+		assertTrue(content2.equals(Body), MainData.NOT_MATCHED);
 	}
 
 	@Test
 	@Tag("PUT")
 	// 오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인
 	public void test_object_emoji() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "test❤🍕🍔🚗";
 
-		Client.putObject(BucketName, "asdf", Key);
+		client.putObject(bucketName, "asdf", Key);
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		assertEquals(1, Response.getObjectSummaries().size());
-	}
-
-	@Test
-	@Tag("ACL")
-	// acl 정보를 포함하여 업로드 가능한지 확인
-	public void test_object_in_acl() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		var Key = "foo";
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		
-		var AltUserID = Config.AltUser.UserID;
-		var AltDisplayName = Config.AltUser.DisplayName;
-
-		var ACL = new AccessControlList();
-		ACL.setOwner(new Owner(AltUserID, AltDisplayName));
-
-		var AltUser = new CanonicalGrantee(AltUserID);
-		AltUser.setDisplayName(AltDisplayName);
-		ACL.grantPermission(AltUser, Permission.FullControl);
-
-		var Request = new PutObjectRequest(BucketName, Key, CreateBody(Key), Metadata);
-		Request.setAccessControlList(ACL);
-
-		Client.putObject(Request);
 	}
 }

@@ -40,10 +40,10 @@ public class PutBucket extends TestBase
 	@Tag("PUT")
 	//생성한 버킷이 비어있는지 확인
 	public void test_bucket_list_empty() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 
 		assertEquals(0, Response.getObjectSummaries().size());
 	}
@@ -52,9 +52,9 @@ public class PutBucket extends TestBase
 	@Tag("CreationRules")
 	//생성할 버킷이름의 맨앞에 [_]가 있을 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_bad_starts_nonalpha() {
-		var BucketName = GetNewBucketName();
-		CheckBadBucketName("_" + BucketName);
-		DeleteBucketList(BucketName);
+		var bucketName = getNewBucketName();
+		CheckBadBucketName("_" + bucketName);
+		DeleteBucketList(bucketName);
 	}
 
 	@Test
@@ -103,10 +103,10 @@ public class PutBucket extends TestBase
 	@Tag("CreationRules")
 	//버킷이름의 길이 긴 경우 버킷 목록을 읽어올 수 있는지 확인
 	public void test_bucket_list_long_name() {
-		var BucketName = GetNewBucketName(61);
-		var Client = GetClient();
-		Client.createBucket(BucketName);
-		var Response = Client.listObjects(BucketName);
+		var bucketName = getNewBucketName(61);
+		var client = getClient();
+		client.createBucket(bucketName);
+		var Response = client.listObjects(bucketName);
 
 		assertEquals(0, Response.getObjectSummaries().size());
 	}
@@ -129,9 +129,9 @@ public class PutBucket extends TestBase
 	@Tag("CreationRules")
 	//생성할 버킷이름이 랜덤 알파벳 63자로 구성된 경우 버킷 생성 확인
 	public void test_bucket_create_naming_dns_long() {
-		var Prefix = GetPrefix();
+		var Prefix = getPrefix();
 		var AddLength = 63 - Prefix.length();
-		Prefix = Utils.RandomText(AddLength);
+		Prefix = Utils.randomText(AddLength);
 		CheckGoodBucketName(Prefix, null);
 	}
 
@@ -167,12 +167,12 @@ public class PutBucket extends TestBase
 	@Tag("Duplicate")
 	//버킷 중복 생성시 실패 확인
 	public void test_bucket_create_exists() {
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
+		var bucketName = getNewBucketName();
+		var client = getClient();
 
-		Client.createBucket(BucketName);
+		client.createBucket(bucketName);
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.createBucket(BucketName));
+		var e = assertThrows(AmazonServiceException.class, () -> client.createBucket(bucketName));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 
@@ -184,13 +184,13 @@ public class PutBucket extends TestBase
 	@Tag("Duplicate")
 	//[다른 2명의 사용자가 버킷 생성하려고 할 경우] 메인유저가 버킷을 생성하고 서브유저가가 같은 이름으로 버킷 생성하려고 할 경우 실패 확인
 	public void test_bucket_create_exists_nonowner() {
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
-		var AltClient = GetAltClient();
+		var bucketName = getNewBucketName();
+		var client = getClient();
+		var AltClient = getAltClient();
 
-		Client.createBucket(BucketName);
+		client.createBucket(bucketName);
 
-		var e = assertThrows(AmazonServiceException.class, () -> AltClient.createBucket(BucketName));
+		var e = assertThrows(AmazonServiceException.class, () -> AltClient.createBucket(bucketName));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 
@@ -202,14 +202,14 @@ public class PutBucket extends TestBase
 	@Tag("CreationRules")
 	//생성할 버킷의 이름이 알파벳으로 시작할 경우 생성되는지 확인
 	public void test_bucket_create_naming_good_starts_alpha() {
-		CheckGoodBucketName("foo", "a" + GetPrefix());
+		CheckGoodBucketName("foo", "a" + getPrefix());
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷의 이름이 숫자로 시작할 경우 생성되는지 확인
 	public void test_bucket_create_naming_good_starts_digit() {
-		CheckGoodBucketName("foo", "0" + GetPrefix());
+		CheckGoodBucketName("foo", "0" + getPrefix());
 	}
 
 	@Test
@@ -234,15 +234,15 @@ public class PutBucket extends TestBase
 		KeyNames.add("mykey1");
 		KeyNames.add("mykey2");
 
-		var BucketName = CreateObjects(KeyNames);
+		var bucketName = createObjects(KeyNames);
 
-		var ObjectList = GetObjectList(BucketName, null);
+		var ObjectList = GetObjectList(bucketName, null);
 		assertEquals(KeyNames, ObjectList);
 
-		var Client = GetClient();
-		assertThrows(AmazonServiceException.class, () -> Client.createBucket(BucketName));
+		var client = getClient();
+		assertThrows(AmazonServiceException.class, () -> client.createBucket(bucketName));
 
-		ObjectList = GetObjectList(BucketName, null);
+		ObjectList = GetObjectList(bucketName, null);
 		assertEquals(KeyNames, ObjectList);
 	}
 
@@ -251,8 +251,8 @@ public class PutBucket extends TestBase
 	// 버킷의 location 정보 조회
 	public void test_get_bucket_location()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		Client.getBucketLocation(BucketName);
+		var bucketName = getNewBucket();
+		var client = getClient();
+		client.getBucketLocation(bucketName);
 	}
 }

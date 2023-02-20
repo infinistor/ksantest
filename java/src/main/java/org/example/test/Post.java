@@ -51,10 +51,10 @@ public class Post extends TestBase {
 	@Tag("Upload")
 	// post 방식으로 권한없는 사용자가 파일 업로드할 경우 성공 확인
 	public void test_post_object_anonymous_request() throws MalformedURLException {
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
+		var bucketName = getNewBucketName();
+		var client = getClient();
 		var Key = "foo.txt";
-		Client.createBucket(new CreateBucketRequest(BucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 
 		var ContentType = "text/plain";
 		var FileData = new FormFile(Key, ContentType, "bar");
@@ -63,10 +63,10 @@ public class Post extends TestBase {
 		Payload.put("acl", "public-read");
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
 
-		var Response = Client.getObject(BucketName, Key);
+		var Response = client.getObject(bucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -75,18 +75,18 @@ public class Post extends TestBase {
 	@Tag("Upload")
 	// post 방식으로 로그인 정보를 포함한 파일 업로드할 경우 성공 확인
 	public void test_post_object_authenticated_request() throws MalformedURLException {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -117,22 +117,22 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
-		Payload.put("Content-Length", String.format("%d", FileData.Body.length()));
+		Payload.put("Content-Length", String.format("%d", FileData.body.length()));
 		Payload.put("Content-Type", ContentType);
 		Payload.put("x-amz-content-sha256", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD");
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
 
-		var Response = Client.getObject(BucketName, Key);
+		var Response = client.getObject(bucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -141,20 +141,20 @@ public class Post extends TestBase {
 	@Tag("Upload")
 	// content-type 헤더 정보 없이 post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
 	public void test_post_object_authenticated_no_content_type() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
-		Client.createBucket(new CreateBucketRequest(BucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucketName();
+		var client = getClient();
+		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -179,18 +179,18 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
-		var Response = Client.getObject(BucketName, Key);
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var Response = client.getObject(bucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -199,21 +199,21 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	// [AccessKey 값이 틀린 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_authenticated_request_bad_access_key() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
-		Client.createBucket(new CreateBucketRequest(BucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucketName();
+		var client = getClient();
+		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -244,7 +244,7 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
@@ -254,18 +254,18 @@ public class Post extends TestBase {
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(403, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("StatusCode")
 	// [성공시 반환상태값을 201로 설정] post 방식으로 권한없는 사용자가 파일 업로드시 에러체크가 올바른지 확인
 	public void test_post_object_set_success_code() throws MalformedURLException {
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
+		var bucketName = getNewBucketName();
+		var client = getClient();
 		var Key = "foo.txt";
-		Client.createBucket(new CreateBucketRequest(BucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 
 		var ContentType = "text/plain";
 		var FileData = new FormFile(Key, ContentType, "bar");
@@ -275,10 +275,10 @@ public class Post extends TestBase {
 		Payload.put("Content-Type", ContentType);
 		Payload.put("success_action_status", "201");
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(201, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(201, Result.statusCode, Result.getErrorCode());
 
-		var Response = Client.getObject(BucketName, Key);
+		var Response = client.getObject(bucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -287,11 +287,11 @@ public class Post extends TestBase {
 	@Tag("StatusCode")
 	// [성공시 반환상태값을 에러코드인 404로 설정] post 방식으로 권한없는 사용자가 파일 업로드시 에러체크가 올바른지 확인
 	public void test_post_object_set_invalid_success_code() throws MalformedURLException {
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
+		var bucketName = getNewBucketName();
+		var client = getClient();
 		var Key = "foo.txt";
 
-		Client.createBucket(new CreateBucketRequest(BucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 		var ContentType = "text/plain";
 
 		var FileData = new FormFile(Key, ContentType, "bar");
@@ -301,10 +301,10 @@ public class Post extends TestBase {
 		Payload.put("Content-Type", ContentType);
 		Payload.put("success_action_status", "404");
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
 
-		var Response = Client.getObject(BucketName, Key);
+		var Response = client.getObject(bucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -313,22 +313,22 @@ public class Post extends TestBase {
 	@Tag("Upload")
 	// post 방식으로 로그인정보를 포함한 대용량 파일 업로드시 올바르게 업로드 되는지 확인
 	public void test_post_object_upload_larger_than_chunk() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 		var Size = 5 * 1024 * 1024;
-		var Data = Utils.RandomTextToLong(Size);
+		var Data = Utils.randomTextToLong(Size);
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -359,20 +359,20 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, Data);
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
 
-		var Response = Client.getObject(BucketName, Key);
+		var Response = client.getObject(bucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
 		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 	}
@@ -382,19 +382,19 @@ public class Post extends TestBase {
 	// [오브젝트 이름을 로그인정보에 포함되어 있는 key값으로 대체할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드
 	// 되는지 확인
 	public void test_post_object_set_key_from_filename() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -425,20 +425,20 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
 
-		var Response = Client.getObject(BucketName, Key);
+		var Response = client.getObject(bucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -447,18 +447,18 @@ public class Post extends TestBase {
 	@Tag("Upload")
 	// post 방식으로 로그인, 헤더 정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
 	public void test_post_object_ignored_header() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -489,37 +489,37 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("x-ignore-foo", "bar");
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("Upload")
 	// [헤더정보에 대소문자를 섞어서 사용할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
 	public void test_post_object_case_insensitive_condition_fields() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bUcKeT", BucketName);
+		Bucket.addProperty("bUcKeT", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -550,38 +550,38 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("kEy", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("aCl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("pOLICy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("Upload")
 	// [오브젝트 이름에 '\'를 사용할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
 	public void test_post_object_escaped_field_values() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -612,20 +612,20 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
 
-		var Response = Client.getObject(BucketName, Key);
+		var Response = client.getObject(bucketName, Key);
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -634,22 +634,22 @@ public class Post extends TestBase {
 	@Tag("Upload")
 	// [redirect url설정하여 체크] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
 	public void test_post_object_success_redirect_action() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucketName();
-		var Client = GetClient();
-		Client.createBucket(new CreateBucketRequest(BucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucketName();
+		var client = getClient();
+		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
-		var RedirectURL = GetURL(BucketName);
+		var RedirectURL = getURL(bucketName);
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -686,22 +686,22 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 		Payload.put("success_action_redirect", RedirectURL.toString());
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(200, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(200, Result.statusCode, Result.getErrorCode());
 
-		var Response = Client.getObject(BucketName, Key);
-		assertEquals(String.format("%s?bucket=%s&key=%s&etag=%s%s%s", RedirectURL, BucketName, Key, "%22",
+		var Response = client.getObject(bucketName, Key);
+		assertEquals(String.format("%s?bucket=%s&key=%s&etag=%s%s%s", RedirectURL, bucketName, Key, "%22",
 				Response.getObjectMetadata().getETag().replace("\"", ""), "%22"), Result.URL);
 	}
 
@@ -709,18 +709,18 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	// [SecretKey Hash 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_invalid_signature() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -751,37 +751,37 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature.substring(0, Signature.length() - 1));
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(403, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [AccessKey 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_invalid_access_key() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -812,37 +812,37 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey.substring(0, Config.MainUser.AccessKey.length() - 1));
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey.substring(0, config.mainUser.accessKey.length() - 1));
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(403, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [로그인 정보의 날짜포맷이 다를경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_invalid_date_format() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100).replace("T", " "));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100).replace("T", " "));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -873,36 +873,36 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [오브젝트 이름을 입력하지 않을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_no_key_specified() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var ACL = new JsonObject();
@@ -927,36 +927,36 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile("", ContentType, "bar");
 		var Payload = new HashMap<String, String>();
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [signature 정보를 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_missing_signature() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -990,27 +990,27 @@ public class Post extends TestBase {
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [policy에 버킷 이름을 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_missing_policy_condition() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
@@ -1042,37 +1042,37 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(403, Result.StatusCode, Result.Message);
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(403, Result.statusCode, Result.message);
 	}
 
 	@Test
 	@Tag("Metadata")
 	// [사용자가 추가 메타데이터를 입력한 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
 	public void test_post_object_user_specified_header() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1109,21 +1109,21 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("x-amz-meta-foo", "barclamp");
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(204, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(204, Result.statusCode, Result.getErrorCode());
 
-		var Response = Client.getObject(BucketName, Key);
+		var Response = client.getObject(bucketName, Key);
 		assertEquals("barclamp", Response.getObjectMetadata().getUserMetadata().get(("foo")));
 	}
 
@@ -1132,19 +1132,19 @@ public class Post extends TestBase {
 	// [사용자가 추가 메타데이터를 policy에 설정하였으나 오브젝트에 해당 정보가 누락된 경우] post 방식으로 로그인정보를 포함한 파일
 	// 업로드시 실패하는지 확인
 	public void test_post_object_request_missing_policy_specified_field() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1181,18 +1181,18 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(403, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
@@ -1200,19 +1200,19 @@ public class Post extends TestBase {
 	// [policy의 condition을 대문자(CONDITIONS)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시
 	// 실패하는지 확인
 	public void test_post_object_condition_is_case_sensitive() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1243,18 +1243,18 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
@@ -1262,19 +1262,19 @@ public class Post extends TestBase {
 	// [policy의 expiration을 대문자(EXPIRATION)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시
 	// 실패하는지 확인
 	public void test_post_object_expires_is_case_sensitive() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("EXPIRATION", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("EXPIRATION", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1305,37 +1305,37 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [policy의 expiration을 만료된 값으로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_expired_policy() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(-100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(-100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1366,18 +1366,18 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(403, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
@@ -1385,18 +1385,18 @@ public class Post extends TestBase {
 	// [사용자가 추가 메타데이터를 policy에 설정하였으나 설정정보가 올바르지 않을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시
 	// 실패하는지 확인
 	public void test_post_object_invalid_request_field_value() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1433,27 +1433,27 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("x-amz-meta-foo", "barclamp");
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(403, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(403, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [policy의 expiration값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_missing_expires_condition() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
@@ -1462,7 +1462,7 @@ public class Post extends TestBase {
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1493,65 +1493,65 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [policy의 conditions값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_missing_conditions_list() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [policy에 설정한 용량보다 큰 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_upload_size_limit_exceeded() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1582,37 +1582,37 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [policy에 용량정보 설정을 누락할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_missing_content_length_argument() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1642,37 +1642,37 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [policy에 용량정보 설정값이 틀렸을 경우(용량값을 음수로 입력) post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_invalid_content_length_argument() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1703,37 +1703,37 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [policy에 설정한 용량보다 작은 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_upload_size_below_minimum() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "\\$foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
 		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", BucketName);
+		Bucket.addProperty("bucket", bucketName);
 		Conditions.add(Bucket);
 
 		var starts1 = new JsonArray();
@@ -1764,65 +1764,65 @@ public class Post extends TestBase {
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [policy의 conditions값이 비어있을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
 	public void test_post_object_empty_conditions() throws MalformedURLException {
-		assumeFalse(Config.isAWS());
-		var BucketName = GetNewBucket();
+		assumeFalse(config.isAWS());
+		var bucketName = getNewBucket();
 
 		var ContentType = "text/plain";
 		var Key = "foo.txt";
 
 		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", GetTimeToAddMinutes(100));
+		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 		PolicyDocument.add("conditions", new JsonArray());
 
 		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
 		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
 		var FileData = new FormFile(Key, ContentType, "bar");
 		var Payload = new HashMap<String, String>();
 		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", Config.MainUser.AccessKey);
+		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		Payload.put("acl", "private");
 		Payload.put("signature", Signature);
 		Payload.put("policy", Policy);
 		Payload.put("Content-Type", ContentType);
 
-		var Result = NetUtils.PostUpload(GetURL(BucketName), Payload, FileData);
-		assertEquals(400, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
+		assertEquals(400, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("PresignedURL")
 	// PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	public void test_presignedurl_put_get() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "foo";
 
-		var PutURL = Client.generatePresignedUrl(BucketName, Key, GetTimeToAddSeconds(100000), HttpMethod.PUT);
+		var PutURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.PUT);
 		var PutResponse = PutObject(PutURL, Key);
 		assertEquals(200, PutResponse.getStatusLine().getStatusCode());
 
-		var GetURL = Client.generatePresignedUrl(BucketName, Key, GetTimeToAddSeconds(100000), HttpMethod.GET);
+		var GetURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.GET);
 		var GetResponse = GetObject(GetURL);
 		assertEquals(200, GetResponse.getStatusLine().getStatusCode());
 
@@ -1832,17 +1832,17 @@ public class Post extends TestBase {
 	@Tag("PresignedURL")
 	// [SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	public void test_presignedurl_put_get_v4() {
-		var BucketName = GetNewBucketName();
-		var Client = GetClientV4(true);
+		var bucketName = getNewBucketName();
+		var client = getClientV4(true);
 		var Key = "foo";
 
-		Client.createBucket(BucketName);
+		client.createBucket(bucketName);
 
-		var PutURL = Client.generatePresignedUrl(BucketName, Key, GetTimeToAddSeconds(100000), HttpMethod.PUT);
+		var PutURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.PUT);
 		var PutResponse = PutObject(PutURL, Key);
 		assertEquals(200, PutResponse.getStatusLine().getStatusCode());
 
-		var GetURL = Client.generatePresignedUrl(BucketName, Key, GetTimeToAddSeconds(100000), HttpMethod.GET);
+		var GetURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.GET);
 		var GetResponse = GetObject(GetURL);
 		assertEquals(200, GetResponse.getStatusLine().getStatusCode());
 	}
@@ -1851,11 +1851,11 @@ public class Post extends TestBase {
 	@Tag("signV4")
 	// [SignatureVersion4] post 방식으로 오브젝트 업로드 성공 확인
 	public void test_put_object_v4() throws MalformedURLException {
-		var BucketName = GetNewBucket();
+		var bucketName = getNewBucket();
 		var Key = "foo";
-		var EndPoint = GetURL(BucketName, Key);
+		var EndPoint = getURL(bucketName, Key);
 		var Size = 100;
-		var Content = Utils.RandomTextToLong(Size);
+		var Content = Utils.randomTextToLong(Size);
 
 		// precompute hash of the body content
 		byte[] contentHash = AWS4SignerBase.hash(Content);
@@ -1865,72 +1865,71 @@ public class Post extends TestBase {
 		headers.put("x-amz-content-sha256", contentHashString);
 		headers.put("x-amz-decoded-content-length", "" + Content.length());
 
-		var signer = new AWS4SignerForAuthorizationHeader(EndPoint, "PUT", "s3", Config.RegionName);
+		var signer = new AWS4SignerForAuthorizationHeader(EndPoint, "PUT", "s3", config.regionName);
 
-		var authorization = signer.computeSignature(headers, null, contentHashString, Config.MainUser.AccessKey,
-				Config.MainUser.SecretKey);
+		var authorization = signer.computeSignature(headers, null, contentHashString, config.mainUser.accessKey,
+				config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
-		var Result = NetUtils.PutUpload(EndPoint, "PUT", headers, Content);
+		var Result = NetUtils.putUpload(EndPoint, "PUT", headers, Content);
 
-		assertEquals(200, Result.StatusCode, Result.GetErrorCode());
+		assertEquals(200, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("signV4")
 	// [SignatureVersion4] post 방식으로 내용을 chunked 하여 오브젝트 업로드 성공 확인
 	public void test_put_object_chunked_v4() throws MalformedURLException {
-		var BucketName = GetNewBucket();
+		var bucketName = getNewBucket();
 		var Key = "foo";
-		var EndPoint = GetURL(BucketName, Key);
+		var EndPoint = getURL(bucketName, Key);
 		var Size = 100;
-		var Content = Utils.RandomTextToLong(Size);
+		var Content = Utils.randomTextToLong(Size);
 
 		var headers = new HashMap<String, String>();
 		headers.put("x-amz-content-sha256", AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256);
 		headers.put("content-encoding", "" + "aws-chunked");
 		headers.put("x-amz-decoded-content-length", "" + Content.length());
 
-		var signer = new AWS4SignerForChunkedUpload(EndPoint, "PUT", "s3", Config.RegionName);
+		var signer = new AWS4SignerForChunkedUpload(EndPoint, "PUT", "s3", config.regionName);
 
 		// Content Encoding
 		long totalLength = AWS4SignerForChunkedUpload.calculateChunkedContentLength(Content.length(), NetUtils.USER_DATE_BLOCK_SIZE);
 		headers.put("content-length", "" + totalLength);
 
-		String authorization = signer.computeSignature(headers, null, AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256,
-									Config.MainUser.AccessKey, Config.MainUser.SecretKey);
+		String authorization = signer.computeSignature(headers, null, AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256, config.mainUser.accessKey, config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
 
-		var Result = NetUtils.PutUploadChunked(EndPoint, "PUT", headers, signer, Content);
-		assertEquals(200, Result.StatusCode, Result.GetErrorCode());
+		var Result = NetUtils.putUploadChunked(EndPoint, "PUT", headers, signer, Content);
+		assertEquals(200, Result.statusCode, Result.getErrorCode());
 	}
 
 	@Test
 	@Tag("signV4")
 	// [SignatureVersion4] post 방식으로 오브젝트 다운로드 성공 확인
 	public void test_get_object_v4() throws MalformedURLException {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "foo";
-		var EndPoint = GetURL(BucketName, Key);
+		var EndPoint = getURL(bucketName, Key);
 		var HttpMethod = "GET";
 		var Size = 100;
-		var Content = Utils.RandomTextToLong(Size);
-		
-		Client.putObject(BucketName, Key, Content);
+		var Content = Utils.randomTextToLong(Size);
+
+		client.putObject(bucketName, Key, Content);
 
 		var headers = new HashMap<String, String>();
-        headers.put("x-amz-content-sha256", AWS4SignerBase.EMPTY_BODY_SHA256);
+		headers.put("x-amz-content-sha256", AWS4SignerBase.EMPTY_BODY_SHA256);
 
-		var signer = new AWS4SignerForChunkedUpload(EndPoint, HttpMethod, "s3", Config.RegionName);
+		var signer = new AWS4SignerForChunkedUpload(EndPoint, HttpMethod, "s3", config.regionName);
 
 		String authorization = signer.computeSignature(headers, null, AWS4SignerBase.EMPTY_BODY_SHA256,
-									Config.MainUser.AccessKey, Config.MainUser.SecretKey);
+				config.mainUser.accessKey, config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
 
-		var Result = NetUtils.PutUpload(EndPoint, HttpMethod, headers, null);
-		assertEquals(200, Result.StatusCode, Result.GetErrorCode());
-		assertEquals(Content, Result.GetContent());
+		var Result = NetUtils.putUpload(EndPoint, HttpMethod, headers, null);
+		assertEquals(200, Result.statusCode, Result.getErrorCode());
 		assertEquals(Size, Result.GetContent().length());
+		assertEquals(Content, Result.GetContent());
 		assertTrue(Content.equals(Result.GetContent()), MainData.NOT_MATCHED);
 	}
 }

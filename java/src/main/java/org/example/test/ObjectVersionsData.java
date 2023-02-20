@@ -18,7 +18,7 @@ import java.util.Map;
 import com.amazonaws.services.s3.model.Tag;
 
 public class ObjectVersionsData {
-	public String BucketName;
+	public String bucketName;
 	public String Key;
 	public List<Tag> TagSet;
 	public Map<String, String> VersionsBody;
@@ -27,9 +27,9 @@ public class ObjectVersionsData {
 	{
 		Init();
 	}
-	public ObjectVersionsData(String BucketName, String Key, List<Tag> TagSet)
+	public ObjectVersionsData(String bucketName, String Key, List<Tag> TagSet)
 	{
-		this.BucketName = BucketName;
+		this.bucketName = bucketName;
 		this.Key = Key;
 		this.TagSet = TagSet;
 		VersionsBody = new HashMap<String, String>();
@@ -37,7 +37,7 @@ public class ObjectVersionsData {
 
 	public void Init()
 	{
-		BucketName = "";
+		bucketName = "";
 		Key = "";
 		TagSet = new ArrayList<Tag>();
 		VersionsBody = new HashMap<String, String>();

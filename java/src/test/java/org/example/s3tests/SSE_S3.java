@@ -226,4 +226,12 @@ public class SSE_S3 {
 	public void test_sse_s3_encryption_multipart_copy_many() {
 		Test.test_sse_s3_encryption_multipart_copy_many();
 	}
+
+	@Test
+	@Tag("KSAN")
+	@Tag("PutGet")
+	//sse-s3설정은 소급적용 되지 않음을 확인
+	public void test_sse_s3_not_retroactive() {
+		Test.test_sse_s3_not_retroactive();
+	}
 }

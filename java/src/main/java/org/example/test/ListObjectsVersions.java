@@ -41,17 +41,17 @@ public class ListObjectsVersions extends TestBase
 	@Tag("Metadata")
 	//Version정보를 가질 수 있는 버킷에서 ListObjectsVersions로 가져온 Metadata와 HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
 	public void test_bucket_list_return_data_versioning() {
-		var BucketName = GetNewBucket();
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		var bucketName = getNewBucket();
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo" }));
-		BucketName = CreateObjects(KeyNames, BucketName);
+		bucketName = createObjects(KeyNames, bucketName);
 
-		var Client = GetClient();
+		var client = getClient();
 		var Data = new ArrayList<ObjectData>();
 
 		for (var Key : KeyNames) {
-			var ObjResponse = Client.getObjectMetadata(BucketName, Key);
-			var ACLResponse = Client.getObjectAcl(BucketName, Key);
+			var ObjResponse = client.getObjectMetadata(bucketName, Key);
+			var ACLResponse = client.getObjectAcl(bucketName, Key);
 
 			Data.add(new ObjectData().withKey(Key).withDisplayName(ACLResponse.getOwner().getDisplayName())
 					.withID(ACLResponse.getOwner().getId()).withETag(ObjResponse.getETag())
@@ -59,7 +59,7 @@ public class ListObjectsVersions extends TestBase
 					.withVersionId(ObjResponse.getVersionId()));
 		}
 
-		var Response = Client.listVersions(new ListVersionsRequest().withBucketName(BucketName));
+		var Response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
 		var ObjList = Response.getVersionSummaries();
 
 		for (var Object : ObjList) {
@@ -67,12 +67,12 @@ public class ListObjectsVersions extends TestBase
 			var KeyData = GetObjectToKey(KeyName, Data);
 
 			assertNotNull(KeyData);
-			assertEquals(KeyData.ETag, Object.getETag());
-			assertEquals(KeyData.ContentLength, Object.getSize());
-			assertEquals(KeyData.DisplayName, Object.getOwner().getDisplayName());
-			assertEquals(KeyData.ID, Object.getOwner().getId());
-			assertEquals(KeyData.VersionId, Object.getVersionId());
-			assertEquals(KeyData.LastModified, Object.getLastModified());
+			assertEquals(KeyData.eTag, Object.getETag());
+			assertEquals(KeyData.contentLength, Object.getSize());
+			assertEquals(KeyData.displayName, Object.getOwner().getDisplayName());
+			assertEquals(KeyData.id, Object.getOwner().getId());
+			assertEquals(KeyData.versionId, Object.getVersionId());
+			assertEquals(KeyData.lastModified, Object.getLastModified());
 		}
 	}
 }

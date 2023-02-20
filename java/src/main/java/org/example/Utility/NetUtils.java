@@ -38,54 +38,54 @@ public class NetUtils {
 
 	public final static int USER_DATE_BLOCK_SIZE = 64 * 1024;
 
-	public static String CreateURLToHTTP(String Address, int Port) {
-		var URL = MainData.HTTP + Address;
+	public static String createURLToHTTP(String address, int port) {
+		var URL = MainData.HTTP + address;
 
 		if (URL.endsWith("/"))
 			URL = URL.substring(0, URL.length() - 1);
 
-		return String.format("%s:%d", URL, Port);
+		return String.format("%s:%d", URL, port);
 	}
 
-	public static String CreateURLToHTTPS(String Address, int Port) {
-		var URL = MainData.HTTPS + Address;
+	public static String createURLToHTTPS(String address, int port) {
+		var URL = MainData.HTTPS + address;
 
 		if (URL.endsWith("/"))
 			URL = URL.substring(0, URL.length() - 1);
 
-		return String.format("%s:%d", URL, Port);
+		return String.format("%s:%d", URL, port);
 	}
 
-	public static URL GetEndPoint(String Protocol, String Address, int Port, String BucketName)
+	public static URL getEndPoint(String protocol, String address, int port, String bucketName)
 			throws MalformedURLException {
-		return new URL(String.format("%s%s:%d/%s", Protocol, Address, Port, BucketName));
+		return new URL(String.format("%s%s:%d/%s", protocol, address, port, bucketName));
 	}
 
-	public static URL GetEndPoint(String Protocol, String RegionName, String BucketName) throws MalformedURLException {
-		return new URL(String.format("%s%s.s3-%s.amazonaws.com", Protocol, BucketName, RegionName));
+	public static URL getEndPoint(String protocol, String regionName, String bucketName) throws MalformedURLException {
+		return new URL(String.format("%s%s.s3-%s.amazonaws.com", protocol, bucketName, regionName));
 	}
 
-	public static URL GetEndPoint(String Protocol, String Address, int Port, String BucketName, String Key)
+	public static URL getEndPoint(String protocol, String address, int port, String bucketName, String Key)
 			throws MalformedURLException {
-		return new URL(String.format("%s%s:%d/%s/%s", Protocol, Address, Port, BucketName, Key));
+		return new URL(String.format("%s%s:%d/%s/%s", protocol, address, port, bucketName, Key));
 	}
 
-	public static URL GetEndPoint(String Protocol, String RegionName, String BucketName, String Key)
+	public static URL getEndPoint(String protocol, String regionName, String bucketName, String Key)
 			throws MalformedURLException {
-		return new URL(String.format("%s%s.s3-%s.amazonaws.com/%s", Protocol, BucketName, RegionName, Key));
+		return new URL(String.format("%s%s.s3-%s.amazonaws.com/%s", protocol, bucketName, regionName, Key));
 	}
 
-	public static MyResult PostUpload(URL SendURL, Map<String, String> Headers, FormFile FileData) {
-		var Result = new MyResult();
+	public static MyResult postUpload(URL sendURL, Map<String, String> headers, FormFile fileData) {
+		var result = new MyResult();
 
 		try {
-			if (SendURL.getProtocol().startsWith("https")) {
+			if (sendURL.getProtocol().startsWith("https")) {
 				ignoreSsl();
 			}
 
 			var boundary = Long.toHexString(System.currentTimeMillis());
 			var LINE_FEED = "\r\n";
-			var connection = (HttpURLConnection) SendURL.openConnection();
+			var connection = (HttpURLConnection) sendURL.openConnection();
 
 			connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
 			connection.setRequestMethod("POST");
@@ -96,26 +96,28 @@ public class NetUtils {
 
 			var writer = new PrintWriter(new OutputStreamWriter(connection.getOutputStream(), "UTF-8"));
 
-			for (var Header : Headers.keySet()) {
+			for (var Header : headers.keySet()) {
 				writer.append("--" + boundary).append(LINE_FEED);
 				writer.append(String.format("Content-Disposition: form-data; name=\"%s\"", Header)).append(LINE_FEED);
 				writer.append(LINE_FEED);
-				writer.append(Headers.get(Header)).append(LINE_FEED);
+				writer.append(headers.get(Header)).append(LINE_FEED);
 			}
 
 			writer.append("--" + boundary).append(LINE_FEED);
-			writer.append(String.format("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"", FileData.Name)).append(LINE_FEED);
-			writer.append(String.format("Content-Type: %s", FileData.ContentType)).append(LINE_FEED);
+			writer.append(
+					String.format("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"", fileData.name))
+					.append(LINE_FEED);
+			writer.append(String.format("Content-Type: %s", fileData.contentType)).append(LINE_FEED);
 			writer.append(LINE_FEED);
-			writer.append(FileData.Body).append(LINE_FEED);
+			writer.append(fileData.body).append(LINE_FEED);
 			writer.append("--" + boundary + "--").append(LINE_FEED);
 			writer.close();
 
-			Result.StatusCode = connection.getResponseCode();
-			Result.URL = connection.getURL().toString();
-			if (Result.StatusCode != HttpURLConnection.HTTP_NO_CONTENT
-					&& Result.StatusCode != HttpURLConnection.HTTP_CREATED
-					&& Result.StatusCode != HttpURLConnection.HTTP_OK) {
+			result.statusCode = connection.getResponseCode();
+			result.URL = connection.getURL().toString();
+			if (result.statusCode != HttpURLConnection.HTTP_NO_CONTENT
+					&& result.statusCode != HttpURLConnection.HTTP_CREATED
+					&& result.statusCode != HttpURLConnection.HTTP_OK) {
 				var in = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
 				var inputLine = "";
 				var response = new StringBuffer();
@@ -123,7 +125,7 @@ public class NetUtils {
 					response.append(inputLine);
 				}
 				in.close();
-				Result.Message = response.toString();
+				result.message = response.toString();
 			}
 		} catch (IOException e) {
 			fail(e.getMessage());
@@ -131,10 +133,10 @@ public class NetUtils {
 			fail(e.getMessage());
 		}
 
-		return Result;
+		return result;
 	}
 
-	public static MyResult PutUpload(URL EndPoint, String httpMethod, Map<String, String> headers, String requestBody) {
+	public static MyResult putUpload(URL EndPoint, String httpMethod, Map<String, String> headers, String requestBody) {
 		try {
 			var connection = createHttpConnection(EndPoint, httpMethod, headers);
 			if (requestBody != null) {
@@ -144,7 +146,7 @@ public class NetUtils {
 				wr.close();
 			}
 
-			return Send(connection);
+			return send(connection);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -152,7 +154,8 @@ public class NetUtils {
 		return null;
 	}
 
-	public static MyResult PutUploadChunked(URL EndPoint, String httpMethod, Map<String, String> headers, AWS4SignerForChunkedUpload signer, String requestBody) {
+	public static MyResult putUploadChunked(URL EndPoint, String httpMethod, Map<String, String> headers,
+			AWS4SignerForChunkedUpload signer, String requestBody) {
 
 		try {
 			var connection = NetUtils.createHttpConnection(EndPoint, httpMethod, headers);
@@ -173,7 +176,7 @@ public class NetUtils {
 			outputStream.flush();
 			outputStream.close();
 
-			return Send(connection);
+			return send(connection);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -181,7 +184,7 @@ public class NetUtils {
 		return null;
 	}
 
-	public static MyResult Send(HttpURLConnection connection) {
+	public static MyResult send(HttpURLConnection connection) {
 		var Result = new MyResult();
 		try {
 			// Get Response
@@ -200,11 +203,11 @@ public class NetUtils {
 				response.append('\r');
 			}
 			rd.close();
-			Result.Message = response.toString();
-			Result.StatusCode = connection.getResponseCode();
+			Result.message = response.toString();
+			Result.statusCode = connection.getResponseCode();
 		} catch (Exception e) {
 			e.printStackTrace();
-			Result.Message = e.getMessage();
+			Result.message = e.getMessage();
 		} finally {
 			if (connection != null) {
 				connection.disconnect();

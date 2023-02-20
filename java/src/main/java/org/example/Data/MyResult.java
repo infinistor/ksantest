@@ -12,8 +12,8 @@ package org.example.Data;
 
 public class MyResult {
 
-	public int StatusCode;
-	public String Message;
+	public int statusCode;
+	public String message;
 	public String URL;
 
 	public MyResult() {
@@ -21,20 +21,20 @@ public class MyResult {
 	}
 
 	public void Init() {
-		StatusCode = -1;
-		Message = "";
+		statusCode = -1;
+		message = "";
 		URL = "";
 	}
 
-	public String GetErrorCode() {
-		int StartIndex = Message.indexOf("<Message>");
-		int EndIndex = Message.indexOf("</Message>");
+	public String getErrorCode() {
+		int StartIndex = message.indexOf("<Message>");
+		int EndIndex = message.indexOf("</Message>");
 		if (StartIndex != -1 && EndIndex != -1)
-			return Message.substring(StartIndex, EndIndex);
-		return Message;
+			return message.substring(StartIndex, EndIndex);
+		return message;
 	}
 
 	public String GetContent() {
-		return Message.substring(0, Message.length() - 1);
+		return message.substring(0, message.length() - 1);
 	}
 }

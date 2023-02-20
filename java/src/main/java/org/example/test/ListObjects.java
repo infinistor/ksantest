@@ -50,16 +50,16 @@ public class ListObjects extends TestBase
 	@Tag("Check")
 	//버킷의 오브젝트 목록을 올바르게 가져오는지 확인
 	public void test_bucket_list_many() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "foo", "bar", "baz" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "foo", "bar", "baz" })));
+		var client = getClient();
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMaxKeys(2));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMaxKeys(2));
 		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "bar", "baz" })), GetKeys(Response.getObjectSummaries()));
 		assertEquals(2, Response.getObjectSummaries().size());
 		assertTrue(Response.isTruncated());
 
-		Response = Client
-				.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMarker("baz").withMaxKeys(2));
+		Response = client
+				.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMarker("baz").withMaxKeys(2));
 		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "foo" })), GetKeys(Response.getObjectSummaries()));
 		assertEquals(1, Response.getObjectSummaries().size());
 		assertFalse(Response.isTruncated());
@@ -69,13 +69,13 @@ public class ListObjects extends TestBase
 	@Tag("Delimiter")
 	//오브젝트 목록을 가져올때 폴더 구분자[/]로 필터링 되는지 확인
 	public void test_bucket_list_delimiter_basic() {
-		var BucketName = CreateObjects(
+		var bucketName = createObjects(
 				new ArrayList<>(Arrays.asList(new String[] { "foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf" })));
-		var Client = GetClient();
+		var client = getClient();
 
 		String Delimiter = "/";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter));
 
 		assertEquals(Delimiter, Response.getDelimiter());
 		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "asdf" })), GetKeys(Response.getObjectSummaries()));
@@ -89,14 +89,14 @@ public class ListObjects extends TestBase
 	@Tag("Encoding")
 	//오브젝트 목록을 가져올때 인코딩이 올바르게 동작하는지 확인
 	public void test_bucket_list_encoding_basic() {
-		var BucketName = CreateObjects(new ArrayList<>(
+		var bucketName = createObjects(new ArrayList<>(
 				Arrays.asList(new String[] { "foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b" })));
-		var Client = GetClient();
+		var client = getClient();
 
 		String Delimiter = "/";
 
-		var Response = Client.listObjects(
-				new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter).withEncodingType("url"));
+		var Response = client.listObjects(
+				new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter).withEncodingType("url"));
 		assertEquals(Delimiter, Response.getDelimiter());
 		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "asdf%2Bb" })), GetKeys(Response.getObjectSummaries()));
 
@@ -109,34 +109,34 @@ public class ListObjects extends TestBase
 	@Tag("DelimiterandPrefix")
 	//조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix() {
-		var BucketName = CreateObjects(new ArrayList<>(
+		var bucketName = createObjects(new ArrayList<>(
 				Arrays.asList(new String[] { "asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla" })));
 
 		String Delimiter = "/";
 		String Marker = "";
 		String Prefix = "";
 
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 1, true, new ArrayList<>(Arrays.asList(new String[] { "asdf" })), new ArrayList<String>(), "asdf");
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, true, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "boo/" })), "boo/");
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "cquux/" })), null);
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, "", 1, true, new ArrayList<>(Arrays.asList(new String[] { "asdf" })), new ArrayList<String>(), "asdf");
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, Marker, 1, true, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "boo/" })), "boo/");
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, Marker, 1, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "cquux/" })), null);
 
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 2, true, new ArrayList<>(Arrays.asList(new String[] { "asdf" })), new ArrayList<>(Arrays.asList(new String[] { "boo/" })), "boo/");
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 2, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "cquux/" })), null);
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, "", 2, true, new ArrayList<>(Arrays.asList(new String[] { "asdf" })), new ArrayList<>(Arrays.asList(new String[] { "boo/" })), "boo/");
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, Marker, 2, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "cquux/" })), null);
 
 		Prefix = "boo/";
 
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 1, true, new ArrayList<>(Arrays.asList(new String[] { "boo/bar" })), new ArrayList<String>(), "boo/bar");
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "boo/baz/" })), null);
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, "", 1, true, new ArrayList<>(Arrays.asList(new String[] { "boo/bar" })), new ArrayList<String>(), "boo/bar");
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, Marker, 1, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "boo/baz/" })), null);
 
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 2, false, new ArrayList<>(Arrays.asList(new String[] { "boo/bar" })), new ArrayList<>(Arrays.asList(new String[] { "boo/baz/" })), null);
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, "", 2, false, new ArrayList<>(Arrays.asList(new String[] { "boo/bar" })), new ArrayList<>(Arrays.asList(new String[] { "boo/baz/" })), null);
 	}
 
 	@Test
 	@Tag("DelimiterandPrefix")
 	//비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix_ends_with_delimiter() {
-		var BucketName = CreateObjectsToBody(new ArrayList<>(Arrays.asList(new String[] { "asdf/" })), "");
-		ValidateListObjcet(BucketName, "asdf/", "/", "", 1000, false,
+		var bucketName = createObjectsToBody(new ArrayList<>(Arrays.asList(new String[] { "asdf/" })), "");
+		ValidateListObject(bucketName, "asdf/", "/", "", 1000, false,
 				new ArrayList<>(Arrays.asList(new String[] { "asdf/" })), new ArrayList<String>(), null);
 	}
 
@@ -144,12 +144,12 @@ public class ListObjects extends TestBase
 	@Tag("Delimiter")
 	//오브젝트 목록을 가져올때 문자 구분자[a]로 필터링 되는지 확인
 	public void test_bucket_list_delimiter_alt() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "cab", "foo" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "cab", "foo" })));
+		var client = getClient();
 
 		String Delimiter = "a";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -164,38 +164,38 @@ public class ListObjects extends TestBase
 	@Tag("DelimiterandPrefix")
 	//[폴더명 앞에 _가 포함되어 있는 환경] 조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix_underscore() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays
+		var bucketName = createObjects(new ArrayList<>(Arrays
 				.asList(new String[] { "_obj1_", "_under1/bar", "_under1/baz/xyzzy", "_under2/thud", "_under2/bla" })));
 
 		String Delimiter = "/";
 		String Marker = "";
 		String Prefix = "";
 
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 1, true, new ArrayList<>(Arrays.asList(new String[] { "_obj1_" })), new ArrayList<String>(), "_obj1_");
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, true, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under1/" })), "_under1/");
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under2/" })), null);
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, "", 1, true, new ArrayList<>(Arrays.asList(new String[] { "_obj1_" })), new ArrayList<String>(), "_obj1_");
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, Marker, 1, true, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under1/" })), "_under1/");
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, Marker, 1, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under2/" })), null);
 
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 2, true, new ArrayList<>(Arrays.asList(new String[] { "_obj1_" })), new ArrayList<>(Arrays.asList(new String[] { "_under1/" })), "_under1/");
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 2, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under2/" })), null);
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, "", 2, true, new ArrayList<>(Arrays.asList(new String[] { "_obj1_" })), new ArrayList<>(Arrays.asList(new String[] { "_under1/" })), "_under1/");
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, Marker, 2, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under2/" })), null);
 
 		Prefix = "_under1/";
 
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 1, true, new ArrayList<>(Arrays.asList(new String[] { "_under1/bar" })), new ArrayList<String>(), "_under1/bar");
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under1/baz/" })), null);
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, "", 1, true, new ArrayList<>(Arrays.asList(new String[] { "_under1/bar" })), new ArrayList<String>(), "_under1/bar");
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, Marker, 1, false, new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under1/baz/" })), null);
 
-		Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 2, false, new ArrayList<>(Arrays.asList(new String[] { "_under1/bar" })), new ArrayList<>(Arrays.asList(new String[] { "_under1/baz/" })), null);
+		Marker = ValidateListObject(bucketName, Prefix, Delimiter, "", 2, false, new ArrayList<>(Arrays.asList(new String[] { "_under1/bar" })), new ArrayList<>(Arrays.asList(new String[] { "_under1/baz/" })), null);
 	}
 
 	@Test
 	@Tag("Delimiter")
 	//오브젝트 목록을 가져올때 특수문자 구분자[%]로 필터링 되는지 확인
 	public void test_bucket_list_delimiter_percentage() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "b%ar", "b%az", "c%ab", "foo" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "b%ar", "b%az", "c%ab", "foo" })));
+		var client = getClient();
 
 		String Delimiter = "%";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -210,12 +210,12 @@ public class ListObjects extends TestBase
 	@Tag("Delimiter")
 	//오브젝트 목록을 가져올때 공백문자 구분자[ ]로 필터링 되는지 확인
 	public void test_bucket_list_delimiter_whitespace() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "b ar", "b az", "c ab", "foo" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "b ar", "b az", "c ab", "foo" })));
+		var client = getClient();
 
 		String Delimiter = " ";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -230,12 +230,12 @@ public class ListObjects extends TestBase
 	@Tag("Delimiter")
 	//오브젝트 목록을 가져올때 구분자[.]로 필터링 되는지 확인
 	public void test_bucket_list_delimiter_dot() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "b.ar", "b.az", "c.ab", "foo" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "b.ar", "b.az", "c.ab", "foo" })));
+		var client = getClient();
 
 		String Delimiter = ".";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -251,12 +251,12 @@ public class ListObjects extends TestBase
 	//오브젝트 목록을 가져올때 읽을수 없는 구분자[\n]로 필터링 되는지 확인
 	public void test_bucket_list_delimiter_unreadable() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "cab", "foo" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		String Delimiter = "\n";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -271,12 +271,12 @@ public class ListObjects extends TestBase
 	//오브젝트 목록을 가져올때 구분자가 빈문자일때 필터링 되는지 확인
 	public void test_bucket_list_delimiter_empty() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "cab", "foo" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		String Delimiter = "";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertNull(Response.getDelimiter());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -291,10 +291,10 @@ public class ListObjects extends TestBase
 	//오브젝트 목록을 가져올때 구분자를 입력하지 않아도 문제없는지 확인
 	public void test_bucket_list_delimiter_none() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "cab", "foo" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		assertNull(Response.getDelimiter());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -309,12 +309,12 @@ public class ListObjects extends TestBase
 	//[폴더가 존재하지 않는 환경] 오브젝트 목록을 가져올때 폴더 구분자[/]로 필터링 되는지 확인
 	public void test_bucket_list_delimiter_not_exist() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "cab", "foo" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		String Delimiter = "/";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -333,13 +333,13 @@ public class ListObjects extends TestBase
 			KeyNames.add("0/" + Integer.toString(i));
 		var KeyNames2 = new ArrayList<>(Arrays.asList(new String[] { "1999", "1999#", "1999+", "2000" }));
 		KeyNames.addAll(KeyNames2);
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		String Delimiter = "/";
 
-		var Response = Client.listObjects(
-				new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter).withMaxKeys(2000));
+		var Response = client.listObjects(
+				new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter).withMaxKeys(2000));
 		assertEquals(Delimiter, Response.getDelimiter());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -353,11 +353,11 @@ public class ListObjects extends TestBase
 	@Tag("Prefix")
 	//[접두어에 '/'가 포함] 오브젝트 목록을 가져올때 선택한 폴더 목록만 가져오는지 확인
 	public void test_bucket_list_prefix_basic() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "foo/bar", "foo/baz", "quux" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "foo/bar", "foo/baz", "quux" })));
+		var client = getClient();
 
 		String Prefix = "foo/";
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withPrefix(Prefix));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -370,11 +370,11 @@ public class ListObjects extends TestBase
 	@Tag("Prefix")
 	//접두어가 [/]가 아닌 경우 구분기호와 접두사 논리를 수행할 수 있는지 확인
 	public void test_bucket_list_prefix_alt() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo" })));
+		var client = getClient();
 
 		String Prefix = "ba";
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withPrefix(Prefix));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -388,11 +388,11 @@ public class ListObjects extends TestBase
 	//접두어를 빈문자로 입력할 경우 모든 오브젝트 목록을 받아오는지 확인
 	public void test_bucket_list_prefix_empty() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "foo/bar", "foo/baz", "quux" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		String Prefix = "";
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withPrefix(Prefix));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(Prefix));
 		assertNull(Response.getPrefix());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -406,10 +406,10 @@ public class ListObjects extends TestBase
 	//접두어를 입력하지 않을 경우 모든 오브젝트 목록을 받아오는지 확인
 	public void test_bucket_list_prefix_none() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "foo/bar", "foo/baz", "quux" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		assertNull(Response.getPrefix());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -423,11 +423,11 @@ public class ListObjects extends TestBase
 	//[접두어와 일치하는 오브젝트가 없는 경우] 접두어를 입력할 경우 빈 오브젝트 목록을 받아오는지 확인
 	public void test_bucket_list_prefix_not_exist() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "foo/bar", "foo/baz", "quux" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		String Prefix = "d";
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withPrefix(Prefix));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -441,11 +441,11 @@ public class ListObjects extends TestBase
 	//읽을수 없는 접두어를 입력할 경우 빈 오브젝트 목록을 받아오는지 확인
 	public void test_bucket_list_prefix_unreadable() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "foo/bar", "foo/baz", "quux" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		String Prefix = "\n";
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withPrefix(Prefix));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -459,13 +459,13 @@ public class ListObjects extends TestBase
 	//접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인
 	public void test_bucket_list_prefix_delimiter_basic() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		String Prefix = "foo/";
 		String Delimiter = "/";
-		var Response = Client.listObjects(
-				new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter).withPrefix(Prefix));
+		var Response = client.listObjects(
+				new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 		assertEquals(Delimiter, Response.getDelimiter());
 
@@ -480,14 +480,14 @@ public class ListObjects extends TestBase
 	//[구분자가 '/' 아닐 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인
 	public void test_bucket_list_prefix_delimiter_alt() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "bazar", "cab", "foo" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		String Delimiter = "a";
 		String Prefix = "ba";
 
-		var Response = Client.listObjects(
-				new ListObjectsRequest().withBucketName(BucketName).withDelimiter(Delimiter).withPrefix(Prefix));
+		var Response = client.listObjects(
+				new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 		assertEquals(Delimiter, Response.getDelimiter());
 
@@ -501,11 +501,11 @@ public class ListObjects extends TestBase
 	@Tag("PrefixAndDelimiter")
 	//[입력한 접두어와 일치하는 오브젝트가 없을 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록이 비어있는지 확인
 	public void test_bucket_list_prefix_delimiter_prefix_not_exist() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "b/a/r", "b/a/c", "b/a/g", "g" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "b/a/r", "b/a/c", "b/a/g", "g" })));
+		var client = getClient();
 
-		var Response = Client
-				.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter("d").withPrefix("/"));
+		var Response = client
+				.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter("d").withPrefix("/"));
 
 		var Keys = GetKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
@@ -517,11 +517,11 @@ public class ListObjects extends TestBase
 	@Tag("PrefixAndDelimiter")
 	//[구분자가 '/'가 아닐 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인
 	public void test_bucket_list_prefix_delimiter_delimiter_not_exist() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "b/a/c", "b/a/g", "b/a/r", "g" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "b/a/c", "b/a/g", "b/a/r", "g" })));
+		var client = getClient();
 
-		var Response = Client
-				.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter("z").withPrefix("b"));
+		var Response = client
+				.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter("z").withPrefix("b"));
 
 		var Keys = GetKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
@@ -533,11 +533,11 @@ public class ListObjects extends TestBase
 	@Tag("PrefixAndDelimiter")
 	//[구분자가 '/'가 아니며, 접두어와 일치하는 오브젝트가 존재하지 않는 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록이 비어있는지 확인
 	public void test_bucket_list_prefix_delimiter_prefix_delimiter_not_exist() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "b/a/r", "b/a/c", "b/a/g", "g" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "b/a/r", "b/a/c", "b/a/g", "g" })));
+		var client = getClient();
 
-		var Response = Client
-				.listObjects(new ListObjectsRequest().withBucketName(BucketName).withDelimiter("z").withPrefix("y"));
+		var Response = client
+				.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter("z").withPrefix("y"));
 
 		var Keys = GetKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
@@ -550,16 +550,16 @@ public class ListObjects extends TestBase
 	//오브젝트 목록의 최대갯수를 1로 지정하고 불러올때 올바르게 가져오는지 확인
 	public void test_bucket_list_maxkeys_one() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMaxKeys(1));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMaxKeys(1));
 		assertTrue(Response.isTruncated());
 
 		var Keys = GetKeys(Response.getObjectSummaries());
 		assertEquals(KeyNames.subList(0, 1), Keys);
 
-		Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMarker(KeyNames.get(0)));
+		Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMarker(KeyNames.get(0)));
 		assertFalse(Response.isTruncated());
 
 		Keys = GetKeys(Response.getObjectSummaries());
@@ -571,10 +571,10 @@ public class ListObjects extends TestBase
 	//오브젝트 목록의 최대갯수를 0으로 지정하고 불러올때 목록이 비어있는지 확인
 	public void test_bucket_list_maxkeys_zero() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMaxKeys(0));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMaxKeys(0));
 
 		assertFalse(Response.isTruncated());
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -586,10 +586,10 @@ public class ListObjects extends TestBase
 	//[default = 1000] 오브젝트 목록의 최대갯수를 지정하지않고 불러올때 올바르게 가져오는지 확인
 	public void test_bucket_list_maxkeys_none() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		assertFalse(Response.isTruncated());
 		var Keys = GetKeys(Response.getObjectSummaries());
 		assertEquals(KeyNames, Keys);
@@ -602,12 +602,12 @@ public class ListObjects extends TestBase
 	//[함수가 호출되기 전에 URL에 유효하지 않은 최대목록갯수를 추가할 경우] 오브젝트 목록 조회 실패 확인
 	public void test_bucket_list_maxkeys_invalid() {
 //	            var KeyNames = new ArrayList<>(Arrays.asList(new String[]{ "bar", "baz", "foo", "quxx" }));
-//	            var BucketName = CreateObjects(KeyNames);
-//	            var Client = GetClient();
+//	            var bucketName = CreateObjects(KeyNames);
+//	            var client = GetClient();
 //
-//	            Client.BeforeRequestEvent += BeforeCallS3ListObjectsMaxKeys;
+//	            client.BeforeRequestEvent += BeforeCallS3ListObjectsMaxKeys;
 //
-//	            var e = Assert.Throws<AggregateException>(() => Client.listObjects(BucketName));
+//	            var e = Assert.Throws<AggregateException>(() => client.listObjects(bucketName));
 //
 //	            var StatusCode = e.getStatusCode();
 //	            var ErrorCode = GetErrorCode(e);
@@ -628,10 +628,10 @@ public class ListObjects extends TestBase
 	//오브젝트 목록을 가져올때 모든 목록을 가져왓을 경우 마커가 비어있는지 확인
 	public void test_bucket_list_marker_none() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMarker(""));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMarker(""));
 		assertNull(Response.getNextMarker());
 	}
 
@@ -640,10 +640,10 @@ public class ListObjects extends TestBase
 	//빈 마커를 입력하고 오브젝트 목록을 불러올때 올바르게 가져오는지 확인
 	public void test_bucket_list_marker_empty() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMarker(""));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMarker(""));
 		assertNull(Response.getNextMarker());
 		assertFalse(Response.isTruncated());
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -655,12 +655,12 @@ public class ListObjects extends TestBase
 	//마커에 읽을수 없는 값[\n]을 설정한 경우 오브젝트 목록을 올바르게 가져오는지 확인
 	public void test_bucket_list_marker_unreadable() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		var Marker = "\n";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMarker(Marker));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMarker(Marker));
 		assertNull(Response.getNextMarker());
 		assertFalse(Response.isTruncated());
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -672,12 +672,12 @@ public class ListObjects extends TestBase
 	//[마커와 일치하는 오브젝트가 존재하지 않지만 해당 마커보다 정렬순서가 낮은 오브젝트는 존재하는 환경] 마커를 설정하고 오브젝트 목록을 불러올때 재대로 가져오는지 확인
 	public void test_bucket_list_marker_not_in_list() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		var Marker = "blah";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMarker(Marker));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMarker(Marker));
 		assertEquals(Marker, Response.getMarker());
 		var Keys = GetKeys(Response.getObjectSummaries());
 		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "foo", "quxx" })), Keys);
@@ -688,12 +688,12 @@ public class ListObjects extends TestBase
 	//[마커와 일치하는 오브젝트도 정렬순서가 같은 오브젝트도 존재하지 않는 환경] 마커를 설정하고 오브젝트 목록을 불러올때 재대로 가져오는지 확인
 	public void test_bucket_list_marker_after_list() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		var Marker = "zzz";
 
-		var Response = Client.listObjects(new ListObjectsRequest().withBucketName(BucketName).withMarker(Marker));
+		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMarker(Marker));
 		assertEquals(Marker, Response.getMarker());
 		assertFalse(Response.isTruncated());
 		var Keys = GetKeys(Response.getObjectSummaries());
@@ -705,21 +705,21 @@ public class ListObjects extends TestBase
 	//ListObjcets으로 가져온 Metadata와  HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
 	public void test_bucket_list_return_data() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo" }));
-		var BucketName = CreateObjects(KeyNames);
-		var Client = GetClient();
+		var bucketName = createObjects(KeyNames);
+		var client = getClient();
 
 		var Data = new ArrayList<ObjectData>();
 
 		for (var Key : KeyNames) {
-			var ObjResponse = Client.getObjectMetadata(BucketName, Key);
-			var ACLResponse = Client.getObjectAcl(BucketName, Key);
+			var ObjResponse = client.getObjectMetadata(bucketName, Key);
+			var ACLResponse = client.getObjectAcl(bucketName, Key);
 
 			Data.add(new ObjectData().withKey(Key).withDisplayName(ACLResponse.getOwner().getDisplayName())
 					.withID(ACLResponse.getOwner().getId()).withETag(ObjResponse.getETag())
 					.withLastModified(ObjResponse.getLastModified()).withContentLength(ObjResponse.getContentLength()));
 		}
 
-		var Response = Client.listObjects(BucketName);
+		var Response = client.listObjects(bucketName);
 		var ObjList = Response.getObjectSummaries();
 
 		for (var Object : ObjList) {
@@ -727,11 +727,11 @@ public class ListObjects extends TestBase
 			var KeyData = GetObjectToKey(KeyName, Data);
 
 			assertNotNull(KeyData);
-			assertEquals(KeyData.ETag, Object.getETag());
-			assertEquals(KeyData.ContentLength, Object.getSize());
-			assertEquals(KeyData.DisplayName, Object.getOwner().getDisplayName());
-			assertEquals(KeyData.ID, Object.getOwner().getId());
-			assertEquals(KeyData.LastModified, Object.getLastModified());
+			assertEquals(KeyData.eTag, Object.getETag());
+			assertEquals(KeyData.contentLength, Object.getSize());
+			assertEquals(KeyData.displayName, Object.getOwner().getDisplayName());
+			assertEquals(KeyData.id, Object.getOwner().getId());
+			assertEquals(KeyData.lastModified, Object.getLastModified());
 		}
 	}
 
@@ -739,22 +739,22 @@ public class ListObjects extends TestBase
 	@Tag("ACL")
 	//권한없는 사용자가 공용읽기설정된 버킷의 오브젝트 목록을 읽을수 있는지 확인
 	public void test_bucket_list_objects_anonymous() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		Client.setBucketAcl(new SetBucketAclRequest(BucketName, CannedAccessControlList.PublicRead));
+		var bucketName = getNewBucket();
+		var client = getClient();
+		client.setBucketAcl(new SetBucketAclRequest(bucketName, CannedAccessControlList.PublicRead));
 
-		var UnauthenticatedClient = GetUnauthenticatedClient();
-		UnauthenticatedClient.listObjects(BucketName);
+		var UnauthenticatedClient = getPublicClient();
+		UnauthenticatedClient.listObjects(bucketName);
 	}
 
 	@Test
 	@Tag("ACL")
 	//권한없는 사용자가 버킷의 오브젝트 목록을 읽지 못하는지 확인
 	public void test_bucket_list_objects_anonymous_fail() {
-		var BucketName = GetNewBucket();
-		var UnauthenticatedClient = GetUnauthenticatedClient();
+		var bucketName = getNewBucket();
+		var UnauthenticatedClient = getPublicClient();
 
-		var e = assertThrows(AmazonServiceException.class, () -> UnauthenticatedClient.listObjects(BucketName));
+		var e = assertThrows(AmazonServiceException.class, () -> UnauthenticatedClient.listObjects(bucketName));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 
@@ -766,16 +766,16 @@ public class ListObjects extends TestBase
 	@Tag("ERROR")
 	//존재하지 않는 버킷 내 오브젝트들을 가져오려 했을 경우 실패 확인
 	public void test_bucket_notexist() {
-		var BucketName = GetNewBucketNameOnly();
-		var Client = GetClient();
+		var bucketName = getNewBucketNameOnly();
+		var client = getClient();
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.listObjects(BucketName));
+		var e = assertThrows(AmazonServiceException.class, () -> client.listObjects(bucketName));
 
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 
 		assertEquals(404, StatusCode);
 		assertEquals(MainData.NoSuchBucket, ErrorCode);
-		DeleteBucketList(BucketName);
+		DeleteBucketList(bucketName);
 	}
 }

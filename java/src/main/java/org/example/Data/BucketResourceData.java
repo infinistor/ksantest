@@ -14,25 +14,25 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.PutObjectResult;
 
 public class BucketResourceData {
-	public AmazonS3 Client;
-	public String BucketName;
+	public AmazonS3 client;
+	public String bucketName;
 
-	public BucketResourceData(AmazonS3 _Client, String _BucketName) {
-		Client = _Client;
-		BucketName = _BucketName;
+	public BucketResourceData(AmazonS3 client, String bucketName) {
+		this.client = client;
+		this.bucketName = bucketName;
 	}
 
-	public PutObjectResult PutObject(String Key, String Body) {
-		if (Client == null) return null;
-		if (BucketName.isBlank()) return null;
+	public PutObjectResult PutObject(String key, String body) {
+		if (client == null) return null;
+		if (bucketName.isBlank()) return null;
 
-		return Client.putObject(BucketName, Key, Body);
+		return client.putObject(bucketName, key, body);
 	}
 
-	static public boolean IsEmpty(BucketResourceData Data) {
-		if (Data == null) return true;
-		if (Data.Client == null) return true;
-		if (Data.BucketName.isBlank()) return true;
+	static public boolean IsEmpty(BucketResourceData data) {
+		if (data == null) return true;
+		if (data.client == null) return true;
+		if (data.bucketName.isBlank()) return true;
 
 		return false;
 	}

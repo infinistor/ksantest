@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
@@ -39,17 +38,14 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
 
-public class Versioning extends TestBase
-{
+public class Versioning extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
-	{
+	static public void BeforeAll() {
 		System.out.println("Versioning Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
-	{
+	static public void AfterAll() {
 		System.out.println("Versioning End");
 	}
 
@@ -57,28 +53,28 @@ public class Versioning extends TestBase
 	@Tag("Check")
 	// 버킷의 버저닝 옵션 변경 가능 확인
 	public void test_versioning_bucket_create_suspend() {
-		var BucketName = GetNewBucket();
-		CheckVersioning(BucketName, BucketVersioningConfiguration.OFF);
+		var bucketName = getNewBucket();
+		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.SUSPENDED);
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.SUSPENDED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
 	}
 
 	@Test
 	@Tag("Object")
 	// 버저닝 오브젝트의 생성/읽기/삭제 확인
 	public void test_versioning_obj_create_read_remove() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		Client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(BucketName,
+		var bucketName = getNewBucket();
+		var client = getClient();
+		client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
 				new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED)));
-		var Key = "testobj";
-		var NumVersions = 5;
+		var key = "obj";
+		var numVersions = 5;
 
-		DoTestCreateRemoveVersions(Client, BucketName, Key, NumVersions, 0, 0);
-		DoTestCreateRemoveVersions(Client, BucketName, Key, NumVersions, 4, -1);
+		DoTestCreateRemoveVersions(client, bucketName, key, numVersions, 0, 0);
+		DoTestCreateRemoveVersions(client, bucketName, key, numVersions, 4, -1);
 	}
 
 	@Test
@@ -86,318 +82,307 @@ public class Versioning extends TestBase
 	@Tag("Object")
 	// 버저닝 오브젝트의 해더 정보를 사용하여 읽기/쓰기/삭제확인
 	public void test_versioning_obj_create_read_remove_head() {
-		var BucketName = GetNewBucket();
+		var bucketName = getNewBucket();
 
-		var Client = GetClient();
-		Client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(BucketName,
+		var client = getClient();
+		client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
 				new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED)));
-		var Key = "testobj";
-		var NumVersions = 5;
+		var key = "obj";
+		var numVersions = 5;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
-		CreateMultipleVersions(Client, BucketName, Key, NumVersions, VersionIDs, Contents, true);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		var RemovedVersionID = VersionIDs.get(0);
-		VersionIDs.remove(0);
-		Contents.remove(0);
-		NumVersions--;
+		var removedVersionID = versionIds.get(0);
+		versionIds.remove(0);
+		contents.remove(0);
+		numVersions--;
 
-		Client.deleteVersion(BucketName, Key, RemovedVersionID);
+		client.deleteVersion(bucketName, key, removedVersionID);
 
-		var GetResponse = Client.getObject(BucketName, Key);
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertEquals(Contents.get(Contents.size() - 1), Body);
+		var getResponse = client.getObject(bucketName, key);
+		var body = GetBody(getResponse.getObjectContent());
+		assertEquals(contents.get(contents.size() - 1), body);
 
-		Client.deleteObject(BucketName, Key);
+		client.deleteObject(bucketName, key);
 
-		var DeleteMarkerVersionID = GetResponse.getObjectMetadata().getVersionId();
-		VersionIDs.add(DeleteMarkerVersionID);
+		var deleteMarkerVersionID = getResponse.getObjectMetadata().getVersionId();
+		versionIds.add(deleteMarkerVersionID);
 
-		var ListResponse = Client.listVersions(BucketName, "");
-		assertEquals(NumVersions, GetVersions(ListResponse.getVersionSummaries()).size());
-		assertEquals(1, GetDeleteMarkers(ListResponse.getVersionSummaries()).size());
-		for (var Item : ListResponse.getVersionSummaries())
-		{
+		var listResponse = client.listVersions(bucketName, "");
+		assertEquals(numVersions, GetVersions(listResponse.getVersionSummaries()).size());
+		assertEquals(1, GetDeleteMarkers(listResponse.getVersionSummaries()).size());
+		for (var Item : listResponse.getVersionSummaries()) {
 			System.out.format("%s, %b\n", Item.getVersionId(), Item.isDeleteMarker());
 		}
 		System.out.format("\n");
 
-		assertEquals(DeleteMarkerVersionID, GetDeleteMarkers(ListResponse.getVersionSummaries()).get(0).getVersionId());
+		assertEquals(deleteMarkerVersionID, GetDeleteMarkers(listResponse.getVersionSummaries()).get(0).getVersionId());
 	}
 
 	@Test
 	@Tag("Object")
 	// 버킷에 버저닝 설정을 할 경우 소급적용되지 않음을 확인
 	public void test_versioning_obj_plain_null_version_removal() {
-		var BucketName = GetNewBucket();
-		CheckVersioning(BucketName, BucketVersioningConfiguration.OFF);
+		var bucketName = getNewBucket();
+		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
 
-		var Client = GetClient();
-		var Key = "testobjfoo";
-		var Content = "fooz";
-		Client.putObject(BucketName, Key, Content);
+		var client = getClient();
+		var key = "foo";
+		var content = "foo data";
+		client.putObject(bucketName, key, content);
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
-		Client.deleteVersion(BucketName, Key, "null");
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		client.deleteVersion(bucketName, key, "null");
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.getObject(BucketName, Key));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchKey, ErrorCode);
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(404, statusCode);
+		assertEquals(MainData.NoSuchKey, errorCode);
 
-		var ListResponse = Client.listVersions(BucketName, "");
-		assertEquals(0, ListResponse.getVersionSummaries().size());
+		var listResponse = client.listVersions(bucketName, "");
+		assertEquals(0, listResponse.getVersionSummaries().size());
 	}
 
 	@Test
 	@Tag("Object")
-	//[버킷에 버저닝 설정이 되어있는 상태] null 버전 오브젝트를 덮어쓰기 할경우 버전 정보가 추가됨을 확인
+	// [버킷에 버저닝 설정이 되어있는 상태] null 버전 오브젝트를 덮어쓰기 할경우 버전 정보가 추가됨을 확인
 	public void test_versioning_obj_plain_null_version_overwrite() {
-		var BucketName = GetNewBucket();
-		CheckVersioning(BucketName, BucketVersioningConfiguration.OFF);
+		var bucketName = getNewBucket();
+		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
 
-		var Client = GetClient();
-		var Key = "testobjfoo";
-		var Content = "fooz";
-		Client.putObject(BucketName, Key, Content);
+		var client = getClient();
+		var key = "foo";
+		var content = "foo zzz";
+		client.putObject(bucketName, key, content);
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Content2 = "zzz";
-		Client.putObject(BucketName, Key, Content2);
-		var Response = Client.getObject(BucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals(Content2, Body);
+		var content2 = "zzz";
+		client.putObject(bucketName, key, content2);
+		var response = client.getObject(bucketName, key);
+		var body = GetBody(response.getObjectContent());
+		assertEquals(content2, body);
 
-		var VersionID = Response.getObjectMetadata().getVersionId();
-		Client.deleteVersion(BucketName, Key, VersionID);
-		Response = Client.getObject(BucketName, Key);
-		Body = GetBody(Response.getObjectContent());
-		assertEquals(Content, Body);
+		var VersionID = response.getObjectMetadata().getVersionId();
+		client.deleteVersion(bucketName, key, VersionID);
+		response = client.getObject(bucketName, key);
+		body = GetBody(response.getObjectContent());
+		assertEquals(content, body);
 
-		Client.deleteVersion(BucketName, Key, "null");
+		client.deleteVersion(bucketName, key, "null");
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.getObject(BucketName, Key));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchKey, ErrorCode);
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
+		assertEquals(404, e.getStatusCode());
+		assertEquals(MainData.NoSuchKey, e.getErrorCode());
 
-		var ListResponse = Client.listVersions(BucketName, "");
-		assertEquals(0, ListResponse.getVersionSummaries().size());
+		var listResponse = client.listVersions(bucketName, "");
+		assertEquals(0, listResponse.getVersionSummaries().size());
 	}
 
 	@Test
 	@Tag("Object")
-	//[버킷에 버저닝 설정이 되어있지만 중단된 상태일때] null 버전 오브젝트를 덮어쓰기 할경우 버전정보가 추가되지 않음을 확인
+	// [버킷에 버저닝 설정이 되어있지만 중단된 상태일때] null 버전 오브젝트를 덮어쓰기 할경우 버전정보가 추가되지 않음을 확인
 	public void test_versioning_obj_plain_null_version_overwrite_suspended() {
-		var BucketName = GetNewBucket();
-		CheckVersioning(BucketName, BucketVersioningConfiguration.OFF);
+		var bucketName = getNewBucket();
+		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
 
-		var Client = GetClient();
-		var Key = "testobjfoo";
-		var Content = "fooz";
-		Client.putObject(BucketName, Key, Content);
+		var client = getClient();
+		var key = "foo";
+		var content = "foo zzz";
+		client.putObject(bucketName, key, content);
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.SUSPENDED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
 
-		var Content2 = "zzz";
-		Client.putObject(BucketName, Key, Content2);
-		var Response = Client.getObject(BucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals(Content2, Body);
+		var content2 = "zzz";
+		client.putObject(bucketName, key, content2);
+		var response = client.getObject(bucketName, key);
+		var body = GetBody(response.getObjectContent());
+		assertEquals(content2, body);
 
-		var ListResponse = Client.listVersions(BucketName, "");
-		assertEquals(1, ListResponse.getVersionSummaries().size());
+		var listResponse = client.listVersions(bucketName, "");
+		assertEquals(1, listResponse.getVersionSummaries().size());
 
-		Client.deleteVersion(BucketName, Key, "null");
+		client.deleteVersion(bucketName, key, "null");
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.getObject(BucketName, Key));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchKey, ErrorCode);
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
+		assertEquals(404, e.getStatusCode());
+		assertEquals(MainData.NoSuchKey, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("Object")
-	//버전관리를 일시중단했을때 올바르게 동작하는지 확인
+	// 버전관리를 일시중단했을때 올바르게 동작하는지 확인
 	public void test_versioning_obj_suspend_versions() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
-		var Key = "testobj";
-		var NumVersions = 5;
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var key = "obj";
+		var numVersions = 5;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
-		CreateMultipleVersions(Client, BucketName, Key, NumVersions, VersionIDs, Contents, true);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.SUSPENDED);
-		DeleteSuspendedVersioningObj(Client, BucketName, Key, VersionIDs, Contents);
-		DeleteSuspendedVersioningObj(Client, BucketName, Key, VersionIDs, Contents);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
+		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents);
+		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents);
 
-		OverwriteSuspendedVersioningObj(Client, BucketName, Key, VersionIDs, Contents, "null content 1");
-		OverwriteSuspendedVersioningObj(Client, BucketName, Key, VersionIDs, Contents, "null content 2");
-		DeleteSuspendedVersioningObj(Client, BucketName, Key, VersionIDs, Contents);
-		OverwriteSuspendedVersioningObj(Client, BucketName, Key, VersionIDs, Contents, "null content 3");
-		DeleteSuspendedVersioningObj(Client, BucketName, Key, VersionIDs, Contents);
+		overwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, "null content 1");
+		overwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, "null content 2");
+		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents);
+		overwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, "null content 3");
+		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents);
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		CreateMultipleVersions(Client, BucketName, Key, 3, VersionIDs, Contents, true);
-		NumVersions += 3;
+		createMultipleVersions(client, bucketName, key, 3, versionIds, contents, true);
+		numVersions += 3;
 
-		for (int i = 0; i < NumVersions; i++)
-			RemoveObjVersion(Client, BucketName, Key, VersionIDs, Contents, 0);
+		for (int i = 0; i < numVersions; i++)
+			removeObjVersion(client, bucketName, key, versionIds, contents, 0);
 
-		assertEquals(0, VersionIDs.size());
-		assertEquals(0, Contents.size());
+		assertEquals(0, versionIds.size());
+		assertEquals(0, contents.size());
 
 	}
 
 	@Test
 	@Tag("Object")
-	//오브젝트하나의 여러버전을 모두 삭제 가능한지 확인
+	// 오브젝트하나의 여러버전을 모두 삭제 가능한지 확인
 	public void test_versioning_obj_create_versions_remove_all() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "testobj";
-		var NumVersions = 10;
+		var key = "obj";
+		var numVersions = 10;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
-		CreateMultipleVersions(Client, BucketName, Key, NumVersions, VersionIDs, Contents, true);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		for (int i = 0; i < NumVersions; i++)
-			RemoveObjVersion(Client, BucketName, Key, VersionIDs, Contents, 0);
+		for (int i = 0; i < numVersions; i++)
+			removeObjVersion(client, bucketName, key, versionIds, contents, 0);
 
-		var Response = Client.listVersions(BucketName, "");
-		assertEquals(0, Response.getVersionSummaries().size());
+		var response = client.listVersions(bucketName, "");
+		assertEquals(0, response.getVersionSummaries().size());
 	}
 
 	@Test
 	@Tag("Object")
-	//이름에 특수문자가 들어간 오브젝트에 대해 버전관리가 올바르게 동작하는지 확인
+	// 이름에 특수문자가 들어간 오브젝트에 대해 버전관리가 올바르게 동작하는지 확인
 	public void test_versioning_obj_create_versions_remove_special_names() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
 		var Keys = new ArrayList<>(Arrays.asList(new String[] { "_testobj", "_", ":", " " }));
-		var NumVersions = 10;
+		var numVersions = 10;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
-		for (var Key : Keys) {
-			CreateMultipleVersions(Client, BucketName, Key, NumVersions, VersionIDs, Contents, true);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		for (var key : Keys) {
+			createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-			for (int i = 0; i < NumVersions; i++)
-				RemoveObjVersion(Client, BucketName, Key, VersionIDs, Contents, 0);
+			for (int i = 0; i < numVersions; i++)
+				removeObjVersion(client, bucketName, key, versionIds, contents, 0);
 
-			var Response = Client.listVersions(BucketName, "");
-			assertEquals(0, Response.getVersionSummaries().size());
+			var response = client.listVersions(bucketName, "");
+			assertEquals(0, response.getVersionSummaries().size());
 		}
-	}
-
-	public void ListTest(List<String> Temp) {
-		if (Temp == null)
-			Temp = new ArrayList<String>();
-		Temp.add(Integer.toString(Temp.size()));
 	}
 
 	@Test
 	@Tag("Multipart")
 	// 오브젝트를 멀티파트 업로드하였을 경우 버전관리가 올바르게 동작하는지 확인
 	public void test_versioning_obj_create_overwrite_multipart() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "testobj";
-		var NumVersions = 3;
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
+		var key = "obj";
+		var numVersions = 3;
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
 
-		for (int i = 0; i < NumVersions; i++)
-			Contents.add(DoTestMultipartUploadContents(BucketName, Key, 3));
+		for (int i = 0; i < numVersions; i++)
+			contents.add(DoTestMultipartUploadContents(bucketName, key, 3));
 
-		var Response = Client.listVersions(BucketName, "");
-		for (var Version : Response.getVersionSummaries())
-			VersionIDs.add(Version.getVersionId());
+		var response = client.listVersions(bucketName, "");
+		for (var version : response.getVersionSummaries())
+			versionIds.add(version.getVersionId());
 
-		Collections.reverse(VersionIDs);
-		CheckObjVersions(Client, BucketName, Key, VersionIDs, Contents);
+		Collections.reverse(versionIds);
+		checkObjVersions(client, bucketName, key, versionIds, contents);
 
-		for (int i = 0; i < NumVersions; i++)
-			RemoveObjVersion(Client, BucketName, Key, VersionIDs, Contents, 0);
+		for (int i = 0; i < numVersions; i++)
+			removeObjVersion(client, bucketName, key, versionIds, contents, 0);
 
-		Response = Client.listVersions(BucketName, "");
-		assertEquals(0, Response.getVersionSummaries().size());
+		response = client.listVersions(bucketName, "");
+		assertEquals(0, response.getVersionSummaries().size());
 	}
 
 	@Test
 	@Tag("Check")
 	// 오브젝트의 해당 버전 정보가 올바른지 확인
 	public void test_versioning_obj_list_marker() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "testobj";
-		var Key2 = "testobj-1";
-		var NumVersions = 5;
+		var key = "obj";
+		var Key2 = "obj-1";
+		var numVersions = 5;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
 		var VersionIDs2 = new ArrayList<String>();
 		var Contents2 = new ArrayList<String>();
 
-		for (int i = 0; i < NumVersions; i++) {
-			var Body = String.format("content-%s", i);
-			var Response = Client.putObject(BucketName, Key, Body);
-			var VersionID = Response.getVersionId();
+		for (int i = 0; i < numVersions; i++) {
+			var body = String.format("content-%s", i);
+			var response = client.putObject(bucketName, key, body);
+			var VersionID = response.getVersionId();
 
-			Contents.add(Body);
-			VersionIDs.add(VersionID);
+			contents.add(body);
+			versionIds.add(VersionID);
 		}
 
-		for (int i = 0; i < NumVersions; i++) {
-			var Body = String.format("content-%s", i);
-			var Response = Client.putObject(BucketName, Key2, Body);
-			var VersionID = Response.getVersionId();
+		for (int i = 0; i < numVersions; i++) {
+			var body = String.format("content-%s", i);
+			var response = client.putObject(bucketName, Key2, body);
+			var VersionID = response.getVersionId();
 
-			Contents2.add(Body);
+			Contents2.add(body);
 			VersionIDs2.add(VersionID);
 		}
 
-		var ListResponse = Client.listVersions(BucketName, "");
-		var Versions = GetVersions(ListResponse.getVersionSummaries());
-		Collections.reverse(Versions);
+		var listResponse = client.listVersions(bucketName, "");
+		var versions = GetVersions(listResponse.getVersionSummaries());
+		Collections.reverse(versions);
 
 		int index = 0;
 		for (int i = 0; i < 5; i++, index++) {
-			var Version = Versions.get(i);
-			assertEquals(Version.getVersionId(), VersionIDs2.get(i));
-			assertEquals(Version.getKey(), Key2);
-			CheckObjContent(Client, BucketName, Key2, Version.getVersionId(), Contents2.get(i));
+			var version = versions.get(i);
+			assertEquals(version.getVersionId(), VersionIDs2.get(i));
+			assertEquals(version.getKey(), Key2);
+			checkObjContent(client, bucketName, Key2, version.getVersionId(), Contents2.get(i));
 		}
 
 		for (int i = 0; i < 5; i++, index++) {
-			var Version = Versions.get(index);
-			assertEquals(Version.getVersionId(), VersionIDs.get(i));
-			assertEquals(Version.getKey(), Key);
-			CheckObjContent(Client, BucketName, Key, Version.getVersionId(), Contents.get(i));
+			var version = versions.get(index);
+			assertEquals(version.getVersionId(), versionIds.get(i));
+			assertEquals(version.getKey(), key);
+			checkObjContent(client, bucketName, key, version.getVersionId(), contents.get(i));
 		}
 	}
 
@@ -405,175 +390,175 @@ public class Versioning extends TestBase
 	@Tag("Copy")
 	// 오브젝트의 버전별 복사가 가능한지 화인
 	public void test_versioning_copy_obj_version() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "testobj";
-		var NumVersions = 3;
+		var key = "obj";
+		var numVersions = 3;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
-		CreateMultipleVersions(Client, BucketName, Key, NumVersions, VersionIDs, Contents, true);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		for (int i = 0; i < NumVersions; i++) {
-			var NewKeyName = String.format("key_%s", i);
-			Client.copyObject(new CopyObjectRequest(BucketName, Key, BucketName, NewKeyName)
-					.withSourceVersionId(VersionIDs.get(i)));
-			var GetResponse = Client.getObject(BucketName, NewKeyName);
-			var Content = GetBody(GetResponse.getObjectContent());
-			assertEquals(Contents.get(i), Content);
+		for (int i = 0; i < numVersions; i++) {
+			var newKeyName = String.format("key_%s", i);
+			client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, newKeyName)
+					.withSourceVersionId(versionIds.get(i)));
+			var getResponse = client.getObject(bucketName, newKeyName);
+			var content = GetBody(getResponse.getObjectContent());
+			assertEquals(contents.get(i), content);
 		}
 
-		var AnotherBucketName = GetNewBucket();
+		var AnotherBucketName = getNewBucket();
 
-		for (int i = 0; i < NumVersions; i++) {
-			var NewKeyName = String.format("key_%s", i);
-			Client.copyObject(new CopyObjectRequest(BucketName, Key, BucketName, NewKeyName)
-					.withSourceVersionId(VersionIDs.get(i)));
-			var GetResponse = Client.getObject(BucketName, NewKeyName);
-			var Content = GetBody(GetResponse.getObjectContent());
-			assertEquals(Contents.get(i), Content);
+		for (int i = 0; i < numVersions; i++) {
+			var newKeyName = String.format("key_%s", i);
+			client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, newKeyName)
+					.withSourceVersionId(versionIds.get(i)));
+			var getResponse = client.getObject(bucketName, newKeyName);
+			var content = GetBody(getResponse.getObjectContent());
+			assertEquals(contents.get(i), content);
 		}
 
-		var NewKeyName2 = "new_key";
-		Client.copyObject(BucketName, Key, AnotherBucketName, NewKeyName2);
+		var newKeyName2 = "new_key";
+		client.copyObject(bucketName, key, AnotherBucketName, newKeyName2);
 
-		var Response = Client.getObject(AnotherBucketName, NewKeyName2);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals(Body, Contents.get(Contents.size() - 1));
+		var response = client.getObject(AnotherBucketName, newKeyName2);
+		var body = GetBody(response.getObjectContent());
+		assertEquals(body, contents.get(contents.size() - 1));
 	}
 
 	@Test
 	@Tag("Delete")
 	// 버전이 여러개인 오브젝트에 대한 삭제가 올바르게 동작하는지 확인
 	public void test_versioning_multi_object_delete() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "key";
-		var NumVersions = 2;
+		var key = "key";
+		var numVersions = 2;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
-		CreateMultipleVersions(Client, BucketName, Key, NumVersions, VersionIDs, Contents, true);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		var ListResponse = Client.listVersions(BucketName, "");
-		var Versions = GetVersions(ListResponse.getVersionSummaries());
-		Collections.reverse(Versions);
+		var listResponse = client.listVersions(bucketName, "");
+		var versions = GetVersions(listResponse.getVersionSummaries());
+		Collections.reverse(versions);
 
-		for (var Version : Versions)
-			Client.deleteVersion(BucketName, Key, Version.getVersionId());
+		for (var version : versions)
+			client.deleteVersion(bucketName, key, version.getVersionId());
 
-		ListResponse = Client.listVersions(BucketName, "");
-		assertEquals(0, ListResponse.getVersionSummaries().size());
+		listResponse = client.listVersions(bucketName, "");
+		assertEquals(0, listResponse.getVersionSummaries().size());
 
-		for (var Version : Versions)
-			Client.deleteVersion(BucketName, Key, Version.getVersionId());
+		for (var version : versions)
+			client.deleteVersion(bucketName, key, version.getVersionId());
 
-		ListResponse = Client.listVersions(BucketName, "");
-		assertEquals(0, ListResponse.getVersionSummaries().size());
+		listResponse = client.listVersions(bucketName, "");
+		assertEquals(0, listResponse.getVersionSummaries().size());
 	}
 
 	@Test
 	@Tag("DeleteMarker")
 	// 버전이 여러개인 오브젝트에 대한 삭제마커가 올바르게 동작하는지 확인
 	public void test_versioning_multi_object_delete_with_marker() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "key";
-		var NumVersions = 2;
+		var key = "key";
+		var numVersions = 2;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
-		CreateMultipleVersions(Client, BucketName, Key, NumVersions, VersionIDs, Contents, true);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		Client.deleteObject(BucketName, Key);
-		var Response = Client.listVersions(BucketName, "");
-		var Versions = GetVersions(Response.getVersionSummaries());
-		var DeleteMarkers = GetDeleteMarkers(Response.getVersionSummaries());
+		client.deleteObject(bucketName, key);
+		var response = client.listVersions(bucketName, "");
+		var versions = GetVersions(response.getVersionSummaries());
+		var DeleteMarkers = GetDeleteMarkers(response.getVersionSummaries());
 
-		VersionIDs.add(DeleteMarkers.get(0).getVersionId());
-		assertEquals(3, VersionIDs.size());
+		versionIds.add(DeleteMarkers.get(0).getVersionId());
+		assertEquals(3, versionIds.size());
 		assertEquals(1, DeleteMarkers.size());
 
-		for (var Version : Versions)
-			Client.deleteVersion(BucketName, Key, Version.getVersionId());
+		for (var version : versions)
+			client.deleteVersion(bucketName, key, version.getVersionId());
 
 		for (var DeleteMarker : DeleteMarkers)
-			Client.deleteVersion(BucketName, Key, DeleteMarker.getVersionId());
+			client.deleteVersion(bucketName, key, DeleteMarker.getVersionId());
 
-		Response = Client.listVersions(BucketName, "");
-		assertEquals(0, GetVersions(Response.getVersionSummaries()).size());
-		assertEquals(0, GetDeleteMarkers(Response.getVersionSummaries()).size());
+		response = client.listVersions(bucketName, "");
+		assertEquals(0, GetVersions(response.getVersionSummaries()).size());
+		assertEquals(0, GetDeleteMarkers(response.getVersionSummaries()).size());
 
-		for (var Version : Versions)
-			Client.deleteVersion(BucketName, Key, Version.getVersionId());
+		for (var version : versions)
+			client.deleteVersion(bucketName, key, version.getVersionId());
 
 		for (var DeleteMarker : DeleteMarkers)
-			Client.deleteVersion(BucketName, Key, DeleteMarker.getVersionId());
+			client.deleteVersion(bucketName, key, DeleteMarker.getVersionId());
 
-		Response = Client.listVersions(BucketName, "");
-		assertEquals(0, GetVersions(Response.getVersionSummaries()).size());
-		assertEquals(0, GetDeleteMarkers(Response.getVersionSummaries()).size());
+		response = client.listVersions(bucketName, "");
+		assertEquals(0, GetVersions(response.getVersionSummaries()).size());
+		assertEquals(0, GetDeleteMarkers(response.getVersionSummaries()).size());
 	}
 
 	@Test
 	@Tag("DeleteMarker")
 	// 존재하지않는 오브젝트를 삭제할경우 삭제마커가 생성되는지 확인
 	public void test_versioning_multi_object_delete_with_marker_create() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "key";
+		var key = "key";
 
-		Client.deleteObject(BucketName, Key);
+		client.deleteObject(bucketName, key);
 		// var DeleteMarkerVersionId = DelResponse.getVersionId();
 
-		var Response = Client.listVersions(BucketName, "");
-		var DeleteMarker = GetDeleteMarkers(Response.getVersionSummaries());
+		var response = client.listVersions(bucketName, "");
+		var DeleteMarker = GetDeleteMarkers(response.getVersionSummaries());
 
 		assertEquals(1, DeleteMarker.size());
 		// assertEquals(DeleteMarkerVersionId, DeleteMarker[0].getVersionId());
-		assertEquals(Key, DeleteMarker.get(0).getKey());
+		assertEquals(key, DeleteMarker.get(0).getKey());
 	}
 
 	@Test
 	@Tag("ACL")
 	// 오브젝트 버전의 acl이 올바르게 관리되고 있는지 확인
 	public void test_versioned_object_acl() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "xyz";
-		var NumVersions = 3;
+		var key = "xyz";
+		var numVersions = 3;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
-		CreateMultipleVersions(Client, BucketName, Key, NumVersions, VersionIDs, Contents, true);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		var VersionID = VersionIDs.get(1);
+		var VersionID = versionIds.get(1);
 
-		var Response = Client.getObjectAcl(BucketName, Key, VersionID);
+		var response = client.getObjectAcl(bucketName, key, VersionID);
 
-		var User = new CanonicalGrantee(Config.MainUser.UserID);
-		User.setDisplayName(Config.MainUser.DisplayName);
+		var User = new CanonicalGrantee(config.mainUser.userId);
+		User.setDisplayName(config.mainUser.displayName);
 
-		if (!StringUtils.isBlank(Config.URL))
-			assertEquals(User.getDisplayName(), Response.getOwner().getDisplayName());
-		assertEquals(User.getIdentifier(), Response.getOwner().getId());
+		if (!StringUtils.isBlank(config.URL))
+			assertEquals(User.getDisplayName(), response.getOwner().getDisplayName());
+		assertEquals(User.getIdentifier(), response.getOwner().getId());
 
-		var GetGrants = Response.getGrantsAsList();
+		var GetGrants = response.getGrantsAsList();
 		var MyGrants = new ArrayList<Grant>();
 		MyGrants.add(new Grant(User, Permission.FullControl));
 		CheckGrants(MyGrants, new ArrayList<Grant>(GetGrants));
@@ -583,39 +568,39 @@ public class Versioning extends TestBase
 	@Tag("ACL")
 	// 버전정보를 입력하지 않고 오브젝트의 acl정보를 수정할 경우 가장 최신 버전에 반영되는지 확인
 	public void test_versioned_object_acl_no_version_specified() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "xyz";
-		var NumVersions = 3;
+		var key = "xyz";
+		var numVersions = 3;
 
-		var VersionIDs = new ArrayList<String>();
-		var Contents = new ArrayList<String>();
-		CreateMultipleVersions(Client, BucketName, Key, NumVersions, VersionIDs, Contents, true);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		var GetResponse = Client.getObject(BucketName, Key);
-		var VersionID = GetResponse.getObjectMetadata().getVersionId();
+		var getResponse = client.getObject(bucketName, key);
+		var VersionID = getResponse.getObjectMetadata().getVersionId();
 
-		var Response = Client.getObjectAcl(BucketName, Key, VersionID);
+		var response = client.getObjectAcl(bucketName, key, VersionID);
 
-		var User = new CanonicalGrantee(Config.MainUser.UserID);
-		User.setDisplayName(Config.MainUser.DisplayName);
+		var User = new CanonicalGrantee(config.mainUser.userId);
+		User.setDisplayName(config.mainUser.displayName);
 
-		if (!StringUtils.isBlank(Config.URL))
-			assertEquals(User.getDisplayName(), Response.getOwner().getDisplayName());
-		assertEquals(User.getIdentifier(), Response.getOwner().getId());
+		if (!StringUtils.isBlank(config.URL))
+			assertEquals(User.getDisplayName(), response.getOwner().getDisplayName());
+		assertEquals(User.getIdentifier(), response.getOwner().getId());
 
-		var GetGrants = Response.getGrantsAsList();
+		var GetGrants = response.getGrantsAsList();
 		var MyGrants = new ArrayList<Grant>();
 		MyGrants.add(new Grant(User, Permission.FullControl));
 		CheckGrants(MyGrants, new ArrayList<Grant>(GetGrants));
 
-		Client.setObjectAcl(BucketName, Key, CannedAccessControlList.PublicRead);
+		client.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead);
 
-		Response = Client.getObjectAcl(BucketName, Key, VersionID);
-		GetGrants = Response.getGrantsAsList();
+		response = client.getObjectAcl(bucketName, key, VersionID);
+		GetGrants = response.getGrantsAsList();
 
 		MyGrants = new ArrayList<Grant>();
 		MyGrants.add(new Grant(User, Permission.FullControl));
@@ -627,26 +612,25 @@ public class Versioning extends TestBase
 	@Tag("Check")
 	// 오브젝트 버전을 추가/삭제를 여러번 했을 경우 올바르게 동작하는지 확인
 	public void test_versioned_concurrent_object_create_and_remove() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Key = "myobj";
-		var NumVersions = 3;
+		var key = "myobj";
+		var numVersions = 3;
 
-		var AllTasks = new ArrayList<Thread>();
+		var allTasks = new ArrayList<Thread>();
 
 		for (int i = 0; i < 3; i++) {
-			var TList = DoCreateVersionedObjConcurrent(Client, BucketName, Key, NumVersions);
-			AllTasks.addAll(TList);
+			var TList = DoCreateVersionedObjConcurrent(client, bucketName, key, numVersions);
+			allTasks.addAll(TList);
 
-			var TList2 = DoClearVersionedBucketConcurrent(Client, BucketName);
-			AllTasks.addAll(TList2);
+			var TList2 = DoClearVersionedBucketConcurrent(client, bucketName);
+			allTasks.addAll(TList2);
 		}
 
-		for (var mTask : AllTasks)
-		{
+		for (var mTask : allTasks) {
 			try {
 				mTask.join();
 			} catch (InterruptedException e) {
@@ -654,9 +638,8 @@ public class Versioning extends TestBase
 			}
 		}
 
-		var TList3 = DoClearVersionedBucketConcurrent(Client, BucketName);
-		for (var mTask : TList3)
-		{
+		var tList3 = DoClearVersionedBucketConcurrent(client, bucketName);
+		for (var mTask : tList3) {
 			try {
 				mTask.join();
 			} catch (InterruptedException e) {
@@ -664,36 +647,36 @@ public class Versioning extends TestBase
 			}
 		}
 
-		var Response = Client.listVersions(BucketName, "");
-		assertEquals(0, Response.getVersionSummaries().size());
+		var response = client.listVersions(bucketName, "");
+		assertEquals(0, response.getVersionSummaries().size());
 	}
 
 	@Test
 	@Tag("Check")
 	// 버킷의 버저닝 설정이 업로드시 올바르게 동작하는지 확인
 	public void test_versioning_bucket_atomic_upload_return_version_id() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		var Key = "bar";
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "bar";
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
-		var PutResponse = Client.putObject(BucketName, Key, "");
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var PutResponse = client.putObject(bucketName, key, "");
 		var VersionID = PutResponse.getVersionId();
 
-		var ListResponse = Client.listVersions(BucketName, "");
-		var Versions = GetVersions(ListResponse.getVersionSummaries());
-		for (var Version : Versions)
-			assertEquals(VersionID, Version.getVersionId());
+		var listResponse = client.listVersions(bucketName, "");
+		var versions = GetVersions(listResponse.getVersionSummaries());
+		for (var version : versions)
+			assertEquals(VersionID, version.getVersionId());
 
-		BucketName = GetNewBucket();
-		Key = "baz";
-		PutResponse = Client.putObject(BucketName, Key, "");
+		bucketName = getNewBucket();
+		key = "baz";
+		PutResponse = client.putObject(bucketName, key, "");
 		assertNull(PutResponse.getVersionId());
 
-		BucketName = GetNewBucket();
-		Key = "baz";
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.SUSPENDED);
-		PutResponse = Client.putObject(BucketName, Key, "");
+		bucketName = getNewBucket();
+		key = "baz";
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
+		PutResponse = client.putObject(bucketName, key, "");
 		assertNull(PutResponse.getVersionId());
 	}
 
@@ -704,96 +687,91 @@ public class Versioning extends TestBase
 		var ContentType = "text/bla";
 		var Size = 50 * MainData.MB;
 
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		var Key = "bar";
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "bar";
 		var Metadata = new ObjectMetadata();
 		Metadata.addUserMetadata("foo", "baz");
 		Metadata.setContentType(ContentType);
 
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, Metadata);
+		var UploadData = SetupMultipartUpload(client, bucketName, key, Size, Metadata);
 
-		var CompResponse = Client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
+		var CompResponse = client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, UploadData.uploadId, UploadData.parts));
 		var VersionID = CompResponse.getVersionId();
 
-		var ListResponse = Client.listVersions(BucketName, "");
-		var Versions = GetVersions(ListResponse.getVersionSummaries());
-		for (var Version : Versions)
-			assertEquals(VersionID, Version.getVersionId());
+		var listResponse = client.listVersions(bucketName, "");
+		var versions = GetVersions(listResponse.getVersionSummaries());
+		for (var version : versions)
+			assertEquals(VersionID, version.getVersionId());
 
-		BucketName = GetNewBucket();
-		Key = "baz";
+		bucketName = getNewBucket();
+		key = "baz";
 
-		UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, Metadata);
-		CompResponse = Client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
+		UploadData = SetupMultipartUpload(client, bucketName, key, Size, Metadata);
+		CompResponse = client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, UploadData.uploadId, UploadData.parts));
 		assertNull(CompResponse.getVersionId());
 
-		BucketName = GetNewBucket();
-		Key = "foo";
+		bucketName = getNewBucket();
+		key = "foo";
 
-		UploadData = SetupMultipartUpload(Client, BucketName, Key, Size, Metadata);
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.SUSPENDED);
-		CompResponse = Client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(BucketName, Key, UploadData.UploadId, UploadData.Parts));
+		UploadData = SetupMultipartUpload(client, bucketName, key, Size, Metadata);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
+		CompResponse = client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, UploadData.uploadId, UploadData.parts));
 		assertNull(CompResponse.getVersionId());
 	}
 
 	@Test
 	@Tag("Metadata")
 	// 업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인
-	public void test_versioning_get_object_head()
-	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+	public void test_versioning_get_object_head() {
+		var bucketName = getNewBucket();
+		var client = getClient();
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var KeyName = "foo";
-		var VersionList = new ArrayList<String>();
+		var key = "foo";
+		var versions = new ArrayList<String>();
 
-		for (int i = 1; i <= 5; i++)
-		{
-			var Response = Client.putObject(BucketName, KeyName, Utils.RandomTextToLong(i));
-			VersionList.add(Response.getVersionId());
+		for (int i = 1; i <= 5; i++) {
+			var response = client.putObject(bucketName, key, Utils.randomTextToLong(i));
+			versions.add(response.getVersionId());
 		}
 
-		for (int i = 0; i < 5; i++)
-		{
-			var Response = Client.getObjectMetadata(new GetObjectMetadataRequest(BucketName, KeyName, VersionList.get(i)));
-			assertEquals(i + 1, Response.getContentLength());
+		for (int i = 0; i < 5; i++) {
+			var response = client
+					.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key, versions.get(i)));
+			assertEquals(i + 1, response.getContentLength());
 		}
 	}
 
 	@Test
 	@Tag("Delete")
 	// 버전이 여러개인 오브젝트의 최신 버전을 삭제 했을때 이전버전이 최신버전으로 변경되는지 확인
-	public void test_versioning_latest()
-	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
-		CheckConfigureVersioningRetry(BucketName, BucketVersioningConfiguration.ENABLED);
+	public void test_versioning_latest() {
+		var bucketName = getNewBucket();
+		var client = getClient();
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var KeyName = "foo";
-		var VersionList = new ArrayList<String>();
+		var key = "foo";
+		var versions = new ArrayList<String>();
 
-		for (int i = 1; i <= 5; i++)
-		{
-			var Response = Client.putObject(BucketName, KeyName, Utils.RandomTextToLong(i));
-			VersionList.add(0, Response.getVersionId());
+		for (int i = 1; i <= 5; i++) {
+			var response = client.putObject(bucketName, key, Utils.randomTextToLong(i));
+			versions.add(0, response.getVersionId());
 		}
 
-		while (VersionList.size() > 1)
-		{
-			var DeleteVersionId = VersionList.get(0);
-			VersionList.remove(DeleteVersionId);
-			Client.deleteVersion(BucketName, KeyName, DeleteVersionId);
-			
-			var ListVersion = VersionList.get(0);
-			var Response = Client.getObjectMetadata(BucketName, KeyName);
-			assertEquals(ListVersion, Response.getVersionId());
+		while (versions.size() > 1) {
+			var DeleteVersionId = versions.get(0);
+			versions.remove(DeleteVersionId);
+			client.deleteVersion(bucketName, key, DeleteVersionId);
+
+			var listVersion = versions.get(0);
+			var response = client.getObjectMetadata(bucketName, key);
+			assertEquals(listVersion, response.getVersionId());
 		}
 	}
 }

@@ -42,10 +42,10 @@ public class GetObject extends TestBase {
 	@Tag("ERROR")
 	// 버킷에 존재하지 않는 오브젝트 다운로드를 할 경우 실패 확인
 	public void test_object_read_not_exist() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.getObject(BucketName, "bar"));
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, "bar"));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 
@@ -57,14 +57,14 @@ public class GetObject extends TestBase {
 	@Tag("Ifmatch")
 	// 존재하는 오브젝트 이름과 ETag 값으로 오브젝트를 가져오는지 확인
 	public void test_get_object_ifmatch_good() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 
-		var PutResponse = Client.putObject(BucketName, KeyName, "bar");
+		var PutResponse = client.putObject(bucketName, KeyName, "bar");
 		var ETag = PutResponse.getETag();
 
-		var GetResponse = Client.getObject(new GetObjectRequest(BucketName, KeyName).withMatchingETagConstraint(ETag));
+		var GetResponse = client.getObject(new GetObjectRequest(bucketName, KeyName).withMatchingETagConstraint(ETag));
 		var Body = GetBody(GetResponse.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -73,12 +73,12 @@ public class GetObject extends TestBase {
 	@Tag("Ifmatch")
 	// 오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
 	public void test_get_object_ifmatch_failed() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 
-		Client.putObject(BucketName, KeyName, "bar");
-		var Response = Client.getObject(new GetObjectRequest(BucketName, KeyName).withMatchingETagConstraint("ABCORZ"));
+		client.putObject(bucketName, KeyName, "bar");
+		var Response = client.getObject(new GetObjectRequest(bucketName, KeyName).withMatchingETagConstraint("ABCORZ"));
 		assertNull(Response);
 	}
 
@@ -86,14 +86,14 @@ public class GetObject extends TestBase {
 	@Tag("Ifnonematch")
 	// 오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
 	public void test_get_object_ifnonematch_good() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 
-		var PutResponse = Client.putObject(BucketName, KeyName, "bar");
+		var PutResponse = client.putObject(bucketName, KeyName, "bar");
 		var ETag = PutResponse.getETag();
 
-		var Response = Client.getObject(new GetObjectRequest(BucketName, KeyName).withNonmatchingETagConstraint(ETag));
+		var Response = client.getObject(new GetObjectRequest(bucketName, KeyName).withNonmatchingETagConstraint(ETag));
 		assertNull(Response);
 	}
 
@@ -101,14 +101,14 @@ public class GetObject extends TestBase {
 	@Tag("Ifnonematch")
 	// 오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
 	public void test_get_object_ifnonematch_failed() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 
-		Client.putObject(BucketName, KeyName, "bar");
+		client.putObject(bucketName, KeyName, "bar");
 
-		var GetResponse = Client
-				.getObject(new GetObjectRequest(BucketName, KeyName).withNonmatchingETagConstraint("ABCORZ"));
+		var GetResponse = client
+				.getObject(new GetObjectRequest(bucketName, KeyName).withNonmatchingETagConstraint("ABCORZ"));
 		var Body = GetBody(GetResponse.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -117,16 +117,16 @@ public class GetObject extends TestBase {
 	@Tag("Ifmodifiedsince")
 	// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifmodifiedsince)보다 이후에 수정된 오브젝트를 조회 성공
 	public void test_get_object_ifmodifiedsince_good() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 
-		Client.putObject(BucketName, KeyName, "bar");
+		client.putObject(bucketName, KeyName, "bar");
 
 		var MyDay = Calendar.getInstance();
 		MyDay.set(1994, 8, 29, 19, 43, 31);
-		var Response = Client
-				.getObject(new GetObjectRequest(BucketName, KeyName).withModifiedSinceConstraint(MyDay.getTime()));
+		var Response = client
+				.getObject(new GetObjectRequest(bucketName, KeyName).withModifiedSinceConstraint(MyDay.getTime()));
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -135,20 +135,20 @@ public class GetObject extends TestBase {
 	@Tag("Ifmodifiedsince")
 	// [지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifmodifiedsince)보다 이전에 수정된 오브젝트 조회 실패
 	public void test_get_object_ifmodifiedsince_failed() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 
-		Client.putObject(BucketName, KeyName, "bar");
-		var Response = Client.getObject(BucketName, KeyName);
+		client.putObject(bucketName, KeyName, "bar");
+		var Response = client.getObject(bucketName, KeyName);
 		var After = Calendar.getInstance();
 		After.setTime(Response.getObjectMetadata().getLastModified());
 		After.add(Calendar.SECOND, 1);
 
 		Delay(1000);
 
-		Response = Client
-				.getObject(new GetObjectRequest(BucketName, KeyName).withModifiedSinceConstraint(After.getTime()));
+		Response = client
+				.getObject(new GetObjectRequest(bucketName, KeyName).withModifiedSinceConstraint(After.getTime()));
 		assertNull(Response);
 	}
 
@@ -156,17 +156,17 @@ public class GetObject extends TestBase {
 	@Tag("Ifunmodifiedsince")
 	// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifunmodifiedsince) 이후 수정되지 않은 오브젝트 조회 실패
 	public void test_get_object_ifunmodifiedsince_good() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 
-		Client.putObject(BucketName, KeyName, "bar");
+		client.putObject(bucketName, KeyName, "bar");
 
 		var MyDay = Calendar.getInstance();
 		MyDay.set(1994, 8, 29, 19, 43, 31);
 
-		var Response = Client
-				.getObject(new GetObjectRequest(BucketName, KeyName).withUnmodifiedSinceConstraint(MyDay.getTime()));
+		var Response = client
+				.getObject(new GetObjectRequest(bucketName, KeyName).withUnmodifiedSinceConstraint(MyDay.getTime()));
 		assertNull(Response);
 	}
 
@@ -174,16 +174,16 @@ public class GetObject extends TestBase {
 	@Tag("Ifunmodifiedsince")
 	// [지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifunmodifiedsince) 이후 수정되지 않은 오브젝트 조회 성공
 	public void test_get_object_ifunmodifiedsince_failed() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var KeyName = "foo";
 
-		Client.putObject(BucketName, KeyName, "bar");
+		client.putObject(bucketName, KeyName, "bar");
 
 		var MyDay = Calendar.getInstance();
 		MyDay.set(2100, 8, 29, 19, 43, 31);
-		var Response = Client
-				.getObject(new GetObjectRequest(BucketName, KeyName).withUnmodifiedSinceConstraint(MyDay.getTime()));
+		var Response = client
+				.getObject(new GetObjectRequest(bucketName, KeyName).withUnmodifiedSinceConstraint(MyDay.getTime()));
 		var Body = GetBody(Response.getObjectContent());
 		assertEquals("bar", Body);
 	}
@@ -195,11 +195,11 @@ public class GetObject extends TestBase {
 		var Key = "testobj";
 		var Content = "testcontent";
 
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		Client.putObject(BucketName, Key, Content);
-		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(4, 7));
+		client.putObject(bucketName, Key, Content);
+		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withRange(4, 7));
 
 		var FetchedContent = GetBody(Response.getObjectContent());
 		assertEquals(Content.substring(4, 8), FetchedContent);
@@ -211,13 +211,13 @@ public class GetObject extends TestBase {
 	// 지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
 	public void test_ranged_big_request_response_code() {
 		var Key = "testobj";
-		var Content = Utils.RandomTextToLong(8 * MainData.MB);
+		var Content = Utils.randomTextToLong(8 * MainData.MB);
 
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		Client.putObject(BucketName, Key, Content);
-		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(3145728, 5242880));
+		client.putObject(bucketName, Key, Content);
+		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withRange(3145728, 5242880));
 
 		var FetchedContent = GetBody(Response.getObjectContent());
 		assertTrue(Content.substring(3145728, 5242881).equals(FetchedContent), MainData.NOT_MATCHED);
@@ -232,11 +232,11 @@ public class GetObject extends TestBase {
 		var Key = "testobj";
 		var Content = "testcontent";
 
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		Client.putObject(BucketName, Key, Content);
-		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(4));
+		client.putObject(bucketName, Key, Content);
+		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withRange(4));
 
 		var FetchedContent = GetBody(Response.getObjectContent());
 		assertEquals(Content.substring(4), FetchedContent);
@@ -250,11 +250,11 @@ public class GetObject extends TestBase {
 		var Key = "testobj";
 		var Content = "testcontent";
 
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		Client.putObject(BucketName, Key, Content);
-		var Response = Client.getObject(new GetObjectRequest(BucketName, Key).withRange(4));
+		client.putObject(bucketName, Key, Content);
+		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withRange(4));
 
 		var FetchedContent = GetBody(Response.getObjectContent());
 		assertEquals(Content.substring(Content.length() - 7), FetchedContent);
@@ -268,12 +268,12 @@ public class GetObject extends TestBase {
 		var Key = "testobj";
 		var Content = "testcontent";
 
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		Client.putObject(BucketName, Key, Content);
+		client.putObject(bucketName, Key, Content);
 		var e = assertThrows(AmazonServiceException.class,
-				() -> Client.getObject(new GetObjectRequest(BucketName, Key).withRange(40, 50)));
+				() -> client.getObject(new GetObjectRequest(bucketName, Key).withRange(40, 50)));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 		assertEquals(416, StatusCode);
@@ -287,12 +287,12 @@ public class GetObject extends TestBase {
 		var Key = "testobj";
 		var Content = "";
 
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		Client.putObject(BucketName, Key, Content);
+		client.putObject(bucketName, Key, Content);
 		var e = assertThrows(AmazonServiceException.class,
-				() -> Client.getObject(new GetObjectRequest(BucketName, Key).withRange(40, 50)));
+				() -> client.getObject(new GetObjectRequest(bucketName, Key).withRange(40, 50)));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 		assertEquals(416, StatusCode);
@@ -303,40 +303,40 @@ public class GetObject extends TestBase {
 	@Tag("Get")
 	// 같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	public void test_get_object_many() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "foo";
-		var Data = Utils.RandomTextToLong(15 * MainData.MB);
+		var Data = Utils.randomTextToLong(15 * MainData.MB);
 
-		Client.putObject(BucketName, Key, Data);
-		CheckContent(BucketName, Key, Data, 50);
+		client.putObject(bucketName, Key, Data);
+		CheckContent(bucketName, Key, Data, 50);
 	}
 
 	@Test
 	@Tag("Get")
 	// 같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	public void test_range_object_many() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "foo";
 		var FileSize = 1024 * 1024 * 15;
-		var Data = Utils.RandomTextToLong(FileSize);
+		var Data = Utils.randomTextToLong(FileSize);
 
-		Client.putObject(BucketName, Key, Data);
-		CheckContentUsingRandomRange(BucketName, Key, Data, 50);
+		client.putObject(bucketName, Key, Data);
+		CheckContentUsingRandomRange(bucketName, Key, Data, 50);
 	}
 
 	@Test
 	@Tag("Restore")
 	//오브젝트 복구 명령이 성공하는지 확인
 	public void test_restore_object() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "foo";
 
-		Client.putObject(BucketName, Key, Key);
+		client.putObject(bucketName, Key, Key);
 		
-		var Request = new RestoreObjectRequest(BucketName, Key);
-		Client.restoreObjectV2(Request);
+		var Request = new RestoreObjectRequest(bucketName, Key);
+		client.restoreObjectV2(Request);
 	}
 }

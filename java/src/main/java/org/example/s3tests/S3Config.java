@@ -21,8 +21,8 @@ import org.ini4j.InvalidFileFormatException;
 public class S3Config
 {
 	// private final String STR_FILENAME = "config.ini";
-	// private final String STR_FILENAME = "s3tests_227.ini";
-	private final String STR_FILENAME = "suwon_gw.ini";
+	private final String STR_FILENAME = "s3tests_227.ini";
+	// private final String STR_FILENAME = "suwon_gw.ini";
 	// private final String STR_FILENAME = "awstests.ini";
 	//////////////////////////////SIGNATUREVERSION////////////////////////////////////
 	public final static String STR_SIGNATUREVERSION_V2 = "S3SignerType";
@@ -53,45 +53,45 @@ public class S3Config
 	private final String STR_KMS = "KMS";
 
 	/*********************************************************************************************************/
-	public final String FileName;
+	public final String fileName;
 	private final Ini ini = new Ini();
 	/*********************************************************************************************************/
 	public String URL;
-	public int Port;
-	public int SSLPort;
-	public String RegionName;
-	public String SignatureVersion;
-	public boolean IsSecure;
-	public String BucketPrefix;
-	public boolean NotDelete;
-	public UserData MainUser;
-	public UserData AltUser;
+	public int port;
+	public int sslPort;
+	public String regionName;
+	public String signatureVersion;
+	public boolean isSecure;
+	public String bucketPrefix;
+	public boolean notDelete;
+	public UserData mainUser;
+	public UserData altUser;
 
-	public S3Config(String _FileName)
+	public S3Config(String fileName)
 	{
-		if(_FileName == null) FileName = STR_FILENAME;
-		else if(_FileName.isBlank()) FileName = STR_FILENAME;
-		else FileName = _FileName;
+		if(fileName == null) this.fileName = STR_FILENAME;
+		else if(fileName.isBlank()) this.fileName = STR_FILENAME;
+		else this.fileName = fileName;
 	}
 
 	public boolean GetConfig()
 	{
-		File file = new File(FileName);
+		File file = new File(fileName);
 		try {
 			ini.load(new FileReader(file));
 
-			URL = ReadKeyToString(STR_S3, STR_URL);
-			Port = ReadKeyToInt(STR_S3, STR_PORT);
-			SSLPort = ReadKeyToInt(STR_S3, STR_SSLPORT);
-			RegionName = ReadKeyToString(STR_S3, STR_REGION);
-			SignatureVersion = ReadKeyToString(STR_S3, STR_SIGNATUREVERSION);
-			IsSecure = ReadKeyToBoolean(STR_S3, STR_ISSECURE);
+			URL = readKeyToString(STR_S3, STR_URL);
+			port = readKeyToInt(STR_S3, STR_PORT);
+			sslPort = readKeyToInt(STR_S3, STR_SSLPORT);
+			regionName = readKeyToString(STR_S3, STR_REGION);
+			signatureVersion = readKeyToString(STR_S3, STR_SIGNATUREVERSION);
+			isSecure = readKeyToBoolean(STR_S3, STR_ISSECURE);
 
-			BucketPrefix = ReadKeyToString(STR_FIXTURES, STR_BUCKET_PREFIX);
-			NotDelete = ReadKeyToBoolean(STR_FIXTURES, STR_BUCKET_DELETE);
+			bucketPrefix = readKeyToString(STR_FIXTURES, STR_BUCKET_PREFIX);
+			notDelete = readKeyToBoolean(STR_FIXTURES, STR_BUCKET_DELETE);
 
-			MainUser = ReadUser(STR_MAINUSER);
-			AltUser = ReadUser(STR_ALTUSER);
+			mainUser = readUser(STR_MAINUSER);
+			altUser = readUser(STR_ALTUSER);
 
 		} catch (InvalidFileFormatException e) {
 			e.printStackTrace();
@@ -103,9 +103,9 @@ public class S3Config
 		return true;
 	}
 
-	public String GetSignatureVersion()
+	public String getSignatureVersion()
 	{
-		if (SignatureVersion.equals("2")) return STR_SIGNATUREVERSION_V2;
+		if (signatureVersion.equals("2")) return STR_SIGNATUREVERSION_V2;
 		return STR_SIGNATUREVERSION_V4;
 	}
 	public boolean isAWS()
@@ -114,21 +114,21 @@ public class S3Config
 		return false;
 	}
 
-	private UserData ReadUser(String Section)
+	private UserData readUser(String Section)
 	{
 		UserData Item = new UserData();
 
-		Item.DisplayName = ReadKeyToString(Section, STR_DISPLAYNAME);
-		Item.UserID 	 = ReadKeyToString(Section, STR_USERID);
-		Item.Email 		 = ReadKeyToString(Section, STR_EMAIL);
-		Item.AccessKey 	 = ReadKeyToString(Section, STR_ACCESSKEY);
-		Item.SecretKey 	 = ReadKeyToString(Section, STR_SECRETKEY);
-		Item.KMS 		 = ReadKeyToString(Section, STR_KMS);
+		Item.displayName = readKeyToString(Section, STR_DISPLAYNAME);
+		Item.userId 	 = readKeyToString(Section, STR_USERID);
+		Item.email 		 = readKeyToString(Section, STR_EMAIL);
+		Item.accessKey 	 = readKeyToString(Section, STR_ACCESSKEY);
+		Item.secretKey 	 = readKeyToString(Section, STR_SECRETKEY);
+		Item.KMS 		 = readKeyToString(Section, STR_KMS);
 
 		return Item;
 	}
 
-	private String ReadKeyToString(String Section, String Key) { return ini.get(Section, Key); }
-	private int ReadKeyToInt(String Section, String Key) { return Integer.parseInt(ini.get(Section, Key)); }
-	private boolean ReadKeyToBoolean(String Section, String Key) { return Boolean.parseBoolean(ini.get(Section, Key)); }
+	private String readKeyToString(String section, String key) { return ini.get(section, key); }
+	private int readKeyToInt(String section, String key) { return Integer.parseInt(ini.get(section, key)); }
+	private boolean readKeyToBoolean(String section, String key) { return Boolean.parseBoolean(ini.get(section, key)); }
 }

@@ -109,7 +109,7 @@ public class Policy {
 	@Test
 	@Tag("KSAN")
 	@Tag("PathOptions")
-	// @Tag("[복사하려는 경로명이 'BucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부
+	// @Tag("[복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부
 	// 정책설정시 올바르게 동작하는지 확인
 	public void test_bucket_policy_put_obj_copy_source() {
 		Test.test_bucket_policy_put_obj_copy_source();

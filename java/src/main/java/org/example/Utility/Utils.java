@@ -14,48 +14,48 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 public class Utils {
 	public static final char[] TEXT = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
 			'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-	public static final char[] TEXT_String = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+	public static final char[] TEXT_LONG = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
 			'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 			'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3',
 			'4', '5', '6', '7', '8', '9' };
 	public static Random rand = new Random();
 
-	public static String RandomText(int Length) {
+	public static String randomText(int length) {
 		StringBuffer sb = new StringBuffer();
 
-		for (int i = 0; i < Length; i++)
+		for (int i = 0; i < length; i++)
 			sb.append(TEXT[rand.nextInt(TEXT.length)]);
 		return sb.toString();
 	}
 
-	public static String RandomTextToLong(int Length) {
+	public static String randomTextToLong(int length) {
 		StringBuffer sb = new StringBuffer();
 
-		for (int i = 0; i < Length; i++)
-			sb.append(TEXT_String[rand.nextInt(TEXT_String.length)]);
+		for (int i = 0; i < length; i++)
+			sb.append(TEXT_LONG[rand.nextInt(TEXT_LONG.length)]);
 		return sb.toString();
 	}
 
-	public static ArrayList<String> GenerateRandomString(int Size, int PartSize) {
-		ArrayList<String> StringList = new ArrayList<String>();
+	public static ArrayList<String> generateRandomString(int size, int partSize) {
+		ArrayList<String> stringList = new ArrayList<String>();
 
-		int RemainSize = Size;
-		while (RemainSize > 0) {
-			int NowPartSize;
-			if (RemainSize > PartSize)
-				NowPartSize = PartSize;
+		int remainSize = size;
+		while (remainSize > 0) {
+			int nowPartSize;
+			if (remainSize > partSize)
+				nowPartSize = partSize;
 			else
-				NowPartSize = RemainSize;
+				nowPartSize = remainSize;
 
-			StringList.add(Utils.RandomTextToLong(NowPartSize));
+			stringList.add(Utils.randomTextToLong(nowPartSize));
 
-			RemainSize -= NowPartSize;
+			remainSize -= nowPartSize;
 		}
 
-		return StringList;
+		return stringList;
 	}
 
-	public static String GetMD5(String str) {
+	public static String getMD5(String str) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			md.update(str.getBytes("UTF-8"));
@@ -74,7 +74,7 @@ public class Utils {
 		return null;
 	}
 
-	public static ArrayList<String> GetKeys(List<S3ObjectSummary> ObjectList) {
+	public static ArrayList<String> getKeys(List<S3ObjectSummary> ObjectList) {
 		if (ObjectList != null) {
 			var Temp = new ArrayList<String>();
 

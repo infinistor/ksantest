@@ -37,10 +37,10 @@ public class Website extends TestBase
 	//버킷의 Websize 설정 조회 확인
 	public void test_webiste_get_buckets()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		var Response = Client.getBucketWebsiteConfiguration(BucketName);
+		var Response = client.getBucketWebsiteConfiguration(bucketName);
 		assertNull(Response);
 	}
 
@@ -49,17 +49,17 @@ public class Website extends TestBase
 	//버킷의 Websize 설정이 가능한지 확인
 	public void test_webiste_put_buckets()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		var WebConfig = new BucketWebsiteConfiguration();
-		WebConfig.setErrorDocument("400");
-		WebConfig.setIndexDocumentSuffix("a");
+		var webConfig = new BucketWebsiteConfiguration();
+		webConfig.setErrorDocument("400");
+		webConfig.setIndexDocumentSuffix("a");
 
-		Client.setBucketWebsiteConfiguration(BucketName, WebConfig);
+		client.setBucketWebsiteConfiguration(bucketName, webConfig);
 
-		var GetResponse = Client.getBucketWebsiteConfiguration(BucketName);
-		assertEquals(WebConfig.getErrorDocument(), GetResponse.getErrorDocument());
+		var GetResponse = client.getBucketWebsiteConfiguration(bucketName);
+		assertEquals(webConfig.getErrorDocument(), GetResponse.getErrorDocument());
 	}
 
 	@Test
@@ -67,14 +67,14 @@ public class Website extends TestBase
 	//버킷의 Websize 설정이 삭제가능한지 확인
 	public void test_webiste_delete_buckets()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		var WebConfig = new BucketWebsiteConfiguration();
-		WebConfig.setErrorDocument("400");
-		WebConfig.setIndexDocumentSuffix("a");
+		var webConfig = new BucketWebsiteConfiguration();
+		webConfig.setErrorDocument("400");
+		webConfig.setIndexDocumentSuffix("a");
 
-		Client.setBucketWebsiteConfiguration(BucketName, WebConfig);
-		Client.deleteBucketWebsiteConfiguration(BucketName);
+		client.setBucketWebsiteConfiguration(bucketName, webConfig);
+		client.deleteBucketWebsiteConfiguration(bucketName);
 	}
 }

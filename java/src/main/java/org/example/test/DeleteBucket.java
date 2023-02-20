@@ -40,27 +40,27 @@ public class DeleteBucket extends TestBase
 	@Tag("ERROR")
 	//존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인
 	public void test_bucket_delete_notexist() {
-		var BucketName = GetNewBucketNameOnly();
-		var Client = GetClient();
+		var bucketName = getNewBucketNameOnly();
+		var client = getClient();
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.deleteBucket(BucketName));
+		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 
 		assertEquals(404, StatusCode);
 		assertEquals(MainData.NoSuchBucket, ErrorCode);
-		DeleteBucketList(BucketName);
+		DeleteBucketList(bucketName);
 	}
 
 	@Test
 	@Tag("ERROR")
 	//내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인
 	public void test_bucket_delete_nonempty() {
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { "foo" })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "foo" })));
+		var client = getClient();
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.deleteBucket(BucketName));
+		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
@@ -73,18 +73,18 @@ public class DeleteBucket extends TestBase
 	@Tag("ERROR")
 	//이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인
 	public void test_bucket_create_delete() {
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		Client.deleteBucket(BucketName);
+		client.deleteBucket(bucketName);
 
-		var e = assertThrows(AmazonServiceException.class, () -> Client.deleteBucket(BucketName));
+		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 
 		assertEquals(404, StatusCode);
 		assertEquals(MainData.NoSuchBucket, ErrorCode);
-		DeleteBucketList(BucketName);
+		DeleteBucketList(bucketName);
 	}
 }

@@ -23,7 +23,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class AES256 {
-	public static String encryptAES256(String msg, String key) throws Exception {
+	public static String EncryptAES256(String msg, String key) throws Exception {
 
 		SecureRandom random = new SecureRandom();
 		byte bytes[] = new byte[20];
@@ -54,7 +54,7 @@ public class AES256 {
 		return Base64.getEncoder().encodeToString(buffer);
 	}
 
-	public static String decryptAES256(String msg, String key) throws Exception {
+	public static String DecryptAES256(String msg, String key) throws Exception {
 
 		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 		ByteBuffer buffer = ByteBuffer.wrap(Base64.getDecoder().decode(msg));

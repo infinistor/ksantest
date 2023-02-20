@@ -11,21 +11,21 @@
 package org.example.Data;
 
 public class FormFile {
-	public String Name;
-	public String ContentType;
-	public String Body;
+	public String name;
+	public String contentType;
+	public String body;
 
-	public FormFile(String Name, String ContentType, String Body) {
-		this.Name = Name;
-		this.ContentType = ContentType;
-		this.Body = Body;
+	public FormFile(String name, String contentType, String body) {
+		this.name = name;
+		this.contentType = contentType;
+		this.body = body;
 	}
 
-	public String getName() { return Name; }
-	public String getContentType() { return ContentType; }
-	public String getBody() { return Body; }
+	public String getName() { return name; }
+	public String getContentType() { return contentType; }
+	public String getBody() { return body; }
 
-	public void setName(String Name) { this.Name = Name; }
-	public void setContentType(String ContentType) { this.ContentType = ContentType; }
-	public void setBody(String Body) { this.Body = Body; }
+	public void setName(String name) { this.name = name; }
+	public void setContentType(String contentType) { this.contentType = contentType; }
+	public void setBody(String body) { this.body = body; }
 }

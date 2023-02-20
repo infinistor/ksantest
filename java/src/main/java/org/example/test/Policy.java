@@ -56,13 +56,13 @@ public class Policy extends TestBase
 	// 버킷에 정책 설정이 올바르게 적용되는지 확인
 	public void test_bucket_policy()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "asdf";
-		Client.putObject(BucketName, Key, Key);
+		client.putObject(bucketName, Key, Key);
 
-		var Resource1 = "arn:aws:s3:::" + BucketName;
-		var Resource2 = "arn:aws:s3:::" + BucketName + "/*";
+		var Resource1 = "arn:aws:s3:::" + bucketName;
+		var Resource2 = "arn:aws:s3:::" + bucketName + "/*";
 
 		var PolicyDocument = new JsonObject();
 		PolicyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
@@ -86,13 +86,13 @@ public class Policy extends TestBase
 		Statements.add(Statement);
 		PolicyDocument.add(MainData.PolicyStatement, Statements);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
-		var AltClient = GetAltClient();
-		var Response = AltClient.listObjects(BucketName);
+		var AltClient = getAltClient();
+		var Response = AltClient.listObjects(bucketName);
 		assertEquals(1, Response.getObjectSummaries().size());
 
-		var GetResponse = Client.getBucketPolicy(BucketName);
+		var GetResponse = client.getBucketPolicy(bucketName);
 		assertEquals(PolicyDocument.toString(), GetResponse.getPolicyText());
 	}
 
@@ -101,13 +101,13 @@ public class Policy extends TestBase
 	// 버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)
 	public void test_bucketv2_policy()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "asdf";
-		Client.putObject(BucketName, Key, Key);
+		client.putObject(bucketName, Key, Key);
 
-		var Resource1 = "arn:aws:s3:::" + BucketName;
-		var Resource2 = "arn:aws:s3:::" + BucketName + "/*";
+		var Resource1 = "arn:aws:s3:::" + bucketName;
+		var Resource2 = "arn:aws:s3:::" + bucketName + "/*";
 
 		var PolicyDocument = new JsonObject();
 		PolicyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
@@ -131,13 +131,13 @@ public class Policy extends TestBase
 		Statements.add(Statement);
 		PolicyDocument.add(MainData.PolicyStatement, Statements);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
-		var AltClient = GetAltClient();
-		var Response = AltClient.listObjectsV2(BucketName);
+		var AltClient = getAltClient();
+		var Response = AltClient.listObjectsV2(bucketName);
 		assertEquals(1, Response.getObjectSummaries().size());
 
-		var GetResponse = Client.getBucketPolicy(BucketName);
+		var GetResponse = client.getBucketPolicy(bucketName);
 		assertEquals(PolicyDocument.toString(), GetResponse.getPolicyText());
 	}
 
@@ -146,13 +146,13 @@ public class Policy extends TestBase
 	// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인
 	public void test_bucket_policy_acl()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "asdf";
-		Client.putObject(BucketName, Key, Key);
+		client.putObject(bucketName, Key, Key);
 
-		var Resource1 = "arn:aws:s3:::" + BucketName;
-		var Resource2 = "arn:aws:s3:::" + BucketName + "/*";
+		var Resource1 = "arn:aws:s3:::" + bucketName;
+		var Resource2 = "arn:aws:s3:::" + bucketName + "/*";
 
 		var PolicyDocument = new JsonObject();
 		PolicyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
@@ -176,18 +176,18 @@ public class Policy extends TestBase
 		Statements.add(Statement);
 		PolicyDocument.add(MainData.PolicyStatement, Statements);
 
-		Client.setBucketAcl(BucketName, CannedAccessControlList.AuthenticatedRead);
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketAcl(bucketName, CannedAccessControlList.AuthenticatedRead);
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
-		var AltClient = GetAltClient();
-		var e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, Key));
+		var AltClient = getAltClient();
+		var e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, Key));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 		assertEquals(403, StatusCode);
 		assertEquals(MainData.AccessDenied, ErrorCode);
 
-		Client.deleteBucketPolicy(BucketName);
-		Client.setBucketAcl(BucketName, CannedAccessControlList.PublicRead);
+		client.deleteBucketPolicy(bucketName);
+		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 	}
 
 	@Test
@@ -196,13 +196,13 @@ public class Policy extends TestBase
 	public void test_bucketv2_policy_acl()
 	{
 
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 		var Key = "asdf";
-		Client.putObject(BucketName, Key, Key);
+		client.putObject(bucketName, Key, Key);
 
-		var Resource1 = "arn:aws:s3:::" + BucketName;
-		var Resource2 = "arn:aws:s3:::" + BucketName + "/*";
+		var Resource1 = "arn:aws:s3:::" + bucketName;
+		var Resource2 = "arn:aws:s3:::" + bucketName + "/*";
 
 
 		var PolicyDocument = new JsonObject();
@@ -227,18 +227,18 @@ public class Policy extends TestBase
 		Statements.add(Statement);
 		PolicyDocument.add(MainData.PolicyStatement, Statements);
 
-		Client.setBucketAcl(BucketName, CannedAccessControlList.AuthenticatedRead);
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketAcl(bucketName, CannedAccessControlList.AuthenticatedRead);
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
-		var AltClient = GetAltClient();
-		var e = assertThrows(AmazonServiceException.class, () -> AltClient.listObjectsV2(BucketName));
+		var AltClient = getAltClient();
+		var e = assertThrows(AmazonServiceException.class, () -> AltClient.listObjectsV2(bucketName));
 		var StatusCode = e.getStatusCode();
 		var ErrorCode = e.getErrorCode();
 		assertEquals(403, StatusCode);
 		assertEquals(MainData.AccessDenied, ErrorCode);
 
-		Client.deleteBucketPolicy(BucketName);
-		Client.setBucketAcl(BucketName, CannedAccessControlList.PublicRead);
+		client.deleteBucketPolicy(bucketName);
+		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 	}
 
 	@Test
@@ -247,20 +247,20 @@ public class Policy extends TestBase
 	public void test_get_tags_acl_public()
 	{
 		var Key = "testgettagsacl";
-		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
-		var Client = GetClient();
+		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var client = getClient();
 
-		var Resource = MakeArnResource(String.format("%s/%s", BucketName, Key));
+		var Resource = makeArnResource(String.format("%s/%s", bucketName, Key));
 		var PolicyDocument = MakeJsonPolicy("s3:GetObjectTagging", Resource, null, null);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
-		var InputTagset = new ObjectTagging(CreateSimpleTagset(10));
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagset));
+		var InputTagset = new ObjectTagging(createSimpleTagSet(10));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagset));
 
-		var AltClient = GetAltClient();
+		var AltClient = getAltClient();
 
-		var GetResponse = AltClient.getObjectTagging(new GetObjectTaggingRequest(BucketName, Key));
+		var GetResponse = AltClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
 		TaggingCompare(InputTagset.getTagSet(), GetResponse.getTagSet());
 	}
 
@@ -270,19 +270,19 @@ public class Policy extends TestBase
 	public void test_put_tags_acl_public()
 	{
 		var Key = "testputtagsacl";
-		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
-		var Client = GetClient();
+		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var client = getClient();
 
-		var Resource = MakeArnResource(String.format("%s/%s", BucketName, Key));
+		var Resource = makeArnResource(String.format("%s/%s", bucketName, Key));
 		var PolicyDocument = MakeJsonPolicy("s3:PutObjectTagging", Resource, null, null);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
-		var InputTagset = new ObjectTagging(CreateSimpleTagset(10));
-		var AltClient = GetAltClient();
-		AltClient.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagset));
+		var InputTagset = new ObjectTagging(createSimpleTagSet(10));
+		var AltClient = getAltClient();
+		AltClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagset));
 
-		var GetResponse = Client.getObjectTagging(new GetObjectTaggingRequest(BucketName, Key));
+		var GetResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
 		TaggingCompare(InputTagset.getTagSet(), GetResponse.getTagSet());
 	}
 
@@ -292,21 +292,21 @@ public class Policy extends TestBase
 	public void test_delete_tags_obj_public()
 	{
 		var Key = "testdeltagsacl";
-		var BucketName = CreateKeyWithRandomContent(Key, 0, null, null);
-		var Client = GetClient();
+		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var client = getClient();
 
-		var Resource = MakeArnResource(String.format("%s/%s", BucketName, Key));
+		var Resource = makeArnResource(String.format("%s/%s", bucketName, Key));
 		var PolicyDocument = MakeJsonPolicy("s3:DeleteObjectTagging", Resource, null, null);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
-		var InputTagset = new ObjectTagging(CreateSimpleTagset(10));
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, Key, InputTagset));
+		var InputTagset = new ObjectTagging(createSimpleTagSet(10));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagset));
 
-		var AltClient = GetAltClient();
-		AltClient.deleteObjectTagging(new DeleteObjectTaggingRequest(BucketName, Key));
+		var AltClient = getAltClient();
+		AltClient.deleteObjectTagging(new DeleteObjectTaggingRequest(bucketName, Key));
 
-		var GetResponse = Client.getObjectTagging(new GetObjectTaggingRequest(BucketName, Key));
+		var GetResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
 		assertEquals(0, GetResponse.getTagSet().size());
 	}
 
@@ -318,45 +318,45 @@ public class Policy extends TestBase
 		var publictag = "publictag";
 		var privatetag = "privatetag";
 		var invalidtag = "invalidtag";
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { publictag, privatetag, invalidtag })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { publictag, privatetag, invalidtag })));
+		var client = getClient();
 
 		var Conditional = new JsonObject();
 		Conditional.addProperty("s3:ExistingObjectTag/security", "public");
 		var TagConditional = new JsonObject();
 		TagConditional.add("StringEquals", Conditional);
 
-		var Resource = MakeArnResource(String.format("%s/%s", BucketName, "*"));
+		var Resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var PolicyDocument = MakeJsonPolicy("s3:GetObject", Resource, null, TagConditional);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
 		var TagSets = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
 		var InputTagset = new ObjectTagging(TagSets);
 
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, publictag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, publictag, InputTagset));
 
 		TagSets.clear();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security", "private"));
 		InputTagset.setTagSet(TagSets);
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, privatetag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, privatetag, InputTagset));
 
 		TagSets.clear();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security1", "public"));
 		InputTagset.setTagSet(TagSets);
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, invalidtag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, invalidtag, InputTagset));
 
-		var AltClient = GetAltClient();
-		var GetResponse = AltClient.getObject(BucketName, publictag);
+		var AltClient = getAltClient();
+		var GetResponse = AltClient.getObject(bucketName, publictag);
 		assertNotNull(GetResponse);
 
-		var e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, privatetag));
+		var e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, privatetag));
 		var StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 
-		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, invalidtag));
+		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, invalidtag));
 		StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 	}
@@ -369,49 +369,49 @@ public class Policy extends TestBase
 		var publictag = "publictag";
 		var privatetag = "privatetag";
 		var invalidtag = "invalidtag";
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { publictag, privatetag, invalidtag })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { publictag, privatetag, invalidtag })));
+		var client = getClient();
 
 		var Conditional = new JsonObject();
 		Conditional.addProperty("s3:ExistingObjectTag/security", "public");
 		var TagConditional = new JsonObject();
 		TagConditional.add("StringEquals", Conditional);
 
-		var Resource = MakeArnResource(String.format("%s/%s", BucketName, "*"));
+		var Resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var PolicyDocument = MakeJsonPolicy("s3:GetObjectTagging", Resource, null, TagConditional);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
 		var TagSets = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
 		var InputTagset = new ObjectTagging(TagSets);
 
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, publictag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, publictag, InputTagset));
 
 		TagSets.clear();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security", "private"));
 		InputTagset.setTagSet(TagSets);
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, privatetag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, privatetag, InputTagset));
 
 		TagSets.clear();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security1", "public"));
 		InputTagset.setTagSet(TagSets);
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, invalidtag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, invalidtag, InputTagset));
 
-		var AltClient = GetAltClient();
-		var GetResponse = AltClient.getObjectTagging(new GetObjectTaggingRequest(BucketName, publictag));
+		var AltClient = getAltClient();
+		var GetResponse = AltClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, publictag));
 		assertNotNull(GetResponse);
 
-		var e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, publictag));
+		var e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, publictag));
 		var StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 
-		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObjectTagging(new GetObjectTaggingRequest(BucketName, privatetag)));
+		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privatetag)));
 		StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 
-		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObjectTagging(new GetObjectTaggingRequest(BucketName, invalidtag)));
+		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, invalidtag)));
 		StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 	}
@@ -424,45 +424,45 @@ public class Policy extends TestBase
 		var publictag = "publictag";
 		var privatetag = "privatetag";
 		var invalidtag = "invalidtag";
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { publictag, privatetag, invalidtag })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { publictag, privatetag, invalidtag })));
+		var client = getClient();
 
 		var Conditional = new JsonObject();
 		Conditional.addProperty("s3:ExistingObjectTag/security", "public");
 		var TagConditional = new JsonObject();
 		TagConditional.add("StringEquals", Conditional);
 
-		var Resource = MakeArnResource(String.format("%s/%s", BucketName, "*"));
+		var Resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var PolicyDocument = MakeJsonPolicy("s3:PutObjectTagging", Resource, null, TagConditional);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
 		var TagSets = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
 		var InputTagset = new ObjectTagging(TagSets);
 
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, publictag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, publictag, InputTagset));
 
 		TagSets.clear();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security", "private"));
 		InputTagset.setTagSet(TagSets);
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, privatetag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, privatetag, InputTagset));
 
 		TagSets.clear();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security1", "public"));
 		InputTagset.setTagSet(TagSets);
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, invalidtag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, invalidtag, InputTagset));
 
 		var TestTagSets = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		TestTagSets.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
 		TestTagSets.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
 		var TestTagset = new ObjectTagging(TestTagSets);
 
-		var AltClient = GetAltClient();
-		AltClient.setObjectTagging(new SetObjectTaggingRequest(BucketName, publictag, TestTagset));
+		var AltClient = getAltClient();
+		AltClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publictag, TestTagset));
 
-		var e = assertThrows(AmazonServiceException.class, () -> AltClient.setObjectTagging(new SetObjectTaggingRequest(BucketName, privatetag, TestTagset)));
+		var e = assertThrows(AmazonServiceException.class, () -> AltClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, privatetag, TestTagset)));
 		var StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 
@@ -470,45 +470,45 @@ public class Policy extends TestBase
 		TestTagSets.add(new com.amazonaws.services.s3.model.Tag("security", "private"));
 		var TestTagset2 = new ObjectTagging(TestTagSets);
 
-		AltClient.setObjectTagging(new SetObjectTaggingRequest(BucketName, publictag, TestTagset2));
+		AltClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publictag, TestTagset2));
 
 		TestTagSets = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		TestTagSets.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
 		TestTagSets.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
 		var TestTagset3 = new ObjectTagging(TestTagSets);
 
-		e = assertThrows(AmazonServiceException.class, () -> AltClient.setObjectTagging(new SetObjectTaggingRequest(BucketName, publictag, TestTagset3)));
+		e = assertThrows(AmazonServiceException.class, () -> AltClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publictag, TestTagset3)));
 		StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 	}
 
 	@Test
 	@Tag("PathOptions")
-	// [복사하려는 경로명이 'BucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
+	// [복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
 	public void test_bucket_policy_put_obj_copy_source()
 	{
 		var public_foo = "public/foo";
 		var public_bar = "public/bar";
 		var private_foo = "private/foo";
-		var SourceBucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { public_foo, public_bar, private_foo })));
-		var Client = GetClient();
+		var SourceBucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { public_foo, public_bar, private_foo })));
+		var client = getClient();
 
-		var SourceResource = MakeArnResource(String.format("%s/%s", SourceBucketName, "*"));
+		var SourceResource = makeArnResource(String.format("%s/%s", SourceBucketName, "*"));
 		var PolicyDocument = MakeJsonPolicy("s3:GetObject", SourceResource, null, null);
-		Client.setBucketPolicy(SourceBucketName, PolicyDocument.toString());
+		client.setBucketPolicy(SourceBucketName, PolicyDocument.toString());
 
-		var TargetBucketName = GetNewBucket();
+		var TargetBucketName = getNewBucket();
 
 		var Conditional = new JsonObject();
 		Conditional.addProperty("s3:x-amz-copy-source", String.format("/%s/public/*", SourceBucketName));
 		var TagConditional = new JsonObject();
 		TagConditional.add("StringLike", Conditional);
 
-		var Resource = MakeArnResource(String.format("%s/%s", TargetBucketName, "*"));
+		var Resource = makeArnResource(String.format("%s/%s", TargetBucketName, "*"));
 		PolicyDocument = MakeJsonPolicy("s3:PutObject", Resource, null, TagConditional);
-		Client.setBucketPolicy(TargetBucketName, PolicyDocument.toString());
+		client.setBucketPolicy(TargetBucketName, PolicyDocument.toString());
 
-		var AltClient = GetAltClient();
+		var AltClient = getAltClient();
 		var new_foo = "new_foo";
 		AltClient.copyObject(SourceBucketName, public_foo, TargetBucketName, new_foo);
 
@@ -533,25 +533,25 @@ public class Policy extends TestBase
 	{
 		var public_foo = "public/foo";
 		var public_bar = "public/bar";
-		var SourceBucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { public_foo, public_bar })));
-		var Client = GetClient();
+		var SourceBucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { public_foo, public_bar })));
+		var client = getClient();
 
-		var SourceResource = MakeArnResource(String.format("%s/%s", SourceBucketName, "*"));
+		var SourceResource = makeArnResource(String.format("%s/%s", SourceBucketName, "*"));
 		var PolicyDocument = MakeJsonPolicy("s3:GetObject", SourceResource, null, null);
-		Client.setBucketPolicy(SourceBucketName, PolicyDocument.toString());
+		client.setBucketPolicy(SourceBucketName, PolicyDocument.toString());
 
-		var TargetBucketName = GetNewBucket();
+		var TargetBucketName = getNewBucket();
 
 		var Conditional = new JsonObject();
 		Conditional.addProperty("s3:x-amz-metadata-directive", "COPY");
 		var S3Conditional = new JsonObject();
 		S3Conditional.add("StringEquals", Conditional);
 
-		var Resource = MakeArnResource(String.format("%s/%s", TargetBucketName, "*"));
+		var Resource = makeArnResource(String.format("%s/%s", TargetBucketName, "*"));
 		PolicyDocument = MakeJsonPolicy("s3:PutObject", Resource, null, S3Conditional);
-		Client.setBucketPolicy(TargetBucketName, PolicyDocument.toString());
+		client.setBucketPolicy(TargetBucketName, PolicyDocument.toString());
 
-		var AltClient = GetAltClient();
+		var AltClient = getAltClient();
 		var new_foo = "new_foo";
 		AltClient.copyObject(new CopyObjectRequest(SourceBucketName, public_foo, TargetBucketName, new_foo).withMetadataDirective(MetadataDirective.COPY));
 
@@ -570,25 +570,25 @@ public class Policy extends TestBase
 	// [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시 올바르게 동작하는지 확
 	public void test_bucket_policy_put_obj_acl()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		var Conditional = new JsonObject();
 		Conditional.addProperty("s3:x-amz-acl", "public*");
 		var TagConditional = new JsonObject();
 		TagConditional.add("StringLike", Conditional);
 
-		var Resource = MakeArnResource(String.format("%s/%s", BucketName, "*"));
-		var s1 = MakeJsonStatement("s3:PutObject", Resource, null, null, null);
-		var s2 = MakeJsonStatement("s3:PutObject", Resource, MainData.PolicyEffectDeny, null, TagConditional);
+		var Resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
+		var s1 = makeJsonStatement("s3:PutObject", Resource, null, null, null);
+		var s2 = makeJsonStatement("s3:PutObject", Resource, MainData.PolicyEffectDeny, null, TagConditional);
 		var PolicyDocument = MakeJsonPolicy(s1, s2);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
-		var AltClient = GetAltClient();
+		var AltClient = getAltClient();
 		var Key1 = "private-key";
 
-		AltClient.putObject(BucketName, Key1, Key1);
+		AltClient.putObject(bucketName, Key1, Key1);
 
 		var Key2 = "public-key";
 		var Headers = new ObjectMetadata();
@@ -596,7 +596,7 @@ public class Policy extends TestBase
 		Headers.setContentType("text/plain");
 		Headers.setContentLength(Key2.length());
 
-		var e = assertThrows(AmazonServiceException.class, () -> AltClient.putObject(BucketName, Key2, CreateBody(Key2), Headers));
+		var e = assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key2, createBody(Key2), Headers));
 		var StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 	}
@@ -606,12 +606,12 @@ public class Policy extends TestBase
 	// [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
 	public void test_bucket_policy_put_obj_grant()
 	{
-		var BucketName = GetNewBucket();
-		var BucketName2 = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var BucketName2 = getNewBucket();
+		var client = getClient();
 
-		var MainUserID = Config.MainUser.UserID;
-		var AltUserID = Config.AltUser.UserID;
+		var MainUserID = config.mainUser.userId;
+		var AltUserID = config.altUser.userId;
 
 		var OwnerID_str = "id=" + MainUserID;
 
@@ -620,16 +620,16 @@ public class Policy extends TestBase
 		var S3Conditional = new JsonObject();
 		S3Conditional.add("StringEquals", Conditional);
 
-		var Resource = MakeArnResource(String.format("%s/%s", BucketName, "*"));
+		var Resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var PolicyDocument = MakeJsonPolicy("s3:PutObject", Resource, null, S3Conditional);
 
-		var Resource2 = MakeArnResource(String.format("%s/%s", BucketName2, "*"));
+		var Resource2 = makeArnResource(String.format("%s/%s", BucketName2, "*"));
 		var PolicyDocument2 = MakeJsonPolicy("s3:PutObject", Resource2, null, null);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
-		Client.setBucketPolicy(BucketName2, PolicyDocument2.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
+		client.setBucketPolicy(BucketName2, PolicyDocument2.toString());
 
-		var AltClient = GetAltClient();
+		var AltClient = getAltClient();
 		var Key1 = "key1";
 
 		var Headers = new ObjectMetadata();
@@ -637,14 +637,14 @@ public class Policy extends TestBase
 		Headers.setContentType("text/plain");
 		Headers.setContentLength(Key1.length());
 
-		AltClient.putObject(BucketName, Key1, CreateBody(Key1), Headers);
+		AltClient.putObject(bucketName, Key1, createBody(Key1), Headers);
 
 		var Key2 = "key2";
 		AltClient.putObject(BucketName2, Key2, Key2);
 
-		var Acl1Response = Client.getObjectAcl(BucketName, Key1);
+		var Acl1Response = client.getObjectAcl(bucketName, Key1);
 
-		assertThrows(AmazonServiceException.class, () -> Client.getObjectAcl(BucketName2, Key2));
+		assertThrows(AmazonServiceException.class, () -> client.getObjectAcl(BucketName2, Key2));
 
 		var Acl2Response = AltClient.getObjectAcl(BucketName2, Key2);
 
@@ -660,18 +660,18 @@ public class Policy extends TestBase
 		var publictag = "publictag";
 		var privatetag = "privatetag";
 		var invalidtag = "invalidtag";
-		var BucketName = CreateObjects(new ArrayList<>(Arrays.asList(new String[] { publictag, privatetag, invalidtag })));
-		var Client = GetClient();
+		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { publictag, privatetag, invalidtag })));
+		var client = getClient();
 
 		var Conditional = new JsonObject();
 		Conditional.addProperty("s3:ExistingObjectTag/security", "public");
 		var TagConditional = new JsonObject();
 		TagConditional.add("StringEquals", Conditional);
 
-		var Resource = MakeArnResource(String.format("%s/%s", BucketName, "*"));
+		var Resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var PolicyDocument = MakeJsonPolicy("s3:GetObjectAcl", Resource, null, TagConditional);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
 
 
 		var TagSets = new ArrayList<com.amazonaws.services.s3.model.Tag>();
@@ -679,31 +679,31 @@ public class Policy extends TestBase
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
 		var InputTagset = new ObjectTagging(TagSets);
 
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, publictag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, publictag, InputTagset));
 
 		TagSets.clear();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security", "private"));
 		InputTagset.setTagSet(TagSets);
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, privatetag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, privatetag, InputTagset));
 
 		TagSets.clear();
 		TagSets.add(new com.amazonaws.services.s3.model.Tag("security1", "public"));
 		InputTagset.setTagSet(TagSets);
-		Client.setObjectTagging(new SetObjectTaggingRequest(BucketName, invalidtag, InputTagset));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, invalidtag, InputTagset));
 
-		var AltClient = GetAltClient();
-		var ACLResponse = AltClient.getObjectAcl(BucketName, publictag);
+		var AltClient = getAltClient();
+		var ACLResponse = AltClient.getObjectAcl(bucketName, publictag);
 		assertNotNull(ACLResponse);
 
-		var e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(BucketName, publictag));
+		var e = assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, publictag));
 		var StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 
-		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObjectTagging(new GetObjectTaggingRequest(BucketName, privatetag)));
+		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privatetag)));
 		StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 
-		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObjectTagging(new GetObjectTaggingRequest(BucketName, invalidtag)));
+		e = assertThrows(AmazonServiceException.class, () -> AltClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, invalidtag)));
 		StatusCode = e.getStatusCode();
 		assertEquals(403, StatusCode);
 	}
@@ -713,13 +713,13 @@ public class Policy extends TestBase
 	// [모든 사용자가 버킷에 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
 	public void test_get_publicpolicy_acl_bucket_policy_status()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		assertThrows(AmazonServiceException.class, () -> Client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(BucketName)));
+		assertThrows(AmazonServiceException.class, () -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
 
-		var Resource1 = MainData.PolicyResourcePrefix + BucketName;
-		var Resource2 = MainData.PolicyResourcePrefix + BucketName + "/*";
+		var Resource1 = MainData.PolicyResourcePrefix + bucketName;
+		var Resource2 = MainData.PolicyResourcePrefix + bucketName + "/*";
 
 		var PolicyDocument = new JsonObject();
 		PolicyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
@@ -743,8 +743,8 @@ public class Policy extends TestBase
 		Statements.add(Statement);
 		PolicyDocument.add(MainData.PolicyStatement, Statements);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
-		var Response = Client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(BucketName));
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
+		var Response = client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName));
 		assertTrue(Response.getPolicyStatus().getIsPublic());
 	}
 
@@ -753,13 +753,13 @@ public class Policy extends TestBase
 	// [특정 ip로 접근했을때만 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
 	public void test_get_nonpublicpolicy_acl_bucket_policy_status()
 	{
-		var BucketName = GetNewBucket();
-		var Client = GetClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-		assertThrows(AmazonServiceException.class, () -> Client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(BucketName)));
+		assertThrows(AmazonServiceException.class, () -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
 
-		var Resource1 = MainData.PolicyResourcePrefix + BucketName;
-		var Resource2 = MainData.PolicyResourcePrefix + BucketName + "/*";
+		var Resource1 = MainData.PolicyResourcePrefix + bucketName;
+		var Resource2 = MainData.PolicyResourcePrefix + bucketName + "/*";
 
 		var PolicyDocument = new JsonObject();
 		PolicyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
@@ -789,8 +789,8 @@ public class Policy extends TestBase
 		Statements.add(Statement);
 		PolicyDocument.add(MainData.PolicyStatement, Statements);
 
-		Client.setBucketPolicy(BucketName, PolicyDocument.toString());
-		var Response = Client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(BucketName));
+		client.setBucketPolicy(bucketName, PolicyDocument.toString());
+		var Response = client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName));
 		assertFalse(Response.getPolicyStatus().getIsPublic());
 	}
 }

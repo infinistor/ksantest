@@ -13,14 +13,14 @@ package org.example.Data;
 import java.util.Date;
 
 public class ObjectData {
-	public String BucketName;
-	public String Key;
-	public String DisplayName;
-	public String ID;
-	public String ETag;
-	public Date LastModified;
-	public long ContentLength;
-	public String VersionId;
+	public String bucketName;
+	public String key;
+	public String displayName;
+	public String id;
+	public String eTag;
+	public Date lastModified;
+	public long contentLength;
+	public String versionId;
 
 	public ObjectData()
 	{
@@ -29,65 +29,65 @@ public class ObjectData {
 
 	public void Init()
 	{
-		BucketName = null;
-		Key = null;
-		DisplayName = null;
-		ID = null;
-		ETag = null;
-		LastModified = null;
-		ContentLength = -1;
-		VersionId = null;
+		bucketName = null;
+		key = null;
+		displayName = null;
+		id = null;
+		eTag = null;
+		lastModified = null;
+		contentLength = -1;
+		versionId = null;
 	}
 
 
-	public ObjectData withBucketName(String BucketName) {
-		setBucketName(BucketName);
+	public ObjectData withBucketName(String bucketName) {
+		setBucketName(bucketName);
 		return this;
 	}
-	public ObjectData withKey(String Key) {
-		setKey(Key);
+	public ObjectData withKey(String key) {
+		setKey(key);
 		return this;
 	}
-	public ObjectData withDisplayName(String DisplayName) {
-		setDisplayName(DisplayName);
+	public ObjectData withDisplayName(String displayName) {
+		setDisplayName(displayName);
 		return this;
 	}
-	public ObjectData withID(String ID) {
-		setID(ID);
+	public ObjectData withID(String id) {
+		setId(id);
 		return this;
 	}
-	public ObjectData withETag(String ETag) {
-		setETag(ETag);
+	public ObjectData withETag(String eTag) {
+		setETag(eTag);
 		return this;
 	}
-	public ObjectData withLastModified(Date LastModified) {
-		setLastModified(LastModified);
+	public ObjectData withLastModified(Date lastModified) {
+		setLastModified(lastModified);
 		return this;
 	}
-	public ObjectData withContentLength(long ContentLength) {
-		setContentLength(ContentLength);
+	public ObjectData withContentLength(long contentLength) {
+		setContentLength(contentLength);
 		return this;
 	}
-	public ObjectData withVersionId(String VersionId) {
-		setVersionId(VersionId);
+	public ObjectData withVersionId(String versionId) {
+		setVersionId(versionId);
 		return this;
 	}
 
 
-	public void setBucketName(String BucketName) { this.BucketName = BucketName; }
-	public String getBucketName() { return BucketName; }
-	public void setKey(String Key) { this.Key = Key; }
-	public String getKey() { return Key; }
-	public void setDisplayName(String DisplayName) { this.DisplayName = DisplayName; }
-	public String getDisplayName() { return DisplayName; }
-	public void setID(String ID) { this.ID = ID; }
-	public String getID() { return ID; }
-	public void setETag(String ETag) { this.ETag = ETag; }
-	public String getETag() { return ETag; }
-	public void setLastModified(Date LastModified) { this.LastModified = LastModified; }
-	public Date getLastModified() { return LastModified; }
-	public void setContentLength(long ContentLength) { this.ContentLength = ContentLength; }
-	public long getContentLength() { return ContentLength; }
-	public void setVersionId(String VersionId) { this.VersionId = VersionId; }
-	public String getVersionId() { return VersionId; }
+	public void setBucketName(String bucketName) { this.bucketName = bucketName; }
+	public String getBucketName() { return bucketName; }
+	public void setKey(String key) { this.key = key; }
+	public String getKey() { return key; }
+	public void setDisplayName(String displayName) { this.displayName = displayName; }
+	public String getDisplayName() { return displayName; }
+	public void setId(String id) { this.id = id; }
+	public String getId() { return id; }
+	public void setETag(String eTag) { this.eTag = eTag; }
+	public String getETag() { return eTag; }
+	public void setLastModified(Date lastModified) { this.lastModified = lastModified; }
+	public Date getLastModified() { return lastModified; }
+	public void setContentLength(long contentLength) { this.contentLength = contentLength; }
+	public long getContentLength() { return contentLength; }
+	public void setVersionId(String versionId) { this.versionId = versionId; }
+	public String getVersionId() { return versionId; }
 }
