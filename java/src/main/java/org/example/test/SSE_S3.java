@@ -608,7 +608,7 @@ public class SSE_S3 extends TestBase
 	}
 	
 	@Test
-	@Tag("PutGet")
+	@Tag("Retroactive")
 	//sse-s3설정은 소급적용 되지 않음을 확인
 	public void test_sse_s3_not_retroactive()
 	{
