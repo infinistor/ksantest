@@ -96,8 +96,18 @@
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
     </Reference>
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Client\MyHttpClient.cs" />
+    <Compile Include="Signers\AWS4SignerBase.cs" />
+    <Compile Include="Signers\AWS4SignerForAuthorizationHeader.cs" />
+    <Compile Include="Signers\AWS4SignerForChunkedUpload.cs" />
+    <Compile Include="Signers\AWS4SignerForPOST.cs" />
+    <Compile Include="Signers\AWS4SignerForQueryParameterAuth.cs" />
+    <Compile Include="Signers\ErrorResponse.cs" />
+    <Compile Include="Signers\HttpHelpers.cs" />
+    <Compile Include="Signers\S3Exception.cs" />
     <Compile Include="Test\Access.cs" />
     <Compile Include="Test\ACL.cs" />
     <Compile Include="Data\AES256.cs" />
@@ -142,19 +152,19 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
-    <None Include="awstests2.ini">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <None Include="awstests.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
     <None Include="run_netframework.bat" />
     <None Include="run_netframework_227.bat" />
-    <None Include="s3tests2_229.ini">
+    <None Include="s3tests_229.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="s3tests2_227.ini">
+    <None Include="s3tests_227.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="s3tests2_gw.ini">
+    <None Include="s3tests_gw.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Start-Class.bat">

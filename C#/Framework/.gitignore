@@ -2,7 +2,7 @@
 bin/
 obj/
 packages/
-s3tests2_*
-awstests2.ini
+s3tests_*
+awstests.ini
 *.bat
 *.ps1
