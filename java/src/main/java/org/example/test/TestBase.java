@@ -1624,11 +1624,11 @@ public class TestBase {
 	}
 
 	public void TestObjectCopy(EncryptionType Source, EncryptionType Target, int FileSize) {
-		var SourceKey = "SourceKey";
-		var TargetKey = "TargetKey";
+		var sourceKey = "SourceKey";
+		var targetKey = "TargetKey";
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Data = Utils.randomTextToLong(FileSize);
+		var data = Utils.randomTextToLong(FileSize);
 
 		var metadata = new ObjectMetadata();
 		metadata.setContentType("text/plain");
@@ -1646,10 +1646,10 @@ public class TestBase {
 				.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
 		// Source Put Object
-		var SourcePutRequest = new PutObjectRequest(bucketName, SourceKey, createBody(Data), metadata);
-		var SourceGetRequest = new GetObjectRequest(bucketName, SourceKey);
-		var TargetGetRequest = new GetObjectRequest(bucketName, SourceKey);
-		var CopyRequest = new CopyObjectRequest(bucketName, SourceKey, bucketName, TargetKey)
+		var SourcePutRequest = new PutObjectRequest(bucketName, sourceKey, createBody(data), metadata);
+		var SourceGetRequest = new GetObjectRequest(bucketName, sourceKey);
+		var TargetGetRequest = new GetObjectRequest(bucketName, targetKey);
+		var CopyRequest = new CopyObjectRequest(bucketName, sourceKey, bucketName, targetKey)
 				.withMetadataDirective(MetadataDirective.REPLACE);
 
 		// Source Options
@@ -1660,7 +1660,6 @@ public class TestBase {
 			case SSE_C:
 				SourcePutRequest.setSSECustomerKey(SSE_C);
 				SourceGetRequest.setSSECustomerKey(SSE_C);
-				TargetGetRequest.setSSECustomerKey(SSE_C);
 				CopyRequest.setSourceSSECustomerKey(SSE_C);
 				break;
 			case NORMAL:
@@ -1674,6 +1673,7 @@ public class TestBase {
 				break;
 			case SSE_C:
 				CopyRequest.setDestinationSSECustomerKey(SSE_C);
+				TargetGetRequest.setSSECustomerKey(SSE_C);
 				break;
 			case NORMAL:
 				CopyRequest.setNewObjectMetadata(metadata);
@@ -1686,7 +1686,7 @@ public class TestBase {
 		// Source Get Object
 		var SourceResponse = client.getObject(SourceGetRequest);
 		var SourceBody = GetBody(SourceResponse.getObjectContent());
-		assertTrue(Data.equals(SourceBody), MainData.NOT_MATCHED);
+		assertTrue(data.equals(SourceBody), MainData.NOT_MATCHED);
 
 		// Copy Object
 		client.copyObject(CopyRequest);
