@@ -1452,15 +1452,15 @@ namespace s3tests
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
 				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				 {
-					 new ServerSideEncryptionRule()
-					 {
-						  ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
-						  {
-							   ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
-						  }
-					 }
-				 }
+				{
+					new ServerSideEncryptionRule()
+					{
+						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
+						{
+							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
+						}
+					}
+				}
 			};
 
 			Client.PutBucketEncryption(BucketName, SSEConfig);
@@ -1507,15 +1507,15 @@ namespace s3tests
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
 				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				 {
-					 new ServerSideEncryptionRule()
-					 {
-						  ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
-						  {
-							   ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
-						  }
-					 }
-				 }
+				{
+					new ServerSideEncryptionRule()
+					{
+						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
+						{
+							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
+						}
+					}
+				}
 			};
 
 			//Source Bucket Encryption
