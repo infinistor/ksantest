@@ -44,10 +44,7 @@ namespace s3tests
 		private List<string> BucketList { get; set; }
 		#endregion
 
-		public enum EncryptionType
-		{
-			NORMAL, SSE_S3, SSE_C
-		};
+		public enum EncryptionType { NORMAL, SSE_S3, SSE_C };
 
 		public TestBase()
 		{
@@ -1548,6 +1545,7 @@ namespace s3tests
 			else Assert.Null(DestResponse.ServerSideEncryptionMethod);
 			Assert.Equal(SourceBody, DestBody);
 		}
+
 		public void TestObjectCopy(EncryptionType Source, EncryptionType Target, int FileSize)
 		{
 			var SourceKey = "SourceKey";
@@ -1584,10 +1582,9 @@ namespace s3tests
 
 			var SourceResponse = Client.GetObject(BucketName, SourceKey, SSE_C: Source == EncryptionType.SSE_C ? SSE_C : null);
 			Assert.Equal(Content, GetBody(SourceResponse));
-			
+
 			var TargetResponse = Client.GetObject(BucketName, TargetKey, SSE_C: SSE_C);
 			Assert.Equal(Content, GetBody(TargetResponse));
-			
 		}
 
 		public string TestMultipartUploadContents(string BucketName, string Key, int NumParts)

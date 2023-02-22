@@ -96,19 +96,19 @@ namespace s3tests2
 			string Marker = string.Empty;
 			string Prefix = string.Empty;
 
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 1, true, new List<string>() { "asdf" }, EmptyList, "asdf");
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, true, EmptyList, new List<string>() { "boo/" }, "boo/");
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, false, EmptyList, new List<string>() { "cquux/" }, null);
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, "", 1, true, new List<string>() { "asdf" }, EmptyList, "asdf");
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, Marker, 1, true, EmptyList, new List<string>() { "boo/" }, "boo/");
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, Marker, 1, false, EmptyList, new List<string>() { "cquux/" }, null);
 
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 2, true, new List<string>() { "asdf" }, new List<string>() { "boo/" }, "boo/");
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 2, false, EmptyList, new List<string>() { "cquux/" }, null);
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, "", 2, true, new List<string>() { "asdf" }, new List<string>() { "boo/" }, "boo/");
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, Marker, 2, false, EmptyList, new List<string>() { "cquux/" }, null);
 
 			Prefix = "boo/";
 
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 1, true, new List<string>() { "boo/bar" }, EmptyList, "boo/bar");
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, false, EmptyList, new List<string>() { "boo/baz/" }, null);
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, "", 1, true, new List<string>() { "boo/bar" }, EmptyList, "boo/bar");
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, Marker, 1, false, EmptyList, new List<string>() { "boo/baz/" }, null);
 
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 2, false, new List<string>() { "boo/bar" }, new List<string>() { "boo/baz/" }, null);
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, "", 2, false, new List<string>() { "boo/bar" }, new List<string>() { "boo/baz/" }, null);
 		}
 
 		[TestMethod("test_bucket_list_delimiter_prefix_ends_with_delimiter")]
@@ -119,7 +119,7 @@ namespace s3tests2
 		public void test_bucket_list_delimiter_prefix_ends_with_delimiter()
 		{
 			var BucketName = SetupObjects(new List<string>() { "asdf/" }, Body: "");
-			ValidateListObjcet(BucketName, "asdf/", "/", "", 1000, false, new List<string>() { "asdf/" }, EmptyList, null);
+			ValidateListObject(BucketName, "asdf/", "/", "", 1000, false, new List<string>() { "asdf/" }, EmptyList, null);
 		}
 
 		[TestMethod("test_bucket_list_delimiter_alt")]
@@ -158,19 +158,19 @@ namespace s3tests2
 			string Marker = "";
 			string Prefix = "";
 
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 1, true, new List<string>() { "_obj1_" }, EmptyList, "_obj1_");
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, true, EmptyList, new List<string>() { "_under1/" }, "_under1/");
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, false, EmptyList, new List<string>() { "_under2/" }, null);
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, "", 1, true, new List<string>() { "_obj1_" }, EmptyList, "_obj1_");
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, Marker, 1, true, EmptyList, new List<string>() { "_under1/" }, "_under1/");
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, Marker, 1, false, EmptyList, new List<string>() { "_under2/" }, null);
 
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 2, true, new List<string>() { "_obj1_" }, new List<string>() { "_under1/" }, "_under1/");
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 2, false, EmptyList, new List<string>() { "_under2/" }, null);
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, "", 2, true, new List<string>() { "_obj1_" }, new List<string>() { "_under1/" }, "_under1/");
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, Marker, 2, false, EmptyList, new List<string>() { "_under2/" }, null);
 
 			Prefix = "_under1/";
 
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 1, true, new List<string>() { "_under1/bar" }, EmptyList, "_under1/bar");
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, Marker, 1, false, EmptyList, new List<string>() { "_under1/baz/" }, null);
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, "", 1, true, new List<string>() { "_under1/bar" }, EmptyList, "_under1/bar");
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, Marker, 1, false, EmptyList, new List<string>() { "_under1/baz/" }, null);
 
-			Marker = ValidateListObjcet(BucketName, Prefix, Delimiter, "", 2, false, new List<string>() { "_under1/bar" }, new List<string>() { "_under1/baz/" }, null);
+			Marker = ValidateListObject(BucketName, Prefix, Delimiter, "", 2, false, new List<string>() { "_under1/bar" }, new List<string>() { "_under1/baz/" }, null);
 		}
 
 		[TestMethod("test_bucket_list_delimiter_percentage")]
@@ -365,7 +365,7 @@ namespace s3tests2
 		[TestProperty(MainData.Minor, "Prefix")]
 		[TestProperty(MainData.Explanation, "[접두어에 '/'가 포함] 오브젝트 목록을 가져올때 선택한 폴더 목록만 가져오는지 확인")]
 		[TestProperty(MainData.Result, MainData.ResultSuccess)]
-		public void Tetest_bucket_list_prefix_basicst()
+		public void test_bucket_list_prefix_basic()
 		{
 			var BucketName = SetupObjects(new List<string>() { "foo/bar", "foo/baz", "quux" });
 			var Client = GetClient();

@@ -839,7 +839,7 @@ namespace s3tests2
 		[TestProperty(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_acl_grant_userid_fullcontrol()
 		{
-			var BucketName = BucketACLGrantUserid(S3Permission.FULL_CONTROL);
+			var BucketName = BucketACLGrantUserId(S3Permission.FULL_CONTROL);
 
 			CheckBucketACLGrantCanRead(BucketName);
 			CheckBucketACLGrantCanReadACP(BucketName);
@@ -866,7 +866,7 @@ namespace s3tests2
 		[TestProperty(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_acl_grant_userid_read()
 		{
-			var BucketName = BucketACLGrantUserid(S3Permission.READ);
+			var BucketName = BucketACLGrantUserId(S3Permission.READ);
 
 			CheckBucketACLGrantCanRead(BucketName);
 			CheckBucketACLGrantCantReadACP(BucketName);
@@ -881,7 +881,7 @@ namespace s3tests2
 		[TestProperty(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_acl_grant_userid_readacp()
 		{
-			var BucketName = BucketACLGrantUserid(S3Permission.READ_ACP);
+			var BucketName = BucketACLGrantUserId(S3Permission.READ_ACP);
 
 			CheckBucketACLGrantCantRead(BucketName);
 			CheckBucketACLGrantCanReadACP(BucketName);
@@ -896,7 +896,7 @@ namespace s3tests2
 		[TestProperty(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_acl_grant_userid_write()
 		{
-			var BucketName = BucketACLGrantUserid(S3Permission.WRITE);
+			var BucketName = BucketACLGrantUserId(S3Permission.WRITE);
 
 			CheckBucketACLGrantCantRead(BucketName);
 			CheckBucketACLGrantCantReadACP(BucketName);
@@ -911,7 +911,7 @@ namespace s3tests2
 		[TestProperty(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_acl_grant_userid_writeacp()
 		{
-			var BucketName = BucketACLGrantUserid(S3Permission.WRITE_ACP);
+			var BucketName = BucketACLGrantUserId(S3Permission.WRITE_ACP);
 
 			CheckBucketACLGrantCantRead(BucketName);
 			CheckBucketACLGrantCantReadACP(BucketName);

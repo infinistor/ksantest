@@ -586,7 +586,6 @@ namespace s3tests
 
 			var Response = Client.GetObject(BucketName, key);
 			Assert.Equal(Content2, GetBody(Response));
-
 		}
 
 		[Fact(DisplayName = "test_object_emoji")]

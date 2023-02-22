@@ -14,67 +14,67 @@ using System.Net;
 
 namespace s3tests2
 {
-    [TestClass]
-    public class Website : TestBase
-    {
-        [TestMethod("test_webiste_get_buckets")]
-        [TestProperty(MainData.Major, "Website")]
-        [TestProperty(MainData.Minor, "Check")]
-        [TestProperty(MainData.Explanation, "버킷의 Websize 설정 조회 확인")]
-        [TestProperty(MainData.Result, MainData.ResultFailure)]
-        public void test_webiste_get_buckets()
-        {
-            var BucketName = GetNewBucket();
-            var Client = GetClient();
+	[TestClass]
+	public class Website : TestBase
+	{
+		[TestMethod("test_webiste_get_buckets")]
+		[TestProperty(MainData.Major, "Website")]
+		[TestProperty(MainData.Minor, "Check")]
+		[TestProperty(MainData.Explanation, "버킷의 Websize 설정 조회 확인")]
+		[TestProperty(MainData.Result, MainData.ResultFailure)]
+		public void test_webiste_get_buckets()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
 
-            var Response = Client.GetBucketWebsite(BucketName);
-            Assert.AreEqual(HttpStatusCode.NotFound, Response.HttpStatusCode);
-        }
+			var Response = Client.GetBucketWebsite(BucketName);
+			Assert.AreEqual(HttpStatusCode.NotFound, Response.HttpStatusCode);
+		}
 
-        [TestMethod("test_webiste_put_buckets")]
-        [TestProperty(MainData.Major, "Website")]
-        [TestProperty(MainData.Minor, "Check")]
-        [TestProperty(MainData.Explanation, "버킷의 Websize 설정이 가능한지 확인")]
-        [TestProperty(MainData.Result, MainData.ResultSuccess)]
-        public void test_webiste_put_buckets()
-        {
-            var BucketName = GetNewBucket();
-            var Client = GetClient();
+		[TestMethod("test_webiste_put_buckets")]
+		[TestProperty(MainData.Major, "Website")]
+		[TestProperty(MainData.Minor, "Check")]
+		[TestProperty(MainData.Explanation, "버킷의 Websize 설정이 가능한지 확인")]
+		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		public void test_webiste_put_buckets()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
 
-            var WebConfig = new WebsiteConfiguration()
-            {
-                ErrorDocument = "400",
-                IndexDocumentSuffix = "a"
-            };
+			var WebConfig = new WebsiteConfiguration()
+			{
+				ErrorDocument = "400",
+				IndexDocumentSuffix = "a"
+			};
 
-            var Response = Client.PutBucketWebsite(BucketName, WebConfig);
-            Assert.AreEqual(HttpStatusCode.OK, Response.HttpStatusCode);
+			var Response = Client.PutBucketWebsite(BucketName, WebConfig);
+			Assert.AreEqual(HttpStatusCode.OK, Response.HttpStatusCode);
 
-            var GetResponse = Client.GetBucketWebsite(BucketName);
-            Assert.AreEqual(WebConfig.ErrorDocument, GetResponse.WebsiteConfiguration.ErrorDocument);
-        }
+			var GetResponse = Client.GetBucketWebsite(BucketName);
+			Assert.AreEqual(WebConfig.ErrorDocument, GetResponse.WebsiteConfiguration.ErrorDocument);
+		}
 
-        [TestMethod("test_webiste_delete_buckets")]
-        [TestProperty(MainData.Major, "Website")]
-        [TestProperty(MainData.Minor, "Delete")]
-        [TestProperty(MainData.Explanation, "버킷의 Websize 설정이 삭제가능한지 확인")]
-        [TestProperty(MainData.Result, MainData.ResultSuccess)]
-        public void test_webiste_delete_buckets()
-        {
-            var BucketName = GetNewBucket();
-            var Client = GetClient();
+		[TestMethod("test_webiste_delete_buckets")]
+		[TestProperty(MainData.Major, "Website")]
+		[TestProperty(MainData.Minor, "Delete")]
+		[TestProperty(MainData.Explanation, "버킷의 Websize 설정이 삭제가능한지 확인")]
+		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		public void test_webiste_delete_buckets()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
 
-            var WebConfig = new WebsiteConfiguration()
-            {
-                ErrorDocument = "400",
-                IndexDocumentSuffix = "a"
-            };
+			var WebConfig = new WebsiteConfiguration()
+			{
+				ErrorDocument = "400",
+				IndexDocumentSuffix = "a"
+			};
 
-            var Response = Client.PutBucketWebsite(BucketName, WebConfig);
-            Assert.AreEqual(HttpStatusCode.OK, Response.HttpStatusCode);
+			var Response = Client.PutBucketWebsite(BucketName, WebConfig);
+			Assert.AreEqual(HttpStatusCode.OK, Response.HttpStatusCode);
 
-            var DelResponse = Client.DeleteBucketWebsite(BucketName);
-            Assert.AreEqual(HttpStatusCode.NoContent, DelResponse.HttpStatusCode);
-        }
-    }
+			var DelResponse = Client.DeleteBucketWebsite(BucketName);
+			Assert.AreEqual(HttpStatusCode.NoContent, DelResponse.HttpStatusCode);
+		}
+	}
 }

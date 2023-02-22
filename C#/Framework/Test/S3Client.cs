@@ -49,22 +49,15 @@ namespace s3tests2
 			}
 			else
 			{
-				string URL;
-
-				if (IsSecure)
-				{
-					ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
-					URL = S3.GetHttpsURL();
-				}
-				else URL = S3.GetHttpURL();
-
 				S3Config = new AmazonS3Config
 				{
-					ServiceURL = URL,
+					ServiceURL = IsSecure ? S3.GetHttpsURL() : S3.GetHttpURL(),
 					Timeout = TimeSpan.FromSeconds(S3_TIMEOUT),
 					SignatureVersion = SignatureVersion,
 					ForcePathStyle = true,
 				};
+
+				if (IsSecure) ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
 			}
 
 			if (!IsSecure) S3Config.UseHttp = true;
@@ -72,7 +65,8 @@ namespace s3tests2
 			Client = new AmazonS3Client(Credentials, S3Config);
 		}
 
-		/**************************************** Bucket ****************************************************/
+		#region Bucket Function
+
 		public ListBucketsResponse ListBuckets()
 		{
 			if (Client == null) return null;
@@ -104,28 +98,18 @@ namespace s3tests2
 			return Client.PutBucket(Request);
 		}
 
-		public DeleteBucketResponse DeleteBucket(string BucketName)
-		{
-			var Request = new DeleteBucketRequest() { BucketName = BucketName };
-			return Client.DeleteBucket(Request);
-		}
+		public DeleteBucketResponse DeleteBucket(string BucketName) => Client.DeleteBucket(BucketName);
 
-		public GetBucketLocationResponse GetBucketLocation(string BucketName)
-		{
-			var Request = new GetBucketLocationRequest() { BucketName = BucketName };
-			return Client.GetBucketLocation(Request);
-		}
-		
-		public PutBucketLoggingResponse PutBucketLogging(string BucketName, S3BucketLoggingConfig Config)
-		{
-			var Request = new PutBucketLoggingRequest() { BucketName = BucketName, LoggingConfig = Config };
-			return Client.PutBucketLogging(Request);
-		}
-		public GetBucketLoggingResponse GetBucketLogging(string BucketName)
-		{
-			var Request = new GetBucketLoggingRequest() { BucketName = BucketName };
-			return Client.GetBucketLogging(Request);
-		}
+		public GetBucketLocationResponse GetBucketLocation(string BucketName) => Client.GetBucketLocation(BucketName);
+
+		public PutBucketLoggingResponse PutBucketLogging(string BucketName, S3BucketLoggingConfig Config) =>
+			Client.PutBucketLogging(new PutBucketLoggingRequest()
+			{
+				BucketName = BucketName,
+				LoggingConfig = Config
+			});
+
+		public GetBucketLoggingResponse GetBucketLogging(string BucketName) => Client.GetBucketLogging(BucketName);
 
 		public PutBucketVersioningResponse PutBucketVersioning(string BucketName, bool? EnableMfaDelete = null, VersionStatus Status = null)
 		{
@@ -137,28 +121,13 @@ namespace s3tests2
 			return Client.PutBucketVersioning(Request);
 		}
 
-		public GetBucketVersioningResponse GetBucketVersioning(string BucketName)
-		{
-			var Request = new GetBucketVersioningRequest() { BucketName = BucketName };
+		public GetBucketVersioningResponse GetBucketVersioning(string BucketName) => Client.GetBucketVersioning(BucketName);
 
-			return Client.GetBucketVersioning(Request);
-		}
-
-		public GetACLResponse GetBucketACL(string BucketName)
-		{
-			var Request = new GetACLRequest()
-			{
-				BucketName = BucketName
-			};
-			return Client.GetACL(Request);
-		}
+		public GetACLResponse GetBucketACL(string BucketName) => Client.GetACL(BucketName);
 
 		public PutACLResponse PutBucketACL(string BucketName, S3CannedACL ACL = null, S3AccessControlList AccessControlPolicy = null)
 		{
-			var Request = new PutACLRequest()
-			{
-				BucketName = BucketName
-			};
+			var Request = new PutACLRequest() { BucketName = BucketName };
 
 			if (ACL != null) Request.CannedACL = ACL;
 			if (AccessControlPolicy != null) Request.AccessControlList = AccessControlPolicy;
@@ -166,253 +135,65 @@ namespace s3tests2
 			return Client.PutACL(Request);
 		}
 
-		public PutCORSConfigurationResponse PutCORSConfiguration(string BucketName, CORSConfiguration Configuration)
-		{
-			var Request = new PutCORSConfigurationRequest()
-			{
-				BucketName = BucketName,
-				Configuration = Configuration,
-			};
+		public PutCORSConfigurationResponse PutCORSConfiguration(string BucketName, CORSConfiguration Configuration) => Client.PutCORSConfiguration(BucketName, Configuration);
 
-			return Client.PutCORSConfiguration(Request);
-		}
+		public GetCORSConfigurationResponse GetCORSConfiguration(string BucketName) => Client.GetCORSConfiguration(BucketName);
 
-		public GetCORSConfigurationResponse GetCORSConfiguration(string BucketName)
-		{
-			var Request = new GetCORSConfigurationRequest()
-			{
-				BucketName = BucketName,
-			};
+		public DeleteCORSConfigurationResponse DeleteCORSConfiguration(string BucketName) => Client.DeleteCORSConfiguration(BucketName);
 
-			return Client.GetCORSConfiguration(Request);
-		}
+		public GetBucketTaggingResponse GetBucketTagging(string BucketName) => Client.GetBucketTagging(new GetBucketTaggingRequest() { BucketName = BucketName });
 
-		public DeleteCORSConfigurationResponse DeleteCORSConfiguration(string BucketName)
-		{
-			var Request = new DeleteCORSConfigurationRequest()
-			{
-				BucketName = BucketName,
-			};
+		public PutBucketTaggingResponse PutBucketTagging(string BucketName, List<Tag> TagSet) => Client.PutBucketTagging(BucketName, TagSet);
 
-			return Client.DeleteCORSConfiguration(Request);
-		}
-
-		public GetBucketTaggingResponse GetBucketTagging(string BucketName)
-		{
-			var Request = new GetBucketTaggingRequest()
-			{
-				BucketName = BucketName,
-			};
-
-			return Client.GetBucketTagging(Request);
-		}
-
-		public PutBucketTaggingResponse PutBucketTagging(string BucketName, List<Tag> TagSet)
-		{
-			var Request = new PutBucketTaggingRequest()
-			{
-				BucketName = BucketName,
-				TagSet = TagSet,
-			};
-
-			return Client.PutBucketTagging(Request);
-		}
-
-		public DeleteBucketTaggingResponse DeleteBucketTagging(string BucketName)
-		{
-			var Request = new DeleteBucketTaggingRequest()
-			{
-				BucketName = BucketName,
-			};
-
-			return Client.DeleteBucketTagging(Request);
-		}
+		public DeleteBucketTaggingResponse DeleteBucketTagging(string BucketName) => Client.DeleteBucketTagging(BucketName);
 
 		public PutLifecycleConfigurationResponse PutLifecycleConfiguration(string BucketName, LifecycleConfiguration Configuration)
-		{
-			var Request = new PutLifecycleConfigurationRequest()
-			{
-				BucketName = BucketName,
-				Configuration = Configuration,
-			};
+			=> Client.PutLifecycleConfiguration(BucketName, Configuration);
+		public GetLifecycleConfigurationResponse GetLifecycleConfiguration(string BucketName) => Client.GetLifecycleConfiguration(BucketName);
+		public DeleteLifecycleConfigurationResponse DeleteLifecycleConfiguration(string BucketName) => Client.DeleteLifecycleConfiguration(BucketName);
 
-			return Client.PutLifecycleConfiguration(Request);
-		}
-		public GetLifecycleConfigurationResponse GetLifecycleConfiguration(string BucketName)
-		{
-			var Request = new GetLifecycleConfigurationRequest()
-			{
-				BucketName = BucketName,
-			};
+		public PutBucketPolicyResponse PutBucketPolicy(string BucketName, string Policy) => Client.PutBucketPolicy(BucketName, Policy);
+		public GetBucketPolicyResponse GetBucketPolicy(string BucketName) => Client.GetBucketPolicy(BucketName);
 
-			return Client.GetLifecycleConfiguration(Request);
-		}
-		public DeleteLifecycleConfigurationResponse DeleteLifecycleConfiguration(string BucketName)
-		{
-			var Request = new DeleteLifecycleConfigurationRequest()
-			{
-				BucketName = BucketName,
-			};
+		public GetBucketPolicyStatusResponse GetBucketPolicyStatus(string BucketName) => Client.GetBucketPolicyStatus(new GetBucketPolicyStatusRequest() { BucketName = BucketName });
 
-			return Client.DeleteLifecycleConfiguration(Request);
-		}
-
-		public PutBucketPolicyResponse PutBucketPolicy(string BucketName, string Policy)
-		{
-			var Request = new PutBucketPolicyRequest()
-			{
-				BucketName = BucketName,
-				Policy = Policy,
-			};
-
-			return Client.PutBucketPolicy(Request);
-		}
-		public GetBucketPolicyResponse GetBucketPolicy(string BucketName)
-		{
-			var Request = new GetBucketPolicyRequest()
-			{
-				BucketName = BucketName,
-			};
-
-			return Client.GetBucketPolicy(Request);
-		}
-		public GetBucketPolicyStatusResponse GetBucketPolicyStatus(string BucketName)
-		{
-			var Request = new GetBucketPolicyStatusRequest()
-			{
-				BucketName = BucketName,
-			};
-
-			return Client.GetBucketPolicyStatus(Request);
-		}
-
-		public DeleteBucketPolicyResponse DeleteBucketPolicy(string BucketName)
-		{
-			var Request = new DeleteBucketPolicyRequest()
-			{
-				BucketName = BucketName,
-			};
-
-			return Client.DeleteBucketPolicy(Request);
-		}
+		public DeleteBucketPolicyResponse DeleteBucketPolicy(string BucketName) => Client.DeleteBucketPolicy(BucketName);
 		public PutObjectLockConfigurationResponse PutObjectLockConfiguration(string BucketName, ObjectLockConfiguration ObjectLockConfiguration)
-		{
-			var Request = new PutObjectLockConfigurationRequest()
-			{
-				BucketName = BucketName,
-				ObjectLockConfiguration = ObjectLockConfiguration,
-			};
-
-			return Client.PutObjectLockConfiguration(Request);
-		}
+			=> Client.PutObjectLockConfiguration(new PutObjectLockConfigurationRequest() { BucketName = BucketName, ObjectLockConfiguration = ObjectLockConfiguration });
 		public GetObjectLockConfigurationResponse GetObjectLockConfiguration(string BucketName)
-		{
-			var Request = new GetObjectLockConfigurationRequest()
-			{
-				BucketName = BucketName,
-			};
-
-			return Client.GetObjectLockConfiguration(Request);
-		}
+			=> Client.GetObjectLockConfiguration(new GetObjectLockConfigurationRequest() { BucketName = BucketName });
 
 		public PutPublicAccessBlockResponse PutPublicAccessBlock(string BucketName, PublicAccessBlockConfiguration PublicAccessBlockConfiguration)
-		{
-			var Request = new PutPublicAccessBlockRequest()
+			=> Client.PutPublicAccessBlock(new PutPublicAccessBlockRequest()
 			{
 				BucketName = BucketName,
 				PublicAccessBlockConfiguration = PublicAccessBlockConfiguration,
-			};
-
-			return Client.PutPublicAccessBlock(Request);
-		}
+			});
 		public GetPublicAccessBlockResponse GetPublicAccessBlock(string BucketName)
-		{
-			var Request = new GetPublicAccessBlockRequest()
+			=> Client.GetPublicAccessBlock(new GetPublicAccessBlockRequest()
 			{
 				BucketName = BucketName,
-			};
+			});
 
-			return Client.GetPublicAccessBlock(Request);
-		}
+		public DeletePublicAccessBlockResponse DeletePublicAccessBlock(string BucketName) => Client.DeletePublicAccessBlock(new DeletePublicAccessBlockRequest() { BucketName = BucketName });
 
-		private DeletePublicAccessBlockResponse DeletePublicAccessBlock(DeletePublicAccessBlockRequest Request)
-		{
-			if (Client == null) return null;
-			Task<DeletePublicAccessBlockResponse> Response = Client.DeletePublicAccessBlockAsync(Request);
-			Response.Wait();
-			return Response.Result;
-		}
-		public DeletePublicAccessBlockResponse DeletePublicAccessBlock(string BucketName)
-		{
-			var Request = new DeletePublicAccessBlockRequest()
-			{
-				BucketName = BucketName,
-			};
-
-			return DeletePublicAccessBlock(Request);
-		}
-
-		public GetBucketEncryptionResponse GetBucketEncryption(string BucketName)
-		{
-			var Request = new GetBucketEncryptionRequest()
-			{
-				BucketName = BucketName
-			};
-
-			return Client.GetBucketEncryption(Request);
-		}
+		public GetBucketEncryptionResponse GetBucketEncryption(string BucketName) => Client.GetBucketEncryption(new GetBucketEncryptionRequest() { BucketName = BucketName });
 		public PutBucketEncryptionResponse PutBucketEncryption(string BucketName, ServerSideEncryptionConfiguration SSEConfig)
-		{
-			var Request = new PutBucketEncryptionRequest()
+			=> Client.PutBucketEncryption(new PutBucketEncryptionRequest()
 			{
 				BucketName = BucketName,
 				ServerSideEncryptionConfiguration = SSEConfig,
-			};
+			});
+		public DeleteBucketEncryptionResponse DeleteBucketEncryption(string BucketName) => Client.DeleteBucketEncryption(new DeleteBucketEncryptionRequest() { BucketName = BucketName });
 
-			return Client.PutBucketEncryption(Request);
-		}
-		public DeleteBucketEncryptionResponse DeleteBucketEncryption(string BucketName)
-		{
-			var Request = new DeleteBucketEncryptionRequest()
-			{
-				BucketName = BucketName
-			};
-
-			return Client.DeleteBucketEncryption(Request);
-		}
-
-		public GetBucketWebsiteResponse GetBucketWebsite(string BucketName)
-		{
-			var Request = new GetBucketWebsiteRequest()
-			{
-				BucketName = BucketName
-			};
-
-			return Client.GetBucketWebsite(Request);
-		}
-		public PutBucketWebsiteResponse PutBucketWebsite(string BucketName, WebsiteConfiguration WebConfig)
-		{
-			var Request = new PutBucketWebsiteRequest()
-			{
-				BucketName = BucketName,
-				WebsiteConfiguration = WebConfig,
-			};
-
-			return Client.PutBucketWebsite(Request);
-		}
-		public DeleteBucketWebsiteResponse DeleteBucketWebsite(string BucketName)
-		{
-			var Request = new DeleteBucketWebsiteRequest()
-			{
-				BucketName = BucketName
-			};
-
-			return Client.DeleteBucketWebsite(Request);
-		}
-		/**************************************** Object ****************************************************/
+		public GetBucketWebsiteResponse GetBucketWebsite(string BucketName) => Client.GetBucketWebsite(BucketName);
+		public PutBucketWebsiteResponse PutBucketWebsite(string BucketName, WebsiteConfiguration WebConfig) => Client.PutBucketWebsite(BucketName, WebConfig);
+		public DeleteBucketWebsiteResponse DeleteBucketWebsite(string BucketName) => Client.DeleteBucketWebsite(BucketName);
+		#endregion
+		#region Object Function
 		public PutObjectResponse PutObject(string BucketName, string Key, string Body = null, byte[] ByteBody = null, string ContentType = null,
 			string CacheControl = null, DateTime? Expires = null, string IfMatch = null, string IfNoneMatch = null,
-			string MD5Digest = null, SSECustomerKey SSEC = null,
+			string MD5Digest = null, SSECustomerKey SSE_C = null,
 			List<KeyValuePair<string, string>> MetadataList = null, List<KeyValuePair<string, string>> HeaderList = null,
 			S3CannedACL ACL = null, List<S3Grant> Grants = null, ServerSideEncryptionMethod SSE_S3_Method = null,
 			ObjectLockLegalHoldStatus ObjectLockLegalHoldStatus = null, DateTime? ObjectLockRetainUntilDate = null,
@@ -458,11 +239,11 @@ namespace s3tests2
 			if (SSE_S3_Method != null) Request.ServerSideEncryptionMethod = SSE_S3_Method;
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 			//ChunkEncoding Payload
 			if (UseChunkEncoding.HasValue) Request.UseChunkEncoding = UseChunkEncoding.Value;
@@ -474,7 +255,7 @@ namespace s3tests2
 		}
 
 		public GetObjectResponse GetObject(
-			string BucketName, string Key, string IfMatch = null, string IfNoneMatch = null, ByteRange Range = null, string VersionId = null, SSECustomerKey SSEC = null,
+			string BucketName, string Key, string IfMatch = null, string IfNoneMatch = null, ByteRange Range = null, string VersionId = null, SSECustomerKey SSE_C = null,
 			string IfModifiedSince = null, DateTime? IfModifiedSinceDateTime = null,
 			string IfUnmodifiedSince = null, DateTime? IfUnmodifiedSinceDateTime = null,
 			string ResponseContentType = null, string ResponseContentLanguage = null, string ResponseExpires = null, string ResponseCacheControl = null,
@@ -492,11 +273,11 @@ namespace s3tests2
 			if (Range != null) Request.ByteRange = Range;
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 
 			if (IfModifiedSince != null) Request.ModifiedSinceDateUtc = DateTime.Parse(IfModifiedSince);
@@ -516,7 +297,8 @@ namespace s3tests2
 		}
 
 		public CopyObjectResponse CopyObject(string SourceBucket, string SourceKey, string BucketName, string Key,
-			List<KeyValuePair<string, string>> MetadataList = null, S3MetadataDirective? MetadataDirective = null, ServerSideEncryptionMethod SSE_S3_Method = null,
+			List<KeyValuePair<string, string>> MetadataList = null, S3MetadataDirective? MetadataDirective = null,
+			ServerSideEncryptionMethod SSE_S3_Method = null, SSECustomerKey SSE_C = null, SSECustomerKey SSE_C_Source = null,
 			string VersionId = null, S3CannedACL ACL = null, string ETagToMatch = null, string ETagToNotMatch = null, string ContentType = null)
 		{
 			var Request = new CopyObjectRequest()
@@ -540,6 +322,19 @@ namespace s3tests2
 
 			//SSE-S3
 			if (SSE_S3_Method != null) Request.ServerSideEncryptionMethod = SSE_S3_Method;
+
+			if (SSE_C != null)
+			{
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
+			}
+			if (SSE_C_Source != null)
+			{
+				Request.CopySourceServerSideEncryptionCustomerMethod = SSE_C_Source.Method;
+				Request.CopySourceServerSideEncryptionCustomerProvidedKey = SSE_C_Source.ProvidedKey;
+				Request.CopySourceServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C_Source.MD5;
+			}
 
 			return Client.CopyObject(Request);
 		}
@@ -618,7 +413,7 @@ namespace s3tests2
 			return Client.DeleteObjects(Request);
 		}
 
-		public GetObjectMetadataResponse GetObjectMetadata(string BucketName, string Key, string VersionId = null, SSECustomerKey SSEC = null)
+		public GetObjectMetadataResponse GetObjectMetadata(string BucketName, string Key, string VersionId = null, SSECustomerKey SSE_C = null)
 		{
 			var Request = new GetObjectMetadataRequest()
 			{
@@ -630,11 +425,11 @@ namespace s3tests2
 			if (VersionId != null) Request.VersionId = VersionId;
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 
 			return Client.GetObjectMetadata(Request);
@@ -666,47 +461,24 @@ namespace s3tests2
 		}
 
 		public GetObjectTaggingResponse GetObjectTagging(string BucketName, string Key)
-		{
-			var Request = new GetObjectTaggingRequest()
+			=> Client.GetObjectTagging(new GetObjectTaggingRequest()
 			{
 				BucketName = BucketName,
 				Key = Key,
-			};
-
-			return Client.GetObjectTagging(Request);
-		}
+			});
 
 		public PutObjectTaggingResponse PutObjectTagging(string BucketName, string Key, Tagging Tagging)
-		{
-			var Request = new PutObjectTaggingRequest()
+			=> Client.PutObjectTagging(new PutObjectTaggingRequest()
 			{
 				BucketName = BucketName,
 				Key = Key,
 				Tagging = Tagging,
-			};
-
-			return Client.PutObjectTagging(Request);
-		}
+			});
 		public DeleteObjectTaggingResponse DeleteObjectTagging(string BucketName, string Key)
-		{
-			var Request = new DeleteObjectTaggingRequest()
-			{
-				BucketName = BucketName,
-				Key = Key,
-			};
+			=> Client.DeleteObjectTagging(new DeleteObjectTaggingRequest() { BucketName = BucketName, Key = Key, });
 
-			return Client.DeleteObjectTagging(Request);
-		}
 		public GetObjectRetentionResponse GetObjectRetention(string BucketName, string Key)
-		{
-			var Request = new GetObjectRetentionRequest()
-			{
-				BucketName = BucketName,
-				Key = Key,
-			};
-
-			return Client.GetObjectRetention(Request);
-		}
+			=> Client.GetObjectRetention(new GetObjectRetentionRequest() { BucketName = BucketName, Key = Key, });
 		public PutObjectRetentionResponse PutObjectRetention(string BucketName, string Key, ObjectLockRetention Retention,
 			string ContentMD5 = null, string VersionId = null, bool? BypassGovernanceRetention = null)
 		{
@@ -724,36 +496,17 @@ namespace s3tests2
 		}
 
 		public PutObjectLegalHoldResponse PutObjectLegalHold(string BucketName, string Key, ObjectLockLegalHold LegalHold)
-		{
-			var Request = new PutObjectLegalHoldRequest()
+			=> Client.PutObjectLegalHold(new PutObjectLegalHoldRequest()
 			{
 				BucketName = BucketName,
 				Key = Key,
 				LegalHold = LegalHold,
-			};
-
-			return Client.PutObjectLegalHold(Request);
-		}
+			});
 		public GetObjectLegalHoldResponse GetObjectLegalHold(string BucketName, string Key)
-		{
-			var Request = new GetObjectLegalHoldRequest()
-			{
-				BucketName = BucketName,
-				Key = Key,
-			};
-
-			return Client.GetObjectLegalHold(Request);
-		}
+			=> Client.GetObjectLegalHold(new GetObjectLegalHoldRequest() { BucketName = BucketName, Key = Key, });
 
 		public GetBucketReplicationResponse GetBucketReplication(string BucketName)
-		{
-			var Request = new GetBucketReplicationRequest()
-			{
-				BucketName = BucketName,
-			};
-
-			return Client.GetBucketReplication(Request);
-		}
+			=> Client.GetBucketReplication(new GetBucketReplicationRequest() { BucketName = BucketName });
 		public PutBucketReplicationResponse PutBucketReplication(string BucketName, ReplicationConfiguration Configuration,
 			string Token = null, string ExpectedBucketOwner = null)
 		{
@@ -768,18 +521,25 @@ namespace s3tests2
 
 			return Client.PutBucketReplication(Request);
 		}
-		public DeleteBucketReplicationResponse DeleteBucketReplication(string BucketName)
+		public DeleteBucketReplicationResponse DeleteBucketReplication(string BucketName) => Client.DeleteBucketReplication(new DeleteBucketReplicationRequest() { BucketName = BucketName });
+
+		public RestoreObjectResponse RestoreObject(string BucketName, string Key, string VersionId = null)
 		{
-			var Request = new DeleteBucketReplicationRequest()
+			var Request = new RestoreObjectRequest()
 			{
 				BucketName = BucketName,
+				Key = Key,
 			};
 
-			return Client.DeleteBucketReplication(Request);
+			if (VersionId != null) Request.VersionId = VersionId;
+
+			return Client.RestoreObject(Request);
 		}
-		/**************************************** MultiPart **************************************************/
+		#endregion
+
+		#region Multipart Function
 		public InitiateMultipartUploadResponse InitiateMultipartUpload(string BucketName, string Key, string ContentType = null,
-			List<KeyValuePair<string, string>> MetadataList = null, ServerSideEncryptionMethod SSE_S3 = null, SSECustomerKey SSEC = null)
+			List<KeyValuePair<string, string>> MetadataList = null, ServerSideEncryptionMethod SSE_S3 = null, SSECustomerKey SSE_C = null)
 		{
 			var Request = new InitiateMultipartUploadRequest()
 			{
@@ -797,17 +557,17 @@ namespace s3tests2
 			if (SSE_S3 != null) Request.ServerSideEncryptionMethod = SSE_S3;
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 
 			return Client.InitiateMultipartUpload(Request);
 		}
 
-		public UploadPartResponse UploadPart(string BucketName, string Key, string UploadId, string Body, int PartNumber, SSECustomerKey SSEC = null)
+		public UploadPartResponse UploadPart(string BucketName, string Key, string UploadId, string Body, int PartNumber, SSECustomerKey SSE_C = null)
 		{
 			var Request = new UploadPartRequest()
 			{
@@ -819,18 +579,18 @@ namespace s3tests2
 			};
 
 			//SSE-C
-			if (SSEC != null)
+			if (SSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = SSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = SSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = SSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = SSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = SSE_C.MD5;
 			}
 
 			return Client.UploadPart(Request);
 		}
 
 		public CopyPartResponse CopyPart(string SrcBucketName, string SrcKey, string DestBucketName, string DestKey, string UploadId,
-			int PartNumber, int Start, int End, string VersionId = null, SSECustomerKey SrcSSEC = null, SSECustomerKey DestSSEC = null)
+			int PartNumber, int Start, int End, string VersionId = null, SSECustomerKey SrcSSE_C = null, SSECustomerKey DestSSE_C = null)
 		{
 			var Request = new CopyPartRequest()
 			{
@@ -847,46 +607,38 @@ namespace s3tests2
 			if (VersionId != null) Request.SourceVersionId = VersionId;
 
 			////SSE-C
-			if (SrcSSEC != null)
+			if (SrcSSE_C != null)
 			{
-				Request.CopySourceServerSideEncryptionCustomerMethod = SrcSSEC.Method;
-				Request.CopySourceServerSideEncryptionCustomerProvidedKey = SrcSSEC.ProvidedKey;
-				Request.CopySourceServerSideEncryptionCustomerProvidedKeyMD5 = SrcSSEC.MD5;
+				Request.CopySourceServerSideEncryptionCustomerMethod = SrcSSE_C.Method;
+				Request.CopySourceServerSideEncryptionCustomerProvidedKey = SrcSSE_C.ProvidedKey;
+				Request.CopySourceServerSideEncryptionCustomerProvidedKeyMD5 = SrcSSE_C.MD5;
 			}
-			if (DestSSEC != null)
+			if (DestSSE_C != null)
 			{
-				Request.ServerSideEncryptionCustomerMethod = DestSSEC.Method;
-				Request.ServerSideEncryptionCustomerProvidedKey = DestSSEC.ProvidedKey;
-				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = DestSSEC.MD5;
+				Request.ServerSideEncryptionCustomerMethod = DestSSE_C.Method;
+				Request.ServerSideEncryptionCustomerProvidedKey = DestSSE_C.ProvidedKey;
+				Request.ServerSideEncryptionCustomerProvidedKeyMD5 = DestSSE_C.MD5;
 			}
 
 			return Client.CopyPart(Request);
 		}
 
 		public CompleteMultipartUploadResponse CompleteMultipartUpload(string BucketName, string Key, string UploadId, List<PartETag> Parts)
-		{
-			var Request = new CompleteMultipartUploadRequest()
+			=> Client.CompleteMultipartUpload(new CompleteMultipartUploadRequest()
 			{
 				BucketName = BucketName,
 				Key = Key,
 				UploadId = UploadId,
 				PartETags = Parts
-			};
-
-			return Client.CompleteMultipartUpload(Request);
-		}
+			});
 
 		public AbortMultipartUploadResponse AbortMultipartUpload(string BucketNume, string Key, string UploadId)
-		{
-			var Request = new AbortMultipartUploadRequest()
+			=> Client.AbortMultipartUpload(new AbortMultipartUploadRequest()
 			{
 				BucketName = BucketNume,
 				Key = Key,
 				UploadId = UploadId,
-			};
-
-			return Client.AbortMultipartUpload(Request);
-		}
+			});
 
 		public ListMultipartUploadsResponse ListMultipartUploads(string BucketNume)
 		{
@@ -911,7 +663,9 @@ namespace s3tests2
 
 			return Client.ListParts(Request);
 		}
-		/**************************************** URL ****************************************************/
+		#endregion
+
+		#region ETC Function
 		public string GeneratePresignedURL(string BucketName, string Key, DateTime Expires, HttpVerb Verb)
 		{
 			var Request = new GetPreSignedUrlRequest()
@@ -925,28 +679,6 @@ namespace s3tests2
 
 			return Client.GetPreSignedURL(Request);
 		}
-		/**************************************** Utility ****************************************************/
-		private static string CreateURLToHTTP(string Address, int Port)
-		{
-			string URL;
-			if (Address.StartsWith(MainData.HTTPS, StringComparison.OrdinalIgnoreCase)) URL = Address.Replace(MainData.HTTPS, MainData.HTTP);
-			else if (Address.StartsWith(MainData.HTTP, StringComparison.OrdinalIgnoreCase)) URL = Address;
-			else URL = MainData.HTTP + Address;
-
-			if (URL.EndsWith("/")) URL = URL.Substring(0, URL.Length - 1);
-
-			return string.Format("{0}:{1}", URL, Port);
-		}
-		private static string CreateURLToHTTPS(string Address, int Port)
-		{
-			string URL;
-			if (Address.StartsWith(MainData.HTTP, StringComparison.OrdinalIgnoreCase)) URL = Address.Replace(MainData.HTTP, MainData.HTTPS);
-			else if (Address.StartsWith(MainData.HTTPS, StringComparison.OrdinalIgnoreCase)) URL = Address;
-			else URL = MainData.HTTPS + Address;
-
-			if (URL.EndsWith("/")) URL = URL.Substring(0, URL.Length - 1);
-
-			return string.Format("{0}:{1}", URL, Port);
-		}
+		#endregion
 	}
 }

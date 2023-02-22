@@ -200,7 +200,7 @@ namespace s3tests2
 
 			Client.PutBucketPolicy(BucketName, PolicyDocument.ToString());
 
-			var InputTagset = MakeSimpleTagset(10);
+			var InputTagset = MakeSimpleTagSet(10);
 			var PutResponse = Client.PutObjectTagging(BucketName, Key, InputTagset);
 			Assert.AreEqual(HttpStatusCode.OK, PutResponse.HttpStatusCode);
 
@@ -226,7 +226,7 @@ namespace s3tests2
 
 			Client.PutBucketPolicy(BucketName, PolicyDocument.ToString());
 
-			var InputTagset = MakeSimpleTagset(10);
+			var InputTagset = MakeSimpleTagSet(10);
 			var AltClient = GetAltClient();
 			var PutResponse = AltClient.PutObjectTagging(BucketName, Key, InputTagset);
 			Assert.AreEqual(HttpStatusCode.OK, PutResponse.HttpStatusCode);
@@ -251,7 +251,7 @@ namespace s3tests2
 
 			Client.PutBucketPolicy(BucketName, PolicyDocument.ToString());
 
-			var InputTagset = MakeSimpleTagset(10);
+			var InputTagset = MakeSimpleTagSet(10);
 			var PutResponse = Client.PutObjectTagging(BucketName, Key, InputTagset);
 			Assert.AreEqual(HttpStatusCode.OK, PutResponse.HttpStatusCode);
 

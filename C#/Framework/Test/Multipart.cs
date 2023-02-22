@@ -622,7 +622,7 @@ namespace s3tests2
 			Body += UploadData.Body;
 			CheckContent(Client, BucketName, DestKey2, Body);
 		}
-		
+
 		[TestMethod("test_multipart_list_parts")]
 		[TestProperty(MainData.Major, "Multipart")]
 		[TestProperty(MainData.Minor, "List")]

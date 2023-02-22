@@ -368,7 +368,6 @@ namespace s3tests
 			Client.PutObject(BucketName, Key, Key);
 
 			Client.RestoreObject(BucketName, Key);
-			
 		}
 	}
 }
