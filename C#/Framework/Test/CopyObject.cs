@@ -196,9 +196,9 @@ namespace s3tests2
 
 			Client.PutObject(BucketName, Key1, Body: "foo");
 
-			var AltUserid = Config.AltUser.UserId;
+			var AltUserId = Config.AltUser.UserId;
 
-			var Grant = new S3Grant() { Grantee = new S3Grantee() { CanonicalUser = AltUserid }, Permission = S3Permission.FULL_CONTROL };
+			var Grant = new S3Grant() { Grantee = new S3Grantee() { CanonicalUser = AltUserId }, Permission = S3Permission.FULL_CONTROL };
 			var Grants = AddObjectUserGrant(BucketName, Key1, Grant);
 			Client.PutObjectACL(BucketName, Key1, AccessControlPolicy: Grants);
 
@@ -716,6 +716,78 @@ namespace s3tests2
 			TestObjectCopy(true, true, true, true, 1024);
 			TestObjectCopy(true, true, true, true, 256 * 1024);
 			TestObjectCopy(true, true, true, true, 1024 * 1024);
+		}
+
+		[TestMethod("test_copy_to_normal_source")]
+		[TestProperty(MainData.Major, "CopyObject")]
+		[TestProperty(MainData.Minor, "encryption")]
+		[TestProperty(MainData.Explanation, "일반 오브젝트에서 다양한 방식으로 복사 성공 확인")]
+		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		public void test_copy_to_normal_source()
+		{
+			var Size1 = 1024;
+			var Size2 = 256 * 1024;
+			var Size3 = 1024 * 1024;
+
+			TestObjectCopy(EncryptionType.NORMAL, EncryptionType.NORMAL, Size1);
+			TestObjectCopy(EncryptionType.NORMAL, EncryptionType.NORMAL, Size2);
+			TestObjectCopy(EncryptionType.NORMAL, EncryptionType.NORMAL, Size3);
+
+			TestObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_S3, Size1);
+			TestObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_S3, Size2);
+			TestObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_S3, Size3);
+
+			TestObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_C, Size1);
+			TestObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_C, Size2);
+			TestObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_C, Size3);
+		}
+
+		[TestMethod("test_copy_to_sse_s3_source")]
+		[TestProperty(MainData.Major, "CopyObject")]
+		[TestProperty(MainData.Minor, "encryption")]
+		[TestProperty(MainData.Explanation, "SSE-S3암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인")]
+		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		public void test_copy_to_sse_s3_source()
+		{
+			var Size1 = 1024;
+			var Size2 = 256 * 1024;
+			var Size3 = 1024 * 1024;
+
+			TestObjectCopy(EncryptionType.SSE_S3, EncryptionType.NORMAL, Size1);
+			TestObjectCopy(EncryptionType.SSE_S3, EncryptionType.NORMAL, Size2);
+			TestObjectCopy(EncryptionType.SSE_S3, EncryptionType.NORMAL, Size3);
+
+			TestObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_S3, Size1);
+			TestObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_S3, Size2);
+			TestObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_S3, Size3);
+
+			TestObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_C, Size1);
+			TestObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_C, Size2);
+			TestObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_C, Size3);
+		}
+
+		[TestMethod("test_copy_to_sse_c_source")]
+		[TestProperty(MainData.Major, "CopyObject")]
+		[TestProperty(MainData.Minor, "encryption")]
+		[TestProperty(MainData.Explanation, "SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인")]
+		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		public void test_copy_to_sse_c_source()
+		{
+			var Size1 = 1024;
+			var Size2 = 256 * 1024;
+			var Size3 = 1024 * 1024;
+
+			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, Size1);
+			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, Size2);
+			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, Size3);
+
+			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, Size1);
+			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, Size2);
+			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, Size3);
+
+			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, Size1);
+			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, Size2);
+			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, Size3);
 		}
 	}
 }
