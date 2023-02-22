@@ -291,5 +291,18 @@ namespace s3tests2
 			ObjectList = GetObjectList(BucketName);
 			CollectionAssert.AreEqual(KeyNames, ObjectList);
 		}
+
+		[TestMethod("test_get_bucket_location")]
+		[TestProperty(MainData.Major, "PutBucket")]
+		[TestProperty(MainData.Minor, "location")]
+		[TestProperty(MainData.Explanation, "버킷의 location 정보 조회")]
+		[TestProperty(MainData.Result, MainData.ResultFailure)]
+		public void test_get_bucket_location()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+
+			Client.GetBucketLocation(BucketName);
+		}
 	}
 }
