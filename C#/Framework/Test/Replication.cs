@@ -62,287 +62,12 @@ namespace s3tests2
 			Assert.AreEqual(0, Response.Configuration.Rules.Count);
 		}
 
-
-		[TestMethod("test_replication_no_rule")]
-		[TestProperty(MainData.Major, "Replication")]
-		[TestProperty(MainData.Minor, "Check")]
-		[TestProperty(MainData.Explanation, "복제설정중 role이 없어도 설정되는지 확인")]
-		[TestProperty(MainData.Result, MainData.ResultSuccess)]
-		public void test_replication_no_rule()
-		{
-			var SourceBucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucket();
-			var Client = GetClient();
-
-			CheckConfigureVersioningRetry(SourceBucketName, VersionStatus.Enabled);
-			CheckConfigureVersioningRetry(TargetBucketName, VersionStatus.Enabled);
-
-			//룰 생성
-			var Rule1 = new ReplicationRule
-			{
-				Id = "Rule1",
-				Priority = 1,
-				Status = ReplicationRuleStatus.Enabled,
-				Destination = new ReplicationDestination()
-				{
-					BucketArn = "arn:aws:s3:::" + TargetBucketName,
-				},
-			};
-
-			ReplicationConfiguration Replication = new ReplicationConfiguration
-			{
-				Role = ""
-			};
-			Replication.Rules.Add(Rule1);
-			Client.PutBucketReplication(SourceBucketName, Replication);
-
-			var Response = Client.GetBucketReplication(SourceBucketName);
-			Assert.AreEqual(Replication.ToString(), Response.Configuration.ToString());
-		}
-
-
-		[TestMethod("test_replication_full_copy")]
-		[TestProperty(MainData.Major, "Replication")]
-		[TestProperty(MainData.Minor, "Check")]
-		[TestProperty(MainData.Explanation, "버킷의 복제설정이 올바르게 동작하는지 확인")]
-		[TestProperty(MainData.Result, MainData.ResultSuccess)]
-		public void test_replication_full_copy()
-		{
-			var SourceBucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucket();
-			var Client = GetClient();
-
-			CheckConfigureVersioningRetry(SourceBucketName, VersionStatus.Enabled);
-			CheckConfigureVersioningRetry(TargetBucketName, VersionStatus.Enabled);
-
-			//룰 생성
-			var Rule1 = new ReplicationRule
-			{
-				Id = "Rule1",
-				Priority = 1,
-				Status = ReplicationRuleStatus.Enabled,
-				Destination = new ReplicationDestination()
-				{
-					BucketArn = "arn:aws:s3:::" + TargetBucketName,
-				},
-			};
-
-			ReplicationConfiguration Replication = new ReplicationConfiguration
-			{
-				Role = "arn:aws:iam::635518764071:role/awsreplicationtest"
-			};
-			Replication.Rules.Add(Rule1);
-			Client.PutBucketReplication(SourceBucketName, Replication);
-
-			var Response = Client.GetBucketReplication(SourceBucketName);
-			Assert.AreEqual(Replication.ToString(), Response.Configuration.ToString());
-
-			Thread.Sleep(5000);
-
-			// 3개의 오브젝트 업로드
-			var SourceKeys = new List<string>();
-			for (int i = 0; i < 3; i++)
-			{
-				var KeyName = string.Format("test{0}", i);
-
-				// 2개의 버전정보 생성
-				for (int j = 0; j < 2; j++) Client.PutObject(SourceBucketName, KeyName, RandomTextToLong(100));
-				SourceKeys.Add(KeyName);
-			}
-
-			Thread.Sleep(5000);
-
-			// 검증
-			var TargetResource = Client.ListObjects(TargetBucketName);
-			var TargetKeys = GetKeys(TargetResource);
-			CollectionAssert.AreEqual(SourceKeys, TargetKeys);
-
-			var SourceVersionsResource = Client.ListVersions(SourceBucketName);
-			var TargetVersionsResource = Client.ListVersions(TargetBucketName);
-			var SourceVerions = GetVersions(SourceVersionsResource.Versions);
-			var TargetVerions = GetVersions(TargetVersionsResource.Versions);
-
-			VersionIdsCompare(SourceVerions, TargetVerions);
-		}
-
-
-		[TestMethod("test_replication_prefix_copy")]
-		[TestProperty(MainData.Major, "Replication")]
-		[TestProperty(MainData.Minor, "Check")]
-		[TestProperty(MainData.Explanation, "버킷의 복제 설정중 prefix가 올바르게 동작하는지 확인")]
-		[TestProperty(MainData.Result, MainData.ResultSuccess)]
-		public void test_replication_prefix_copy()
-		{
-			var SourceBucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucket();
-			var Client = GetClient();
-			var Prefix = "test1/";
-
-			CheckConfigureVersioningRetry(SourceBucketName, VersionStatus.Enabled);
-			CheckConfigureVersioningRetry(TargetBucketName, VersionStatus.Enabled);
-
-			//룰 생성
-			var Rule1 = new ReplicationRule
-			{
-				Id = "Rule1",
-				Priority = 1,
-				Status = ReplicationRuleStatus.Enabled,
-				Filter = new ReplicationRuleFilter()
-				{
-					Prefix = Prefix,
-				},
-				Destination = new ReplicationDestination()
-				{
-					BucketArn = "arn:aws:s3:::" + TargetBucketName
-				},
-			};
-
-			ReplicationConfiguration Replication = new ReplicationConfiguration
-			{
-				Role = "arn:aws:iam::635518764071:role/awsreplicationtest"
-			};
-			Replication.Rules.Add(Rule1);
-			Client.PutBucketReplication(SourceBucketName, Replication);
-
-			var Response = Client.GetBucketReplication(SourceBucketName);
-			Assert.AreEqual(Replication.ToString(), Response.Configuration.ToString());
-
-			Thread.Sleep(5000);
-
-			// 3개의 폴더 생성
-			for (int i = 0; i < 3; i++)
-			{
-				var Dir = string.Format("test{0}", i);
-
-				// 5개의 오브젝트 업로드
-				for (int j = 0; j < 3; j++)
-				{
-					var KeyName = string.Format("{0}/{1}", Dir, RandomText(10));
-					Client.PutObject(SourceBucketName, KeyName, RandomTextToLong(100));
-				}
-			}
-
-			Thread.Sleep(5000);
-
-			// 검증
-			var SourceResource = Client.ListObjects(SourceBucketName, Prefix: Prefix);
-			var TargetResource = Client.ListObjects(TargetBucketName);
-			var SourceKeys = GetKeys(SourceResource);
-			var TargetKeys = GetKeys(TargetResource);
-			CollectionAssert.AreEqual(SourceKeys, TargetKeys);
-
-			var SourceVersionsResource = Client.ListVersions(SourceBucketName, Prefix);
-			var TargetVersionsResource = Client.ListVersions(TargetBucketName);
-			var SourceVerions = GetVersions(SourceVersionsResource.Versions);
-			var TargetVerions = GetVersions(TargetVersionsResource.Versions);
-
-			VersionIdsCompare(SourceVerions, TargetVerions);
-		}
-
-
-		[TestMethod("test_replication_deletemarker_copy")]
-		[TestProperty(MainData.Major, "Replication")]
-		[TestProperty(MainData.Minor, "Check")]
-		[TestProperty(MainData.Explanation, "버킷의 복제 설정중 DeleteMarker가 올바르게 동작하는지 확인")]
-		[TestProperty(MainData.Result, MainData.ResultSuccess)]
-		public void test_replication_deletemarker_copy()
-		{
-			var SourceBucketName = GetNewBucket();
-			var Target1BucketName = GetNewBucket();
-			var Target2BucketName = GetNewBucket();
-			var Client = GetClient();
-
-			CheckConfigureVersioningRetry(SourceBucketName, VersionStatus.Enabled);
-			CheckConfigureVersioningRetry(Target1BucketName, VersionStatus.Enabled);
-			CheckConfigureVersioningRetry(Target2BucketName, VersionStatus.Enabled);
-
-			//룰 생성
-			var Rule1 = new ReplicationRule
-			{
-				Id = "Rule1",
-				Priority = 1,
-				Status = ReplicationRuleStatus.Enabled,
-				Destination = new ReplicationDestination()
-				{
-					BucketArn = "arn:aws:s3:::" + Target1BucketName
-				},
-			};
-			var Rule2 = new ReplicationRule
-			{
-				Id = "Rule2",
-				Priority = 2,
-				Status = ReplicationRuleStatus.Enabled,
-				Destination = new ReplicationDestination()
-				{
-					BucketArn = "arn:aws:s3:::" + Target2BucketName
-				},
-				DeleteMarkerReplication = new DeleteMarkerReplication() { Status = DeleteMarkerReplicationStatus.Enabled },
-			};
-
-			ReplicationConfiguration Replication = new ReplicationConfiguration
-			{
-				Role = "arn:aws:iam::635518764071:role/awsreplicationtest"
-			};
-			Replication.Rules.Add(Rule1);
-			Replication.Rules.Add(Rule2);
-			Client.PutBucketReplication(SourceBucketName, Replication);
-
-			var Response = Client.GetBucketReplication(SourceBucketName);
-			Assert.AreEqual(Replication.ToString(), Response.Configuration.ToString());
-
-			Thread.Sleep(5000);
-
-			var Keys = new List<string>();
-			// 3개의 오브젝트 업로드
-			for (int i = 0; i < 3; i++)
-			{
-				var KeyName = string.Format("test{0}", i);
-
-				// 2개의 버전정보 생성
-				for (int j = 0; j < 2; j++) Client.PutObject(SourceBucketName, KeyName, RandomTextToLong(100));
-				Keys.Add(KeyName);
-			}
-
-			Thread.Sleep(5000);
-
-			//원본 삭제
-			foreach (string KeyName in Keys)
-				Client.DeleteObject(SourceBucketName, KeyName);
-
-			Thread.Sleep(5000);
-
-			// 검증
-			var SourceResource = Client.ListObjects(SourceBucketName);
-			var Target1Resource = Client.ListObjects(Target1BucketName);
-			var Target2Resource = Client.ListObjects(Target2BucketName);
-			var SourceKeys = GetKeys(SourceResource);
-			var Target1Keys = GetKeys(Target1Resource);
-			var Target2Keys = GetKeys(Target2Resource);
-			Assert.AreEqual(SourceKeys.Count, Target2Keys.Count);
-			Assert.AreEqual(Keys, Target1Keys);
-
-			var SourceVersionsResource = Client.ListVersions(SourceBucketName);
-			var Target1VersionsResource = Client.ListVersions(Target1BucketName);
-			var Target2VersionsResource = Client.ListVersions(Target2BucketName);
-			var SourceVerions = GetVersions(SourceVersionsResource.Versions);
-			var SourceDeleteMarkers = GetDeleteMarkers(SourceVersionsResource.Versions);
-			var Target1Verions = GetVersions(Target1VersionsResource.Versions);
-			var Target2Verions = GetVersions(Target2VersionsResource.Versions);
-			var Target2DeleteMarkers = GetDeleteMarkers(Target2VersionsResource.Versions);
-
-			VersionIdsCompare(SourceVerions, Target1Verions);
-			VersionIdsCompare(SourceVerions, Target2Verions);
-			VersionIdsCompare(SourceVerions, Target2Verions);
-			VersionIdsCompare(SourceDeleteMarkers, Target2DeleteMarkers);
-		}
-
-
-		[TestMethod("trest_replication_invalid_source_bucket_name")]
+		[TestMethod("test_replication_invalid_source_bucket_name")]
 		[TestProperty(MainData.Major, "Replication")]
 		[TestProperty(MainData.Minor, "ERROR")]
 		[TestProperty(MainData.Explanation, "원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")]
 		[TestProperty(MainData.Result, MainData.ResultFailure)]
-		public void trest_replication_invalid_source_bucket_name()
+		public void test_replication_invalid_source_bucket_name()
 		{
 			var SourceBucketName = GetNewBucketName(false);
 			var TargetBucketName = GetNewBucketName(false);
@@ -372,12 +97,12 @@ namespace s3tests2
 		}
 
 
-		[TestMethod("trest_replication_invalid_source_bucket_versioning")]
+		[TestMethod("test_replication_invalid_source_bucket_versioning")]
 		[TestProperty(MainData.Major, "Replication")]
 		[TestProperty(MainData.Minor, "ERROR")]
 		[TestProperty(MainData.Explanation, "원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")]
 		[TestProperty(MainData.Result, MainData.ResultFailure)]
-		public void trest_replication_invalid_source_bucket_versioning()
+		public void test_replication_invalid_source_bucket_versioning()
 		{
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucketName(false);
@@ -407,12 +132,12 @@ namespace s3tests2
 		}
 
 
-		[TestMethod("trest_replication_invalid_target_bucket_name")]
+		[TestMethod("test_replication_invalid_target_bucket_name")]
 		[TestProperty(MainData.Major, "Replication")]
 		[TestProperty(MainData.Minor, "ERROR")]
 		[TestProperty(MainData.Explanation, "대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")]
 		[TestProperty(MainData.Result, MainData.ResultFailure)]
-		public void trest_replication_invalid_target_bucket_name()
+		public void test_replication_invalid_target_bucket_name()
 		{
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucketName(false);
@@ -442,12 +167,12 @@ namespace s3tests2
 		}
 
 
-		[TestMethod("trest_replication_invalid_target_bucket_versioning")]
+		[TestMethod("test_replication_invalid_target_bucket_versioning")]
 		[TestProperty(MainData.Major, "Replication")]
 		[TestProperty(MainData.Minor, "ERROR")]
 		[TestProperty(MainData.Explanation, "대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")]
 		[TestProperty(MainData.Result, MainData.ResultFailure)]
-		public void trest_replication_invalid_target_bucket_versioning()
+		public void test_replication_invalid_target_bucket_versioning()
 		{
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucketName();
