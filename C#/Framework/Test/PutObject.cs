@@ -245,19 +245,6 @@ namespace s3tests2
 			Assert.IsTrue(ErrorCheck(e.StatusCode));
 		}
 
-		[TestMethod("test_object_set_get_metadata_empty_to_unreadable_infix")]
-		[Ignore("AWS에서 문자열 중간에 읽을수 없는 특수문자는 무시하고 저장하기 때문에 에러가 발생하지 않음.")]
-		[TestProperty(MainData.Major, "PutObject")]
-		[TestProperty(MainData.Minor, "Metadata")]
-		[TestProperty(MainData.Explanation, "메타데이터에 올바르지 않는 문자[EOF(\x04)]를 문자열 중간에 사용할 경우 실패 확인")]
-		[TestProperty(MainData.Result, MainData.ResultFailure)]
-		public void test_object_set_get_metadata_empty_to_unreadable_infix()
-		{
-			var Metadata = "h\x04w";
-			var e = TestMetadataUnreadable(Metadata);
-			Assert.IsTrue(ErrorCheck(e.StatusCode));
-		}
-
 		[TestMethod("test_object_metadata_replaced_on_put")]
 		[TestProperty(MainData.Major, "PutObject")]
 		[TestProperty(MainData.Minor, "Metadata")]
@@ -585,7 +572,27 @@ namespace s3tests2
 			Keys = GetKeys(Response);
 			Assert.AreEqual(2, Keys.Count);
 		}
-		
+
+		[TestMethod("test_object_overwrite")]
+		[TestProperty(MainData.Major, "PutObject")]
+		[TestProperty(MainData.Minor, "Overwrite")]
+		[TestProperty(MainData.Explanation, "오브젝트를 덮어쓰기 했을때 올바르게 반영되는지 확인")]
+		[TestProperty(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_overwrite()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var key = "temp";
+			var Content1 = RandomTextToLong(10 * MainData.KB);
+			var Content2 = RandomTextToLong(1 * MainData.MB);
+
+			Client.PutObject(BucketName, key, Content1);
+			Client.PutObject(BucketName, key, Content2);
+
+			var Response = Client.GetObject(BucketName, key);
+			Assert.AreEqual(Content2, GetBody(Response));
+		}
+
 		[TestMethod("test_object_emoji")]
 		[TestProperty(MainData.Major, "Bucket")]
 		[TestProperty(MainData.Minor, "PUT")]
