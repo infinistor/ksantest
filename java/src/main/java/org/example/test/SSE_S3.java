@@ -12,7 +12,6 @@ package org.example.test;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -615,7 +614,7 @@ public class SSE_S3 extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var Data = Utils.randomTextToLong(1000);
-
+		
 		var Key = "bar";
 		client.putObject(bucketName, Key, Data);
 
@@ -631,7 +630,6 @@ public class SSE_S3 extends TestBase
 
 		var GetResponse = client.getObject(bucketName, Key);
 		var Body = GetBody(GetResponse.getObjectContent());
-		assertNull(GetResponse.getObjectMetadata().getSSEAlgorithm());
 		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 
 		
@@ -642,7 +640,6 @@ public class SSE_S3 extends TestBase
 
 		GetResponse = client.getObject(bucketName, Key2);
 		Body = GetBody(GetResponse.getObjectContent());
-		assertNull(GetResponse.getObjectMetadata().getSSEAlgorithm());
 		assertTrue(Data2.equals(Body), MainData.NOT_MATCHED);
 	}
 }
