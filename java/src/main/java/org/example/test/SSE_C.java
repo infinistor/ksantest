@@ -369,19 +369,19 @@ public class SSE_C extends TestBase
 		var starts3 = new JsonArray();
 		starts3.add("starts-with");
 		starts3.add("$x-amz-server-side-encryption-customer-algorithm");
-		starts3.add("");
+		starts3.add("AES256");
 		Conditions.add(starts3);
 
 		var starts4 = new JsonArray();
 		starts4.add("starts-with");
 		starts4.add("$x-amz-server-side-encryption-customer-key");
-		starts4.add("");
+		starts4.add("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=");
 		Conditions.add(starts4);
 
 		var starts5 = new JsonArray();
 		starts5.add("starts-with");
 		starts5.add("$x-amz-server-side-encryption-customer-key-md5");
-		starts5.add("");
+		starts5.add("DWygnHRtgiJ77HCm+1rvHw==");
 		Conditions.add(starts5);
 
 		var ContentLengthRange = new JsonArray();
