@@ -781,7 +781,7 @@ public class Grants extends TestBase
 		assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, Key1));
 		assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, Key2));
 		assertThrows(AmazonServiceException.class, () -> AltClient.listObjects(bucketName));
-		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "barcontent"));
+		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, Key2));
 
 		var AltClient2 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> AltClient2.putObject(bucketName, Key2, "baroverwrite"));
@@ -803,7 +803,7 @@ public class Grants extends TestBase
 		assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, Key1));
 		assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, Key2));
 		assertThrows(AmazonServiceException.class, () -> AltClient.listObjectsV2(bucketName));
-		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "barcontent"));
+		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, Key2));
 
 		var AltClient2 = getAltClient();
 
@@ -824,7 +824,7 @@ public class Grants extends TestBase
 		var Response = AltClient.getObject(bucketName, Key1);
 
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals("foocontent", Body);
+		assertEquals(Key1, Body);
 
 		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "foooverwrite"));
 
@@ -850,7 +850,7 @@ public class Grants extends TestBase
 		var Response = AltClient.getObject(bucketName, Key1);
 
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals("foocontent", Body);
+		assertEquals(Key1, Body);
 
 		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "foooverwrite"));
 
@@ -876,7 +876,7 @@ public class Grants extends TestBase
 		var Response = AltClient.getObject(bucketName, Key1);
 
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals("foocontent", Body);
+		assertEquals(Key1, Body);
 
 		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "foooverwrite"));
 
@@ -902,7 +902,7 @@ public class Grants extends TestBase
 		var Response = AltClient.getObject(bucketName, Key1);
 
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals("foocontent", Body);
+		assertEquals(Key1, Body);
 
 		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "foooverwrite"));
 
@@ -952,7 +952,7 @@ public class Grants extends TestBase
 
 		var Response = AltClient.getObject(bucketName, Key1);
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals("foocontent", Body);
+		assertEquals(Key1, Body);
 
 		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "foooverwrite"));
 
@@ -979,7 +979,7 @@ public class Grants extends TestBase
 
 		var Response = AltClient.getObject(bucketName, Key1);
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals("foocontent", Body);
+		assertEquals(Key1, Body);
 
 		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "foooverwrite"));
 
@@ -1031,7 +1031,7 @@ public class Grants extends TestBase
 
 		var Response = AltClient.getObject(bucketName, Key1);
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals("foocontent", Body);
+		assertEquals(Key1, Body);
 		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "foooverwrite"));
 
 		assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, Key2));
@@ -1057,7 +1057,7 @@ public class Grants extends TestBase
 
 		var Response = AltClient.getObject(bucketName, Key1);
 		var Body = GetBody(Response.getObjectContent());
-		assertEquals("foocontent", Body);
+		assertEquals(Key1, Body);
 		assertThrows(AmazonServiceException.class, () -> AltClient.putObject(bucketName, Key1, "foooverwrite"));
 
 		assertThrows(AmazonServiceException.class, () -> AltClient.getObject(bucketName, Key2));

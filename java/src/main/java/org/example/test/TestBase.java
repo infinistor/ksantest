@@ -625,9 +625,9 @@ public class TestBase {
 		key2 = "bar";
 
 		client.setBucketAcl(bucketName, bucketACL);
-		client.putObject(bucketName, key1, "foo content");
+		client.putObject(bucketName, key1, key1);
 		client.setObjectAcl(bucketName, key1, objectACL);
-		client.putObject(bucketName, key2, "bar content");
+		client.putObject(bucketName, key2, key2);
 
 		return bucketName;
 	}
