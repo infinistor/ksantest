@@ -54,7 +54,7 @@ public class SSE_S3 extends TestBase
 	//1Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_sse_s3_encrypted_transfer_1b()
 	{
-		TestEncryptionSSE_S3CustomerWrite(1);
+		testEncryptionSSE_S3CustomerWrite(1);
 	}
 
 	@Test
@@ -62,7 +62,7 @@ public class SSE_S3 extends TestBase
 	//1KB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_sse_s3_encrypted_transfer_1kb()
 	{
-		TestEncryptionSSE_S3CustomerWrite(1024);
+		testEncryptionSSE_S3CustomerWrite(1024);
 	}
 
 	@Test
@@ -70,7 +70,7 @@ public class SSE_S3 extends TestBase
 	//1MB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_sse_s3_encrypted_transfer_1MB()
 	{
-		TestEncryptionSSE_S3CustomerWrite(1024 * 1024);
+		testEncryptionSSE_S3CustomerWrite(1024 * 1024);
 	}
 
 	@Test
@@ -78,7 +78,7 @@ public class SSE_S3 extends TestBase
 	//13Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_sse_s3_encrypted_transfer_13b()
 	{
-		TestEncryptionSSE_S3CustomerWrite(13);
+		testEncryptionSSE_S3CustomerWrite(13);
 	}
 
 	@Test
@@ -88,17 +88,17 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "testobj";
-		var Data = Utils.randomTextToLong(1000);
-		var Metadata = new ObjectMetadata();
-		Metadata.addUserMetadata("x-amz-meta-foo", "bar");
+		var key = "obj";
+		var data = Utils.randomTextToLong(1000);
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("x-amz-meta-foo", "bar");
 
-		Metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+		metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
 
-		client.putObject(bucketName, Key, createBody(Data), Metadata);
+		client.putObject(bucketName, key, createBody(data), metadata);
 
-		var Response = client.getObjectMetadata(bucketName, Key);
-		assertEquals(Metadata.getUserMetadata(), Response.getUserMetadata());
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
 	}
 
 	@Test
@@ -108,44 +108,44 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "multipart_enc";
-		var Size = 50 * MainData.MB;
-		var ContentType = "text/plain";
-		var MetadataList = new ObjectMetadata();
-		MetadataList.addUserMetadata("x-amz-meta-foo", "bar");
-		MetadataList.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-		MetadataList.setContentType(ContentType);
+		var key = "multipart_enc";
+		var size = 50 * MainData.MB;
+		var contentType = "text/plain";
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("x-amz-meta-foo", "bar");
+		metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+		metadata.setContentType(contentType);
 
-		var InitMultiPartResponse = client
-				.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, Key, MetadataList));
-		var UploadID = InitMultiPartResponse.getUploadId();
+		var initMultiPartResponse = client
+				.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, metadata));
+		var uploadId = initMultiPartResponse.getUploadId();
 
-		var Parts = Utils.generateRandomString(Size, 5 * MainData.MB);
-		var PartETag = new ArrayList<PartETag>();
-		int PartNumber = 1;
-		var Data = "";
-		for (var Part : Parts) {
-			Data += Part;
-			var PartResPonse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(Key)
-					.withUploadId(UploadID).withPartNumber(PartNumber++).withInputStream(createBody(Part))
-					.withPartSize(Part.length()));
-			PartETag.add(PartResPonse.getPartETag());
+		var parts = Utils.generateRandomString(size, 5 * MainData.MB);
+		var partETags = new ArrayList<PartETag>();
+		int partNumber = 1;
+		var data = "";
+		for (var part : parts) {
+			data += part;
+			var partResPonse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+					.withUploadId(uploadId).withPartNumber(partNumber++).withInputStream(createBody(part))
+					.withPartSize(part.length()));
+			partETags.add(partResPonse.getPartETag());
 		}
 
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, Key, UploadID, PartETag));
-		var HeadResponse = client.listObjectsV2(bucketName);
-		var ObjectCount = HeadResponse.getKeyCount();
-		assertEquals(1, ObjectCount);
-		var BytesUsed = GetBytesUsed(HeadResponse);
-		assertEquals(Size, BytesUsed);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId, partETags));
+		var headResponse = client.listObjectsV2(bucketName);
+		var objectCount = headResponse.getKeyCount();
+		assertEquals(1, objectCount);
+		var bytesUsed = GetBytesUsed(headResponse);
+		assertEquals(size, bytesUsed);
 
-		var GetResponse = client.getObjectMetadata(bucketName, Key);
-		assertEquals(MetadataList.getUserMetadata(), GetResponse.getUserMetadata());
-		assertEquals(ContentType, GetResponse.getContentType());
+		var getResponse = client.getObjectMetadata(bucketName, key);
+		assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
+		assertEquals(contentType, getResponse.getContentType());
 
-		CheckContentUsingRange(bucketName, Key, Data, MainData.MB);
-		CheckContentUsingRange(bucketName, Key, Data, 10 * MainData.MB);
-		CheckContentUsingRandomRange(bucketName, Key, Data, 100);
+		checkContentUsingRange(bucketName, key, data, MainData.MB);
+		checkContentUsingRange(bucketName, key, data, 10 * MainData.MB);
+		checkContentUsingRandomRange(bucketName, key, data, 100);
 	}
 
 	@Test
@@ -168,15 +168,12 @@ public class SSE_S3 extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
-
-		// var Response = client.getBucketEncryption(bucketName);
-		// assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 	}
 
 	@Test
@@ -187,15 +184,15 @@ public class SSE_S3 extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(1, Response.getServerSideEncryptionConfiguration().getRules().size());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(1, response.getServerSideEncryptionConfiguration().getRules().size());
 
 		client.deleteBucketEncryption(bucketName);
 
@@ -210,21 +207,21 @@ public class SSE_S3 extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "for/bar", "test/" }));
-		createObjectsToBody(bucketName, KeyNames, "");
+		var keys = new ArrayList<>(Arrays.asList(new String[] { "for/bar", "test/" }));
+		createObjectsToBody(bucketName, keys, "");
 
-		var GetHeadResponse = client.getObjectMetadata(bucketName, KeyNames.get(1));
-		assertEquals(SSEAlgorithm.AES256.toString(), GetHeadResponse.getSSEAlgorithm());
+		var getHeadResponse = client.getObjectMetadata(bucketName, keys.get(1));
+		assertEquals(SSEAlgorithm.AES256.toString(), getHeadResponse.getSSEAlgorithm());
 	}
 
 	@Test
@@ -232,7 +229,7 @@ public class SSE_S3 extends TestBase
 	//버킷에 SSE-S3 설정하여 업로드한 1kb 오브젝트를 복사 가능한지 확인
 	public void test_copy_object_encryption_1kb()
 	{
-		TestEncryptionSSE_S3Copy(1024);
+		testEncryptionSSE_S3Copy(1024);
 	}
 
 	@Test
@@ -240,7 +237,7 @@ public class SSE_S3 extends TestBase
 	//버킷에 SSE-S3 설정하여 업로드한 256kb 오브젝트를 복사 가능한지 확인
 	public void test_copy_object_encryption_256kb()
 	{
-		TestEncryptionSSE_S3Copy(256 * 1024);
+		testEncryptionSSE_S3Copy(256 * 1024);
 	}
 
 	@Test
@@ -248,7 +245,7 @@ public class SSE_S3 extends TestBase
 	//버킷에 SSE-S3 설정하여 업로드한 1mb 오브젝트를 복사 가능한지 확인
 	public void test_copy_object_encryption_1mb()
 	{
-		TestEncryptionSSE_S3Copy(1024 * 1024);
+		testEncryptionSSE_S3Copy(1024 * 1024);
 	}
 
 	@Test
@@ -258,25 +255,25 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Data = Utils.randomTextToLong(1000);
+		var data = Utils.randomTextToLong(1000);
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var Key = "bar";
-		client.putObject(bucketName, Key, Data);
+		var key = "bar";
+		client.putObject(bucketName, key, data);
 
-		var GetResponse = client.getObject(bucketName, Key);
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var getResponse = client.getObject(bucketName, key);
+		var body = getBody(getResponse.getObjectContent());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSEAlgorithm());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -286,25 +283,25 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientV4(true);
-		var Data = Utils.randomTextToLong(1000);
+		var data = Utils.randomTextToLong(1000);
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var Key = "bar";
-		client.putObject(bucketName, Key, Data);
+		var key = "bar";
+		client.putObject(bucketName, key, data);
 
-		var GetResponse = client.getObject(bucketName, Key);
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var getResponse = client.getObject(bucketName, key);
+		var body = getBody(getResponse.getObjectContent());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSEAlgorithm());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -314,25 +311,25 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttpsV4(true, false);
-		var Data = Utils.randomTextToLong(1000);
+		var data = Utils.randomTextToLong(1000);
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var Key = "bar";
-		client.putObject(bucketName, Key, Data);
+		var key = "bar";
+		client.putObject(bucketName, key, data);
 
-		var GetResponse = client.getObject(bucketName, Key);
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var getResponse = client.getObject(bucketName, key);
+		var body = getBody(getResponse.getObjectContent());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSEAlgorithm());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -342,25 +339,25 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttpsV4(true, true);
-		var Data = Utils.randomTextToLong(1000);
+		var data = Utils.randomTextToLong(1000);
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var Key = "bar";
-		client.putObject(bucketName, Key, Data);
+		var key = "bar";
+		client.putObject(bucketName, key, data);
 
-		var GetResponse = client.getObject(bucketName, Key);
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var getResponse = client.getObject(bucketName, key);
+		var body = getBody(getResponse.getObjectContent());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSEAlgorithm());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -370,25 +367,25 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttpsV4(false, false);
-		var Data = Utils.randomTextToLong(1000);
+		var data = Utils.randomTextToLong(1000);
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var Key = "bar";
-		client.putObject(bucketName, Key, Data);
+		var key = "bar";
+		client.putObject(bucketName, key, data);
 
-		var GetResponse = client.getObject(bucketName, Key);
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var getResponse = client.getObject(bucketName, key);
+		var body = getBody(getResponse.getObjectContent());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSEAlgorithm());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -398,25 +395,25 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttpsV4(false, true);
-		var Data = Utils.randomTextToLong(1000);
+		var data = Utils.randomTextToLong(1000);
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var Key = "bar";
-		client.putObject(bucketName, Key, Data);
+		var key = "bar";
+		client.putObject(bucketName, key, data);
 
-		var GetResponse = client.getObject(bucketName, Key);
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertEquals(SSEAlgorithm.AES256.toString(), GetResponse.getObjectMetadata().getSSEAlgorithm());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var getResponse = client.getObject(bucketName, key);
+		var body = getBody(getResponse.getObjectContent());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSEAlgorithm());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -426,25 +423,25 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
+		var key = "foo";
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var PutURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var PutResponse = PutObject(PutURL, Key);
-		assertEquals(200, PutResponse.getStatusLine().getStatusCode());
+		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
+		var putResponse = PutObject(putURL, key);
+		assertEquals(200, putResponse.getStatusLine().getStatusCode());
 
-		var GetURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var GetResponse = GetObject(GetURL);
-		assertEquals(200, GetResponse.getStatusLine().getStatusCode());
+		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
+		var getResponse = GetObject(getURL);
+		assertEquals(200, getResponse.getStatusLine().getStatusCode());
 
 	}
 
@@ -455,25 +452,25 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientV4(true);
-		var Key = "foo";
+		var key = "foo";
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var PutURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var PutResponse = PutObject(PutURL, Key);
-		assertEquals(200, PutResponse.getStatusLine().getStatusCode());
+		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
+		var putResponse = PutObject(putURL, key);
+		assertEquals(200, putResponse.getStatusLine().getStatusCode());
 
-		var GetURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var GetResponse = GetObject(GetURL);
-		assertEquals(200, GetResponse.getStatusLine().getStatusCode());
+		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
+		var getResponse = GetObject(getURL);
+		assertEquals(200, getResponse.getStatusLine().getStatusCode());
 	}
 
 	@Test
@@ -483,18 +480,18 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
-		var Data = Utils.randomTextToLong(15 * MainData.MB);
+		var key = "foo";
+		var data = Utils.randomTextToLong(15 * MainData.MB);
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		client.putObject(bucketName, Key, Data);
-		CheckContent(bucketName, Key, Data, 50);
+		client.putObject(bucketName, key, data);
+		checkContent(bucketName, key, data, 50);
 	}
 
 	@Test
@@ -504,19 +501,19 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
-		var FileSize = 15 * 1024 * 1024;
-		var Data = Utils.randomTextToLong(FileSize);
+		var key = "foo";
+		var size = 15 * 1024 * 1024;
+		var data = Utils.randomTextToLong(size);
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		var SSE_S3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		client.putObject(bucketName, Key, Data);
-		CheckContentUsingRandomRange(bucketName, Key, Data, 100);
+		client.putObject(bucketName, key, data);
+		checkContentUsingRandomRange(bucketName, key, data, 100);
 	}
 
 	@Test
@@ -526,38 +523,38 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var SourceKey = "multipart_enc";
-		var Size = 50 * MainData.MB;
-		var ContentType = "text/plain";
-		var Metadata = new ObjectMetadata();
-		Metadata.addUserMetadata("x-amz-meta-foo", "bar");
-		Metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-		Metadata.setContentType(ContentType);
+		var sourceKey = "multipart_enc";
+		var size = 50 * MainData.MB;
+		var contentType = "text/plain";
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("x-amz-meta-foo", "bar");
+		metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+		metadata.setContentType(contentType);
 
 		// 멀티파트 업로드
-		var UploadData = SetupMultipartUpload(client, bucketName, SourceKey, Size, Metadata);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, SourceKey, UploadData.uploadId, UploadData.parts));
+		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size, metadata);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, sourceKey, uploadData.uploadId, uploadData.parts));
 
 		//올바르게 업로드 되었는지 확인
-		var HeadResponse = client.listObjectsV2(bucketName);
-		var ObjectCount = HeadResponse.getKeyCount();
-		assertEquals(1, ObjectCount);
-		var BytesUsed = GetBytesUsed(HeadResponse);
-		assertEquals(Size, BytesUsed);
+		var headResponse = client.listObjectsV2(bucketName);
+		var objectCount = headResponse.getKeyCount();
+		assertEquals(1, objectCount);
+		var bytesUsed = GetBytesUsed(headResponse);
+		assertEquals(size, bytesUsed);
 
-		var GetResponse = client.getObjectMetadata(bucketName, SourceKey);
-		assertEquals(Metadata.getUserMetadata(), GetResponse.getUserMetadata());
-		assertEquals(ContentType, GetResponse.getContentType());
+		var getResponse = client.getObjectMetadata(bucketName, sourceKey);
+		assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
+		assertEquals(contentType, getResponse.getContentType());
 
-		CheckContentUsingRange(bucketName, SourceKey, UploadData.getBody(), MainData.MB);
+		checkContentUsingRange(bucketName, sourceKey, uploadData.getBody(), MainData.MB);
 
 		// 멀티파트 복사
-		var TargetKey = "multipart_enc_copy";
-		UploadData = MultipartCopy(client, bucketName, SourceKey, bucketName, TargetKey, Size, Metadata);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey, UploadData.uploadId, UploadData.parts));
+		var targetKey = "multipart_enc_copy";
+		uploadData = multipartCopy(client, bucketName, sourceKey, bucketName, targetKey, size, metadata);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, targetKey, uploadData.uploadId, uploadData.parts));
 
 		//올바르게 복사 되었는지 확인
-		CheckCopyContentUsingRange(bucketName, SourceKey, bucketName, TargetKey, MainData.MB);
+		checkCopyContentUsingRange(bucketName, sourceKey, bucketName, targetKey, MainData.MB);
 	}
 
 	@Test
@@ -567,43 +564,43 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var SourceKey = "multipart_enc";
-		var Size = 10 * MainData.MB;
-		var ContentType = "text/plain";
-		var Metadata = new ObjectMetadata();
-		Metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-		Metadata.setContentType(ContentType);
-		var Body = new StringBuilder();
+		var sourceKey = "multipart_enc";
+		var size = 10 * MainData.MB;
+		var contentType = "text/plain";
+		var metadata = new ObjectMetadata();
+		metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+		metadata.setContentType(contentType);
+		var body = new StringBuilder();
 
 		// 멀티파트 업로드
-		var UploadData = SetupMultipartUpload(client, bucketName, SourceKey, Size, Metadata);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, SourceKey, UploadData.uploadId, UploadData.parts));
+		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size, metadata);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, sourceKey, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
-		Body.append(UploadData.body);
-		CheckContentUsingRange(bucketName, SourceKey, Body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, sourceKey, body.toString(), MainData.MB);
 
 		// 멀티파트 카피
 		var TargetKey1 = "mymultipart1";
-		UploadData = MultipartCopy(client, bucketName, SourceKey, bucketName, TargetKey1, Size, Metadata);
+		uploadData = multipartCopy(client, bucketName, sourceKey, bucketName, TargetKey1, size, metadata);
 		// 추가파츠 업로드
-		UploadData = MultipartUpload(client, bucketName, TargetKey1, Size, UploadData);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey1, UploadData.uploadId, UploadData.parts));
+		uploadData = MultipartUpload(client, bucketName, TargetKey1, size, uploadData);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey1, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
-		Body.append(UploadData.body);
-		CheckContentUsingRange(bucketName, TargetKey1, Body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, TargetKey1, body.toString(), MainData.MB);
 
 		// 멀티파트 카피
 		var TargetKey2 = "mymultipart2";
-		UploadData = MultipartCopy(client, bucketName, TargetKey1, bucketName, TargetKey2, Size * 2, Metadata);
+		uploadData = multipartCopy(client, bucketName, TargetKey1, bucketName, TargetKey2, size * 2, metadata);
 		// 추가파츠 업로드
-		UploadData = MultipartUpload(client, bucketName, TargetKey2, Size, UploadData);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey2, UploadData.uploadId, UploadData.parts));
+		uploadData = MultipartUpload(client, bucketName, TargetKey2, size, uploadData);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey2, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
-		Body.append(UploadData.body);
-		CheckContentUsingRange(bucketName, TargetKey2, Body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, TargetKey2, body.toString(), MainData.MB);
 	}
 	
 	@Test
@@ -613,33 +610,68 @@ public class SSE_S3 extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Data = Utils.randomTextToLong(1000);
+		var data = Utils.randomTextToLong(1000);
 		
-		var Key = "bar";
-		client.putObject(bucketName, Key, Data);
+		var putKey = "put";
+		var copyKey = "copy";
+		var multiKey = "multi";
+		
+		// 일반 파일 업로드
+		client.putObject(bucketName, putKey, data);
 
-		var SSES3Config = new ServerSideEncryptionConfiguration()
+		// 일반 파일 복사
+		client.copyObject(bucketName, putKey, bucketName, copyKey);
+
+		// 멀티파트 업로드
+		var uploadData = setupMultipartUpload(client, bucketName, multiKey, 5 * MainData.MB, null);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, multiKey, uploadData.uploadId, uploadData.parts));
+
+		//SSE-S3 설정
+		var sseS3Config = new ServerSideEncryptionConfiguration()
 			.withRules(new ServerSideEncryptionRule()
 			.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
 			.withSSEAlgorithm(SSEAlgorithm.AES256)).withBucketKeyEnabled(false));
 
-		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(SSES3Config));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName).withServerSideEncryptionConfiguration(sseS3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSES3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		//SSE-S3 설정이 올바르게 되었는지 확인
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(sseS3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var GetResponse = client.getObject(bucketName, Key);
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		//SSE-S3 설정이 적용되지 않은 파일들이 올바르게 복사되었는지 확인
+		var getResponse = client.getObject(bucketName, putKey);
+		var body = getBody(getResponse.getObjectContent());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 
+		getResponse = client.getObject(bucketName, copyKey);
+		body = getBody(getResponse.getObjectContent());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
+
+		checkContentUsingRange(bucketName, multiKey, uploadData.body.toString(), MainData.MB);
 		
-		var Key2 = "bar2";
-		var Data2 = Utils.randomTextToLong(1000);
-		client.putObject(bucketName, Key2, Data2);
+		var putKey2 = "put2";
+		var copyKey2 = "copy2";
+		var multiKey2 = "multi2";
+		var data2 = Utils.randomTextToLong(1000);
+		client.putObject(bucketName, putKey2, data2);
+		
+		// 일반 파일 복사
+		client.copyObject(bucketName, putKey, bucketName, copyKey2);
+
+		// 멀티파트 업로드
+		var uploadData2 = setupMultipartUpload(client, bucketName, multiKey2, 5 * MainData.MB, null);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, multiKey2, uploadData2.uploadId, uploadData2.parts));
+
 		client.deleteBucketEncryption(bucketName);
 
-		GetResponse = client.getObject(bucketName, Key2);
-		Body = GetBody(GetResponse.getObjectContent());
-		assertTrue(Data2.equals(Body), MainData.NOT_MATCHED);
+		getResponse = client.getObject(bucketName, putKey2);
+		body = getBody(getResponse.getObjectContent());
+		assertTrue(data2.equals(body), MainData.NOT_MATCHED);
+
+		getResponse = client.getObject(bucketName, copyKey2);
+		body = getBody(getResponse.getObjectContent());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
+
+		checkContentUsingRange(bucketName, multiKey, uploadData2.body.toString(), MainData.MB);
 	}
 }
