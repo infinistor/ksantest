@@ -51,16 +51,16 @@ public class Multipart extends TestBase {
 	public void test_multipart_upload_empty() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key1 = "mymultipart";
-		var Size = 0;
+		var key = "multipart";
+		var size = 0;
 
-		var UploadData = SetupMultipartUpload(client, bucketName, Key1, Size, null);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, null);
 		var e = assertThrows(AmazonServiceException.class, () -> client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key1, UploadData.uploadId, UploadData.parts)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.MalformedXML, ErrorCode);
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts)));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(400, statusCode);
+		assertEquals(MainData.MalformedXML, errorCode);
 	}
 
 	@Test
@@ -69,35 +69,35 @@ public class Multipart extends TestBase {
 	public void test_multipart_upload_small() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key1 = "mymultipart";
-		var Size = 1;
+		var key = "multipart";
+		var size = 1;
 
-		var UploadData = SetupMultipartUpload(client, bucketName, Key1, Size, null);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key1, UploadData.uploadId, UploadData.parts));
-		var Response = client.getObject(bucketName, Key1);
-		assertEquals(Size, Response.getObjectMetadata().getContentLength());
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
+		var response = client.getObject(bucketName, key);
+		assertEquals(size, response.getObjectMetadata().getContentLength());
 	}
 
 	@Test
 	@Tag("Copy")
 	// 버킷a에서 버킷b로 멀티파트 복사 성공확인
 	public void test_multipart_copy_small() {
-		var SourceKey = "foo";
-		var SourceBucketName = createKeyWithRandomContent(SourceKey, 0, null, null);
+		var sourceKey = "foo";
+		var sourceBucketName = createKeyWithRandomContent(sourceKey, 0, null, null);
 
-		var TargetBucketName = getNewBucket();
-		var TargetKey = "mymultipart";
-		var Size = 1;
+		var targetBucketName = getNewBucket();
+		var targetKey = "multipart";
+		var size = 1;
 		var client = getClient();
 
-		var UploadData = MultipartCopy(SourceBucketName, SourceKey, TargetBucketName, TargetKey, Size, client, 0, null);
+		var uploadData = multipartCopy(sourceBucketName, sourceKey, targetBucketName, targetKey, size, client, 0, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId, uploadData.parts));
 
-		var Response = client.getObject(TargetBucketName, TargetKey);
-		assertEquals(Size, Response.getObjectMetadata().getContentLength());
-		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey, MainData.MB);
+		var response = client.getObject(targetBucketName, targetKey);
+		assertEquals(size, response.getObjectMetadata().getContentLength());
+		checkCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey, MainData.MB);
 	}
 
 	@Test
@@ -105,22 +105,22 @@ public class Multipart extends TestBase {
 	// 범위설정을 잘못한 멀티파트 복사 실패 확인
 	public void test_multipart_copy_invalid_range() {
 		var client = getClient();
-		var SourceKey = "source";
-		var SourceBucketName = createKeyWithRandomContent(SourceKey, 5, null, client);
+		var sourceKey = "source";
+		var sourceBucketName = createKeyWithRandomContent(sourceKey, 5, null, client);
 
-		var TargetKey = "dest";
-		var Response = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(SourceBucketName, TargetKey));
-		var UploadID = Response.getUploadId();
+		var targetKey = "dest";
+		var response = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(sourceBucketName, targetKey));
+		var uploadId = response.getUploadId();
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.copyPart(new CopyPartRequest()
-				.withSourceBucketName(SourceBucketName).withSourceKey(SourceKey)
-				.withDestinationBucketName(SourceBucketName).withDestinationKey(TargetKey).withUploadId(UploadID)
+				.withSourceBucketName(sourceBucketName).withSourceKey(sourceKey)
+				.withDestinationBucketName(sourceBucketName).withDestinationKey(targetKey).withUploadId(uploadId)
 				.withPartNumber(1).withFirstByte((long) 0).withLastByte((long) 21)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
 
-		assertTrue(new ArrayList<>(Arrays.asList(new Integer[] { 400, 416 })).contains(StatusCode));
-		assertEquals(MainData.InvalidArgument, ErrorCode);
+		assertTrue(new ArrayList<>(Arrays.asList(new Integer[] { 400, 416 })).contains(statusCode));
+		assertEquals(MainData.InvalidArgument, errorCode);
 	}
 
 	@Test
@@ -128,49 +128,49 @@ public class Multipart extends TestBase {
 	// 범위를 지정한 멀티파트 복사 성공확인
 	public void test_multipart_copy_without_range() {
 		var client = getClient();
-		var SourceKey = "source";
-		var SourceBucketName = createKeyWithRandomContent(SourceKey, 10, null, client);
-		var TargetBucketName = getNewBucket();
-		var TargetKey = "mymultipartcopy";
+		var sourceKey = "source";
+		var sourceBucketName = createKeyWithRandomContent(sourceKey, 10, null, client);
+		var targetBucketName = getNewBucket();
+		var targetKey = "mymultipartcopy";
 
-		var InitResponse = client
-				.initiateMultipartUpload(new InitiateMultipartUploadRequest(TargetBucketName, TargetKey));
-		var UploadID = InitResponse.getUploadId();
-		var Parts = new ArrayList<PartETag>();
+		var initResponse = client
+				.initiateMultipartUpload(new InitiateMultipartUploadRequest(targetBucketName, targetKey));
+		var uploadId = initResponse.getUploadId();
+		var parts = new ArrayList<PartETag>();
 
-		var CopyResponse = client.copyPart(new CopyPartRequest().withSourceBucketName(SourceBucketName)
-				.withSourceKey(SourceKey).withDestinationBucketName(TargetBucketName).withDestinationKey(TargetKey)
-				.withUploadId(UploadID).withPartNumber(1).withFirstByte((long) 0).withLastByte((long) 9));
-		Parts.add(new PartETag(1, CopyResponse.getETag()));
+		var CopyResponse = client.copyPart(new CopyPartRequest().withSourceBucketName(sourceBucketName)
+				.withSourceKey(sourceKey).withDestinationBucketName(targetBucketName).withDestinationKey(targetKey)
+				.withUploadId(uploadId).withPartNumber(1).withFirstByte((long) 0).withLastByte((long) 9));
+		parts.add(new PartETag(1, CopyResponse.getETag()));
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadID, Parts));
+				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadId, parts));
 
-		var Response = client.getObject(TargetBucketName, TargetKey);
-		assertEquals(10, Response.getObjectMetadata().getContentLength());
-		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+		var response = client.getObject(targetBucketName, targetKey);
+		assertEquals(10, response.getObjectMetadata().getContentLength());
+		CheckCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey);
 	}
 
 	@Test
 	@Tag("SpecialNames")
 	// 특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인
 	public void test_multipart_copy_special_names() {
-		var SourceBucketName = getNewBucket();
-		var TargetBucketName = getNewBucket();
+		var sourceBucketName = getNewBucket();
+		var targetBucketName = getNewBucket();
 
-		var TargetKey = "mymultipart";
-		var Size = 1;
+		var targetKey = "mymultipart";
+		var size = 1;
 		var client = getClient();
 
-		for (var SourceKey : new String[] { " ", "_", "__", "?versionId" }) {
-			createKeyWithRandomContent(SourceKey, 0, SourceBucketName, null);
-			var UploadData = MultipartCopy(client, SourceBucketName, SourceKey, TargetBucketName, TargetKey, Size,
+		for (var sourceKey : new String[] { " ", "_", "__", "?versionId" }) {
+			createKeyWithRandomContent(sourceKey, 0, sourceBucketName, null);
+			var uploadData = multipartCopy(client, sourceBucketName, sourceKey, targetBucketName, targetKey, size,
 					null);
 			client.completeMultipartUpload(
-					new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadData.uploadId,
-							UploadData.parts));
-			var Response = client.getObject(TargetBucketName, TargetKey);
-			assertEquals(Size, Response.getObjectMetadata().getContentLength());
-			CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey, MainData.MB);
+					new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId,
+							uploadData.parts));
+			var response = client.getObject(targetBucketName, targetKey);
+			assertEquals(size, response.getObjectMetadata().getContentLength());
+			checkCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey, MainData.MB);
 		}
 	}
 
@@ -179,67 +179,67 @@ public class Multipart extends TestBase {
 	// 멀티파트 업로드 확인
 	public void test_multipart_upload() {
 		var bucketName = getNewBucket();
-		var Key = "mymultipart";
-		var ContentType = "text/bla";
-		var Size = 50 * MainData.MB;
-		var MetadataList = new ObjectMetadata();
-		MetadataList.addUserMetadata("x-amz-meta-foo", "bar");
-		MetadataList.setContentType(ContentType);
+		var key = "mymultipart";
+		var contentType = "text/bla";
+		var size = 50 * MainData.MB;
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("x-amz-meta-foo", "bar");
+		metadata.setContentType(contentType);
 		var client = getClient();
 
-		var UploadData = SetupMultipartUpload(client, bucketName, Key, Size, MetadataList);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 
-		var HeadResponse = client.listObjectsV2(bucketName);
-		var ObjectCount = HeadResponse.getKeyCount();
-		assertEquals(1, ObjectCount);
-		var BytesUsed = GetBytesUsed(HeadResponse);
-		assertEquals(Size, BytesUsed);
+		var headResponse = client.listObjectsV2(bucketName);
+		var objectCount = headResponse.getKeyCount();
+		assertEquals(1, objectCount);
+		var bytesUsed = GetBytesUsed(headResponse);
+		assertEquals(size, bytesUsed);
 
-		var GetResponse = client.getObjectMetadata(bucketName, Key);
-		assertEquals(ContentType, GetResponse.getContentType());
-		assertEquals(MetadataList.getUserMetadata(), GetResponse.getUserMetadata());
+		var getResponse = client.getObjectMetadata(bucketName, key);
+		assertEquals(contentType, getResponse.getContentType());
+		assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
 
-		var Body = UploadData.getBody();
+		var body = uploadData.getBody();
 
-		CheckContentUsingRange(bucketName, Key, Body, MainData.MB);
-		CheckContentUsingRange(bucketName, Key, Body, 10 * MainData.MB);
-		CheckContentUsingRandomRange(bucketName, Key, Body, 100);
+		checkContentUsingRange(bucketName, key, body, MainData.MB);
+		checkContentUsingRange(bucketName, key, body, 10 * MainData.MB);
+		checkContentUsingRandomRange(bucketName, key, body, 100);
 	}
 
 	@Test
 	@Tag("Copy")
 	// 버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인
 	public void test_multipart_copy_versioned() {
-		var SourceBucketName = getNewBucket();
-		var TargetBucketName = getNewBucket();
+		var sourceBucketName = getNewBucket();
+		var targetBucketName = getNewBucket();
 
-		var TargetKey = "mymultipart";
-		checkVersioning(SourceBucketName, BucketVersioningConfiguration.OFF);
+		var targetKey = "mymultipart";
+		checkVersioning(sourceBucketName, BucketVersioningConfiguration.OFF);
 
-		var SourceKey = "foo";
-		checkConfigureVersioningRetry(SourceBucketName, BucketVersioningConfiguration.ENABLED);
+		var sourceKey = "foo";
+		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningConfiguration.ENABLED);
 
-		var Size = 15 * MainData.MB;
-		createKeyWithRandomContent(SourceKey, Size, SourceBucketName, null);
-		createKeyWithRandomContent(SourceKey, Size, SourceBucketName, null);
-		createKeyWithRandomContent(SourceKey, Size, SourceBucketName, null);
+		var size = 15 * MainData.MB;
+		createKeyWithRandomContent(sourceKey, size, sourceBucketName, null);
+		createKeyWithRandomContent(sourceKey, size, sourceBucketName, null);
+		createKeyWithRandomContent(sourceKey, size, sourceBucketName, null);
 
-		var VersionID = new ArrayList<String>();
+		var versionIds = new ArrayList<String>();
 		var client = getClient();
-		var ListResponse = client.listVersions(SourceBucketName, null);
-		for (var version : ListResponse.getVersionSummaries())
-			VersionID.add(version.getVersionId());
+		var listResponse = client.listVersions(sourceBucketName, null);
+		for (var version : listResponse.getVersionSummaries())
+			versionIds.add(version.getVersionId());
 
-		for (var VID : VersionID) {
-			var UploadData = MultipartCopy(SourceBucketName, SourceKey, TargetBucketName, TargetKey, Size, null, 0,
-					VID);
-			client.completeMultipartUpload(new CompleteMultipartUploadRequest(TargetBucketName, TargetKey,
-					UploadData.uploadId, UploadData.parts));
-			var Response = client.getObject(TargetBucketName, TargetKey);
-			assertEquals(Size, Response.getObjectMetadata().getContentLength());
-			CheckCopyContent(SourceBucketName, SourceKey, TargetBucketName, TargetKey, VID);
+		for (var versionId : versionIds) {
+			var uploadData = multipartCopy(sourceBucketName, sourceKey, targetBucketName, targetKey, size, null, 0,
+					versionId);
+			client.completeMultipartUpload(new CompleteMultipartUploadRequest(targetBucketName, targetKey,
+					uploadData.uploadId, uploadData.parts));
+			var response = client.getObject(targetBucketName, targetKey);
+			assertEquals(size, response.getObjectMetadata().getContentLength());
+			CheckCopyContent(sourceBucketName, sourceKey, targetBucketName, targetKey, versionId);
 		}
 	}
 
@@ -248,14 +248,14 @@ public class Multipart extends TestBase {
 	// 멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
 	public void test_multipart_upload_resend_part() {
 		var bucketName = getNewBucket();
-		var Key = "mymultipart";
-		var Size = 50 * MainData.MB;
+		var key = "multipart";
+		var size = 50 * MainData.MB;
 
-		CheckUploadMultipartResend(bucketName, Key, Size, new ArrayList<>(Arrays.asList(new Integer[] { 0 })));
-		CheckUploadMultipartResend(bucketName, Key, Size, new ArrayList<>(Arrays.asList(new Integer[] { 1 })));
-		CheckUploadMultipartResend(bucketName, Key, Size, new ArrayList<>(Arrays.asList(new Integer[] { 2 })));
-		CheckUploadMultipartResend(bucketName, Key, Size, new ArrayList<>(Arrays.asList(new Integer[] { 1, 2 })));
-		CheckUploadMultipartResend(bucketName, Key, Size,
+		checkUploadMultipartResend(bucketName, key, size, new ArrayList<>(Arrays.asList(new Integer[] { 0 })));
+		checkUploadMultipartResend(bucketName, key, size, new ArrayList<>(Arrays.asList(new Integer[] { 1 })));
+		checkUploadMultipartResend(bucketName, key, size, new ArrayList<>(Arrays.asList(new Integer[] { 2 })));
+		checkUploadMultipartResend(bucketName, key, size, new ArrayList<>(Arrays.asList(new Integer[] { 1, 2 })));
+		checkUploadMultipartResend(bucketName, key, size,
 				new ArrayList<>(Arrays.asList(new Integer[] { 0, 1, 2, 3, 4, 5 })));
 	}
 
@@ -264,38 +264,38 @@ public class Multipart extends TestBase {
 	// 한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
 	public void test_multipart_upload_multiple_sizes() {
 		var bucketName = getNewBucket();
-		var Key = "mymultipart";
+		var key = "mymultipart";
 		var client = getClient();
 
-		var Size = 5 * MainData.MB;
-		var UploadData = SetupMultipartUpload(client, bucketName, Key, Size, null);
+		var size = 5 * MainData.MB;
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 
-		Size = 5 * MainData.MB + 100 * MainData.KB;
-		UploadData = SetupMultipartUpload(client, bucketName, Key, Size, null);
+		size = 5 * MainData.MB + 100 * MainData.KB;
+		uploadData = setupMultipartUpload(client, bucketName, key, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 
-		Size = 5 * MainData.MB + 600 * MainData.KB;
-		UploadData = SetupMultipartUpload(client, bucketName, Key, Size, null);
+		size = 5 * MainData.MB + 600 * MainData.KB;
+		uploadData = setupMultipartUpload(client, bucketName, key, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 
-		Size = 10 * MainData.MB;
-		UploadData = SetupMultipartUpload(client, bucketName, Key, Size, null);
+		size = 10 * MainData.MB;
+		uploadData = setupMultipartUpload(client, bucketName, key, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 
-		Size = 10 * MainData.MB + 100 * MainData.KB;
-		UploadData = SetupMultipartUpload(client, bucketName, Key, Size, null);
+		size = 10 * MainData.MB + 100 * MainData.KB;
+		uploadData = setupMultipartUpload(client, bucketName, key, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 
-		Size = 10 * MainData.MB + 600 * MainData.KB;
-		UploadData = SetupMultipartUpload(client, bucketName, Key, Size, null);
+		size = 10 * MainData.MB + 600 * MainData.KB;
+		uploadData = setupMultipartUpload(client, bucketName, key, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 
 	}
 
@@ -303,48 +303,48 @@ public class Multipart extends TestBase {
 	@Tag("Copy")
 	// 한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인
 	public void test_multipart_copy_multiple_sizes() {
-		var SourceKey = "foo";
-		var SourceBucketName = createKeyWithRandomContent(SourceKey, 12 * MainData.MB, null, null);
+		var sourceKey = "source";
+		var sourceBucketName = createKeyWithRandomContent(sourceKey, 12 * MainData.MB, null, null);
 
-		var TargetBucketName = getNewBucket();
-		var TargetKey = "mymultipart";
+		var targetBucketName = getNewBucket();
+		var targetKey = "target";
 		var client = getClient();
 
-		var Size = 5 * MainData.MB;
-		var UploadData = MultipartCopy(client, SourceBucketName, SourceKey, TargetBucketName, TargetKey, Size, null);
+		var size = 5 * MainData.MB;
+		var uploadData = multipartCopy(client, sourceBucketName, sourceKey, targetBucketName, targetKey, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadData.uploadId, UploadData.parts));
-		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId, uploadData.parts));
+		CheckCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey);
 
-		Size = 5 * MainData.MB + 100 * MainData.KB;
-		UploadData = MultipartCopy(client, SourceBucketName, SourceKey, TargetBucketName, TargetKey, Size, null);
+		size = 5 * MainData.MB + 100 * MainData.KB;
+		uploadData = multipartCopy(client, sourceBucketName, sourceKey, targetBucketName, targetKey, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadData.uploadId, UploadData.parts));
-		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId, uploadData.parts));
+		CheckCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey);
 
-		Size = 5 * MainData.MB + 600 * MainData.KB;
-		UploadData = MultipartCopy(client, SourceBucketName, SourceKey, TargetBucketName, TargetKey, Size, null);
+		size = 5 * MainData.MB + 600 * MainData.KB;
+		uploadData = multipartCopy(client, sourceBucketName, sourceKey, targetBucketName, targetKey, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadData.uploadId, UploadData.parts));
-		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId, uploadData.parts));
+		CheckCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey);
 
-		Size = 10 * MainData.MB;
-		UploadData = MultipartCopy(client, SourceBucketName, SourceKey, TargetBucketName, TargetKey, Size, null);
+		size = 10 * MainData.MB;
+		uploadData = multipartCopy(client, sourceBucketName, sourceKey, targetBucketName, targetKey, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadData.uploadId, UploadData.parts));
-		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId, uploadData.parts));
+		CheckCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey);
 
-		Size = 10 * MainData.MB + 100 * MainData.KB;
-		UploadData = MultipartCopy(client, SourceBucketName, SourceKey, TargetBucketName, TargetKey, Size, null);
+		size = 10 * MainData.MB + 100 * MainData.KB;
+		uploadData = multipartCopy(client, sourceBucketName, sourceKey, targetBucketName, targetKey, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadData.uploadId, UploadData.parts));
-		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId, uploadData.parts));
+		CheckCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey);
 
-		Size = 10 * MainData.MB + 600 * MainData.KB;
-		UploadData = MultipartCopy(client, SourceBucketName, SourceKey, TargetBucketName, TargetKey, Size, null);
+		size = 10 * MainData.MB + 600 * MainData.KB;
+		uploadData = multipartCopy(client, sourceBucketName, sourceKey, targetBucketName, targetKey, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(TargetBucketName, TargetKey, UploadData.uploadId, UploadData.parts));
-		CheckCopyContentUsingRange(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
+				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId, uploadData.parts));
+		CheckCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey);
 	}
 
 	@Test
@@ -352,17 +352,17 @@ public class Multipart extends TestBase {
 	// 멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
 	public void test_multipart_upload_size_too_small() {
 		var bucketName = getNewBucket();
-		var Key = "mymultipart";
+		var key = "multipart";
 		var client = getClient();
 
-		var Size = 1 * MainData.MB;
-		var UploadData = SetupMultipartUpload(client, bucketName, Key, Size, 10 * MainData.KB, null, null);
+		var size = 1 * MainData.MB;
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, 10 * MainData.KB, null, null);
 		var e = assertThrows(AmazonServiceException.class, () -> client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.EntityTooSmall, ErrorCode);
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts)));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(400, statusCode);
+		assertEquals(MainData.EntityTooSmall, errorCode);
 	}
 
 	@Test
@@ -370,7 +370,7 @@ public class Multipart extends TestBase {
 	// 내용물을 채운 멀티파트 업로드 성공 확인
 	public void test_multipart_upload_contents() {
 		var bucketName = getNewBucket();
-		DoTestMultipartUploadContents(bucketName, "mymultipart", 3);
+		doTestMultipartUploadContents(bucketName, "multipart", 3);
 	}
 
 	@Test
@@ -379,31 +379,31 @@ public class Multipart extends TestBase {
 	public void test_multipart_upload_overwrite_existing_object() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "mymultipart";
-		var Payload = Utils.randomTextToLong(5 * MainData.MB);
+		var key = "multipart";
+		var content = Utils.randomTextToLong(5 * MainData.MB);
 		var NumParts = 2;
 
-		client.putObject(bucketName, Key, Payload);
+		client.putObject(bucketName, key, content);
 
-		var InitResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, Key));
-		var UploadID = InitResponse.getUploadId();
-		var Parts = new ArrayList<PartETag>();
-		var AllPayload = "";
+		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		var uploadId = initResponse.getUploadId();
+		var parts = new ArrayList<PartETag>();
+		var totalContent = "";
 
 		for (int i = 0; i < NumParts; i++) {
 			var PartNumber = i + 1;
-			var PartResponse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(Key)
-					.withUploadId(UploadID).withInputStream(createBody(Payload)).withPartNumber(PartNumber)
-					.withPartSize(Payload.length()));
-			Parts.add(new PartETag(PartNumber, PartResponse.getETag()));
-			AllPayload += Payload;
+			var PartResponse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+					.withUploadId(uploadId).withInputStream(createBody(content)).withPartNumber(PartNumber)
+					.withPartSize(content.length()));
+			parts.add(new PartETag(PartNumber, PartResponse.getETag()));
+			totalContent += content;
 		}
 
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, Key, UploadID, Parts));
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId, parts));
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertTrue(AllPayload.equals(Body), MainData.NOT_MATCHED);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertTrue(totalContent.equals(body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -411,18 +411,18 @@ public class Multipart extends TestBase {
 	// 멀티파트 업로드하는 도중 중단 성공 확인
 	public void test_abort_multipart_upload() {
 		var bucketName = getNewBucket();
-		var Key = "mymultipart";
-		var Size = 10 * MainData.MB;
+		var key = "multipart";
+		var size = 10 * MainData.MB;
 		var client = getClient();
 
-		var UploadData = SetupMultipartUpload(client, bucketName, Key, Size, null);
-		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, Key, UploadData.uploadId));
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, null);
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
 
 		var HeadResponse = client.listObjectsV2(bucketName);
 		var ObjectCount = HeadResponse.getKeyCount();
 		assertEquals(0, ObjectCount);
-		var BytesUsed = GetBytesUsed(HeadResponse);
-		assertEquals(0, BytesUsed);
+		var bytesUsed = GetBytesUsed(HeadResponse);
+		assertEquals(0, bytesUsed);
 	}
 
 	@Test
@@ -431,15 +431,15 @@ public class Multipart extends TestBase {
 	public void test_abort_multipart_upload_not_found() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "mymultipart";
-		client.putObject(bucketName, Key, "");
+		var key = "mymultipart";
+		client.putObject(bucketName, key, "");
 
 		var e = assertThrows(AmazonServiceException.class,
-				() -> client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, Key, "56788")));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchUpload, ErrorCode);
+				() -> client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, "56788")));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(404, statusCode);
+		assertEquals(MainData.NoSuchUpload, errorCode);
 	}
 
 	@Test
@@ -448,26 +448,26 @@ public class Multipart extends TestBase {
 	public void test_list_multipart_upload() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "mymultipart";
-		var Key2 = "mymultipart2";
+		var key = "mymultipart";
+		var key2 = "mymultipart2";
 
-		var UploadIDs = new ArrayList<>(Arrays.asList(
-				new String[] { SetupMultipartUpload(client, bucketName, Key, 5 * MainData.MB, null).uploadId,
-						SetupMultipartUpload(client, bucketName, Key, 6 * MainData.MB, null).uploadId,
-						SetupMultipartUpload(client, bucketName, Key2, 5 * MainData.MB, null).uploadId, }));
+		var uploadIds = new ArrayList<>(Arrays.asList(
+				new String[] { setupMultipartUpload(client, bucketName, key, 5 * MainData.MB, null).uploadId,
+						setupMultipartUpload(client, bucketName, key, 6 * MainData.MB, null).uploadId,
+						setupMultipartUpload(client, bucketName, key2, 5 * MainData.MB, null).uploadId, }));
 
-		var Response = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
-		var GetUploadIDs = new ArrayList<String>();
+		var response = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
+		var getUploadIds = new ArrayList<String>();
 
-		for (var UploadData : Response.getMultipartUploads())
-			GetUploadIDs.add(UploadData.getUploadId());
+		for (var uploadData : response.getMultipartUploads())
+			getUploadIds.add(uploadData.getUploadId());
 
-		for (var UploadID : UploadIDs)
-			assertTrue(GetUploadIDs.contains(UploadID));
+		for (var uploadId : uploadIds)
+			assertTrue(getUploadIds.contains(uploadId));
 
-		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, Key, UploadIDs.get(0)));
-		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, Key, UploadIDs.get(1)));
-		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, Key2, UploadIDs.get(2)));
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadIds.get(0)));
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadIds.get(1)));
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key2, uploadIds.get(2)));
 	}
 
 	@Test
@@ -476,25 +476,25 @@ public class Multipart extends TestBase {
 	public void test_multipart_upload_missing_part() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "mymultipart";
-		var Body = "test";
+		var key = "mymultipart";
+		var body = "test";
 
-		var InitResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, Key));
-		var UploadID = InitResponse.getUploadId();
+		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		var uploadId = initResponse.getUploadId();
 
-		var Parts = new ArrayList<PartETag>();
-		var PartResponse = client
-				.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(Key).withUploadId(UploadID)
-						.withInputStream(createBody(Body)).withPartNumber(1).withPartSize(Body.length()));
-		Parts.add(new PartETag(9999, PartResponse.getETag()));
+		var parts = new ArrayList<PartETag>();
+		var partResponse = client
+				.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key).withUploadId(uploadId)
+						.withInputStream(createBody(body)).withPartNumber(1).withPartSize(body.length()));
+		parts.add(new PartETag(9999, partResponse.getETag()));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
-				.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, Key, UploadID, Parts)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+				.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId, parts)));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
 
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidPart, ErrorCode);
+		assertEquals(400, statusCode);
+		assertEquals(MainData.InvalidPart, errorCode);
 	}
 
 	@Test
@@ -503,23 +503,23 @@ public class Multipart extends TestBase {
 	public void test_multipart_upload_incorrect_etag() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "mymultipart";
+		var key = "mymultipart";
 
-		var InitResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, Key));
-		var UploadID = InitResponse.getUploadId();
+		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		var uploadId = initResponse.getUploadId();
 
-		var Parts = new ArrayList<PartETag>();
-		client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(Key).withUploadId(UploadID)
+		var parts = new ArrayList<PartETag>();
+		client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key).withUploadId(uploadId)
 				.withInputStream(createBody("\\00")).withPartNumber(1).withPartSize("\\00".length()));
-		Parts.add(new PartETag(1, "ffffffffffffffffffffffffffffffff"));
+		parts.add(new PartETag(1, "ffffffffffffffffffffffffffffffff"));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
-				.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, Key, UploadID, Parts)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+				.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId, parts)));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
 
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidPart, ErrorCode);
+		assertEquals(400, statusCode);
+		assertEquals(MainData.InvalidPart, errorCode);
 	}
 
 	@Test
@@ -528,21 +528,21 @@ public class Multipart extends TestBase {
 	public void test_atomic_multipart_upload_write() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
-		client.putObject(bucketName, Key, "bar");
+		var key = "foo";
+		client.putObject(bucketName, key, "bar");
 
-		var InitResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, Key));
-		var UploadID = InitResponse.getUploadId();
+		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		var uploadId = initResponse.getUploadId();
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 
-		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, Key, UploadID));
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId));
 
-		Response = client.getObject(bucketName, Key);
-		Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		response = client.getObject(bucketName, key);
+		body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -550,20 +550,20 @@ public class Multipart extends TestBase {
 	// 멀티파트 업로드 목록 확인
 	public void test_multipart_upload_list() {
 		var bucketName = getNewBucket();
-		var Key = "mymultipart";
-		var ContentType = "text/bla";
-		var Size = 50 * MainData.MB;
-		var MetadataList = new ObjectMetadata();
-		MetadataList.addUserMetadata("x-amz-meta-foo", "bar");
-		MetadataList.setContentType(ContentType);
+		var key = "mymultipart";
+		var contentType = "text/bla";
+		var size = 50 * MainData.MB;
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("x-amz-meta-foo", "bar");
+		metadata.setContentType(contentType);
 		var client = getClient();
 
-		var UploadData = SetupMultipartUpload(client, bucketName, Key, Size, MetadataList);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 
-		var Response = client.listParts(new ListPartsRequest(bucketName, Key, UploadData.uploadId));
-		PartsETagCompare(UploadData.parts, Response.getParts());
+		var response = client.listParts(new ListPartsRequest(bucketName, key, uploadData.uploadId));
+		partsETagCompare(uploadData.parts, response.getParts());
 
-		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, Key, UploadData.uploadId));
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
 	}
 
 	@Test
@@ -571,15 +571,15 @@ public class Multipart extends TestBase {
 	// 멀티파트 업로드하는 도중 중단 성공 확인
 	public void test_abort_multipart_upload_list() {
 		var bucketName = getNewBucket();
-		var Key = "mymultipart";
-		var Size = 10 * MainData.MB;
+		var key = "mymultipart";
+		var size = 10 * MainData.MB;
 		var client = getClient();
 
-		var UploadData = SetupMultipartUpload(client, bucketName, Key, Size, null);
-		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, Key, UploadData.uploadId));
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, null);
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
 
-		var ListResponse = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
-		assertEquals(0, ListResponse.getMultipartUploads().size());
+		var listResponse = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
+		assertEquals(0, listResponse.getMultipartUploads().size());
 	}
 
 	@Test
@@ -587,43 +587,43 @@ public class Multipart extends TestBase {
 	// 멀티파트업로드와 멀티파티 카피로 오브젝트가 업로드 가능한지 확인
 	public void test_multipart_copy_many() {
 		var bucketName = getNewBucket();
-		var SourceKey = "mymultipart";
-		var Size = 10 * MainData.MB;
+		var sourceKey = "mymultipart";
+		var size = 10 * MainData.MB;
 		var client = getClient();
-		var Body = new StringBuilder();
+		var body = new StringBuilder();
 
 		// 멀티파트 업로드
-		var UploadData = SetupMultipartUpload(client, bucketName, SourceKey, Size, null);
+		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size, null);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, SourceKey, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, sourceKey, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
-		Body.append(UploadData.body);
-		CheckContentUsingRange(bucketName, SourceKey, Body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, sourceKey, body.toString(), MainData.MB);
 
 		// 멀티파트 카피
 		var TargetKey1 = "mymultipart1";
-		UploadData = MultipartCopy(bucketName, SourceKey, bucketName, TargetKey1, Size, client, 0, null);
+		uploadData = multipartCopy(bucketName, sourceKey, bucketName, TargetKey1, size, client, 0, null);
 		// 추가파츠 업로드
-		UploadData = MultipartUpload(client, bucketName, TargetKey1, Size, UploadData);
+		uploadData = MultipartUpload(client, bucketName, TargetKey1, size, uploadData);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, TargetKey1, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, TargetKey1, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
-		Body.append(UploadData.body);
-		CheckContentUsingRange(bucketName, TargetKey1, Body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, TargetKey1, body.toString(), MainData.MB);
 
 		// 멀티파트 카피
 		var TargetKey2 = "mymultipart2";
-		UploadData = MultipartCopy(bucketName, TargetKey1, bucketName, TargetKey2, Size * 2, client, 0, null);
+		uploadData = multipartCopy(bucketName, TargetKey1, bucketName, TargetKey2, size * 2, client, 0, null);
 		// 추가파츠 업로드
-		UploadData = MultipartUpload(client, bucketName, TargetKey2, Size, UploadData);
+		uploadData = MultipartUpload(client, bucketName, TargetKey2, size, uploadData);
 		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, TargetKey2, UploadData.uploadId, UploadData.parts));
+				new CompleteMultipartUploadRequest(bucketName, TargetKey2, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
-		Body.append(UploadData.body);
-		CheckContentUsingRange(bucketName, TargetKey2, Body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, TargetKey2, body.toString(), MainData.MB);
 	}
 
 	@Test
@@ -631,24 +631,24 @@ public class Multipart extends TestBase {
 	// 멀티파트 목록 확인
 	public void test_multipart_list_parts() {
 		var bucketName = getNewBucket();
-		var Key = "mymultipart";
-		var ContentType = "text/bla";
-		var Size = 50 * MainData.MB;
-		var MetadataList = new ObjectMetadata();
-		MetadataList.setContentType(ContentType);
+		var key = "mymultipart";
+		var contentType = "text/bla";
+		var size = 50 * MainData.MB;
+		var metadata = new ObjectMetadata();
+		metadata.setContentType(contentType);
 		var client = getClient();
 
-		var UploadData = SetupMultipartUpload(client, bucketName, Key, Size, 1 * MainData.MB, MetadataList, null);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, 1 * MainData.MB, metadata, null);
 
 		for (int i = 0; i < 41; i += 10) {
-			var Response = client.listParts(
-					new ListPartsRequest(bucketName, Key, UploadData.uploadId)
+			var response = client.listParts(
+					new ListPartsRequest(bucketName, key, uploadData.uploadId)
 							.withMaxParts(10)
 							.withPartNumberMarker(i));
 
-			assertEquals(10, Response.getParts().size());
-			PartsETagCompare(UploadData.parts.subList(i, i + 10), Response.getParts());
+			assertEquals(10, response.getParts().size());
+			partsETagCompare(uploadData.parts.subList(i, i + 10), response.getParts());
 		}
-		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, Key, UploadData.uploadId));
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
 	}
 }

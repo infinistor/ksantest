@@ -53,22 +53,22 @@ public class Post extends TestBase {
 	public void test_post_object_anonymous_request() throws MalformedURLException {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		var Key = "foo.txt";
+		var key = "foo.txt";
 		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 
-		var ContentType = "text/plain";
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("acl", "public-read");
-		Payload.put("Content-Type", ContentType);
+		var contentType = "text/plain";
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("acl", "public-read");
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -77,64 +77,64 @@ public class Post extends TestBase {
 	public void test_post_object_authenticated_request() throws MalformedURLException {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
+		var contentType = "text/plain";
+		var key = "foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Length", String.format("%d", FileData.body.length()));
-		Payload.put("Content-Type", ContentType);
-		Payload.put("x-amz-content-sha256", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD");
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Length", String.format("%d", fileData.body.length()));
+		payload.put("Content-Type", contentType);
+		payload.put("x-amz-content-sha256", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD");
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -145,54 +145,54 @@ public class Post extends TestBase {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
+		var contentType = "text/plain";
+		var key = "foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -204,58 +204,58 @@ public class Post extends TestBase {
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
+		var contentType = "text/plain";
+		var key = "foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", "foo");
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", "foo");
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(403, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(403, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -264,23 +264,23 @@ public class Post extends TestBase {
 	public void test_post_object_set_success_code() throws MalformedURLException {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		var Key = "foo.txt";
+		var key = "foo.txt";
 		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 
-		var ContentType = "text/plain";
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("acl", "public-read");
-		Payload.put("Content-Type", ContentType);
-		Payload.put("success_action_status", "201");
+		var contentType = "text/plain";
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("acl", "public-read");
+		payload.put("Content-Type", contentType);
+		payload.put("success_action_status", "201");
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(201, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(201, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -289,24 +289,24 @@ public class Post extends TestBase {
 	public void test_post_object_set_invalid_success_code() throws MalformedURLException {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		var Key = "foo.txt";
+		var key = "foo.txt";
 
 		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
-		var ContentType = "text/plain";
+		var contentType = "text/plain";
 
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("acl", "public-read");
-		Payload.put("Content-Type", ContentType);
-		Payload.put("success_action_status", "404");
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("acl", "public-read");
+		payload.put("Content-Type", contentType);
+		payload.put("success_action_status", "404");
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -317,64 +317,64 @@ public class Post extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
-		var Size = 5 * 1024 * 1024;
-		var Data = Utils.randomTextToLong(Size);
+		var contentType = "text/plain";
+		var key = "foo.txt";
+		var size = 5 * 1024 * 1024;
+		var data = Utils.randomTextToLong(size);
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(Size);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(size);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, Data);
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, data);
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 	}
 
 	@Test
@@ -386,61 +386,61 @@ public class Post extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var contentType = "text/plain";
+		var key = "foo.txt";
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -450,58 +450,58 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var contentType = "text/plain";
+		var key = "foo.txt";
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("x-ignore-foo", "bar");
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("x-ignore-foo", "bar");
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -511,57 +511,57 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var contentType = "text/plain";
+		var key = "foo.txt";
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bUcKeT", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bUcKeT", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("StArTs-WiTh");
 		starts1.add("$KeY");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("AcL", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("AcL", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("StArTs-WiTh");
 		starts2.add("$CoNtEnT-TyPe");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("kEy", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("aCl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("pOLICy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("kEy", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("aCl", "private");
+		payload.put("signature", signature);
+		payload.put("pOLICy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -572,62 +572,62 @@ public class Post extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -639,70 +639,70 @@ public class Post extends TestBase {
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
-		var RedirectURL = getURL(bucketName);
+		var contentType = "text/plain";
+		var key = "foo.txt";
+		var redirectURL = getURL(bucketName);
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
 		var starts3 = new JsonArray();
 		starts3.add("eq");
 		starts3.add("$success_action_redirect");
-		starts3.add(RedirectURL.toString());
-		Conditions.add(starts3);
+		starts3.add(redirectURL.toString());
+		conditions.add(starts3);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
-		Payload.put("success_action_redirect", RedirectURL.toString());
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
+		payload.put("success_action_redirect", redirectURL.toString());
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(200, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(200, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		assertEquals(String.format("%s?bucket=%s&key=%s&etag=%s%s%s", RedirectURL, bucketName, Key, "%22",
-				Response.getObjectMetadata().getETag().replace("\"", ""), "%22"), Result.URL);
+		var response = client.getObject(bucketName, key);
+		assertEquals(String.format("%s?bucket=%s&key=%s&etag=%s%s%s", redirectURL, bucketName, key, "%22",
+				response.getObjectMetadata().getETag().replace("\"", ""), "%22"), result.URL);
 	}
 
 	@Test
@@ -712,57 +712,57 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature.substring(0, Signature.length() - 1));
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature.substring(0, signature.length() - 1));
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(403, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(403, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -772,58 +772,58 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey.substring(0, config.mainUser.accessKey.length() - 1));
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey.substring(0, config.mainUser.accessKey.length() - 1));
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(403, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(403, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -833,58 +833,58 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100).replace("T", " "));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100).replace("T", " "));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -894,50 +894,50 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
+		var contentType = "text/plain";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile("", ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile("", contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -947,56 +947,56 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1006,54 +1006,54 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(403, Result.statusCode, Result.message);
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(403, result.statusCode, result.message);
 	}
 
 	@Test
@@ -1064,67 +1064,67 @@ public class Post extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var contentType = "text/plain";
+		var key = "foo.txt";
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
 		var starts3 = new JsonArray();
 		starts3.add("starts-with");
 		starts3.add("$x-amz-meta-foo");
 		starts3.add("bar");
-		Conditions.add(starts3);
+		conditions.add(starts3);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("x-amz-meta-foo", "barclamp");
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("x-amz-meta-foo", "barclamp");
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		assertEquals("barclamp", Response.getObjectMetadata().getUserMetadata().get(("foo")));
+		var response = client.getObject(bucketName, key);
+		assertEquals("barclamp", response.getObjectMetadata().getUserMetadata().get(("foo")));
 	}
 
 	@Test
@@ -1135,64 +1135,64 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
 		var starts3 = new JsonArray();
 		starts3.add("starts-with");
 		starts3.add("$x-amz-meta-foo");
 		starts3.add("bar");
-		Conditions.add(starts3);
+		conditions.add(starts3);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(403, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(403, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1203,58 +1203,58 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("CONDITIONS", Conditions);
+		policyDocument.add("CONDITIONS", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1265,58 +1265,58 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("EXPIRATION", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("EXPIRATION", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1326,58 +1326,58 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(-100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(-100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(403, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(403, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1388,64 +1388,64 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
 		var starts3 = new JsonArray();
 		starts3.add("eq");
 		starts3.add("$x-amz-meta-foo");
 		starts3.add("");
-		Conditions.add(starts3);
+		conditions.add(starts3);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("x-amz-meta-foo", "barclamp");
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("x-amz-meta-foo", "barclamp");
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(403, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(403, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1455,55 +1455,55 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
-		var PolicyDocument = new JsonObject();
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
+		var policyDocument = new JsonObject();
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1513,26 +1513,26 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var contentType = "text/plain";
+		var key = "foo.txt";
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1542,58 +1542,58 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(0);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(0);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1603,57 +1603,57 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1663,58 +1663,58 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(-1);
-		ContentLengthRange.add(0);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(-1);
+		contentLengthRange.add(0);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1724,58 +1724,58 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "\\$foo.txt";
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("\\$foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(512);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(512);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1785,29 +1785,29 @@ public class Post extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
+		var contentType = "text/plain";
+		var key = "foo.txt";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
-		PolicyDocument.add("conditions", new JsonArray());
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		policyDocument.add("conditions", new JsonArray());
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(400, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(400, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1816,13 +1816,13 @@ public class Post extends TestBase {
 	public void test_presignedurl_put_get() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
+		var key = "foo";
 
-		var PutURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var PutResponse = PutObject(PutURL, Key);
+		var PutURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
+		var PutResponse = PutObject(PutURL, key);
 		assertEquals(200, PutResponse.getStatusLine().getStatusCode());
 
-		var GetURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.GET);
+		var GetURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
 		var GetResponse = GetObject(GetURL);
 		assertEquals(200, GetResponse.getStatusLine().getStatusCode());
 
@@ -1834,15 +1834,15 @@ public class Post extends TestBase {
 	public void test_presignedurl_put_get_v4() {
 		var bucketName = getNewBucketName();
 		var client = getClientV4(true);
-		var Key = "foo";
+		var key = "foo";
 
 		client.createBucket(bucketName);
 
-		var PutURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var PutResponse = PutObject(PutURL, Key);
+		var PutURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
+		var PutResponse = PutObject(PutURL, key);
 		assertEquals(200, PutResponse.getStatusLine().getStatusCode());
 
-		var GetURL = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.GET);
+		var GetURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
 		var GetResponse = GetObject(GetURL);
 		assertEquals(200, GetResponse.getStatusLine().getStatusCode());
 	}
@@ -1852,10 +1852,10 @@ public class Post extends TestBase {
 	// [SignatureVersion4] post 방식으로 오브젝트 업로드 성공 확인
 	public void test_put_object_v4() throws MalformedURLException {
 		var bucketName = getNewBucket();
-		var Key = "foo";
-		var EndPoint = getURL(bucketName, Key);
-		var Size = 100;
-		var Content = Utils.randomTextToLong(Size);
+		var key = "foo";
+		var EndPoint = getURL(bucketName, key);
+		var size = 100;
+		var Content = Utils.randomTextToLong(size);
 
 		// precompute hash of the body content
 		byte[] contentHash = AWS4SignerBase.hash(Content);
@@ -1870,9 +1870,9 @@ public class Post extends TestBase {
 		var authorization = signer.computeSignature(headers, null, contentHashString, config.mainUser.accessKey,
 				config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
-		var Result = NetUtils.putUpload(EndPoint, "PUT", headers, Content);
+		var result = NetUtils.putUpload(EndPoint, "PUT", headers, Content);
 
-		assertEquals(200, Result.statusCode, Result.getErrorCode());
+		assertEquals(200, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1880,10 +1880,10 @@ public class Post extends TestBase {
 	// [SignatureVersion4] post 방식으로 내용을 chunked 하여 오브젝트 업로드 성공 확인
 	public void test_put_object_chunked_v4() throws MalformedURLException {
 		var bucketName = getNewBucket();
-		var Key = "foo";
-		var EndPoint = getURL(bucketName, Key);
-		var Size = 100;
-		var Content = Utils.randomTextToLong(Size);
+		var key = "foo";
+		var EndPoint = getURL(bucketName, key);
+		var size = 100;
+		var Content = Utils.randomTextToLong(size);
 
 		var headers = new HashMap<String, String>();
 		headers.put("x-amz-content-sha256", AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256);
@@ -1899,8 +1899,8 @@ public class Post extends TestBase {
 		String authorization = signer.computeSignature(headers, null, AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256, config.mainUser.accessKey, config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
 
-		var Result = NetUtils.putUploadChunked(EndPoint, "PUT", headers, signer, Content);
-		assertEquals(200, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.putUploadChunked(EndPoint, "PUT", headers, signer, Content);
+		assertEquals(200, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1909,13 +1909,13 @@ public class Post extends TestBase {
 	public void test_get_object_v4() throws MalformedURLException {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
-		var EndPoint = getURL(bucketName, Key);
+		var key = "foo";
+		var EndPoint = getURL(bucketName, key);
 		var HttpMethod = "GET";
-		var Size = 100;
-		var Content = Utils.randomTextToLong(Size);
+		var size = 100;
+		var Content = Utils.randomTextToLong(size);
 
-		client.putObject(bucketName, Key, Content);
+		client.putObject(bucketName, key, Content);
 
 		var headers = new HashMap<String, String>();
 		headers.put("x-amz-content-sha256", AWS4SignerBase.EMPTY_BODY_SHA256);
@@ -1926,10 +1926,10 @@ public class Post extends TestBase {
 				config.mainUser.accessKey, config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
 
-		var Result = NetUtils.putUpload(EndPoint, HttpMethod, headers, null);
-		assertEquals(200, Result.statusCode, Result.getErrorCode());
-		assertEquals(Size, Result.GetContent().length());
-		assertEquals(Content, Result.GetContent());
-		assertTrue(Content.equals(Result.GetContent()), MainData.NOT_MATCHED);
+		var result = NetUtils.putUpload(EndPoint, HttpMethod, headers, null);
+		assertEquals(200, result.statusCode, result.getErrorCode());
+		assertEquals(size, result.GetContent().length());
+		assertEquals(Content, result.GetContent());
+		assertTrue(Content.equals(result.GetContent()), MainData.NOT_MATCHED);
 	}
 }

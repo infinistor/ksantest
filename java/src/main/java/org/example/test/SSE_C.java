@@ -56,7 +56,7 @@ public class SSE_C extends TestBase
 	//1Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_encrypted_transfer_1b()
 	{
-		TestEncryptionSSECustomerWrite(1);
+		testEncryptionSSECustomerWrite(1);
 	}
 
 	@Test
@@ -64,7 +64,7 @@ public class SSE_C extends TestBase
 	//1KB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_encrypted_transfer_1kb()
 	{
-		TestEncryptionSSECustomerWrite(1024);
+		testEncryptionSSECustomerWrite(1024);
 	}
 
 	@Test
@@ -72,7 +72,7 @@ public class SSE_C extends TestBase
 	//1MB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_encrypted_transfer_1MB()
 	{
-		TestEncryptionSSECustomerWrite(1024 * 1024);
+		testEncryptionSSECustomerWrite(1024 * 1024);
 	}
 
 	@Test
@@ -80,35 +80,35 @@ public class SSE_C extends TestBase
 	//13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void test_encrypted_transfer_13b()
 	{
-		TestEncryptionSSECustomerWrite(13);
+		testEncryptionSSECustomerWrite(13);
 	}
 
 	@Test
-	@Tag("Metadata")
+	@Tag("metadata")
 	//SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인
 	public void test_encryption_sse_c_method_head()
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "testobj";
-		var Size = 1000;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "obj";
+		var size = 1000;
+		var data = Utils.randomTextToLong(size);
 
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Size);
+		var metadata = new ObjectMetadata();
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
 
-		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
+		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
 		.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
 		.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		client.putObject(new PutObjectRequest(bucketName, Key, createBody(Data), Metadata).withSSECustomerKey(SSEC));
+		client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(SSE_C));
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.getObjectMetadata(bucketName, Key));
-		var StatusCode = e.getStatusCode();
-		assertEquals(400, StatusCode);
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObjectMetadata(bucketName, key));
+		var statusCode = e.getStatusCode();
+		assertEquals(400, statusCode);
 
-		client.getObject(new GetObjectRequest(bucketName, Key).withSSECustomerKey(SSEC));
+		client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
 	}
 
 	@Test
@@ -118,23 +118,23 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "testobj";
-		var Size = 1000;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "obj";
+		var size = 1000;
+		var data = Utils.randomTextToLong(size);
 
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Size);
+		var metadata = new ObjectMetadata();
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
 
-		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
+		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
 		.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
 		.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		client.putObject(new PutObjectRequest(bucketName, Key, createBody(Data), Metadata).withSSECustomerKey(SSEC));
+		client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(SSE_C));
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, Key));
-		var StatusCode = e.getStatusCode();
-		assertEquals(400, StatusCode);
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
+		var statusCode = e.getStatusCode();
+		assertEquals(400, statusCode);
 	}
 
 	@Test
@@ -144,27 +144,27 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "testobj";
-		var Size = 100;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "obj";
+		var size = 100;
+		var data = Utils.randomTextToLong(size);
 
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Size);
+		var metadata = new ObjectMetadata();
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
 
-		var SSEC_A = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
+		var SSE_C_A = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
 				.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
 				.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		var SSEC_B = new SSECustomerKey("6b+WOZ1T3cqZMxgThRcXAQBrS5mXKdDUphvpxptl9/4=")
+		var SSE_C_B = new SSECustomerKey("6b+WOZ1T3cqZMxgThRcXAQBrS5mXKdDUphvpxptl9/4=")
 				.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
 				.withMd5("arxBvwY2V4SiOne6yppVPQ==");
 
-		client.putObject(new PutObjectRequest(bucketName, Key, createBody(Data), Metadata).withSSECustomerKey(SSEC_A));
+		client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(SSE_C_A));
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(new GetObjectRequest(bucketName, Key).withSSECustomerKey(SSEC_B)));
-		var StatusCode = e.getStatusCode();
-		assertEquals(403, StatusCode);
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C_B)));
+		var statusCode = e.getStatusCode();
+		assertEquals(403, statusCode);
 	}
 
 	@Test
@@ -174,22 +174,22 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "testobj";
-		var Size = 100;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "obj";
+		var size = 100;
+		var data = Utils.randomTextToLong(size);
 
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Size);
+		var metadata = new ObjectMetadata();
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
 
-		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
+		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
 		.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
 		.withMd5("AAAAAAAAAAAAAAAAAAAAAA==");
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(new PutObjectRequest(bucketName, Key, createBody(Data), Metadata).withSSECustomerKey(SSEC)));
+		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(SSE_C)));
 
-		var StatusCode = e.getStatusCode();
-		assertEquals(400, StatusCode);
+		var statusCode = e.getStatusCode();
+		assertEquals(400, statusCode);
 	}
 
 
@@ -200,21 +200,21 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "testobj";
-		var Size = 100;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "obj";
+		var size = 100;
+		var data = Utils.randomTextToLong(size);
 
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Size);
+		var metadata = new ObjectMetadata();
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
 
-		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
+		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
 		.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
 
-		client.putObject(new PutObjectRequest(bucketName, Key, createBody(Data), Metadata).withSSECustomerKey(SSEC));
-		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withSSECustomerKey(SSEC));
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals(Data, Body);
+		client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(SSE_C));
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
+		var body = getBody(response.getObjectContent());
+		assertEquals(data, body);
 	}
 
 	@Test
@@ -233,20 +233,20 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "testobj";
-		var Size = 100;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "obj";
+		var size = 100;
+		var data = Utils.randomTextToLong(size);
 
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Size);
+		var metadata = new ObjectMetadata();
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
 
-		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
+		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
 		.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(new PutObjectRequest(bucketName, Key, createBody(Data), Metadata).withSSECustomerKey(SSEC)));
-		var StatusCode = e.getStatusCode();
-		assertEquals(400, StatusCode);
+		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(SSE_C)));
+		var statusCode = e.getStatusCode();
+		assertEquals(400, statusCode);
 	}
 
 	@Test
@@ -256,34 +256,34 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "multipart_enc";
-		var Size = 50 * MainData.MB;
-		var ContentType = "text/plain";
-		var Metadata = new ObjectMetadata();
-		Metadata.addUserMetadata("x-amz-meta-foo", "bar");
-		Metadata.setContentType(ContentType);
-		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
+		var key = "multipart_enc";
+		var size = 50 * MainData.MB;
+		var contentType = "text/plain";
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("x-amz-meta-foo", "bar");
+		metadata.setContentType(contentType);
+		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
 		.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
 		.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		var UploadData = SetupMultipartUpload(client, bucketName, Key, Size, 0, Metadata, SSEC);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, 0, metadata, SSE_C);
 
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts));
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 
-		var HeadResponse = client.listObjectsV2(bucketName);
-		var ObjectCount = HeadResponse.getKeyCount();
-		assertEquals(1, ObjectCount);
-		var BytesUsed = GetBytesUsed(HeadResponse);
-		assertEquals(Size, BytesUsed);
+		var headResponse = client.listObjectsV2(bucketName);
+		var objectCount = headResponse.getKeyCount();
+		assertEquals(1, objectCount);
+		var bytesUsed = GetBytesUsed(headResponse);
+		assertEquals(size, bytesUsed);
 
-		var GetResponse = client.getObject(new GetObjectRequest(bucketName, Key).withSSECustomerKey(SSEC));
-		assertEquals(Metadata.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
-		assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
+		var getResponse = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
+		assertEquals(metadata.getUserMetadata(), getResponse.getObjectMetadata().getUserMetadata());
+		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
 
-		var Body = UploadData.getBody();
-		CheckContentUsingRangeEnc(client, bucketName, Key, Body, MainData.MB, SSEC);
-		CheckContentUsingRangeEnc(client, bucketName, Key, Body, 10 * MainData.MB, SSEC);
-		CheckContentUsingRandomRangeEnc(client, bucketName, Key, Body, Size, 100, SSEC);
+		var body = uploadData.getBody();
+		CheckContentUsingRangeEnc(client, bucketName, key, body, MainData.MB, SSE_C);
+		CheckContentUsingRangeEnc(client, bucketName, key, body, 10 * MainData.MB, SSE_C);
+		checkContentUsingRandomRangeEnc(client, bucketName, key, body, size, 100, SSE_C);
 	}
 
 
@@ -294,38 +294,38 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "multipart_enc";
-		var Size = 50 * MainData.MB;
-		var ContentType = "text/plain";
-		var Metadata = new ObjectMetadata();
-		Metadata.addUserMetadata("x-amz-meta-foo", "bar");
-		Metadata.setContentType(ContentType);
+		var key = "multipart_enc";
+		var size = 50 * MainData.MB;
+		var contentType = "text/plain";
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("x-amz-meta-foo", "bar");
+		metadata.setContentType(contentType);
 
-		var SetSSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
+		var SetSSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
 				.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
 				.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		var GetSSEC = new SSECustomerKey("6b+WOZ1T3cqZMxgThRcXAQBrS5mXKdDUphvpxptl9/4=")
+		var GetSSE_C = new SSECustomerKey("6b+WOZ1T3cqZMxgThRcXAQBrS5mXKdDUphvpxptl9/4=")
 				.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
 				.withMd5("arxBvwY2V4SiOne6yppVPQ==");
 
-		var UploadData = SetupMultipartUpload(client, bucketName, Key, Size, 0, Metadata, SetSSEC);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, 0, metadata, SetSSE_C);
 
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, Key, UploadData.uploadId, UploadData.parts));
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 
-		var HeadResponse = client.listObjectsV2(bucketName);
-		var ObjectCount = HeadResponse.getKeyCount();
-		assertEquals(1, ObjectCount);
-		var BytesUsed = GetBytesUsed(HeadResponse);
-		assertEquals(Size, BytesUsed);
+		var headResponse = client.listObjectsV2(bucketName);
+		var objectCount = headResponse.getKeyCount();
+		assertEquals(1, objectCount);
+		var bytesUsed = GetBytesUsed(headResponse);
+		assertEquals(size, bytesUsed);
 
-		var GetResponse = client.getObject(new GetObjectRequest(bucketName, Key).withSSECustomerKey(SetSSEC));
-		assertEquals(Metadata.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
-		assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
+		var getResponse = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SetSSE_C));
+		assertEquals(metadata.getUserMetadata(), getResponse.getObjectMetadata().getUserMetadata());
+		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
 
-		var e = assertThrows(AmazonServiceException.class, ()-> client.getObject(new GetObjectRequest(bucketName, Key).withSSECustomerKey(GetSSEC)));
-		var StatusCode = e.getStatusCode();
-		assertEquals(403, StatusCode);
+		var e = assertThrows(AmazonServiceException.class, ()-> client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(GetSSE_C)));
+		var statusCode = e.getStatusCode();
+		assertEquals(403, statusCode);
 	}
 
 
@@ -338,84 +338,84 @@ public class SSE_C extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
 
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var contentType = "text/plain";
+		var key = "foo.txt";
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
-		Conditions.add(starts2);
+		starts2.add(contentType);
+		conditions.add(starts2);
 
 
 		var starts3 = new JsonArray();
 		starts3.add("starts-with");
 		starts3.add("$x-amz-server-side-encryption-customer-algorithm");
 		starts3.add("AES256");
-		Conditions.add(starts3);
+		conditions.add(starts3);
 
 		var starts4 = new JsonArray();
 		starts4.add("starts-with");
 		starts4.add("$x-amz-server-side-encryption-customer-key");
 		starts4.add("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=");
-		Conditions.add(starts4);
+		conditions.add(starts4);
 
 		var starts5 = new JsonArray();
 		starts5.add("starts-with");
 		starts5.add("$x-amz-server-side-encryption-customer-key-md5");
 		starts5.add("DWygnHRtgiJ77HCm+1rvHw==");
-		Conditions.add(starts5);
+		conditions.add(starts5);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var BytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put( "key", Key );
-		Payload.put( "AWSAccessKeyId", config.mainUser.accessKey );
-		Payload.put( "acl", "private" );
-		Payload.put( "signature", Signature );
-		Payload.put( "policy", Policy );
-		Payload.put( "Content-Type", ContentType );
-		Payload.put( "x-amz-server-side-encryption-customer-algorithm", "AES256" );
-		Payload.put( "x-amz-server-side-encryption-customer-key", "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=" );
-		Payload.put( "x-amz-server-side-encryption-customer-key-md5", "DWygnHRtgiJ77HCm+1rvHw==" );
+		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var FileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put( "key", key );
+		payload.put( "AWSAccessKeyId", config.mainUser.accessKey );
+		payload.put( "acl", "private" );
+		payload.put( "signature", Signature );
+		payload.put( "policy", policy );
+		payload.put( "Content-Type", contentType );
+		payload.put( "x-amz-server-side-encryption-customer-algorithm", "AES256" );
+		payload.put( "x-amz-server-side-encryption-customer-key", "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=" );
+		payload.put( "x-amz-server-side-encryption-customer-key-md5", "DWygnHRtgiJ77HCm+1rvHw==" );
 
-		var SendURL = getURL(bucketName);
-		var Result = NetUtils.postUpload(SendURL, Payload, FileData);
-		assertEquals(204, Result.statusCode);
+		var sendURL = getURL(bucketName);
+		var result = NetUtils.postUpload(sendURL, payload, FileData);
+		assertEquals(204, result.statusCode);
 
-		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withSSECustomerKey(new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")));
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")));
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -425,20 +425,20 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "testobj";
-		var Size = 15 * 1024 * 1024;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "obj";
+		var size = 15 * 1024 * 1024;
+		var data = Utils.randomTextToLong(size);
 
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Size);
+		var metadata = new ObjectMetadata();
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
 
-		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=").
+		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=").
 					   withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION).
 					   withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		client.putObject(new PutObjectRequest(bucketName, Key, createBody(Data), Metadata).withSSECustomerKey(SSEC));
-		CheckContentEnc(bucketName, Key, Data, 50, SSEC);
+		client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(SSE_C));
+		CheckContentEnc(bucketName, key, data, 50, SSE_C);
 	}
 
 	@Test
@@ -448,25 +448,25 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var Key = "testobj";
-		var Size = 15 * 1024 * 1024;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "obj";
+		var size = 15 * 1024 * 1024;
+		var data = Utils.randomTextToLong(size);
 
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Size);
+		var metadata = new ObjectMetadata();
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
 
-		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=").
+		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=").
 					   withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION).
 					   withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		client.putObject(new PutObjectRequest(bucketName, Key, createBody(Data), Metadata).withSSECustomerKey(SSEC));
+		client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(SSE_C));
 
-		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withSSECustomerKey(SSEC));
-		var Body = GetBody(Response.getObjectContent());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
+		var body = getBody(response.getObjectContent());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 
-		CheckContentUsingRandomRangeEnc(client, bucketName, Key, Data, Size, 50, SSEC);
+		checkContentUsingRandomRangeEnc(client, bucketName, key, data, size, 50, SSE_C);
 	}
 
 	@Test
@@ -476,37 +476,37 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var SourceKey = "multipart_enc";
-		var Size = 50 * MainData.MB;
-		var ContentType = "text/plain";
+		var sourceKey = "multipart_enc";
+		var size = 50 * MainData.MB;
+		var contentType = "text/plain";
 
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Size);
+		var metadata = new ObjectMetadata();
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
 
-		var SSEC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=").
+		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=").
 					   withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION).
 					   withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		var UploadData = SetupMultipartUpload(client, bucketName, SourceKey, Size, 0, Metadata, SSEC);
+		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size, 0, metadata, SSE_C);
 
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, SourceKey, UploadData.uploadId, UploadData.parts));
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, sourceKey, uploadData.uploadId, uploadData.parts));
 
-		var HeadResponse = client.listObjectsV2(bucketName);
-		var ObjectCount = HeadResponse.getKeyCount();
-		assertEquals(1, ObjectCount);
-		var BytesUsed = GetBytesUsed(HeadResponse);
-		assertEquals(Size, BytesUsed);
+		var headResponse = client.listObjectsV2(bucketName);
+		var objectCount = headResponse.getKeyCount();
+		assertEquals(1, objectCount);
+		var bytesUsed = GetBytesUsed(headResponse);
+		assertEquals(size, bytesUsed);
 
-		var GetResponse = client.getObject(new GetObjectRequest(bucketName, SourceKey).withSSECustomerKey(SSEC));
-		assertEquals(Metadata.getUserMetadata(), GetResponse.getObjectMetadata().getUserMetadata());
-		assertEquals(ContentType, GetResponse.getObjectMetadata().getContentType());
+		var getResponse = client.getObject(new GetObjectRequest(bucketName, sourceKey).withSSECustomerKey(SSE_C));
+		assertEquals(metadata.getUserMetadata(), getResponse.getObjectMetadata().getUserMetadata());
+		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
 
 		// 멀티파트 복사
-		var TargetKey = "multipart_enc_copy";
-		UploadData = MultipartCopySSE_C(client, bucketName, SourceKey, bucketName, TargetKey, Size, Metadata, SSEC);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey, UploadData.uploadId, UploadData.parts));
-		CheckCopyContentSSE_C(client, bucketName, SourceKey, bucketName, TargetKey, SSEC);
+		var targetKey = "multipart_enc_copy";
+		uploadData = MultipartCopySSE_C(client, bucketName, sourceKey, bucketName, targetKey, size, metadata, SSE_C);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, targetKey, uploadData.uploadId, uploadData.parts));
+		CheckCopyContentSSE_C(client, bucketName, sourceKey, bucketName, targetKey, SSE_C);
 	}
 
 	@Test
@@ -516,42 +516,42 @@ public class SSE_C extends TestBase
 	{
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
-		var SourceKey = "multipart_enc";
-		var Size = 50 * MainData.MB;
-		var ContentType = "text/plain";
-		var Metadata = new ObjectMetadata();
-		Metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-		Metadata.setContentType(ContentType);
-		var Body = new StringBuilder();
+		var sourceKey = "multipart_enc";
+		var size = 50 * MainData.MB;
+		var contentType = "text/plain";
+		var metadata = new ObjectMetadata();
+		metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+		metadata.setContentType(contentType);
+		var body = new StringBuilder();
 
 		// 멀티파트 업로드
-		var UploadData = SetupMultipartUpload(client, bucketName, SourceKey, Size, Metadata);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, SourceKey, UploadData.uploadId, UploadData.parts));
+		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size, metadata);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, sourceKey, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
-		Body.append(UploadData.body);
-		CheckContentUsingRange(bucketName, SourceKey, Body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, sourceKey, body.toString(), MainData.MB);
 
 		// 멀티파트 카피
-		var TargetKey1 = "mymultipart1";
-		UploadData = MultipartCopy(client, bucketName, SourceKey, bucketName, TargetKey1, Size, Metadata);
+		var targetKey1 = "mymultipart1";
+		uploadData = multipartCopy(client, bucketName, sourceKey, bucketName, targetKey1, size, metadata);
 		// 추가파츠 업로드
-		UploadData = MultipartUpload(client, bucketName, TargetKey1, Size, UploadData);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey1, UploadData.uploadId, UploadData.parts));
+		uploadData = MultipartUpload(client, bucketName, targetKey1, size, uploadData);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, targetKey1, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
-		Body.append(UploadData.body);
-		CheckContentUsingRange(bucketName, TargetKey1, Body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, targetKey1, body.toString(), MainData.MB);
 
 		// 멀티파트 카피
 		var TargetKey2 = "mymultipart2";
-		UploadData = MultipartCopy(client, bucketName, TargetKey1, bucketName, TargetKey2, Size * 2, Metadata);
+		uploadData = multipartCopy(client, bucketName, targetKey1, bucketName, TargetKey2, size * 2, metadata);
 		// 추가파츠 업로드
-		UploadData = MultipartUpload(client, bucketName, TargetKey2, Size, UploadData);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey2, UploadData.uploadId, UploadData.parts));
+		uploadData = MultipartUpload(client, bucketName, TargetKey2, size, uploadData);
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey2, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
-		Body.append(UploadData.body);
-		CheckContentUsingRange(bucketName, TargetKey2, Body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, TargetKey2, body.toString(), MainData.MB);
 	}
 }

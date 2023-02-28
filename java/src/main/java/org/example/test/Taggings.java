@@ -57,25 +57,25 @@ public class Taggings extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var TagSets = new ArrayList<TagSet>();
-		var Tag1 = new TagSet();
-		Tag1.setTag("Hello", "World");
-		TagSets.add(Tag1);
-		var Tags = new BucketTaggingConfiguration();
-		Tags.setTagSets(TagSets);
+		var tags = new ArrayList<TagSet>();
+		var tag = new TagSet();
+		tag.setTag("Hello", "World");
+		tags.add(tag);
+		var tagConfig = new BucketTaggingConfiguration();
+		tagConfig.setTagSets(tags);
 
-		var Response = client.getBucketTaggingConfiguration(bucketName);
-		assertNull(Response);
+		var response = client.getBucketTaggingConfiguration(bucketName);
+		assertNull(response);
 
-		client.setBucketTaggingConfiguration(bucketName, Tags);
+		client.setBucketTaggingConfiguration(bucketName, tagConfig);
 
-		Response = client.getBucketTaggingConfiguration(bucketName);
-		assertEquals(1, Response.getAllTagSets().size());
-		BucketTaggingCompare(Tags.getAllTagSets(), Response.getAllTagSets());
+		response = client.getBucketTaggingConfiguration(bucketName);
+		assertEquals(1, response.getAllTagSets().size());
+		BucketTaggingCompare(tagConfig.getAllTagSets(), response.getAllTagSets());
 		client.deleteBucketTaggingConfiguration(bucketName);
 
-		Response = client.getBucketTaggingConfiguration(bucketName);
-		assertNull(Response);
+		response = client.getBucketTaggingConfiguration(bucketName);
+		assertNull(response);
 
 	}
 
@@ -83,171 +83,171 @@ public class Taggings extends TestBase {
 	@Tag("Check")
 	// 오브젝트에 태그 설정이 올바르게 적용되는지 확인
 	public void test_get_obj_tagging() {
-		var Key = "testputtags";
-		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var key = "obj";
+		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
-		var InputTagSet = new ObjectTagging(createSimpleTagSet(2));
+		var inputTagSet = new ObjectTagging(createSimpleTagSet(2));
 
-		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
-		var Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		TaggingCompare(InputTagSet.getTagSet(), Response.getTagSet());
+		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		tagCompare(inputTagSet.getTagSet(), response.getTagSet());
 	}
 
 	@Test
 	@Tag("Check")
 	// 오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
 	public void test_get_obj_head_tagging() {
-		var Key = "testputtags";
-		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var key = "obj";
+		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
-		var Count = 2;
+		var count = 2;
 
-		var InputTagSet = new ObjectTagging(createSimpleTagSet(Count));
+		var inputTagSet = new ObjectTagging(createSimpleTagSet(count));
 
-		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
-		var Response = client.getObjectMetadata(bucketName, Key);
-		assertEquals(Integer.toString(Count), Response.getRawMetadataValue("x-amz-tagging-count"));
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(Integer.toString(count), response.getRawMetadataValue("x-amz-tagging-count"));
 	}
 
 	@Test
 	@Tag("Max")
 	// 추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)
 	public void test_put_max_tags() {
-		var Key = "testputmaxtags";
-		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var key = "testputmaxtags";
+		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
-		var InputTagSet = new ObjectTagging(createSimpleTagSet(10));
+		var inputTagSet = new ObjectTagging(createSimpleTagSet(10));
 
-		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
-		var Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		TaggingCompare(InputTagSet.getTagSet(), Response.getTagSet());
+		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		tagCompare(inputTagSet.getTagSet(), response.getTagSet());
 	}
 
 	@Test
 	@Tag("Overflow")
 	// 추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인
 	public void test_put_excess_tags() {
-		var Key = "testputmaxtags";
-		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var key = "test put max tags";
+		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
-		var InputTagSet = new ObjectTagging(createSimpleTagSet(11));
+		var inputTagSet = new ObjectTagging(createSimpleTagSet(11));
 
 		var e = assertThrows(AmazonServiceException.class,
-				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.BadRequest, ErrorCode);
+				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet)));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(400, statusCode);
+		assertEquals(MainData.BadRequest, errorCode);
 
-		var Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		assertEquals(0, Response.getTagSet().size());
+		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		assertEquals(0, response.getTagSet().size());
 	}
 
 	@Test
 	@Tag("Max")
 	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인
 	public void test_put_max_kvsize_tags() {
-		var Key = "testputmaxkeysize";
-		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var key = "test put max key size";
+		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
-		var InputTagSet = new ObjectTagging(createDetailTagSet(10, 128, 256));
-		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet));
+		var inputTagSet = new ObjectTagging(createDetailTagSet(10, 128, 256));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
-		var Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		TaggingCompare(InputTagSet.getTagSet(), Response.getTagSet());
+		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		tagCompare(inputTagSet.getTagSet(), response.getTagSet());
 	}
 
 	@Test
 	@Tag("Overflow")
 	// 태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인
 	public void test_put_excess_key_tags() {
-		var Key = "testputexcesskeytags";
-		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var key = "test put excess key tags";
+		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
-		var InputTagSet = new ObjectTagging(createDetailTagSet(10, 129, 256));
+		var inputTagSet = new ObjectTagging(createDetailTagSet(10, 129, 256));
 
 		var e = assertThrows(AmazonServiceException.class,
-				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidTag, ErrorCode);
+				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet)));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(400, statusCode);
+		assertEquals(MainData.InvalidTag, errorCode);
 
-		var Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		assertEquals(0, Response.getTagSet().size());
+		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		assertEquals(0, response.getTagSet().size());
 	}
 
 	@Test
 	@Tag("Overflow")
 	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인
 	public void test_put_excess_val_tags() {
-		var Key = "testputexcesskeytags";
-		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var key = "test put excess value tags";
+		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
-		var InputTagSet = new ObjectTagging(createDetailTagSet(10, 128, 259));
+		var inputTagSet = new ObjectTagging(createDetailTagSet(10, 128, 259));
 
 		var e = assertThrows(AmazonServiceException.class,
-				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidTag, ErrorCode);
+				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet)));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(400, statusCode);
+		assertEquals(MainData.InvalidTag, errorCode);
 
-		var Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		assertEquals(0, Response.getTagSet().size());
+		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		assertEquals(0, response.getTagSet().size());
 	}
 
 	@Test
 	@Tag("Overwrite")
 	// 오브젝트의 태그목록을 덮어쓰기 가능한지 확인
 	public void test_put_modify_tags() {
-		var Key = "testputmodifytags";
-		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var key = "test put modify tags";
+		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
-		var InputTagSet = new ObjectTagging(createSimpleTagSet(2));
+		var inputTagSet = new ObjectTagging(createSimpleTagSet(2));
 
-		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
-		var Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		TaggingCompare(InputTagSet.getTagSet(), Response.getTagSet());
+		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		tagCompare(inputTagSet.getTagSet(), response.getTagSet());
 
-		var InputTagSet2 = new ObjectTagging(createDetailTagSet(1, 128, 256));
+		var inputTagSet2 = new ObjectTagging(createDetailTagSet(1, 128, 256));
 
-		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet2));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet2));
 
-		Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		TaggingCompare(InputTagSet2.getTagSet(), Response.getTagSet());
+		response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		tagCompare(inputTagSet2.getTagSet(), response.getTagSet());
 	}
 
 	@Test
 	@Tag("Delete")
 	// 오브젝트의 태그를 삭제 가능한지 확인
 	public void test_put_delete_tags() {
-		var Key = "testputmodifytags";
-		var bucketName = createKeyWithRandomContent(Key, 0, null, null);
+		var key = "test delete tags";
+		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
-		var InputTagSet = new ObjectTagging(createSimpleTagSet(2));
+		var inputTagSet = new ObjectTagging(createSimpleTagSet(2));
 
-		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, Key, InputTagSet));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
-		var Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		TaggingCompare(InputTagSet.getTagSet(), Response.getTagSet());
+		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		tagCompare(inputTagSet.getTagSet(), response.getTagSet());
 
-		client.deleteObjectTagging(new DeleteObjectTaggingRequest(bucketName, Key));
+		client.deleteObjectTagging(new DeleteObjectTaggingRequest(bucketName, key));
 
-		Response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		assertEquals(0, Response.getTagSet().size());
+		response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		assertEquals(0, response.getTagSet().size());
 	}
 
 	@Test
@@ -256,23 +256,23 @@ public class Taggings extends TestBase {
 	public void test_put_obj_with_tags() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "testtagobj1";
+		var key = "test tag obj1";
 		var Data = Utils.randomTextToLong(100);
 
-		var TagSets = new ArrayList<com.amazonaws.services.s3.model.Tag>();
-		TagSets.add(new com.amazonaws.services.s3.model.Tag("bar", ""));
-		TagSets.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
+		var tags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
+		tags.add(new com.amazonaws.services.s3.model.Tag("bar", ""));
+		tags.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
 
-		var Headers = new ObjectMetadata();
-		Headers.setHeader("x-amz-tagging", "foo=bar&bar");
+		var headers = new ObjectMetadata();
+		headers.setHeader("x-amz-tagging", "foo=bar&bar");
 
-		client.putObject(bucketName, Key, createBody(Data), Headers);
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
+		client.putObject(bucketName, key, createBody(Data), headers);
+		var response = client.getObject(bucketName, key);
+		var Body = getBody(response.getObjectContent());
 		assertEquals(Data, Body);
 
-		var GetResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		TaggingCompare(TagSets, GetResponse.getTagSet());
+		var GetResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		tagCompare(tags, GetResponse.getTagSet());
 	}
 
 	@Test
@@ -282,14 +282,14 @@ public class Taggings extends TestBase {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var ContentType = "text/plain";
-		var Key = "foo.txt";
+		var contentType = "text/plain";
+		var key = "foo.txt";
 
-		var TagSets = createSimpleTagSet(2);
-		var XmlInputTagset = "<Tagging><TagSet><Tag><Key>0</Key><Value>0</Value></Tag><Tag><Key>1</Key><Value>1</Value></Tag></TagSet></Tagging>";
+		var tags = createSimpleTagSet(2);
+		var xmlInputTagset = "<Tagging><TagSet><Tag><key>0</key><Value>0</Value></Tag><Tag><key>1</key><Value>1</Value></Tag></TagSet></Tagging>";
 
-		var PolicyDocument = new JsonObject();
-		PolicyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
 		var Conditions = new JsonArray();
 
@@ -310,7 +310,7 @@ public class Taggings extends TestBase {
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
-		starts2.add(ContentType);
+		starts2.add(contentType);
 		Conditions.add(starts2);
 
 		var ContentLengthRange = new JsonArray();
@@ -325,32 +325,32 @@ public class Taggings extends TestBase {
 		starts3.add("");
 		Conditions.add(starts3);
 
-		PolicyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", Conditions);
 
-		var BytesJsonPolicyDocument = PolicyDocument.toString().getBytes();
+		var BytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var Policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(BytesJsonPolicyDocument);
 
-		var Signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(Policy, config.mainUser.secretKey);
-		var FileData = new FormFile(Key, ContentType, "bar");
-		var Payload = new HashMap<String, String>();
-		Payload.put("key", Key);
-		Payload.put("AWSAccessKeyId", config.mainUser.accessKey);
-		Payload.put("acl", "private");
-		Payload.put("signature", Signature);
-		Payload.put("policy", Policy);
-		Payload.put("tagging", XmlInputTagset);
-		Payload.put("x-ignore-foo", "bar");
-		Payload.put("Content-Type", ContentType);
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("tagging", xmlInputTagset);
+		payload.put("x-ignore-foo", "bar");
+		payload.put("Content-Type", contentType);
 
-		var Result = NetUtils.postUpload(getURL(bucketName), Payload, FileData);
-		assertEquals(204, Result.statusCode, Result.getErrorCode());
+		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var Response = client.getObject(bucketName, Key);
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 
-		var GetResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, Key));
-		TaggingCompare(TagSets, GetResponse.getTagSet());
+		var getResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		tagCompare(tags, getResponse.getTagSet());
 	}
 }

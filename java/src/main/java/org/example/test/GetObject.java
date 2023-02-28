@@ -46,11 +46,11 @@ public class GetObject extends TestBase {
 		var client = getClient();
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, "bar"));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
 
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchKey, ErrorCode);
+		assertEquals(404, statusCode);
+		assertEquals(MainData.NoSuchKey, errorCode);
 	}
 
 	@Test
@@ -59,14 +59,14 @@ public class GetObject extends TestBase {
 	public void test_get_object_ifmatch_good() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var KeyName = "foo";
+		var key = "foo";
 
-		var PutResponse = client.putObject(bucketName, KeyName, "bar");
-		var ETag = PutResponse.getETag();
+		var putResponse = client.putObject(bucketName, key, "bar");
+		var eTag = putResponse.getETag();
 
-		var GetResponse = client.getObject(new GetObjectRequest(bucketName, KeyName).withMatchingETagConstraint(ETag));
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertEquals("bar", Body);
+		var getResponse = client.getObject(new GetObjectRequest(bucketName, key).withMatchingETagConstraint(eTag));
+		var body = getBody(getResponse.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -75,11 +75,11 @@ public class GetObject extends TestBase {
 	public void test_get_object_ifmatch_failed() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var KeyName = "foo";
+		var key = "foo";
 
-		client.putObject(bucketName, KeyName, "bar");
-		var Response = client.getObject(new GetObjectRequest(bucketName, KeyName).withMatchingETagConstraint("ABCORZ"));
-		assertNull(Response);
+		client.putObject(bucketName, key, "bar");
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withMatchingETagConstraint("ABCORZ"));
+		assertNull(response);
 	}
 
 	@Test
@@ -88,13 +88,13 @@ public class GetObject extends TestBase {
 	public void test_get_object_ifnonematch_good() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var KeyName = "foo";
+		var key = "foo";
 
-		var PutResponse = client.putObject(bucketName, KeyName, "bar");
-		var ETag = PutResponse.getETag();
+		var putResponse = client.putObject(bucketName, key, "bar");
+		var eTag = putResponse.getETag();
 
-		var Response = client.getObject(new GetObjectRequest(bucketName, KeyName).withNonmatchingETagConstraint(ETag));
-		assertNull(Response);
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withNonmatchingETagConstraint(eTag));
+		assertNull(response);
 	}
 
 	@Test
@@ -103,14 +103,14 @@ public class GetObject extends TestBase {
 	public void test_get_object_ifnonematch_failed() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var KeyName = "foo";
+		var key = "foo";
 
-		client.putObject(bucketName, KeyName, "bar");
+		client.putObject(bucketName, key, "bar");
 
-		var GetResponse = client
-				.getObject(new GetObjectRequest(bucketName, KeyName).withNonmatchingETagConstraint("ABCORZ"));
-		var Body = GetBody(GetResponse.getObjectContent());
-		assertEquals("bar", Body);
+		var getResponse = client
+				.getObject(new GetObjectRequest(bucketName, key).withNonmatchingETagConstraint("ABCORZ"));
+		var body = getBody(getResponse.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -119,16 +119,16 @@ public class GetObject extends TestBase {
 	public void test_get_object_ifmodifiedsince_good() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var KeyName = "foo";
+		var key = "foo";
 
-		client.putObject(bucketName, KeyName, "bar");
+		client.putObject(bucketName, key, "bar");
 
-		var MyDay = Calendar.getInstance();
-		MyDay.set(1994, 8, 29, 19, 43, 31);
-		var Response = client
-				.getObject(new GetObjectRequest(bucketName, KeyName).withModifiedSinceConstraint(MyDay.getTime()));
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+		var response = client
+				.getObject(new GetObjectRequest(bucketName, key).withModifiedSinceConstraint(days.getTime()));
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
@@ -137,19 +137,19 @@ public class GetObject extends TestBase {
 	public void test_get_object_ifmodifiedsince_failed() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var KeyName = "foo";
+		var key = "foo";
 
-		client.putObject(bucketName, KeyName, "bar");
-		var Response = client.getObject(bucketName, KeyName);
-		var After = Calendar.getInstance();
-		After.setTime(Response.getObjectMetadata().getLastModified());
-		After.add(Calendar.SECOND, 1);
+		client.putObject(bucketName, key, "bar");
+		var response = client.getObject(bucketName, key);
+		var after = Calendar.getInstance();
+		after.setTime(response.getObjectMetadata().getLastModified());
+		after.add(Calendar.SECOND, 1);
 
-		Delay(1000);
+		delay(1000);
 
-		Response = client
-				.getObject(new GetObjectRequest(bucketName, KeyName).withModifiedSinceConstraint(After.getTime()));
-		assertNull(Response);
+		response = client
+				.getObject(new GetObjectRequest(bucketName, key).withModifiedSinceConstraint(after.getTime()));
+		assertNull(response);
 	}
 
 	@Test
@@ -158,16 +158,16 @@ public class GetObject extends TestBase {
 	public void test_get_object_ifunmodifiedsince_good() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var KeyName = "foo";
+		var key = "foo";
 
-		client.putObject(bucketName, KeyName, "bar");
+		client.putObject(bucketName, key, "bar");
 
-		var MyDay = Calendar.getInstance();
-		MyDay.set(1994, 8, 29, 19, 43, 31);
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
 
-		var Response = client
-				.getObject(new GetObjectRequest(bucketName, KeyName).withUnmodifiedSinceConstraint(MyDay.getTime()));
-		assertNull(Response);
+		var response = client
+				.getObject(new GetObjectRequest(bucketName, key).withUnmodifiedSinceConstraint(days.getTime()));
+		assertNull(response);
 	}
 
 	@Test
@@ -176,127 +176,127 @@ public class GetObject extends TestBase {
 	public void test_get_object_ifunmodifiedsince_failed() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var KeyName = "foo";
+		var key = "foo";
 
-		client.putObject(bucketName, KeyName, "bar");
+		client.putObject(bucketName, key, "bar");
 
-		var MyDay = Calendar.getInstance();
-		MyDay.set(2100, 8, 29, 19, 43, 31);
-		var Response = client
-				.getObject(new GetObjectRequest(bucketName, KeyName).withUnmodifiedSinceConstraint(MyDay.getTime()));
-		var Body = GetBody(Response.getObjectContent());
-		assertEquals("bar", Body);
+		var days = Calendar.getInstance();
+		days.set(2100, 8, 29, 19, 43, 31);
+		var response = client
+				.getObject(new GetObjectRequest(bucketName, key).withUnmodifiedSinceConstraint(days.getTime()));
+		var body = getBody(response.getObjectContent());
+		assertEquals("bar", body);
 	}
 
 	@Test
 	@Tag("Range")
 	// 지정한 범위로 오브젝트 다운로드가 가능한지 확인
 	public void test_ranged_request_response_code() {
-		var Key = "testobj";
-		var Content = "testcontent";
+		var key = "obj";
+		var content = "testcontent";
 
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(bucketName, Key, Content);
-		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withRange(4, 7));
+		client.putObject(bucketName, key, content);
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(4, 7));
 
-		var FetchedContent = GetBody(Response.getObjectContent());
-		assertEquals(Content.substring(4, 8), FetchedContent);
-		assertEquals("bytes 4-7/11", Response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
+		var fetchedContent = getBody(response.getObjectContent());
+		assertEquals(content.substring(4, 8), fetchedContent);
+		assertEquals("bytes 4-7/11", response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
 	}
 
 	@Test
 	@Tag("Range")
 	// 지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
 	public void test_ranged_big_request_response_code() {
-		var Key = "testobj";
-		var Content = Utils.randomTextToLong(8 * MainData.MB);
+		var key = "testobj";
+		var content = Utils.randomTextToLong(8 * MainData.MB);
 
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(bucketName, Key, Content);
-		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withRange(3145728, 5242880));
+		client.putObject(bucketName, key, content);
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(3145728, 5242880));
 
-		var FetchedContent = GetBody(Response.getObjectContent());
-		assertTrue(Content.substring(3145728, 5242881).equals(FetchedContent), MainData.NOT_MATCHED);
+		var fetchedContent = getBody(response.getObjectContent());
+		assertTrue(content.substring(3145728, 5242881).equals(fetchedContent), MainData.NOT_MATCHED);
 		assertEquals("bytes 3145728-5242880/8388608",
-				Response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
+				response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
 	}
 
 	@Test
 	@Tag("Range")
 	// 특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
 	public void test_ranged_request_skip_leading_bytes_response_code() {
-		var Key = "testobj";
-		var Content = "testcontent";
+		var key = "testobj";
+		var content = "testcontent";
 
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(bucketName, Key, Content);
-		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withRange(4));
+		client.putObject(bucketName, key, content);
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(4));
 
-		var FetchedContent = GetBody(Response.getObjectContent());
-		assertEquals(Content.substring(4), FetchedContent);
-		assertEquals("bytes 4-10/11", Response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
+		var fetchedContent = getBody(response.getObjectContent());
+		assertEquals(content.substring(4), fetchedContent);
+		assertEquals("bytes 4-10/11", response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
 	}
 
 	@Test
 	@Tag("Range")
 	// 끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
 	public void test_ranged_request_return_trailing_bytes_response_code() {
-		var Key = "testobj";
-		var Content = "testcontent";
+		var key = "testobj";
+		var content = "testcontent";
 
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(bucketName, Key, Content);
-		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withRange(4));
+		client.putObject(bucketName, key, content);
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(4));
 
-		var FetchedContent = GetBody(Response.getObjectContent());
-		assertEquals(Content.substring(Content.length() - 7), FetchedContent);
-		assertEquals("bytes 4-10/11", Response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
+		var fetchedContent = getBody(response.getObjectContent());
+		assertEquals(content.substring(content.length() - 7), fetchedContent);
+		assertEquals("bytes 4-10/11", response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
 	}
 
 	@Test
 	@Tag("Range")
 	// 오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
 	public void test_ranged_request_invalid_range() {
-		var Key = "testobj";
-		var Content = "testcontent";
+		var key = "testobj";
+		var content = "testcontent";
 
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(bucketName, Key, Content);
+		client.putObject(bucketName, key, content);
 		var e = assertThrows(AmazonServiceException.class,
-				() -> client.getObject(new GetObjectRequest(bucketName, Key).withRange(40, 50)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(416, StatusCode);
-		assertEquals(MainData.InvalidRange, ErrorCode);
+				() -> client.getObject(new GetObjectRequest(bucketName, key).withRange(40, 50)));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(416, statusCode);
+		assertEquals(MainData.InvalidRange, errorCode);
 	}
 
 	@Test
 	@Tag("Range")
 	// 비어있는 오브젝트를 범위를 지정하여 다운로드 실패 확인
 	public void test_ranged_request_empty_object() {
-		var Key = "testobj";
-		var Content = "";
+		var key = "testobj";
+		var content = "";
 
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(bucketName, Key, Content);
+		client.putObject(bucketName, key, content);
 		var e = assertThrows(AmazonServiceException.class,
-				() -> client.getObject(new GetObjectRequest(bucketName, Key).withRange(40, 50)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(416, StatusCode);
-		assertEquals(MainData.InvalidRange, ErrorCode);
+				() -> client.getObject(new GetObjectRequest(bucketName, key).withRange(40, 50)));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(416, statusCode);
+		assertEquals(MainData.InvalidRange, errorCode);
 	}
 
 	@Test
@@ -305,11 +305,11 @@ public class GetObject extends TestBase {
 	public void test_get_object_many() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
+		var key = "foo";
 		var Data = Utils.randomTextToLong(15 * MainData.MB);
 
-		client.putObject(bucketName, Key, Data);
-		CheckContent(bucketName, Key, Data, 50);
+		client.putObject(bucketName, key, Data);
+		checkContent(bucketName, key, Data, 50);
 	}
 
 	@Test
@@ -318,12 +318,12 @@ public class GetObject extends TestBase {
 	public void test_range_object_many() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
+		var key = "foo";
 		var FileSize = 1024 * 1024 * 15;
 		var Data = Utils.randomTextToLong(FileSize);
 
-		client.putObject(bucketName, Key, Data);
-		CheckContentUsingRandomRange(bucketName, Key, Data, 50);
+		client.putObject(bucketName, key, Data);
+		checkContentUsingRandomRange(bucketName, key, Data, 50);
 	}
 
 	@Test
@@ -332,11 +332,11 @@ public class GetObject extends TestBase {
 	public void test_restore_object() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
+		var key = "foo";
 
-		client.putObject(bucketName, Key, Key);
+		client.putObject(bucketName, key, key);
 		
-		var Request = new RestoreObjectRequest(bucketName, Key);
+		var Request = new RestoreObjectRequest(bucketName, key);
 		client.restoreObjectV2(Request);
 	}
 }

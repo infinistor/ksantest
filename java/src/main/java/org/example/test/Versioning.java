@@ -73,8 +73,8 @@ public class Versioning extends TestBase {
 		var key = "obj";
 		var numVersions = 5;
 
-		DoTestCreateRemoveVersions(client, bucketName, key, numVersions, 0, 0);
-		DoTestCreateRemoveVersions(client, bucketName, key, numVersions, 4, -1);
+		doTestCreateRemoveVersions(client, bucketName, key, numVersions, 0, 0);
+		doTestCreateRemoveVersions(client, bucketName, key, numVersions, 4, -1);
 	}
 
 	@Test
@@ -102,23 +102,19 @@ public class Versioning extends TestBase {
 		client.deleteVersion(bucketName, key, removedVersionID);
 
 		var getResponse = client.getObject(bucketName, key);
-		var body = GetBody(getResponse.getObjectContent());
+		var body = getBody(getResponse.getObjectContent());
 		assertEquals(contents.get(contents.size() - 1), body);
 
 		client.deleteObject(bucketName, key);
 
-		var deleteMarkerVersionID = getResponse.getObjectMetadata().getVersionId();
-		versionIds.add(deleteMarkerVersionID);
+		var deleteMarkerVersionId = getResponse.getObjectMetadata().getVersionId();
+		versionIds.add(deleteMarkerVersionId);
 
 		var listResponse = client.listVersions(bucketName, "");
 		assertEquals(numVersions, GetVersions(listResponse.getVersionSummaries()).size());
 		assertEquals(1, GetDeleteMarkers(listResponse.getVersionSummaries()).size());
-		for (var Item : listResponse.getVersionSummaries()) {
-			System.out.format("%s, %b\n", Item.getVersionId(), Item.isDeleteMarker());
-		}
-		System.out.format("\n");
 
-		assertEquals(deleteMarkerVersionID, GetDeleteMarkers(listResponse.getVersionSummaries()).get(0).getVersionId());
+		assertEquals(deleteMarkerVersionId, GetDeleteMarkers(listResponse.getVersionSummaries()).get(0).getVersionId());
 	}
 
 	@Test
@@ -163,13 +159,13 @@ public class Versioning extends TestBase {
 		var content2 = "zzz";
 		client.putObject(bucketName, key, content2);
 		var response = client.getObject(bucketName, key);
-		var body = GetBody(response.getObjectContent());
+		var body = getBody(response.getObjectContent());
 		assertEquals(content2, body);
 
-		var VersionID = response.getObjectMetadata().getVersionId();
-		client.deleteVersion(bucketName, key, VersionID);
+		var versionId = response.getObjectMetadata().getVersionId();
+		client.deleteVersion(bucketName, key, versionId);
 		response = client.getObject(bucketName, key);
-		body = GetBody(response.getObjectContent());
+		body = getBody(response.getObjectContent());
 		assertEquals(content, body);
 
 		client.deleteVersion(bucketName, key, "null");
@@ -200,7 +196,7 @@ public class Versioning extends TestBase {
 		var content2 = "zzz";
 		client.putObject(bucketName, key, content2);
 		var response = client.getObject(bucketName, key);
-		var body = GetBody(response.getObjectContent());
+		var body = getBody(response.getObjectContent());
 		assertEquals(content2, body);
 
 		var listResponse = client.listVersions(bucketName, "");
@@ -314,7 +310,7 @@ public class Versioning extends TestBase {
 		var contents = new ArrayList<String>();
 
 		for (int i = 0; i < numVersions; i++)
-			contents.add(DoTestMultipartUploadContents(bucketName, key, 3));
+			contents.add(doTestMultipartUploadContents(bucketName, key, 3));
 
 		var response = client.listVersions(bucketName, "");
 		for (var version : response.getVersionSummaries())
@@ -345,25 +341,25 @@ public class Versioning extends TestBase {
 
 		var versionIds = new ArrayList<String>();
 		var contents = new ArrayList<String>();
-		var VersionIDs2 = new ArrayList<String>();
-		var Contents2 = new ArrayList<String>();
+		var versionIds2 = new ArrayList<String>();
+		var contents2 = new ArrayList<String>();
 
 		for (int i = 0; i < numVersions; i++) {
 			var body = String.format("content-%s", i);
 			var response = client.putObject(bucketName, key, body);
-			var VersionID = response.getVersionId();
+			var versionId = response.getVersionId();
 
 			contents.add(body);
-			versionIds.add(VersionID);
+			versionIds.add(versionId);
 		}
 
 		for (int i = 0; i < numVersions; i++) {
 			var body = String.format("content-%s", i);
 			var response = client.putObject(bucketName, Key2, body);
-			var VersionID = response.getVersionId();
+			var versionId = response.getVersionId();
 
-			Contents2.add(body);
-			VersionIDs2.add(VersionID);
+			contents2.add(body);
+			versionIds2.add(versionId);
 		}
 
 		var listResponse = client.listVersions(bucketName, "");
@@ -373,9 +369,9 @@ public class Versioning extends TestBase {
 		int index = 0;
 		for (int i = 0; i < 5; i++, index++) {
 			var version = versions.get(i);
-			assertEquals(version.getVersionId(), VersionIDs2.get(i));
+			assertEquals(version.getVersionId(), versionIds2.get(i));
 			assertEquals(version.getKey(), Key2);
-			checkObjContent(client, bucketName, Key2, version.getVersionId(), Contents2.get(i));
+			checkObjContent(client, bucketName, Key2, version.getVersionId(), contents2.get(i));
 		}
 
 		for (int i = 0; i < 5; i++, index++) {
@@ -407,26 +403,26 @@ public class Versioning extends TestBase {
 			client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, newKeyName)
 					.withSourceVersionId(versionIds.get(i)));
 			var getResponse = client.getObject(bucketName, newKeyName);
-			var content = GetBody(getResponse.getObjectContent());
+			var content = getBody(getResponse.getObjectContent());
 			assertEquals(contents.get(i), content);
 		}
 
-		var AnotherBucketName = getNewBucket();
+		var anotherBucketName = getNewBucket();
 
 		for (int i = 0; i < numVersions; i++) {
 			var newKeyName = String.format("key_%s", i);
 			client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, newKeyName)
 					.withSourceVersionId(versionIds.get(i)));
 			var getResponse = client.getObject(bucketName, newKeyName);
-			var content = GetBody(getResponse.getObjectContent());
+			var content = getBody(getResponse.getObjectContent());
 			assertEquals(contents.get(i), content);
 		}
 
 		var newKeyName2 = "new_key";
-		client.copyObject(bucketName, key, AnotherBucketName, newKeyName2);
+		client.copyObject(bucketName, key, anotherBucketName, newKeyName2);
 
-		var response = client.getObject(AnotherBucketName, newKeyName2);
-		var body = GetBody(response.getObjectContent());
+		var response = client.getObject(anotherBucketName, newKeyName2);
+		var body = getBody(response.getObjectContent());
 		assertEquals(body, contents.get(contents.size() - 1));
 	}
 
@@ -482,16 +478,16 @@ public class Versioning extends TestBase {
 		client.deleteObject(bucketName, key);
 		var response = client.listVersions(bucketName, "");
 		var versions = GetVersions(response.getVersionSummaries());
-		var DeleteMarkers = GetDeleteMarkers(response.getVersionSummaries());
+		var deleteMarkers = GetDeleteMarkers(response.getVersionSummaries());
 
-		versionIds.add(DeleteMarkers.get(0).getVersionId());
+		versionIds.add(deleteMarkers.get(0).getVersionId());
 		assertEquals(3, versionIds.size());
-		assertEquals(1, DeleteMarkers.size());
+		assertEquals(1, deleteMarkers.size());
 
 		for (var version : versions)
 			client.deleteVersion(bucketName, key, version.getVersionId());
 
-		for (var DeleteMarker : DeleteMarkers)
+		for (var DeleteMarker : deleteMarkers)
 			client.deleteVersion(bucketName, key, DeleteMarker.getVersionId());
 
 		response = client.listVersions(bucketName, "");
@@ -501,7 +497,7 @@ public class Versioning extends TestBase {
 		for (var version : versions)
 			client.deleteVersion(bucketName, key, version.getVersionId());
 
-		for (var DeleteMarker : DeleteMarkers)
+		for (var DeleteMarker : deleteMarkers)
 			client.deleteVersion(bucketName, key, DeleteMarker.getVersionId());
 
 		response = client.listVersions(bucketName, "");
@@ -547,21 +543,21 @@ public class Versioning extends TestBase {
 		var contents = new ArrayList<String>();
 		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		var VersionID = versionIds.get(1);
+		var versionId = versionIds.get(1);
 
-		var response = client.getObjectAcl(bucketName, key, VersionID);
+		var response = client.getObjectAcl(bucketName, key, versionId);
 
-		var User = new CanonicalGrantee(config.mainUser.userId);
-		User.setDisplayName(config.mainUser.displayName);
+		var user = new CanonicalGrantee(config.mainUser.userId);
+		user.setDisplayName(config.mainUser.displayName);
 
 		if (!StringUtils.isBlank(config.URL))
-			assertEquals(User.getDisplayName(), response.getOwner().getDisplayName());
-		assertEquals(User.getIdentifier(), response.getOwner().getId());
+			assertEquals(user.getDisplayName(), response.getOwner().getDisplayName());
+		assertEquals(user.getIdentifier(), response.getOwner().getId());
 
-		var GetGrants = response.getGrantsAsList();
-		var MyGrants = new ArrayList<Grant>();
-		MyGrants.add(new Grant(User, Permission.FullControl));
-		CheckGrants(MyGrants, new ArrayList<Grant>(GetGrants));
+		var getGrants = response.getGrantsAsList();
+		var myGrants = new ArrayList<Grant>();
+		myGrants.add(new Grant(user, Permission.FullControl));
+		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
 	}
 
 	@Test
@@ -581,31 +577,31 @@ public class Versioning extends TestBase {
 		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
 		var getResponse = client.getObject(bucketName, key);
-		var VersionID = getResponse.getObjectMetadata().getVersionId();
+		var versionId = getResponse.getObjectMetadata().getVersionId();
 
-		var response = client.getObjectAcl(bucketName, key, VersionID);
+		var response = client.getObjectAcl(bucketName, key, versionId);
 
-		var User = new CanonicalGrantee(config.mainUser.userId);
-		User.setDisplayName(config.mainUser.displayName);
+		var user = new CanonicalGrantee(config.mainUser.userId);
+		user.setDisplayName(config.mainUser.displayName);
 
 		if (!StringUtils.isBlank(config.URL))
-			assertEquals(User.getDisplayName(), response.getOwner().getDisplayName());
-		assertEquals(User.getIdentifier(), response.getOwner().getId());
+			assertEquals(user.getDisplayName(), response.getOwner().getDisplayName());
+		assertEquals(user.getIdentifier(), response.getOwner().getId());
 
-		var GetGrants = response.getGrantsAsList();
-		var MyGrants = new ArrayList<Grant>();
-		MyGrants.add(new Grant(User, Permission.FullControl));
-		CheckGrants(MyGrants, new ArrayList<Grant>(GetGrants));
+		var getGrants = response.getGrantsAsList();
+		var myGrants = new ArrayList<Grant>();
+		myGrants.add(new Grant(user, Permission.FullControl));
+		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
 
 		client.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead);
 
-		response = client.getObjectAcl(bucketName, key, VersionID);
-		GetGrants = response.getGrantsAsList();
+		response = client.getObjectAcl(bucketName, key, versionId);
+		getGrants = response.getGrantsAsList();
 
-		MyGrants = new ArrayList<Grant>();
-		MyGrants.add(new Grant(User, Permission.FullControl));
-		MyGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Read));
-		CheckGrants(MyGrants, new ArrayList<Grant>(GetGrants));
+		myGrants = new ArrayList<Grant>();
+		myGrants.add(new Grant(user, Permission.FullControl));
+		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Read));
+		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
 	}
 
 	@Test
@@ -623,11 +619,11 @@ public class Versioning extends TestBase {
 		var allTasks = new ArrayList<Thread>();
 
 		for (int i = 0; i < 3; i++) {
-			var TList = DoCreateVersionedObjConcurrent(client, bucketName, key, numVersions);
-			allTasks.addAll(TList);
+			var tList = doCreateVersionedObjConcurrent(client, bucketName, key, numVersions);
+			allTasks.addAll(tList);
 
-			var TList2 = DoClearVersionedBucketConcurrent(client, bucketName);
-			allTasks.addAll(TList2);
+			var tList2 = doClearVersionedBucketConcurrent(client, bucketName);
+			allTasks.addAll(tList2);
 		}
 
 		for (var mTask : allTasks) {
@@ -638,7 +634,7 @@ public class Versioning extends TestBase {
 			}
 		}
 
-		var tList3 = DoClearVersionedBucketConcurrent(client, bucketName);
+		var tList3 = doClearVersionedBucketConcurrent(client, bucketName);
 		for (var mTask : tList3) {
 			try {
 				mTask.join();
@@ -660,73 +656,73 @@ public class Versioning extends TestBase {
 		var key = "bar";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
-		var PutResponse = client.putObject(bucketName, key, "");
-		var VersionID = PutResponse.getVersionId();
+		var putResponse = client.putObject(bucketName, key, "");
+		var versionId = putResponse.getVersionId();
 
 		var listResponse = client.listVersions(bucketName, "");
 		var versions = GetVersions(listResponse.getVersionSummaries());
 		for (var version : versions)
-			assertEquals(VersionID, version.getVersionId());
+			assertEquals(versionId, version.getVersionId());
 
 		bucketName = getNewBucket();
 		key = "baz";
-		PutResponse = client.putObject(bucketName, key, "");
-		assertNull(PutResponse.getVersionId());
+		putResponse = client.putObject(bucketName, key, "");
+		assertNull(putResponse.getVersionId());
 
 		bucketName = getNewBucket();
 		key = "baz";
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
-		PutResponse = client.putObject(bucketName, key, "");
-		assertNull(PutResponse.getVersionId());
+		putResponse = client.putObject(bucketName, key, "");
+		assertNull(putResponse.getVersionId());
 	}
 
 	@Test
 	@Tag("MultiPart")
 	// 버킷의 버저닝 설정이 멀티파트 업로드시 올바르게 동작하는지 확인
 	public void test_versioning_bucket_multipart_upload_return_version_id() {
-		var ContentType = "text/bla";
-		var Size = 50 * MainData.MB;
+		var contentType = "text/bla";
+		var size = 50 * MainData.MB;
 
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "bar";
-		var Metadata = new ObjectMetadata();
-		Metadata.addUserMetadata("foo", "baz");
-		Metadata.setContentType(ContentType);
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("foo", "baz");
+		metadata.setContentType(contentType);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
-		var UploadData = SetupMultipartUpload(client, bucketName, key, Size, Metadata);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 
-		var CompResponse = client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, key, UploadData.uploadId, UploadData.parts));
-		var VersionID = CompResponse.getVersionId();
+		var compResponse = client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
+		var versionId = compResponse.getVersionId();
 
 		var listResponse = client.listVersions(bucketName, "");
 		var versions = GetVersions(listResponse.getVersionSummaries());
 		for (var version : versions)
-			assertEquals(VersionID, version.getVersionId());
+			assertEquals(versionId, version.getVersionId());
 
 		bucketName = getNewBucket();
 		key = "baz";
 
-		UploadData = SetupMultipartUpload(client, bucketName, key, Size, Metadata);
-		CompResponse = client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, key, UploadData.uploadId, UploadData.parts));
-		assertNull(CompResponse.getVersionId());
+		uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
+		compResponse = client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
+		assertNull(compResponse.getVersionId());
 
 		bucketName = getNewBucket();
 		key = "foo";
 
-		UploadData = SetupMultipartUpload(client, bucketName, key, Size, Metadata);
+		uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
-		CompResponse = client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, key, UploadData.uploadId, UploadData.parts));
-		assertNull(CompResponse.getVersionId());
+		compResponse = client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
+		assertNull(compResponse.getVersionId());
 	}
 
 	@Test
-	@Tag("Metadata")
+	@Tag("metadata")
 	// 업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인
 	public void test_versioning_get_object_head() {
 		var bucketName = getNewBucket();
@@ -765,9 +761,9 @@ public class Versioning extends TestBase {
 		}
 
 		while (versions.size() > 1) {
-			var DeleteVersionId = versions.get(0);
-			versions.remove(DeleteVersionId);
-			client.deleteVersion(bucketName, key, DeleteVersionId);
+			var deleteVersionId = versions.get(0);
+			versions.remove(deleteVersionId);
+			client.deleteVersion(bucketName, key, deleteVersionId);
 
 			var listVersion = versions.get(0);
 			var response = client.getObjectMetadata(bucketName, key);

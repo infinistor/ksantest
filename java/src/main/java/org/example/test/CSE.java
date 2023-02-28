@@ -47,28 +47,28 @@ public class CSE extends TestBase {
 	@Tag("PutGet")
 	// @Tag("[AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	public void test_cse_encrypted_transfer_1b() {
-		TestEncryptionCSEWrite(1);
+		testEncryptionCSEWrite(1);
 	}
 
 	@Test
 	@Tag("PutGet")
 	// @Tag("[AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	public void test_cse_encrypted_transfer_1kb() {
-		TestEncryptionCSEWrite(1024);
+		testEncryptionCSEWrite(1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	// @Tag("[AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	public void test_cse_encrypted_transfer_1MB() {
-		TestEncryptionCSEWrite(1024 * 1024);
+		testEncryptionCSEWrite(1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	// @Tag("[AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	public void test_cse_encrypted_transfer_13b() {
-		TestEncryptionCSEWrite(13);
+		testEncryptionCSEWrite(13);
 	}
 
 	@Test
@@ -77,23 +77,23 @@ public class CSE extends TestBase {
 	public void test_cse_encryption_method_head() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "testobj";
-		var Size = 1000;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "testobj";
+		var size = 1000;
+		var data = Utils.randomTextToLong(size);
 
 		// AES
-		var AESKey = Utils.randomTextToLong(32);
+		var aesKey = Utils.randomTextToLong(32);
 		try {
-			var EncodingData = AES256.EncryptAES256(Data, AESKey);
-			var MetadataList = new ObjectMetadata();
-			MetadataList.addUserMetadata("x-amz-meta-key", AESKey);
-			MetadataList.setContentType("text/plain");
-			MetadataList.setContentLength(EncodingData.length());
+			var encoding = AES256.encrypt(data, aesKey);
+			var metadata = new ObjectMetadata();
+			metadata.addUserMetadata("x-amz-meta-key", aesKey);
+			metadata.setContentType("text/plain");
+			metadata.setContentLength(encoding.length());
 
-			client.putObject(bucketName, Key, createBody(EncodingData), MetadataList);
+			client.putObject(bucketName, key, createBody(encoding), metadata);
 
-			var ResMetaData = client.getObjectMetadata(bucketName, Key);
-			assertEquals(MetadataList.getUserMetadata(), ResMetaData.getUserMetadata());
+			var getMetadata = client.getObjectMetadata(bucketName, key);
+			assertEquals(metadata.getUserMetadata(), getMetadata.getUserMetadata());
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
@@ -105,25 +105,25 @@ public class CSE extends TestBase {
 	public void test_cse_encryption_non_decryption() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "testobj";
-		var Size = 1000;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "testobj";
+		var size = 1000;
+		var data = Utils.randomTextToLong(size);
 
 		// AES
-		var AESKey = Utils.randomTextToLong(32);
+		var aesKey = Utils.randomTextToLong(32);
 
 		try {
-			var EncodingData = AES256.EncryptAES256(Data, AESKey);
-			var MetadataList = new ObjectMetadata();
-			MetadataList.addUserMetadata("x-amz-meta-key", AESKey);
-			MetadataList.setContentType("text/plain");
-			MetadataList.setContentLength(EncodingData.length());
+			var encoding = AES256.encrypt(data, aesKey);
+			var metadata = new ObjectMetadata();
+			metadata.addUserMetadata("x-amz-meta-key", aesKey);
+			metadata.setContentType("text/plain");
+			metadata.setContentLength(encoding.length());
 
-			client.putObject(bucketName, Key, createBody(EncodingData), MetadataList);
+			client.putObject(bucketName, key, createBody(encoding), metadata);
 
-			var Response = client.getObject(bucketName, Key);
-			var Body = GetBody(Response.getObjectContent());
-			assertNotEquals(Data, Body);
+			var response = client.getObject(bucketName, key);
+			var Body = getBody(response.getObjectContent());
+			assertNotEquals(data, Body);
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
@@ -135,22 +135,22 @@ public class CSE extends TestBase {
 	public void test_cse_non_encryption_decryption() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "testobj";
-		var Size = 1000;
-		var Data = Utils.randomTextToLong(Size);
+		var key = "testobj";
+		var size = 1000;
+		var data = Utils.randomTextToLong(size);
 
 		// AES
-		var AESKey = Utils.randomTextToLong(32);
+		var aesKey = Utils.randomTextToLong(32);
 
-		var MetadataList = new ObjectMetadata();
-		MetadataList.addUserMetadata("x-amz-meta-key", AESKey);
-		MetadataList.setContentType("text/plain");
-		MetadataList.setContentLength(Size);
-		client.putObject(bucketName, Key, createBody(Data), MetadataList);
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("x-amz-meta-key", aesKey);
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(size);
+		client.putObject(bucketName, key, createBody(data), metadata);
 
-		var Response = client.getObject(bucketName, Key);
-		var EncodingBody = GetBody(Response.getObjectContent());
-		assertThrows(Exception.class, () -> AES256.DecryptAES256(EncodingBody, AESKey));
+		var response = client.getObject(bucketName, key);
+		var encodingBody = getBody(response.getObjectContent());
+		assertThrows(Exception.class, () -> AES256.decrypt(encodingBody, aesKey));
 	}
 
 	@Test
@@ -159,26 +159,26 @@ public class CSE extends TestBase {
 	public void test_cse_encryption_range_read() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "testobj";
+		var key = "testobj";
 
 		// AES
-		var AESKey = Utils.randomTextToLong(32);
+		var aesKey = Utils.randomTextToLong(32);
 
 		try {
-			var Data = Utils.randomTextToLong(1024 * 1024);
-			var EncodingData = AES256.EncryptAES256(Data, AESKey);
-			var MetadataList = new ObjectMetadata();
-			MetadataList.addUserMetadata("x-amz-meta-key", AESKey);
-			MetadataList.setContentType("text/plain");
-			MetadataList.setContentLength(EncodingData.length());
-			client.putObject(bucketName, Key, createBody(EncodingData), MetadataList);
+			var data = Utils.randomTextToLong(1024 * 1024);
+			var encoding = AES256.encrypt(data, aesKey);
+			var metadata = new ObjectMetadata();
+			metadata.addUserMetadata("x-amz-meta-key", aesKey);
+			metadata.setContentType("text/plain");
+			metadata.setContentLength(encoding.length());
+			client.putObject(bucketName, key, createBody(encoding), metadata);
 
 			var r = new Random();
-			var StartPoint = r.nextInt(1024 * 1024 - 1001);
-			var Response = client
-					.getObject(new GetObjectRequest(bucketName, Key).withRange(StartPoint, StartPoint + 1000 - 1));
-			var EncodingBody = GetBody(Response.getObjectContent());
-			assertTrue(EncodingData.substring(StartPoint, StartPoint + 1000).equals(EncodingBody),
+			var startPoint = r.nextInt(1024 * 1024 - 1001);
+			var response = client
+					.getObject(new GetObjectRequest(bucketName, key).withRange(startPoint, startPoint + 1000 - 1));
+			var encodingBody = getBody(response.getObjectContent());
+			assertTrue(encoding.substring(startPoint, startPoint + 1000).equals(encodingBody),
 					MainData.NOT_MATCHED);
 		} catch (Exception e) {
 			fail(e.getMessage());
@@ -191,48 +191,48 @@ public class CSE extends TestBase {
 	public void test_cse_encryption_multipart_upload() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "multipart_enc";
-		var Size = 50 * MainData.MB;
-		var ContentType = "text/plain";
-		var Data = Utils.randomTextToLong(Size);
+		var key = "multipart_enc";
+		var size = 50 * MainData.MB;
+		var contentType = "text/plain";
+		var data = Utils.randomTextToLong(size);
 
 		// AES
-		var AESKey = Utils.randomTextToLong(32);
+		var aesKey = Utils.randomTextToLong(32);
 
 		try {
-			var EncodingData = AES256.EncryptAES256(Data, AESKey);
-			var MetadataList = new ObjectMetadata();
-			MetadataList.addUserMetadata("x-amz-meta-key", AESKey);
-			MetadataList.setContentType(ContentType);
+			var encoding = AES256.encrypt(data, aesKey);
+			var metadata = new ObjectMetadata();
+			metadata.addUserMetadata("x-amz-meta-key", aesKey);
+			metadata.setContentType(contentType);
 
 			var InitMultiPartResponse = client
-					.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, Key, MetadataList));
+					.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, metadata));
 			var UploadID = InitMultiPartResponse.getUploadId();
 
-			var Parts = CutStringData(EncodingData, 5 * MainData.MB);
-			var PartETag = new ArrayList<PartETag>();
-			int PartNumber = 1;
-			for (var Part : Parts) {
-				var PartResPonse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(Key)
-						.withUploadId(UploadID).withPartNumber(PartNumber++).withInputStream(createBody(Part))
-						.withPartSize(Part.length()));
-				PartETag.add(PartResPonse.getPartETag());
+			var parts = CutStringData(encoding, 5 * MainData.MB);
+			var partETags = new ArrayList<PartETag>();
+			int partNumber = 1;
+			for (var part : parts) {
+				var PartResPonse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+						.withUploadId(UploadID).withPartNumber(partNumber++).withInputStream(createBody(part))
+						.withPartSize(part.length()));
+				partETags.add(PartResPonse.getPartETag());
 			}
 
-			client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, Key, UploadID, PartETag));
+			client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, UploadID, partETags));
 
-			var HeadResponse = client.listObjectsV2(bucketName);
-			var ObjectCount = HeadResponse.getKeyCount();
-			assertEquals(1, ObjectCount);
-			assertEquals(EncodingData.length(), GetBytesUsed(HeadResponse));
+			var headResponse = client.listObjectsV2(bucketName);
+			var objectCount = headResponse.getKeyCount();
+			assertEquals(1, objectCount);
+			assertEquals(encoding.length(), GetBytesUsed(headResponse));
 
-			var GetResponse = client.getObjectMetadata(bucketName, Key);
-			assertEquals(MetadataList.getUserMetadata(), GetResponse.getUserMetadata());
-			assertEquals(ContentType, GetResponse.getContentType());
+			var GetResponse = client.getObjectMetadata(bucketName, key);
+			assertEquals(metadata.getUserMetadata(), GetResponse.getUserMetadata());
+			assertEquals(contentType, GetResponse.getContentType());
 
-			CheckContentUsingRange(bucketName, Key, EncodingData, MainData.MB);
-			CheckContentUsingRange(bucketName, Key, EncodingData, 10 * MainData.MB);
-			CheckContentUsingRandomRange(bucketName, Key, EncodingData, 100);
+			checkContentUsingRange(bucketName, key, encoding, MainData.MB);
+			checkContentUsingRange(bucketName, key, encoding, 10 * MainData.MB);
+			checkContentUsingRandomRange(bucketName, key, encoding, 100);
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
@@ -244,25 +244,25 @@ public class CSE extends TestBase {
 	public void test_cse_get_object_many() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
+		var key = "foo";
 		// AES
-		var AESKey = Utils.randomTextToLong(32);
-		var Data = Utils.randomTextToLong(15 * MainData.MB);
+		var aesKey = Utils.randomTextToLong(32);
+		var data = Utils.randomTextToLong(15 * MainData.MB);
 
 		try {
-			var EncodingData = AES256.EncryptAES256(Data, AESKey);
-			var MetadataList = new ObjectMetadata();
-			MetadataList.addUserMetadata("AESkey", AESKey);
-			MetadataList.setContentType("text/plain");
-			MetadataList.setContentLength(EncodingData.length());
+			var encoding = AES256.encrypt(data, aesKey);
+			var metadata = new ObjectMetadata();
+			metadata.addUserMetadata("AESkey", aesKey);
+			metadata.setContentType("text/plain");
+			metadata.setContentLength(encoding.length());
 
-			client.putObject(bucketName, Key, createBody(EncodingData), MetadataList);
+			client.putObject(bucketName, key, createBody(encoding), metadata);
 
-			var Response = client.getObject(bucketName, Key);
-			var EncodingBody = GetBody(Response.getObjectContent());
-			var Body = AES256.DecryptAES256(EncodingBody, AESKey);
-			assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
-			CheckContent(bucketName, Key, EncodingData, 50);
+			var response = client.getObject(bucketName, key);
+			var encodingBody = getBody(response.getObjectContent());
+			var Body = AES256.decrypt(encodingBody, aesKey);
+			assertTrue(data.equals(Body), MainData.NOT_MATCHED);
+			checkContent(bucketName, key, encoding, 50);
 
 		} catch (Exception e) {
 			fail(e.getMessage());
@@ -275,28 +275,28 @@ public class CSE extends TestBase {
 	public void test_cse_range_object_many() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
+		var key = "foo";
 
 		// AES
-		var AESKey = Utils.randomTextToLong(32);
+		var aesKey = Utils.randomTextToLong(32);
 		var FileSize = 15 * 1024 * 1024;
-		var Data = Utils.randomTextToLong(FileSize);
+		var data = Utils.randomTextToLong(FileSize);
 
 		try {
-			var EncodingData = AES256.EncryptAES256(Data, AESKey);
-			var MetadataList = new ObjectMetadata();
-			MetadataList.addUserMetadata("AESkey", AESKey);
-			MetadataList.setContentType("text/plain");
-			MetadataList.setContentLength(EncodingData.length());
+			var encoding = AES256.encrypt(data, aesKey);
+			var metadata = new ObjectMetadata();
+			metadata.addUserMetadata("AESkey", aesKey);
+			metadata.setContentType("text/plain");
+			metadata.setContentLength(encoding.length());
 
-			client.putObject(bucketName, Key, createBody(EncodingData), MetadataList);
+			client.putObject(bucketName, key, createBody(encoding), metadata);
 
-			var Response = client.getObject(bucketName, Key);
-			var EncodingBody = GetBody(Response.getObjectContent());
-			var Body = AES256.DecryptAES256(EncodingBody, AESKey);
-			assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+			var response = client.getObject(bucketName, key);
+			var encodingBody = getBody(response.getObjectContent());
+			var Body = AES256.decrypt(encodingBody, aesKey);
+			assertTrue(data.equals(Body), MainData.NOT_MATCHED);
 
-			CheckContentUsingRandomRange(bucketName, Key, EncodingData, 50);
+			checkContentUsingRandomRange(bucketName, key, encoding, 50);
 
 		} catch (Exception e) {
 			fail(e.getMessage());
