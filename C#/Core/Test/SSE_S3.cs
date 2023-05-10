@@ -710,40 +710,51 @@ namespace s3tests
 		{
 			var BucketName = GetNewBucket();
 			var Client = GetClient();
-			var Key1 = "key1";
-			var Data1 = RandomTextToLong(1000);
-			var Key2 = "key2";
-			var Data2 = RandomTextToLong(1000);
+			var PutKey = "PutKey";
+			var CopyKey = "CopyKey";
+			var MultiKey = "MultiKey";
+			var PutData = RandomTextToLong(1000);
 
-			Client.PutObject(BucketName, Key1, Data1);
+			var SSEConfig = new ServerSideEncryptionConfiguration() { ServerSideEncryptionRules = new List<ServerSideEncryptionRule>() { new ServerSideEncryptionRule() { ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault() { ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256) } } } };
 
-			var SSEConfig = new ServerSideEncryptionConfiguration()
-			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
-					new ServerSideEncryptionRule()
-					{
-						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
-						{
-							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
-						}
-					}
-				}
-			};
+			Client.PutObject(BucketName, PutKey, PutData);
+			Client.CopyObject(BucketName, PutKey, BucketName, CopyKey);
+			var UploadData = SetupMultipartUpload(Client, BucketName, MultiKey, 1000, SSE_S3: ServerSideEncryptionMethod.AES256);
 
+			// SSE-S3 설정
 			Client.PutBucketEncryption(BucketName, SSEConfig);
 			Assert.Single(Client.GetBucketEncryption(BucketName).ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
 
-			var Response = Client.GetObject(BucketName, Key1);
-			Assert.Equal(Data1, GetBody(Response));
+			// 오브젝트 다운로드 확인
+			var Response = Client.GetObject(BucketName, PutKey);
+			Assert.Equal(PutData, GetBody(Response));
+			Response = Client.GetObject(BucketName, CopyKey);
+			Assert.Equal(PutData, GetBody(Response));
+			Response = Client.GetObject(BucketName, MultiKey);
+			Assert.Equal(UploadData.Body, GetBody(Response));
 
-			Client.PutObject(BucketName, Key2, Data2);
+			// 오브젝트 업로드
+			var PutKey2 = "key2";
+			var PutData2 = RandomTextToLong(1000);
+			var CopyKey2 = "CopyKey2";
+			var MultiKey2 = "MultiKey2";
 
+			Client.PutObject(BucketName, PutKey2, PutData2);
+			Client.CopyObject(BucketName, PutKey2, BucketName, CopyKey2);
+			UploadData = SetupMultipartUpload(Client, BucketName, MultiKey2, 1000, SSE_S3: ServerSideEncryptionMethod.AES256);
+
+			// SSE-S3 설정 해제
 			Assert.Equal(HttpStatusCode.NoContent, Client.DeleteBucketEncryption(BucketName).HttpStatusCode);
 			Assert.Empty(Client.GetBucketEncryption(BucketName).ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
 
-			Response = Client.GetObject(BucketName, Key2);
-			Assert.Equal(Data2, GetBody(Response));
+			// 오브젝트 다운로드 확인
+			Response = Client.GetObject(BucketName, PutKey2);
+			Assert.Equal(PutData2, GetBody(Response));
+			Response = Client.GetObject(BucketName, CopyKey2);
+			Assert.Equal(PutData2, GetBody(Response));
+			Response = Client.GetObject(BucketName, MultiKey2);
+			Assert.Equal(UploadData.Body, GetBody(Response));
+
 		}
 	}
 }
