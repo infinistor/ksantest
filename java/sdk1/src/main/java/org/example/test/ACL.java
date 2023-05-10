@@ -207,7 +207,7 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = private] 로그인한 사용자가 공용버킷의 개인 오브젝트에 접근 가능한지 확인
 	public void test_object_raw_authenticated_object_acl() {
 		var Key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.Private, Key);
+		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.AuthenticatedRead, Key);
 
 		var client = getAltClient();
 		client.getObject(bucketName, Key);
