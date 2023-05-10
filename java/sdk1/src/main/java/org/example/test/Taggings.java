@@ -221,7 +221,7 @@ public class Taggings extends TestBase {
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
 		tagCompare(inputTagSet.getTagSet(), response.getTagSet());
 
-		var inputTagSet2 = new ObjectTagging(createDetailTagSet(1, 128, 256));
+		var inputTagSet2 = new ObjectTagging(createDetailTagSet(1, 128, 128));
 
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet2));
 
