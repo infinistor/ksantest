@@ -281,7 +281,7 @@ public class ACL extends TestBase {
 				Key);
 		var client = getClient();
 
-		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(0), HttpMethod.GET);
+		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(-1), HttpMethod.GET);
 		var Response = GetObject(Address);
 		assertEquals(403, Response.getStatusLine().getStatusCode());
 	}
@@ -296,7 +296,7 @@ public class ACL extends TestBase {
 				Key);
 		var client = getClient();
 
-		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(0), HttpMethod.GET);
+		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(-1), HttpMethod.GET);
 
 		var Response = GetObject(Address);
 		assertEquals(403, Response.getStatusLine().getStatusCode());
@@ -364,7 +364,7 @@ public class ACL extends TestBase {
 		var Key = "foo";
 		client.putObject(bucketName, Key, "");
 
-		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(0), HttpMethod.PUT);
+		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(-1), HttpMethod.PUT);
 
 		var Response = PutObject(Address, null);
 		assertEquals(403, Response.getStatusLine().getStatusCode());
