@@ -326,8 +326,12 @@ public class TestBase {
 		client.createBucket(bucketName);
 
 		if (keys != null && client != null) {
-			for (var key : keys)
-				client.putObject(bucketName, key, key);
+			for (var key : keys) {
+				var body = key;
+				if (key.endsWith("/"))
+					body = "";
+				client.putObject(bucketName, key, body);
+			}
 		}
 
 		return bucketName;
@@ -352,8 +356,12 @@ public class TestBase {
 		client.createBucket(bucketName);
 
 		if (keys != null && client != null) {
-			for (var key : keys)
-				client.putObject(bucketName, key, "");
+			for (var key : keys) {
+				var body = key;
+				if (key.endsWith("/"))
+					body = "";
+				client.putObject(bucketName, key, body);
+			}
 		}
 
 		return bucketName;
