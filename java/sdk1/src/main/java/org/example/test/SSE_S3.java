@@ -672,6 +672,6 @@ public class SSE_S3 extends TestBase
 		body = getBody(getResponse.getObjectContent());
 		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 
-		checkContentUsingRange(bucketName, multiKey, uploadData2.body.toString(), MainData.MB);
+		checkContentUsingRange(bucketName, multiKey2, uploadData2.body.toString(), MainData.MB);
 	}
 }
