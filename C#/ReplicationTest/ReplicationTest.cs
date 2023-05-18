@@ -209,18 +209,21 @@ namespace ReplicationTest
 			foreach (var Bucket in Buckets)
 			{
 				log.Info($"[{Bucket.BucketName}] Compare Check!");
-				var SourceData = GetListVersions(Main, MainBucket.BucketName, Bucket.Filtering ? Bucket.Prefix : null).OrderBy(x=> x.Key).ThenByDescending(x=> x.VersionId).ToList();
-				var TargetData = GetListVersions(Alt, Bucket.BucketName, Bucket.Filtering ? Bucket.Prefix : null).OrderBy(x=> x.Key).ThenByDescending(x=> x.VersionId).ToList();
+				var SourceData = GetListVersions(Main, MainBucket.BucketName, Bucket.Filtering ? Bucket.Prefix : null).OrderBy(x => x.Key).ThenByDescending(x => x.VersionId).ToList();
+				var TargetData = GetListVersions(Alt, Bucket.BucketName, Bucket.Filtering ? Bucket.Prefix : null).OrderBy(x => x.Key).ThenByDescending(x => x.VersionId).ToList();
 
 				if (!Bucket.DeleteMarker) SourceData.RemoveAll(i => i.IsDeleteMarker);
 
 				var Message = CompareMain2Alt(SourceData, TargetData);
-				var Result = "";
-				if (string.IsNullOrWhiteSpace(Message))
+				var Result = "Pass";
+				if (!string.IsNullOrWhiteSpace(Message)) Result = "Failed";
+				else
 				{
-					log.Info($"[{Bucket.BucketName}] is match!");
-					Result = "Pass";
 				}
+
+
+				if (Result == "Pass")
+					log.Info($"[{Bucket.BucketName}] is match!");
 				else
 				{
 					Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -229,7 +232,6 @@ namespace ReplicationTest
 					foreach (var Version in TargetData) Console.WriteLine($"[{Version.Key:10}\t{Version.Size}\t{Version.ETag}\t{Version.IsDeleteMarker} {Version.VersionId.Trim()}]");
 					Console.WriteLine("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 					log.Error($"[{Bucket.BucketName}] is not match! -> {Message}");
-					Result = "Failed";
 				}
 				if (DB != null) DB.Insert(MainBucket, Bucket, Main.Config.ServiceURL, Config.AltUser, Result, Message);
 			}
@@ -246,6 +248,43 @@ namespace ReplicationTest
 				if (Main[Index].IsDeleteMarker != Alt[Index].IsDeleteMarker) return $"{Main[Index].Key} DeleteMarker does not match! {Main[Index].IsDeleteMarker} != {Alt[Index].IsDeleteMarker}";
 				if (!Main[Index].IsDeleteMarker && Config.CheckVersionId && Main[Index].VersionId != Alt[Index].VersionId) return $"{Main[Index].Key} VersionId does not match! {Main[Index].VersionId} != {Alt[Index].VersionId}";
 			}
+			return "";
+		}
+
+		string CompareMetadata(AmazonS3Client Main, AmazonS3Client Alt, string BucketName, string Key, string VersionId)
+		{
+			var MainResponse = GetObjectMetadata(Main, BucketName, Key, VersionId);
+			var AltResponse = GetObjectMetadata(Alt, BucketName, Key, VersionId);
+
+			if (MainResponse == null) return $"MainResponse is null!";
+			if (AltResponse == null) return $"AltResponse is null!";
+
+			if (MainResponse.Metadata.Count != AltResponse.Metadata.Count) return $"Metadata is not match! {MainResponse.Metadata.Count} != {AltResponse.Metadata.Count}";
+			foreach (var MetaKey in MainResponse.Metadata.Keys)
+			{
+				if (!AltResponse.Metadata.Keys.Contains(MetaKey)) return $"Alt does not Metadata Key : {MetaKey}";
+				if (MainResponse.Metadata[MetaKey] != AltResponse.Metadata[MetaKey]) return $"Metadata does not match! {MainResponse.Metadata[MetaKey]} != {AltResponse.Metadata[MetaKey]}";
+			}
+
+			return "";
+		}
+
+		string CompareTagSet(AmazonS3Client Main, AmazonS3Client Alt, string BucketName, string Key, string VersionId)
+		{
+			var MainResponse = GetObjectTagging(Main, BucketName, Key, VersionId);
+			var AltResponse = GetObjectTagging(Alt, BucketName, Key, VersionId);
+
+			if (MainResponse == null) return $"MainResponse is null!";
+			if (AltResponse == null) return $"AltResponse is null!";
+
+			if (MainResponse.Tagging.Count != AltResponse.Tagging.Count) return $"Tagging is not match! {MainResponse.Tagging.Count} != {AltResponse.Tagging.Count}";
+			
+			for(int Index =0;Index<MainResponse.Tagging.Count;Index++)
+			{
+				if (MainResponse.Tagging[Index].Key != AltResponse.Tagging[Index].Key) return $"Tagging Key is not match! {MainResponse.Tagging[Index].Key} != {AltResponse.Tagging[Index].Key}";
+				if (MainResponse.Tagging[Index].Value != AltResponse.Tagging[Index].Value) return $"Tagging Value is not match! {MainResponse.Tagging[Index].Value} != {AltResponse.Tagging[Index].Value}";
+			}
+			
 			return "";
 		}
 
@@ -412,8 +451,11 @@ namespace ReplicationTest
 				{
 					BucketName = BucketName,
 					Key = ObjectName,
-					ContentBody = Utility.RandomTextToLong(100)
+					ContentBody = Utility.RandomTextToLong(100),
+					TagSet = new List<Tag> { new Tag { Key = BucketName, Value = ObjectName } },
 				};
+
+				Request.Metadata["x-amz-meta-Test"] = ObjectName;
 
 				var TaskResponse = Client.PutObjectAsync(Request);
 				TaskResponse.Wait();
@@ -462,7 +504,13 @@ namespace ReplicationTest
 		{
 			try
 			{
-				var InitRequest = new InitiateMultipartUploadRequest() { BucketName = BucketName, Key = ObjectName };
+				var InitRequest = new InitiateMultipartUploadRequest()
+				{
+					BucketName = BucketName,
+					Key = ObjectName,
+					TagSet = new List<Tag> { new Tag { Key = BucketName, Value = ObjectName } },
+				};
+				InitRequest.Metadata["x-amz-meta-Test"] = ObjectName;
 				var InitResponse = Client.InitiateMultipartUploadAsync(InitRequest);
 				InitResponse.Wait();
 				var UploadId = InitResponse.Result.UploadId;
@@ -505,6 +553,36 @@ namespace ReplicationTest
 				TaskResponse.Wait();
 
 				return TaskResponse.Result.Versions;
+			}
+			catch (AggregateException e) { log.Error($"StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}", e); }
+			catch (Exception e) { log.Error(e); }
+			return null;
+		}
+
+		static GetObjectMetadataResponse GetObjectMetadata(AmazonS3Client Client, string BucketName, string ObjectName, string VersionId)
+		{
+			try
+			{
+				var Request = new GetObjectMetadataRequest { BucketName = BucketName, Key = ObjectName, VersionId = VersionId, };
+				var TaskResponse = Client.GetObjectMetadataAsync(Request);
+				TaskResponse.Wait();
+
+				return TaskResponse.Result;
+			}
+			catch (AggregateException e) { log.Error($"StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}", e); }
+			catch (Exception e) { log.Error(e); }
+			return null;
+		}
+
+		static GetObjectTaggingResponse GetObjectTagging(AmazonS3Client Client, string BucketName, string ObjectName, string VersionId)
+		{
+			try
+			{
+				var Request = new GetObjectTaggingRequest { BucketName = BucketName, Key = ObjectName, VersionId = VersionId,};
+				var TaskResponse = Client.GetObjectTaggingAsync(Request);
+				TaskResponse.Wait();
+
+				return TaskResponse.Result;
 			}
 			catch (AggregateException e) { log.Error($"StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}", e); }
 			catch (Exception e) { log.Error(e); }

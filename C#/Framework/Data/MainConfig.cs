@@ -19,8 +19,8 @@ namespace s3tests2
 	{
 
 		#region Default Define
-		public const string STR_DEF_FILENAME = "awstests2.ini";
-		// public const string STR_DEF_FILENAME = "s3tests2_227.ini";
+		// public const string STR_DEF_FILENAME = "awstests.ini";
+		public const string STR_DEF_FILENAME = "s3tests_229.ini";
 		private const string STR_DEF = "(NONE)";
 		private const int VALUE_LENGTH = 255;
 		public const string STR_SIGNATURE_VERSION_2 = "2";
