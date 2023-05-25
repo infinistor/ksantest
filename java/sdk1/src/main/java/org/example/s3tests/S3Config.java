@@ -20,8 +20,8 @@ import org.ini4j.InvalidFileFormatException;
 
 public class S3Config
 {
-	// private final String STR_FILENAME = "config.ini";
-	private final String STR_FILENAME = "s3tests-227.ini";
+	private final String STR_FILENAME = "config.ini";
+	// private final String STR_FILENAME = "s3tests-227.ini";
 	// private final String STR_FILENAME = "s3tests_gw.ini";
 	// private final String STR_FILENAME = "s3tests_ksan.ini";
 	// private final String STR_FILENAME = "awstests.ini";
