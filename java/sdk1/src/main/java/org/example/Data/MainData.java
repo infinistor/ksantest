@@ -75,6 +75,7 @@ public class MainData {
 	public static final String NotImplemented = "NotImplemented";
 	public static final String SignatureDoesNotMatch = "SignatureDoesNotMatch";
 	public static final String InvalidTargetBucketForLogging = "InvalidTargetBucketForLogging";
+	public static final String NoSuchConfiguration = "NoSuchConfiguration";
 
 	public static final String NOT_MATCHED = "Source does not match target";
 }
