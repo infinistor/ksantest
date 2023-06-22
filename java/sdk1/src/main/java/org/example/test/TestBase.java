@@ -169,11 +169,11 @@ public class TestBase {
 	}
 
 	public AmazonS3 getClientV2() {
-		return createClient(config.isSecure, config.mainUser, true, true, S3Config.STR_SIGNATUREVERSION_V2);
+		return createClient(config.isSecure, config.mainUser, true, true, S3Config.STR_SIGNATURE_VERSION_V2);
 	}
 
 	public AmazonS3 getClientV4(Boolean useChunkEncoding) {
-		return createClient(config.isSecure, config.mainUser, useChunkEncoding, true, S3Config.STR_SIGNATUREVERSION_V4);
+		return createClient(config.isSecure, config.mainUser, useChunkEncoding, true, S3Config.STR_SIGNATURE_VERSION_V4);
 	}
 
 	public AmazonS3 getClientHttps() {
@@ -181,7 +181,7 @@ public class TestBase {
 	}
 
 	public AmazonS3 getClientHttpsV4(Boolean useChunkEncoding, Boolean payloadSigning) {
-		return createClient(true, config.mainUser, useChunkEncoding, payloadSigning, S3Config.STR_SIGNATUREVERSION_V4);
+		return createClient(true, config.mainUser, useChunkEncoding, payloadSigning, S3Config.STR_SIGNATURE_VERSION_V4);
 	}
 
 	public AmazonS3 getAltClient() {
