@@ -59,50 +59,64 @@ public class Inventory {
 	}
 
 	@Test
-	@Tag("Get")
+	@Tag("Error")
 	// 존재하지 않은 인벤토리를 가져오려고 할 경우 실패하는지 확인
 	public void test_get_bucket_inventory_not_exist() {
 		Test.test_get_bucket_inventory_not_exist();
 	}
 
 	@Test
-	@Tag("Delete")
+	@Tag("Error")
 	// 존재하지 않은 인벤토리를 삭제하려고 할 경우 실패하는지 확인
 	public void test_delete_bucket_inventory_not_exist() {
 		Test.test_delete_bucket_inventory_not_exist();
 	}
 
 	@Test
-	@Tag("Put")
+	@Tag("Error")
 	// 존재하지 않은 버킷에 인벤토리를 설정하려고 할 경우 실패하는지 확인
 	public void test_put_bucket_inventory_not_exist() {
 		Test.test_put_bucket_inventory_not_exist();
 	}
 
+	@Test
+	@Tag("Error")
+	// 인벤토리 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
+	public void test_put_bucket_inventory_id_not_exist() {
+		Test.test_put_bucket_inventory_id_not_exist();
+	}
+
+	@Test
+	@Tag("Error")
+	// 인벤토리 아이디를 중복으로 설정하려고 할 경우 실패하는지 확인
+	public void test_put_bucket_inventory_id_duplicate(){
+		Test.test_put_bucket_inventory_id_duplicate();
+	}
+
 	@Ignore("aws에서 타깃 버킷이 존재하는지 확인하지 않음")
 	@Test
-	@Tag("Put")
+	@Tag("Error")
 	// 타깃 버킷이 존재하지 않을 경우 실패하는지 확인
 	public void test_put_bucket_inventory_target_not_exist() {
 		Test.test_put_bucket_inventory_target_not_exist();
 	}
 
 	@Test
-	@Tag("Put")
+	@Tag("Error")
 	// 지원하지 않는 파일 형식의 인벤토리를 설정하려고 할 경우 실패하는지 확인
 	public void test_put_bucket_inventory_invalid_format() {
 		Test.test_put_bucket_inventory_invalid_format();
 	}
 
 	@Test
-	@Tag("Put")
+	@Tag("Error")
 	// 올바르지 않은 주기의 인벤토리를 설정하려고 할 경우 실패하는지 확인
-	public void test_put_bucket_inventory_invalid() {
-		Test.test_put_bucket_inventory_invalid();
+	public void test_put_bucket_inventory_invalid_frequency() {
+		Test.test_put_bucket_inventory_invalid_frequency();
 	}
 
 	@Test
-	@Tag("Put")
+	@Tag("Error")
 	// 대소문자를 잘못 입력하여 인벤토리를 설정하려고 할 경우 실패하는지 확인
 	public void test_put_bucket_inventory_invalid_case() {
 		Test.test_put_bucket_inventory_invalid_case();

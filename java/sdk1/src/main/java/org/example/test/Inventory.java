@@ -60,9 +60,10 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
+		var inventoryId = "my-inventory";
 
 		var inventory = new InventoryConfiguration()
-				.withId("test")
+				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
 						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")))
 				.withEnabled(true)
@@ -78,9 +79,10 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
+		var inventoryId = "my-inventory";
 
 		var inventory = new InventoryConfiguration()
-				.withId("test")
+				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
 						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")))
 				.withEnabled(true)
@@ -100,7 +102,7 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
-		var inventoryId = "test";
+		var inventoryId = "my-inventory";
 
 		var inventory = new InventoryConfiguration()
 				.withId(inventoryId)
@@ -111,7 +113,7 @@ public class Inventory extends TestBase {
 				.withSchedule(new InventorySchedule().withFrequency(InventoryFrequency.Daily));
 		client.setBucketInventoryConfiguration(bucketName, inventory);
 
-		var response = client.getBucketInventoryConfiguration(bucketName, "test");
+		var response = client.getBucketInventoryConfiguration(bucketName, inventoryId);
 		assertEquals(inventoryId, response.getInventoryConfiguration().getId());
 	}
 
@@ -122,7 +124,7 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
-		var inventoryId = "test";
+		var inventoryId = "my-inventory";
 
 		var inventory = new InventoryConfiguration()
 				.withId(inventoryId)
@@ -145,7 +147,7 @@ public class Inventory extends TestBase {
 	public void test_get_bucket_inventory_not_exist() {
 		var client = getClient();
 		var bucketName = getNewBucket();
-		var inventoryId = "test";
+		var inventoryId = "my-inventory";
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.getBucketInventoryConfiguration(bucketName, inventoryId));
@@ -160,7 +162,7 @@ public class Inventory extends TestBase {
 	public void test_delete_bucket_inventory_not_exist() {
 		var client = getClient();
 		var bucketName = getNewBucket();
-		var inventoryId = "test";
+		var inventoryId = "my-inventory";
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.deleteBucketInventoryConfiguration(bucketName, inventoryId));
@@ -176,9 +178,10 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucketName();
 		var targetBucketName = getNewBucket();
+		var inventoryId = "my-inventory";
 
 		var inventory = new InventoryConfiguration()
-				.withId("test")
+				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
 						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")))
 				.withEnabled(true)
@@ -192,6 +195,72 @@ public class Inventory extends TestBase {
 		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
 	}
 
+	@Test
+	@Tag("Error")
+	// 인벤토리 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
+	public void test_put_bucket_inventory_id_not_exist() {
+		var client = getClient();
+		var bucketName = getNewBucket();
+		var targetBucketName = getNewBucket();
+		var inventoryId = "";
+
+		var inventory = new InventoryConfiguration()
+				.withId(inventoryId)
+				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
+						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")))
+				.withEnabled(true)
+				.withIncludedObjectVersions(InventoryIncludedObjectVersions.Current)
+				.withSchedule(new InventorySchedule().withFrequency(InventoryFrequency.Daily));
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
+
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidConfigurationId, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Error")
+	// 인벤토리 아이디를 중복으로 설정하려고 할 경우 실패하는지 확인
+	public void test_put_bucket_inventory_id_duplicate() {
+		var client = getClient();
+		var bucketName = getNewBucket();
+		var targetBucketName = getNewBucket();
+		var inventoryId = "my-inventory";
+
+		var inventory = new InventoryConfiguration()
+				.withId(inventoryId)
+				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
+						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")))
+				.withEnabled(true)
+				.withIncludedObjectVersions(InventoryIncludedObjectVersions.Current)
+				.withSchedule(new InventorySchedule().withFrequency(InventoryFrequency.Daily));
+
+		client.setBucketInventoryConfiguration(bucketName, inventory);
+		var inventoryId2 = "my-inventory";
+
+		var inventory2 = new InventoryConfiguration()
+				.withId(inventoryId2)
+				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
+						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")))
+				.withEnabled(true)
+				.withIncludedObjectVersions(InventoryIncludedObjectVersions.Current)
+				.withSchedule(new InventorySchedule().withFrequency(InventoryFrequency.Daily));
+
+		client.setBucketInventoryConfiguration(bucketName, inventory2);
+
+		var response = client.listBucketInventoryConfigurations(
+				new ListBucketInventoryConfigurationsRequest().withBucketName(bucketName));
+
+		assertEquals(2, response.getInventoryConfigurationList().size());
+
+		// var e = assertThrows(AmazonServiceException.class,
+		// () -> client.setBucketInventoryConfiguration(bucketName, inventory));
+
+		// assertEquals(409, e.getStatusCode());
+		// assertEquals(MainData.DuplicateInventory, e.getErrorCode());
+	}
+
 	@Ignore("aws에서 타깃 버킷이 존재하는지 확인하지 않음")
 	@Test
 	@Tag("Error")
@@ -200,9 +269,10 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucketName();
+		var inventoryId = "my-inventory";
 
 		var inventory = new InventoryConfiguration()
-				.withId("test")
+				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
 						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")))
 				.withEnabled(true)
@@ -223,9 +293,10 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
+		var inventoryId = "my-inventory";
 
 		var inventory = new InventoryConfiguration()
-				.withId("test")
+				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
 						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("JSON")))
 				.withEnabled(true)
@@ -242,18 +313,19 @@ public class Inventory extends TestBase {
 	@Test
 	@Tag("Error")
 	// 올바르지 않은 주기의 인벤토리를 설정하려고 할 경우 실패하는지 확인
-	public void test_put_bucket_inventory_invalid() {
+	public void test_put_bucket_inventory_invalid_frequency() {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
+		var inventoryId = "my-inventory";
 
 		var inventory = new InventoryConfiguration()
-				.withId("test")
+				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
 						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")))
 				.withEnabled(true)
 				.withIncludedObjectVersions("Current")
-				.withSchedule(new InventorySchedule().withFrequency("DAILY"));
+				.withSchedule(new InventorySchedule().withFrequency("Hourly"));
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
@@ -269,9 +341,10 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
+		var inventoryId = "my-inventory";
 
 		var inventory = new InventoryConfiguration()
-				.withId("test")
+				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
 						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")))
 				.withEnabled(true)
@@ -292,13 +365,15 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
-		var inventoryId = "test";
+		var inventoryId = "my-inventory";
+
 		var inventoryPrefix = "a/";
 
 		var inventory = new InventoryConfiguration()
 				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
-						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV").withPrefix(inventoryPrefix)))
+						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")
+						.withPrefix(inventoryPrefix)))
 				.withEnabled(true)
 				.withIncludedObjectVersions(InventoryIncludedObjectVersions.Current)
 				.withSchedule(new InventorySchedule().withFrequency(InventoryFrequency.Daily));
@@ -306,9 +381,10 @@ public class Inventory extends TestBase {
 		client.setBucketInventoryConfiguration(bucketName, inventory);
 
 		var result = client.getBucketInventoryConfiguration(bucketName, inventoryId);
-		
+
 		assertEquals(inventoryId, result.getInventoryConfiguration().getId());
-		assertEquals(inventoryPrefix, result.getInventoryConfiguration().getDestination().getS3BucketDestination().getPrefix());
+		assertEquals(inventoryPrefix,
+				result.getInventoryConfiguration().getDestination().getS3BucketDestination().getPrefix());
 	}
 
 	@Test
@@ -318,14 +394,16 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
-		var inventoryId = "test";
+		var inventoryId = "my-inventory";
+
 		var inventoryPrefix = "a/";
 		var inventoryOptionalFields = Arrays.asList("Size", "LastModifiedDate");
 
 		var inventory = new InventoryConfiguration()
 				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
-						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV").withPrefix(inventoryPrefix)))
+						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")
+						.withPrefix(inventoryPrefix)))
 				.withEnabled(true)
 				.withIncludedObjectVersions(InventoryIncludedObjectVersions.Current)
 				.withOptionalFields(inventoryOptionalFields)
@@ -334,27 +412,30 @@ public class Inventory extends TestBase {
 		client.setBucketInventoryConfiguration(bucketName, inventory);
 
 		var result = client.getBucketInventoryConfiguration(bucketName, inventoryId);
-		
+
 		assertEquals(inventoryId, result.getInventoryConfiguration().getId());
-		assertEquals(inventoryPrefix, result.getInventoryConfiguration().getDestination().getS3BucketDestination().getPrefix());
+		assertEquals(inventoryPrefix,
+				result.getInventoryConfiguration().getDestination().getS3BucketDestination().getPrefix());
 		assertEquals(inventoryOptionalFields, result.getInventoryConfiguration().getOptionalFields());
 	}
 
 	@Test
 	@Tag("Error")
-	// 올바르지 않은 옵션을 포함한 인벤토리를 설정하려고 할 경우 실패하는지 확인
+	// 옵션을 잘못 입력하여 인벤토리를 설정하려고 할 경우 실패하는지 확인
 	public void test_put_bucket_inventory_invalid_optional() {
 		var client = getClient();
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
-		var inventoryId = "test";
+		var inventoryId = "my-inventory";
+
 		var inventoryPrefix = "a/";
 		var inventoryOptionalFields = Arrays.asList("SIZE", "LastModified");
 
 		var inventory = new InventoryConfiguration()
 				.withId(inventoryId)
 				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
-						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV").withPrefix(inventoryPrefix)))
+						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat("CSV")
+						.withPrefix(inventoryPrefix)))
 				.withEnabled(true)
 				.withIncludedObjectVersions(InventoryIncludedObjectVersions.Current)
 				.withOptionalFields(inventoryOptionalFields)
