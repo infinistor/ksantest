@@ -23,7 +23,6 @@ import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.commons.util.StringUtils;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.AbortIncompleteMultipartUpload;
@@ -164,10 +163,8 @@ public class LifeCycle extends TestBase
 
 		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
 		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidArgument, ErrorCode);
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidArgument, e.getErrorCode());
 	}
 
 	@Test
@@ -188,10 +185,8 @@ public class LifeCycle extends TestBase
 
 		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
 		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		if(StringUtils.isBlank(config.URL)) assertEquals(MainData.InvalidArgument, ErrorCode);
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidArgument, e.getErrorCode());
 	}
 
 	@Test
@@ -209,10 +204,8 @@ public class LifeCycle extends TestBase
 
 		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
 		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.MalformedXML, ErrorCode);
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.MalformedXML, e.getErrorCode());
 	}
 
 	@Test
@@ -247,8 +240,8 @@ public class LifeCycle extends TestBase
 
 		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
 		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
-		var StatusCode = e.getStatusCode();
-		assertEquals(400, StatusCode);
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidArgument, e.getErrorCode());
 	}
 
 	@Test
@@ -436,7 +429,7 @@ public class LifeCycle extends TestBase
 	
 	@Test
 	@Tag("Delete")
-	// @Tag("버킷의 Lifecycle 규칙을 삭제 가능한지 확인
+	//버킷의 Lifecycle 규칙을 삭제 가능한지 확인
 	public void test_lifecycle_delete()
 	{
 		var bucketName = getNewBucket();
@@ -456,35 +449,22 @@ public class LifeCycle extends TestBase
 		client.deleteBucketLifecycleConfiguration(bucketName);
 	}
 
-	// 테스트 규격이 확정되지 않음
-	// @Test
-	// @Tag("Get")
-	// //버킷에 다양한 Lifecycle 설정이 가능한지 확인
-	// public void test_lifecycle_set_and() {
-	// 	var bucketName = GetNewBucket();
-	// 	var client = GetClient();
-	// 	CheckConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+	@Test
+	@Tag("ERROR")
+	// Lifecycle 규칙에 0일을 설정할때 실패하는지 확인
+	public void test_lifecycle_set_expiration_zero()
+	{
+		var bucketName = getNewBucket();
+		var client = getClient();
 
-	// 	var Rules = new ArrayList<Rule>();
-	// 	Rules.add(new Rule().withId("rule1")
-	// 			.withExpirationInDays(31) // 31일 뒤에 삭제
-	// 			.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/"))) // Object명이 test1/ 으로 시작할 경우에만 동작
-	// 			.withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(31)) // 오브젝트의 최신버전을 제외한 나머지 버전일 경우 31일 뒤에 삭제
-	// 			.withAbortIncompleteMultipartUpload(new AbortIncompleteMultipartUpload().withDaysAfterInitiation(31)) // Multipart의 유예시간을 31일로 설정
-	// 			.withStatus(BucketLifecycleConfiguration.ENABLED));
-	// 	Rules.add(new Rule().withId("rule2")
-	// 			.withExpiredObjectDeleteMarker(true) // Object의 모든 버전이 삭제되고 DeleteMarker만 남았을 경우 삭제
-	// 			.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test2/"))) // Object명이 test2/ 으로 시작할 경우에만 동작
-	// 			.withStatus(BucketLifecycleConfiguration.ENABLED));
-	// 	Rules.add(new Rule().withId("rule3").withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(31))// 오브젝트의 최신버전을 제외한 나머지 버전일 경우 31일 뒤에 삭제
-	// 			.withFilter(new LifecycleFilter(new LifecycleTagPredicate(new com.amazonaws.services.s3.model.Tag("Filter", "001"))))
-	// 			.withStatus(BucketLifecycleConfiguration.ENABLED));
+		var Rules = new ArrayList<Rule>();
+		Rules.add(new Rule().withId("rule1").withExpirationInDays(0)
+				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
+				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-	// 	var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-
-	// 	client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
-	// 	var Response = client.getBucketLifecycleConfiguration(bucketName);
-	// 	PrefixLifecycleConfigurationCheck(Rules, Response.getRules());
-	// }
-
+		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
+		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidArgument, e.getErrorCode());
+	}
 }

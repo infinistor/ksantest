@@ -167,13 +167,11 @@ public class LifeCycle {
 		Test.test_lifecycle_delete();
 	}
 
-	// 테스트 규격이 확정되지 않음
-	// @Test
-	// @Tag("KSAN")
-	// @Tag("Get")
-	// //버킷에 다양한 Lifecycle 설정이 가능한지 확인
-	// public void test_lifecycle_set_and()
-	// {
-	// Test.test_lifecycle_set_and();
-	// }
+	@Test
+	@Tag("KSAN")
+	@Tag("ERROR")
+	// Lifecycle 규칙에 0일을 설정할때 실패하는지 확인
+	public void test_lifecycle_set_expiration_zero(){
+		Test.test_lifecycle_set_expiration_zero();
+	}
 }
