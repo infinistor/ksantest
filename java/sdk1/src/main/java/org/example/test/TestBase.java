@@ -130,6 +130,7 @@ public class TestBase {
 		config.GetConfig();
 	}
 
+	// region Create Client
 	public AmazonS3 createClient(boolean isSecure, UserData user, Boolean useChunkEncoding, Boolean payloadSigning,
 			String signatureVersion) {
 		String address = "";
@@ -173,7 +174,8 @@ public class TestBase {
 	}
 
 	public AmazonS3 getClientV4(Boolean useChunkEncoding) {
-		return createClient(config.isSecure, config.mainUser, useChunkEncoding, true, S3Config.STR_SIGNATURE_VERSION_V4);
+		return createClient(config.isSecure, config.mainUser, useChunkEncoding, true,
+				S3Config.STR_SIGNATURE_VERSION_V4);
 	}
 
 	public AmazonS3 getClientHttps() {
@@ -204,7 +206,9 @@ public class TestBase {
 
 		return createClient(config.isSecure, dummyUser, true, true, config.getSignatureVersion());
 	}
+	// endregion
 
+	// region Create Data
 	public AccessControlList getGrantList(String userId, Permission[] perms) {
 		Permission[] allHeaders = new Permission[] { Permission.Read, Permission.Write, Permission.ReadAcp,
 				Permission.WriteAcp, Permission.FullControl };
@@ -241,10 +245,6 @@ public class TestBase {
 		}
 		return headers;
 	}
-
-	/******************************************
-	 * Create Data
-	 *******************************************************/
 
 	public String getPrefix() {
 		return config.bucketPrefix.replace(STR_RANDOM, Utils.randomText(RANDOM_PREFIX_TEXT_LENGTH));
@@ -710,10 +710,9 @@ public class TestBase {
 			tagSets.add(new Tag(Utils.randomTextToLong(keySize), Utils.randomTextToLong(valueSize)));
 		return tagSets;
 	}
+	// endregion
 
-	/*****************************************
-	 * Get Data
-	 **********************************************************/
+	// region Get Data
 
 	public ArrayList<String> GetObjectList(String bucketName, String Prefix) {
 		var client = getClient();
@@ -832,10 +831,9 @@ public class TestBase {
 				DeleteMarkers.add(item);
 		return DeleteMarkers;
 	}
+	// endregion
 
-	/*****************************************
-	 * Auto
-	 **********************************************************/
+	// region Check Data
 	public void ACLTest(String bucketName, String key, AmazonS3 client, Boolean Pass) {
 		if (Pass) {
 			var Response = client.getObject(bucketName, key);
@@ -2135,9 +2133,16 @@ public class TestBase {
 		}
 	}
 
-	/******************************************
-	 * Bucket Clear
-	 ******************************************************/
+	public void s3eventCompare(Object[] expected, Object[] actual){
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i].toString(), actual[i].toString());
+		}
+	}
+
+	// endregion
+
+	// region Bucket Clear
 	public void DeleteBucketList(String bucketName) {
 		buckets.remove(bucketName);
 	}
@@ -2192,11 +2197,9 @@ public class TestBase {
 		}
 
 	}
+	// endregion
 
-	/********************************************
-	 * Utility
-	 ********************************************************/
-
+	// region Utils
 	public void delay(int milliseconds) {
 		try {
 			Thread.sleep(milliseconds);
@@ -2204,16 +2207,18 @@ public class TestBase {
 		}
 	}
 
-	public Date getExpiredDate(int days){
+	public Date getExpiredDate(int days) {
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.DATE, days);
 		return cal.getTime();
 	}
 
-	public Date getExpiredDate(Date day, int days){
+	public Date getExpiredDate(Date day, int days) {
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(day);
 		cal.add(Calendar.DATE, days);
 		return cal.getTime();
 	}
+
+	// endregion
 }
