@@ -2203,4 +2203,17 @@ public class TestBase {
 		} catch (InterruptedException e) {
 		}
 	}
+
+	public Date getExpiredDate(int days){
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.DATE, days);
+		return cal.getTime();
+	}
+
+	public Date getExpiredDate(Date day, int days){
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(day);
+		cal.add(Calendar.DATE, days);
+		return cal.getTime();
+	}
 }

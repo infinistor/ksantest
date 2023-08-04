@@ -35,96 +35,92 @@ import com.amazonaws.services.s3.model.ListMultipartUploadsRequest;
 import com.amazonaws.services.s3.model.lifecycle.LifecycleFilter;
 import com.amazonaws.services.s3.model.lifecycle.LifecyclePrefixPredicate;
 
-public class LifeCycle extends TestBase
-{
+public class LifeCycle extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
-	{
+	static public void BeforeAll() {
 		System.out.println("LifeCycle Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
-	{
+	static public void AfterAll() {
 		System.out.println("LifeCycle End");
 	}
 
 	@Test
 	@Tag("Check")
-	//버킷의 Lifecycle 규칙을 추가 가능한지 확인
+	// 버킷의 Lifecycle 규칙을 추가 가능한지 확인
 	public void test_lifecycle_set() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpirationInDays(1)
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
-		Rules.add(new Rule().withId("rule2").withExpirationInDays(2)
+		rules.add(new Rule().withId("rule2").withExpirationInDays(2)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test2/")))
 				.withStatus(BucketLifecycleConfiguration.DISABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 	}
 
 	@Test
 	@Tag("Get")
-	//버킷에 설정한 Lifecycle 규칙을 가져올 수 있는지 확인
+	// 버킷에 설정한 Lifecycle 규칙을 가져올 수 있는지 확인
 	public void test_lifecycle_get() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpirationInDays(31)
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpirationInDays(31)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
-		Rules.add(new Rule().withId("rule2").withExpirationInDays(120)
+		rules.add(new Rule().withId("rule2").withExpirationInDays(120)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test2/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 		var Response = client.getBucketLifecycleConfiguration(bucketName);
-		PrefixLifecycleConfigurationCheck(Rules, Response.getRules());
+		PrefixLifecycleConfigurationCheck(rules, Response.getRules());
 	}
 
 	@Test
 	@Tag("Check")
-	//ID 없이 버킷에 Lifecycle 규칙을 설정 할 수 있는지 확인
+	// ID 없이 버킷에 Lifecycle 규칙을 설정 할 수 있는지 확인
 	public void test_lifecycle_get_no_id() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withExpirationInDays(31)
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withExpirationInDays(31)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
-		Rules.add(new Rule().withExpirationInDays(120)
+		rules.add(new Rule().withExpirationInDays(120)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test2/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 		var Response = client.getBucketLifecycleConfiguration(bucketName);
 		var CurrentLifeCycle = Response.getRules();
 
-		for (int i = 0; i < Rules.size(); i++) {
+		for (int i = 0; i < rules.size(); i++) {
 			assertNotNull(CurrentLifeCycle.get(i).getId());
-			assertEquals(Rules.get(i).getExpirationDate(), CurrentLifeCycle.get(i).getExpirationDate());
-			assertEquals(Rules.get(i).getExpirationInDays(), CurrentLifeCycle.get(i).getExpirationInDays());
-			assertEquals(((LifecyclePrefixPredicate) Rules.get(i).getFilter().getPredicate()).getPrefix(),
+			assertEquals(rules.get(i).getExpirationDate(), CurrentLifeCycle.get(i).getExpirationDate());
+			assertEquals(rules.get(i).getExpirationInDays(), CurrentLifeCycle.get(i).getExpirationInDays());
+			assertEquals(((LifecyclePrefixPredicate) rules.get(i).getFilter().getPredicate()).getPrefix(),
 					((LifecyclePrefixPredicate) CurrentLifeCycle.get(i).getFilter().getPredicate()).getPrefix());
-			assertEquals(Rules.get(i).getStatus(), CurrentLifeCycle.get(i).getStatus());
+			assertEquals(rules.get(i).getStatus(), CurrentLifeCycle.get(i).getStatus());
 		}
 	}
 
 	@Test
 	@Tag("Version")
-	//버킷에 버저닝 설정이 되어있는 상태에서 Lifecycle 규칙을 추가 가능한지 확인
-	public void test_lifecycle_expiration_versioning_enabled()
-	{
+	// 버킷에 버저닝 설정이 되어있는 상태에서 Lifecycle 규칙을 추가 가능한지 확인
+	public void test_lifecycle_expiration_versioning_enabled() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var Key = "test1/a";
@@ -132,14 +128,14 @@ public class LifeCycle extends TestBase
 		CreateMultipleVersions(client, bucketName, Key, 1, true);
 		client.deleteObject(bucketName, Key);
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpirationInDays(1)
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("expire1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 
 		var Response = client.listVersions(bucketName, null);
 		var Versions = GetVersions(Response.getVersionSummaries());
@@ -150,128 +146,130 @@ public class LifeCycle extends TestBase
 
 	@Test
 	@Tag("Check")
-	//버킷에 Lifecycle 규칙을 설정할때 ID의 길이가 너무 길면 실패하는지 확인
-	public void test_lifecycle_id_too_long()
-	{
+	// 버킷에 Lifecycle 규칙을 설정할때 ID의 길이가 너무 길면 실패하는지 확인
+	public void test_lifecycle_id_too_long() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId(Utils.randomTextToLong(256)).withExpirationInDays(2)
-				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("tset1/")))
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId(Utils.randomTextToLong(256)).withExpirationInDays(2)
+				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
 		assertEquals(400, e.getStatusCode());
 		assertEquals(MainData.InvalidArgument, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("Duplicate")
-	//버킷에 Lifecycle 규칙을 설정할때 같은 ID로 규칙을 여러개 설정할경우 실패하는지 확인
-	public void test_lifecycle_same_id()
-	{
+	// 버킷에 Lifecycle 규칙을 설정할때 같은 ID로 규칙을 여러개 설정할경우 실패하는지 확인
+	public void test_lifecycle_same_id() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpirationInDays(1)
-				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("tset1/")))
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
+				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
-		Rules.add(new Rule().withId("rule1").withExpirationInDays(2)
-				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("tset2/")))
+		rules.add(new Rule().withId("rule1").withExpirationInDays(2)
+				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test2/")))
 				.withStatus(BucketLifecycleConfiguration.DISABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
 		assertEquals(400, e.getStatusCode());
 		assertEquals(MainData.InvalidArgument, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
-	//버킷에 Lifecycle 규칙중 status를 잘못 설정할때 실패하는지 확인
-	public void test_lifecycle_invalid_status()
-	{
+	// 버킷에 Lifecycle 규칙중 status를 잘못 설정할때 실패하는지 확인
+	public void test_lifecycle_invalid_status() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpirationInDays(2)
-				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("tset1/")))
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpirationInDays(2)
+				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus("invalid"));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
 		assertEquals(400, e.getStatusCode());
 		assertEquals(MainData.MalformedXML, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("Date")
-	//버킷의 Lifecycle규칙에 날짜를 입력가능한지 확인
-	public void test_lifecycle_set_date()
-	{
+	// 버킷의 Lifecycle규칙에 날짜를 입력가능한지 확인
+	public void test_lifecycle_set_date() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpirationDate(new Calendar.Builder().setDate(2099, 10, 10).setTimeZone(TimeZone.getTimeZone("GMT")).build().getTime())
-				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("tset1/")))
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1")
+				.withExpirationDate(new Calendar.Builder().setDate(2099, 10, 10)
+						.setTimeZone(TimeZone.getTimeZone("GMT")).build().getTime())
+				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 	}
 
 	@Test
 	@Tag("ERROR")
-	//버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식으로 입력했을때 실패 확인
-	public void test_lifecycle_set_invalid_date()
-	{
+	// 버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식으로 입력했을때 실패 확인
+	public void test_lifecycle_set_invalid_date() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpirationDate(new Calendar.Builder().setDate(2099, 10, 10).build().getTime())
-				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("tset1/")))
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1")
+				.withExpirationDate(new Calendar.Builder().setDate(2099, 10, 10).build().getTime())
+				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
 		assertEquals(400, e.getStatusCode());
 		assertEquals(MainData.InvalidArgument, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("Version")
-	//버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인
-	public void test_lifecycle_set_noncurrent()
-	{
+	// 버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인
+	public void test_lifecycle_set_noncurrent() {
 		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "past/foo", "future/bar" })));
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(2))
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1")
+				.withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(2))
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("past/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
-		Rules.add(new Rule().withId("rule2").withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(3))
-				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("futrue/")))
+		rules.add(new Rule().withId("rule2")
+				.withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(3))
+				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("future/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 	}
 
 	@Test
 	@Tag("Version")
-	//버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
-	public void test_lifecycle_noncur_expiration()
-	{
+	// 버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
+	public void test_lifecycle_noncur_expiration() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		
+
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		CreateMultipleVersions(client, bucketName, "test1/a", 3, true);
 		CreateMultipleVersions(client, bucketName, "test2/abc", 3, false);
@@ -279,76 +277,73 @@ public class LifeCycle extends TestBase
 		var Response = client.listVersions(bucketName, null);
 		var InitVersions = Response.getVersionSummaries();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(2))
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1")
+				.withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(2))
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
-		
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
+
 		assertEquals(6, InitVersions.size());
 	}
 
 	@Test
 	@Tag("DeleteMarker")
-	//DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
-	public void test_lifecycle_set_deletemarker()
-	{
+	// DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
+	public void test_lifecycle_set_deletemarker() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpiredObjectDeleteMarker(true)
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpiredObjectDeleteMarker(true)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
-		
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
+
 	}
 
 	@Test
 	@Tag("Filter")
-	//Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인
-	public void test_lifecycle_set_filter()
-	{
+	// Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인
+	public void test_lifecycle_set_filter() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpiredObjectDeleteMarker(true)
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpiredObjectDeleteMarker(true)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("foo")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
-		
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
+
 	}
 
 	@Test
 	@Tag("Filter")
-	//Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인
-	public void test_lifecycle_set_empty_filter()
-	{
+	// Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인
+	public void test_lifecycle_set_empty_filter() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpiredObjectDeleteMarker(true)
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpiredObjectDeleteMarker(true)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
-		
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
+
 	}
 
 	@Test
 	@Tag("DeleteMarker")
-	//DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
-	public void test_lifecycle_deletemarker_expiration()
-	{
+	// DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
+	public void test_lifecycle_deletemarker_expiration() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -361,54 +356,52 @@ public class LifeCycle extends TestBase
 		var Response = client.listVersions(bucketName, null);
 		var TotalVersions = Response.getVersionSummaries();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(1))
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1")
+				.withNoncurrentVersionExpiration(new NoncurrentVersionExpiration().withDays(1))
 				.withExpiredObjectDeleteMarker(true)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
-		
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
+
 		assertEquals(4, TotalVersions.size());
 	}
 
 	@Test
 	@Tag("Multipart")
-	//AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
-	public void test_lifecycle_set_multipart()
-	{
+	// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
+	public void test_lifecycle_set_multipart() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1")
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1")
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED)
 				.withAbortIncompleteMultipartUpload(new AbortIncompleteMultipartUpload().withDaysAfterInitiation(2)));
-		Rules.add(new Rule().withId("rule2")
+		rules.add(new Rule().withId("rule2")
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test2/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED)
 				.withAbortIncompleteMultipartUpload(new AbortIncompleteMultipartUpload().withDaysAfterInitiation(3)));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
-		
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
+
 	}
 
 	@Test
 	@Tag("Multipart")
-	//AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
-	public void test_lifecycle_multipart_expiration()
-	{
+	// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
+	public void test_lifecycle_multipart_expiration() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "test1/a", "test2/b" }));
 		var UploadIDs = new ArrayList<String>();
 
-		for (var Key : KeyNames)
-		{
+		for (var Key : KeyNames) {
 			var Response = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, Key));
 			UploadIDs.add(Response.getUploadId());
 		}
@@ -416,55 +409,83 @@ public class LifeCycle extends TestBase
 		var ListResponse = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
 		var InitUploads = ListResponse.getMultipartUploads();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1")
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1")
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED)
 				.withAbortIncompleteMultipartUpload(new AbortIncompleteMultipartUpload().withDaysAfterInitiation(2)));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 		assertEquals(2, InitUploads.size());
 	}
-	
+
 	@Test
 	@Tag("Delete")
-	//버킷의 Lifecycle 규칙을 삭제 가능한지 확인
-	public void test_lifecycle_delete()
-	{
+	// 버킷의 Lifecycle 규칙을 삭제 가능한지 확인
+	public void test_lifecycle_delete() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpirationInDays(1)
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
-		Rules.add(new Rule().withId("rule2").withExpirationInDays(2)
+		rules.add(new Rule().withId("rule2").withExpirationInDays(2)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test2/")))
 				.withStatus(BucketLifecycleConfiguration.DISABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 
-		client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 		client.deleteBucketLifecycleConfiguration(bucketName);
 	}
 
 	@Test
 	@Tag("ERROR")
 	// Lifecycle 규칙에 0일을 설정할때 실패하는지 확인
-	public void test_lifecycle_set_expiration_zero()
-	{
+	public void test_lifecycle_set_expiration_zero() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Rules = new ArrayList<Rule>();
-		Rules.add(new Rule().withId("rule1").withExpirationInDays(0)
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpirationInDays(0)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
-		var MyLifeCycle = new BucketLifecycleConfiguration(Rules);
-		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketLifecycleConfiguration(bucketName, MyLifeCycle));
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
 		assertEquals(400, e.getStatusCode());
 		assertEquals(MainData.InvalidArgument, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("metadata")
+	// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
+	public void test_lifecycle_set_expiration() {
+		var bucketName = getNewBucket();
+		var client = getClient();
+
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
+				.withStatus(BucketLifecycleConfiguration.ENABLED));
+		rules.add(new Rule().withId("rule1").withExpirationInDays(2)
+				.withStatus(BucketLifecycleConfiguration.ENABLED));
+
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
+
+		var key = "test1/a";
+		var content = "test";
+
+		client.putObject(bucketName, key, content);
+
+		var response = client.getObjectMetadata(bucketName, key);
+		var expiredTime = getExpiredDate(response.getLastModified(), 1);
+		assertEquals(expiredTime.getTime(), response.getExpirationTime().getTime());
+
+		var response2 = client.getObject(bucketName, key);
+		assertEquals(expiredTime.getTime(), response2.getObjectMetadata().getExpirationTime().getTime());
 	}
 }

@@ -174,4 +174,12 @@ public class LifeCycle {
 	public void test_lifecycle_set_expiration_zero(){
 		Test.test_lifecycle_set_expiration_zero();
 	}
+
+	@Test
+	@Tag("KSAN")
+	@Tag("metadata")
+	// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
+	public void test_lifecycle_set_expiration(){
+		Test.test_lifecycle_set_expiration();
+	}
 }
