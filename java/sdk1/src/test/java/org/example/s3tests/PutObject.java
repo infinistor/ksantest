@@ -275,4 +275,11 @@ public class PutObject {
 	public void test_object_emoji() {
 		Test.test_object_emoji();
 	}
+
+	@Test
+	@Tag("metadata")
+	// 메타데이터에 utf-8이 포함될 경우 올바르게 업로드 되는지 확인
+	public void test_object_set_get_metadata_utf8() {
+		Test.test_object_set_get_metadata_utf8();
+	}
 }

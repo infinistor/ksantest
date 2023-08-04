@@ -575,4 +575,29 @@ public class PutObject extends TestBase {
 		var response = client.listObjects(bucketName);
 		assertEquals(1, response.getObjectSummaries().size());
 	}
+	
+	@Test
+	@Tag("metadata")
+	// 메타데이터에 utf-8이 포함될 경우 올바르게 업로드 되는지 확인
+	public void test_object_set_get_metadata_utf8() {
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo";
+		var MetadataKey1 = "x-amz-meta-meta1";
+		var MetadataKey2 = "x-amz-meta-meta2";
+		var metadata1 = "utf-8";
+		var metadata2 = "UTF-8";
+		var ContentType = "text/plain; charset=UTF-8";
+		var MetadataList = new ObjectMetadata();
+		MetadataList.addUserMetadata(MetadataKey1, metadata1);
+		MetadataList.addUserMetadata(MetadataKey2, metadata2);
+		MetadataList.setContentType(ContentType);
+
+		client.putObject(bucketName, key, createBody("bar"), MetadataList);
+
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(metadata1, response.getUserMetaDataOf(MetadataKey1));
+		assertEquals(metadata2, response.getUserMetaDataOf(MetadataKey2));
+
+	}
 }
