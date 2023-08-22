@@ -741,4 +741,43 @@ public class CopyObject extends TestBase
 		testObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, size3);
 	}
 
+	@Test
+	@Tag("ERROR")
+	// 삭제된 오브젝트 복사 실패 확인
+	public void test_copy_to_deleted_object(){
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key1 = "foo123bar";
+		var ker2 = "bar321foo";
+
+		client.putObject(bucketName, key1, key1);
+		client.deleteObject(bucketName, key1);
+
+		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key1, bucketName, ker2));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(404, statusCode);
+		assertEquals("NoSuchKey", errorCode);
+	}
+
+	@Test
+	@Tag("ERROR")
+	// 버저닝된 버킷에서 삭제된 오브젝트 복사 실패 확인
+	public void test_copy_to_delete_marker_object(){
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key1 = "foo123bar";
+		var ker2 = "bar321foo";
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+
+		client.putObject(bucketName, key1, key1);
+		client.deleteObject(bucketName, key1);
+
+		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key1, bucketName, ker2));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(404, statusCode);
+		assertEquals("NoSuchKey", errorCode);
+	}
 }

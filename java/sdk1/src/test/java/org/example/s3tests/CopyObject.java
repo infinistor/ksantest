@@ -334,4 +334,19 @@ public class CopyObject {
 	public void test_copy_to_sse_c_source() {
 		Test.test_copy_to_sse_c_source();
 	}
+	
+	@Test
+	@Tag("ERROR")
+	// 삭제된 오브젝트 복사 실패 확인
+	public void test_copy_to_deleted_object(){
+		Test.test_copy_to_deleted_object();
+	}
+
+
+	@Test
+	@Tag("ERROR")
+	// 버저닝된 버킷에서 삭제된 오브젝트 복사 실패 확인
+	public void test_copy_to_delete_marker_object(){
+		Test.test_copy_to_delete_marker_object();
+	}
 }
