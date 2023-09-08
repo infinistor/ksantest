@@ -334,19 +334,42 @@ public class CopyObject {
 	public void test_copy_to_sse_c_source() {
 		Test.test_copy_to_sse_c_source();
 	}
-	
+
 	@Test
 	@Tag("ERROR")
 	// 삭제된 오브젝트 복사 실패 확인
-	public void test_copy_to_deleted_object(){
+	public void test_copy_to_deleted_object() {
 		Test.test_copy_to_deleted_object();
 	}
-
 
 	@Test
 	@Tag("ERROR")
 	// 버저닝된 버킷에서 삭제된 오브젝트 복사 실패 확인
-	public void test_copy_to_delete_marker_object(){
+	public void test_copy_to_delete_marker_object() {
 		Test.test_copy_to_delete_marker_object();
+	}
+
+	@Test
+	@Tag("KSAN")
+	@Tag("OverWrite")
+	// copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 추가 가능한지 확인(Versioning 설정)
+	public void test_object_versioning_copy_to_itself_with_metadata() {
+		Test.test_object_versioning_copy_to_itself_with_metadata();
+	}
+
+	@Test
+	@Tag("KSAN")
+	@Tag("OverWrite")
+	// copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인
+	public void test_object_copy_to_itself_with_metadata_overwrite() {
+		Test.test_object_copy_to_itself_with_metadata_overwrite();
+	}
+
+	@Test
+	@Tag("KSAN")
+	@Tag("OverWrite")
+	// copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인(Versioning 설정)
+	public void test_object_versioning_copy_to_itself_with_metadata_overwrite() {
+		Test.test_object_versioning_copy_to_itself_with_metadata_overwrite();
 	}
 }

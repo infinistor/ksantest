@@ -4,6 +4,7 @@ junit-merger/
 .project
 .settings/
 s3tests_*
+s3tests-*
 .vscode/
 .factorypath
 logs/

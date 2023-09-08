@@ -110,7 +110,7 @@ public class CopyObject extends TestBase
 	}
 
 	@Test
-	@Tag("OverWrite")
+	@Tag("Overwrite")
 	//복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러 확인
 	public void test_object_copy_to_itself()
 	{
@@ -129,7 +129,7 @@ public class CopyObject extends TestBase
 	}
 
 	@Test
-	@Tag("OverWrite")
+	@Tag("Overwrite")
 	//복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
 	public void test_object_copy_to_itself_with_metadata()
 	{
@@ -224,7 +224,7 @@ public class CopyObject extends TestBase
 	}
 
 	@Test
-	@Tag("OverWrite")
+	@Tag("Overwrite")
 	//권한정보를 포함하여 복사할때 올바르게 적용되는지 확인 메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인
 	public void test_object_copy_canned_acl()
 	{
@@ -779,5 +779,73 @@ public class CopyObject extends TestBase
 		var errorCode = e.getErrorCode();
 		assertEquals(404, statusCode);
 		assertEquals("NoSuchKey", errorCode);
+	}
+
+	
+	@Test
+	@Tag("Overwrite")
+	//복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인(Versioning 설정)
+	public void test_object_versioning_copy_to_itself_with_metadata()
+	{
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo123bar";
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+
+		client.putObject(bucketName, key, "foo");
+
+		var metaData = new ObjectMetadata();
+		metaData.addUserMetadata("foo", "bar");
+
+		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key).withNewObjectMetadata(metaData).withMetadataDirective(MetadataDirective.REPLACE));
+		var response = client.getObject(bucketName, key);
+
+		assertEquals(metaData.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
+	}
+
+	@Test
+	@Tag("Overwrite")
+	//복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
+	public void test_object_copy_to_itself_with_metadata_overwrite()
+	{
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo123bar";
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("foo", "bar");
+
+		client.putObject(bucketName, key, createBody(key), metadata);
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
+
+		metadata.addUserMetadata("foo", "bar2");
+		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key).withNewObjectMetadata(metadata).withMetadataDirective(MetadataDirective.REPLACE));
+		response = client.getObjectMetadata(bucketName, key);
+
+		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
+	}
+	@Test
+	@Tag("Overwrite")
+	//복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인(Versioning 설정)
+	public void test_object_versioning_copy_to_itself_with_metadata_overwrite()
+	{
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo123bar";
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("foo", "bar");
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+
+		client.putObject(bucketName, key, createBody(key), metadata);
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
+
+		metadata.addUserMetadata("foo", "bar2");
+		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key).withNewObjectMetadata(metadata).withMetadataDirective(MetadataDirective.REPLACE));
+		response = client.getObjectMetadata(bucketName, key);
+
+		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
 	}
 }
