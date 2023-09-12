@@ -105,27 +105,6 @@ namespace s3tests
 			Assert.Equal(MainData.InvalidRequest, GetErrorCode(e));
 		}
 
-		[Fact(DisplayName = "test_object_copy_to_itself_with_metadata")]
-		[Trait(MainData.Major, "CopyObject")]
-		[Trait(MainData.Minor, "Overwrite")]
-		[Trait(MainData.Explanation, "복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 " +
-									 "모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_copy_to_itself_with_metadata()
-		{
-			var BucketName = GetNewBucket();
-			var Client = GetClient();
-			var Key = "foo123bar";
-
-			Client.PutObject(BucketName, Key, Body: "foo");
-
-			var MetaData = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("x-amz-meta-foo", "bar") };
-
-			Client.CopyObject(BucketName, Key, BucketName, Key, MetadataList: MetaData, MetadataDirective: S3MetadataDirective.REPLACE);
-			var Response = Client.GetObject(BucketName, Key);
-			Assert.Equal(MetaData, GetMetaData(Response.Metadata));
-		}
-
 		[Fact(DisplayName = "test_object_copy_diff_bucket")]
 		[Trait(MainData.Major, "CopyObject")]
 		[Trait(MainData.Minor, "Check")]
@@ -780,6 +759,92 @@ namespace s3tests
 			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, Size1);
 			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, Size2);
 			TestObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, Size3);
+		}
+
+		[Fact(DisplayName = "test_object_copy_to_itself_with_metadata")]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Overwrite")]
+		[Trait(MainData.Explanation, "복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_copy_to_itself_with_metadata()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var Key = "foo123bar";
+
+			Client.PutObject(BucketName, Key, Body: "foo");
+
+			var MetaData = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("x-amz-meta-foo", "bar") };
+
+			Client.CopyObject(BucketName, Key, BucketName, Key, MetadataList: MetaData, MetadataDirective: S3MetadataDirective.REPLACE);
+			var Response = Client.GetObjectMetadata(BucketName, Key);
+			Assert.Equal(MetaData, GetMetaData(Response.Metadata));
+		}
+
+		[Fact(DisplayName = "test_object_versioning_copy_to_itself_with_metadata")]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Overwrite")]
+		[Trait(MainData.Explanation, "복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인(Versioning 설정)")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_versioning_copy_to_itself_with_metadata()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var Key = "foo123bar";
+			
+			CheckConfigureVersioningRetry(BucketName, VersionStatus.Enabled);
+
+			Client.PutObject(BucketName, Key, Body: "foo");
+
+			var MetaData = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("x-amz-meta-foo", "bar") };
+
+			Client.CopyObject(BucketName, Key, BucketName, Key, MetadataList: MetaData, MetadataDirective: S3MetadataDirective.REPLACE);
+			var Response = Client.GetObjectMetadata(BucketName, Key);
+			Assert.Equal(MetaData, GetMetaData(Response.Metadata));
+		}
+
+		[Fact(DisplayName = "test_object_copy_to_itself_with_metadata_overwrite")]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Overwrite")]
+		[Trait(MainData.Explanation, "복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_copy_to_itself_with_metadata_overwrite()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var Key = "foo123bar";
+			var MetaData = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("x-amz-meta-foo", "bar") };
+
+			Client.PutObject(BucketName, Key, Body: "foo", MetadataList: MetaData);
+
+			MetaData[0] = new KeyValuePair<string, string>("x-amz-meta-foo", "bar2");
+
+			Client.CopyObject(BucketName, Key, BucketName, Key, MetadataList: MetaData, MetadataDirective: S3MetadataDirective.REPLACE);
+			var Response = Client.GetObjectMetadata(BucketName, Key);
+			Assert.Equal(MetaData, GetMetaData(Response.Metadata));
+		}
+
+		[Fact(DisplayName = "test_object_versioning_copy_to_itself_with_metadata_overwrite")]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Overwrite")]
+		[Trait(MainData.Explanation, "복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인(Versioning 설정)")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void test_object_versioning_copy_to_itself_with_metadata_overwrite()
+		{
+			var BucketName = GetNewBucket();
+			var Client = GetClient();
+			var Key = "foo123bar";
+
+			CheckConfigureVersioningRetry(BucketName, VersionStatus.Enabled);
+
+			var MetaData = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("x-amz-meta-foo", "bar") };
+			Client.PutObject(BucketName, Key, Body: "foo", MetadataList: MetaData);
+
+			MetaData[0] = new KeyValuePair<string, string>("x-amz-meta-foo", "bar2");
+
+			Client.CopyObject(BucketName, Key, BucketName, Key, MetadataList: MetaData, MetadataDirective: S3MetadataDirective.REPLACE);
+			var Response = Client.GetObjectMetadata(BucketName, Key);
+			Assert.Equal(MetaData, GetMetaData(Response.Metadata));
 		}
 	}
 }
