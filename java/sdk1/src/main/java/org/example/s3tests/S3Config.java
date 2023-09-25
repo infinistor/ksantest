@@ -21,13 +21,14 @@ import org.ini4j.InvalidFileFormatException;
 public class S3Config
 {
 	private final String STR_FILENAME = "config.ini";
+	// private final String STR_FILENAME = "s3tests-229.ini";
 	// private final String STR_FILENAME = "s3tests-227.ini";
 	// private final String STR_FILENAME = "s3tests_gw.ini";
 	// private final String STR_FILENAME = "s3tests_ksan.ini";
 	// private final String STR_FILENAME = "awstests.ini";
 	//////////////////////////////SIGNATUREVERSION////////////////////////////////////
-	public final static String STR_SIGNATUREVERSION_V2 = "S3SignerType";
-	public final static String STR_SIGNATUREVERSION_V4 = "AWSS3V4SignerType";
+	public final static String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
+	public final static String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";
 
 	/////////////////////////////////////S3///////////////////////////////////////////
 	private final String STR_S3 = "S3";
@@ -106,8 +107,8 @@ public class S3Config
 
 	public String getSignatureVersion()
 	{
-		if (signatureVersion.equals("2")) return STR_SIGNATUREVERSION_V2;
-		return STR_SIGNATUREVERSION_V4;
+		if (signatureVersion.equals("2")) return STR_SIGNATURE_VERSION_V2;
+		return STR_SIGNATURE_VERSION_V4;
 	}
 	public boolean isAWS()
 	{
