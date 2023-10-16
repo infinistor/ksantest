@@ -31,4 +31,11 @@ public class ListObjectsVersions {
 	public void test_bucket_list_return_data_versioning() {
 		Test.test_bucket_list_return_data_versioning();
 	}
+	
+	@Test
+	@Tag("Filtering")
+	// delimiter, prefix, max-keys, marker를 조합하여 오브젝트 목록을 가져올때 올바르게 가져오는지 확인
+	public void test_versioning_bucket_list_filtering_all() {
+		Test.test_versioning_bucket_list_filtering_all();
+	}
 }

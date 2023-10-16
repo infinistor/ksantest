@@ -12,6 +12,7 @@ package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -796,5 +797,34 @@ public class ListObjectsV2 extends TestBase
 		assertEquals(404, StatusCode);
 		assertEquals(MainData.NoSuchBucket, ErrorCode);
 		DeleteBucketList(bucketName);
+	}
+
+	
+	@Test
+	@Tag("Filtering")
+	// delimiter, prefix, max-keys, marker를 조합하여 오브젝트 목록을 가져올때 올바르게 가져오는지 확인
+	public void test_bucket_listv2_filtering_all() {
+		var keyNames = new ArrayList<>(Arrays.asList(new String[] { "test1/f1", "test2/f2", "test3", "test4/f3", "test_f4" }));
+		var bucketName = createObjects(keyNames);
+		var client = getClient();
+
+		var marker = "test3";
+		var Delimiter = "/";
+		var MaxKeys = 3;
+
+		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter).withMaxKeys(MaxKeys));
+		assertEquals(Delimiter, response.getDelimiter());
+		assertEquals(MaxKeys, response.getMaxKeys());
+		assertEquals(marker, response.getNextContinuationToken());
+
+		var keys = GetKeys(response.getObjectSummaries());
+		var prefixes = response.getCommonPrefixes();
+		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "test3" })), keys);
+		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "test1/", "test2/" })), prefixes);
+
+		response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter).withMaxKeys(MaxKeys).withContinuationToken(marker));
+		assertEquals(Delimiter, response.getDelimiter());
+		assertEquals(MaxKeys, response.getMaxKeys());
+		assertEquals(false, response.isTruncated());
 	}
 }

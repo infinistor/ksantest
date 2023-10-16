@@ -145,6 +145,9 @@ public class TestBase {
 			s3Config = new ClientConfiguration().withProtocol(Protocol.HTTP).withSignerOverride(signatureVersion);
 		}
 		s3Config.setSignerOverride(signatureVersion);
+		s3Config.setMaxErrorRetry(1);
+		s3Config.setConnectionTimeout(1000);
+		s3Config.setSocketTimeout(1000);
 		var clientBuilder = AmazonS3ClientBuilder.standard();
 
 		if (user == null)
@@ -283,7 +286,8 @@ public class TestBase {
 	public String getNewBucket() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(bucketName);
+		var request = new CreateBucketRequest(bucketName).withObjectOwnership("BucketOwnerPreferred");
+		client.createBucket(request);
 		return bucketName;
 	}
 
@@ -721,6 +725,18 @@ public class TestBase {
 	}
 
 	public static ArrayList<String> GetKeys(List<S3ObjectSummary> ObjectList) {
+		if (ObjectList != null) {
+			var Temp = new ArrayList<String>();
+
+			for (var S3Object : ObjectList)
+				Temp.add(S3Object.getKey());
+
+			return Temp;
+		}
+		return null;
+	}
+
+	public static ArrayList<String> GetKeys2(List<S3VersionSummary> ObjectList) {
 		if (ObjectList != null) {
 			var Temp = new ArrayList<String>();
 

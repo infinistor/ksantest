@@ -11,6 +11,7 @@
 package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.ArrayList;
@@ -74,5 +75,33 @@ public class ListObjectsVersions extends TestBase
 			assertEquals(KeyData.versionId, Object.getVersionId());
 			assertEquals(KeyData.lastModified, Object.getLastModified());
 		}
+	}
+	
+	@Test
+	@Tag("Filtering")
+	// delimiter, prefix, max-keys, marker를 조합하여 오브젝트 목록을 가져올때 올바르게 가져오는지 확인
+	public void test_versioning_bucket_list_filtering_all() {
+		var keyNames = new ArrayList<>(Arrays.asList(new String[] { "test1/f1", "test2/f2", "test3", "test4/f3", "test_f4" }));
+		var bucketName = createObjects(keyNames);
+		var client = getClient();
+
+		var marker = "test3";
+		var Delimiter = "/";
+		var MaxKeys = 3;
+
+		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withDelimiter(Delimiter).withMaxResults(MaxKeys));
+		assertEquals(Delimiter, response.getDelimiter());
+		assertEquals(MaxKeys, response.getMaxKeys());
+		assertEquals(marker, response.getNextKeyMarker());
+
+		var keys = GetKeys2(response.getVersionSummaries());
+		var prefixes = response.getCommonPrefixes();
+		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "test3" })), keys);
+		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "test1/", "test2/" })), prefixes);
+
+		response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withDelimiter(Delimiter).withMaxResults(MaxKeys).withKeyMarker(marker));
+		assertEquals(Delimiter, response.getDelimiter());
+		assertEquals(MaxKeys, response.getMaxKeys());
+		assertEquals(false, response.isTruncated());
 	}
 }

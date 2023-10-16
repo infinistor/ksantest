@@ -339,4 +339,11 @@ public class ListObjects {
 	public void test_bucket_notexist() {
 		Test.test_bucket_notexist();
 	}
+
+	@Test
+	@Tag("Filtering")
+	// delimiter, prefix, max-keys, marker를 조합하여 오브젝트 목록을 가져올때 올바르게 가져오는지 확인
+	public void test_bucket_list_filtering_all() {
+		Test.test_bucket_list_filtering_all();
+	}
 }

@@ -106,7 +106,7 @@ public class ListObjects extends TestBase
 	}
 
 	@Test
-	@Tag("DelimiterandPrefix")
+	@Tag("DelimiterAndPrefix")
 	//조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix() {
 		var bucketName = createObjects(new ArrayList<>(
@@ -132,7 +132,7 @@ public class ListObjects extends TestBase
 	}
 
 	@Test
-	@Tag("DelimiterandPrefix")
+	@Tag("DelimiterAndPrefix")
 	//비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix_ends_with_delimiter() {
 		var bucketName = createObjectsToBody(new ArrayList<>(Arrays.asList(new String[] { "asdf/" })), "");
@@ -161,7 +161,7 @@ public class ListObjects extends TestBase
 	}
 
 	@Test
-	@Tag("DelimiterandPrefix")
+	@Tag("DelimiterAndPrefix")
 	//[폴더명 앞에 _가 포함되어 있는 환경] 조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix_underscore() {
 		var bucketName = createObjects(new ArrayList<>(Arrays
@@ -777,5 +777,33 @@ public class ListObjects extends TestBase
 		assertEquals(404, StatusCode);
 		assertEquals(MainData.NoSuchBucket, ErrorCode);
 		DeleteBucketList(bucketName);
+	}
+
+	@Test
+	@Tag("Filtering")
+	// delimiter, prefix, max-keys, marker를 조합하여 오브젝트 목록을 가져올때 올바르게 가져오는지 확인
+	public void test_bucket_list_filtering_all() {
+		var keyNames = new ArrayList<>(Arrays.asList(new String[] { "test1/f1", "test2/f2", "test3", "test4/f3", "test_f4" }));
+		var bucketName = createObjects(keyNames);
+		var client = getClient();
+
+		var marker = "test3";
+		var Delimiter = "/";
+		var MaxKeys = 3;
+
+		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter).withMaxKeys(MaxKeys));
+		assertEquals(Delimiter, response.getDelimiter());
+		assertEquals(MaxKeys, response.getMaxKeys());
+		assertEquals(marker, response.getNextMarker());
+
+		var keys = GetKeys(response.getObjectSummaries());
+		var prefixes = response.getCommonPrefixes();
+		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "test3" })), keys);
+		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "test1/", "test2/" })), prefixes);
+
+		response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter).withMaxKeys(MaxKeys).withMarker(marker));
+		assertEquals(Delimiter, response.getDelimiter());
+		assertEquals(MaxKeys, response.getMaxKeys());
+		assertEquals(false, response.isTruncated());
 	}
 }
