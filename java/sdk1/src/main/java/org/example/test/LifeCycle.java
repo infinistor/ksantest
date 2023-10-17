@@ -470,7 +470,7 @@ public class LifeCycle extends TestBase {
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
-		rules.add(new Rule().withId("rule1").withExpirationInDays(2)
+		rules.add(new Rule().withId("rule2").withExpirationInDays(2)
 				.withStatus(BucketLifecycleConfiguration.ENABLED));
 
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
