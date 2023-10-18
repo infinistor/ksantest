@@ -99,7 +99,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Check")
 	// 버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)
-	public void test_bucketv2_policy()
+	public void test_bucket_v2_policy()
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -193,7 +193,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Priority")
 	// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인(ListObjectsV2)
-	public void test_bucketv2_policy_acl()
+	public void test_bucket_v2_policy_acl()
 	{
 
 		var bucketName = getNewBucket();
@@ -242,11 +242,11 @@ public class Policy extends TestBase
 	}
 
 	@Test
-	@Tag("Taggings")
+	@Tag("Tagging")
 	// 정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void test_get_tags_acl_public()
 	{
-		var key = "testgettagsacl";
+		var key = "acl";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
@@ -269,7 +269,7 @@ public class Policy extends TestBase
 	// 정책설정으로 오브젝트의 태그 입력을 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void test_put_tags_acl_public()
 	{
-		var key = "testputtagsacl";
+		var key = "acl";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
@@ -291,7 +291,7 @@ public class Policy extends TestBase
 	// 정책설정으로 오브젝트의 태그 삭제를 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void test_delete_tags_obj_public()
 	{
-		var key = "testdeltagsacl";
+		var key = "acl";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
 
@@ -457,27 +457,27 @@ public class Policy extends TestBase
 		var testTags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		testTags.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
 		testTags.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
-		var TestTagset = new ObjectTagging(testTags);
+		var TestTagSet = new ObjectTagging(testTags);
 
 		var altClient = getAltClient();
-		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, TestTagset));
+		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, TestTagSet));
 
-		var e = assertThrows(AmazonServiceException.class, () -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, privateTag, TestTagset)));
+		var e = assertThrows(AmazonServiceException.class, () -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, privateTag, TestTagSet)));
 		var statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 
 		testTags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		testTags.add(new com.amazonaws.services.s3.model.Tag("security", "private"));
-		var TestTagset2 = new ObjectTagging(testTags);
+		var TestTagSet2 = new ObjectTagging(testTags);
 
-		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, TestTagset2));
+		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, TestTagSet2));
 
 		testTags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		testTags.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
 		testTags.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
-		var TestTagset3 = new ObjectTagging(testTags);
+		var TestTagSet3 = new ObjectTagging(testTags);
 
-		e = assertThrows(AmazonServiceException.class, () -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, TestTagset3)));
+		e = assertThrows(AmazonServiceException.class, () -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, TestTagSet3)));
 		statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 	}
@@ -711,7 +711,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Status")
 	// [모든 사용자가 버킷에 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
-	public void test_get_publicpolicy_acl_bucket_policy_status()
+	public void test_get_public_policy_acl_bucket_policy_status()
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -751,7 +751,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Status")
 	// [특정 ip로 접근했을때만 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
-	public void test_get_nonpublicpolicy_acl_bucket_policy_status()
+	public void test_get_nonpublic_policy_acl_bucket_policy_status()
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();

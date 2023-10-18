@@ -106,7 +106,7 @@ public class ListObjects extends TestBase
 	}
 
 	@Test
-	@Tag("DelimiterAndPrefix")
+	@Tag("Filtering")
 	//조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix() {
 		var bucketName = createObjects(new ArrayList<>(
@@ -132,7 +132,7 @@ public class ListObjects extends TestBase
 	}
 
 	@Test
-	@Tag("DelimiterAndPrefix")
+	@Tag("Filtering")
 	//비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix_ends_with_delimiter() {
 		var bucketName = createObjectsToBody(new ArrayList<>(Arrays.asList(new String[] { "asdf/" })), "");
@@ -161,7 +161,7 @@ public class ListObjects extends TestBase
 	}
 
 	@Test
-	@Tag("DelimiterAndPrefix")
+	@Tag("Filtering")
 	//[폴더명 앞에 _가 포함되어 있는 환경] 조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix_underscore() {
 		var bucketName = createObjects(new ArrayList<>(Arrays
@@ -548,7 +548,7 @@ public class ListObjects extends TestBase
 	@Test
 	@Tag("MaxKeys")
 	//오브젝트 목록의 최대갯수를 1로 지정하고 불러올때 올바르게 가져오는지 확인
-	public void test_bucket_list_maxkeys_one() {
+	public void test_bucket_list_max_keys_one() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
 		var bucketName = createObjects(KeyNames);
 		var client = getClient();
@@ -569,7 +569,7 @@ public class ListObjects extends TestBase
 	@Test
 	@Tag("MaxKeys")
 	//오브젝트 목록의 최대갯수를 0으로 지정하고 불러올때 목록이 비어있는지 확인
-	public void test_bucket_list_maxkeys_zero() {
+	public void test_bucket_list_max_keys_zero() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
 		var bucketName = createObjects(KeyNames);
 		var client = getClient();
@@ -584,7 +584,7 @@ public class ListObjects extends TestBase
 	@Test
 	@Tag("MaxKeys")
 	//[default = 1000] 오브젝트 목록의 최대갯수를 지정하지않고 불러올때 올바르게 가져오는지 확인
-	public void test_bucket_list_maxkeys_none() {
+	public void test_bucket_list_max_keys_none() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
 		var bucketName = createObjects(KeyNames);
 		var client = getClient();
@@ -600,7 +600,7 @@ public class ListObjects extends TestBase
 	@Disabled("JAVA에서는 BeforeRequestEvent 사용이 불가능하여 테스트 하지 못함")
 	@Tag("MaxKeys")
 	//[함수가 호출되기 전에 URL에 유효하지 않은 최대목록갯수를 추가할 경우] 오브젝트 목록 조회 실패 확인
-	public void test_bucket_list_maxkeys_invalid() {
+	public void test_bucket_list_max_keys_invalid() {
 //	            var KeyNames = new ArrayList<>(Arrays.asList(new String[]{ "bar", "baz", "foo", "quxx" }));
 //	            var bucketName = CreateObjects(KeyNames);
 //	            var client = GetClient();
@@ -702,7 +702,7 @@ public class ListObjects extends TestBase
 
 	@Test
 	@Tag("Metadata")
-	//ListObjcets으로 가져온 Metadata와  HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
+	//ListObjects으로 가져온 Metadata와  HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
 	public void test_bucket_list_return_data() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo" }));
 		var bucketName = createObjects(KeyNames);
@@ -765,7 +765,7 @@ public class ListObjects extends TestBase
 	@Test
 	@Tag("ERROR")
 	//존재하지 않는 버킷 내 오브젝트들을 가져오려 했을 경우 실패 확인
-	public void test_bucket_notexist() {
+	public void test_bucket_not_exist() {
 		var bucketName = getNewBucketNameOnly();
 		var client = getClient();
 
@@ -795,6 +795,7 @@ public class ListObjects extends TestBase
 		assertEquals(Delimiter, response.getDelimiter());
 		assertEquals(MaxKeys, response.getMaxKeys());
 		assertEquals(marker, response.getNextMarker());
+		assertEquals(true, response.isTruncated());
 
 		var keys = GetKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();

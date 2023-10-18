@@ -50,7 +50,7 @@ public class ListObjects {
 
 	@Test
 	@Tag("KSAN")
-	@Tag("DelimiterandPrefix")
+	@Tag("Filtering")
 	// 조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix() {
 		Test.test_bucket_list_delimiter_prefix();
@@ -58,7 +58,7 @@ public class ListObjects {
 
 	@Test
 	@Tag("KSAN")
-	@Tag("DelimiterandPrefix")
+	@Tag("Filtering")
 	// 비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix_ends_with_delimiter() {
 		Test.test_bucket_list_delimiter_prefix_ends_with_delimiter();
@@ -74,7 +74,7 @@ public class ListObjects {
 
 	@Test
 	@Tag("KSAN")
-	@Tag("DelimiterandPrefix")
+	@Tag("Filtering")
 	// [폴더명 앞에 _가 포함되어 있는 환경] 조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인
 	public void test_bucket_list_delimiter_prefix_underscore() {
 		Test.test_bucket_list_delimiter_prefix_underscore();
@@ -237,24 +237,24 @@ public class ListObjects {
 	@Tag("KSAN")
 	@Tag("MaxKeys")
 	// 오브젝트 목록의 최대갯수를 1로 지정하고 불러올때 올바르게 가져오는지 확인
-	public void test_bucket_list_maxkeys_one() {
-		Test.test_bucket_list_maxkeys_one();
+	public void test_bucket_list_max_keys_one() {
+		Test.test_bucket_list_max_keys_one();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("MaxKeys")
 	// 오브젝트 목록의 최대갯수를 0으로 지정하고 불러올때 목록이 비어있는지 확인
-	public void test_bucket_list_maxkeys_zero() {
-		Test.test_bucket_list_maxkeys_zero();
+	public void test_bucket_list_max_keys_zero() {
+		Test.test_bucket_list_max_keys_zero();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("MaxKeys")
 	// [default = 1000] 오브젝트 목록의 최대갯수를 지정하지않고 불러올때 올바르게 가져오는지 확인
-	public void test_bucket_list_maxkeys_none() {
-		Test.test_bucket_list_maxkeys_none();
+	public void test_bucket_list_max_keys_none() {
+		Test.test_bucket_list_max_keys_none();
 	}
 
 	@Test
@@ -262,8 +262,8 @@ public class ListObjects {
 	@Disabled("JAVA에서는 BeforeRequestEvent 사용이 불가능하여 테스트 하지 못함")
 	@Tag("MaxKeys")
 	// [함수가 호출되기 전에 URL에 유효하지 않은 최대목록갯수를 추가할 경우] 오브젝트 목록 조회 실패 확인
-	public void test_bucket_list_maxkeys_invalid() {
-		Test.test_bucket_list_maxkeys_invalid();
+	public void test_bucket_list_max_keys_invalid() {
+		Test.test_bucket_list_max_keys_invalid();
 	}
 
 	@Test
@@ -311,7 +311,7 @@ public class ListObjects {
 	@Test
 	@Tag("KSAN")
 	@Tag("Metadata")
-	// ListObjcets으로 가져온 Metadata와 HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
+	// ListObjects으로 가져온 Metadata와 HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
 	public void test_bucket_list_return_data() {
 		Test.test_bucket_list_return_data();
 	}
@@ -336,8 +336,8 @@ public class ListObjects {
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// 존재하지 않는 버킷 내 오브젝트들을 가져오려 했을 경우 실패 확인
-	public void test_bucket_notexist() {
-		Test.test_bucket_notexist();
+	public void test_bucket_not_exist() {
+		Test.test_bucket_not_exist();
 	}
 
 	@Test

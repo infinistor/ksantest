@@ -286,7 +286,7 @@ public class Taggings extends TestBase {
 		var key = "foo.txt";
 
 		var tags = createSimpleTagSet(2);
-		var xmlInputTagset = "<Tagging><TagSet><Tag><Key>0</Key><Value>0</Value></Tag><Tag><Key>1</Key><Value>1</Value></Tag></TagSet></Tagging>";
+		var xmlInputTagSet = "<Tagging><TagSet><Tag><Key>0</Key><Value>0</Value></Tag><Tag><Key>1</Key><Value>1</Value></Tag></TagSet></Tagging>";
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -339,7 +339,7 @@ public class Taggings extends TestBase {
 		payload.put("acl", "private");
 		payload.put("signature", signature);
 		payload.put("policy", policy);
-		payload.put("tagging", xmlInputTagset);
+		payload.put("tagging", xmlInputTagSet);
 		payload.put("x-ignore-foo", "bar");
 		payload.put("Content-Type", contentType);
 

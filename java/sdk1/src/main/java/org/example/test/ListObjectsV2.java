@@ -120,7 +120,7 @@ public class ListObjectsV2 extends TestBase
 	}
 
 	@Test
-	@Tag("DelimiterandPrefix")
+	@Tag("Filtering")
 	//조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)
 	public void test_bucket_listv2_delimiter_prefix() {
 		var bucketName = createObjects(new ArrayList<>(
@@ -156,7 +156,7 @@ public class ListObjectsV2 extends TestBase
 	}
 
 	@Test
-	@Tag("DelimiterandPrefix")
+	@Tag("Filtering")
 	//비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)
 	public void test_bucket_listv2_delimiter_prefix_ends_with_delimiter() {
 		var bucketName = createObjectsToBody(new ArrayList<>(Arrays.asList(new String[] { "asdf/" })), "");
@@ -186,7 +186,7 @@ public class ListObjectsV2 extends TestBase
 	}
 
 	@Test
-	@Tag("DelimiterandPrefix")
+	@Tag("Filtering")
 	//[폴더명 앞에 _가 포함되어 있는 환경] 조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)
 	public void test_bucket_listv2_delimiter_prefix_underscore() {
 		var bucketName = createObjects(new ArrayList<>(Arrays
@@ -607,7 +607,7 @@ public class ListObjectsV2 extends TestBase
 	@Test
 	@Tag("MaxKeys")
 	//오브젝트 목록의 최대갯수를 1로 지정하고 불러올때 올바르게 가져오는지 확인(ListObjectsV2)
-	public void test_bucket_listv2_maxkeys_one() {
+	public void test_bucket_listv2_max_keys_one() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
 		var bucketName = createObjects(KeyNames);
 		var client = getClient();
@@ -629,7 +629,7 @@ public class ListObjectsV2 extends TestBase
 	@Test
 	@Tag("MaxKeys")
 	//오브젝트 목록의 최대갯수를 0으로 지정하고 불러올때 목록이 비어있는지 확인(ListObjectsV2)
-	public void test_bucket_listv2_maxkeys_zero() {
+	public void test_bucket_listv2_max_keys_zero() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
 		var bucketName = createObjects(KeyNames);
 		var client = getClient();
@@ -644,7 +644,7 @@ public class ListObjectsV2 extends TestBase
 	@Test
 	@Tag("MaxKeys")
 	//[default = 1000] 오브젝트 목록의 최대갯수를 지정하지않고 불러올때 올바르게 가져오는지 확인(ListObjectsV2)
-	public void test_bucket_listv2_maxkeys_none() {
+	public void test_bucket_listv2_max_keys_none() {
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "bar", "baz", "foo", "quxx" }));
 		var bucketName = createObjects(KeyNames);
 		var client = getClient();
@@ -816,6 +816,8 @@ public class ListObjectsV2 extends TestBase
 		assertEquals(Delimiter, response.getDelimiter());
 		assertEquals(MaxKeys, response.getMaxKeys());
 		assertEquals(marker, response.getNextContinuationToken());
+		assertEquals(true, response.isTruncated());
+		assertEquals(MaxKeys, response.getKeyCount());
 
 		var keys = GetKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();

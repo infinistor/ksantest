@@ -57,7 +57,7 @@ public class ListObjectsV2 {
 
 	@Test
 	@Tag("KSAN")
-	@Tag("DelimiterandPrefix")
+	@Tag("Filtering")
 	// 조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)
 	public void test_bucket_listv2_delimiter_prefix() {
 		Test.test_bucket_listv2_delimiter_prefix();
@@ -65,7 +65,7 @@ public class ListObjectsV2 {
 
 	@Test
 	@Tag("KSAN")
-	@Tag("DelimiterandPrefix")
+	@Tag("Filtering")
 	// 비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)
 	public void test_bucket_listv2_delimiter_prefix_ends_with_delimiter() {
 		Test.test_bucket_listv2_delimiter_prefix_ends_with_delimiter();
@@ -81,7 +81,7 @@ public class ListObjectsV2 {
 
 	@Test
 	@Tag("KSAN")
-	@Tag("DelimiterandPrefix")
+	@Tag("Filtering")
 	// [폴더명 앞에 _가 포함되어 있는 환경] 조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)
 	public void test_bucket_listv2_delimiter_prefix_underscore() {
 		Test.test_bucket_listv2_delimiter_prefix_underscore();
@@ -261,24 +261,24 @@ public class ListObjectsV2 {
 	@Tag("KSAN")
 	@Tag("MaxKeys")
 	// 오브젝트 목록의 최대갯수를 1로 지정하고 불러올때 올바르게 가져오는지 확인(ListObjectsV2)
-	public void test_bucket_listv2_maxkeys_one() {
-		Test.test_bucket_listv2_maxkeys_one();
+	public void test_bucket_listv2_max_keys_one() {
+		Test.test_bucket_listv2_max_keys_one();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("MaxKeys")
 	// 오브젝트 목록의 최대갯수를 0으로 지정하고 불러올때 목록이 비어있는지 확인(ListObjectsV2)
-	public void test_bucket_listv2_maxkeys_zero() {
-		Test.test_bucket_listv2_maxkeys_zero();
+	public void test_bucket_listv2_max_keys_zero() {
+		Test.test_bucket_listv2_max_keys_zero();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("MaxKeys")
 	// [default = 1000] 오브젝트 목록의 최대갯수를 지정하지않고 불러올때 올바르게 가져오는지 확인(ListObjectsV2)
-	public void test_bucket_listv2_maxkeys_none() {
-		Test.test_bucket_listv2_maxkeys_none();
+	public void test_bucket_listv2_max_keys_none() {
+		Test.test_bucket_listv2_max_keys_none();
 	}
 
 	@Test
