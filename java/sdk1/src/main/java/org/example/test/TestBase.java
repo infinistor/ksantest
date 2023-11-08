@@ -146,8 +146,8 @@ public class TestBase {
 		}
 		s3Config.setSignerOverride(signatureVersion);
 		s3Config.setMaxErrorRetry(1);
-		s3Config.setConnectionTimeout(1000);
-		s3Config.setSocketTimeout(1000);
+		s3Config.setConnectionTimeout(10000);
+		s3Config.setSocketTimeout(10000);
 		var clientBuilder = AmazonS3ClientBuilder.standard();
 
 		if (user == null)
