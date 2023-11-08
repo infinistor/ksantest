@@ -134,6 +134,10 @@ public class Analytics extends TestBase {
 												.withBucketArn("arn:aws:s3:::" + targetBucketName)
 												.withFormat("CSV"))))));
 		client.deleteBucketAnalyticsConfiguration(bucketName, "test");
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.getBucketAnalyticsConfiguration(bucketName, "test"));
+		assertEquals(404, e.getStatusCode());
+		assertEquals("NoSuchConfiguration", e.getErrorCode());
 	}
 
 	@Test
