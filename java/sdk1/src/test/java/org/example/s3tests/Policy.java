@@ -35,8 +35,8 @@ public class Policy {
 	@Tag("KSAN")
 	@Tag("Check")
 	// @Tag("버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)
-	public void test_bucketv2_policy() {
-		Test.test_bucketv2_policy();
+	public void test_bucket_v2_policy() {
+		Test.test_bucket_v2_policy();
 	}
 
 	@Test
@@ -51,13 +51,13 @@ public class Policy {
 	@Tag("KSAN")
 	@Tag("Priority")
 	// @Tag("버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인(ListObjectsV2)
-	public void test_bucketv2_policy_acl() {
-		Test.test_bucketv2_policy_acl();
+	public void test_bucket_v2_policy_acl() {
+		Test.test_bucket_v2_policy_acl();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Taggings")
+	@Tag("Tagging")
 	// @Tag("정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void test_get_tags_acl_public() {
 		Test.test_get_tags_acl_public();
@@ -155,15 +155,15 @@ public class Policy {
 	@Tag("KSAN")
 	@Tag("Status")
 	// @Tag("[모든 사용자가 버킷에 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
-	public void test_get_publicpolicy_acl_bucket_policy_status() {
-		Test.test_get_publicpolicy_acl_bucket_policy_status();
+	public void test_get_public_policy_acl_bucket_policy_status() {
+		Test.test_get_public_policy_acl_bucket_policy_status();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Status")
 	// @Tag("[특정 ip로 접근했을때만 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
-	public void test_get_nonpublicpolicy_acl_bucket_policy_status() {
-		Test.test_get_nonpublicpolicy_acl_bucket_policy_status();
+	public void test_get_nonpublic_policy_acl_bucket_policy_status() {
+		Test.test_get_nonpublic_policy_acl_bucket_policy_status();
 	}
 }

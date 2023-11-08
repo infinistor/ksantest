@@ -953,14 +953,18 @@ public class TestBase {
 
 	public HttpResponse PutObject(URL Address, String Body) {
 		HttpClient client = HttpClientBuilder.create().build();
-		HttpPut getRequest = new HttpPut(Address.toString());
+		HttpPut putRequest = new HttpPut(Address.toString());
 		if (Body != null) {
-			StringEntity requestEntity = new StringEntity(Body, "utf-8");
+			var requestEntity = new StringEntity(Body, "utf-8");
 			requestEntity.setContentType(new BasicHeader("Content-Type", "application/txt"));
-			getRequest.setEntity(requestEntity);
+			putRequest.setEntity(requestEntity);
+			// Utils.createDummyFile(Body, 1024*1024*1000);
+			// var fileEntity = new FileEntity(new File(Body));
+			// putRequest.setEntity(fileEntity);
 		}
 		try {
-			return client.execute(getRequest);
+			return client.execute(putRequest);
+			
 		} catch (ClientProtocolException e) {
 			e.printStackTrace();
 		} catch (IOException e) {

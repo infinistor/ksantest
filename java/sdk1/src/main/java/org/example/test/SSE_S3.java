@@ -419,7 +419,7 @@ public class SSE_S3 extends TestBase
 	@Test
 	@Tag("PresignedURL")
 	//[버킷에 SSE-S3 설정]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_sse_s3_bucket_presignedurl_put_get()
+	public void test_sse_s3_bucket_presigned_url_put_get()
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -448,7 +448,7 @@ public class SSE_S3 extends TestBase
 	@Test
 	@Tag("PresignedURL")
 	//[버킷에 SSE-S3 설정, SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_sse_s3_bucket_presignedurl_put_get_v4()
+	public void test_sse_s3_bucket_presigned_url_put_get_v4()
 	{
 		var bucketName = getNewBucket();
 		var client = getClientV4(true);

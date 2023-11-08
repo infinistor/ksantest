@@ -10,6 +10,7 @@
 */
 package org.example.s3tests;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 
 import org.junit.jupiter.api.AfterEach;
@@ -286,16 +287,16 @@ public class Post {
 	@Tag("KSAN")
 	@Tag("PresignedURL")
 	// @Tag("PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_presignedurl_put_get() throws MalformedURLException {
-		Test.test_presignedurl_put_get();
+	public void test_presigned_url_put_get() throws UnsupportedOperationException, IOException {
+		Test.test_presigned_url_put_get();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("PresignedURL")
 	// @Tag("[SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_presignedurl_put_get_v4() throws MalformedURLException {
-		Test.test_presignedurl_put_get_v4();
+	public void test_presigned_url_put_get_v4() throws MalformedURLException {
+		Test.test_presigned_url_put_get_v4();
 	}
 
 	@Test

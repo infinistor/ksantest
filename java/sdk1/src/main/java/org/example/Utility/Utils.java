@@ -6,6 +6,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.Random;
 import java.util.Base64.Encoder;
 
@@ -84,5 +86,22 @@ public class Utils {
 			return Temp;
 		}
 		return null;
+	}
+
+	public static boolean createDummyFile(String filePath, int size) {
+		try {
+			var file = new File(filePath);
+			file.createNewFile();
+			var fos = new FileOutputStream(file);
+			var buffer = new byte[1048576];
+			for (long i = 0; i < size; i+=buffer.length) {
+				fos.write(buffer, 0, buffer.length);
+			}
+			fos.close();
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 }

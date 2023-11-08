@@ -1813,7 +1813,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("PresignedURL")
 	// PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_presignedurl_put_get() {
+	public void test_presigned_url_put_get() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
@@ -1831,7 +1831,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("PresignedURL")
 	// [SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_presignedurl_put_get_v4() {
+	public void test_presigned_url_put_get_v4() {
 		var bucketName = getNewBucketName();
 		var client = getClientV4(true);
 		var key = "foo";
@@ -1893,10 +1893,12 @@ public class Post extends TestBase {
 		var signer = new AWS4SignerForChunkedUpload(EndPoint, "PUT", "s3", config.regionName);
 
 		// Content Encoding
-		long totalLength = AWS4SignerForChunkedUpload.calculateChunkedContentLength(Content.length(), NetUtils.USER_DATE_BLOCK_SIZE);
+		long totalLength = AWS4SignerForChunkedUpload.calculateChunkedContentLength(Content.length(),
+				NetUtils.USER_DATE_BLOCK_SIZE);
 		headers.put("content-length", "" + totalLength);
 
-		String authorization = signer.computeSignature(headers, null, AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256, config.mainUser.accessKey, config.mainUser.secretKey);
+		String authorization = signer.computeSignature(headers, null, AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256,
+				config.mainUser.accessKey, config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
 
 		var result = NetUtils.putUploadChunked(EndPoint, "PUT", headers, signer, Content);
@@ -1910,8 +1912,8 @@ public class Post extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
-		var EndPoint = getURL(bucketName, key);
-		var HttpMethod = "GET";
+		var endPoint = getURL(bucketName, key);
+		var httpMethod = "GET";
 		var size = 100;
 		var Content = Utils.randomTextToLong(size);
 
@@ -1920,16 +1922,77 @@ public class Post extends TestBase {
 		var headers = new HashMap<String, String>();
 		headers.put("x-amz-content-sha256", AWS4SignerBase.EMPTY_BODY_SHA256);
 
-		var signer = new AWS4SignerForChunkedUpload(EndPoint, HttpMethod, "s3", config.regionName);
+		var signer = new AWS4SignerForChunkedUpload(endPoint, httpMethod, "s3", config.regionName);
 
 		String authorization = signer.computeSignature(headers, null, AWS4SignerBase.EMPTY_BODY_SHA256,
 				config.mainUser.accessKey, config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
 
-		var result = NetUtils.putUpload(EndPoint, HttpMethod, headers, null);
+		var result = NetUtils.putUpload(endPoint, httpMethod, headers, null);
 		assertEquals(200, result.statusCode, result.getErrorCode());
 		assertEquals(size, result.GetContent().length());
 		assertEquals(Content, result.GetContent());
 		assertTrue(Content.equals(result.GetContent()), MainData.NOT_MATCHED);
+	}
+
+	@Test
+	@Tag("ERROR")
+	// 잘못된 버킷이름으로 오브젝트 업로드시 실패하는지 확인
+	public void test_post_object_wrong_bucket() throws MalformedURLException {
+		var bucketName = getNewBucket();
+		var badBucketName = getNewBucketName();
+
+		var contentType = "text/plain";
+		var key = "\\$foo.txt";
+
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
+
+		var conditions = new JsonArray();
+
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
+
+		var starts1 = new JsonArray();
+		starts1.add("starts-with");
+		starts1.add("$key");
+		starts1.add("\\$foo");
+		conditions.add(starts1);
+
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
+
+		var starts2 = new JsonArray();
+		starts2.add("starts-with");
+		starts2.add("$Content-Type");
+		starts2.add(contentType);
+		conditions.add(starts2);
+
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(512);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
+
+		policyDocument.add("conditions", conditions);
+
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
+		var encoder = Base64.getEncoder();
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
+
+		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var fileData = new FormFile(key, contentType, "bar");
+		var payload = new HashMap<String, String>();
+		payload.put("key", key);
+		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("acl", "private");
+		payload.put("signature", signature);
+		payload.put("policy", policy);
+		payload.put("Content-Type", contentType);
+
+		var result = NetUtils.postUpload(getURL(badBucketName), payload, fileData);
+		assertEquals(403, result.statusCode, result.getErrorCode());
 	}
 }
