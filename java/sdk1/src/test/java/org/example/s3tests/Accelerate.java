@@ -31,4 +31,12 @@ public class Accelerate {
 	public void test_delete_bucket_accelerate() {
 		Test.test_delete_bucket_accelerate();
 	}
+
+	
+	@Test
+	@Tag("Error")
+	// 버킷 가속 설정을 잘못 입력했을 때 에러가 발생하는지 확인
+	public void test_put_bucket_accelerate_invalid() {
+		Test.test_put_bucket_accelerate_invalid();
+	}
 }

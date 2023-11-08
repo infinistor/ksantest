@@ -1,10 +1,12 @@
 package org.example.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.BucketAccelerateConfiguration;
 import com.amazonaws.services.s3.model.BucketAccelerateStatus;
 import com.amazonaws.services.s3.model.SetBucketAccelerateConfigurationRequest;
@@ -67,5 +69,23 @@ public class Accelerate extends TestBase {
 
 		response = client.getBucketAccelerateConfiguration(bucketName);
 		assertEquals("Suspended", response.getStatus());
+	}
+
+	@Test
+	@Tag("Error")
+	// 버킷 가속 설정을 잘못 입력했을 때 에러가 발생하는지 확인
+	public void test_put_bucket_accelerate_invalid() {
+		var bucketName = getNewBucket();
+		var client = getClient();
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client
+						.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
+								.withBucketName(bucketName)
+								.withAccelerateConfiguration(new BucketAccelerateConfiguration("Invalid"))));
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(400, statusCode);
+		assertEquals("MalformedXML", errorCode);
 	}
 }
