@@ -28,8 +28,8 @@ public class Accelerate {
 	@Test
 	@Tag("Change")
 	// 버킷 가속 설정이 변경되는지 확인
-	public void test_delete_bucket_accelerate() {
-		Test.test_delete_bucket_accelerate();
+	public void test_change_bucket_accelerate() {
+		Test.test_change_bucket_accelerate();
 	}
 
 	
