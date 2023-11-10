@@ -69,9 +69,9 @@ public class Analytics extends TestBase {
 	}
 
 	@Test
-	@Tag("Change")
-	// 버킷 분석 설정이 변경되는지 확인
-	public void test_update_bucket_analytics() {
+	@Tag("Put")
+	// 버킷 분석 설정이 여러개 가능한지 확인
+	public void test_add_bucket_analytics() {
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
 		var client = getClient();
@@ -83,6 +83,9 @@ public class Analytics extends TestBase {
 										.withS3BucketDestination(new AnalyticsS3BucketDestination()
 												.withBucketArn("arn:aws:s3:::" + targetBucketName)
 												.withFormat("CSV"))))));
+		var response = client.listBucketAnalyticsConfigurations(new ListBucketAnalyticsConfigurationsRequest().withBucketName(bucketName));
+		assertEquals(1, response.getAnalyticsConfigurationList().size());
+
 		client.setBucketAnalyticsConfiguration(bucketName, new AnalyticsConfiguration().withId("test2")
 				.withStorageClassAnalysis(new StorageClassAnalysis()
 						.withDataExport(new StorageClassAnalysisDataExport().withOutputSchemaVersion("V_1")
@@ -90,6 +93,8 @@ public class Analytics extends TestBase {
 										.withS3BucketDestination(new AnalyticsS3BucketDestination()
 												.withBucketArn("arn:aws:s3:::" + targetBucketName)
 												.withFormat("CSV"))))));
+		response = client.listBucketAnalyticsConfigurations(new ListBucketAnalyticsConfigurationsRequest().withBucketName(bucketName));
+		assertEquals(2, response.getAnalyticsConfigurationList().size());
 	}
 
 	@Test

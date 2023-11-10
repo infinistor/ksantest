@@ -26,10 +26,10 @@ public class Analytics {
 	}
 
 	@Test
-	@Tag("Change")
-	// 버킷 분석 설정이 변경되는지 확인
-	public void test_update_bucket_analytics() {
-		Test.test_update_bucket_analytics();
+	@Tag("Put")
+	// 버킷 분석 설정이 여러개 가능한지 확인
+	public void test_add_bucket_analytics() {
+		Test.test_add_bucket_analytics();
 	}
 	
 	@Test
