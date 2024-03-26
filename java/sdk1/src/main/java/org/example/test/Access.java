@@ -28,12 +28,12 @@ import com.amazonaws.services.s3.model.SetPublicAccessBlockRequest;
 
 public class Access extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("Access Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("Access End");
 	}
 

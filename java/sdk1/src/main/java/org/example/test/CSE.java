@@ -34,12 +34,12 @@ import com.amazonaws.services.s3.model.UploadPartRequest;
 
 public class CSE extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("CSE Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("CSE End");
 	}
 
@@ -122,8 +122,8 @@ public class CSE extends TestBase {
 			client.putObject(bucketName, key, createBody(encoding), metadata);
 
 			var response = client.getObject(bucketName, key);
-			var Body = getBody(response.getObjectContent());
-			assertNotEquals(data, Body);
+			var body = getBody(response.getObjectContent());
+			assertNotEquals(data, body);
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
@@ -175,8 +175,8 @@ public class CSE extends TestBase {
 
 			var r = new Random();
 			var startPoint = r.nextInt(1024 * 1024 - 1001);
-			var response = client
-					.getObject(new GetObjectRequest(bucketName, key).withRange(startPoint, startPoint + 1000 - 1));
+			var endPoint = startPoint + 999;
+			var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(startPoint, endPoint));
 			var encodingBody = getBody(response.getObjectContent());
 			assertTrue(encoding.substring(startPoint, startPoint + 1000).equals(encodingBody),
 					MainData.NOT_MATCHED);
@@ -205,30 +205,30 @@ public class CSE extends TestBase {
 			metadata.addUserMetadata("x-amz-meta-key", aesKey);
 			metadata.setContentType(contentType);
 
-			var InitMultiPartResponse = client
+			var initMultiPartResponse = client
 					.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, metadata));
-			var UploadID = InitMultiPartResponse.getUploadId();
+			var uploadID = initMultiPartResponse.getUploadId();
 
 			var parts = CutStringData(encoding, 5 * MainData.MB);
 			var partETags = new ArrayList<PartETag>();
 			int partNumber = 1;
 			for (var part : parts) {
-				var PartResPonse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
-						.withUploadId(UploadID).withPartNumber(partNumber++).withInputStream(createBody(part))
+				var partResPonse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+						.withUploadId(uploadID).withPartNumber(partNumber++).withInputStream(createBody(part))
 						.withPartSize(part.length()));
-				partETags.add(PartResPonse.getPartETag());
+				partETags.add(partResPonse.getPartETag());
 			}
 
-			client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, UploadID, partETags));
+			client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadID, partETags));
 
 			var headResponse = client.listObjectsV2(bucketName);
 			var objectCount = headResponse.getKeyCount();
 			assertEquals(1, objectCount);
 			assertEquals(encoding.length(), GetBytesUsed(headResponse));
 
-			var GetResponse = client.getObjectMetadata(bucketName, key);
-			assertEquals(metadata.getUserMetadata(), GetResponse.getUserMetadata());
-			assertEquals(contentType, GetResponse.getContentType());
+			var getResponse = client.getObjectMetadata(bucketName, key);
+			assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
+			assertEquals(contentType, getResponse.getContentType());
 
 			checkContentUsingRange(bucketName, key, encoding, MainData.MB);
 			checkContentUsingRange(bucketName, key, encoding, 10 * MainData.MB);
@@ -260,8 +260,8 @@ public class CSE extends TestBase {
 
 			var response = client.getObject(bucketName, key);
 			var encodingBody = getBody(response.getObjectContent());
-			var Body = AES256.decrypt(encodingBody, aesKey);
-			assertTrue(data.equals(Body), MainData.NOT_MATCHED);
+			var body = AES256.decrypt(encodingBody, aesKey);
+			assertTrue(data.equals(body), MainData.NOT_MATCHED);
 			checkContent(bucketName, key, encoding, 50);
 
 		} catch (Exception e) {
@@ -279,8 +279,8 @@ public class CSE extends TestBase {
 
 		// AES
 		var aesKey = Utils.randomTextToLong(32);
-		var FileSize = 15 * 1024 * 1024;
-		var data = Utils.randomTextToLong(FileSize);
+		var fileSize = 15 * 1024 * 1024;
+		var data = Utils.randomTextToLong(fileSize);
 
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
@@ -293,8 +293,8 @@ public class CSE extends TestBase {
 
 			var response = client.getObject(bucketName, key);
 			var encodingBody = getBody(response.getObjectContent());
-			var Body = AES256.decrypt(encodingBody, aesKey);
-			assertTrue(data.equals(Body), MainData.NOT_MATCHED);
+			var body = AES256.decrypt(encodingBody, aesKey);
+			assertTrue(data.equals(body), MainData.NOT_MATCHED);
 
 			checkContentUsingRandomRange(bucketName, key, encoding, 50);
 

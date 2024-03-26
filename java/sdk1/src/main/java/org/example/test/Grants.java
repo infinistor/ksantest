@@ -37,13 +37,13 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 public class Grants extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("Grants Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("Grants End");
 	}
@@ -63,13 +63,13 @@ public class Grants extends TestBase
 		var user = new CanonicalGrantee(userId);
 		user.setDisplayName(displayName);
 
-		if (!StringUtils.isBlank(config.URL)) assertEquals(displayName, response.getOwner().getDisplayName());
+		if (!StringUtils.isBlank(config.url)) assertEquals(displayName, response.getOwner().getDisplayName());
 		assertEquals(userId, response.getOwner().getId());
 
 		var getGrants = response.getGrantsAsList();
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -92,7 +92,7 @@ public class Grants extends TestBase
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Read));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -115,7 +115,7 @@ public class Grants extends TestBase
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Read));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 
 		client.setBucketAcl(bucketName, CannedAccessControlList.Private);
 		response = client.getBucketAcl(bucketName);
@@ -123,7 +123,7 @@ public class Grants extends TestBase
 
 		myGrants.clear();
 		myGrants.add(new Grant(user, Permission.FullControl));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -147,7 +147,7 @@ public class Grants extends TestBase
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Read));
 		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Write));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -170,7 +170,7 @@ public class Grants extends TestBase
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(GroupGrantee.AuthenticatedUsers, Permission.Read));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -194,7 +194,7 @@ public class Grants extends TestBase
 		var getGrants = response.getGrantsAsList();
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -223,7 +223,7 @@ public class Grants extends TestBase
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Read));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -252,7 +252,7 @@ public class Grants extends TestBase
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Read));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 
 		client.setObjectAcl(bucketName, key, CannedAccessControlList.Private);
 		response = client.getObjectAcl(bucketName, key);
@@ -260,7 +260,7 @@ public class Grants extends TestBase
 		getGrants = response.getGrantsAsList();
 		myGrants.clear();
 		myGrants.add(new Grant(user, Permission.FullControl));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -290,7 +290,7 @@ public class Grants extends TestBase
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Read));
 		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Write));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -319,7 +319,7 @@ public class Grants extends TestBase
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(GroupGrantee.AuthenticatedUsers, Permission.Read));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -358,7 +358,7 @@ public class Grants extends TestBase
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(owner, Permission.Read));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -397,7 +397,7 @@ public class Grants extends TestBase
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(user, Permission.FullControl));
 		myGrants.add(new Grant(owner, Permission.FullControl));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -459,7 +459,7 @@ public class Grants extends TestBase
 		mainClient.putObject(new PutObjectRequest(bucketName, key, createBody("bar"), headers));
 
 		var response = mainClient.getObject(bucketName, key);
-		var ContentType = response.getObjectMetadata().getContentType();
+		var contentType = response.getObjectMetadata().getContentType();
 		var eTag = response.getObjectMetadata().getETag();
 
 		var altUserId = config.altUser.userId;
@@ -472,7 +472,7 @@ public class Grants extends TestBase
 		mainClient.setObjectAcl(bucketName, key, accessControlList);
 
 		response = mainClient.getObject(bucketName, key);
-		assertEquals(ContentType, response.getObjectMetadata().getContentType());
+		assertEquals(contentType, response.getObjectMetadata().getContentType());
 		assertEquals(eTag, response.getObjectMetadata().getETag());
 	}
 
@@ -549,7 +549,7 @@ public class Grants extends TestBase
 		var mainDisplayName = config.mainUser.displayName;
 
 		assertEquals(mainUserId, ownerId);
-		if (!StringUtils.isBlank(config.URL)) assertEquals(mainDisplayName, ownerDisplayName);
+		if (!StringUtils.isBlank(config.url)) assertEquals(mainDisplayName, ownerDisplayName);
 	}
 
 	@Test
@@ -612,8 +612,8 @@ public class Grants extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var BadUser = new CanonicalGrantee("_foo");
-		var accessControlList = addBucketUserGrant(bucketName, new Grant(BadUser, Permission.FullControl));
+		var badUser = new CanonicalGrantee("_foo");
+		var accessControlList = addBucketUserGrant(bucketName, new Grant(badUser, Permission.FullControl));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, accessControlList));
 		var statusCode = e.getStatusCode();
@@ -633,7 +633,7 @@ public class Grants extends TestBase
 
 		client.putObject(bucketName, key, "bar");
 		var response = client.getBucketAcl(bucketName);
-		var OldGrants = response.getGrantsAsList();
+		var oldGrants = response.getGrantsAsList();
 		var policy = new AccessControlList();
 		policy.setOwner(response.getOwner());
 
@@ -647,7 +647,7 @@ public class Grants extends TestBase
 		client2.getBucketAcl(bucketName);
 		client2.setBucketAcl(bucketName, CannedAccessControlList.Private);
 
-		for(var MyGrant : OldGrants) policy.grantAllPermissions(MyGrant);
+		for(var MyGrant : oldGrants) policy.grantAllPermissions(MyGrant);
 		client2.setBucketAcl(bucketName, policy);
 	}
 
@@ -679,7 +679,7 @@ public class Grants extends TestBase
 		myGrants.add(new Grant(altUser, Permission.ReadAcp));
 		myGrants.add(new Grant(altUser, Permission.Write));
 		myGrants.add(new Grant(altUser, Permission.WriteAcp));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -705,7 +705,7 @@ public class Grants extends TestBase
 		myGrants.add(new Grant(altUser, Permission.ReadAcp));
 		myGrants.add(new Grant(altUser, Permission.Write));
 		myGrants.add(new Grant(altUser, Permission.WriteAcp));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 	}
 
 	@Test
@@ -934,8 +934,8 @@ public class Grants extends TestBase
 		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
 
 		var altClient3 = getAltClient();
-		var ObjList = GetKeys(altClient3.listObjects(bucketName).getObjectSummaries());
-		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), ObjList);
+		var objList = getKeys(altClient3.listObjects(bucketName).getObjectSummaries());
+		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), objList);
 		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
 	}
 
@@ -961,8 +961,8 @@ public class Grants extends TestBase
 		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
 
 		var altClient3 = getAltClient();
-		var ObjList = GetKeys(altClient3.listObjects(bucketName).getObjectSummaries());
-		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), ObjList);
+		var objList = getKeys(altClient3.listObjects(bucketName).getObjectSummaries());
+		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), objList);
 		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
 	}
 
@@ -988,8 +988,8 @@ public class Grants extends TestBase
 		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
 
 		var altClient3 = getAltClient();
-		var ObjList = GetKeys(altClient3.listObjects(bucketName).getObjectSummaries());
-		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), ObjList);
+		var objList = getKeys(altClient3.listObjects(bucketName).getObjectSummaries());
+		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), objList);
 		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
 	}
 
@@ -1012,8 +1012,8 @@ public class Grants extends TestBase
 		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
 		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "baroverwrite"));
 
-		var ObjList = GetKeys(altClient.listObjects(bucketName).getObjectSummaries());
-		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), ObjList);
+		var objList = getKeys(altClient.listObjects(bucketName).getObjectSummaries());
+		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), objList);
 		altClient.putObject(bucketName, newKey, "newcontent");
 	}
 
@@ -1037,7 +1037,7 @@ public class Grants extends TestBase
 		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
 		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "baroverwrite"));
 
-		var objects = GetKeys(altClient.listObjects(bucketName).getObjectSummaries());
+		var objects = getKeys(altClient.listObjects(bucketName).getObjectSummaries());
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), objects);
 		altClient.putObject(bucketName, newKey, "newcontent");
 	}
@@ -1063,7 +1063,7 @@ public class Grants extends TestBase
 		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
 		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "baroverwrite"));
 
-		var objects = GetKeys(altClient.listObjects(bucketName).getObjectSummaries());
+		var objects = getKeys(altClient.listObjects(bucketName).getObjectSummaries());
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { key2, key1 })), objects);
 		altClient.putObject(bucketName, newKey, "newcontent");
 	}

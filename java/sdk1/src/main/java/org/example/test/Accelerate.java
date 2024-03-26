@@ -13,12 +13,12 @@ import com.amazonaws.services.s3.model.SetBucketAccelerateConfigurationRequest;
 
 public class Accelerate extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("Accelerate Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("Accelerate End");
 	}
 

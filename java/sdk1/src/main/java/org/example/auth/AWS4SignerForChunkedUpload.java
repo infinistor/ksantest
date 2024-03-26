@@ -1,6 +1,7 @@
 package org.example.auth;
 
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 
@@ -25,7 +26,7 @@ public class AWS4SignerForChunkedUpload extends AWS4SignerBase {
 		super(endpointUrl, httpMethod, serviceName, regionName);
 	}
 
-	public String computeSignature(Map<String, String> headers, Map<String, String> queryParameters, String bodyHash, String AccessKey, String SecretKey) {
+	public String computeSignature(Map<String, String> headers, Map<String, String> queryParameters, String bodyHash, String accessKey, String secretKey) {
 		Date now = new Date();
 		this.dateTimeStamp = dateTimeFormat.format(now);
 
@@ -49,7 +50,7 @@ public class AWS4SignerForChunkedUpload extends AWS4SignerBase {
 		this.scope = dateStamp + "/" + regionName + "/" + serviceName + "/" + TERMINATOR;
 		String stringToSign = getStringToSign(SCHEME, ALGORITHM, dateTimeStamp, scope, canonicalRequest);
 
-		byte[] kSecret = (SCHEME + SecretKey).getBytes();
+		byte[] kSecret = (SCHEME + secretKey).getBytes();
 		byte[] kDate = sign(dateStamp, kSecret, "HmacSHA256");
 		byte[] kRegion = sign(regionName, kDate, "HmacSHA256");
 		byte[] kService = sign(serviceName, kRegion, "HmacSHA256");
@@ -58,15 +59,10 @@ public class AWS4SignerForChunkedUpload extends AWS4SignerBase {
 
 		lastComputedSignature = BinaryUtils.toHex(signature);
 
-		String credentialsAuthorizationHeader = "Credential=" + AccessKey + "/" + scope;
+		String credentialsAuthorizationHeader = "Credential=" + accessKey + "/" + scope;
 		String signedHeadersAuthorizationHeader = "SignedHeaders=" + canonicalizedHeaderNames;
 		String signatureAuthorizationHeader = "Signature=" + lastComputedSignature;
-		String authorizationHeader = SCHEME + "-" + ALGORITHM + " "
-				+ credentialsAuthorizationHeader + ", "
-				+ signedHeadersAuthorizationHeader + ", "
-				+ signatureAuthorizationHeader;
-
-		return authorizationHeader;
+		return SCHEME + "-" + ALGORITHM + " " + credentialsAuthorizationHeader + ", " + signedHeadersAuthorizationHeader + ", " + signatureAuthorizationHeader;
 	}
 
 	public static long calculateChunkedContentLength(long originalLength, long chunkSize) {
@@ -96,7 +92,7 @@ public class AWS4SignerForChunkedUpload extends AWS4SignerBase {
 			dataToChunk = FINAL_CHUNK;
 		} else {
 			if (userDataLen < userData.length) {
-				// shrink the chunkdata to fit
+				// shrink the chunk data to fit
 				dataToChunk = new byte[userDataLen];
 				System.arraycopy(userData, 0, dataToChunk, 0, userDataLen);
 			} else {
@@ -109,26 +105,26 @@ public class AWS4SignerForChunkedUpload extends AWS4SignerBase {
 		// start with size of user data
 		chunkHeader.append(Integer.toHexString(dataToChunk.length));
 
-		// nonsig-extension; we have none in these samples
-		String nonsigExtension = "";
+		// nonSign-extension; we have none in these samples
+		String nonSignExtension = "";
 
 		// sig-extension
 		String chunkStringToSign = CHUNK_STRING_TO_SIGN_PREFIX + "\n" +
 				dateTimeStamp + "\n" +
 				scope + "\n" +
 				lastComputedSignature + "\n" +
-				BinaryUtils.toHex(AWS4SignerBase.hash(nonsigExtension)) + "\n" +
+				BinaryUtils.toHex(AWS4SignerBase.hash(nonSignExtension)) + "\n" +
 				BinaryUtils.toHex(AWS4SignerBase.hash(dataToChunk));
 
 		String chunkSignature = BinaryUtils.toHex(AWS4SignerBase.sign(chunkStringToSign, signingKey, "HmacSHA256"));
 		lastComputedSignature = chunkSignature;
 
-		chunkHeader.append(nonsigExtension + CHUNK_SIGNATURE_HEADER + chunkSignature);
+		chunkHeader.append(nonSignExtension + CHUNK_SIGNATURE_HEADER + chunkSignature);
 		chunkHeader.append(CLRF);
 
 		try {
-			byte[] header = chunkHeader.toString().getBytes("UTF-8");
-			byte[] trailer = CLRF.getBytes("UTF-8");
+			byte[] header = chunkHeader.toString().getBytes(StandardCharsets.UTF_8);
+			byte[] trailer = CLRF.getBytes(StandardCharsets.UTF_8);
 			byte[] signedChunk = new byte[header.length + dataToChunk.length + trailer.length];
 			System.arraycopy(header, 0, signedChunk, 0, header.length);
 			System.arraycopy(dataToChunk, 0, signedChunk, header.length, dataToChunk.length);

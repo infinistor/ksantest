@@ -986,7 +986,7 @@ namespace s3tests
 		public string SetupObjectsV4(List<string> KeyList, string BucketName = null, string Body = null,
 										bool? UseChunkEncoding = null, bool? DisablePayloadSigning = null)
 		{
-			var Client = GetClientHttpsV4();
+			var Client = GetClientV4();
 			if (BucketName == null)
 			{
 				BucketName = GetNewBucketName();

@@ -12,12 +12,12 @@ import com.amazonaws.services.s3.model.SetBucketNotificationConfigurationRequest
 
 public class Notification extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("Notification Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("Notification End");
 	}
 

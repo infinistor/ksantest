@@ -32,12 +32,12 @@ import com.amazonaws.services.s3.model.inventory.InventorySchedule;
 
 public class Inventory extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("Inventory Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("Inventory End");
 	}
 

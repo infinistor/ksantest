@@ -38,12 +38,12 @@ import com.google.gson.JsonObject;
 
 public class Post extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("Post Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("Post End");
 	}
 
@@ -1818,13 +1818,13 @@ public class Post extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		var PutURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var PutResponse = PutObject(PutURL, key);
-		assertEquals(200, PutResponse.getStatusLine().getStatusCode());
+		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
+		var putResponse = putObject(putURL, key);
+		assertEquals(200, putResponse.getStatusLine().getStatusCode());
 
-		var GetURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var GetResponse = GetObject(GetURL);
-		assertEquals(200, GetResponse.getStatusLine().getStatusCode());
+		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
+		var getResponse = getObject(getURL);
+		assertEquals(200, getResponse.getStatusLine().getStatusCode());
 
 	}
 
@@ -1838,13 +1838,13 @@ public class Post extends TestBase {
 
 		client.createBucket(bucketName);
 
-		var PutURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var PutResponse = PutObject(PutURL, key);
-		assertEquals(200, PutResponse.getStatusLine().getStatusCode());
+		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
+		var putResponse = putObject(putURL, key);
+		assertEquals(200, putResponse.getStatusLine().getStatusCode());
 
-		var GetURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var GetResponse = GetObject(GetURL);
-		assertEquals(200, GetResponse.getStatusLine().getStatusCode());
+		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
+		var getResponse = getObject(getURL);
+		assertEquals(200, getResponse.getStatusLine().getStatusCode());
 	}
 
 	@Test
@@ -1853,7 +1853,7 @@ public class Post extends TestBase {
 	public void test_put_object_v4() throws MalformedURLException {
 		var bucketName = getNewBucket();
 		var key = "foo";
-		var EndPoint = getURL(bucketName, key);
+		var endPoint = getURL(bucketName, key);
 		var size = 100;
 		var Content = Utils.randomTextToLong(size);
 
@@ -1865,12 +1865,12 @@ public class Post extends TestBase {
 		headers.put("x-amz-content-sha256", contentHashString);
 		headers.put("x-amz-decoded-content-length", "" + Content.length());
 
-		var signer = new AWS4SignerForAuthorizationHeader(EndPoint, "PUT", "s3", config.regionName);
+		var signer = new AWS4SignerForAuthorizationHeader(endPoint, "PUT", "s3", config.regionName);
 
-		var authorization = signer.computeSignature(headers, null, contentHashString, config.mainUser.accessKey,
-				config.mainUser.secretKey);
+		var authorization = signer.computeSignature(headers, null, contentHashString, config.mainUser.accessKey, config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
-		var result = NetUtils.putUpload(EndPoint, "PUT", headers, Content);
+		
+		var result = NetUtils.putUpload(endPoint, "PUT", headers, Content);
 
 		assertEquals(200, result.statusCode, result.getErrorCode());
 	}
@@ -1993,6 +1993,6 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(getURL(badBucketName), payload, fileData);
-		assertEquals(403, result.statusCode, result.getErrorCode());
+		assertEquals(404, result.statusCode, result.getErrorCode());
 	}
 }

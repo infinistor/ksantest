@@ -25,13 +25,13 @@ import com.amazonaws.AmazonServiceException;
 public class DeleteBucket extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("DeleteBucket Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("DeleteBucket End");
 	}

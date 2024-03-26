@@ -99,8 +99,10 @@
 				<configuration>
 					<reportsDirectory>${surefireReportsDirectory}</reportsDirectory>
 					<includes>
+						<include>Accelerate.java</include>
 						<include>Access.java</include>
 						<include>ACL.java</include>
+						<include>Analytics.java</include>
 						<include>CopyObject.java</include>
 						<include>Cors.java</include>
 						<include>CSE.java</include>
@@ -108,6 +110,7 @@
 						<include>DeleteObjects.java</include>
 						<include>GetObject.java</include>
 						<include>Grants.java</include>
+						<include>Inventory.java</include>
 						<include>LifeCycle.java</include>
 						<include>ListBuckets.java</include>
 						<include>ListObjects.java</include>
@@ -116,6 +119,8 @@
 						<include>Lock.java</include>
 						<include>Logging.java</include>
 						<include>Multipart.java</include>
+						<include>Notification.java</include>
+						<include>Payment.java</include>
 						<include>Policy.java</include>
 						<include>Post.java</include>
 						<include>PutBucket.java</include>

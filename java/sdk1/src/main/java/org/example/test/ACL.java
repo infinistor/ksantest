@@ -29,12 +29,12 @@ import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
 
 public class ACL extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("ACL Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("ACL End");
 	}
 
@@ -43,12 +43,12 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 권한없는 사용자가 오브젝트에 접근 가능한지
 	// 확인
 	public void test_object_raw_get() {
-		var Key = "foo";
+		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+				key);
 
-		var UnauthenticatedClient = getPublicClient();
-		UnauthenticatedClient.getObject(bucketName, Key);
+		var unauthenticatedClient = getPublicClient();
+		unauthenticatedClient.getObject(bucketName, key);
 	}
 
 	@Test
@@ -56,21 +56,19 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 권한없는 사용자가 삭제된 버킷의 삭제된
 	// 오브젝트에 접근할때 에러 확인
 	public void test_object_raw_get_bucket_gone() {
-		var Key = "foo";
+		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+				key);
 		var client = getClient();
 
-		client.deleteObject(bucketName, Key);
+		client.deleteObject(bucketName, key);
 		client.deleteBucket(bucketName);
 
-		var UnauthenticatedClient = getPublicClient();
-		var e = assertThrows(AmazonServiceException.class, () -> UnauthenticatedClient.getObject(bucketName, Key));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var unauthenticatedClient = getPublicClient();
+		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.getObject(bucketName, key));
 
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchBucket, ErrorCode);
+		assertEquals(404, e.getStatusCode());
+		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
 		DeleteBucketList(bucketName);
 	}
 
@@ -79,21 +77,19 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 권한없는 사용자가 삭제된 버킷의 삭제된
 	// 오브젝트를 삭제할때 에러 확인
 	public void test_object_delete_key_bucket_gone() {
-		var Key = "foo";
+		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+				key);
 		var client = getClient();
 
-		client.deleteObject(bucketName, Key);
+		client.deleteObject(bucketName, key);
 		client.deleteBucket(bucketName);
 
-		var UnauthenticatedClient = getPublicClient();
-		var e = assertThrows(AmazonServiceException.class, () -> UnauthenticatedClient.deleteObject(bucketName, Key));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var unauthenticatedClient = getPublicClient();
+		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.deleteObject(bucketName, key));
 
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchBucket, ErrorCode);
+		assertEquals(404, e.getStatusCode());
+		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
 		DeleteBucketList(bucketName);
 	}
 
@@ -102,20 +98,18 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 권한없는 사용자가 삭제된 오브젝트에 접근할때
 	// 에러 확인
 	public void test_object_raw_get_object_gone() {
-		var Key = "foo";
+		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+				key);
 		var client = getClient();
 
-		client.deleteObject(bucketName, Key);
+		client.deleteObject(bucketName, key);
 
-		var UnauthenticatedClient = getPublicClient();
-		var e = assertThrows(AmazonServiceException.class, () -> UnauthenticatedClient.getObject(bucketName, Key));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var unauthenticatedClient = getPublicClient();
+		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.getObject(bucketName, key));
 
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchKey, ErrorCode);
+		assertEquals(404, e.getStatusCode());
+		assertEquals(MainData.NoSuchKey, e.getErrorCode());
 	}
 
 	@Test
@@ -123,11 +117,11 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = private, Object_ACL = public-read] 권한없는 사용자가 개인버킷의 공용 오브젝트에 접근
 	// 가능한지 확인
 	public void test_object_raw_get_bucket_acl() {
-		var Key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, Key);
+		var key = "foo";
+		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, key);
 
-		var UnauthenticatedClient = getPublicClient();
-		UnauthenticatedClient.getObject(bucketName, Key);
+		var unauthenticatedClient = getPublicClient();
+		unauthenticatedClient.getObject(bucketName, key);
 	}
 
 	@Test
@@ -135,16 +129,14 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = private] 권한없는 사용자가 공용버킷의 개인 오브젝트에
 	// 접근할때 에러확인
 	public void test_object_raw_get_object_acl() {
-		var Key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.Private, Key);
+		var key = "foo";
+		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.Private, key);
 
-		var UnauthenticatedClient = getPublicClient();
-		var e = assertThrows(AmazonServiceException.class, () -> UnauthenticatedClient.getObject(bucketName, Key));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var unauthenticatedClient = getPublicClient();
+		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.getObject(bucketName, key));
 
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.AccessDenied, ErrorCode);
+		assertEquals(403, e.getStatusCode());
+		assertEquals(MainData.AccessDenied, e.getErrorCode());
 	}
 
 	@Test
@@ -152,12 +144,12 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인한 사용자가 공용 버킷의 공용
 	// 오브젝트에 접근 가능한지 확인
 	public void test_object_raw_authenticated() {
-		var Key = "foo";
+		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+				key);
 
 		var client = getClient();
-		client.getObject(bucketName, Key);
+		client.getObject(bucketName, key);
 	}
 
 	@Test
@@ -165,8 +157,8 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = private, Object_ACL = private] 로그인한 사용자가 GetObject의 반환헤더값을 설정하고
 	// 개인 오브젝트를 가져올때 반환헤더값이 적용되었는지 확인
 	public void test_object_raw_response_headers() {
-		var Key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.Private, Key);
+		var key = "foo";
+		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.Private, key);
 		var client = getClient();
 
 		var Date = new Date();
@@ -174,7 +166,7 @@ public class ACL extends TestBase {
 		// rfc822format.setTimeZone(TimeZone.getTimeZone("UTC"));
 		String Str_Date = rfc822format.format(Date);
 
-		var Response = client.getObject(new GetObjectRequest(bucketName, Key).withResponseHeaders(
+		var Response = client.getObject(new GetObjectRequest(bucketName, key).withResponseHeaders(
 				new ResponseHeaderOverrides()
 						.withCacheControl("no-cache")
 						.withContentDisposition("bla")
@@ -195,22 +187,22 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = private, Object_ACL = public-read] 로그인한 사용자가 개인버킷의 공용 오브젝트에 접근
 	// 가능한지 확인
 	public void test_object_raw_authenticated_bucket_acl() {
-		var Key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, Key);
+		var key = "foo";
+		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, key);
 
 		var client = getAltClient();
-		client.getObject(bucketName, Key);
+		client.getObject(bucketName, key);
 	}
 
 	@Test
 	@Tag("Get")
 	// [Bucket_ACL = public-read, Object_ACL = private] 로그인한 사용자가 공용버킷의 개인 오브젝트에 접근 가능한지 확인
 	public void test_object_raw_authenticated_object_acl() {
-		var Key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.AuthenticatedRead, Key);
+		var key = "foo";
+		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.AuthenticatedRead, key);
 
 		var client = getAltClient();
-		client.getObject(bucketName, Key);
+		client.getObject(bucketName, key);
 	}
 
 	@Test
@@ -218,20 +210,18 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인한 사용자가 삭제된 버킷의 삭제된
 	// 오브젝트에 접근할때 에러 확인
 	public void test_object_raw_authenticated_bucket_gone() {
-		var Key = "foo";
+		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+				key);
 		var client = getClient();
 
-		client.deleteObject(bucketName, Key);
+		client.deleteObject(bucketName, key);
 		client.deleteBucket(bucketName);
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, Key));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
 
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchBucket, ErrorCode);
+		assertEquals(404, e.getStatusCode());
+		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
 		DeleteBucketList(bucketName);
 	}
 
@@ -240,19 +230,17 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인한 사용자가 삭제된 오브젝트에 접근할때
 	// 에러 확인
 	public void test_object_raw_authenticated_object_gone() {
-		var Key = "foo";
+		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+				key);
 		var client = getClient();
 
-		client.deleteObject(bucketName, Key);
+		client.deleteObject(bucketName, key);
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, Key));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
 
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchKey, ErrorCode);
+		assertEquals(404, e.getStatusCode());
+		assertEquals(MainData.NoSuchKey, e.getErrorCode());
 	}
 
 	@Test
@@ -260,13 +248,13 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인이 만료되지 않은 사용자가 공용 버킷의
 	// 공용 오브젝트에 URL 형식으로 접근 가능한지 확인
 	public void test_object_raw_get_x_amz_expires_not_expired() {
-		var Key = "foo";
+		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+				key);
 		var client = getClient();
 
-		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var Response = GetObject(Address);
+		var Address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
+		var Response = getObject(Address);
 
 		assertEquals(200, Response.getStatusLine().getStatusCode());
 	}
@@ -276,13 +264,13 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인이 만료된 사용자가 공용 버킷의 공용
 	// 오브젝트에 URL 형식으로 접근 실패 확인
 	public void test_object_raw_get_x_amz_expires_out_range_zero() {
-		var Key = "foo";
+		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+				key);
 		var client = getClient();
 
-		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(-1), HttpMethod.GET);
-		var Response = GetObject(Address);
+		var Address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.GET);
+		var Response = getObject(Address);
 		assertEquals(403, Response.getStatusLine().getStatusCode());
 	}
 
@@ -291,15 +279,14 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인 유효주기가 만료된 사용자가 공용
 	// 버킷의 공용 오브젝트에 URL 형식으로 접근 실패 확인
 	public void test_object_raw_get_x_amz_expires_out_positive_range() {
-		var Key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				Key);
+		var key = "foo";
+		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead, key);
 		var client = getClient();
 
-		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(-1), HttpMethod.GET);
+		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.GET);
 
-		var Response = GetObject(Address);
-		assertEquals(403, Response.getStatusLine().getStatusCode());
+		var response = getObject(address);
+		assertEquals(403, response.getStatusLine().getStatusCode());
 	}
 
 	@Test
@@ -309,18 +296,16 @@ public class ACL extends TestBase {
 	public void test_object_anon_put() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
+		var key = "foo";
 
-		client.putObject(bucketName, Key, "");
+		client.putObject(bucketName, key, "");
 
-		var UnauthenticatedClient = getPublicClient();
+		var unauthenticatedClient = getPublicClient();
 
 		var e = assertThrows(AmazonServiceException.class,
-				() -> UnauthenticatedClient.putObject(bucketName, Key, "bar"));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.AccessDenied, ErrorCode);
+				() -> unauthenticatedClient.putObject(bucketName, key, "bar"));
+		assertEquals(403, e.getStatusCode());
+		assertEquals(MainData.AccessDenied, e.getErrorCode());
 	}
 
 	@Test
@@ -330,18 +315,16 @@ public class ACL extends TestBase {
 	public void test_object_anon_put_write_access() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
+		var key = "foo";
 
-		client.putObject(bucketName, Key, "");
+		client.putObject(bucketName, key, "");
 
-		var UnauthenticatedClient = getPublicClient();
+		var unauthenticatedClient = getPublicClient();
 
 		var e = assertThrows(AmazonServiceException.class,
-				() -> UnauthenticatedClient.putObject(bucketName, Key, "bar"));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.AccessDenied, ErrorCode);
+				() -> unauthenticatedClient.putObject(bucketName, key, "bar"));
+		assertEquals(403, e.getStatusCode());
+		assertEquals(MainData.AccessDenied, e.getErrorCode());
 	}
 
 	@Test
@@ -361,12 +344,12 @@ public class ACL extends TestBase {
 	public void test_object_raw_put_authenticated_expired() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "foo";
-		client.putObject(bucketName, Key, "");
+		var key = "foo";
+		client.putObject(bucketName, key, "");
 
-		var Address = client.generatePresignedUrl(bucketName, Key, getTimeToAddSeconds(-1), HttpMethod.PUT);
+		var Address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.PUT);
 
-		var Response = PutObject(Address, null);
+		var Response = putObject(Address, null);
 		assertEquals(403, Response.getStatusLine().getStatusCode());
 	}
 
@@ -375,16 +358,16 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = private, Object_ACL = public-read] 모든 사용자가 개인버킷의 공용 오브젝트에 접근
 	// 가능한지 확인
 	public void test_acl_private_bucket_public_read_object() {
-		var Key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, Key);
+		var key = "foo";
+		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, key);
 
 		var client = getClient();
-		ACLTest(bucketName, Key, client, true);
+		ACLTest(bucketName, key, client, true);
 
 		var AltClient = getAltClient();
-		ACLTest(bucketName, Key, AltClient, true);
+		ACLTest(bucketName, key, AltClient, true);
 
-		var UnauthenticatedClient = getPublicClient();
-		ACLTest(bucketName, Key, UnauthenticatedClient, true);
+		var unauthenticatedClient = getPublicClient();
+		ACLTest(bucketName, key, unauthenticatedClient, true);
 	}
 }

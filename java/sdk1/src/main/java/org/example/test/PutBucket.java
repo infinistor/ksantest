@@ -25,13 +25,13 @@ import com.amazonaws.AmazonServiceException;
 public class PutBucket extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("PutBucket Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("PutBucket End");
 	}
@@ -53,7 +53,7 @@ public class PutBucket extends TestBase
 	//생성할 버킷이름의 맨앞에 [_]가 있을 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_bad_starts_nonalpha() {
 		var bucketName = getNewBucketName();
-		CheckBadBucketName("_" + bucketName);
+		checkBadBucketName("_" + bucketName);
 		DeleteBucketList(bucketName);
 	}
 
@@ -61,49 +61,49 @@ public class PutBucket extends TestBase
 	@Tag("CreationRules")
 	//생성할 버킷이름이 한글자인 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_bad_short_one() {
-		CheckBadBucketName("a");
+		checkBadBucketName("a");
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름이 두글자인 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_bad_short_two() {
-		CheckBadBucketName("aa");
+		checkBadBucketName("aa");
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름이 60자인 경우 버킷 생성 확인
 	public void test_bucket_create_naming_good_long_60() {
-		TestBucketCreateNamingGoodLong(60);
+		testBucketCreateNamingGoodLong(60);
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름이 61자인 경우 버킷 생성 확인
 	public void test_bucket_create_naming_good_long_61() {
-		TestBucketCreateNamingGoodLong(61);
+		testBucketCreateNamingGoodLong(61);
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름이 62자인 경우 버킷 생성 확인
 	public void test_bucket_create_naming_good_long_62() {
-		TestBucketCreateNamingGoodLong(62);
+		testBucketCreateNamingGoodLong(62);
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름이 63자인 경우 버킷 생성 확인
 	public void test_bucket_create_naming_good_long_63() {
-		TestBucketCreateNamingGoodLong(63);
+		testBucketCreateNamingGoodLong(63);
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름이 64자인 경우 버킷 생성 실패
 	public void test_bucket_create_naming_good_long_64() {
-		TestBucketCreateNamingGoodLong(64);
+		testBucketCreateNamingBadLong(64);
 	}
 
 	@Test
@@ -122,14 +122,14 @@ public class PutBucket extends TestBase
 	@Tag("CreationRules")
 	//생성할 버킷이름이 IP 주소로 되어 있을 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_bad_ip() {
-		CheckBadBucketName("192.168.11.123");
+		checkBadBucketName("192.168.11.123");
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름에 문자와 [_]가 포함되어 있을 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_dns_underscore() {
-		CheckBadBucketName("foo_bar");
+		checkBadBucketName("foo_bar");
 	}
 
 	@Test
@@ -139,35 +139,35 @@ public class PutBucket extends TestBase
 		var Prefix = getPrefix();
 		var AddLength = 63 - Prefix.length();
 		Prefix = Utils.randomText(AddLength);
-		CheckGoodBucketName(Prefix, null);
+		checkGoodBucketName(Prefix, null);
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름의 끝이 [-]로 끝날 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_dns_dash_at_end() {
-		CheckBadBucketName("foo-");
+		checkBadBucketName("foo-");
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름에 문자와 [..]가 포함되어 있을 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_dns_dot_dot() {
-		CheckBadBucketName("foo..bar");
+		checkBadBucketName("foo..bar");
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름의 사이에 [.-]가 포함되어 있을 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_dns_dot_dash() {
-		CheckBadBucketName("foo.-bar");
+		checkBadBucketName("foo.-bar");
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름의 사이에 [-.]가 포함되어 있을 경우 버킷 생성 실패 확인
 	public void test_bucket_create_naming_dns_dash_dot() {
-		CheckBadBucketName("foo-.bar");
+		checkBadBucketName("foo-.bar");
 	}
 
 	@Test
@@ -209,28 +209,28 @@ public class PutBucket extends TestBase
 	@Tag("CreationRules")
 	//생성할 버킷의 이름이 알파벳으로 시작할 경우 생성되는지 확인
 	public void test_bucket_create_naming_good_starts_alpha() {
-		CheckGoodBucketName("foo", "a" + getPrefix());
+		checkGoodBucketName("foo", "a" + getPrefix());
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷의 이름이 숫자로 시작할 경우 생성되는지 확인
 	public void test_bucket_create_naming_good_starts_digit() {
-		CheckGoodBucketName("foo", "0" + getPrefix());
+		checkGoodBucketName("foo", "0" + getPrefix());
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷의 이름 중간에 [.]이 포함된 이름일 경우 생성되는지 확인
 	public void test_bucket_create_naming_good_contains_period() {
-		CheckGoodBucketName("aaa.111", null);
+		checkGoodBucketName("aaa.111", null);
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷의 이름 중간에 [-]이 포함된 이름일 경우 생성되는지 확인
 	public void test_bucket_create_naming_good_contains_hyphen() {
-		CheckGoodBucketName("aaa-111", null);
+		checkGoodBucketName("aaa-111", null);
 	}
 
 	@Test
@@ -243,13 +243,13 @@ public class PutBucket extends TestBase
 
 		var bucketName = createObjects(KeyNames);
 
-		var ObjectList = GetObjectList(bucketName, null);
+		var ObjectList = getObjectList(bucketName, null);
 		assertEquals(KeyNames, ObjectList);
 
 		var client = getClient();
 		assertThrows(AmazonServiceException.class, () -> client.createBucket(bucketName));
 
-		ObjectList = GetObjectList(bucketName, null);
+		ObjectList = getObjectList(bucketName, null);
 		assertEquals(KeyNames, ObjectList);
 	}
 

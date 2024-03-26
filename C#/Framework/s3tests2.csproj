@@ -119,6 +119,7 @@
     <Compile Include="Test\DeleteObjects.cs" />
     <Compile Include="Test\GetObject.cs" />
     <Compile Include="Test\Grants.cs" />
+    <Compile Include="Test\Inventory.cs" />
     <Compile Include="Test\Lifecycle.cs" />
     <Compile Include="Test\ListBuckets.cs" />
     <Compile Include="Test\ListObjects.cs" />

@@ -8,15 +8,19 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using System.Collections.Generic;
+using Amazon.S3.Model;
+
 namespace ReplicationTest
 {
 	class BucketData
 	{
 		public string BucketName;
-		public string Prefix;
+		public bool Prefix;
 		public bool DeleteMarker;
 		public bool Encryption;
 		public bool Create;
+		public bool Tag;
 
 		public BucketData()
 		{
@@ -26,12 +30,13 @@ namespace ReplicationTest
 		public void Init()
 		{
 			BucketName = "";
-			Prefix = "";
+			Prefix = false;
 			DeleteMarker = false;
 			Encryption = false;
 			Create = false;
+			Tag = false;
 		}
 
-		public bool Filtering { get { return !string.IsNullOrWhiteSpace(Prefix); } }
+		public bool Filtering { get { return Prefix || Tag; } }
 	}
 }

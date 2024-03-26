@@ -40,12 +40,12 @@ import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
 
 public class Versioning extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("Versioning Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("Versioning End");
 	}
 
@@ -550,7 +550,7 @@ public class Versioning extends TestBase {
 		var user = new CanonicalGrantee(config.mainUser.userId);
 		user.setDisplayName(config.mainUser.displayName);
 
-		if (!StringUtils.isBlank(config.URL))
+		if (!StringUtils.isBlank(config.url))
 			assertEquals(user.getDisplayName(), response.getOwner().getDisplayName());
 		assertEquals(user.getIdentifier(), response.getOwner().getId());
 
@@ -584,7 +584,7 @@ public class Versioning extends TestBase {
 		var user = new CanonicalGrantee(config.mainUser.userId);
 		user.setDisplayName(config.mainUser.displayName);
 
-		if (!StringUtils.isBlank(config.URL))
+		if (!StringUtils.isBlank(config.url))
 			assertEquals(user.getDisplayName(), response.getOwner().getDisplayName());
 		assertEquals(user.getIdentifier(), response.getOwner().getId());
 

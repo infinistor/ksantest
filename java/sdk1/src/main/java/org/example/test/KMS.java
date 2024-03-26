@@ -16,13 +16,13 @@ import org.junit.jupiter.api.Tag;
 public class KMS {
 	
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("KMS Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("KMS End");
 	}

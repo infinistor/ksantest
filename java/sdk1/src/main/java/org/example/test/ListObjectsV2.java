@@ -32,13 +32,13 @@ import com.amazonaws.services.s3.model.ListObjectsV2Request;
 public class ListObjectsV2 extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("ListObjectsV2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("ListObjectsV2 End");
 	}
@@ -52,13 +52,13 @@ public class ListObjectsV2 extends TestBase
 
 		var Response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(2));
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "bar", "baz" })),
-				GetKeys(Response.getObjectSummaries()));
+				getKeys(Response.getObjectSummaries()));
 		assertEquals(2, Response.getObjectSummaries().size());
 		assertTrue(Response.isTruncated());
 
 		Response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withStartAfter("baz").withMaxKeys(2));
-		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo" })), GetKeys(Response.getObjectSummaries()));
+		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo" })), getKeys(Response.getObjectSummaries()));
 		assertEquals(1, Response.getObjectSummaries().size());
 		assertFalse(Response.isTruncated());
 	}
@@ -91,7 +91,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(MyDelimiter));
 		assertEquals(MyDelimiter, Response.getDelimiter());
-		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "asdf" })), GetKeys(Response.getObjectSummaries()));
+		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "asdf" })), getKeys(Response.getObjectSummaries()));
 
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(2, Prefixes.size());
@@ -112,7 +112,7 @@ public class ListObjectsV2 extends TestBase
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter).withEncodingType("URL"));
 		assertEquals(Delimiter, Response.getDelimiter());
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "asdf%2Bb" })),
-				GetKeys(Response.getObjectSummaries()));
+				getKeys(Response.getObjectSummaries()));
 
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(3, Prefixes.size());
@@ -130,27 +130,27 @@ public class ListObjectsV2 extends TestBase
 		String ContinuationToken = "";
 		String prefix = "";
 
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, Delimiter, null, 1, true,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, Delimiter, null, 1, true,
 				new ArrayList<>(Arrays.asList(new String[] { "asdf" })), new ArrayList<String>(), false);
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, Delimiter, ContinuationToken, 1, true,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, Delimiter, ContinuationToken, 1, true,
 				new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "boo/" })), false);
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, Delimiter, ContinuationToken, 1, false,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, Delimiter, ContinuationToken, 1, false,
 				new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "cquux/" })), true);
 
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, Delimiter, null, 2, true,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, Delimiter, null, 2, true,
 				new ArrayList<>(Arrays.asList(new String[] { "asdf" })),
 				new ArrayList<>(Arrays.asList(new String[] { "boo/" })), false);
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, Delimiter, ContinuationToken, 2, false,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, Delimiter, ContinuationToken, 2, false,
 				new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "cquux/" })), true);
 
 		prefix = "boo/";
 
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, Delimiter, null, 1, true,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, Delimiter, null, 1, true,
 				new ArrayList<>(Arrays.asList(new String[] { "boo/bar" })), new ArrayList<String>(), false);
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, Delimiter, ContinuationToken, 1, false,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, Delimiter, ContinuationToken, 1, false,
 				new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "boo/baz/" })), true);
 
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, Delimiter, null, 2, false,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, Delimiter, null, 2, false,
 				new ArrayList<>(Arrays.asList(new String[] { "boo/bar" })),
 				new ArrayList<>(Arrays.asList(new String[] { "boo/baz/" })), true);
 	}
@@ -160,7 +160,7 @@ public class ListObjectsV2 extends TestBase
 	//비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)
 	public void test_bucket_listv2_delimiter_prefix_ends_with_delimiter() {
 		var bucketName = createObjectsToBody(new ArrayList<>(Arrays.asList(new String[] { "asdf/" })), "");
-		ValidateListObjectV2(bucketName, "asdf/", "/", null, 1000, false,
+		validateListObjectV2(bucketName, "asdf/", "/", null, 1000, false,
 				new ArrayList<>(Arrays.asList(new String[] { "asdf/" })), new ArrayList<String>(), true);
 	}
 
@@ -177,7 +177,7 @@ public class ListObjectsV2 extends TestBase
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo" })), Keys);
 
 		var Profixes = Response.getCommonPrefixes();
@@ -196,27 +196,27 @@ public class ListObjectsV2 extends TestBase
 		String ContinuationToken = "";
 		String prefix = "";
 
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, delim, null, 1, true,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, delim, null, 1, true,
 				new ArrayList<>(Arrays.asList(new String[] { "_obj1_" })), new ArrayList<String>(), false);
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, delim, ContinuationToken, 1, true,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, delim, ContinuationToken, 1, true,
 				new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under1/" })), false);
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, delim, ContinuationToken, 1, false,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, delim, ContinuationToken, 1, false,
 				new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under2/" })), true);
 
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, delim, null, 2, true,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, delim, null, 2, true,
 				new ArrayList<>(Arrays.asList(new String[] { "_obj1_" })),
 				new ArrayList<>(Arrays.asList(new String[] { "_under1/" })), false);
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, delim, ContinuationToken, 2, false,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, delim, ContinuationToken, 2, false,
 				new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under2/" })), true);
 
 		prefix = "_under1/";
 
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, delim, null, 1, true,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, delim, null, 1, true,
 				new ArrayList<>(Arrays.asList(new String[] { "_under1/bar" })), new ArrayList<String>(), false);
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, delim, ContinuationToken, 1, false,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, delim, ContinuationToken, 1, false,
 				new ArrayList<String>(), new ArrayList<>(Arrays.asList(new String[] { "_under1/baz/" })), true);
 
-		ContinuationToken = ValidateListObjectV2(bucketName, prefix, delim, null, 2, false,
+		ContinuationToken = validateListObjectV2(bucketName, prefix, delim, null, 2, false,
 				new ArrayList<>(Arrays.asList(new String[] { "_under1/bar" })),
 				new ArrayList<>(Arrays.asList(new String[] { "_under1/baz/" })), true);
 	}
@@ -234,7 +234,7 @@ public class ListObjectsV2 extends TestBase
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo" })), Keys);
 
 		var Prefixes = Response.getCommonPrefixes();
@@ -255,7 +255,7 @@ public class ListObjectsV2 extends TestBase
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo" })), Keys);
 
 		var Prefixes = Response.getCommonPrefixes();
@@ -276,7 +276,7 @@ public class ListObjectsV2 extends TestBase
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo" })), Keys);
 
 		var Prefixes = Response.getCommonPrefixes();
@@ -298,7 +298,7 @@ public class ListObjectsV2 extends TestBase
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 
 		assertEquals(KeyNames, Keys);
@@ -319,7 +319,7 @@ public class ListObjectsV2 extends TestBase
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertNull(Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 
 		assertEquals(KeyNames, Keys);
@@ -337,7 +337,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(bucketName);
 		assertNull(Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 
 		assertEquals(KeyNames, Keys);
@@ -401,7 +401,7 @@ public class ListObjectsV2 extends TestBase
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter));
 		assertEquals(Delimiter, Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 
 		assertEquals(KeyNames, Keys);
@@ -419,7 +419,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo/bar", "foo/baz" })), Keys);
 		assertEquals(0, Prefixes.size());
@@ -436,7 +436,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "bar", "baz" })), Keys);
 		assertEquals(0, Prefixes.size());
@@ -454,7 +454,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
 		assertNull(Response.getPrefix());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(KeyNames, Keys);
 		assertEquals(0, Prefixes.size());
@@ -471,7 +471,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(bucketName);
 		assertNull(Response.getPrefix());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(KeyNames, Keys);
 		assertEquals(0, Prefixes.size());
@@ -489,7 +489,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(0, Keys.size());
 		assertEquals(0, Prefixes.size());
@@ -507,7 +507,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
 		assertEquals(Prefix, Response.getPrefix());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(0, Keys.size());
 		assertEquals(0, Prefixes.size());
@@ -528,7 +528,7 @@ public class ListObjectsV2 extends TestBase
 		assertEquals(Prefix, Response.getPrefix());
 		assertEquals(Delimiter, Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo/bar" })), Keys);
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo/baz/" })), Prefixes);
@@ -550,7 +550,7 @@ public class ListObjectsV2 extends TestBase
 		assertEquals(Prefix, Response.getPrefix());
 		assertEquals(Delimiter, Response.getDelimiter());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "bar" })), Keys);
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "baza" })), Prefixes);
@@ -566,7 +566,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("d").withPrefix("/"));
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(0, Keys.size());
 		assertEquals(0, Prefixes.size());
@@ -582,7 +582,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("z").withPrefix("b"));
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "b/a/c", "b/a/g", "b/a/r" })), Keys);
 		assertEquals(0, Prefixes.size());
@@ -598,7 +598,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("z").withPrefix("y"));
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		var Prefixes = Response.getCommonPrefixes();
 		assertEquals(0, Keys.size());
 		assertEquals(0, Prefixes.size());
@@ -615,14 +615,14 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(1));
 		assertTrue(Response.isTruncated());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(KeyNames.subList(0, 1), Keys);
 
 		Response = client
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(KeyNames.get(0)));
 		assertFalse(Response.isTruncated());
 
-		Keys = GetKeys(Response.getObjectSummaries());
+		Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(KeyNames.subList(1, KeyNames.size()), Keys);
 	}
 
@@ -637,7 +637,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(0));
 
 		assertFalse(Response.isTruncated());
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(0, Keys.size());
 	}
 
@@ -651,7 +651,7 @@ public class ListObjectsV2 extends TestBase
 
 		var Response = client.listObjectsV2(bucketName);
 		assertFalse(Response.isTruncated());
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(KeyNames, Keys);
 		assertEquals(1000, Response.getMaxKeys());
 	}
@@ -672,7 +672,7 @@ public class ListObjectsV2 extends TestBase
 		assertEquals(NextContinuationToken, Response2.getContinuationToken());
 		assertFalse(Response2.isTruncated());
 		var KeyNames2 = new ArrayList<>(Arrays.asList(new String[] { "baz", "foo", "quxx" }));
-		var Keys = GetKeys(Response2.getObjectSummaries());
+		var Keys = getKeys(Response2.getObjectSummaries());
 		assertEquals(KeyNames2, Keys);
 	}
 
@@ -696,7 +696,7 @@ public class ListObjectsV2 extends TestBase
 		//assertEquals(StartAfter, Response2.getStartAfter());
 		assertFalse(Response2.isTruncated());
 		var KeyNames2 = new ArrayList<>(Arrays.asList(new String[] { "foo", "quxx" }));
-		var Keys = GetKeys(Response2.getObjectSummaries());
+		var Keys = getKeys(Response2.getObjectSummaries());
 		assertEquals(KeyNames2, Keys);
 	}
 
@@ -714,7 +714,7 @@ public class ListObjectsV2 extends TestBase
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(StartAfter));
 		assertTrue(Response.getStartAfter().isBlank());
 		assertFalse(Response.isTruncated());
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(KeyNames, Keys);
 	}
 
@@ -731,7 +731,7 @@ public class ListObjectsV2 extends TestBase
 		var Response = client
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(StartAfter));
 		assertEquals(StartAfter, Response.getStartAfter());
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(new ArrayList<>(Arrays.asList(new String[] { "foo", "quxx" })), Keys);
 	}
 
@@ -749,7 +749,7 @@ public class ListObjectsV2 extends TestBase
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(StartAfter));
 		assertEquals(StartAfter, Response.getStartAfter());
 		assertFalse(Response.isTruncated());
-		var Keys = GetKeys(Response.getObjectSummaries());
+		var Keys = getKeys(Response.getObjectSummaries());
 		assertEquals(0, Keys.size());
 	}
 
@@ -819,7 +819,7 @@ public class ListObjectsV2 extends TestBase
 		assertEquals(true, response.isTruncated());
 		assertEquals(MaxKeys, response.getKeyCount());
 
-		var keys = GetKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
 		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "test3" })), keys);
 		assertLinesMatch(new ArrayList<>(Arrays.asList(new String[] { "test1/", "test2/" })), prefixes);

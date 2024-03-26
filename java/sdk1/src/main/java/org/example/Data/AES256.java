@@ -23,12 +23,14 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class AES256 {
+	static final String CBC_MODE = "AES/CBC/PKCS5Padding";
+
 	public static String encrypt(String msg, String key) throws Exception {
 
-		SecureRandom random = new SecureRandom();
-		byte bytes[] = new byte[20];
+		var random = new SecureRandom();
+		var bytes = new byte[20];
 		random.nextBytes(bytes);
-		byte[] saltBytes = bytes;
+		var saltBytes = bytes;
 
 		// Password-Based Key Derivation function 2
 		SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
@@ -39,7 +41,7 @@ public class AES256 {
 		SecretKeySpec secret = new SecretKeySpec(secretKey.getEncoded(), "AES");
 
 		// CBC : Cipher Block Chaining Mode
-		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+		Cipher cipher = Cipher.getInstance(CBC_MODE);
 		cipher.init(Cipher.ENCRYPT_MODE, secret);
 
 		AlgorithmParameters params = cipher.getParameters();
@@ -56,15 +58,15 @@ public class AES256 {
 
 	public static String decrypt(String msg, String key) throws Exception {
 
-		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+		Cipher cipher = Cipher.getInstance(CBC_MODE);
 		ByteBuffer buffer = ByteBuffer.wrap(Base64.getDecoder().decode(msg));
 
 		byte[] saltBytes = new byte[20];
 		buffer.get(saltBytes, 0, saltBytes.length);
 		byte[] ivBytes = new byte[cipher.getBlockSize()];
 		buffer.get(ivBytes, 0, ivBytes.length);
-		byte[] encryoptedTextBytes = new byte[buffer.capacity() - saltBytes.length - ivBytes.length];
-		buffer.get(encryoptedTextBytes);
+		byte[] encryptedTextBytes = new byte[buffer.capacity() - saltBytes.length - ivBytes.length];
+		buffer.get(encryptedTextBytes);
 
 		SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
 		PBEKeySpec spec = new PBEKeySpec(key.toCharArray(), saltBytes, 70000, 256);
@@ -74,7 +76,7 @@ public class AES256 {
 
 		cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(ivBytes));
 
-		byte[] decryptedTextBytes = cipher.doFinal(encryoptedTextBytes);
+		byte[] decryptedTextBytes = cipher.doFinal(encryptedTextBytes);
 		return new String(decryptedTextBytes);
 	}
 }

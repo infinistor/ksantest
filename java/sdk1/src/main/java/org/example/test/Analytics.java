@@ -16,12 +16,12 @@ import com.amazonaws.services.s3.model.analytics.StorageClassAnalysisDataExport;
 
 public class Analytics extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("Analytics Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("Analytics End");
 	}
 

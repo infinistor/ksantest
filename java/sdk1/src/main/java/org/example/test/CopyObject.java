@@ -37,13 +37,13 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 public class CopyObject extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("CopyObject Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("CopyObject End");
 	}
@@ -54,15 +54,15 @@ public class CopyObject extends TestBase
 	public void test_object_copy_zero_size()
 	{
 		var key = "foo123bar";
-		var NewKey = "bar321foo";
+		var newKey = "bar321foo";
 		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { key })));
 		var client = getClient();
 
 		client.putObject(bucketName, key, "");
 
-		client.copyObject(bucketName, key, bucketName, NewKey);
+		client.copyObject(bucketName, key, bucketName, newKey);
 
-		var response = client.getObject(bucketName, NewKey);
+		var response = client.getObject(bucketName, newKey);
 		assertEquals(0, response.getObjectMetadata().getContentLength());
 	}
 
@@ -74,13 +74,13 @@ public class CopyObject extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo123bar";
-		var NewKey = "bar321foo";
+		var newKey = "bar321foo";
 
 		client.putObject(bucketName, key, "foo");
 
-		client.copyObject(bucketName, key, bucketName, NewKey);
+		client.copyObject(bucketName, key, bucketName, newKey);
 
-		var response = client.getObject(bucketName, NewKey);
+		var response = client.getObject(bucketName, newKey);
 		var body = getBody(response.getObjectContent());
 		assertEquals("foo", body);
 	}

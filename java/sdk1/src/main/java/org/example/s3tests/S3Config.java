@@ -10,55 +10,52 @@
 */
 package org.example.s3tests;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 
 import org.example.Data.UserData;
 import org.ini4j.Ini;
-import org.ini4j.InvalidFileFormatException;
 
 public class S3Config
 {
-	private final String STR_FILENAME = "config.ini";
-	// private final String STR_FILENAME = "s3tests-229.ini";
+	// private final String STR_FILENAME = "config.ini";
+	private final String STR_FILENAME = "s3tests-229.ini";
 	// private final String STR_FILENAME = "s3tests-227.ini";
 	// private final String STR_FILENAME = "s3tests_gw.ini";
-	// private final String STR_FILENAME = "s3tests_ksan.ini";
+	// private final String STR_FILENAME = "s3tests_ksan2.ini";
 	// private final String STR_FILENAME = "awstests.ini";
-	//////////////////////////////SIGNATUREVERSION////////////////////////////////////
-	public final static String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
-	public final static String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";
+	//////////////////////////////SIGNATURE VERSION////////////////////////////////////
+	public static final String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
+	public static final String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";
 
 	/////////////////////////////////////S3///////////////////////////////////////////
-	private final String STR_S3 = "S3";
-	private final String STR_URL = "URL";
-	private final String STR_PORT = "Port";
-	private final String STR_SSL_PORT = "SSLPort";
-	private final String STR_SIGNATURE_VERSION = "SignatureVersion";
-	private final String STR_IS_SECURE = "IsSecure";
-	private final String STR_REGION = "RegionName";
+	private static final String STR_S3 = "S3";
+	private static final String STR_URL = "URL";
+	private static final String STR_PORT = "Port";
+	private static final String STR_SSL_PORT = "SSLPort";
+	private static final String STR_SIGNATURE_VERSION = "SignatureVersion";
+	private static final String STR_IS_SECURE = "IsSecure";
+	private static final String STR_REGION = "RegionName";
 
 	/////////////////////////////////////Fixtures///////////////////////////////////////////
-	private final String STR_FIXTURES = "Fixtures";
-	private final String STR_BUCKET_PREFIX = "BucketPrefix";
-	private final String STR_BUCKET_DELETE = "NotDelete";
+	private static final String STR_FIXTURES = "Fixtures";
+	private static final String STR_BUCKET_PREFIX = "BucketPrefix";
+	private static final String STR_BUCKET_DELETE = "NotDelete";
 	/////////////////////////////////////User Data///////////////////////////////////////////
-	private final String STR_MAIN_USER = "Main User";
-	private final String STR_ALT_USER = "Alt User";
+	private static final String STR_MAIN_USER = "Main User";
+	private static final String STR_ALT_USER = "Alt User";
 
-	private final String STR_DISPLAY_NAME = "DisplayName";
-	private final String STR_USER_ID = "UserID";
-	private final String STR_EMAIL = "Email";
-	private final String STR_ACCESS_KEY = "AccessKey";
-	private final String STR_SECRET_KEY = "SecretKey";
-	private final String STR_KMS = "KMS";
+	private static final String STR_DISPLAY_NAME = "DisplayName";
+	private static final String STR_USER_ID = "UserID";
+	private static final String STR_EMAIL = "Email";
+	private static final String STR_ACCESS_KEY = "AccessKey";
+	private static final String STR_SECRET_KEY = "SecretKey";
+	private static final String STR_KMS = "KMS";
 
 	/*********************************************************************************************************/
 	public final String fileName;
 	private final Ini ini = new Ini();
 	/*********************************************************************************************************/
-	public String URL;
+	public String url;
 	public int port;
 	public int sslPort;
 	public String regionName;
@@ -76,13 +73,13 @@ public class S3Config
 		else this.fileName = fileName;
 	}
 
-	public boolean GetConfig()
+	public boolean getConfig()
 	{
 		File file = new File(fileName);
 		try {
 			ini.load(new FileReader(file));
 
-			URL = readKeyToString(STR_S3, STR_URL);
+			url = readKeyToString(STR_S3, STR_URL);
 			port = readKeyToInt(STR_S3, STR_PORT);
 			sslPort = readKeyToInt(STR_S3, STR_SSL_PORT);
 			regionName = readKeyToString(STR_S3, STR_REGION);
@@ -95,11 +92,7 @@ public class S3Config
 			mainUser = readUser(STR_MAIN_USER);
 			altUser = readUser(STR_ALT_USER);
 
-		} catch (InvalidFileFormatException e) {
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return true;
@@ -112,22 +105,21 @@ public class S3Config
 	}
 	public boolean isAWS()
 	{
-		if (URL == null || URL.length() == 0) return true;
-		return false;
+		return url == null || url.length() == 0;
 	}
 
-	private UserData readUser(String Section)
+	private UserData readUser(String section)
 	{
-		UserData Item = new UserData();
+		UserData user = new UserData();
 
-		Item.displayName = readKeyToString(Section, STR_DISPLAY_NAME);
-		Item.userId 	 = readKeyToString(Section, STR_USER_ID);
-		Item.email 		 = readKeyToString(Section, STR_EMAIL);
-		Item.accessKey 	 = readKeyToString(Section, STR_ACCESS_KEY);
-		Item.secretKey 	 = readKeyToString(Section, STR_SECRET_KEY);
-		Item.KMS 		 = readKeyToString(Section, STR_KMS);
+		user.displayName = readKeyToString(section, STR_DISPLAY_NAME);
+		user.userId 	 = readKeyToString(section, STR_USER_ID);
+		user.email 		 = readKeyToString(section, STR_EMAIL);
+		user.accessKey 	 = readKeyToString(section, STR_ACCESS_KEY);
+		user.secretKey 	 = readKeyToString(section, STR_SECRET_KEY);
+		user.kms 		 = readKeyToString(section, STR_KMS);
 
-		return Item;
+		return user;
 	}
 
 	private String readKeyToString(String section, String key) { return ini.get(section, key); }

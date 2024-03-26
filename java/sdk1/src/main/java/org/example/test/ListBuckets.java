@@ -27,13 +27,13 @@ import com.amazonaws.services.s3.model.HeadBucketRequest;
 public class ListBuckets extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("ListBuckets Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("ListBuckets End");
 	}
@@ -44,20 +44,20 @@ public class ListBuckets extends TestBase
 	public void test_buckets_create_then_list()
 	{
 		var client = getClient();
-		var BucketNames = new ArrayList<String>();
+		var bucketNames = new ArrayList<String>();
 		for (int i = 0; i < 5; i++)
 		{
 			var bucketName = getNewBucketName();
 			client.createBucket(bucketName);
-			BucketNames.add(bucketName);
+			bucketNames.add(bucketName);
 		}
 
-		var Response = client.listBuckets();
-		var BucketList = GetBucketList(Response);
+		var response = client.listBuckets();
+		var bucketList = getBucketList(response);
 
-		for (var bucketName : BucketNames)
+		for (var bucketName : bucketNames)
 		{
-			if(!BucketList.contains(bucketName))
+			if(!bucketList.contains(bucketName))
 				fail(String.format("S3 implementation's GET on Service did not return bucket we created: %s", bucketName));
 		}
 	}
@@ -100,7 +100,7 @@ public class ListBuckets extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClient();
 		
-		var Response = client.headBucket(new HeadBucketRequest(bucketName));
-		assertNotNull(Response);
+		var response = client.headBucket(new HeadBucketRequest(bucketName));
+		assertNotNull(response);
 	}
 }

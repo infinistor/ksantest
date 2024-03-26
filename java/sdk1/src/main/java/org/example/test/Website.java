@@ -21,13 +21,13 @@ import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
 public class Website extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("Website Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("Website End");
 	}

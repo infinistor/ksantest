@@ -37,12 +37,12 @@ import com.amazonaws.services.s3.model.lifecycle.LifecyclePrefixPredicate;
 
 public class LifeCycle extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("LifeCycle Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("LifeCycle End");
 	}
 
@@ -125,7 +125,7 @@ public class LifeCycle extends TestBase {
 		var client = getClient();
 		var Key = "test1/a";
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
-		CreateMultipleVersions(client, bucketName, Key, 1, true);
+		createMultipleVersions(client, bucketName, Key, 1, true);
 		client.deleteObject(bucketName, Key);
 
 		var rules = new ArrayList<Rule>();
@@ -271,8 +271,8 @@ public class LifeCycle extends TestBase {
 		var client = getClient();
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
-		CreateMultipleVersions(client, bucketName, "test1/a", 3, true);
-		CreateMultipleVersions(client, bucketName, "test2/abc", 3, false);
+		createMultipleVersions(client, bucketName, "test1/a", 3, true);
+		createMultipleVersions(client, bucketName, "test2/abc", 3, false);
 
 		var Response = client.listVersions(bucketName, null);
 		var InitVersions = Response.getVersionSummaries();
@@ -348,8 +348,8 @@ public class LifeCycle extends TestBase {
 		var client = getClient();
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
-		CreateMultipleVersions(client, bucketName, "test1/a", 1, true);
-		CreateMultipleVersions(client, bucketName, "test2/abc", 1, false);
+		createMultipleVersions(client, bucketName, "test1/a", 1, true);
+		createMultipleVersions(client, bucketName, "test2/abc", 1, false);
 		client.deleteObject(bucketName, "test1/a");
 		client.deleteObject(bucketName, "test2/abc");
 

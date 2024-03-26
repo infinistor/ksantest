@@ -99,12 +99,7 @@ public abstract class AWS4SignerBase {
 	 * 
 	 * @return
 	 */
-	protected static String getCanonicalRequest(URL endpoint,
-			String httpMethod,
-			String queryParameters,
-			String canonicalizedHeaderNames,
-			String canonicalizedHeaders,
-			String bodyHash) {
+	protected static String getCanonicalRequest(URL endpoint, String httpMethod, String queryParameters, String canonicalizedHeaderNames, String canonicalizedHeaders, String bodyHash) {
 		String canonicalRequest = httpMethod + "\n" +
 				getCanonicalizedResourcePath(endpoint) + "\n" +
 				queryParameters + "\n" +

@@ -38,12 +38,12 @@ import com.amazonaws.services.s3.model.SetObjectLegalHoldRequest;
 
 public class PutObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("PutObject Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("PutObject End");
 	}
 
@@ -285,11 +285,11 @@ public class PutObject extends TestBase {
 	// 오브젝트 이름과 내용이 모두 특수문자인 오브젝트 여러개를 업로드 할 경우 모두 재대로 업로드 되는지 확인
 	public void test_bucket_create_special_key_names() {
 		var keys = new ArrayList<>(
-				Arrays.asList(new String[] { " ", "\"", "$", "%", "&", "'", "<", ">", "_", "_ ", "_ _", "__", }));
-
+				Arrays.asList(new String[] { "!", "-", "_", ".", "'", "("+")", "&", "$", "@", "=", ";", "/", ":", "+", "  ", ",", "?", "\\", "{"+"}", "^", "%", "`", "["+"]", "<" + ">", "~", "#", "|"}));
+				
 		var bucketName = createObjects(keys);
 
-		var objects = GetObjectList(bucketName, null);
+		var objects = getObjectList(bucketName, null);
 
 		var client = getClient();
 
@@ -310,10 +310,10 @@ public class PutObject extends TestBase {
 
 		var bucketName = createObjects(keys);
 
-		var objects = GetObjectList(bucketName, null);
+		var objects = getObjectList(bucketName, null);
 		assertEquals(5, objects.size());
 
-		objects = GetObjectList(bucketName, "_bla/");
+		objects = getObjectList(bucketName, "_bla/");
 		assertEquals(4, objects.size());
 	}
 
@@ -362,7 +362,7 @@ public class PutObject extends TestBase {
 		var client = getClient();
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -376,7 +376,7 @@ public class PutObject extends TestBase {
 		var client = getClient();
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -391,7 +391,7 @@ public class PutObject extends TestBase {
 		var client = getClientV2();
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -406,7 +406,7 @@ public class PutObject extends TestBase {
 		var client = getClientV4(true);
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -421,7 +421,7 @@ public class PutObject extends TestBase {
 		var client = getClientV2();
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -436,7 +436,7 @@ public class PutObject extends TestBase {
 		var client = getClientV4(true);
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -451,7 +451,7 @@ public class PutObject extends TestBase {
 		var client = getClientV4(true);
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -467,7 +467,7 @@ public class PutObject extends TestBase {
 		var client = getClientV4(true);
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -482,7 +482,7 @@ public class PutObject extends TestBase {
 		var client = getClientV4(false);
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -498,7 +498,7 @@ public class PutObject extends TestBase {
 		var client = getClientV4(false);
 
 		var response = client.listObjects(bucketName);
-		var Keys = GetKeys(response.getObjectSummaries());
+		var Keys = getKeys(response.getObjectSummaries());
 
 		assertEquals(keys, Keys);
 	}
@@ -517,7 +517,7 @@ public class PutObject extends TestBase {
 		client.putObject(bucketName, directoryName, "");
 
 		var response = client.listObjects(bucketName);
-		var keys = GetKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		assertEquals(2, keys.size());
 
 		// dir first
@@ -527,7 +527,7 @@ public class PutObject extends TestBase {
 		client.putObject(bucketName2, key, key);
 
 		response = client.listObjects(bucketName2);
-		keys = GetKeys(response.getObjectSummaries());
+		keys = getKeys(response.getObjectSummaries());
 		assertEquals(2, keys.size());
 
 		// etc
@@ -538,7 +538,7 @@ public class PutObject extends TestBase {
 		client.putObject(bucketName3, newKey, newKey);
 
 		response = client.listObjects(bucketName3);
-		keys = GetKeys(response.getObjectSummaries());
+		keys = getKeys(response.getObjectSummaries());
 		assertEquals(2, keys.size());
 	}
 

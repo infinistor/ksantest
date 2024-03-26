@@ -79,6 +79,8 @@ namespace s3tests
 		public const string NoSuchPublicAccessBlockConfiguration = "NoSuchPublicAccessBlockConfiguration";
 		public const string AuthorizationQueryParametersError = "AuthorizationQueryParametersError";
 		public const string InvalidTargetBucketForLogging = "InvalidTargetBucketForLogging";
+		public const string NoSuchConfiguration = "NoSuchConfiguration";
+		public const string InvalidConfigurationId = "InvalidConfigurationId";
 
 	}
 }

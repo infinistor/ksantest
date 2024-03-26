@@ -12,14 +12,14 @@ public class AWS4SignerForQueryParameterAuth extends AWS4SignerBase {
 		super(endpointUrl, httpMethod, serviceName, regionName);
 	}
 
-	public String computeSignature(Map<String, String> headers, Map<String, String> Parameters, String bodyHash, String AccessKey, String SecretKey) {
+	public String computeSignature(Map<String, String> headers, Map<String, String> parameters, String bodyHash, String accessKey, String secretKey) {
 		Date now = new Date();
 		String dateTimeStamp = dateTimeFormat.format(now);
 
 		String hostHeader = endpointUrl.getHost();
 		int port = endpointUrl.getPort();
 		if (port > -1) {
-			hostHeader.concat(":" + Integer.toString(port));
+			hostHeader = hostHeader.concat(":" + Integer.toString(port));
 		}
 		headers.put("Host", hostHeader);
 
@@ -29,19 +29,19 @@ public class AWS4SignerForQueryParameterAuth extends AWS4SignerBase {
 		String dateStamp = dateStampFormat.format(now);
 		String scope = dateStamp + "/" + regionName + "/" + serviceName + "/" + TERMINATOR;
 
-		Parameters.put("X-Amz-Algorithm", SCHEME + "-" + ALGORITHM);
-		Parameters.put("X-Amz-Credential", AccessKey + "/" + scope);
-		Parameters.put("X-Amz-Date", dateTimeStamp);
-		Parameters.put("X-Amz-SignedHeaders", canonicalizedHeaderNames);
+		parameters.put("X-Amz-Algorithm", SCHEME + "-" + ALGORITHM);
+		parameters.put("X-Amz-Credential", accessKey + "/" + scope);
+		parameters.put("X-Amz-Date", dateTimeStamp);
+		parameters.put("X-Amz-SignedHeaders", canonicalizedHeaderNames);
 
-		String canonicalizedQueryParameters = getCanonicalizedQueryString(Parameters);
+		String canonicalizedQueryParameters = getCanonicalizedQueryString(parameters);
 		String canonicalRequest = getCanonicalRequest(endpointUrl, httpMethod,
 				canonicalizedQueryParameters, canonicalizedHeaderNames,
 				canonicalizedHeaders, bodyHash);
 
 		String stringToSign = getStringToSign(SCHEME, ALGORITHM, dateTimeStamp, scope, canonicalRequest);
 
-		byte[] kSecret = (SCHEME + SecretKey).getBytes();
+		byte[] kSecret = (SCHEME + secretKey).getBytes();
 		byte[] kDate = sign(dateStamp, kSecret, "HmacSHA256");
 		byte[] kRegion = sign(regionName, kDate, "HmacSHA256");
 		byte[] kService = sign(serviceName, kRegion, "HmacSHA256");
@@ -50,11 +50,11 @@ public class AWS4SignerForQueryParameterAuth extends AWS4SignerBase {
 
 		StringBuilder authString = new StringBuilder();
 
-		authString.append("X-Amz-Algorithm=" + Parameters.get("X-Amz-Algorithm"));
-		authString.append("&X-Amz-Credential=" + Parameters.get("X-Amz-Credential"));
-		authString.append("&X-Amz-Date=" + Parameters.get("X-Amz-Date"));
-		authString.append("&X-Amz-Expires=" + Parameters.get("X-Amz-Expires"));
-		authString.append("&X-Amz-SignedHeaders=" + Parameters.get("X-Amz-SignedHeaders"));
+		authString.append("X-Amz-Algorithm=" + parameters.get("X-Amz-Algorithm"));
+		authString.append("&X-Amz-Credential=" + parameters.get("X-Amz-Credential"));
+		authString.append("&X-Amz-Date=" + parameters.get("X-Amz-Date"));
+		authString.append("&X-Amz-Expires=" + parameters.get("X-Amz-Expires"));
+		authString.append("&X-Amz-SignedHeaders=" + parameters.get("X-Amz-SignedHeaders"));
 		authString.append("&X-Amz-Signature=" + BinaryUtils.toHex(signature));
 
 		return authString.toString();

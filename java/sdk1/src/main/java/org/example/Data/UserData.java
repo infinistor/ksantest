@@ -9,40 +9,29 @@
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
 package org.example.Data;
-
 public class UserData {
 	public String displayName;
 	public String userId;
 	public String email;
 	public String accessKey;
 	public String secretKey;
-	public String KMS;
+	public String kms;
 
 	public UserData() {
-		Init();
-	}
-
-	public void Init() {
 		displayName = "";
 		userId = "";
 		email = "";
 		accessKey = "";
 		secretKey = "";
-		KMS = "";
+		kms = "";
 	}
 
-	public boolean IsEmpty() {
-
-		if (!displayName.isBlank())
-			return true;
-		if (!userId.isBlank())
-			return true;
-		if (!email.isBlank())
-			return true;
-		if (!accessKey.isBlank())
-			return true;
-		if (!secretKey.isBlank())
-			return true;
-		return false;
+	public UserData(String displayName, String userId, String email, String accessKey, String secretKey, String kms) {
+		this.displayName = displayName;
+		this.userId = userId;
+		this.email = email;
+		this.accessKey = accessKey;
+		this.secretKey = secretKey;
+		this.kms = kms;
 	}
 }

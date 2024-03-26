@@ -638,6 +638,83 @@ namespace s3tests
 
 			return DeleteBucketWebsite(Request);
 		}
+
+		private ListBucketInventoryConfigurationsResponse ListBucketInventoryConfigurations(ListBucketInventoryConfigurationsRequest Request)
+		{
+			if (Client == null) return null;
+			var Response = Client.ListBucketInventoryConfigurationsAsync(Request);
+			Response.Wait();
+			return Response.Result;
+		}
+
+		public ListBucketInventoryConfigurationsResponse ListBucketInventoryConfigurations(string BucketName)
+		{
+			var Request = new ListBucketInventoryConfigurationsRequest()
+			{
+				BucketName = BucketName
+			};
+
+			return ListBucketInventoryConfigurations(Request);
+		}
+
+		private GetBucketInventoryConfigurationResponse GetBucketInventoryConfiguration(GetBucketInventoryConfigurationRequest Request)
+		{
+			if (Client == null) return null;
+			var Response = Client.GetBucketInventoryConfigurationAsync(Request);
+			Response.Wait();
+			return Response.Result;
+		}
+
+		public GetBucketInventoryConfigurationResponse GetBucketInventoryConfiguration(string BucketName, string Id)
+		{
+			var Request = new GetBucketInventoryConfigurationRequest()
+			{
+				BucketName = BucketName,
+				InventoryId = Id
+			};
+
+			return GetBucketInventoryConfiguration(Request);
+		}
+
+		private PutBucketInventoryConfigurationResponse PutBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest Request)
+		{
+			if (Client == null) return null;
+			var Response = Client.PutBucketInventoryConfigurationAsync(Request);
+			Response.Wait();
+			return Response.Result;
+		}
+
+		public PutBucketInventoryConfigurationResponse PutBucketInventoryConfiguration(string BucketName, InventoryConfiguration InventoryConfig)
+		{
+			var Request = new PutBucketInventoryConfigurationRequest()
+			{
+				BucketName = BucketName,
+				InventoryId = InventoryConfig.InventoryId,
+				InventoryConfiguration = InventoryConfig
+			};
+
+			return PutBucketInventoryConfiguration(Request);
+		}
+
+		private DeleteBucketInventoryConfigurationResponse DeleteBucketInventoryConfiguration(DeleteBucketInventoryConfigurationRequest Request)
+		{
+			if (Client == null) return null;
+			var Response = Client.DeleteBucketInventoryConfigurationAsync(Request);
+			Response.Wait();
+			return Response.Result;
+		}
+
+		public DeleteBucketInventoryConfigurationResponse DeleteBucketInventoryConfiguration(string BucketName, string Id)
+		{
+			var Request = new DeleteBucketInventoryConfigurationRequest()
+			{
+				BucketName = BucketName,
+				InventoryId = Id
+			};
+
+			return DeleteBucketInventoryConfiguration(Request);
+		}
+
 		#endregion
 
 		#region Object Function

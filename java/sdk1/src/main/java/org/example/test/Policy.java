@@ -40,13 +40,13 @@ import com.google.gson.JsonObject;
 public class Policy extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("Policy Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("Policy End");
 	}
@@ -72,10 +72,7 @@ public class Policy extends TestBase
 		var statement = new JsonObject();
 		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectAllow);
 
-		var principal = new JsonObject();
-		principal.addProperty( "AWS", "*");
-		statement.add(MainData.PolicyPrincipal, principal);
-
+		statement.addProperty(MainData.PolicyPrincipal, "*");
 		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
 
 		var resources = new JsonArray();
@@ -116,11 +113,7 @@ public class Policy extends TestBase
 
 		var statement = new JsonObject();
 		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectAllow);
-
-		var principal = new JsonObject();
-		principal.addProperty( "AWS", "*");
-		statement.add(MainData.PolicyPrincipal, principal);
-
+		statement.addProperty(MainData.PolicyPrincipal, "*");
 		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
 
 		var resources = new JsonArray();

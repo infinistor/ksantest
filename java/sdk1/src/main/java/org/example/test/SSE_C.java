@@ -24,6 +24,7 @@ import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.SSEAlgorithm;
 import com.amazonaws.services.s3.model.SSECustomerKey;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -40,13 +41,13 @@ import org.junit.jupiter.api.Test;
 public class SSE_C extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("SSE_C Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("SSE_C End");
 	}
@@ -215,6 +216,7 @@ public class SSE_C extends TestBase
 		var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
 		var body = getBody(response.getObjectContent());
 		assertEquals(data, body);
+		assertEquals(SSEAlgorithm.AES256.toString(), response.getObjectMetadata().getSSECustomerAlgorithm());
 	}
 
 	@Test
@@ -279,6 +281,7 @@ public class SSE_C extends TestBase
 		var getResponse = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
 		assertEquals(metadata.getUserMetadata(), getResponse.getObjectMetadata().getUserMetadata());
 		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSECustomerAlgorithm());
 
 		var body = uploadData.getBody();
 		CheckContentUsingRangeEnc(client, bucketName, key, body, MainData.MB, SSE_C);
@@ -322,6 +325,7 @@ public class SSE_C extends TestBase
 		var getResponse = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SetSSE_C));
 		assertEquals(metadata.getUserMetadata(), getResponse.getObjectMetadata().getUserMetadata());
 		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSECustomerAlgorithm());
 
 		var e = assertThrows(AmazonServiceException.class, ()-> client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(GetSSE_C)));
 		var statusCode = e.getStatusCode();
@@ -416,6 +420,7 @@ public class SSE_C extends TestBase
 		var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")));
 		var body = getBody(response.getObjectContent());
 		assertEquals("bar", body);
+		assertEquals(SSEAlgorithm.AES256.toString(), response.getObjectMetadata().getSSECustomerAlgorithm());
 	}
 
 	@Test
@@ -465,6 +470,7 @@ public class SSE_C extends TestBase
 		var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
 		var body = getBody(response.getObjectContent());
 		assertTrue(data.equals(body), MainData.NOT_MATCHED);
+		assertEquals(SSEAlgorithm.AES256.toString(), response.getObjectMetadata().getSSECustomerAlgorithm());
 
 		checkContentUsingRandomRangeEnc(client, bucketName, key, data, size, 50, SSE_C);
 	}
@@ -501,6 +507,7 @@ public class SSE_C extends TestBase
 		var getResponse = client.getObject(new GetObjectRequest(bucketName, sourceKey).withSSECustomerKey(SSE_C));
 		assertEquals(metadata.getUserMetadata(), getResponse.getObjectMetadata().getUserMetadata());
 		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSECustomerAlgorithm());
 
 		// 멀티파트 복사
 		var targetKey = "multipart_enc_copy";
@@ -536,7 +543,7 @@ public class SSE_C extends TestBase
 		var targetKey1 = "mymultipart1";
 		uploadData = multipartCopy(client, bucketName, sourceKey, bucketName, targetKey1, size, metadata);
 		// 추가파츠 업로드
-		uploadData = MultipartUpload(client, bucketName, targetKey1, size, uploadData);
+		uploadData = multipartUpload(client, bucketName, targetKey1, size, uploadData);
 		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, targetKey1, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
@@ -547,7 +554,7 @@ public class SSE_C extends TestBase
 		var TargetKey2 = "mymultipart2";
 		uploadData = multipartCopy(client, bucketName, targetKey1, bucketName, TargetKey2, size * 2, metadata);
 		// 추가파츠 업로드
-		uploadData = MultipartUpload(client, bucketName, TargetKey2, size, uploadData);
+		uploadData = multipartUpload(client, bucketName, TargetKey2, size, uploadData);
 		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey2, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인

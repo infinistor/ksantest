@@ -45,13 +45,13 @@ import com.amazonaws.services.s3.model.SetObjectRetentionRequest;
 public class Lock extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("Lock Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("Lock End");
 	}

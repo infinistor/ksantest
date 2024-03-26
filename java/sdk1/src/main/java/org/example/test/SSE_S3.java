@@ -38,13 +38,13 @@ import com.amazonaws.services.s3.model.UploadPartRequest;
 public class SSE_S3 extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll()
+	public static void beforeAll()
 	{
 		System.out.println("SSE_S3 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll()
+	public static void afterAll()
 	{
 		System.out.println("SSE_S3 End");
 	}
@@ -99,6 +99,7 @@ public class SSE_S3 extends TestBase
 
 		var response = client.getObjectMetadata(bucketName, key);
 		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
+		assertEquals("AES256", response.getSSEAlgorithm());
 	}
 
 	@Test
@@ -142,6 +143,7 @@ public class SSE_S3 extends TestBase
 		var getResponse = client.getObjectMetadata(bucketName, key);
 		assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
 		assertEquals(contentType, getResponse.getContentType());
+		assertEquals("AES256", getResponse.getSSEAlgorithm());
 
 		checkContentUsingRange(bucketName, key, data, MainData.MB);
 		checkContentUsingRange(bucketName, key, data, 10 * MainData.MB);
@@ -436,11 +438,11 @@ public class SSE_S3 extends TestBase
 		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
 		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var putResponse = PutObject(putURL, key);
+		var putResponse = putObject(putURL, key);
 		assertEquals(200, putResponse.getStatusLine().getStatusCode());
 
 		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var getResponse = GetObject(getURL);
+		var getResponse = getObject(getURL);
 		assertEquals(200, getResponse.getStatusLine().getStatusCode());
 
 	}
@@ -465,11 +467,11 @@ public class SSE_S3 extends TestBase
 		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
 		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var putResponse = PutObject(putURL, key);
+		var putResponse = putObject(putURL, key);
 		assertEquals(200, putResponse.getStatusLine().getStatusCode());
 
 		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var getResponse = GetObject(getURL);
+		var getResponse = getObject(getURL);
 		assertEquals(200, getResponse.getStatusLine().getStatusCode());
 	}
 
@@ -545,6 +547,7 @@ public class SSE_S3 extends TestBase
 		var getResponse = client.getObjectMetadata(bucketName, sourceKey);
 		assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
 		assertEquals(contentType, getResponse.getContentType());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getSSEAlgorithm());
 
 		checkContentUsingRange(bucketName, sourceKey, uploadData.getBody(), MainData.MB);
 
@@ -584,7 +587,7 @@ public class SSE_S3 extends TestBase
 		var TargetKey1 = "mymultipart1";
 		uploadData = multipartCopy(client, bucketName, sourceKey, bucketName, TargetKey1, size, metadata);
 		// 추가파츠 업로드
-		uploadData = MultipartUpload(client, bucketName, TargetKey1, size, uploadData);
+		uploadData = multipartUpload(client, bucketName, TargetKey1, size, uploadData);
 		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey1, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
@@ -595,7 +598,7 @@ public class SSE_S3 extends TestBase
 		var TargetKey2 = "mymultipart2";
 		uploadData = multipartCopy(client, bucketName, TargetKey1, bucketName, TargetKey2, size * 2, metadata);
 		// 추가파츠 업로드
-		uploadData = MultipartUpload(client, bucketName, TargetKey2, size, uploadData);
+		uploadData = multipartUpload(client, bucketName, TargetKey2, size, uploadData);
 		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, TargetKey2, uploadData.uploadId, uploadData.parts));
 
 		// 업로드가 올바르게 되었는지 확인
@@ -667,10 +670,12 @@ public class SSE_S3 extends TestBase
 		getResponse = client.getObject(bucketName, putKey2);
 		body = getBody(getResponse.getObjectContent());
 		assertTrue(data2.equals(body), MainData.NOT_MATCHED);
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSEAlgorithm());
 
 		getResponse = client.getObject(bucketName, copyKey2);
 		body = getBody(getResponse.getObjectContent());
 		assertTrue(data.equals(body), MainData.NOT_MATCHED);
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSEAlgorithm());
 
 		checkContentUsingRange(bucketName, multiKey2, uploadData2.body.toString(), MainData.MB);
 	}

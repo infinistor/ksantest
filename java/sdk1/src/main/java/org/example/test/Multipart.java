@@ -36,12 +36,12 @@ import com.amazonaws.services.s3.model.UploadPartRequest;
 
 public class Multipart extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	static public void BeforeAll() {
+	public static void beforeAll() {
 		System.out.println("Multipart Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	static public void AfterAll() {
+	public static void afterAll() {
 		System.out.println("Multipart End");
 	}
 
@@ -605,7 +605,7 @@ public class Multipart extends TestBase {
 		var TargetKey1 = "mymultipart1";
 		uploadData = multipartCopy(bucketName, sourceKey, bucketName, TargetKey1, size, client, 0, null);
 		// 추가파츠 업로드
-		uploadData = MultipartUpload(client, bucketName, TargetKey1, size, uploadData);
+		uploadData = multipartUpload(client, bucketName, TargetKey1, size, uploadData);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, TargetKey1, uploadData.uploadId, uploadData.parts));
 
@@ -617,7 +617,7 @@ public class Multipart extends TestBase {
 		var TargetKey2 = "mymultipart2";
 		uploadData = multipartCopy(bucketName, TargetKey1, bucketName, TargetKey2, size * 2, client, 0, null);
 		// 추가파츠 업로드
-		uploadData = MultipartUpload(client, bucketName, TargetKey2, size, uploadData);
+		uploadData = multipartUpload(client, bucketName, TargetKey2, size, uploadData);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, TargetKey2, uploadData.uploadId, uploadData.parts));
 

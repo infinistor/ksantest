@@ -26,8 +26,6 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
@@ -112,7 +110,7 @@ public class TestBase {
 
 	public enum EncryptionType {
 		NORMAL, SSE_S3, SSE_C
-	};
+	}
 
 	/************************************************************************************************************/
 	private static final int RANDOM_PREFIX_TEXT_LENGTH = 15;
@@ -121,13 +119,13 @@ public class TestBase {
 	private static final String STR_RANDOM = "{random}";
 	/************************************************************************************************************/
 
-	private final ArrayList<String> buckets = new ArrayList<String>();
+	private final ArrayList<String> buckets = new ArrayList<>();
 	protected final S3Config config;
 
 	protected TestBase() {
 		String fileName = System.getenv(MainData.S3TESTS_INI);
 		config = new S3Config(fileName);
-		config.GetConfig();
+		config.getConfig();
 	}
 
 	// region Create Client
@@ -137,11 +135,11 @@ public class TestBase {
 		ClientConfiguration s3Config;
 
 		if (isSecure) {
-			address = NetUtils.createURLToHTTPS(config.URL, config.sslPort);
+			address = NetUtils.createURLToHTTPS(config.url, config.sslPort);
 			System.setProperty(SDKGlobalConfiguration.DISABLE_CERT_CHECKING_SYSTEM_PROPERTY, "true");
 			s3Config = new ClientConfiguration().withProtocol(Protocol.HTTPS).withSignerOverride(signatureVersion);
 		} else {
-			address = NetUtils.createURLToHTTP(config.URL, config.port);
+			address = NetUtils.createURLToHTTP(config.url, config.port);
 			s3Config = new ClientConfiguration().withProtocol(Protocol.HTTP).withSignerOverride(signatureVersion);
 		}
 		s3Config.setSignerOverride(signatureVersion);
@@ -156,7 +154,7 @@ public class TestBase {
 			clientBuilder.setCredentials(
 					new AWSStaticCredentialsProvider(new BasicAWSCredentials(user.accessKey, user.secretKey)));
 
-		if (StringUtils.isBlank(config.URL))
+		if (StringUtils.isBlank(config.url))
 			clientBuilder.setRegion(config.regionName);
 		else
 			clientBuilder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(address, ""));
@@ -298,12 +296,12 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createObjects(ArrayList<String> keys) {
+	public String createObjects(List<String> keys) {
 		var client = getClient();
 		var bucketName = getNewBucketName();
 		client.createBucket(bucketName);
 
-		if (keys != null && client != null) {
+		if (keys != null) {
 			for (var key : keys) {
 				var body = key;
 				if (key.endsWith("/"))
@@ -315,12 +313,12 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createObjectsToBody(ArrayList<String> keys, String body) {
+	public String createObjectsToBody(List<String> keys, String body) {
 		var client = getClient();
 		var bucketName = getNewBucketName();
 		client.createBucket(bucketName);
 
-		if (keys != null && client != null) {
+		if (keys != null) {
 			for (var key : keys)
 				client.putObject(bucketName, key, body);
 		}
@@ -328,12 +326,12 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createObjectsV2(ArrayList<String> keys) {
+	public String createObjectsV2(List<String> keys) {
 		var client = getClientV2();
 		var bucketName = getNewBucketName();
 		client.createBucket(bucketName);
 
-		if (keys != null && client != null) {
+		if (keys != null) {
 			for (var key : keys) {
 				var body = key;
 				if (key.endsWith("/"))
@@ -345,12 +343,12 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createObjectsToBodyV2(ArrayList<String> keys, String body) {
+	public String createObjectsToBodyV2(List<String> keys, String body) {
 		var client = getClientV2();
 		var bucketName = getNewBucketName();
 		client.createBucket(bucketName);
 
-		if (keys != null && client != null) {
+		if (keys != null) {
 			for (var key : keys)
 				client.putObject(bucketName, key, body);
 		}
@@ -358,12 +356,12 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createObjectsV4(ArrayList<String> keys, Boolean useChunkEncoding) {
+	public String createObjectsV4(List<String> keys, Boolean useChunkEncoding) {
 		var client = getClientV4(useChunkEncoding);
 		var bucketName = getNewBucketName();
 		client.createBucket(bucketName);
 
-		if (keys != null && client != null) {
+		if (keys != null) {
 			for (var key : keys) {
 				var body = key;
 				if (key.endsWith("/"))
@@ -375,12 +373,12 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createObjectsHttps(ArrayList<String> keys, Boolean useChunkEncoding, Boolean payloadSigning) {
+	public String createObjectsHttps(List<String> keys, Boolean useChunkEncoding, Boolean payloadSigning) {
 		var client = getClientHttpsV4(useChunkEncoding, payloadSigning);
 		var bucketName = getNewBucketName();
 		client.createBucket(bucketName);
 
-		if (keys != null && client != null) {
+		if (keys != null) {
 			for (var key : keys) {
 				var body = key;
 				if (key.endsWith("/"))
@@ -392,12 +390,12 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createObjectsToBodyV4(ArrayList<String> keys, String body, Boolean useChunkEncoding) {
+	public String createObjectsToBodyV4(List<String> keys, String body, Boolean useChunkEncoding) {
 		var client = getClientV4(useChunkEncoding);
 		var bucketName = getNewBucketName();
 		client.createBucket(bucketName);
 
-		if (keys != null && client != null) {
+		if (keys != null) {
 			for (var key : keys)
 				client.putObject(bucketName, key, body);
 		}
@@ -405,10 +403,10 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createObjectsToBody(String bucketName, ArrayList<String> keys, String body) {
+	public String createObjectsToBody(String bucketName, List<String> keys, String body) {
 		var client = getClient();
 
-		if (keys != null && client != null) {
+		if (keys != null) {
 			for (var key : keys)
 				client.putObject(bucketName, key, body);
 		}
@@ -416,14 +414,14 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createObjects(ArrayList<String> keys, String bucketName) {
+	public String createObjects(List<String> keys, String bucketName) {
 		var client = getClient();
 		if (StringUtils.isBlank(bucketName)) {
 			bucketName = getNewBucketName();
 			client.createBucket(bucketName);
 		}
 
-		if (keys != null && client != null) {
+		if (keys != null) {
 			for (var key : keys) {
 				var body = key;
 				if (key.endsWith("/"))
@@ -440,15 +438,15 @@ public class TestBase {
 		var port = config.isSecure ? config.sslPort : config.port;
 
 		return config.isAWS() ? NetUtils.getEndPoint(protocol, config.regionName, bucketName)
-				: NetUtils.getEndPoint(protocol, config.URL, port, bucketName);
+				: NetUtils.getEndPoint(protocol, config.url, port, bucketName);
 	}
 
 	public URL getURL(String bucketName, String key) throws MalformedURLException {
-		var Protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
-		var Port = config.isSecure ? config.sslPort : config.port;
+		var protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
+		var port = config.isSecure ? config.sslPort : config.port;
 
-		return config.isAWS() ? NetUtils.getEndPoint(Protocol, config.regionName, bucketName, key)
-				: NetUtils.getEndPoint(Protocol, config.URL, Port, bucketName, key);
+		return config.isAWS() ? NetUtils.getEndPoint(protocol, config.regionName, bucketName, key)
+				: NetUtils.getEndPoint(protocol, config.url, port, bucketName, key);
 	}
 
 	public String makeArnResource(String path) {
@@ -613,8 +611,8 @@ public class TestBase {
 		metadata.setContentLength(3);
 		client.putObject(bucketName, key, createBody("bar"), metadata);
 
-		var Response = client.getObject(bucketName, key);
-		return Response.getObjectMetadata().getUserMetaDataOf(metadataKey);
+		var response = client.getObject(bucketName, key);
+		return response.getObjectMetadata().getUserMetaDataOf(metadataKey);
 	}
 
 	public String bucketACLGrantUserId(Permission permission) {
@@ -629,13 +627,13 @@ public class TestBase {
 		var accessControlList = addBucketUserGrant(bucketName, new Grant(altUser, permission));
 		client.setBucketAcl(bucketName, accessControlList);
 
-		var Response = client.getBucketAcl(bucketName);
+		var response = client.getBucketAcl(bucketName);
 
-		var getGrants = Response.getGrantsAsList();
+		var getGrants = response.getGrantsAsList();
 		var myGrants = new ArrayList<Grant>();
 		myGrants.add(new Grant(mainUser, Permission.FullControl));
 		myGrants.add(new Grant(altUser, permission));
-		checkGrants(myGrants, new ArrayList<Grant>(getGrants));
+		checkGrants(myGrants, new ArrayList<>(getGrants));
 
 		return bucketName;
 	}
@@ -644,9 +642,6 @@ public class TestBase {
 			CannedAccessControlList objectACL) {
 		var bucketName = getNewBucket();
 		var client = getClient();
-
-		key1 = "foo";
-		key2 = "bar";
 
 		client.setBucketAcl(bucketName, bucketACL);
 		client.putObject(bucketName, key1, key1);
@@ -659,8 +654,8 @@ public class TestBase {
 	public void checkObjContent(AmazonS3 client, String bucketName, String key, String versionId, String content) {
 		var response = client.getObject(new GetObjectRequest(bucketName, key).withVersionId(versionId));
 		if (content != null) {
-			var Body = getBody(response.getObjectContent());
-			assertTrue(content.equals(Body), MainData.NOT_MATCHED);
+			var body = getBody(response.getObjectContent());
+			assertTrue(content.equals(body), MainData.NOT_MATCHED);
 		} else
 			assertNull(response);
 	}
@@ -681,7 +676,7 @@ public class TestBase {
 		}
 	}
 
-	public void CreateMultipleVersions(AmazonS3 client, String bucketName, String key, int numVersions,
+	public void createMultipleVersions(AmazonS3 client, String bucketName, String key, int numVersions,
 			boolean checkVersion) {
 		var versionIds = new ArrayList<String>();
 		var contents = new ArrayList<String>();
@@ -718,43 +713,43 @@ public class TestBase {
 
 	// region Get Data
 
-	public ArrayList<String> GetObjectList(String bucketName, String Prefix) {
+	public List<String> getObjectList(String bucketName, String prefix) {
 		var client = getClient();
-		var Response = client.listObjects(bucketName, Prefix);
-		return GetKeys(Response.getObjectSummaries());
+		var response = client.listObjects(bucketName, prefix);
+		return getKeys(response.getObjectSummaries());
 	}
 
-	public static ArrayList<String> GetKeys(List<S3ObjectSummary> ObjectList) {
-		if (ObjectList != null) {
-			var Temp = new ArrayList<String>();
+	public static List<String> getKeys(List<S3ObjectSummary> objectList) {
+		if (objectList != null) {
+			var temp = new ArrayList<String>();
 
-			for (var S3Object : ObjectList)
-				Temp.add(S3Object.getKey());
+			for (var S3Object : objectList)
+				temp.add(S3Object.getKey());
 
-			return Temp;
+			return temp;
+		}
+		return new ArrayList<>();
+	}
+
+	public static List<String> getKeys2(List<S3VersionSummary> objectList) {
+		if (objectList != null) {
+			var temp = new ArrayList<String>();
+
+			for (var S3Object : objectList)
+				temp.add(S3Object.getKey());
+
+			return temp;
 		}
 		return null;
 	}
 
-	public static ArrayList<String> GetKeys2(List<S3VersionSummary> ObjectList) {
-		if (ObjectList != null) {
-			var Temp = new ArrayList<String>();
-
-			for (var S3Object : ObjectList)
-				Temp.add(S3Object.getKey());
-
-			return Temp;
-		}
-		return null;
-	}
-
-	public static String getBody(S3ObjectInputStream Data) {
+	public static String getBody(S3ObjectInputStream data) {
 		String Body = "";
-		if (Data != null) {
+		if (data != null) {
 			try {
 				ByteArrayOutputStream result = new ByteArrayOutputStream();
 				byte[] buffer = new byte[1024];
-				for (int length; (length = Data.read(buffer)) != -1;) {
+				for (int length; (length = data.read(buffer)) != -1;) {
 					result.write(buffer, 0, length);
 				}
 				return result.toString("UTF-8");
@@ -765,30 +760,30 @@ public class TestBase {
 		return Body;
 	}
 
-	public static ObjectData GetObjectToKey(String key, ArrayList<ObjectData> KeyList) {
-		for (var Object : KeyList) {
+	public static ObjectData getObjectToKey(String key, List<ObjectData> keyList) {
+		for (var Object : keyList) {
 			if (Object.key.equals(key))
 				return Object;
 		}
 		return null;
 	}
 
-	public ArrayList<String> GetBucketList(List<Bucket> Response) {
-		if (Response == null)
-			return null;
-		var BucketList = new ArrayList<String>();
+	public List<String> getBucketList(List<Bucket> response) {
+		if (response == null)
+			return new ArrayList<>();
+		var bucketList = new ArrayList<String>();
 
-		for (var Item : Response)
-			BucketList.add(Item.getName());
+		for (var Item : response)
+			bucketList.add(Item.getName());
 
-		return BucketList;
+		return bucketList;
 	}
 
 	public void checkVersioning(String bucketName, String StatusCode) {
 		var client = getClient();
 
-		var Response = client.getBucketVersioningConfiguration(bucketName);
-		assertEquals(StatusCode, Response.getStatus());
+		var response = client.getBucketVersioningConfiguration(bucketName);
+		assertEquals(StatusCode, response.getStatus());
 	}
 
 	public ArrayList<String> CutStringData(String Data, int PartSize) {
@@ -852,8 +847,8 @@ public class TestBase {
 	// region Check Data
 	public void ACLTest(String bucketName, String key, AmazonS3 client, Boolean Pass) {
 		if (Pass) {
-			var Response = client.getObject(bucketName, key);
-			assertEquals(key, Response.getKey());
+			var response = client.getObject(bucketName, key);
+			assertEquals(key, response.getKey());
 		} else {
 			var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
 			var StatusCode = e.getStatusCode();
@@ -867,52 +862,52 @@ public class TestBase {
 	public String ValidateListObject(String bucketName, String Prefix, String Delimiter, String Marker, int MaxKeys,
 			boolean IsTruncated, ArrayList<String> CheckKeys, ArrayList<String> checkPrefixes, String NextMarker) {
 		var client = getClient();
-		var Response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter)
+		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter(Delimiter)
 				.withMarker(Marker).withMaxKeys(MaxKeys).withPrefix(Prefix));
 
-		assertEquals(IsTruncated, Response.isTruncated());
-		assertEquals(NextMarker, Response.getNextMarker());
+		assertEquals(IsTruncated, response.isTruncated());
+		assertEquals(NextMarker, response.getNextMarker());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
-		var Prefixes = Response.getCommonPrefixes();
+		var Keys = getKeys(response.getObjectSummaries());
+		var Prefixes = response.getCommonPrefixes();
 
 		assertEquals(CheckKeys.size(), Keys.size());
 		assertEquals(checkPrefixes.size(), Prefixes.size());
 		assertEquals(CheckKeys, Keys);
 		assertEquals(checkPrefixes, Prefixes);
 
-		return Response.getNextMarker();
+		return response.getNextMarker();
 	}
 
-	public String ValidateListObjectV2(String bucketName, String Prefix, String Delimiter, String ContinuationToken,
-			int MaxKeys, boolean IsTruncated, List<String> CheckKeys, List<String> CheckPrefixes, boolean Last) {
+	public String validateListObjectV2(String bucketName, String prefix, String delimiter, String continuationToken,
+			int maxKeys, boolean isTruncated, List<String> checkKeys, List<String> checkPrefixes, boolean last) {
 		var client = getClient();
-		var Response = client
-				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(Delimiter)
-						.withContinuationToken(ContinuationToken).withMaxKeys(MaxKeys).withPrefix(Prefix));
+		var response = client
+				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter)
+						.withContinuationToken(continuationToken).withMaxKeys(maxKeys).withPrefix(prefix));
 
-		assertEquals(IsTruncated, Response.isTruncated());
-		if (Last)
-			assertNull(Response.getNextContinuationToken());
+		assertEquals(isTruncated, response.isTruncated());
+		if (last)
+			assertNull(response.getNextContinuationToken());
 
-		var Keys = GetKeys(Response.getObjectSummaries());
-		var Prefixes = Response.getCommonPrefixes();
+		var keys = getKeys(response.getObjectSummaries());
+		var prefixes = response.getCommonPrefixes();
 
-		assertEquals(CheckKeys, Keys);
-		assertEquals(CheckPrefixes, Prefixes);
-		assertEquals(CheckKeys.size(), Keys.size());
-		assertEquals(CheckPrefixes.size(), Prefixes.size());
+		assertEquals(checkKeys, keys);
+		assertEquals(checkPrefixes, prefixes);
+		assertEquals(checkKeys.size(), keys.size());
+		assertEquals(checkPrefixes.size(), prefixes.size());
 
-		return Response.getNextContinuationToken();
+		return response.getNextContinuationToken();
 	}
 
-	public void CheckBadBucketName(String bucketName) {
+	public void checkBadBucketName(String bucketName) {
 		var client = getClient();
 
 		assertThrows(IllegalBucketNameException.class, () -> client.createBucket(bucketName));
 	}
 
-	public void CheckGoodBucketName(String Name, String Prefix) {
+	public void checkGoodBucketName(String Name, String Prefix) {
 		if (StringUtils.isBlank(Prefix))
 			Prefix = getPrefix();
 
@@ -920,111 +915,112 @@ public class TestBase {
 		buckets.add(bucketName);
 
 		var client = getClient();
-		var Response = client.createBucket(bucketName);
-		assertTrue(StringUtils.isNotBlank(Response.getName()));
+		var response = client.createBucket(bucketName);
+		assertTrue(StringUtils.isNotBlank(response.getName()));
 	}
 
-	public void TestBucketCreateNamingGoodLong(int Length) {
+	public void testBucketCreateNamingGoodLong(int length) {
 		var bucketName = getPrefix();
-		if (bucketName.length() < Length)
-			bucketName += Utils.randomText(Length - bucketName.length());
+		if (bucketName.length() < length)
+			bucketName += Utils.randomText(length - bucketName.length());
 		else
-			bucketName = bucketName.substring(0, Length - 1);
+			bucketName = bucketName.substring(0, length - 1);
 		buckets.add(bucketName);
 
 		var client = getClient();
-		var Response = client.createBucket(bucketName);
-		assertTrue(StringUtils.isNotBlank(Response.getName()));
+		var response = client.createBucket(bucketName);
+		assertTrue(StringUtils.isNotBlank(response.getName()));
 	}
 
-	public HttpResponse GetObject(URL Address) {
-		HttpClient client = HttpClientBuilder.create().build();
-		HttpGet getRequest = new HttpGet(Address.toString());
+	public void testBucketCreateNamingBadLong(int length) {
+		var bucketName = getPrefix();
+		if (bucketName.length() < length)
+			bucketName += Utils.randomText(length - bucketName.length());
+		else
+			bucketName = bucketName.substring(0, length - 1);
+		checkBadBucketName(bucketName);
+	}
+
+	public HttpResponse getObject(URL address) {
+		var client = HttpClientBuilder.create().build();
+		var getRequest = new HttpGet(address.toString());
 		try {
-			HttpResponse httpResponse = client.execute(getRequest);
-			return httpResponse;
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+			return client.execute(getRequest);
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
 
-	public HttpResponse PutObject(URL Address, String Body) {
-		HttpClient client = HttpClientBuilder.create().build();
-		HttpPut putRequest = new HttpPut(Address.toString());
-		if (Body != null) {
-			var requestEntity = new StringEntity(Body, "utf-8");
+	public HttpResponse putObject(URL address, String body) {
+		var client = HttpClientBuilder.create().build();
+		var putRequest = new HttpPut(address.toString());
+		if (body != null) {
+			var requestEntity = new StringEntity(body, "utf-8");
 			requestEntity.setContentType(new BasicHeader("Content-Type", "application/txt"));
 			putRequest.setEntity(requestEntity);
-			// Utils.createDummyFile(Body, 1024*1024*1000);
-			// var fileEntity = new FileEntity(new File(Body));
-			// putRequest.setEntity(fileEntity);
 		}
 		try {
 			return client.execute(putRequest);
-			
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		return null;
 	}
 
-	public MultipartUploadData MultipartUpload(AmazonS3 client, String bucketName, String key, int Size,
-			MultipartUploadData UploadData) {
-		var PartSize = 5 * MainData.MB;
-		var Parts = Utils.generateRandomString(Size, PartSize);
+	public MultipartUploadData multipartUpload(AmazonS3 client, String bucketName, String key, int size,
+			MultipartUploadData uploadData) {
+		var partSize = 5 * MainData.MB;
+		var parts = Utils.generateRandomString(size, partSize);
 
-		for (var Part : Parts) {
-			UploadData.appendBody(Part);
-			var PartResPonse = client.uploadPart(
+		for (var Part : parts) {
+			uploadData.appendBody(Part);
+			var partresPonse = client.uploadPart(
 					new UploadPartRequest()
 							.withBucketName(bucketName)
 							.withKey(key)
-							.withUploadId(UploadData.uploadId)
-							.withPartNumber(UploadData.nextPartNumber())
+							.withUploadId(uploadData.uploadId)
+							.withPartNumber(uploadData.nextPartNumber())
 							.withInputStream(createBody(Part))
 							.withPartSize(Part.length()));
-			UploadData.addPart(PartResPonse.getPartETag());
+			uploadData.addPart(partresPonse.getPartETag());
 		}
 
-		return UploadData;
+		return uploadData;
 	}
 
-	public MultipartUploadData setupMultipartUpload(AmazonS3 client, String bucketName, String key, int Size,
-			ObjectMetadata MetadataList) {
-		var UploadData = new MultipartUploadData();
-		if (MetadataList == null) {
-			MetadataList = new ObjectMetadata();
-			MetadataList.setContentType("text/plain");
+	public MultipartUploadData setupMultipartUpload(AmazonS3 client, String bucketName, String key, int size,
+			ObjectMetadata metadataList) {
+		var uploadData = new MultipartUploadData();
+		if (metadataList == null) {
+			metadataList = new ObjectMetadata();
+			metadataList.setContentType("text/plain");
 		}
-		MetadataList.setContentLength(Size);
+		metadataList.setContentLength(size);
 
-		var InitMultiPartResponse = client
-				.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, MetadataList));
-		UploadData.uploadId = InitMultiPartResponse.getUploadId();
+		var InitMultiPartresponse = client
+				.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, metadataList));
+		uploadData.uploadId = InitMultiPartresponse.getUploadId();
 
-		var Parts = Utils.generateRandomString(Size, UploadData.partSize);
+		var Parts = Utils.generateRandomString(size, uploadData.partSize);
 
 		for (var Part : Parts) {
-			UploadData.appendBody(Part);
+			uploadData.appendBody(Part);
 
-			var PartResPonse = client.uploadPart(
+			var PartresPonse = client.uploadPart(
 					new UploadPartRequest()
 							.withBucketName(bucketName)
 							.withKey(key)
-							.withUploadId(UploadData.uploadId)
-							.withPartNumber(UploadData.nextPartNumber())
+							.withUploadId(uploadData.uploadId)
+							.withPartNumber(uploadData.nextPartNumber())
 							.withInputStream(createBody(Part))
 							.withPartSize(Part.length()));
-			UploadData.parts.add(PartResPonse.getPartETag());
+			uploadData.parts.add(PartresPonse.getPartETag());
 		}
 
-		return UploadData;
+		return uploadData;
 	}
 
 	public MultipartUploadData MultipartUploadResend(AmazonS3 client, String bucketName, String key, int Size,
@@ -1036,9 +1032,9 @@ public class TestBase {
 		}
 		MetadataList.setContentLength(Size);
 
-		var InitMultiPartResponse = client
+		var InitMultiPartresponse = client
 				.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, MetadataList));
-		UploadData.uploadId = InitMultiPartResponse.getUploadId();
+		UploadData.uploadId = InitMultiPartresponse.getUploadId();
 
 		var Parts = Utils.generateRandomString(Size, UploadData.partSize);
 
@@ -1046,7 +1042,7 @@ public class TestBase {
 			UploadData.appendBody(Part);
 			int PartNumber = UploadData.nextPartNumber();
 
-			var PartResPonse = client.uploadPart(
+			var PartresPonse = client.uploadPart(
 					new UploadPartRequest()
 							.withBucketName(bucketName)
 							.withKey(key)
@@ -1054,7 +1050,7 @@ public class TestBase {
 							.withPartNumber(PartNumber)
 							.withInputStream(createBody(Part))
 							.withPartSize(Part.length()));
-			UploadData.parts.add(PartResPonse.getPartETag());
+			UploadData.parts.add(PartresPonse.getPartETag());
 
 			if (ResendParts != null && ResendParts.contains(PartNumber))
 				client.uploadPart(new UploadPartRequest()
@@ -1084,8 +1080,8 @@ public class TestBase {
 		if (SSE_C != null)
 			InitRequest.setSSECustomerKey(SSE_C);
 
-		var InitMultiPartResponse = client.initiateMultipartUpload(InitRequest);
-		UploadData.uploadId = InitMultiPartResponse.getUploadId();
+		var InitMultiPartresponse = client.initiateMultipartUpload(InitRequest);
+		UploadData.uploadId = InitMultiPartresponse.getUploadId();
 
 		var Parts = Utils.generateRandomString(Size, PartSize);
 
@@ -1101,8 +1097,8 @@ public class TestBase {
 			if (SSE_C != null)
 				Request.setSSECustomerKey(SSE_C);
 
-			var Response = client.uploadPart(Request);
-			UploadData.parts.add(Response.getPartETag());
+			var response = client.uploadPart(Request);
+			UploadData.parts.add(response.getPartETag());
 		}
 		return UploadData;
 	}
@@ -1110,13 +1106,13 @@ public class TestBase {
 	public void CheckCopyContent(String SourceBucketName, String SourceKey, String TargetBucketName, String TargetKey) {
 		var client = getClient();
 
-		var Response = client.getObject(new GetObjectRequest(SourceBucketName, SourceKey));
-		var SourceSize = Response.getObjectMetadata().getContentLength();
-		var SourceData = getBody(Response.getObjectContent());
+		var response = client.getObject(new GetObjectRequest(SourceBucketName, SourceKey));
+		var SourceSize = response.getObjectMetadata().getContentLength();
+		var SourceData = getBody(response.getObjectContent());
 
-		Response = client.getObject(TargetBucketName, TargetKey);
-		var TargetSize = Response.getObjectMetadata().getContentLength();
-		var TargetData = getBody(Response.getObjectContent());
+		response = client.getObject(TargetBucketName, TargetKey);
+		var TargetSize = response.getObjectMetadata().getContentLength();
+		var TargetData = getBody(response.getObjectContent());
 		assertEquals(SourceSize, TargetSize);
 		assertTrue(SourceData.equals(TargetData), MainData.NOT_MATCHED);
 	}
@@ -1125,13 +1121,13 @@ public class TestBase {
 			String versionId) {
 		var client = getClient();
 
-		var Response = client.getObject(new GetObjectRequest(SourceBucketName, SourceKey).withVersionId(versionId));
-		var SourceSize = Response.getObjectMetadata().getContentLength();
-		var SourceData = getBody(Response.getObjectContent());
+		var response = client.getObject(new GetObjectRequest(SourceBucketName, SourceKey).withVersionId(versionId));
+		var SourceSize = response.getObjectMetadata().getContentLength();
+		var SourceData = getBody(response.getObjectContent());
 
-		Response = client.getObject(TargetBucketName, TargetKey);
-		var TargetSize = Response.getObjectMetadata().getContentLength();
-		var TargetData = getBody(Response.getObjectContent());
+		response = client.getObject(TargetBucketName, TargetKey);
+		var TargetSize = response.getObjectMetadata().getContentLength();
+		var TargetData = getBody(response.getObjectContent());
 		assertEquals(SourceSize, TargetSize);
 		assertTrue(SourceData.equals(TargetData), MainData.NOT_MATCHED);
 	}
@@ -1139,15 +1135,15 @@ public class TestBase {
 	public void CheckCopyContentSSE_C(AmazonS3 client, String SourceBucketName, String SourceKey,
 			String TargetBucketName, String TargetKey, SSECustomerKey SSE_C) {
 
-		var SourceResponse = client
+		var Sourceresponse = client
 				.getObject(new GetObjectRequest(SourceBucketName, SourceKey).withSSECustomerKey(SSE_C));
-		var SourceSize = SourceResponse.getObjectMetadata().getContentLength();
-		var SourceData = getBody(SourceResponse.getObjectContent());
+		var SourceSize = Sourceresponse.getObjectMetadata().getContentLength();
+		var SourceData = getBody(Sourceresponse.getObjectContent());
 
-		var TargetResponse = client
+		var Targetresponse = client
 				.getObject(new GetObjectRequest(TargetBucketName, TargetKey).withSSECustomerKey(SSE_C));
-		var TargetSize = TargetResponse.getObjectMetadata().getContentLength();
-		var TargetData = getBody(TargetResponse.getObjectContent());
+		var TargetSize = Targetresponse.getObjectMetadata().getContentLength();
+		var TargetData = getBody(Targetresponse.getObjectContent());
 
 		assertEquals(SourceSize, TargetSize);
 		assertTrue(SourceData.equals(TargetData), MainData.NOT_MATCHED);
@@ -1157,13 +1153,13 @@ public class TestBase {
 			String TargetKey) {
 		var client = getClient();
 
-		var Response = client.getObject(new GetObjectRequest(TargetBucketName, TargetKey));
-		var TargetSize = Response.getObjectMetadata().getContentLength();
-		var TargetData = getBody(Response.getObjectContent());
+		var response = client.getObject(new GetObjectRequest(TargetBucketName, TargetKey));
+		var TargetSize = response.getObjectMetadata().getContentLength();
+		var TargetData = getBody(response.getObjectContent());
 
-		Response = client.getObject(new GetObjectRequest(SourceBucketName, SourceKey).withRange(0, TargetSize - 1));
-		var SourceSize = Response.getObjectMetadata().getContentLength();
-		var SourceData = getBody(Response.getObjectContent());
+		response = client.getObject(new GetObjectRequest(SourceBucketName, SourceKey).withRange(0, TargetSize - 1));
+		var SourceSize = response.getObjectMetadata().getContentLength();
+		var SourceData = getBody(response.getObjectContent());
 		assertEquals(SourceSize, TargetSize);
 		assertTrue(SourceData.equals(TargetData), MainData.NOT_MATCHED);
 	}
@@ -1172,8 +1168,8 @@ public class TestBase {
 			String TargetKey, int Step) {
 		var client = getClient();
 
-		var Response = client.getObjectMetadata(SourceBucketName, SourceKey);
-		var Size = Response.getContentLength();
+		var response = client.getObjectMetadata(SourceBucketName, SourceKey);
+		var Size = response.getContentLength();
 
 		long StartPosition = 0;
 		while (StartPosition < Size) {
@@ -1181,15 +1177,15 @@ public class TestBase {
 			if (EndPosition > Size)
 				EndPosition = Size - 1;
 
-			var SourceResponse = client.getObject(
+			var Sourceresponse = client.getObject(
 					new GetObjectRequest(SourceBucketName, SourceKey).withRange(StartPosition, EndPosition - 1));
-			var SourceBody = getBody(SourceResponse.getObjectContent());
-			var TargetResponse = client.getObject(
+			var SourceBody = getBody(Sourceresponse.getObjectContent());
+			var Targetresponse = client.getObject(
 					new GetObjectRequest(SourceBucketName, SourceKey).withRange(StartPosition, EndPosition - 1));
-			var TargetBody = getBody(TargetResponse.getObjectContent());
+			var TargetBody = getBody(Targetresponse.getObjectContent());
 
-			assertEquals(SourceResponse.getObjectMetadata().getContentLength(),
-					TargetResponse.getObjectMetadata().getContentLength());
+			assertEquals(Sourceresponse.getObjectMetadata().getContentLength(),
+					Targetresponse.getObjectMetadata().getContentLength());
 			assertTrue(SourceBody.equals(TargetBody), MainData.NOT_MATCHED);
 			StartPosition += Step;
 		}
@@ -1205,9 +1201,9 @@ public class TestBase {
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, key, UploadData.uploadId, UploadData.parts));
 
-		var Response = client.getObjectMetadata(bucketName, key);
-		assertEquals(ContentType, Response.getContentType());
-		assertEquals(metadata.getUserMetadata(), Response.getUserMetadata());
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(ContentType, response.getContentType());
+		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
 
 		var Body = UploadData.getBody();
 		checkContentUsingRange(bucketName, key, Body, MainData.MB);
@@ -1218,30 +1214,30 @@ public class TestBase {
 		var Payload = Utils.randomTextToLong(5 * MainData.MB);
 		var client = getClient();
 
-		var InitResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
-		var UploadID = InitResponse.getUploadId();
+		var Initresponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		var UploadID = Initresponse.getUploadId();
 		var Parts = new ArrayList<PartETag>();
 		var AllPayload = "";
 
 		for (int i = 0; i < NumParts; i++) {
 			var PartNumber = i + 1;
-			var PartResponse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+			var Partresponse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
 					.withUploadId(UploadID).withPartNumber(PartNumber)
 					.withInputStream(new ByteArrayInputStream(Payload.getBytes())).withPartSize(Payload.length()));
-			Parts.add(new PartETag(PartNumber, PartResponse.getETag()));
+			Parts.add(new PartETag(PartNumber, Partresponse.getETag()));
 			AllPayload += Payload;
 		}
 		var LestPayload = Utils.randomTextToLong(MainData.MB);
-		var LestPartResponse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+		var LestPartresponse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
 				.withUploadId(UploadID).withPartNumber(NumParts + 1)
 				.withInputStream(new ByteArrayInputStream(LestPayload.getBytes())).withPartSize(LestPayload.length()));
-		Parts.add(new PartETag(NumParts + 1, LestPartResponse.getETag()));
+		Parts.add(new PartETag(NumParts + 1, LestPartresponse.getETag()));
 		AllPayload += LestPayload;
 
 		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, UploadID, Parts));
 
-		var Response = client.getObject(bucketName, key);
-		var Text = getBody(Response.getObjectContent());
+		var response = client.getObject(bucketName, key);
+		var Text = getBody(response.getObjectContent());
 
 		assertTrue(AllPayload.equals(Text), MainData.NOT_MATCHED);
 
@@ -1256,19 +1252,19 @@ public class TestBase {
 		if (PartSize <= 0)
 			PartSize = 5 * MainData.MB;
 
-		var Response = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(TargetBucketName, TargetKey));
-		Data.uploadId = Response.getUploadId();
+		var response = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(TargetBucketName, TargetKey));
+		Data.uploadId = response.getUploadId();
 
 		int UploadCount = 1;
 		long Start = 0;
 		while (Start < Size) {
 			long End = Math.min(Start + PartSize - 1, Size - 1);
 
-			var PartResPonse = client.copyPart(new CopyPartRequest().withSourceBucketName(SourceBucketName)
+			var PartresPonse = client.copyPart(new CopyPartRequest().withSourceBucketName(SourceBucketName)
 					.withSourceKey(SourceKey).withDestinationBucketName(TargetBucketName).withDestinationKey(TargetKey)
 					.withUploadId(Data.uploadId).withPartNumber(UploadCount).withFirstByte(Start).withLastByte(End)
 					.withSourceVersionId(versionId));
-			Data.parts.add(new PartETag(UploadCount++, PartResPonse.getETag()));
+			Data.parts.add(new PartETag(UploadCount++, PartresPonse.getETag()));
 
 			Start = End + 1;
 		}
@@ -1284,19 +1280,19 @@ public class TestBase {
 		if (metadata == null)
 			metadata = new ObjectMetadata();
 
-		var Response = client
+		var response = client
 				.initiateMultipartUpload(new InitiateMultipartUploadRequest(TargetBucketName, TargetKey, metadata));
-		Data.uploadId = Response.getUploadId();
+		Data.uploadId = response.getUploadId();
 
 		int UploadCount = 1;
 		long Start = 0;
 		while (Start < Size) {
 			long End = Math.min(Start + PartSize - 1, Size - 1);
 
-			var PartResPonse = client.copyPart(new CopyPartRequest().withSourceBucketName(SourceBucketName)
+			var PartresPonse = client.copyPart(new CopyPartRequest().withSourceBucketName(SourceBucketName)
 					.withSourceKey(SourceKey).withDestinationBucketName(TargetBucketName).withDestinationKey(TargetKey)
 					.withUploadId(Data.uploadId).withPartNumber(UploadCount).withFirstByte(Start).withLastByte(End));
-			Data.parts.add(new PartETag(UploadCount++, PartResPonse.getETag()));
+			Data.parts.add(new PartETag(UploadCount++, PartresPonse.getETag()));
 
 			Start = End + 1;
 		}
@@ -1311,16 +1307,16 @@ public class TestBase {
 		if (metadata == null)
 			metadata = new ObjectMetadata();
 
-		var Response = client.initiateMultipartUpload(
+		var response = client.initiateMultipartUpload(
 				new InitiateMultipartUploadRequest(TargetBucketName, TargetKey, metadata).withSSECustomerKey(SSE_C));
-		Data.uploadId = Response.getUploadId();
+		Data.uploadId = response.getUploadId();
 
 		int UploadCount = 1;
 		long Start = 0;
 		while (Start < Size) {
 			long End = Math.min(Start + PartSize - 1, Size - 1);
 
-			var PartResPonse = client.copyPart(new CopyPartRequest()
+			var PartresPonse = client.copyPart(new CopyPartRequest()
 					.withSourceBucketName(SourceBucketName)
 					.withSourceKey(SourceKey)
 					.withDestinationBucketName(TargetBucketName)
@@ -1331,7 +1327,7 @@ public class TestBase {
 					.withPartNumber(UploadCount)
 					.withFirstByte(Start)
 					.withLastByte(End));
-			Data.parts.add(new PartETag(UploadCount++, PartResPonse.getETag()));
+			Data.parts.add(new PartETag(UploadCount++, PartresPonse.getETag()));
 
 			Start = End + 1;
 		}
@@ -1339,17 +1335,17 @@ public class TestBase {
 		return Data;
 	}
 
-	public static long GetBytesUsed(ListObjectsV2Result Response) {
-		if (Response == null)
+	public static long GetBytesUsed(ListObjectsV2Result response) {
+		if (response == null)
 			return 0;
-		if (Response.getObjectSummaries() == null)
+		if (response.getObjectSummaries() == null)
 			return 0;
-		if (Response.getObjectSummaries().size() > 1)
+		if (response.getObjectSummaries().size() > 1)
 			return 0;
 
 		long Size = 0;
 
-		for (var Obj : Response.getObjectSummaries())
+		for (var Obj : response.getObjectSummaries())
 			Size += Obj.getSize();
 
 		return Size;
@@ -1357,8 +1353,8 @@ public class TestBase {
 
 	public void checkContentUsingRange(String bucketName, String key, String Data, long Step) {
 		var client = getClient();
-		var GetResponse = client.getObjectMetadata(bucketName, key);
-		var Size = GetResponse.getContentLength();
+		var Getresponse = client.getObjectMetadata(bucketName, key);
+		var Size = Getresponse.getContentLength();
 		assertEquals(Data.length(), Size);
 
 		long StartPosition = 0;
@@ -1367,13 +1363,13 @@ public class TestBase {
 			if (EndPosition > Size)
 				EndPosition = Size - 1;
 
-			var Response = client
+			var response = client
 					.getObject(new GetObjectRequest(bucketName, key).withRange(StartPosition, EndPosition - 1));
-			var Body = getBody(Response.getObjectContent());
+			var Body = getBody(response.getObjectContent());
 			var Length = EndPosition - StartPosition;
 			var PartBody = Data.substring((int) StartPosition, (int) EndPosition);
 
-			assertEquals(Length, Response.getObjectMetadata().getContentLength());
+			assertEquals(Length, response.getObjectMetadata().getContentLength());
 			assertTrue(PartBody.equals(Body), MainData.NOT_MATCHED);
 			StartPosition += Step;
 		}
@@ -1383,9 +1379,9 @@ public class TestBase {
 			SSECustomerKey SSE_C) {
 		if (client == null)
 			client = getClient();
-		var GetResponse = client
+		var Getresponse = client
 				.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key).withSSECustomerKey(SSE_C));
-		var Size = GetResponse.getContentLength();
+		var Size = Getresponse.getContentLength();
 
 		long StartPosition = 0;
 		while (StartPosition < Size) {
@@ -1393,13 +1389,13 @@ public class TestBase {
 			if (EndPosition > Size)
 				EndPosition = Size - 1;
 
-			var Response = client.getObject(new GetObjectRequest(bucketName, key)
+			var response = client.getObject(new GetObjectRequest(bucketName, key)
 					.withRange(StartPosition, EndPosition - 1).withSSECustomerKey(SSE_C));
-			var Body = getBody(Response.getObjectContent());
+			var Body = getBody(response.getObjectContent());
 			var Length = EndPosition - StartPosition;
 			var PartBody = Data.substring((int) StartPosition, (int) EndPosition);
 
-			assertEquals(Length, Response.getObjectMetadata().getContentLength());
+			assertEquals(Length, response.getObjectMetadata().getContentLength());
 			assertTrue(PartBody.equals(Body), MainData.NOT_MATCHED);
 			StartPosition += Step;
 		}
@@ -1426,8 +1422,8 @@ public class TestBase {
 		var client = getClient();
 
 		for (int i = 0; i < LoopCount; i++) {
-			var Response = client.getObject(bucketName, key);
-			var Body = getBody(Response.getObjectContent());
+			var response = client.getObject(bucketName, key);
+			var Body = getBody(response.getObjectContent());
 			assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 		}
 	}
@@ -1436,8 +1432,8 @@ public class TestBase {
 		var client = getClientHttps();
 
 		for (int i = 0; i < LoopCount; i++) {
-			var Response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
-			var Body = getBody(Response.getObjectContent());
+			var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
+			var Body = getBody(response.getObjectContent());
 			assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 		}
 	}
@@ -1450,10 +1446,10 @@ public class TestBase {
 			var Range = GetRandomRange(FileSize);
 			var RangeBody = Data.substring(Range.start, Range.end + 1);
 
-			var Response = client.getObject(new GetObjectRequest(bucketName, key).withRange(Range.start, Range.end));
-			var Body = getBody(Response.getObjectContent());
+			var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(Range.start, Range.end));
+			var Body = getBody(response.getObjectContent());
 
-			assertEquals(Range.length, Response.getObjectMetadata().getContentLength() - 1);
+			assertEquals(Range.length, response.getObjectMetadata().getContentLength() - 1);
 			assertTrue(RangeBody.equals(Body), MainData.NOT_MATCHED);
 		}
 	}
@@ -1463,12 +1459,12 @@ public class TestBase {
 		for (int i = 0; i < LoopCount; i++) {
 			var Range = GetRandomRange(FileSize);
 
-			var Response = client.getObject(new GetObjectRequest(bucketName, key).withRange(Range.start, Range.end - 1)
+			var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(Range.start, Range.end - 1)
 					.withSSECustomerKey(SSE_C));
-			var Body = getBody(Response.getObjectContent());
+			var Body = getBody(response.getObjectContent());
 			var RangeBody = Data.substring(Range.start, Range.end);
 
-			assertEquals(Range.length, Response.getObjectMetadata().getContentLength());
+			assertEquals(Range.length, response.getObjectMetadata().getContentLength());
 			assertTrue(RangeBody.equals(Body), MainData.NOT_MATCHED);
 		}
 	}
@@ -1511,8 +1507,8 @@ public class TestBase {
 
 			client.putObject(bucketName, key, createBody(EncodingData), MetadataList);
 
-			var Response = client.getObject(bucketName, key);
-			var EncodingBody = getBody(Response.getObjectContent());
+			var response = client.getObject(bucketName, key);
+			var EncodingBody = getBody(response.getObjectContent());
 			var Body = AES256.decrypt(EncodingBody, AESKey);
 			assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
 
@@ -1525,18 +1521,19 @@ public class TestBase {
 		var bucketName = getNewBucket();
 		var client = getClientHttps();
 		var key = "testobj";
-		var Data = Utils.randomTextToLong(FileSize);
+		var data = Utils.randomTextToLong(FileSize);
 		var metadata = new ObjectMetadata();
 		metadata.setContentType("text/plain");
 		metadata.setContentLength(FileSize);
 		var SSE_C = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
 				.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION).withMd5("DWygnHRtgiJ77HCm+1rvHw==");
 
-		client.putObject(new PutObjectRequest(bucketName, key, createBody(Data), metadata).withSSECustomerKey(SSE_C));
+		client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(SSE_C));
 
-		var Response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
-		var Body = getBody(Response.getObjectContent());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(SSE_C));
+		var body = getBody(response.getObjectContent());
+		assertTrue(data.equals(body), MainData.NOT_MATCHED);
+		assertEquals(SSEAlgorithm.AES256.toString(), response.getObjectMetadata().getSSECustomerAlgorithm());
 	}
 
 	public void testEncryptionSSE_S3CustomerWrite(int FileSize) {
@@ -1552,9 +1549,10 @@ public class TestBase {
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(Data), metadata));
 
-		var Response = client.getObject(bucketName, key);
-		var Body = getBody(Response.getObjectContent());
-		assertTrue(Data.equals(Body), MainData.NOT_MATCHED);
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertTrue(Data.equals(body), MainData.NOT_MATCHED);
+		assertEquals(SSEAlgorithm.AES256.toString(), response.getObjectMetadata().getSSEAlgorithm());
 	}
 
 	public void testEncryptionSSE_S3Copy(int FileSize) {
@@ -1571,22 +1569,22 @@ public class TestBase {
 		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName)
 				.withServerSideEncryptionConfiguration(SSE_S3Config));
 
-		var Response = client.getBucketEncryption(bucketName);
-		assertEquals(SSE_S3Config.getRules(), Response.getServerSideEncryptionConfiguration().getRules());
+		var response = client.getBucketEncryption(bucketName);
+		assertEquals(SSE_S3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
 		var SourceKey = "bar";
 		client.putObject(bucketName, SourceKey, Data);
 
-		var SourceResponse = client.getObject(bucketName, SourceKey);
-		var SourceBody = getBody(SourceResponse.getObjectContent());
-		assertEquals(SSEAlgorithm.AES256.toString(), SourceResponse.getObjectMetadata().getSSEAlgorithm());
+		var Sourceresponse = client.getObject(bucketName, SourceKey);
+		var SourceBody = getBody(Sourceresponse.getObjectContent());
+		assertEquals(SSEAlgorithm.AES256.toString(), Sourceresponse.getObjectMetadata().getSSEAlgorithm());
 
 		var TargetKey = "foo";
 		client.copyObject(bucketName, SourceKey, bucketName, TargetKey);
-		var TargetResponse = client.getObject(bucketName, TargetKey);
-		assertEquals(SSEAlgorithm.AES256.toString(), TargetResponse.getObjectMetadata().getSSEAlgorithm());
+		var Targetresponse = client.getObject(bucketName, TargetKey);
+		assertEquals(SSEAlgorithm.AES256.toString(), Targetresponse.getObjectMetadata().getSSEAlgorithm());
 
-		var TargetBody = getBody(TargetResponse.getObjectContent());
+		var TargetBody = getBody(Targetresponse.getObjectContent());
 		assertTrue(SourceBody.equals(TargetBody), MainData.NOT_MATCHED);
 	}
 
@@ -1612,12 +1610,12 @@ public class TestBase {
 			client.putObject(SourceBucketName, SourceKey, Data);
 
 		//// Source Object Check
-		var SourceResponse = client.getObject(SourceBucketName, SourceKey);
-		var SourceBody = getBody(SourceResponse.getObjectContent());
+		var Sourceresponse = client.getObject(SourceBucketName, SourceKey);
+		var SourceBody = getBody(Sourceresponse.getObjectContent());
 		if (SourceObjectEncryption)
-			assertEquals(SSEAlgorithm.AES256.toString(), SourceResponse.getObjectMetadata().getSSEAlgorithm());
+			assertEquals(SSEAlgorithm.AES256.toString(), Sourceresponse.getObjectMetadata().getSSEAlgorithm());
 		else
-			assertNull(SourceResponse.getObjectMetadata().getSSEAlgorithm());
+			assertNull(Sourceresponse.getObjectMetadata().getSSEAlgorithm());
 		assertEquals(Data, SourceBody);
 
 		var SSE_S3Config = new ServerSideEncryptionConfiguration()
@@ -1631,8 +1629,8 @@ public class TestBase {
 			client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(SourceBucketName)
 					.withServerSideEncryptionConfiguration(SSE_S3Config));
 
-			var EncryptionResponse = client.getBucketEncryption(SourceBucketName);
-			assertEquals(SSE_S3Config.getRules(), EncryptionResponse.getServerSideEncryptionConfiguration().getRules());
+			var Encryptionresponse = client.getBucketEncryption(SourceBucketName);
+			assertEquals(SSE_S3Config.getRules(), Encryptionresponse.getServerSideEncryptionConfiguration().getRules());
 		}
 
 		// Target Bucket Encryption
@@ -1640,8 +1638,8 @@ public class TestBase {
 			client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(TargetBucketName)
 					.withServerSideEncryptionConfiguration(SSE_S3Config));
 
-			var EncryptionResponse = client.getBucketEncryption(TargetBucketName);
-			assertEquals(SSE_S3Config.getRules(), EncryptionResponse.getServerSideEncryptionConfiguration().getRules());
+			var Encryptionresponse = client.getBucketEncryption(TargetBucketName);
+			assertEquals(SSE_S3Config.getRules(), Encryptionresponse.getServerSideEncryptionConfiguration().getRules());
 		}
 
 		// Source Copy Object
@@ -1652,12 +1650,12 @@ public class TestBase {
 			client.copyObject(SourceBucketName, SourceKey, TargetBucketName, TargetKey);
 
 		// Target Object Check
-		var TargetResponse = client.getObject(TargetBucketName, TargetKey);
-		var TargetBody = getBody(TargetResponse.getObjectContent());
+		var Targetresponse = client.getObject(TargetBucketName, TargetKey);
+		var TargetBody = getBody(Targetresponse.getObjectContent());
 		if (TargetBucketEncryption || TargetObjectEncryption)
-			assertEquals(SSEAlgorithm.AES256.toString(), TargetResponse.getObjectMetadata().getSSEAlgorithm());
+			assertEquals(SSEAlgorithm.AES256.toString(), Targetresponse.getObjectMetadata().getSSEAlgorithm());
 		else
-			assertNull(TargetResponse.getObjectMetadata().getSSEAlgorithm());
+			assertNull(Targetresponse.getObjectMetadata().getSSEAlgorithm());
 		assertTrue(SourceBody.equals(TargetBody), MainData.NOT_MATCHED);
 	}
 
@@ -1722,16 +1720,16 @@ public class TestBase {
 		client.putObject(SourcePutRequest);
 
 		// Source Get Object
-		var SourceResponse = client.getObject(SourceGetRequest);
-		var SourceBody = getBody(SourceResponse.getObjectContent());
+		var Sourceresponse = client.getObject(SourceGetRequest);
+		var SourceBody = getBody(Sourceresponse.getObjectContent());
 		assertTrue(data.equals(SourceBody), MainData.NOT_MATCHED);
 
 		// Copy Object
 		client.copyObject(CopyRequest);
 
 		// Target Object Check
-		var TargetResponse = client.getObject(TargetGetRequest);
-		var TargetBody = getBody(TargetResponse.getObjectContent());
+		var Targetresponse = client.getObject(TargetGetRequest);
+		var TargetBody = getBody(Targetresponse.getObjectContent());
 		assertTrue(SourceBody.equals(TargetBody), MainData.NOT_MATCHED);
 	}
 
@@ -1801,15 +1799,15 @@ public class TestBase {
 		var key = "foo";
 
 		client.putObject(bucketName, key, "");
-		var Response = client.getObjectAcl(bucketName, key);
+		var response = client.getObjectAcl(bucketName, key);
 		var Policy = new AccessControlList();
-		Policy.setOwner(Response.getOwner());
-		Policy.grantPermission(Response.getGrantsAsList().get(0).getGrantee(), permission);
+		Policy.setOwner(response.getOwner());
+		Policy.grantPermission(response.getGrantsAsList().get(0).getGrantee(), permission);
 
 		client.setObjectAcl(bucketName, key, Policy);
 
-		Response = client.getObjectAcl(bucketName, key);
-		var GetGrants = Response.getGrantsAsList();
+		response = client.getObjectAcl(bucketName, key);
+		var GetGrants = response.getGrantsAsList();
 
 		var User = new CanonicalGrantee(config.mainUser.userId);
 		User.setDisplayName(config.mainUser.displayName);
@@ -2021,8 +2019,8 @@ public class TestBase {
 
 		for (int i = 0; i < NumVersions; i++) {
 			var Body = String.format("content-%s", i);
-			var Response = client.putObject(bucketName, key, Body);
-			var versionId = Response.getVersionId();
+			var response = client.putObject(bucketName, key, Body);
+			var versionId = response.getVersionId();
 
 			Contents.add(Body);
 			versionIds.add(versionId);
@@ -2040,8 +2038,8 @@ public class TestBase {
 
 		for (int i = 0; i < NumVersions; i++) {
 			var Body = String.format("content-%s", i);
-			var Response = client.putObject(bucketName, key, Body);
-			var versionId = Response.getVersionId();
+			var response = client.putObject(bucketName, key, Body);
+			var versionId = response.getVersionId();
 
 			Contents.add(Body);
 			versionIds.add(versionId);
@@ -2057,8 +2055,8 @@ public class TestBase {
 		var Contents = new ArrayList<String>();
 
 		for (int i = 0; i < NumVersions; i++) {
-			var Response = client.putObject(bucketName, key, Body);
-			var versionId = Response.getVersionId();
+			var response = client.putObject(bucketName, key, Body);
+			var versionId = response.getVersionId();
 
 			Contents.add(Body);
 			versionIds.add(versionId);
@@ -2094,9 +2092,9 @@ public class TestBase {
 
 	public List<Thread> doClearVersionedBucketConcurrent(AmazonS3 client, String bucketName) {
 		var TList = new ArrayList<Thread>();
-		var Response = client.listVersions(bucketName, "");
+		var response = client.listVersions(bucketName, "");
 
-		for (var Version : Response.getVersionSummaries()) {
+		for (var Version : response.getVersionSummaries()) {
 			var mThread = new Thread(() -> client.deleteVersion(bucketName, Version.getKey(), Version.getVersionId()));
 			mThread.start();
 			TList.add(mThread);
@@ -2133,27 +2131,27 @@ public class TestBase {
 		}
 	}
 
-	public void partsETagCompare(List<PartETag> Expected, List<PartSummary> Actual) {
-		assertEquals(Expected.size(), Actual.size());
+	public void partsETagCompare(List<PartETag> expected, List<PartSummary> actual) {
+		assertEquals(expected.size(), actual.size());
 
-		for (int i = 0; i < Expected.size(); i++) {
-			assertEquals(Expected.get(i).getPartNumber(), Actual.get(i).getPartNumber());
-			assertEquals(Expected.get(i).getETag(), Actual.get(i).getETag());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).getPartNumber(), actual.get(i).getPartNumber());
+			assertEquals(expected.get(i).getETag(), actual.get(i).getETag());
 		}
 	}
 
-	public void VersionIDsCompare(List<S3VersionSummary> Expected, List<S3VersionSummary> Actual) {
-		assertEquals(Expected.size(), Actual.size());
+	public void VersionIDsCompare(List<S3VersionSummary> expected, List<S3VersionSummary> actual) {
+		assertEquals(expected.size(), actual.size());
 
-		for (int i = 0; i < Expected.size(); i++) {
-			assertEquals(Expected.get(i).getVersionId(), Actual.get(i).getVersionId());
-			assertEquals(Expected.get(i).getETag(), Actual.get(i).getETag());
-			assertEquals(Expected.get(i).getKey(), Actual.get(i).getKey());
-			assertEquals(Expected.get(i).getSize(), Actual.get(i).getSize());
+		for (int i = 0; i < expected.size(); i++) {
+			assertEquals(expected.get(i).getVersionId(), actual.get(i).getVersionId());
+			assertEquals(expected.get(i).getETag(), actual.get(i).getETag());
+			assertEquals(expected.get(i).getKey(), actual.get(i).getKey());
+			assertEquals(expected.get(i).getSize(), actual.get(i).getSize());
 		}
 	}
 
-	public void s3eventCompare(Object[] expected, Object[] actual){
+	public void s3eventCompare(Object[] expected, Object[] actual) {
 		assertEquals(expected.length, actual.length);
 		for (int i = 0; i < expected.length; i++) {
 			assertEquals(expected[i].toString(), actual[i].toString());
@@ -2180,15 +2178,21 @@ public class TestBase {
 			return;
 
 		try {
-			var Result = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withMaxResults(2000));
-			var ObjectList = Result.getVersionSummaries();
+			var isTruncated = true;
+			while (isTruncated) {
+				var response = client
+						.listVersions(new ListVersionsRequest().withBucketName(bucketName).withMaxResults(1000));
+				var objects = response.getVersionSummaries();
 
-			for (var Object : ObjectList)
-				client.deleteVersion(new DeleteVersionRequest(bucketName, Object.getKey(), Object.getVersionId()));
+				for (var version : objects)
+					client.deleteVersion(
+							new DeleteVersionRequest(bucketName, version.getKey(), version.getVersionId()));
+				isTruncated = response.isTruncated();
+			}
 
 		} catch (AmazonServiceException e) {
-			// System.out.format("Error : Bucket(%s) Clear Failed(%s, %d)\n", bucketName,
-			// e.getErrorCode(), e.getStatusCode());
+			System.out.format("Error : Bucket(%s) Clear Failed(%s, %d)\n", bucketName, e.getErrorCode(),
+					e.getStatusCode());
 		}
 
 		try {
