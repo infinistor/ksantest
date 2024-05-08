@@ -42,7 +42,7 @@ public class ACL extends TestBase {
 	@Tag("Get")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 권한없는 사용자가 오브젝트에 접근 가능한지
 	// 확인
-	public void test_object_raw_get() {
+	public void testObjectRawGet() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
 				key);
@@ -55,7 +55,7 @@ public class ACL extends TestBase {
 	@Tag("Get")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 권한없는 사용자가 삭제된 버킷의 삭제된
 	// 오브젝트에 접근할때 에러 확인
-	public void test_object_raw_get_bucket_gone() {
+	public void testObjectRawGetBucketGone() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
 				key);
@@ -69,14 +69,14 @@ public class ACL extends TestBase {
 
 		assertEquals(404, e.getStatusCode());
 		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
-		DeleteBucketList(bucketName);
+		deleteBucketList(bucketName);
 	}
 
 	@Test
 	@Tag("Delete")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 권한없는 사용자가 삭제된 버킷의 삭제된
 	// 오브젝트를 삭제할때 에러 확인
-	public void test_object_delete_key_bucket_gone() {
+	public void testObjectDeleteKeyBucketGone() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
 				key);
@@ -90,14 +90,14 @@ public class ACL extends TestBase {
 
 		assertEquals(404, e.getStatusCode());
 		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
-		DeleteBucketList(bucketName);
+		deleteBucketList(bucketName);
 	}
 
 	@Test
 	@Tag("Get")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 권한없는 사용자가 삭제된 오브젝트에 접근할때
 	// 에러 확인
-	public void test_object_raw_get_object_gone() {
+	public void testObjectRawGetObjectGone() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
 				key);
@@ -116,7 +116,7 @@ public class ACL extends TestBase {
 	@Tag("Get")
 	// [Bucket_ACL = private, Object_ACL = public-read] 권한없는 사용자가 개인버킷의 공용 오브젝트에 접근
 	// 가능한지 확인
-	public void test_object_raw_get_bucket_acl() {
+	public void testObjectRawGetBucketAcl() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, key);
 
@@ -128,7 +128,7 @@ public class ACL extends TestBase {
 	@Tag("Get")
 	// [Bucket_ACL = public-read, Object_ACL = private] 권한없는 사용자가 공용버킷의 개인 오브젝트에
 	// 접근할때 에러확인
-	public void test_object_raw_get_object_acl() {
+	public void testObjectRawGetObjectAcl() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.Private, key);
 
@@ -143,7 +143,7 @@ public class ACL extends TestBase {
 	@Tag("Get")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인한 사용자가 공용 버킷의 공용
 	// 오브젝트에 접근 가능한지 확인
-	public void test_object_raw_authenticated() {
+	public void testObjectRawAuthenticated() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
 				key);
@@ -156,7 +156,7 @@ public class ACL extends TestBase {
 	@Tag("Header")
 	// [Bucket_ACL = private, Object_ACL = private] 로그인한 사용자가 GetObject의 반환헤더값을 설정하고
 	// 개인 오브젝트를 가져올때 반환헤더값이 적용되었는지 확인
-	public void test_object_raw_response_headers() {
+	public void testObjectRawResponseHeaders() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.Private, key);
 		var client = getClient();
@@ -186,7 +186,7 @@ public class ACL extends TestBase {
 	@Tag("Get")
 	// [Bucket_ACL = private, Object_ACL = public-read] 로그인한 사용자가 개인버킷의 공용 오브젝트에 접근
 	// 가능한지 확인
-	public void test_object_raw_authenticated_bucket_acl() {
+	public void testObjectRawAuthenticatedBucketAcl() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, key);
 
@@ -197,7 +197,7 @@ public class ACL extends TestBase {
 	@Test
 	@Tag("Get")
 	// [Bucket_ACL = public-read, Object_ACL = private] 로그인한 사용자가 공용버킷의 개인 오브젝트에 접근 가능한지 확인
-	public void test_object_raw_authenticated_object_acl() {
+	public void testObjectRawAuthenticatedObjectAcl() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.AuthenticatedRead, key);
 
@@ -209,7 +209,7 @@ public class ACL extends TestBase {
 	@Tag("Get")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인한 사용자가 삭제된 버킷의 삭제된
 	// 오브젝트에 접근할때 에러 확인
-	public void test_object_raw_authenticated_bucket_gone() {
+	public void testObjectRawAuthenticatedBucketGone() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
 				key);
@@ -222,14 +222,14 @@ public class ACL extends TestBase {
 
 		assertEquals(404, e.getStatusCode());
 		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
-		DeleteBucketList(bucketName);
+		deleteBucketList(bucketName);
 	}
 
 	@Test
 	@Tag("Get")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인한 사용자가 삭제된 오브젝트에 접근할때
 	// 에러 확인
-	public void test_object_raw_authenticated_object_gone() {
+	public void testObjectRawAuthenticatedObjectGone() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
 				key);
@@ -247,7 +247,7 @@ public class ACL extends TestBase {
 	@Tag("Post")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인이 만료되지 않은 사용자가 공용 버킷의
 	// 공용 오브젝트에 URL 형식으로 접근 가능한지 확인
-	public void test_object_raw_get_x_amz_expires_not_expired() {
+	public void testObjectRawGetXAmzExpiresNotExpired() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
 				key);
@@ -263,7 +263,7 @@ public class ACL extends TestBase {
 	@Tag("Post")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인이 만료된 사용자가 공용 버킷의 공용
 	// 오브젝트에 URL 형식으로 접근 실패 확인
-	public void test_object_raw_get_x_amz_expires_out_range_zero() {
+	public void testObjectRawGetXAmzExpiresOutRangeZero() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
 				key);
@@ -278,7 +278,7 @@ public class ACL extends TestBase {
 	@Tag("Post")
 	// [Bucket_ACL = public-read, Object_ACL = public-read] 로그인 유효주기가 만료된 사용자가 공용
 	// 버킷의 공용 오브젝트에 URL 형식으로 접근 실패 확인
-	public void test_object_raw_get_x_amz_expires_out_positive_range() {
+	public void testObjectRawGetXAmzExpiresOutPositiveRange() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead, key);
 		var client = getClient();
@@ -293,7 +293,7 @@ public class ACL extends TestBase {
 	@Tag("Update")
 	// [Bucket_ACL = Default, Object_ACL = Default] 로그인한 사용자가 버켓을 만들고 업로드한 오브젝트를
 	// 권한없는 사용자가 업데이트하려고 할때 실패 확인
-	public void test_object_anon_put() {
+	public void testObjectAnonPut() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
@@ -312,7 +312,7 @@ public class ACL extends TestBase {
 	@Tag("Update")
 	// [Bucket_ACL = public-read-write] 로그인한 사용자가 공용버켓(w/r)을 만들고 업로드한 오브젝트를 권한없는
 	// 사용자가 업데이트했을때 올바르게 적용 되는지 확인
-	public void test_object_anon_put_write_access() {
+	public void testObjectAnonPutWriteAccess() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
@@ -330,7 +330,7 @@ public class ACL extends TestBase {
 	@Test
 	@Tag("Default")
 	// [Bucket_ACL = Default, Object_ACL = Default] 로그인한 사용자가 버켓을 만들고 업로드
-	public void test_object_put_authenticated() {
+	public void testObjectPutAuthenticated() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -341,7 +341,7 @@ public class ACL extends TestBase {
 	@Tag("Default")
 	// [Bucket_ACL = Default, Object_ACL = Default] Post방식으로 만료된 로그인 정보를 설정하여 오브젝트
 	// 업데이트 실패 확인
-	public void test_object_raw_put_authenticated_expired() {
+	public void testObjectRawPutAuthenticatedExpired() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
@@ -357,17 +357,17 @@ public class ACL extends TestBase {
 	@Tag("Get")
 	// [Bucket_ACL = private, Object_ACL = public-read] 모든 사용자가 개인버킷의 공용 오브젝트에 접근
 	// 가능한지 확인
-	public void test_acl_private_bucket_public_read_object() {
+	public void testAclPrivateBucketPublicReadObject() {
 		var key = "foo";
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, key);
 
 		var client = getClient();
-		ACLTest(bucketName, key, client, true);
+		aclTest(bucketName, key, client, true);
 
 		var AltClient = getAltClient();
-		ACLTest(bucketName, key, AltClient, true);
+		aclTest(bucketName, key, AltClient, true);
 
 		var unauthenticatedClient = getPublicClient();
-		ACLTest(bucketName, key, unauthenticatedClient, true);
+		aclTest(bucketName, key, unauthenticatedClient, true);
 	}
 }

@@ -59,143 +59,131 @@ public class Lock extends TestBase
 	@Test
 	@Tag("Check")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 잠금 설정이 가능한지 확인
-	public void test_object_lock_put_obj_lock() {
+	public void testObjectLockPutObjLock() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
 				.withRule(new ObjectLockRule().withDefaultRetention(
 						new DefaultRetention().withMode(ObjectLockRetentionMode.COMPLIANCE).withYears(1)));
 		client.setObjectLockConfiguration(
-				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(Conf));
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf));
 
-		var VersionResponse = client.getBucketVersioningConfiguration(bucketName);
-		assertEquals(BucketVersioningConfiguration.ENABLED, VersionResponse.getStatus());
+		var versionResponse = client.getBucketVersioningConfiguration(bucketName);
+		assertEquals(BucketVersioningConfiguration.ENABLED, versionResponse.getStatus());
 	}
 
 	@Test
 	@Tag("ERROR")
 	//버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정이 실패
-	public void test_object_lock_put_obj_lock_invalid_bucket() {
+	public void testObjectLockPutObjLockInvalidBucket() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(bucketName);
 
-		var Conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
 				.withRule(new ObjectLockRule().withDefaultRetention(
 						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withYears(1)));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
-				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(Conf)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(409, StatusCode);
-		assertEquals(MainData.InvalidBucketState, ErrorCode);
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
+		assertEquals(409, e.getStatusCode());
+		assertEquals(MainData.InvalidBucketState, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	//[버킷의 Lock옵션을 활성화] Days, Years값 모두 입력하여 Lock 설정할경우 실패
-	public void test_object_lock_put_obj_lock_with_days_and_years() {
+	public void testObjectLockPutObjLockWithDaysAndYears() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
 				.withRule(new ObjectLockRule().withDefaultRetention(
 						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withYears(1).withDays(1)));
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
-				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(Conf)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.MalformedXML, ErrorCode);
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.MalformedXML, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	//[버킷의 Lock옵션을 활성화] Days값을 0이하로 입력하여 Lock 설정할경우 실패
-	public void test_object_lock_put_obj_lock_invalid_days() {
+	public void testObjectLockPutObjLockInvalidDays() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
 				.withRule(new ObjectLockRule().withDefaultRetention(
 						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withDays(0)));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
-				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(Conf)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidArgument, ErrorCode);
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidArgument, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	//[버킷의 Lock옵션을 활성화] Years값을 0이하로 입력하여 Lock 설정할경우 실패
-	public void test_object_lock_put_obj_lock_invalid_years() {
+	public void testObjectLockPutObjLockInvalidYears() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
 				.withRule(new ObjectLockRule().withDefaultRetention(
 						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withYears(-1)));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
-				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(Conf)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidArgument, ErrorCode);
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidArgument, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	//[버킷의 Lock옵션을 활성화] mode값이 올바르지 않은상태에서 Lock 설정할 경우 실패
-	public void test_object_lock_put_obj_lock_invalid_mode() {
+	public void testObjectLockPutObjLockInvalidMode() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED).withRule(
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED).withRule(
 				new ObjectLockRule().withDefaultRetention(new DefaultRetention().withMode("invalid").withYears(1)));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
-				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(Conf)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.MalformedXML, ErrorCode);
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.MalformedXML, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	//[버킷의 Lock옵션을 활성화] status값이 올바르지 않은상태에서 Lock 설정할 경우 실패
-	public void test_object_lock_put_obj_lock_invalid_status() {
+	public void testObjectLockPutObjLockInvalidStatus() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Conf = new ObjectLockConfiguration().withObjectLockEnabled("Disabled")
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled("Disabled")
 				.withRule(new ObjectLockRule().withDefaultRetention(
 						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withYears(1)));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
-				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(Conf)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.MalformedXML, ErrorCode);
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.MalformedXML, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("Version")
 	//[버킷의 Lock옵션을 활성화] 버킷의 버저닝을 일시중단하려고 할경우 실패
-	public void test_object_lock_suspend_versioning() {
+	public void testObjectLockSuspendVersioning() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
@@ -203,523 +191,501 @@ public class Lock extends TestBase
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
 						new BucketVersioningConfiguration(BucketVersioningConfiguration.SUSPENDED))));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(409, StatusCode);
-		assertEquals(MainData.InvalidBucketState, ErrorCode);
+		assertEquals(409, e.getStatusCode());
+		assertEquals(MainData.InvalidBucketState, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("Check")
 	//[버킷의 Lock옵션을 활성화] 버킷의 lock설정이 올바르게 되었는지 확인
-	public void test_object_lock_get_obj_lock() {
+	public void testObjectLockGetObjLock() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
 				.withRule(new ObjectLockRule().withDefaultRetention(
 						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withDays(1)));
 
 		client.setObjectLockConfiguration(
-				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(Conf));
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf));
 
-		var Response = client
+		var response = client
 				.getObjectLockConfiguration(new GetObjectLockConfigurationRequest().withBucketName(bucketName));
-		LockCompare(Conf, Response.getObjectLockConfiguration());
+		lockCompare(conf, response.getObjectLockConfiguration());
 	}
 
 	@Test
 	@Tag("ERROR")
 	//버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정 조회 실패
-	public void test_object_lock_get_obj_lock_invalid_bucket() {
+	public void testObjectLockGetObjLockInvalidBucket() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(bucketName);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
 				.getObjectLockConfiguration(new GetObjectLockConfigurationRequest().withBucketName(bucketName)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.ObjectLockConfigurationNotFoundError, ErrorCode);
+		assertEquals(404, e.getStatusCode());
+		assertEquals(MainData.ObjectLockConfigurationNotFoundError, e.getErrorCode());
 	}
 
 	@Test
-	@Tag("Retention")
+	@Tag("retention")
 	//[버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정이 가능한지 확인
-	public void test_object_lock_put_obj_retention() {
+	public void testObjectLockPutObjRetention() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
-		var Key = "file1";
+		var key = "file1";
 
-		var PutResponse = client.putObject(bucketName, Key, "abc");
-		var VersionID = PutResponse.getVersionId();
+		var putResponse = client.putObject(bucketName, key, "abc");
+		var versionId = putResponse.getVersionId();
 
-		var Retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention));
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention));
 
-		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, VersionID).withBypassGovernanceRetention(true));
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
 	}
 
 	@Test
-	@Tag("Retention")
+	@Tag("retention")
 	//버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 설정 실패
-	public void test_object_lock_put_obj_retention_invalid_bucket() {
+	public void testObjectLockPutObjRetentionInvalidBucket() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(bucketName);
-		var Key = "file1";
+		var key = "file1";
 
-		client.putObject(bucketName, Key, "abc");
+		client.putObject(bucketName, key, "abc");
 
-		var Retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidRequest, ErrorCode);
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidRequest, e.getErrorCode());
 	}
 
 	@Test
-	@Tag("Retention")
+	@Tag("retention")
 	//[버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정할때 Mode값이 올바르지 않을 경우 설정 실패
-	public void test_object_lock_put_obj_retention_invalid_mode() {
+	public void testObjectLockPutObjRetentionInvalidMode() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
-		var Key = "file1";
+		var key = "file1";
 
-		client.putObject(bucketName, Key, "abc");
+		client.putObject(bucketName, key, "abc");
 
-		var Retention = new ObjectLockRetention().withMode("invalid").withRetainUntilDate(new Calendar.Builder()
+		var retention = new ObjectLockRetention().withMode("invalid").withRetainUntilDate(new Calendar.Builder()
 				.setDate(2030, 1, 1).setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.MalformedXML, ErrorCode);
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.MalformedXML, e.getErrorCode());
 	}
 
 	@Test
-	@Tag("Retention")
+	@Tag("retention")
 	//[버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정이 올바른지 확인
-	public void test_object_lock_get_obj_retention() {
+	public void testObjectLockGetObjRetention() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
-		var Key = "file1";
+		var key = "file1";
 
-		var PutResponse = client.putObject(bucketName, Key, "abc");
-		var VersionID = PutResponse.getVersionId();
+		var putResponse = client.putObject(bucketName, key, "abc");
+		var versionId = putResponse.getVersionId();
 
-		var Retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention));
-		var Response = client
-				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(Key));
-		RetentionCompare(Retention, Response.getRetention());
-		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, VersionID).withBypassGovernanceRetention(true));
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention));
+		var response = client
+				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(key));
+		retentionCompare(retention, response.getRetention());
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
 	}
 
 	@Test
-	@Tag("Retention")
+	@Tag("retention")
 	//버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 조회 실패
-	public void test_object_lock_get_obj_retention_invalid_bucket() {
+	public void testObjectLockGetObjRetentionInvalidBucket() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(bucketName);
-		var Key = "file1";
+		var key = "file1";
 
-		client.putObject(bucketName, Key, "abc");
+		client.putObject(bucketName, key, "abc");
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
-				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(Key)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidRequest, ErrorCode);
+				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(key)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidRequest, e.getErrorCode());
 	}
 
 	@Test
-	@Tag("Retention")
+	@Tag("retention")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 특정 버전에 Lock 유지기한을 설정할 경우 올바르게 적용되었는지 확인
-	public void test_object_lock_put_obj_retention_versionid() {
+	public void testObjectLockPutObjRetentionVersionid() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
-		var Key = "file1";
+		var key = "file1";
 
-		client.putObject(bucketName, Key, "abc");
-		var PutResponse = client.putObject(bucketName, Key, "abc");
-		var VersionID = PutResponse.getVersionId();
+		client.putObject(bucketName, key, "abc");
+		var putResponse = client.putObject(bucketName, key, "abc");
+		var versionId = putResponse.getVersionId();
 
-		var Retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention));
-		var Response = client
-				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(Key));
-		RetentionCompare(Retention, Response.getRetention());
-		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, VersionID).withBypassGovernanceRetention(true));
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention));
+		var response = client
+				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(key));
+		retentionCompare(retention, response.getRetention());
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
 	}
 
 	@Test
 	@Tag("Priority")
 	//[버킷의 Lock옵션을 활성화] 버킷에 설정한 Lock설정보다 오브젝트에 Lock설정한 값이 우선 적용됨을 확인
-	public void test_object_lock_put_obj_retention_override_default_retention() {
+	public void testObjectLockPutObjRetentionOverrideDefaultRetention() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
 				.withRule(new ObjectLockRule().withDefaultRetention(
 						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withDays(1)));
 
 		client.setObjectLockConfiguration(
-				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(Conf));
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf));
 
-		var Key = "file1";
-		var Body = "abc";
-		var Metadata = new ObjectMetadata();
-		Metadata.setContentMD5(Utils.getMD5(Body));
-		Metadata.setContentType("text/plain");
-		Metadata.setContentLength(Body.length());
+		var key = "file1";
+		var body = "abc";
+		var metadata = new ObjectMetadata();
+		metadata.setContentMD5(Utils.getMD5(body));
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(body.length());
 
-		var PutResponse = client.putObject(bucketName, Key, createBody(Body), Metadata);
-		var VersionID = PutResponse.getVersionId();
+		var putResponse = client.putObject(bucketName, key, createBody(body), metadata);
+		var versionId = putResponse.getVersionId();
 
-		var Retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention));
-		var Response = client
-				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(Key));
-		RetentionCompare(Retention, Response.getRetention());
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention));
+		var response = client
+				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(key));
+		retentionCompare(retention, response.getRetention());
 
-		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, VersionID).withBypassGovernanceRetention(true));
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
 	}
 
 	@Test
 	@Tag("Overwrite")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한을 늘렸을때 적용되는지 확인
-	public void test_object_lock_put_obj_retention_increase_period() {
+	public void testObjectLockPutObjRetentionIncreasePeriod() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
-		var Key = "file1";
+		var key = "file1";
 
-		client.putObject(bucketName, Key, "abc");
-		var PutResponse = client.putObject(bucketName, Key, "abc");
-		var VersionID = PutResponse.getVersionId();
+		client.putObject(bucketName, key, "abc");
+		var putResponse = client.putObject(bucketName, key, "abc");
+		var versionId = putResponse.getVersionId();
 
-		var Retention1 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention1 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention1));
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention1));
 
-		var Retention2 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention2 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 3, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention2));
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention2));
 
-		var Response = client
-				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(Key));
-		RetentionCompare(Retention2, Response.getRetention());
-		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, VersionID).withBypassGovernanceRetention(true));
+		var response = client
+				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(key));
+		retentionCompare(retention2, response.getRetention());
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
 	}
 
 	@Test
 	@Tag("Overwrite")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한을 줄였을때 실패 확인
-	public void test_object_lock_put_obj_retention_shorten_period() {
+	public void testObjectLockPutObjRetentionShortenPeriod() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
-		var Key = "file1";
+		var key = "file1";
 
-		client.putObject(bucketName, Key, "abc");
-		var PutResponse = client.putObject(bucketName, Key, "abc");
-		var VersionID = PutResponse.getVersionId();
+		client.putObject(bucketName, key, "abc");
+		var putResponse = client.putObject(bucketName, key, "abc");
+		var versionId = putResponse.getVersionId();
 
-		var Retention1 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention1 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 3, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention1));
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention1));
 
-		var Retention2 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention2 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention2)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.AccessDenied, ErrorCode);
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention2)));
+		assertEquals(403, e.getStatusCode());
+		assertEquals(MainData.AccessDenied, e.getErrorCode());
 
-		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, VersionID).withBypassGovernanceRetention(true));
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
 	}
 
 	@Test
 	@Tag("Overwrite")
 	//[버킷의 Lock옵션을 활성화] 바이패스를 True로 설정하고 오브젝트의 lock 유지기한을 줄였을때 적용되는지 확인
-	public void test_object_lock_put_obj_retention_shorten_period_bypass() {
+	public void testObjectLockPutObjRetentionShortenPeriodBypass() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
-		var Key = "file1";
+		var key = "file1";
 
-		client.putObject(bucketName, Key, "abc");
-		var PutResponse = client.putObject(bucketName, Key, "abc");
-		var VersionID = PutResponse.getVersionId();
+		client.putObject(bucketName, key, "abc");
+		var putResponse = client.putObject(bucketName, key, "abc");
+		var versionId = putResponse.getVersionId();
 
-		var Retention1 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention1 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 3, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention1));
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention1));
 
-		var Retention2 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention2 = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
-		client.setObjectRetention(new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key)
-				.withRetention(Retention2).withBypassGovernanceRetention(true));
+		client.setObjectRetention(new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key)
+				.withRetention(retention2).withBypassGovernanceRetention(true));
 
-		var Response = client
-				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(Key));
-		RetentionCompare(Retention2, Response.getRetention());
-		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, VersionID).withBypassGovernanceRetention(true));
+		var response = client
+				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(key));
+		retentionCompare(retention2, response.getRetention());
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
 	}
 
 	@Test
 	@Tag("ERROR")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한내에 삭제를 시도할 경우 실패 확인
-	public void test_object_lock_delete_object_with_retention() {
+	public void testObjectLockDeleteObjectWithRetention() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
-		var Key = "file1";
+		var key = "file1";
 
-		var PutResponse = client.putObject(bucketName, Key, "abc");
-		var VersionID = PutResponse.getVersionId();
+		var putResponse = client.putObject(bucketName, key, "abc");
+		var versionId = putResponse.getVersionId();
 
-		var Retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention));
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention));
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.deleteVersion(bucketName, Key, VersionID));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.AccessDenied, ErrorCode);
+		var e = assertThrows(AmazonServiceException.class, () -> client.deleteVersion(bucketName, key, versionId));
+		assertEquals(403, e.getStatusCode());
+		assertEquals(MainData.AccessDenied, e.getErrorCode());
 
-		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, VersionID).withBypassGovernanceRetention(true));
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
 	}
 
 	@Test
 	@Tag("LegalHold")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold를 활성화 가능한지 확인
-	public void test_object_lock_put_legal_hold() {
+	public void testObjectLockPutLegalHold() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Key = "file1";
-		client.putObject(bucketName, Key, "abc");
+		var key = "file1";
+		client.putObject(bucketName, key, "abc");
 
-		var LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
+		var legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
 		client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold));
 
-		LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
+		legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
 		client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold));
 
 	}
 
 	@Test
 	@Tag("LegalHold")
 	//[버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold를 활성화 실패 확인
-	public void test_object_lock_put_legal_hold_invalid_bucket() {
+	public void testObjectLockPutLegalHoldInvalidBucket() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(bucketName);
 
-		var Key = "file1";
-		client.putObject(bucketName, Key, "abc");
+		var key = "file1";
+		client.putObject(bucketName, key, "abc");
 
-		var LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
+		var legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidRequest, ErrorCode);
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidRequest, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("LegalHold")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold에 잘못된 값을 넣을 경우 실패 확인
-	public void test_object_lock_put_legal_hold_invalid_status() {
+	public void testObjectLockPutLegalHoldInvalidStatus() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Key = "file1";
-		client.putObject(bucketName, Key, "abc");
+		var key = "file1";
+		client.putObject(bucketName, key, "abc");
 
-		var LegalHold = new ObjectLockLegalHold().withStatus("abc");
+		var legalHold = new ObjectLockLegalHold().withStatus("abc");
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.MalformedXML, ErrorCode);
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.MalformedXML, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("LegalHold")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 올바르게 적용되었는지 확인
-	public void test_object_lock_get_legal_hold() {
+	public void testObjectLockGetLegalHold() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Key = "file1";
-		client.putObject(bucketName, Key, "abc");
+		var key = "file1";
+		client.putObject(bucketName, key, "abc");
 
-		var LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
+		var legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
 		client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
-		var Response = client
-				.getObjectLegalHold(new GetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key));
-		assertEquals(LegalHold.getStatus(), Response.getLegalHold().getStatus());
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold));
+		var response = client
+				.getObjectLegalHold(new GetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key));
+		assertEquals(legalHold.getStatus(), response.getLegalHold().getStatus());
 
-		LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
+		legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
 		client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
-		Response = client.getObjectLegalHold(new GetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key));
-		assertEquals(LegalHold.getStatus(), Response.getLegalHold().getStatus());
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold));
+		response = client.getObjectLegalHold(new GetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key));
+		assertEquals(legalHold.getStatus(), response.getLegalHold().getStatus());
 	}
 
 	@Test
 	@Tag("LegalHold")
 	//[버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold설정 조회 실패 확인
-	public void test_object_lock_get_legal_hold_invalid_bucket() {
+	public void testObjectLockGetLegalHoldInvalidBucket() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(bucketName);
 
-		var Key = "file1";
-		client.putObject(bucketName, Key, "abc");
+		var key = "file1";
+		client.putObject(bucketName, key, "abc");
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
-				.getObjectLegalHold(new GetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key)));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals(MainData.InvalidRequest, ErrorCode);
+				.getObjectLegalHold(new GetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key)));
+		assertEquals(400, e.getStatusCode());
+		assertEquals(MainData.InvalidRequest, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("LegalHold")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 활성화되어 있을 경우 오브젝트 삭제 실패 확인
-	public void test_object_lock_delete_object_with_legal_hold_on() {
+	public void testObjectLockDeleteObjectWithLegalHoldOn() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Key = "file1";
-		var PutResponse = client.putObject(bucketName, Key, "abc");
+		var key = "file1";
+		var putResponse = client.putObject(bucketName, key, "abc");
 
-		var LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
+		var legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
 		client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold));
 
 		var e = assertThrows(AmazonServiceException.class,
-				() -> client.deleteVersion(bucketName, Key, PutResponse.getVersionId()));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.AccessDenied, ErrorCode);
+				() -> client.deleteVersion(bucketName, key, putResponse.getVersionId()));
+		assertEquals(403, e.getStatusCode());
+		assertEquals(MainData.AccessDenied, e.getErrorCode());
 
-		LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
+		legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
 		client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold));
 	}
 
 	@Test
 	@Tag("LegalHold")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 비활성화되어 있을 경우 오브젝트 삭제 확인
-	public void test_object_lock_delete_object_with_legal_hold_off() {
+	public void testObjectLockDeleteObjectWithLegalHoldOff() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Key = "file1";
-		var PutResponse = client.putObject(bucketName, Key, "abc");
+		var key = "file1";
+		var putResponse = client.putObject(bucketName, key, "abc");
 
-		var LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
+		var legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
 		client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold));
 
-		client.deleteVersion(bucketName, Key, PutResponse.getVersionId());
+		client.deleteVersion(bucketName, key, putResponse.getVersionId());
 	}
 
 	@Test
 	@Tag("LegalHold")
 	//[버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold와 Lock유지기한 설정이 모두 적용되는지 메타데이터를 통해 확인
-	public void test_object_lock_get_obj_metadata() {
+	public void testObjectLockGetObjMetadata() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var Key = "file1";
-		var PutResponse = client.putObject(bucketName, Key, "abc");
+		var key = "file1";
+		var putResponse = client.putObject(bucketName, key, "abc");
 
-		var LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
+		var legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON);
 		client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold));
 
-		var Retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
+		var retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 		client.setObjectRetention(
-				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(Key).withRetention(Retention));
+				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention));
 
-		var Response = client.getObjectMetadata(bucketName, Key);
-		assertEquals(Retention.getMode(), Response.getObjectLockMode());
-		assertEquals(Retention.getRetainUntilDate(), Response.getObjectLockRetainUntilDate());
-		assertEquals(LegalHold.getStatus(), Response.getObjectLockLegalHoldStatus());
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(retention.getMode(), response.getObjectLockMode());
+		assertEquals(retention.getRetainUntilDate(), response.getObjectLockRetainUntilDate());
+		assertEquals(legalHold.getStatus(), response.getObjectLockLegalHoldStatus());
 
-		LegalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
+		legalHold = new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF);
 		client.setObjectLegalHold(
-				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(Key).withLegalHold(LegalHold));
-		client.deleteVersion(new DeleteVersionRequest(bucketName, Key, PutResponse.getVersionId())
+				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key).withLegalHold(legalHold));
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, putResponse.getVersionId())
 				.withBypassGovernanceRetention(true));
 	}
 }

@@ -34,7 +34,7 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Get")
 	// 버킷에 알람 설정이 없는지 확인
-	public void test_notification_get_empty() {
+	public void testNotificationGetEmpty() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -46,7 +46,7 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Put")
 	// 버킷에 알람 설정이 가능한지 확인
-	public void test_notification_put() {
+	public void testNotificationPut() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var mainUserId = config.mainUser.userId;
@@ -68,7 +68,7 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Get")
 	// 버킷에 알람 설정이 되어있는지 확인
-	public void test_notification_get() {
+	public void testNotificationGet() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var mainUserId = config.mainUser.userId;
@@ -95,7 +95,7 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Delete")
 	// 버킷에 알람 설정이 삭제되는지 확인
-	public void test_notification_delete() {
+	public void testNotificationDelete() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var mainUserId = config.mainUser.userId;

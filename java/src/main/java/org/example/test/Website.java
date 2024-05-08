@@ -34,20 +34,20 @@ public class Website extends TestBase
 
 	@Test
 	@Tag("Check")
-	//버킷의 Websize 설정 조회 확인
-	public void test_webiste_get_buckets()
+	//버킷의 Website 설정 조회 확인
+	public void testWebsiteGetBuckets()
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Response = client.getBucketWebsiteConfiguration(bucketName);
-		assertNull(Response);
+		var response = client.getBucketWebsiteConfiguration(bucketName);
+		assertNull(response);
 	}
 
 	@Test
 	@Tag("Check")
-	//버킷의 Websize 설정이 가능한지 확인
-	public void test_webiste_put_buckets()
+	//버킷의 Website 설정이 가능한지 확인
+	public void testWebsitePutBuckets()
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -58,14 +58,14 @@ public class Website extends TestBase
 
 		client.setBucketWebsiteConfiguration(bucketName, webConfig);
 
-		var GetResponse = client.getBucketWebsiteConfiguration(bucketName);
-		assertEquals(webConfig.getErrorDocument(), GetResponse.getErrorDocument());
+		var response = client.getBucketWebsiteConfiguration(bucketName);
+		assertEquals(webConfig.getErrorDocument(), response.getErrorDocument());
 	}
 
 	@Test
 	@Tag("Delete")
-	//버킷의 Websize 설정이 삭제가능한지 확인
-	public void test_webiste_delete_buckets()
+	//버킷의 Website 설정이 삭제가능한지 확인
+	public void testWebsiteDeleteBuckets()
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();

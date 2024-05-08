@@ -38,7 +38,7 @@ public class DeleteObjects extends TestBase
 	@Test
 	@Tag("ListObject")
 	//버킷에 존재하는 오브젝트 여러개를 한번에 삭제
-	public void test_multi_object_delete()
+	public void testMultiObjectDelete()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "key0", "key1", "key2" }));
 		var bucketName = createObjects(KeyNames);
@@ -47,7 +47,7 @@ public class DeleteObjects extends TestBase
 		var ListResponse = client.listObjects(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 
-		var ObjectList = GetKeyVersions(KeyNames);
+		var ObjectList = getKeyVersions(KeyNames);
 		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 
 		assertEquals(KeyNames.size(), DelResponse.getDeletedObjects().size());
@@ -65,7 +65,7 @@ public class DeleteObjects extends TestBase
 	@Test
 	@Tag("ListObjectsV2")
 	//버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
-	public void test_multi_objectv2_delete()
+	public void testMultiObjectv2Delete()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "key0", "key1", "key2" }));
 		var bucketName = createObjects(KeyNames);
@@ -74,7 +74,7 @@ public class DeleteObjects extends TestBase
 		var ListResponse = client.listObjectsV2(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 
-		var ObjectList = GetKeyVersions(KeyNames);
+		var ObjectList = getKeyVersions(KeyNames);
 		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 
 		assertEquals(KeyNames.size(), DelResponse.getDeletedObjects().size());
@@ -92,7 +92,7 @@ public class DeleteObjects extends TestBase
 	@Test
 	@Tag("Versioning")
 	// 버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제
-	public void test_multi_object_delete_versions()
+	public void testMultiObjectDeleteVersions()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "key0", "key1", "key2" }));
 		var bucketName = getNewBucket();
@@ -100,12 +100,12 @@ public class DeleteObjects extends TestBase
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		for (var Key : KeyNames)
-			CreateMultipleVersion(client, bucketName, Key, 3, false);
+			createMultipleVersions(client, bucketName, Key, 3, false);
 
 		var ListResponse = client.listObjectsV2(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 
-		var ObjectList = GetKeyVersions(KeyNames);
+		var ObjectList = getKeyVersions(KeyNames);
 		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 
 		assertEquals(KeyNames.size(), DelResponse.getDeletedObjects().size());
@@ -123,7 +123,7 @@ public class DeleteObjects extends TestBase
 	@Test
 	@Tag("quiet")
 	//quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
-	public void test_multi_object_delete_quiet()
+	public void testMultiObjectDeleteQuiet()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "key0", "key1", "key2" }));
 		var bucketName = createObjects(KeyNames);
@@ -132,7 +132,7 @@ public class DeleteObjects extends TestBase
 		var ListResponse = client.listObjects(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
 
-		var ObjectList = GetKeyVersions(KeyNames);
+		var ObjectList = getKeyVersions(KeyNames);
 		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList).withQuiet(true));
 
 		assertEquals(0, DelResponse.getDeletedObjects().size());
@@ -144,7 +144,7 @@ public class DeleteObjects extends TestBase
 	@Test
 	@Tag("Directory")
 	//업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
-	public void test_directory_delete()
+	public void testDirectoryDelete()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "a/b/", "a/b/c/d/obj1", "a/b/c/d/obj2", "1/2/", "1/2/3/4/obj1", "q/w/e/r/obj" }));
 		var bucketName = createObjectsToBody(KeyNames, "");
@@ -171,7 +171,7 @@ public class DeleteObjects extends TestBase
 	@Test
 	@Tag("versioning")
 	//버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
-	public void test_directory_delete_versions()
+	public void testDirectoryDeleteVersions()
 	{
 		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "a/", "a/obj1", "a/obj2", "b/", "b/obj1" }));
 		var bucketName = getNewBucket();
@@ -179,7 +179,7 @@ public class DeleteObjects extends TestBase
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		for (var Key : KeyNames)
-			CreateMultipleVersion(client, bucketName, Key, 3, false, "");
+			createMultipleVersion(client, bucketName, Key, 3, false, "");
 
 		var ListResponse = client.listObjects(bucketName);
 		assertEquals(KeyNames.size(), ListResponse.getObjectSummaries().size());
@@ -196,7 +196,7 @@ public class DeleteObjects extends TestBase
 		assertEquals(16, VersResponse.getVersionSummaries().size());
 
 		var DeleteList = new ArrayList<>(Arrays.asList(new String[] {"a/obj1", "a/obj2" }));
-		var ObjectList = GetKeyVersions(DeleteList);
+		var ObjectList = getKeyVersions(DeleteList);
 
 		var DelResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(ObjectList));
 		assertEquals(2, DelResponse.getDeletedObjects().size());

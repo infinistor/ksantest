@@ -40,7 +40,7 @@ public class Access extends TestBase {
 	@Test
 	@Tag("Check")
 	// 버킷의 접근권한 블록 설정 확인
-	public void test_put_public_block() {
+	public void testPutPublicBlock() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -63,7 +63,7 @@ public class Access extends TestBase {
 	@Test
 	@Tag("Denied")
 	// 버킷의 접근권한 블록을 설정한뒤 acl로 버킷의 권한정보를 덮어씌우기 실패 확인
-	public void test_block_public_put_bucket_acls() {
+	public void testBlockPublicPutBucketAcls() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -94,7 +94,7 @@ public class Access extends TestBase {
 	@Test
 	@Tag("Denied")
 	// 버킷의 접근권한 블록에서 acl권한 설정금지로 설정한뒤 오브젝트에 acl정보를 추가한뒤 업로드 실패 확인
-	public void test_block_public_object_canned_acls() {
+	public void testBlockPublicObjectCannedAcls() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var metadata = new ObjectMetadata();
@@ -132,7 +132,7 @@ public class Access extends TestBase {
 	@Test
 	@Tag("Denied")
 	// 버킷의 접근권한블록으로 권한 설정을 할 수 없도록 막은 뒤 버킷의 정책을 추가하려고 할때 실패 확인
-	public void test_block_public_policy() {
+	public void testBlockPublicPolicy() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -146,10 +146,11 @@ public class Access extends TestBase {
 		assertThrows(AmazonServiceException.class, () -> client.setBucketPolicy(bucketName, policyDocument.toString()));
 	}
 
+	@SuppressWarnings("resource")
 	@Test
 	@Tag("Denied")
 	// 버킷의 접근권한블록으로 개인버킷처럼 설정한뒤 버킷의acl권한을 public-read로 변경해도 적용되지 않음을 확인
-	public void test_ignore_public_acls() {
+	public void testIgnorePublicAcls() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var altClient = getAltClient();
@@ -183,7 +184,7 @@ public class Access extends TestBase {
 	@Test
 	@Tag("Check")
 	// 버킷의 접근권한 블록 삭제 확인
-	public void test_delete_public_block() {
+	public void testDeletePublicBlock() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 

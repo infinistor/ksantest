@@ -54,7 +54,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Check")
 	// 버킷에 사용자 추가 태그값을 설정할경우 성공확인
-	public void test_set_tagging() {
+	public void testSetTagging() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -72,7 +72,7 @@ public class Taggings extends TestBase {
 
 		response = client.getBucketTaggingConfiguration(bucketName);
 		assertEquals(1, response.getAllTagSets().size());
-		BucketTaggingCompare(tagConfig.getAllTagSets(), response.getAllTagSets());
+		bucketTaggingCompare(tagConfig.getAllTagSets(), response.getAllTagSets());
 		client.deleteBucketTaggingConfiguration(bucketName);
 
 		response = client.getBucketTaggingConfiguration(bucketName);
@@ -82,7 +82,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Check")
 	// 오브젝트에 태그 설정이 올바르게 적용되는지 확인
-	public void test_get_obj_tagging() {
+	public void testGetObjTagging() {
 		var key = "obj";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -98,7 +98,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Check")
 	// 오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
-	public void test_get_obj_head_tagging() {
+	public void testGetObjHeadTagging() {
 		var key = "obj";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -115,7 +115,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Max")
 	// 추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)
-	public void test_put_max_tags() {
+	public void testPutMaxTags() {
 		var key = "testputmaxtags";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -131,7 +131,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Overflow")
 	// 추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인
-	public void test_put_excess_tags() {
+	public void testPutExcessTags() {
 		var key = "test put max tags";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -152,7 +152,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Max")
 	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인
-	public void test_put_max_kvsize_tags() {
+	public void testPutMaxKvsizeTags() {
 		var key = "test put max key size";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -167,7 +167,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Overflow")
 	// 태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인
-	public void test_put_excess_key_tags() {
+	public void testPutExcessKeyTags() {
 		var key = "test put excess key tags";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -188,7 +188,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Overflow")
 	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인
-	public void test_put_excess_val_tags() {
+	public void testPutExcessValTags() {
 		var key = "test put excess value tags";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -209,7 +209,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Overwrite")
 	// 오브젝트의 태그목록을 덮어쓰기 가능한지 확인
-	public void test_put_modify_tags() {
+	public void testPutModifyTags() {
 		var key = "test put modify tags";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -232,7 +232,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Delete")
 	// 오브젝트의 태그를 삭제 가능한지 확인
-	public void test_put_delete_tags() {
+	public void testPutDeleteTags() {
 		var key = "test delete tags";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -253,7 +253,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("PutObject")
 	// 헤더에 태그정보를 포함한 오브젝트 업로드 성공 확인
-	public void test_put_obj_with_tags() {
+	public void testPutObjWithTags() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "test tag obj1";
@@ -278,7 +278,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Post")
 	// 로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
-	public void test_post_object_tags_authenticated_request() throws MalformedURLException {
+	public void testPostObjectTagsAuthenticatedRequest() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -357,7 +357,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Check")
 	// 업로드시 오브젝트의 태그 정보를 빈 값으로 올릴 경우 성공 확인
-	public void test_get_obj_non_tagging() {
+	public void testGetObjNonTagging() {
 		var key = "obj";
 		var bucketName = getNewBucket();
 		var client = getClient();

@@ -38,7 +38,7 @@ public class Analytics extends TestBase {
 	@Test
 	@Tag("Put")
 	// 버킷 분석 설정이 가능한지 확인
-	public void test_put_bucket_analytics() {
+	public void testPutBucketAnalytics() {
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
 		var client = getClient();
@@ -55,7 +55,7 @@ public class Analytics extends TestBase {
 	@Test
 	@Tag("Get")
 	// 버킷 분석 설정이 올바르게 적용되는지 확인
-	public void test_get_bucket_analytics() {
+	public void testGetBucketAnalytics() {
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
 		var client = getClient();
@@ -81,7 +81,7 @@ public class Analytics extends TestBase {
 	@Test
 	@Tag("Put")
 	// 버킷 분석 설정이 여러개 가능한지 확인
-	public void test_add_bucket_analytics() {
+	public void testAddBucketAnalytics() {
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
 		var client = getClient();
@@ -110,7 +110,7 @@ public class Analytics extends TestBase {
 	@Test
 	@Tag("List")
 	// 버킷 분석 설정이 목록으로 조회되는지 확인
-	public void test_list_bucket_analytics() {
+	public void testListBucketAnalytics() {
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
 		var client = getClient();
@@ -136,7 +136,7 @@ public class Analytics extends TestBase {
 	@Test
 	@Tag("Delete")
 	// 버킷 분석 설정이 삭제되는지 확인
-	public void test_delete_bucket_analytics() {
+	public void testDeleteBucketAnalytics() {
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
 		var client = getClient();
@@ -158,7 +158,7 @@ public class Analytics extends TestBase {
 	@Test
 	@Tag("Error")
 	// 버킷 분석 설정을 잘못 입력했을 때 에러가 발생하는지 확인
-	public void test_put_bucket_analytics_invalid() {
+	public void testPutBucketAnalyticsInvalid() {
 		var bucketName = getNewBucket();
 		var targetBucketName = getNewBucket();
 		var client = getClient();

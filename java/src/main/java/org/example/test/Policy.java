@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -37,25 +37,21 @@ import org.junit.jupiter.api.Test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-public class Policy extends TestBase
-{
+public class Policy extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll()
-	{
+	public static void beforeAll() {
 		System.out.println("Policy Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	public static void afterAll()
-	{
+	public static void afterAll() {
 		System.out.println("Policy End");
 	}
 
 	@Test
 	@Tag("Check")
 	// 버킷에 정책 설정이 올바르게 적용되는지 확인
-	public void test_bucket_policy()
-	{
+	public void testBucketPolicy() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "asdf";
@@ -96,8 +92,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Check")
 	// 버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)
-	public void test_bucket_v2_policy()
-	{
+	public void testBucketV2Policy() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "asdf";
@@ -137,8 +132,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Priority")
 	// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인
-	public void test_bucket_policy_acl()
-	{
+	public void testBucketPolicyAcl() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "asdf";
@@ -156,7 +150,7 @@ public class Policy extends TestBase
 		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectDeny);
 
 		var principal = new JsonObject();
-		principal.addProperty( "AWS", "*");
+		principal.addProperty("AWS", "*");
 		statement.add(MainData.PolicyPrincipal, principal);
 
 		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
@@ -186,8 +180,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Priority")
 	// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인(ListObjectsV2)
-	public void test_bucket_v2_policy_acl()
-	{
+	public void testBucketV2PolicyAcl() {
 
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -196,7 +189,6 @@ public class Policy extends TestBase
 
 		var resource1 = "arn:aws:s3:::" + bucketName;
 		var resource2 = "arn:aws:s3:::" + bucketName + "/*";
-
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
@@ -207,7 +199,7 @@ public class Policy extends TestBase
 		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectDeny);
 
 		var principal = new JsonObject();
-		principal.addProperty( "AWS", "*");
+		principal.addProperty("AWS", "*");
 		statement.add(MainData.PolicyPrincipal, principal);
 
 		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
@@ -237,8 +229,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Tagging")
 	// 정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인
-	public void test_get_tags_acl_public()
-	{
+	public void testGetTagsAclPublic() {
 		var key = "acl";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -260,8 +251,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Tagging")
 	// 정책설정으로 오브젝트의 태그 입력을 public-read로 설정했을때 올바르게 동작하는지 확인
-	public void test_put_tags_acl_public()
-	{
+	public void testPutTagsAclPublic() {
 		var key = "acl";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -282,8 +272,7 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Tagging")
 	// 정책설정으로 오브젝트의 태그 삭제를 public-read로 설정했을때 올바르게 동작하는지 확인
-	public void test_delete_tags_obj_public()
-	{
+	public void testDeleteTagsObjPublic() {
 		var key = "acl";
 		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
@@ -303,15 +292,16 @@ public class Policy extends TestBase
 		assertEquals(0, getResponse.getTagSet().size());
 	}
 
+	@SuppressWarnings("resource")
 	@Test
 	@Tag("TagOptions")
-	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-	public void test_bucket_policy_get_obj_existing_tag()
-	{
+	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용] 조건부 정책설정시
+	// 올바르게 동작하는지 확인
+	public void testBucketPolicyGetObjExistingTag() {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
-		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { publicTag, privateTag, invalidTag })));
+		var bucketName = createObjects(List.of(publicTag, privateTag, invalidTag));
 		var client = getClient();
 
 		var conditional = new JsonObject();
@@ -356,13 +346,13 @@ public class Policy extends TestBase
 
 	@Test
 	@Tag("TagOptions")
-	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
-	public void test_bucket_policy_get_obj_tagging_existing_tag()
-	{
+	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectTagging허용] 조건부
+	// 정책설정시 올바르게 동작하는지 확인
+	public void testBucketPolicyGetObjTaggingExistingTag() {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
-		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { publicTag, privateTag, invalidTag })));
+		var bucketName = createObjects(List.of(publicTag, privateTag, invalidTag));
 		var client = getClient();
 
 		var conditional = new JsonObject();
@@ -400,24 +390,27 @@ public class Policy extends TestBase
 		var statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 
-		e = assertThrows(AmazonServiceException.class, () -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privateTag)));
+		e = assertThrows(AmazonServiceException.class,
+				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privateTag)));
 		statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 
-		e = assertThrows(AmazonServiceException.class, () -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, invalidTag)));
+		e = assertThrows(AmazonServiceException.class,
+				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, invalidTag)));
 		statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 	}
 
 	@Test
 	@Tag("TagOptions")
-	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 PutObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
-	public void test_bucket_policy_put_obj_tagging_existing_tag()
-	{
+	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 PutObjectTagging허용] 조건부
+	// 정책설정시 올바르게 동작하는지 확인
+	public void testBucketPolicyPutObjTaggingExistingTag() {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
-		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { publicTag, privateTag, invalidTag })));
+		var bucketName = createObjects(
+				List.of(publicTag, privateTag, invalidTag));
 		var client = getClient();
 
 		var conditional = new JsonObject();
@@ -450,40 +443,42 @@ public class Policy extends TestBase
 		var testTags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		testTags.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
 		testTags.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
-		var TestTagSet = new ObjectTagging(testTags);
+		var testTagSet = new ObjectTagging(testTags);
 
 		var altClient = getAltClient();
-		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, TestTagSet));
+		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, testTagSet));
 
-		var e = assertThrows(AmazonServiceException.class, () -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, privateTag, TestTagSet)));
+		var e = assertThrows(AmazonServiceException.class,
+				() -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, privateTag, testTagSet)));
 		var statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 
 		testTags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		testTags.add(new com.amazonaws.services.s3.model.Tag("security", "private"));
-		var TestTagSet2 = new ObjectTagging(testTags);
+		var testTagSet2 = new ObjectTagging(testTags);
 
-		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, TestTagSet2));
+		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, testTagSet2));
 
 		testTags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		testTags.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
 		testTags.add(new com.amazonaws.services.s3.model.Tag("foo", "bar"));
-		var TestTagSet3 = new ObjectTagging(testTags);
+		var testTagSet3 = new ObjectTagging(testTags);
 
-		e = assertThrows(AmazonServiceException.class, () -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, TestTagSet3)));
+		e = assertThrows(AmazonServiceException.class,
+				() -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag, testTagSet3)));
 		statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 	}
 
 	@Test
 	@Tag("PathOptions")
-	// [복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-	public void test_bucket_policy_put_obj_copy_source()
-	{
-		var public_foo = "public/foo";
-		var public_bar = "public/bar";
-		var private_foo = "private/foo";
-		var sourceBucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { public_foo, public_bar, private_foo })));
+	// [복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시
+	// 올바르게 동작하는지 확인
+	public void testBucketPolicyPutObjCopySource() {
+		var publicFoo = "public/foo";
+		var publicBar = "public/bar";
+		var privateFoo = "private/foo";
+		var sourceBucketName = createObjects(List.of(publicFoo, publicBar, privateFoo));
 		var client = getClient();
 
 		var sourceResource = makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
@@ -502,31 +497,32 @@ public class Policy extends TestBase
 		client.setBucketPolicy(targetBucketName, policyDocument.toString());
 
 		var altClient = getAltClient();
-		var new_foo = "new_foo";
-		altClient.copyObject(sourceBucketName, public_foo, targetBucketName, new_foo);
+		var newFoo = "newFoo";
+		altClient.copyObject(sourceBucketName, publicFoo, targetBucketName, newFoo);
 
-		var response = altClient.getObject(targetBucketName, new_foo);
-		var Body = getBody(response.getObjectContent());
-		assertEquals(public_foo, Body);
+		var response = altClient.getObject(targetBucketName, newFoo);
+		var body = getBody(response.getObjectContent());
+		assertEquals(publicFoo, body);
 
-		var new_foo2 = "new_foo2";
-		altClient.copyObject(sourceBucketName, public_bar, targetBucketName, new_foo2);
+		var newFoo2 = "newFoo2";
+		altClient.copyObject(sourceBucketName, publicBar, targetBucketName, newFoo2);
 
-		response = altClient.getObject(targetBucketName, new_foo2);
-		Body = getBody(response.getObjectContent());
-		assertEquals(public_bar, Body);
+		response = altClient.getObject(targetBucketName, newFoo2);
+		body = getBody(response.getObjectContent());
+		assertEquals(publicBar, body);
 
-		 assertThrows(AmazonServiceException.class, () -> altClient.copyObject(sourceBucketName, private_foo, targetBucketName, new_foo2));
+		assertThrows(AmazonServiceException.class,
+				() -> altClient.copyObject(sourceBucketName, privateFoo, targetBucketName, newFoo2));
 	}
 
 	@Test
 	@Tag("MetadataOptions")
-	// [오브젝트의 메타데이터값이 'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-	public void test_bucket_policy_put_obj_copy_source_meta()
-	{
-		var public_foo = "public/foo";
-		var public_bar = "public/bar";
-		var sourceBucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { public_foo, public_bar })));
+	// [오브젝트의 메타데이터값이 'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게 PutObject허용] 조건부
+	// 정책설정시 올바르게 동작하는지 확인
+	public void testBucketPolicyPutObjCopySourceMeta() {
+		var publicFoo = "public/foo";
+		var publicBar = "public/bar";
+		var sourceBucketName = createObjects(List.of(publicFoo, publicBar));
 		var client = getClient();
 
 		var sourceResource = makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
@@ -545,24 +541,28 @@ public class Policy extends TestBase
 		client.setBucketPolicy(targetBucketName, policyDocument.toString());
 
 		var altClient = getAltClient();
-		var new_foo = "new_foo";
-		altClient.copyObject(new CopyObjectRequest(sourceBucketName, public_foo, targetBucketName, new_foo).withMetadataDirective(MetadataDirective.COPY));
+		var newFoo = "newFoo";
+		altClient.copyObject(new CopyObjectRequest(sourceBucketName, publicFoo, targetBucketName, newFoo)
+				.withMetadataDirective(MetadataDirective.COPY));
 
-		var response = altClient.getObject(targetBucketName, new_foo);
-		var Body = getBody(response.getObjectContent());
-		assertEquals(public_foo, Body);
+		var response = altClient.getObject(targetBucketName, newFoo);
+		var body = getBody(response.getObjectContent());
+		assertEquals(publicFoo, body);
 
-		var new_foo2 = "new_foo2";
-		assertThrows(AmazonServiceException.class, () -> altClient.copyObject(sourceBucketName, public_bar, targetBucketName, new_foo2));
+		var newFoo2 = "newFoo2";
+		assertThrows(AmazonServiceException.class,
+				() -> altClient.copyObject(sourceBucketName, publicBar, targetBucketName, newFoo2));
 
-		assertThrows(AmazonServiceException.class, () -> altClient.copyObject(new CopyObjectRequest(sourceBucketName, public_bar, targetBucketName, new_foo2).withMetadataDirective(MetadataDirective.REPLACE)));
+		assertThrows(AmazonServiceException.class,
+				() -> altClient.copyObject(new CopyObjectRequest(sourceBucketName, publicBar, targetBucketName, newFoo2)
+						.withMetadataDirective(MetadataDirective.REPLACE)));
 	}
 
 	@Test
 	@Tag("ACLOptions")
-	// [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시 올바르게 동작하는지 확
-	public void test_bucket_policy_put_obj_acl()
-	{
+	// [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시 올바르게
+	// 동작하는지 확
+	public void testBucketPolicyPutObjAcl() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -589,18 +589,19 @@ public class Policy extends TestBase
 		headers.setContentType("text/plain");
 		headers.setContentLength(key2.length());
 
-		var e = assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, createBody(key2), headers));
+		var e = assertThrows(AmazonServiceException.class,
+				() -> altClient.putObject(bucketName, key2, createBody(key2), headers));
 		var statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 	}
 
 	@Test
 	@Tag("GrantOptions")
-	// [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-	public void test_bucket_policy_put_obj_grant()
-	{
-		var bucketName = getNewBucket();
-		var BucketName2 = getNewBucket();
+	// [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게
+	// 동작하는지 확인
+	public void testBucketPolicyPutObjGrant() {
+		var bucketName1 = getNewBucket();
+		var bucketName2 = getNewBucket();
 		var client = getClient();
 
 		var mainUserId = config.mainUser.userId;
@@ -613,33 +614,33 @@ public class Policy extends TestBase
 		var s3Conditional = new JsonObject();
 		s3Conditional.add("StringEquals", conditional);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
+		var resource = makeArnResource(String.format("%s/%s", bucketName1, "*"));
 		var policyDocument = makeJsonPolicy("s3:PutObject", resource, null, s3Conditional);
 
-		var resource2 = makeArnResource(String.format("%s/%s", BucketName2, "*"));
+		var resource2 = makeArnResource(String.format("%s/%s", bucketName2, "*"));
 		var policyDocument2 = makeJsonPolicy("s3:PutObject", resource2, null, null);
 
-		client.setBucketPolicy(bucketName, policyDocument.toString());
-		client.setBucketPolicy(BucketName2, policyDocument2.toString());
+		client.setBucketPolicy(bucketName1, policyDocument.toString());
+		client.setBucketPolicy(bucketName2, policyDocument2.toString());
 
 		var altClient = getAltClient();
-		var Key1 = "key1";
+		var key1 = "key1";
 
 		var headers = new ObjectMetadata();
 		headers.setHeader("x-amz-grant-full-control", ownerId);
 		headers.setContentType("text/plain");
-		headers.setContentLength(Key1.length());
+		headers.setContentLength(key1.length());
 
-		altClient.putObject(bucketName, Key1, createBody(Key1), headers);
+		altClient.putObject(bucketName1, key1, createBody(key1), headers);
 
-		var Key2 = "key2";
-		altClient.putObject(BucketName2, Key2, Key2);
+		var key2 = "key2";
+		altClient.putObject(bucketName2, key2, key2);
 
-		var acl1Response = client.getObjectAcl(bucketName, Key1);
+		var acl1Response = client.getObjectAcl(bucketName1, key1);
 
-		assertThrows(AmazonServiceException.class, () -> client.getObjectAcl(BucketName2, Key2));
+		assertThrows(AmazonServiceException.class, () -> client.getObjectAcl(bucketName2, key2));
 
-		var acl2Response = altClient.getObjectAcl(BucketName2, Key2);
+		var acl2Response = altClient.getObjectAcl(bucketName2, key2);
 
 		assertEquals(mainUserId, acl1Response.getGrantsAsList().get(0).getGrantee().getIdentifier());
 		assertEquals(altUserId, acl2Response.getGrantsAsList().get(0).getGrantee().getIdentifier());
@@ -647,13 +648,14 @@ public class Policy extends TestBase
 
 	@Test
 	@Tag("TagOptions")
-	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용] 조건부 정책설정시 올바르게 동작하는지 확인
-	public void test_bucket_policy_get_obj_acl_existing_tag()
-	{
+	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용] 조건부
+	// 정책설정시 올바르게 동작하는지 확인
+	public void testBucketPolicyGetObjAclExistingTag() {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
-		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { publicTag, privateTag, invalidTag })));
+		var bucketName = createObjects(
+				List.of(publicTag, privateTag, invalidTag));
 		var client = getClient();
 
 		var conditional = new JsonObject();
@@ -665,7 +667,6 @@ public class Policy extends TestBase
 		var policyDocument = makeJsonPolicy("s3:GetObjectAcl", resource, null, tagConditional);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
-
 
 		var tags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		tags.add(new com.amazonaws.services.s3.model.Tag("security", "public"));
@@ -685,18 +686,20 @@ public class Policy extends TestBase
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, invalidTag, inputTagSet));
 
 		var altClient = getAltClient();
-		var ACLResponse = altClient.getObjectAcl(bucketName, publicTag);
-		assertNotNull(ACLResponse);
+		var aclResponse = altClient.getObjectAcl(bucketName, publicTag);
+		assertNotNull(aclResponse);
 
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, publicTag));
 		var statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 
-		e = assertThrows(AmazonServiceException.class, () -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privateTag)));
+		e = assertThrows(AmazonServiceException.class,
+				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privateTag)));
 		statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 
-		e = assertThrows(AmazonServiceException.class, () -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, invalidTag)));
+		e = assertThrows(AmazonServiceException.class,
+				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, invalidTag)));
 		statusCode = e.getStatusCode();
 		assertEquals(403, statusCode);
 	}
@@ -704,12 +707,12 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Status")
 	// [모든 사용자가 버킷에 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
-	public void test_get_public_policy_acl_bucket_policy_status()
-	{
+	public void testGetPublicPolicyAclBucketPolicyStatus() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		assertThrows(AmazonServiceException.class, () -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
+		assertThrows(AmazonServiceException.class,
+				() -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
 
 		var resource1 = MainData.PolicyResourcePrefix + bucketName;
 		var resource2 = MainData.PolicyResourcePrefix + bucketName + "/*";
@@ -723,7 +726,7 @@ public class Policy extends TestBase
 		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectAllow);
 
 		var principal = new JsonObject();
-		principal.addProperty( "AWS", "*");
+		principal.addProperty("AWS", "*");
 		statement.add(MainData.PolicyPrincipal, principal);
 
 		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
@@ -744,12 +747,12 @@ public class Policy extends TestBase
 	@Test
 	@Tag("Status")
 	// [특정 ip로 접근했을때만 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
-	public void test_get_nonpublic_policy_acl_bucket_policy_status()
-	{
+	public void testGetNonpublicPolicyAclBucketPolicyStatus() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		assertThrows(AmazonServiceException.class, () -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
+		assertThrows(AmazonServiceException.class,
+				() -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
 
 		var resource1 = MainData.PolicyResourcePrefix + bucketName;
 		var resource2 = MainData.PolicyResourcePrefix + bucketName + "/*";
@@ -763,7 +766,7 @@ public class Policy extends TestBase
 		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectAllow);
 
 		var principal = new JsonObject();
-		principal.addProperty( "AWS", "*");
+		principal.addProperty("AWS", "*");
 		statement.add(MainData.PolicyPrincipal, principal);
 
 		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
