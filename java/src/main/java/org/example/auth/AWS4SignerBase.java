@@ -1,23 +1,22 @@
 package org.example.auth;
 
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SimpleTimeZone;
-import java.util.SortedMap;
 import java.util.TreeMap;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import com.amazonaws.util.BinaryUtils;
-
 import org.example.Utility.NetUtils;
+
+import com.amazonaws.util.BinaryUtils;
 
 public abstract class AWS4SignerBase {
 
@@ -26,10 +25,10 @@ public abstract class AWS4SignerBase {
 
 	public static final String SCHEME = "AWS4";
 	public static final String ALGORITHM = "HMAC-SHA256";
-	public static final String TERMINATOR = "aws4_request";
+	public static final String TERMINATOR = "aws4Request";
 
-	public static final String ISO8601BasicFormat = "yyyyMMdd'T'HHmmss'Z'";
-	public static final String DateStringFormat = "yyyyMMdd";
+	public static final String ISO8601_BASIC_FORMAT = "yyyyMMdd'T'HHmmss'Z'";
+	public static final String DATE_STRING_FORMAT = "yyyyMMdd";
 
 	protected URL endpointUrl;
 	protected String httpMethod;
@@ -46,14 +45,14 @@ public abstract class AWS4SignerBase {
 		this.serviceName = serviceName;
 		this.regionName = regionName;
 
-		dateTimeFormat = new SimpleDateFormat(ISO8601BasicFormat);
+		dateTimeFormat = new SimpleDateFormat(ISO8601_BASIC_FORMAT);
 		dateTimeFormat.setTimeZone(new SimpleTimeZone(0, "UTC"));
-		dateStampFormat = new SimpleDateFormat(DateStringFormat);
+		dateStampFormat = new SimpleDateFormat(DATE_STRING_FORMAT);
 		dateStampFormat.setTimeZone(new SimpleTimeZone(0, "UTC"));
 	}
 
 	protected static String getCanonicalizeHeaderNames(Map<String, String> headers) {
-		List<String> sortedHeaders = new ArrayList<String>();
+		List<String> sortedHeaders = new ArrayList<>();
 		sortedHeaders.addAll(headers.keySet());
 		Collections.sort(sortedHeaders, String.CASE_INSENSITIVE_ORDER);
 
@@ -77,7 +76,7 @@ public abstract class AWS4SignerBase {
 		}
 
 		// step1: sort the headers by case-insensitive order
-		List<String> sortedHeaders = new ArrayList<String>();
+		List<String> sortedHeaders = new ArrayList<>();
 		sortedHeaders.addAll(headers.keySet());
 		Collections.sort(sortedHeaders, String.CASE_INSENSITIVE_ORDER);
 
@@ -100,13 +99,12 @@ public abstract class AWS4SignerBase {
 	 * @return
 	 */
 	protected static String getCanonicalRequest(URL endpoint, String httpMethod, String queryParameters, String canonicalizedHeaderNames, String canonicalizedHeaders, String bodyHash) {
-		String canonicalRequest = httpMethod + "\n" +
+		return httpMethod + "\n" +
 				getCanonicalizedResourcePath(endpoint) + "\n" +
 				queryParameters + "\n" +
 				canonicalizedHeaders + "\n" +
 				canonicalizedHeaderNames + "\n" +
 				bodyHash;
-		return canonicalRequest;
 	}
 
 	/**
@@ -147,20 +145,20 @@ public abstract class AWS4SignerBase {
 			return "";
 		}
 
-		SortedMap<String, String> sorted = new TreeMap<String, String>();
+		var sorted = new TreeMap<String, String>();
 
-		Iterator<Map.Entry<String, String>> pairs = parameters.entrySet().iterator();
+		var pairs = parameters.entrySet().iterator();
 		while (pairs.hasNext()) {
-			Map.Entry<String, String> pair = pairs.next();
-			String key = pair.getKey();
-			String value = pair.getValue();
+			var pair = pairs.next();
+			var key = pair.getKey();
+			var value = pair.getValue();
 			sorted.put(NetUtils.urlEncode(key, false), NetUtils.urlEncode(value, false));
 		}
 
 		StringBuilder builder = new StringBuilder();
 		pairs = sorted.entrySet().iterator();
 		while (pairs.hasNext()) {
-			Map.Entry<String, String> pair = pairs.next();
+			var pair = pairs.next();
 			builder.append(pair.getKey());
 			builder.append("=");
 			builder.append(pair.getValue());
@@ -174,17 +172,16 @@ public abstract class AWS4SignerBase {
 
 	protected static String getStringToSign(String scheme, String algorithm, String dateTime, String scope,
 			String canonicalRequest) {
-		String stringToSign = scheme + "-" + algorithm + "\n" +
+				return scheme + "-" + algorithm + "\n" +
 				dateTime + "\n" +
 				scope + "\n" +
 				BinaryUtils.toHex(hash(canonicalRequest));
-		return stringToSign;
 	}
 
 	public static byte[] hash(String text) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			md.update(text.getBytes("UTF-8"));
+			md.update(text.getBytes(StandardCharsets.UTF_8));
 			return md.digest();
 		} catch (Exception e) {
 			throw new RuntimeException("Unable to compute hash while signing request: " + e.getMessage(), e);
@@ -203,7 +200,7 @@ public abstract class AWS4SignerBase {
 
 	protected static byte[] sign(String stringData, byte[] key, String algorithm) {
 		try {
-			byte[] data = stringData.getBytes("UTF-8");
+			byte[] data = stringData.getBytes(StandardCharsets.UTF_8);
 			Mac mac = Mac.getInstance(algorithm);
 			mac.init(new SecretKeySpec(key, algorithm));
 			return mac.doFinal(data);

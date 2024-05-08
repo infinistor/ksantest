@@ -28,15 +28,15 @@ public class Main {
 		if (args.length == 1) {
 			
 		} else if (args.length == 2) {
-			String className = args[0];
+			String className = args[1];
 			System.out.println("Class Test " + className);
 
 			request = LauncherDiscoveryRequestBuilder.request()
 					.selectors(DiscoverySelectors.selectClass(getTestPackageName(className, null)))
 					.build();
 		} else if (args.length == 3) {
-			String className = args[0];
-			String methodName = args[1];
+			String className = args[1];
+			String methodName = args[2];
 			System.out.printf("Method Test %s.%s\n", className, methodName);
 
 			request = LauncherDiscoveryRequestBuilder.request()

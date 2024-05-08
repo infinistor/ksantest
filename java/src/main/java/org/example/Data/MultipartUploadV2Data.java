@@ -13,31 +13,47 @@ package org.example.Data;
 import java.util.List;
 import java.util.ArrayList;
 
-import com.amazonaws.services.s3.model.PartETag;
+import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
 
-public class MultipartUploadData {
+public class MultipartUploadV2Data {
 	public String uploadId;
-	public List<PartETag> parts;
+	public List<CompletedPart> parts;
 	public StringBuilder body;
 	public int partSize;
 
-	public MultipartUploadData()
-	{
+	public MultipartUploadV2Data() {
 		init();
 	}
 
-	public void init()
-	{
+	public void init() {
 		uploadId = "";
 		body = new StringBuilder();
 		parts = new ArrayList<>();
 		partSize = 5 * MainData.MB;
 	}
 
-	public int nextPartNumber() { return parts.size() + 1; }
-	public String getBody() { return body.toString(); }
+	public int nextPartNumber() {
+		return parts.size() + 1;
+	}
 
-	public void addPart(int partNumber, String eTag) { parts.add(new PartETag(partNumber, eTag)); }
-	public void addPart(PartETag part) { parts.add(part); }
-	public void appendBody(String data) { body.append(data); }
+	public String getBody() {
+		return body.toString();
+	}
+
+	public void addPart(int partNumber, String eTag) {
+		parts.add(CompletedPart.builder().partNumber(partNumber).eTag(eTag).build());
+	}
+
+	public void addPart(String eTag) {
+		parts.add(CompletedPart.builder().partNumber(parts.size() + 1).eTag(eTag).build());
+	}
+
+	public void appendBody(String data) {
+		body.append(data);
+	}
+
+	public CompletedMultipartUpload completedMultipartUpload() {
+		return CompletedMultipartUpload.builder().parts(parts).build();
+	}
 }

@@ -34,4 +34,13 @@ public class UserData {
 		this.secretKey = secretKey;
 		this.kms = kms;
 	}
+
+	public software.amazon.awssdk.services.s3.model.Grantee toGrantee() {
+		return software.amazon.awssdk.services.s3.model.Grantee.builder()
+			.displayName(displayName)
+			.id(userId)
+			.emailAddress(email)
+			.type("CanonicalUser")
+			.build();
+	}
 }

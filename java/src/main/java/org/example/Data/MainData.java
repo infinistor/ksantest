@@ -11,18 +11,18 @@
 package org.example.Data;
 
 public class MainData {
-	public static final String Major = "Major";
-	public static final String Minor = "Minor";
-	public static final String Explanation = "Explanation";
+	private MainData() {
+	}
 
-	public static final String Result = "Result";
-	public static final String ResultSuccess = "Success";
-	public static final String ResultFailure = "Failure";
+	public static final String MAJOR = "Major";
+	public static final String MINOR = "Minor";
+	public static final String EXPLANATION = "Explanation";
 
-	public static final String Different = "Different";
+	public static final String RESULT = "Result";
+	public static final String RESULT_SUCCESS = "Success";
+	public static final String RESULT_FAILURE = "Failure";
 
-	public static final String True = "True";
-	public static final String False = "False";
+	public static final String DIFFERENT = "Different";
 
 	public static final String S3TESTS_INI = "S3TESTS_INI";
 

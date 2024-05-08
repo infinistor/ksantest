@@ -17,43 +17,43 @@ import org.ini4j.Ini;
 
 public class S3Config
 {
-	// private final String STR_FILENAME = "config.ini";
-	private final String STR_FILENAME = "s3tests-229.ini";
-	// private final String STR_FILENAME = "s3tests-227.ini";
-	// private final String STR_FILENAME = "s3tests_gw.ini";
-	// private final String STR_FILENAME = "s3tests_ksan2.ini";
-	// private final String STR_FILENAME = "awstests.ini";
+	// static final String STR_FILENAME = "s3tests-229.ini";
+	// static final String STR_FILENAME = "s3tests-227.ini";
+	// static final String STR_FILENAME = "s3tests-gw.ini";
+	// static final String STR_FILENAME = "s3tests-ksan.ini";
+	// static final String STR_FILENAME = "awstests.ini";
+	static final String STR_FILENAME = "config.ini";
 	//////////////////////////////SIGNATURE VERSION////////////////////////////////////
 	public static final String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
 	public static final String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";
 
 	/////////////////////////////////////S3///////////////////////////////////////////
-	private static final String STR_S3 = "S3";
-	private static final String STR_URL = "URL";
-	private static final String STR_PORT = "Port";
-	private static final String STR_SSL_PORT = "SSLPort";
-	private static final String STR_SIGNATURE_VERSION = "SignatureVersion";
-	private static final String STR_IS_SECURE = "IsSecure";
-	private static final String STR_REGION = "RegionName";
+	static final String STR_S3 = "S3";
+	static final String STR_URL = "URL";
+	static final String STR_PORT = "Port";
+	static final String STR_SSL_PORT = "SSLPort";
+	static final String STR_SIGNATURE_VERSION = "SignatureVersion";
+	static final String STR_IS_SECURE = "IsSecure";
+	static final String STR_REGION = "RegionName";
 
 	/////////////////////////////////////Fixtures///////////////////////////////////////////
-	private static final String STR_FIXTURES = "Fixtures";
-	private static final String STR_BUCKET_PREFIX = "BucketPrefix";
-	private static final String STR_BUCKET_DELETE = "NotDelete";
+	static final String STR_FIXTURES = "Fixtures";
+	static final String STR_BUCKET_PREFIX = "BucketPrefix";
+	static final String STR_BUCKET_DELETE = "NotDelete";
 	/////////////////////////////////////User Data///////////////////////////////////////////
-	private static final String STR_MAIN_USER = "Main User";
-	private static final String STR_ALT_USER = "Alt User";
+	static final String STR_MAIN_USER = "Main User";
+	static final String STR_ALT_USER = "Alt User";
 
-	private static final String STR_DISPLAY_NAME = "DisplayName";
-	private static final String STR_USER_ID = "UserID";
-	private static final String STR_EMAIL = "Email";
-	private static final String STR_ACCESS_KEY = "AccessKey";
-	private static final String STR_SECRET_KEY = "SecretKey";
-	private static final String STR_KMS = "KMS";
+	static final String STR_DISPLAY_NAME = "DisplayName";
+	static final String STR_USER_ID = "UserID";
+	static final String STR_EMAIL = "Email";
+	static final String STR_ACCESS_KEY = "AccessKey";
+	static final String STR_SECRET_KEY = "SecretKey";
+	static final String STR_KMS = "KMS";
 
 	/*********************************************************************************************************/
 	public final String fileName;
-	private final Ini ini = new Ini();
+	final Ini ini = new Ini();
 	/*********************************************************************************************************/
 	public String url;
 	public int port;
@@ -108,7 +108,7 @@ public class S3Config
 		return url == null || url.length() == 0;
 	}
 
-	private UserData readUser(String section)
+	UserData readUser(String section)
 	{
 		UserData user = new UserData();
 
@@ -122,7 +122,7 @@ public class S3Config
 		return user;
 	}
 
-	private String readKeyToString(String section, String key) { return ini.get(section, key); }
-	private int readKeyToInt(String section, String key) { return Integer.parseInt(ini.get(section, key)); }
-	private boolean readKeyToBoolean(String section, String key) { return Boolean.parseBoolean(ini.get(section, key)); }
+	String readKeyToString(String section, String key) { return ini.get(section, key); }
+	int readKeyToInt(String section, String key) { return Integer.parseInt(ini.get(section, key)); }
+	boolean readKeyToBoolean(String section, String key) { return Boolean.parseBoolean(ini.get(section, key)); }
 }

@@ -11,6 +11,7 @@
 package org.example.Data;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.AlgorithmParameters;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -47,7 +48,7 @@ public class AES256 {
 		AlgorithmParameters params = cipher.getParameters();
 
 		byte[] ivBytes = params.getParameterSpec(IvParameterSpec.class).getIV();
-		byte[] encryptedTextBytes = cipher.doFinal(msg.getBytes("UTF-8"));
+		byte[] encryptedTextBytes = cipher.doFinal(msg.getBytes(StandardCharsets.UTF_8));
 		byte[] buffer = new byte[saltBytes.length + ivBytes.length + encryptedTextBytes.length];
 		System.arraycopy(saltBytes, 0, buffer, 0, saltBytes.length);
 		System.arraycopy(ivBytes, 0, buffer, saltBytes.length, ivBytes.length);
