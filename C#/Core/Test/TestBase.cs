@@ -372,23 +372,23 @@ namespace s3tests
 		public void CheckContentUsingRange(S3Client Client, string BucketName, string Key, string Data, long Step, SSECustomerKey SSE_C = null)
 		{
 			var Size = Data.Length;
-			long StartpPosition = 0;
+			long StartPosition = 0;
 
-			while (StartpPosition < Size)
+			while (StartPosition < Size)
 			{
-				var EndPosition = StartpPosition + Step;
+				var EndPosition = StartPosition + Step;
 				if (EndPosition > Size) EndPosition = Size - 1;
 				EndPosition -= 1;
 
 
-				var Range = new ByteRange(StartpPosition, EndPosition);
+				var Range = new ByteRange(StartPosition, EndPosition);
 				var Response = Client.GetObject(BucketName, Key: Key, Range: Range, SSE_C: SSE_C);
 				var Body = GetBody(Response);
-				var Length = EndPosition - StartpPosition + 1;
+				var Length = EndPosition - StartPosition + 1;
 
 				Assert.Equal(Length, Response.ContentLength);
 				Assert.Equal(Data.Substring((int)Range.Start, (int)Length), Body);
-				StartpPosition += Step;
+				StartPosition += Step;
 			}
 		}
 		public void CheckContentUsingRandomRange(S3Client Client, string BucketName, string Key, string Data, int LoopCount, SSECustomerKey SSE_C = null)
