@@ -16,33 +16,38 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.model.AccelerateConfiguration;
 import software.amazon.awssdk.services.s3.model.BucketAccelerateStatus;
+import software.amazon.awssdk.services.s3.model.GetBucketAccelerateConfigurationRequest;
 import software.amazon.awssdk.services.s3.model.PutBucketAccelerateConfigurationRequest;
 
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+
+@Execution(ExecutionMode.CONCURRENT)
 public class Accelerate extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Accelerate SDK V2 Start");
+		System.out.println("Accelerate Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Accelerate SDK V2 End");
+		System.out.println("Accelerate End");
 	}
 
 	@Test
 	@Tag("Put")
 	// 버킷 가속 설정이 가능한지 확인
 	public void testPutBucketAccelerate() {
-		String bucketName = getNewBucket();
-		S3Client client = getClient();
+		var bucketName = getNewBucket();
+		var client = getClient();
 
 		client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
 				.bucket(bucketName)
 				.accelerateConfiguration(AccelerateConfiguration.builder()
-						.status(BucketAccelerateStatus.ENABLED)
+						.status("Enabled")
 						.build())
 				.build());
 	}
@@ -50,16 +55,21 @@ public class Accelerate extends TestBase {
 	@Test
 	@Tag("Get")
 	// 버킷 가속 설정이 올바르게 적용되는지 확인
-	public void getBucketAccelerate() {
+	public void testGetBucketAccelerate() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
-				.withBucketName(bucketName)
-				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Enabled)));
+		client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
+				.bucket(bucketName)
+				.accelerateConfiguration(AccelerateConfiguration.builder()
+						.status(BucketAccelerateStatus.ENABLED)
+						.build())
+				.build());
 
-		var response = client.getBucketAccelerateConfiguration(bucketName);
-		assertEquals("Enabled", response.getStatus());
+		var response = client.getBucketAccelerateConfiguration(GetBucketAccelerateConfigurationRequest.builder()
+				.bucket(bucketName)
+				.build());
+		assertEquals(BucketAccelerateStatus.ENABLED, response.status());
 	}
 
 	@Test
@@ -69,37 +79,46 @@ public class Accelerate extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
-				.withBucketName(bucketName)
-				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Enabled)));
+		client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
+				.bucket(bucketName)
+				.accelerateConfiguration(AccelerateConfiguration.builder()
+						.status(BucketAccelerateStatus.ENABLED)
+						.build())
+				.build());
 
-		var response = client.getBucketAccelerateConfiguration(bucketName);
-		assertEquals("Enabled", response.getStatus());
+		var response = client.getBucketAccelerateConfiguration(GetBucketAccelerateConfigurationRequest.builder()
+				.bucket(bucketName)
+				.build());
+		assertEquals(BucketAccelerateStatus.ENABLED, response.status());
 
-		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
-				.withBucketName(bucketName)
-				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Suspended)));
+		client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
+				.bucket(bucketName)
+				.accelerateConfiguration(AccelerateConfiguration.builder()
+						.status(BucketAccelerateStatus.SUSPENDED)
+						.build())
+				.build());
 
-		response = client.getBucketAccelerateConfiguration(bucketName);
-		assertEquals("Suspended", response.getStatus());
+		response = client.getBucketAccelerateConfiguration(GetBucketAccelerateConfigurationRequest.builder()
+				.bucket(bucketName)
+				.build());
+		assertEquals(BucketAccelerateStatus.SUSPENDED, response.status());
 	}
 
 	@Test
 	@Tag("Error")
 	// 버킷 가속 설정을 잘못 입력했을 때 에러가 발생하는지 확인
 	public void testPutBucketAccelerateInvalid() {
-
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var e = assertThrows(AmazonServiceException.class,
-				() -> client
-						.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
-								.withBucketName(bucketName)
-								.withAccelerateConfiguration(new BucketAccelerateConfiguration("Invalid"))));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(400, statusCode);
-		assertEquals("MalformedXML", errorCode);
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
+						.bucket(bucketName)
+						.accelerateConfiguration(AccelerateConfiguration.builder()
+								.status("Invalid")
+								.build())
+						.build()));
+		assertEquals(400, e.statusCode());
+		assertEquals("MalformedXML", e.getMessage());
 	}
 }
