@@ -11,56 +11,57 @@
 package org.example.s3tests;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class Replication {
+class Replication {
 
 	org.example.test.Replication Test = new org.example.test.Replication();
 
 	@AfterEach
-	public void Clear() {
-		Test.Clear();
+	public void clear(TestInfo testInfo) {
+		Test.clear(testInfo);
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Check")
 	// @Tag("버킷의 Replication 설정이 되는지 확인(put/get/delete)
-	public void test_replication_set() {
-		Test.test_replication_set();
+	void testReplicationSet() {
+		Test.testReplicationSet();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
-	public void test_replication_invalid_source_bucket_name() {
-		Test.test_replication_invalid_source_bucket_name();
+	void testReplicationInvalidSourceBucketName() {
+		Test.testReplicationInvalidSourceBucketName();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
-	public void test_replication_invalid_source_bucket_versioning() {
-		Test.test_replication_invalid_source_bucket_versioning();
+	void testReplicationInvalidSourceBucketVersioning() {
+		Test.testReplicationInvalidSourceBucketVersioning();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
-	public void test_replication_invalid_target_bucket_name() {
-		Test.test_replication_invalid_target_bucket_name();
+	void testReplicationInvalidTargetBucketName() {
+		Test.testReplicationInvalidTargetBucketName();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
-	public void test_replication_invalid_target_bucket_versioning() {
-		Test.test_replication_invalid_target_bucket_versioning();
+	void testReplicationInvalidTargetBucketVersioning() {
+		Test.testReplicationInvalidTargetBucketVersioning();
 	}
 
 }

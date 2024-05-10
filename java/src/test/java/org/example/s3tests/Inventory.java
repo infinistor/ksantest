@@ -11,135 +11,136 @@
 package org.example.s3tests;
 
 import org.junit.Ignore;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class Inventory {
+class Inventory {
 	org.example.test.Inventory Test = new org.example.test.Inventory();
 
 	@AfterEach
-	public void Clear() {
-		Test.Clear();
+	public void clear(TestInfo testInfo) {
+		Test.clear(testInfo);
 	}
 
 	@Test
 	@Tag("List")
 	// 버킷에 인벤토리를 설정하지 않은 상태에서 조회가 가능한지 확인
-	public void test_list_bucket_inventory() {
-		Test.test_list_bucket_inventory();
+	void testListBucketInventory() {
+		Test.testListBucketInventory();
 	}
 
 	@Test
 	@Tag("Put")
 	// 버킷에 인벤토리를 설정할 수 있는지 확인
-	public void test_put_bucket_inventory() {
-		Test.test_put_bucket_inventory();
+	void testPutBucketInventory() {
+		Test.testPutBucketInventory();
 	}
 
 	@Test
 	@Tag("Check")
 	// 버킷에 인벤토리 설정이 되었는지 확인
-	public void test_check_bucket_inventory() {
-		Test.test_check_bucket_inventory();
+	void testCheckBucketInventory() {
+		Test.testCheckBucketInventory();
 	}
 
 	@Test
 	@Tag("Get")
 	// 버킷에 설정된 인벤토리를 조회할 수 있는지 확인
-	public void test_get_bucket_inventory() {
-		Test.test_get_bucket_inventory();
+	void testGetBucketInventory() {
+		Test.testGetBucketInventory();
 	}
 
 	@Test
 	@Tag("Delete")
 	// 버킷에 설정된 인벤토리를 삭제할 수 있는지 확인
-	public void test_delete_bucket_inventory() {
-		Test.test_delete_bucket_inventory();
+	void testDeleteBucketInventory() {
+		Test.testDeleteBucketInventory();
 	}
 
 	@Test
 	@Tag("Error")
 	// 존재하지 않은 인벤토리를 가져오려고 할 경우 실패하는지 확인
-	public void test_get_bucket_inventory_not_exist() {
-		Test.test_get_bucket_inventory_not_exist();
+	void testGetBucketInventoryNotExist() {
+		Test.testGetBucketInventoryNotExist();
 	}
 
 	@Test
 	@Tag("Error")
 	// 존재하지 않은 인벤토리를 삭제하려고 할 경우 실패하는지 확인
-	public void test_delete_bucket_inventory_not_exist() {
-		Test.test_delete_bucket_inventory_not_exist();
+	void testDeleteBucketInventoryNotExist() {
+		Test.testDeleteBucketInventoryNotExist();
 	}
 
 	@Test
 	@Tag("Error")
 	// 존재하지 않은 버킷에 인벤토리를 설정하려고 할 경우 실패하는지 확인
-	public void test_put_bucket_inventory_not_exist() {
-		Test.test_put_bucket_inventory_not_exist();
+	void testPutBucketInventoryNotExist() {
+		Test.testPutBucketInventoryNotExist();
 	}
 
 	@Test
 	@Tag("Error")
 	// 인벤토리 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
-	public void test_put_bucket_inventory_id_not_exist() {
-		Test.test_put_bucket_inventory_id_not_exist();
+	void testPutBucketInventoryIdNotExist() {
+		Test.testPutBucketInventoryIdNotExist();
 	}
 
 	@Test
 	@Tag("Error")
 	// 인벤토리 아이디를 중복으로 설정하려고 할 경우 실패하는지 확인
-	public void test_put_bucket_inventory_id_duplicate(){
-		Test.test_put_bucket_inventory_id_duplicate();
+	void testPutBucketInventoryIdDuplicate(){
+		Test.testPutBucketInventoryIdDuplicate();
 	}
 
 	@Ignore("aws에서 타깃 버킷이 존재하는지 확인하지 않음")
 	@Test
 	@Tag("Error")
 	// 타깃 버킷이 존재하지 않을 경우 실패하는지 확인
-	public void test_put_bucket_inventory_target_not_exist() {
-		Test.test_put_bucket_inventory_target_not_exist();
+	void testPutBucketInventoryTargetNotExist() {
+		Test.testPutBucketInventoryTargetNotExist();
 	}
 
 	@Test
 	@Tag("Error")
 	// 지원하지 않는 파일 형식의 인벤토리를 설정하려고 할 경우 실패하는지 확인
-	public void test_put_bucket_inventory_invalid_format() {
-		Test.test_put_bucket_inventory_invalid_format();
+	void testPutBucketInventoryInvalidFormat() {
+		Test.testPutBucketInventoryInvalidFormat();
 	}
 
 	@Test
 	@Tag("Error")
 	// 올바르지 않은 주기의 인벤토리를 설정하려고 할 경우 실패하는지 확인
-	public void test_put_bucket_inventory_invalid_frequency() {
-		Test.test_put_bucket_inventory_invalid_frequency();
+	void testPutBucketInventoryInvalidFrequency() {
+		Test.testPutBucketInventoryInvalidFrequency();
 	}
 
 	@Test
 	@Tag("Error")
 	// 대소문자를 잘못 입력하여 인벤토리를 설정하려고 할 경우 실패하는지 확인
-	public void test_put_bucket_inventory_invalid_case() {
-		Test.test_put_bucket_inventory_invalid_case();
+	void testPutBucketInventoryInvalidCase() {
+		Test.testPutBucketInventoryInvalidCase();
 	}
 
 	@Test
 	@Tag("Put")
 	// 접두어를 포함한 인벤토리 설정이 올바르게 적용되는지 확인
-	public void test_put_bucket_inventory_prefix() {
-		Test.test_put_bucket_inventory_prefix();
+	void testPutBucketInventoryPrefix() {
+		Test.testPutBucketInventoryPrefix();
 	}
 
 	@Test
 	@Tag("Put")
 	// 옵션을 포함한 인벤토리 설정이 올바르게 적용되는지 확인
-	public void test_put_bucket_inventory_optional() {
-		Test.test_put_bucket_inventory_optional();
+	void testPutBucketInventoryOptional() {
+		Test.testPutBucketInventoryOptional();
 	}
 
 	@Test
 	@Tag("Error")
 	// 올바르지 않은 옵션을 포함한 인벤토리를 설정하려고 할 경우 실패하는지 확인
-	public void test_put_bucket_inventory_invalid_optional() {
-		Test.test_put_bucket_inventory_invalid_optional();
+	void testPutBucketInventoryInvalidOptional() {
+		Test.testPutBucketInventoryInvalidOptional();
 	}
 }

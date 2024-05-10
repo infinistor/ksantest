@@ -14,72 +14,73 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class Post {
+class Post {
 
 	org.example.test.Post Test = new org.example.test.Post();
 
 	@AfterEach
-	public void Clear() {
-		Test.Clear();
+	public void clear(TestInfo testInfo) {
+		Test.clear(testInfo);
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Upload")
 	// @Tag("post 방식으로 권한없는 사용자가 파일 업로드할 경우 성공 확인
-	public void test_post_object_anonymous_request() throws MalformedURLException {
-		Test.test_post_object_anonymous_request();
+	void testPostObjectAnonymousRequest() throws MalformedURLException {
+		Test.testPostObjectAnonymousRequest();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Upload")
 	// @Tag("post 방식으로 로그인 정보를 포함한 파일 업로드할 경우 성공 확인
-	public void test_post_object_authenticated_request() throws MalformedURLException {
-		Test.test_post_object_authenticated_request();
+	void testPostObjectAuthenticatedRequest() throws MalformedURLException {
+		Test.testPostObjectAuthenticatedRequest();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Upload")
 	// @Tag("content-type 헤더 정보 없이 post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_authenticated_no_content_type() throws MalformedURLException {
-		Test.test_post_object_authenticated_no_content_type();
+	void testPostObjectAuthenticatedNoContentType() throws MalformedURLException {
+		Test.testPostObjectAuthenticatedNoContentType();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[PostKey 값이 틀린 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_authenticated_request_bad_access_key() throws MalformedURLException {
-		Test.test_post_object_authenticated_request_bad_access_key();
+	void testPostObjectAuthenticatedRequestBadAccessKey() throws MalformedURLException {
+		Test.testPostObjectAuthenticatedRequestBadAccessKey();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("StatusCode")
 	// @Tag("[성공시 반환상태값을 201로 설정] post 방식으로 권한없는 사용자가 파일 업로드시 에러체크가 올바른지 확인
-	public void test_post_object_set_success_code() throws MalformedURLException {
-		Test.test_post_object_set_success_code();
+	void testPostObjectSetSuccessCode() throws MalformedURLException {
+		Test.testPostObjectSetSuccessCode();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("StatusCode")
 	// @Tag("[성공시 반환상태값을 에러코드인 404로 설정] post 방식으로 권한없는 사용자가 파일 업로드시 에러체크가 올바른지 확인
-	public void test_post_object_set_invalid_success_code() throws MalformedURLException {
-		Test.test_post_object_set_invalid_success_code();
+	void testPostObjectSetInvalidSuccessCode() throws MalformedURLException {
+		Test.testPostObjectSetInvalidSuccessCode();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Upload")
 	// @Tag("post 방식으로 로그인정보를 포함한 대용량 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_upload_larger_than_chunk() throws MalformedURLException {
-		Test.test_post_object_upload_larger_than_chunk();
+	void testPostObjectUploadLargerThanChunk() throws MalformedURLException {
+		Test.testPostObjectUploadLargerThanChunk();
 	}
 
 	@Test
@@ -87,96 +88,96 @@ public class Post {
 	@Tag("Upload")
 	// @Tag("[오브젝트 이름을 로그인정보에 포함되어 있는 key값으로 대체할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시
 	// 올바르게 업로드 되는지 확인
-	public void test_post_object_set_key_from_filename() throws MalformedURLException {
-		Test.test_post_object_set_key_from_filename();
+	void testPostObjectSetKeyFromFilename() throws MalformedURLException {
+		Test.testPostObjectSetKeyFromFilename();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Upload")
 	// @Tag("post 방식으로 로그인, 헤더 정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_ignored_header() throws MalformedURLException {
-		Test.test_post_object_ignored_header();
+	void testPostObjectIgnoredHeader() throws MalformedURLException {
+		Test.testPostObjectIgnoredHeader();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Upload")
 	// @Tag("[헤더정보에 대소문자를 섞어서 사용할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_case_insensitive_condition_fields() throws MalformedURLException {
-		Test.test_post_object_case_insensitive_condition_fields();
+	void testPostObjectCaseInsensitiveConditionFields() throws MalformedURLException {
+		Test.testPostObjectCaseInsensitiveConditionFields();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Upload")
 	// @Tag("[오브젝트 이름에 '\'를 사용할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_escaped_field_values() throws MalformedURLException {
-		Test.test_post_object_escaped_field_values();
+	void testPostObjectEscapedFieldValues() throws MalformedURLException {
+		Test.testPostObjectEscapedFieldValues();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Upload")
 	// @Tag("[redirect url설정하여 체크] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_success_redirect_action() throws MalformedURLException {
-		Test.test_post_object_success_redirect_action();
+	void testPostObjectSuccessRedirectAction() throws MalformedURLException {
+		Test.testPostObjectSuccessRedirectAction();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[SecretKey Hash 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_invalid_signature() throws MalformedURLException {
-		Test.test_post_object_invalid_signature();
+	void testPostObjectInvalidSignature() throws MalformedURLException {
+		Test.testPostObjectInvalidSignature();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[PostKey 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_invalid_access_key() throws MalformedURLException {
-		Test.test_post_object_invalid_access_key();
+	void testPostObjectInvalidAccessKey() throws MalformedURLException {
+		Test.testPostObjectInvalidAccessKey();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[로그인 정보의 날짜포맷이 다를경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_invalid_date_format() throws MalformedURLException {
-		Test.test_post_object_invalid_date_format();
+	void testPostObjectInvalidDateFormat() throws MalformedURLException {
+		Test.testPostObjectInvalidDateFormat();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[오브젝트 이름을 입력하지 않을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_no_key_specified() throws MalformedURLException {
-		Test.test_post_object_no_key_specified();
+	void testPostObjectNoKeySpecified() throws MalformedURLException {
+		Test.testPostObjectNoKeySpecified();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[signature 정보를 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_signature() throws MalformedURLException {
-		Test.test_post_object_missing_signature();
+	void testPostObjectMissingSignature() throws MalformedURLException {
+		Test.testPostObjectMissingSignature();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[policy에 버킷 이름을 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_policy_condition() throws MalformedURLException {
-		Test.test_post_object_missing_policy_condition();
+	void testPostObjectMissingPolicyCondition() throws MalformedURLException {
+		Test.testPostObjectMissingPolicyCondition();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("Metadata")
 	// @Tag("[사용자가 추가 메타데이터를 입력한 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_user_specified_header() throws MalformedURLException {
-		Test.test_post_object_user_specified_header();
+	void testPostObjectUserSpecifiedHeader() throws MalformedURLException {
+		Test.testPostObjectUserSpecifiedHeader();
 	}
 
 	@Test
@@ -184,8 +185,8 @@ public class Post {
 	@Tag("ERROR")
 	// @Tag("[사용자가 추가 메타데이터를 policy에 설정하였으나 오브젝트에 해당 정보가 누락된 경우] post 방식으로 로그인정보를
 	// 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_request_missing_policy_specified_field() throws MalformedURLException {
-		Test.test_post_object_request_missing_policy_specified_field();
+	void testPostObjectRequestMissingPolicySpecifiedField() throws MalformedURLException {
+		Test.testPostObjectRequestMissingPolicySpecifiedField();
 	}
 
 	@Test
@@ -193,8 +194,8 @@ public class Post {
 	@Tag("ERROR")
 	// @Tag("[policy의 condition을 대문자(CONDITIONS)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일
 	// 업로드시 실패하는지 확인
-	public void test_post_object_condition_is_case_sensitive() throws MalformedURLException {
-		Test.test_post_object_condition_is_case_sensitive();
+	void testPostObjectConditionIsCaseSensitive() throws MalformedURLException {
+		Test.testPostObjectConditionIsCaseSensitive();
 	}
 
 	@Test
@@ -202,8 +203,8 @@ public class Post {
 	@Tag("ERROR")
 	// @Tag("[policy의 expiration을 대문자(EXPIRATION)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일
 	// 업로드시 실패하는지 확인
-	public void test_post_object_expires_is_case_sensitive() throws MalformedURLException {
-		Test.test_post_object_expires_is_case_sensitive();
+	void testPostObjectExpiresIsCaseSensitive() throws MalformedURLException {
+		Test.testPostObjectExpiresIsCaseSensitive();
 	}
 
 	@Test
@@ -211,8 +212,8 @@ public class Post {
 	@Tag("ERROR")
 	// @Tag("[policy의 expiration을 만료된 값으로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지
 	// 확인
-	public void test_post_object_expired_policy() throws MalformedURLException {
-		Test.test_post_object_expired_policy();
+	void testPostObjectExpiredPolicy() throws MalformedURLException {
+		Test.testPostObjectExpiredPolicy();
 	}
 
 	@Test
@@ -220,24 +221,24 @@ public class Post {
 	@Tag("ERROR")
 	// @Tag("[사용자가 추가 메타데이터를 policy에 설정하였으나 설정정보가 올바르지 않을 경우] post 방식으로 로그인정보를 포함한
 	// 파일 업로드시 실패하는지 확인
-	public void test_post_object_invalid_request_field_value() throws MalformedURLException {
-		Test.test_post_object_invalid_request_field_value();
+	void testPostObjectInvalidRequestFieldValue() throws MalformedURLException {
+		Test.testPostObjectInvalidRequestFieldValue();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[policy의 expiration값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_expires_condition() throws MalformedURLException {
-		Test.test_post_object_missing_expires_condition();
+	void testPostObjectMissingExpiresCondition() throws MalformedURLException {
+		Test.testPostObjectMissingExpiresCondition();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[policy의 conditions값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_conditions_list() throws MalformedURLException {
-		Test.test_post_object_missing_conditions_list();
+	void testPostObjectMissingConditionsList() throws MalformedURLException {
+		Test.testPostObjectMissingConditionsList();
 	}
 
 	@Test
@@ -245,16 +246,16 @@ public class Post {
 	@Tag("ERROR")
 	// @Tag("[policy에 설정한 용량보다 큰 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지
 	// 확인
-	public void test_post_object_upload_size_limit_exceeded() throws MalformedURLException {
-		Test.test_post_object_upload_size_limit_exceeded();
+	void testPostObjectUploadSizeLimitExceeded() throws MalformedURLException {
+		Test.testPostObjectUploadSizeLimitExceeded();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[policy에 용량정보 설정을 누락할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_content_length_argument() throws MalformedURLException {
-		Test.test_post_object_missing_content_length_argument();
+	void testPostObjectMissingContentLengthArgument() throws MalformedURLException {
+		Test.testPostObjectMissingContentLengthArgument();
 	}
 
 	@Test
@@ -262,8 +263,8 @@ public class Post {
 	@Tag("ERROR")
 	// @Tag("[policy에 용량정보 설정값이 틀렸을 경우(용량값을 음수로 입력) post 방식으로 로그인정보를 포함한 파일 업로드시
 	// 실패하는지 확인
-	public void test_post_object_invalid_content_length_argument() throws MalformedURLException {
-		Test.test_post_object_invalid_content_length_argument();
+	void testPostObjectInvalidContentLengthArgument() throws MalformedURLException {
+		Test.testPostObjectInvalidContentLengthArgument();
 	}
 
 	@Test
@@ -271,55 +272,55 @@ public class Post {
 	@Tag("ERROR")
 	// @Tag("[policy에 설정한 용량보다 작은 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지
 	// 확인
-	public void test_post_object_upload_size_below_minimum() throws MalformedURLException {
-		Test.test_post_object_upload_size_below_minimum();
+	void testPostObjectUploadSizeBelowMinimum() throws MalformedURLException {
+		Test.testPostObjectUploadSizeBelowMinimum();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("[policy의 conditions값이 비어있을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_empty_conditions() throws MalformedURLException {
-		Test.test_post_object_empty_conditions();
+	void testPostObjectEmptyConditions() throws MalformedURLException {
+		Test.testPostObjectEmptyConditions();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("PresignedURL")
 	// @Tag("PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_presigned_url_put_get() throws UnsupportedOperationException, IOException {
-		Test.test_presigned_url_put_get();
+	void testPresignedUrlPutGet() throws UnsupportedOperationException, IOException {
+		Test.testPresignedUrlPutGet();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("PresignedURL")
 	// @Tag("[SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_presigned_url_put_get_v4() throws MalformedURLException {
-		Test.test_presigned_url_put_get_v4();
+	void testPresignedUrlPutGetV4() throws MalformedURLException {
+		Test.testPresignedUrlPutGetV4();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("signV4")
 	// SignatureVersion4로 오브젝트 업로드 성공 확인
-	public void test_put_object_v4() throws MalformedURLException {
-		Test.test_put_object_v4();
+	void testPutObjectV4() throws MalformedURLException {
+		Test.testPutObjectV4();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("signV4")
 	// [SignatureVersion4] post 방식으로 내용을 암호화 하여 오브젝트 업로드 성공 확인
-	public void test_put_object_chunked_v4() throws MalformedURLException {
-		Test.test_put_object_chunked_v4();
+	void testPutObjectChunkedV4() throws MalformedURLException {
+		Test.testPutObjectChunkedV4();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("signV4")
 	// [SignatureVersion4] post 방식으로 오브젝트 다운로드 성공 확인
-	public void test_get_object_v4() throws MalformedURLException {
-		Test.test_get_object_v4();
+	void testGetObjectV4() throws MalformedURLException {
+		Test.testGetObjectV4();
 	}
 }
