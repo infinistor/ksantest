@@ -14,216 +14,274 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 
-import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
-import com.amazonaws.services.s3.model.CORSRule;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.CreateBucketRequest;
-import com.amazonaws.services.s3.model.CORSRule.AllowedMethods;
 
-public class Cors extends TestBase
-{
+import software.amazon.awssdk.services.s3.model.BucketCannedACL;
+import software.amazon.awssdk.services.s3.model.CORSConfiguration;
+import software.amazon.awssdk.services.s3.model.CORSRule;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteBucketCorsRequest;
+import software.amazon.awssdk.services.s3.model.GetBucketCorsRequest;
+import software.amazon.awssdk.services.s3.model.PutBucketCorsRequest;
+
+
+public class Cors extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll()
-	{
-		System.out.println("Cors SDK V2 Start");
+	public static void beforeAll() {
+		System.out.println("Cors Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	public static void afterAll()
-	{
-		System.out.println("Cors SDK V2 End");
+	public static void afterAll() {
+		System.out.println("Cors End");
 	}
 
 	@Test
 	@Tag("Check")
-	//버킷의 cors정보 세팅 성공 확인
-	public void test_set_cors() {
+	// 버킷의 cors정보 세팅 성공 확인
+	public void testSetCors() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var allowedMethods = new ArrayList<>(Arrays.asList(new AllowedMethods[] { AllowedMethods.GET, AllowedMethods.PUT }));
-		var allowedOrigins = new ArrayList<>(Arrays.asList(new String[] { "*.get", "*.put" }));
+		var allowedMethods = List.of("GET", "PUT");
+		var allowedOrigins = List.of("*.get", "*.put");
 
-		var corsConfig = new BucketCrossOriginConfiguration().withRules(new CORSRule().withAllowedMethods(allowedMethods).withAllowedOrigins(allowedOrigins));
+		var corsConfig = CORSConfiguration.builder()
+				.corsRules(CORSRule.builder()
+						.allowedMethods(allowedMethods)
+						.allowedOrigins(allowedOrigins)
+						.build())
+				.build();
 
-		var response = client.getBucketCrossOriginConfiguration(bucketName);
+		var response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
 		assertNull(response);
 
-		client.setBucketCrossOriginConfiguration(bucketName, corsConfig);
-		response = client.getBucketCrossOriginConfiguration(bucketName);
-		assertEquals(allowedMethods, response.getRules().get(0).getAllowedMethods());
-		assertEquals(allowedOrigins, response.getRules().get(0).getAllowedOrigins());
+		client.putBucketCors(PutBucketCorsRequest.builder().bucket(bucketName).corsConfiguration(corsConfig).build());
+		response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
+		assertEquals(allowedMethods, response.corsRules().get(0).allowedHeaders());
+		assertEquals(allowedOrigins, response.corsRules().get(0).allowedOrigins());
 
-		client.deleteBucketCrossOriginConfiguration(bucketName);
-		response = client.getBucketCrossOriginConfiguration(bucketName);
+		client.deleteBucketCors(DeleteBucketCorsRequest.builder().bucket(bucketName).build());
+		response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
 		assertNull(response);
 	}
 
 	@Test
 	@Ignore
 	@Tag("Post")
-	//버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인
-	public void test_cors_origin_response()
-	{
+	// 버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인
+	public void testCorsOriginResponse() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicRead));
+		client.createBucket(CreateBucketRequest.builder().bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
 
-		var corsConfig = new BucketCrossOriginConfiguration();
+		var corsConfig = CORSConfiguration.builder();
 		var rules = new ArrayList<CORSRule>();
-		rules.add(new CORSRule()
-				.withAllowedMethods(Arrays.asList(new AllowedMethods[] {AllowedMethods.GET}))
-				.withAllowedOrigins(Arrays.asList(new String[] {"*suffix"})));
-		rules.add(new CORSRule()
-				.withAllowedMethods(Arrays.asList(new AllowedMethods[] {AllowedMethods.GET}))
-				.withAllowedOrigins(Arrays.asList(new String[] {"start*end"})));
-		rules.add(new CORSRule()
-				.withAllowedMethods(Arrays.asList(new AllowedMethods[] {AllowedMethods.GET}))
-				.withAllowedOrigins(Arrays.asList(new String[] {"prefix*"})));
-		rules.add(new CORSRule()
-				.withAllowedMethods(Arrays.asList(new AllowedMethods[] {AllowedMethods.PUT}))
-				.withAllowedOrigins(Arrays.asList(new String[] {"*.put"})));
-		corsConfig.setRules(rules);
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("GET"))
+				.allowedOrigins(List.of("*suffix")).build());
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("GET"))
+				.allowedOrigins(List.of("start*end")).build());
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("GET"))
+				.allowedOrigins(List.of("prefix*")).build());
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("PUT"))
+				.allowedOrigins(List.of("*.put")).build());
+		corsConfig.corsRules(rules);
 
-		var response = client.getBucketCrossOriginConfiguration(bucketName);
+		var response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
 		assertNull(response);
 
-		client.setBucketCrossOriginConfiguration(bucketName, corsConfig);
+		client.putBucketCors(PutBucketCorsRequest.builder().bucket(bucketName).corsConfiguration(corsConfig.build()).build());
 
 		var headers = new HashMap<String, String>();
 
-		CorsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
-		headers.clear(); headers.put("Origin", "foo.suffix");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, "foo.suffix", "GET", null);
-		headers.clear(); headers.put("Origin", "foo.bar");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
-		headers.clear(); headers.put("Origin", "foo.suffix.get");
-		CorsRequestAndCheck("GET", bucketName, headers , 200, null, null, null);
-		headers.clear(); headers.put("Origin", "startend");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, "startend", "GET", null);
-		headers.clear(); headers.put("Origin", "start1end");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, "start1end", "GET", null);
-		headers.clear(); headers.put("Origin", "start12end");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, "start12end", "GET", null);
-		headers.clear(); headers.put("Origin", "0start12end");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
-		headers.clear(); headers.put("Origin", "prefix");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, "prefix", "GET", null);
-		headers.clear(); headers.put("Origin", "prefix.suffix");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, "prefix.suffix", "GET", null);
-		headers.clear(); headers.put("Origin", "bla.prefix");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
-
-		headers.clear(); headers.put("Origin", "foo.suffix");
-		CorsRequestAndCheck("GET", bucketName, headers, 404, "foo.suffix", "GET", "bar");
-		headers.clear(); headers.put("Origin", "foo.suffix"); headers.put("Access-Control-Request-Method", "GET"); headers.put("content-length", "0");
-		CorsRequestAndCheck("PUT", bucketName, headers, 403, "foo.suffix", "GET", "bar");
-		headers.clear(); headers.put("Origin", "foo.suffix");headers.put("Access-Control-Request-Method", "PUT"); headers.put("content-length", "0");
-		CorsRequestAndCheck("PUT", bucketName, headers, 403, null, null, "bar");
-
-		headers.clear(); headers.put("Origin", "foo.suffix"); headers.put("Access-Control-Request-Method", "DELETE"); headers.put("content-length", "0");
-		CorsRequestAndCheck("PUT", bucketName, headers, 403, null, null, "bar");
-		headers.clear(); headers.put("Origin", "foo.suffix"); headers.put("content-length", "0");
-		CorsRequestAndCheck("PUT", bucketName, headers, 403, null, null, "bar");
-
-		headers.clear(); headers.put("Origin", "foo.put"); headers.put("content-length", "0");
-		CorsRequestAndCheck("PUT", bucketName, headers, 403, "foo.put", "PUT", "bar");
-		headers.clear(); headers.put("Origin", "foo.suffix");
-		CorsRequestAndCheck("GET", bucketName, headers, 404, "foo.suffix", "GET", "bar");
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "foo.suffix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "foo.bar");
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.suffix.get");
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
+		headers.clear();
+		headers.put("Origin", "start_end");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "start_end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "start1end");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "start1end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "start12end");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "start12end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "0start12end");
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
+		headers.clear();
+		headers.put("Origin", "prefix");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "prefix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "prefix.suffix");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "prefix.suffix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "bla.prefix");
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
 
 		headers.clear();
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 400, null, null, null);
-		headers.clear(); headers.put("Origin", "foo.suffix");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);// 403 => 400
-		headers.clear(); headers.put("Origin", "foo.bla");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);//403 => 400
-		headers.clear(); headers.put("Origin", "foo.suffix"); headers.put("Access-Control-Request-Method", "GET"); headers.put("content-length", "0");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 200, "foo.suffix", "GET", "bar");
-		headers.clear(); headers.put("Origin", "foo.bar"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
-		headers.clear(); headers.put("Origin", "foo.suffix.get"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
-		headers.clear(); headers.put("Origin", "startend"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 200, "startend", "GET", null);
-		headers.clear(); headers.put("Origin", "start1end"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 200, "start1end", "GET", null);
-		headers.clear(); headers.put("Origin", "start12end"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 200, "start12end", "GET", null);
-		headers.clear(); headers.put("Origin", "0start12end"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
-		headers.clear(); headers.put("Origin", "prefix"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 200, "prefix", "GET", null);
-		headers.clear(); headers.put("Origin", "prefix.suffix"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 200, "prefix.suffix", "GET", null);
-		headers.clear(); headers.put("Origin", "bla.prefix"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
-		headers.clear(); headers.put("Origin", "foo.put"); headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
-		headers.clear(); headers.put("Origin", "foo.put"); headers.put("Access-Control-Request-Method", "PUT");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 200, "foo.put", "PUT", null);
+		headers.put("Origin", "foo.suffix");
+		corsRequestAndCheck("GET", bucketName, headers, 404, "foo.suffix", "GET", "bar");
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("Access-Control-Request-Method", "GET");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, 403, "foo.suffix", "GET", "bar");
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("Access-Control-Request-Method", "PUT");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, 403, null, null, "bar");
+
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("Access-Control-Request-Method", "DELETE");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, 403, null, null, "bar");
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, 403, null, null, "bar");
+
+		headers.clear();
+		headers.put("Origin", "foo.put");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, 403, "foo.put", "PUT", "bar");
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		corsRequestAndCheck("GET", bucketName, headers, 404, "foo.suffix", "GET", "bar");
+
+		headers.clear();
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 400, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);// 403 => 400
+		headers.clear();
+		headers.put("Origin", "foo.bla");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);// 403 => 400
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("Access-Control-Request-Method", "GET");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "foo.suffix", "GET", "bar");
+		headers.clear();
+		headers.put("Origin", "foo.bar");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.suffix.get");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
+		headers.clear();
+		headers.put("Origin", "start_end");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "start_end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "start1end");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "start1end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "start12end");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "start12end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "0start12end");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
+		headers.clear();
+		headers.put("Origin", "prefix");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "prefix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "prefix.suffix");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "prefix.suffix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "bla.prefix");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.put");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.put");
+		headers.put("Access-Control-Request-Method", "PUT");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "foo.put", "PUT", null);
 	}
 
 	@Test
 	@Ignore
 	@Tag("Post")
-	//와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인
-	public void test_cors_origin_wildcard()
-	{
+	// 와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인
+	public void testCorsOriginWildcard() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicRead));
+		client.createBucket(CreateBucketRequest.builder().bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
 
-		var corsConfig = new BucketCrossOriginConfiguration();
+		var corsConfig = CORSConfiguration.builder();
 		var rules = new ArrayList<CORSRule>();
-		rules.add(new CORSRule().withAllowedMethods(Arrays.asList(new AllowedMethods[] {AllowedMethods.GET})).withAllowedOrigins(Arrays.asList(new String[] {"*"})));
-		corsConfig.setRules(rules);
+		rules.add(CORSRule.builder().allowedMethods(List.of("GET"))
+				.allowedOrigins(List.of("*")).build());
+		corsConfig.corsRules(rules);
 
-		var response = client.getBucketCrossOriginConfiguration(bucketName);
+		var response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
 		assertNull(response);
 
-		client.setBucketCrossOriginConfiguration(bucketName, corsConfig);
+		client.putBucketCors(PutBucketCorsRequest.builder().bucket(bucketName).corsConfiguration(corsConfig.build()).build());
 
 		var headers = new HashMap<String, String>();
-		CorsRequestAndCheck("GET", bucketName, new HashMap<String, String>(), 200, null, null, null);
-		headers.clear(); headers.put("Origin", "example.origin");
-		CorsRequestAndCheck("GET", bucketName, headers, 200, "*", "GET", null);
+		corsRequestAndCheck("GET", bucketName, new HashMap<>(), 200, null, null, null);
+		headers.clear();
+		headers.put("Origin", "example.origin");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "*", "GET", null);
 	}
 
 	@Test
 	@Ignore
 	@Tag("Post")
 	// @Tag("cors옵션에서 사용자 추가 헤더를 설정하고 존재하지 않는 헤더를 request 설정한 채로 cors호출하면 실패하는지 확인
-	public void test_cors_header_option()
-	{
+	public void testCorsHeaderOption() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicRead));
+		client.createBucket(CreateBucketRequest.builder().bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
 
-		var corsConfig = new BucketCrossOriginConfiguration();
+		var corsConfig = CORSConfiguration.builder();
 		var rules = new ArrayList<CORSRule>();
-		rules.add(new CORSRule()
-				.withAllowedMethods(Arrays.asList(new AllowedMethods[] {AllowedMethods.GET}))
-				.withAllowedOrigins(Arrays.asList(new String[] {"*"}))
-				.withExposedHeaders(Arrays.asList(new String[] {"x-amz-meta-header1"})));
-		corsConfig.setRules(rules);
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("GET"))
+				.allowedOrigins(List.of("*"))
+				.exposeHeaders(List.of("x-amz-meta-header1"))
+				.build());
+		corsConfig.corsRules(rules);
 
-		var response = client.getBucketCrossOriginConfiguration(bucketName);
+		var response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
 		assertNull(response);
 
-		client.setBucketCrossOriginConfiguration(bucketName, corsConfig);
+		client.putBucketCors(PutBucketCorsRequest.builder().bucket(bucketName).corsConfiguration(corsConfig.build()).build());
 
 		var headers = new HashMap<String, String>();
 		headers.clear();
 		headers.put("Origin", "example.origin");
 		headers.put("Access-Control-Request-headers", "x-amz-meta-header2");
 		headers.put("Access-Control-Request-Method", "GET");
-		CorsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, "bar");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, "bar");
 	}
 }
