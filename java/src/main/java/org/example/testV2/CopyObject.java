@@ -10,119 +10,128 @@
 */
 package org.example.testV2;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.CanonicalGrantee;
-import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
-import com.amazonaws.services.s3.model.CopyObjectRequest;
-import com.amazonaws.services.s3.model.Grant;
-import com.amazonaws.services.s3.model.MetadataDirective;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.Permission;
-import com.amazonaws.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.Grant;
+import software.amazon.awssdk.services.s3.model.Grantee;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.MetadataDirective;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
+import software.amazon.awssdk.services.s3.model.Permission;
+import software.amazon.awssdk.services.s3.model.PutBucketAclRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectAclRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-public class CopyObject extends TestBase
-{
+@Execution(ExecutionMode.CONCURRENT)
+public class CopyObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll()
-	{
-		System.out.println("CopyObject SDK V2 Start");
+	public static void beforeAll() {
+		System.out.println("CopyObject Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	public static void afterAll()
-	{
-		System.out.println("CopyObject SDK V2 End");
+	public static void afterAll() {
+		System.out.println("CopyObject End");
 	}
 
 	@Test
 	@Tag("Check")
-	//오브젝트의 크기가 0일때 복사가 가능한지 확인
-	public void test_object_copy_zero_size()
-	{
+	// 오브젝트의 크기가 0일때 복사가 가능한지 확인
+	public void testObjectCopyZeroSize() {
 		var key = "foo123bar";
 		var newKey = "bar321foo";
-		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { key })));
+		var bucketName = createObjects(List.of(key));
 		var client = getClient();
 
-		client.putObject(bucketName, key, "");
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.empty());
 
-		client.copyObject(bucketName, key, bucketName, newKey);
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(newKey)
+				.build());
 
-		var response = client.getObject(bucketName, newKey);
-		assertEquals(0, response.getObjectMetadata().getContentLength());
+		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(newKey).build());
+		assertEquals(0, response.response().contentLength());
 	}
 
 	@Test
 	@Tag("Check")
-	//동일한 버킷에서 오브젝트 복사가 가능한지 확인
-	public void test_object_copy_same_bucket()
-	{
+	// 동일한 버킷에서 오브젝트 복사가 가능한지 확인
+	public void testObjectCopySameBucket() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo123bar";
 		var newKey = "bar321foo";
 
-		client.putObject(bucketName, key, "foo");
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("foo"));
 
-		client.copyObject(bucketName, key, bucketName, newKey);
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(newKey)
+				.build());
 
-		var response = client.getObject(bucketName, newKey);
-		var body = getBody(response.getObjectContent());
-		assertEquals("foo", body);
+		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(newKey).build());
+		assertEquals("foo", getBody(response));
 	}
 
 	@Test
 	@Tag("ContentType")
-	//ContentType을 설정한 오브젝트를 복사할 경우 복사된 오브젝트도 ContentType값이 일치하는지 확인
-	public void test_object_copy_verify_contenttype()
-	{
+	// ContentType을 설정한 오브젝트를 복사할 경우 복사된 오브젝트도 ContentType값이 일치하는지 확인
+	public void testObjectCopyVerifyContentType() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo123bar";
 		var newKey = "bar321foo";
 		var contentType = "text/bla";
-		var metaData = new ObjectMetadata();
-		metaData.setContentType(contentType);
-		metaData.setContentLength(3);
 
-		client.putObject(new PutObjectRequest(bucketName, key, createBody("foo"), metaData));
-		client.copyObject(bucketName, key, bucketName, newKey);
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentType(contentType).build(),
+				RequestBody.fromString("foo"));
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(newKey)
+				.build());
 
-		var response = client.getObject(bucketName, newKey);
-		var body = getBody(response.getObjectContent());
-		assertEquals("foo", body);
-		var ResponseContentType = response.getObjectMetadata().getContentType();
-		assertEquals(contentType, ResponseContentType);
+		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(newKey).build());
+		assertEquals("foo", getBody(response));
+		assertEquals(contentType, response.response().contentType());
 	}
 
 	@Test
 	@Tag("Overwrite")
-	//복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러 확인
-	public void test_object_copy_to_itself()
-	{
+	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러 확인
+	public void testObjectCopyToItself() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo123bar";
 
-		client.putObject(bucketName, key, "");
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.empty());
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key, bucketName, key));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
+		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key).destinationBucket(bucketName).destinationKey(key).build()));
+		var statusCode = e.statusCode();
+		var errorCode = e.getMessage();
 
 		assertEquals(400, statusCode);
 		assertEquals(MainData.InvalidRequest, errorCode);
@@ -130,29 +139,31 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("Overwrite")
-	//복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
-	public void test_object_copy_to_itself_with_metadata()
-	{
+	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
+	public void testObjectCopyToItselfWithMetadata() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo123bar";
 
-		client.putObject(bucketName, key, "foo");
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("foo"));
 
-		var metaData = new ObjectMetadata();
-		metaData.addUserMetadata("foo", "bar");
+		var metaData = new HashMap<String, String>();
+		metaData.put("foo", "bar");
 
-		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key).withNewObjectMetadata(metaData).withMetadataDirective(MetadataDirective.REPLACE));
-		var response = client.getObject(bucketName, key);
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(key)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.metadata(metaData).build());
+		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
 
-		assertEquals(metaData.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
+		assertEquals(metaData, response.response().metadata());
 	}
 
 	@Test
 	@Tag("Check")
-	//다른 버킷으로 오브젝트 복사가 가능한지 확인
-	public void test_object_copy_diff_bucket()
-	{
+	// 다른 버킷으로 오브젝트 복사가 가능한지 확인
+	public void testObjectCopyDiffBucket() {
 		var bucketName1 = getNewBucket();
 		var bucketName2 = getNewBucket();
 
@@ -160,100 +171,125 @@ public class CopyObject extends TestBase
 		var key2 = "bar321foo";
 
 		var client = getClient();
-		client.putObject(bucketName1, key1, "foo");
+		client.putObject(PutObjectRequest.builder().bucket(bucketName1).key(key1).build(),
+				RequestBody.fromString("foo"));
 
-		client.copyObject(bucketName1, key1, bucketName2, key2);
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName1).sourceKey(key1)
+				.destinationBucket(bucketName2).destinationKey(key2)
+				.build());
 
-		var response = client.getObject(bucketName2, key2);
-		var body = getBody(response.getObjectContent());
-		assertEquals("foo", body);
+		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName2).key(key2).build());
+		assertEquals("foo", getBody(response));
 	}
 
 	@Test
 	@Tag("Check")
-	//[bucket1:created main user, object:created main user / bucket2:created sub user] 메인유저가 만든 버킷, 오브젝트를 서브유저가 만든 버킷으로 오브젝트 복사가 불가능한지 확인
-	public void test_object_copy_not_owned_bucket()
-	{
+	// [bucket1:created main user, object:created main user / bucket2:created sub
+	// user] 메인유저가 만든 버킷, 오브젝트를 서브유저가 만든 버킷으로 오브젝트 복사가 불가능한지 확인
+	public void testObjectCopyNotOwnedBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
 		var bucketName1 = getNewBucketName();
 		var bucketName2 = getNewBucketName();
 
-		client.createBucket(bucketName1);
-		altClient.createBucket(bucketName2);
+		client.createBucket(CreateBucketRequest.builder().bucket(bucketName1).build());
+		altClient.createBucket(CreateBucketRequest.builder().bucket(bucketName2).build());
 
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 
-		client.putObject(bucketName1, key1, "foo");
+		client.putObject(PutObjectRequest.builder().bucket(bucketName1).key(key1).build(),
+				RequestBody.fromString("foo"));
 
-		var e = assertThrows(AmazonServiceException.class, () -> altClient.copyObject(bucketName1, key1, bucketName2, key2));
-		var statusCode = e.getStatusCode();
+		var e = assertThrows(AwsServiceException.class,
+				() -> altClient.copyObject(CopyObjectRequest.builder()
+						.sourceBucket(bucketName1).sourceKey(key1)
+						.destinationBucket(bucketName2).destinationKey(key2)
+						.build()));
+		var statusCode = e.statusCode();
 
 		assertEquals(403, statusCode);
-		altClient.deleteBucket(bucketName2);
-		DeleteBucketList(bucketName2);
+		altClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName2).build());
+		deleteBucketList(bucketName2);
 	}
 
 	@Test
 	@Tag("Check")
-	//[bucket_acl = main:full control,sub : full control | object_acl = default] 서브유저가 접근권한이 있는 버킷에 들어있는 접근권한이 있는 오브젝트를 복사가 가능한지 확인
-	public void test_object_copy_not_owned_object_bucket()
-	{
+	// [bucketAcl = main:full control,sub : full control | objectAcl = default]
+	// 서브유저가 접근권한이 있는 버킷에 들어있는 접근권한이 있는 오브젝트를 복사가 가능한지 확인
+	public void testObjectCopyNotOwnedObjectBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
 		var bucketName = getNewBucketName();
-		client.createBucket(bucketName);
+		client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
 
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 
-		client.putObject(bucketName, key1, "foo");
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(),
+				RequestBody.fromString("foo"));
 
 		var altUserId = config.altUser.userId;
-		var myGrant = new Grant(new CanonicalGrantee(altUserId), Permission.FullControl);
+		var myGrant = Grant.builder().grantee(Grantee.builder().id(altUserId).build())
+				.permission(Permission.FULL_CONTROL)
+				.build();
 		var grants = addObjectUserGrant(bucketName, key1, myGrant);
-		client.setObjectAcl(bucketName, key1, grants);
+		client.putObjectAcl(
+				PutObjectAclRequest.builder().bucket(bucketName).key(key1).accessControlPolicy(grants).build());
 
 		grants = addBucketUserGrant(bucketName, myGrant);
-		client.setBucketAcl(bucketName, grants);
+		client.putBucketAcl(PutBucketAclRequest.builder().bucket(bucketName).accessControlPolicy(grants).build());
 
-		altClient.getObject(bucketName, key1);
+		altClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key1).build());
 
-		altClient.copyObject(bucketName, key1, bucketName, key2);
+		altClient.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName).destinationKey(key2)
+				.build());
 	}
 
 	@Test
 	@Tag("Overwrite")
-	//권한정보를 포함하여 복사할때 올바르게 적용되는지 확인 메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인
-	public void test_object_copy_canned_acl()
-	{
+	// 권한정보를 포함하여 복사할때 올바르게 적용되는지 확인 메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인
+	public void testObjectCopyCannedAcl() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var altClient = getAltClient();
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 
-		client.putObject(bucketName, key1, "foo");
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(),
+				RequestBody.fromString("foo"));
 
-		client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName, key2).withCannedAccessControlList(CannedAccessControlList.PublicRead));
-		altClient.getObject(bucketName, key2);
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName).destinationKey(key2)
+				.acl(ObjectCannedACL.PUBLIC_READ)
+				.build());
+		altClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
 
-		var metaData = new ObjectMetadata();
-		metaData.addUserMetadata("x-amz-meta-abc", "def");
+		var metaData = new HashMap<String, String>();
+		metaData.put("x-amz-meta-abc", "def");
 
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName).destinationKey(key2)
+				.acl(ObjectCannedACL.PUBLIC_READ)
+				.metadata(metaData)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.build());
+		var response = altClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
 
-		client.copyObject(new CopyObjectRequest(bucketName, key2, bucketName, key1).withCannedAccessControlList(CannedAccessControlList.PublicRead).withNewObjectMetadata(metaData).withMetadataDirective(MetadataDirective.REPLACE));
-		altClient.getObject(bucketName, key1);
+		assertEquals("foo", getBody(response));
+		assertEquals("def", response.response().metadata().get("x-amz-meta-abc"));
 	}
 
 	@Test
 	@Tag("Check")
-	//크고 작은 용량의 오브젝트가 복사되는지 확인
-	public void test_object_copy_retaining_metadata()
-	{
-		for (var size : new int[] { 3, 1024 * 1024 })
-		{
+	// 크고 작은 용량의 오브젝트가 복사되는지 확인
+	public void testObjectCopyRetainingMetadata() {
+		for (var size : new int[] { 3, 1024 * 1024 }) {
 			var bucketName = getNewBucket();
 			var client = getClient();
 			var contentType = "audio/ogg";
@@ -261,29 +297,31 @@ public class CopyObject extends TestBase
 			var key1 = "foo123bar";
 			var key2 = "bar321foo";
 
-			var metaData = new ObjectMetadata();
-			metaData.addUserMetadata("x-amz-meta-key1", "value1");
-			metaData.addUserMetadata("x-amz-meta-key2", "value2");
-			metaData.setContentType(contentType);
-			metaData.setContentLength(size);
+			var metaData = new HashMap<String, String>();
+			metaData.put("x-amz-meta-key1", "value1");
+			metaData.put("x-amz-meta-key2", "value2");
 
-			client.putObject(new PutObjectRequest(bucketName, key1, createBody(Utils.randomTextToLong(size)), metaData));
-			client.copyObject(bucketName, key1, bucketName, key2);
+			client.putObject(
+					PutObjectRequest.builder().bucket(bucketName).key(key1).metadata(metaData).contentType(contentType)
+							.build(),
+					RequestBody.fromString(Utils.randomTextToLong(size)));
+			client.copyObject(CopyObjectRequest.builder()
+					.sourceBucket(bucketName).sourceKey(key1)
+					.destinationBucket(bucketName).destinationKey(key2)
+					.build());
 
-			var response = client.getObject(bucketName, key2);
-			assertEquals(contentType, response.getObjectMetadata().getContentType());
-			assertEquals(metaData.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
-			assertEquals(size, response.getObjectMetadata().getContentLength());
+			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
+			assertEquals(contentType, response.response().contentType());
+			assertEquals(metaData, response.response().metadata());
+			assertEquals(size, response.response().contentLength());
 		}
 	}
 
 	@Test
 	@Tag("Check")
-	//크고 작은 용량의 오브젝트및 메타데이터가 복사되는지 확인
-	public void test_object_copy_replacing_metadata()
-	{
-		for (var size : new int[] { 3, 1024 * 1024 })
-		{
+	// 크고 작은 용량의 오브젝트및 메타데이터가 복사되는지 확인
+	public void testObjectCopyReplacingMetadata() {
+		for (var size : new int[] { 3, 1024 * 1024 }) {
 			var bucketName = getNewBucket();
 			var client = getClient();
 			var contentType = "audio/ogg";
@@ -291,234 +329,290 @@ public class CopyObject extends TestBase
 			var key1 = "foo123bar";
 			var key2 = "bar321foo";
 
-			var metaData = new ObjectMetadata();
-			metaData.addUserMetadata("x-amz-meta-key1", "value1");
-			metaData.addUserMetadata("x-amz-meta-key2", "value2");
-			metaData.setContentType(contentType);
-			metaData.setContentLength(size);
+			var metadata = new HashMap<String, String>();
+			metadata.put("x-amz-meta-key1", "value1");
+			metadata.put("x-amz-meta-key2", "value2");
 
-			client.putObject(new PutObjectRequest(bucketName, key1, createBody(Utils.randomTextToLong(size)), metaData));
+			client.putObject(
+					PutObjectRequest.builder().bucket(bucketName).key(key1).metadata(metadata).contentType(contentType)
+							.build(),
+					RequestBody.fromString(Utils.randomTextToLong(size)));
 
-			metaData = new ObjectMetadata();
-			metaData.addUserMetadata("x-amz-meta-key1", "value1");
-			metaData.addUserMetadata("x-amz-meta-key2", "value2");
-			metaData.setContentType(contentType);
+			metadata = new HashMap<String, String>();
+			metadata.put("x-amz-meta-key1", "value1");
+			metadata.put("x-amz-meta-key2", "value2");
 
-			client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName, key2).withNewObjectMetadata(metaData).withMetadataDirective(MetadataDirective.REPLACE));
+			client.copyObject(CopyObjectRequest.builder()
+					.sourceBucket(bucketName).sourceKey(key1)
+					.destinationBucket(bucketName).destinationKey(key2)
+					.metadata(metadata)
+					.metadataDirective(MetadataDirective.REPLACE)
+					.build());
 
-			var response = client.getObject(bucketName, key2);
-			assertEquals(contentType, response.getObjectMetadata().getContentType());
-			assertEquals(metaData.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
-			assertEquals(size, response.getObjectMetadata().getContentLength());
+			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
+			assertEquals(contentType, response.response().contentType());
+			assertEquals(metadata, response.response().metadata());
+			assertEquals(size, response.response().contentLength());
 		}
 	}
 
 	@Test
 	@Tag("ERROR")
-	//존재하지 않는 버킷에서 존재하지 않는 오브젝트 복사 실패 확인
-	public void test_object_copy_bucket_not_found()
-	{
+	// 존재하지 않는 버킷에서 존재하지 않는 오브젝트 복사 실패 확인
+	public void testObjectCopyBucketNotFound() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-
-		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName + "-fake", "foo123bar", bucketName, "bar321foo"));
-		var statusCode = e.getStatusCode();
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(CopyObjectRequest.builder()
+						.sourceBucket(bucketName).sourceKey("foo123bar")
+						.destinationBucket(bucketName + "-fake").destinationKey("bar321foo")
+						.build()));
+		var statusCode = e.statusCode();
 		assertEquals(404, statusCode);
 	}
 
 	@Test
 	@Tag("ERROR")
-	//존재하지않는 오브젝트 복사 실패 확인
-	public void test_object_copy_key_not_found()
-	{
+	// 존재하지않는 오브젝트 복사 실패 확인
+	public void testObjectCopyKeyNotFound() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, "foo123bar", bucketName, "bar321foo"));
-		var statusCode = e.getStatusCode();
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(CopyObjectRequest.builder()
+						.sourceBucket(bucketName).sourceKey("foo123bar")
+						.destinationBucket(bucketName).destinationKey("bar321foo")
+						.build()));
+		var statusCode = e.statusCode();
 		assertEquals(404, statusCode);
 	}
 
 	@Test
 	@Tag("Version")
-	//버저닝된 오브젝트 복사 확인
-	public void test_object_copy_versioned_bucket()
-	{
+	// 버저닝된 오브젝트 복사 확인
+	public void testObjectCopyVersionedBucket() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var size = 1 * 5;
 		var data = Utils.randomTextToLong(size);
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
-		var Key3 = "bar321foo2";
-		client.putObject(bucketName, key1, data);
+		var key3 = "bar321foo2";
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(), RequestBody.fromString(data));
 
-		var response = client.getObject(bucketName, key1);
-		var VersionID = response.getObjectMetadata().getVersionId();
+		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key1).build());
+		var versionId = response.response().versionId();
 
-		client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName, key2).withSourceVersionId(VersionID));
-		response = client.getObject(bucketName, key2);
-		var body = getBody(response.getObjectContent());
-		assertEquals(data, body);
-		assertEquals(size, response.getObjectMetadata().getContentLength());
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName).destinationKey(key2)
+				.sourceVersionId(versionId)
+				.build());
+		response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
+		assertEquals(data, getBody(response));
+		assertEquals(size, response.response().contentLength());
 
-		var VersionID2 = response.getObjectMetadata().getVersionId();
-		client.copyObject(new CopyObjectRequest(bucketName, key2, bucketName, Key3).withSourceVersionId(VersionID2));
-		response = client.getObject(bucketName, Key3);
-		body = getBody(response.getObjectContent());
-		assertEquals(data, body);
-		assertEquals(size, response.getObjectMetadata().getContentLength());
+		var versionId2 = response.response().versionId();
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName).destinationKey(key3)
+				.sourceVersionId(versionId2)
+				.build());
+		response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key3).build());
+		assertEquals(data, getBody(response));
+		assertEquals(size, response.response().contentLength());
 
 		var bucketName2 = getNewBucket();
-		checkConfigureVersioningRetry(bucketName2, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName2, BucketVersioningStatus.ENABLED);
 		var key4 = "bar321foo3";
-		client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName2, key4).withSourceVersionId(VersionID));
-		response = client.getObject(bucketName2, key4);
-		body = getBody(response.getObjectContent());
-		assertEquals(data, body);
-		assertEquals(size, response.getObjectMetadata().getContentLength());
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName2).destinationKey(key4)
+				.sourceVersionId(versionId)
+				.build());
+		response = client.getObject(GetObjectRequest.builder().bucket(bucketName2).key(key4).build());
+		assertEquals(data, getBody(response));
+		assertEquals(size, response.response().contentLength());
 
 		var bucketName3 = getNewBucket();
-		checkConfigureVersioningRetry(bucketName3, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName3, BucketVersioningStatus.ENABLED);
 		var key5 = "bar321foo4";
-		client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName3, key5).withSourceVersionId(VersionID));
-		response = client.getObject(bucketName3, key5);
-		body = getBody(response.getObjectContent());
-		assertEquals(data, body);
-		assertEquals(size, response.getObjectMetadata().getContentLength());
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName3).destinationKey(key5)
+				.sourceVersionId(versionId)
+				.build());
+		response = client.getObject(GetObjectRequest.builder().bucket(bucketName3).key(key5).build());
+		assertEquals(data, getBody(response));
+		assertEquals(size, response.response().contentLength());
 
 		var key6 = "foo123bar2";
-		client.copyObject(bucketName3, key5, bucketName, key6);
-		response = client.getObject(bucketName, key6);
-		body = getBody(response.getObjectContent());
-		assertEquals(data, body);
-		assertEquals(size, response.getObjectMetadata().getContentLength());
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName).destinationKey(key6)
+				.build());
+		response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key6).build());
+		assertEquals(data, getBody(response));
+		assertEquals(size, response.response().contentLength());
 	}
 
 	@Test
 	@Tag("Version")
-	//[버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공 확인
-	public void test_object_copy_versioned_url_encoding()
-	{
+	// [버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공 확인
+	public void testObjectCopyVersionedUrlEncoding() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var sourceKey = "foo?bar";
 
-		client.putObject(bucketName, sourceKey, "");
-		var response = client.getObject(bucketName, sourceKey);
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(sourceKey).build(),
+				RequestBody.fromString("foo"));
+		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(sourceKey).build());
 
 		var targetKey = "bar&foo";
-		client.copyObject(new CopyObjectRequest(bucketName, sourceKey, bucketName, targetKey).withSourceVersionId(response.getObjectMetadata().getVersionId()));
-		client.getObject(bucketName, targetKey);
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(sourceKey)
+				.destinationBucket(bucketName).destinationKey(targetKey)
+				.sourceVersionId(response.response().versionId())
+				.build());
+		client.getObject(GetObjectRequest.builder().bucket(bucketName).key(targetKey).build());
 	}
 
 	@Test
 	@Tag("Multipart")
-	//[버킷에 버저닝 설정] 멀티파트로 업로드된 오브젝트 복사 확인
-	public void test_object_copy_versioning_multipart_upload()
-	{
+	// [버킷에 버저닝 설정] 멀티파트로 업로드된 오브젝트 복사 확인
+	public void testObjectCopyVersioningMultipartUpload() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var size = 50 * MainData.MB;
-		var key1 = "srcmultipart";
+		var key1 = "src_multipart";
 		var contentType = "text/bla";
 
-		var key1Metadata = new ObjectMetadata();
-		key1Metadata.addUserMetadata("x-amz-meta-foo", "bar");
-		key1Metadata.setContentType(contentType);
+		var key1Metadata = new HashMap<String, String>();
+		key1Metadata.put("x-amz-meta-foo", "bar");
 
-		var uploads = setupMultipartUpload(client, bucketName, key1, size, key1Metadata);
-		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key1, uploads.uploadId, uploads.parts));
+		var uploads = setupMultipartUpload(client, bucketName, key1, size, contentType, key1Metadata);
+		client.completeMultipartUpload(CompleteMultipartUploadRequest.builder()
+				.bucket(bucketName).key(key1).uploadId(uploads.uploadId)
+				.multipartUpload(CompletedMultipartUpload.builder().parts(uploads.parts).build())
+				.build());
 
-		var response = client.getObjectMetadata(bucketName, key1);
-		var key1Size = response.getContentLength();
-		var key1VersionId = response.getVersionId();
+		var response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key1).build());
+		var key1Size = response.contentLength();
+		var key1VersionId = response.versionId();
 
-		var key2 = "dstmultipart";
-		client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName, key2).withSourceVersionId(key1VersionId));
-		response = client.getObjectMetadata(bucketName, key2);
-		var key2VersionId = response.getVersionId();
-		assertEquals(key1Size, response.getContentLength());
-		assertEquals(key1Metadata.getUserMetadata(), response.getUserMetadata());
-		assertEquals(contentType, response.getContentType());
+		var key2 = "dst_multipart";
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName).destinationKey(key2)
+				.sourceVersionId(key1VersionId)
+				.build());
+		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key2).build());
+		var key2VersionId = response.versionId();
+		assertEquals(key1Size, response.contentLength());
+		assertEquals(key1Metadata, response.metadata());
+		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName, key2, uploads.getBody(), MainData.MB);
 
-
-		var key3 = "dstmultipart2";
-		client.copyObject(new CopyObjectRequest(bucketName, key2, bucketName, key3).withSourceVersionId(key2VersionId));
-		response = client.getObjectMetadata(bucketName, key3);
-		assertEquals(key1Size, response.getContentLength());
-		assertEquals(key1Metadata.getUserMetadata(), response.getUserMetadata());
-		assertEquals(contentType, response.getContentType());
+		var key3 = "dst_multipart2";
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key2)
+				.destinationBucket(bucketName).destinationKey(key3)
+				.sourceVersionId(key2VersionId)
+				.build());
+		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key3).build());
+		assertEquals(key1Size, response.contentLength());
+		assertEquals(key1Metadata, response.metadata());
+		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName, key3, uploads.getBody(), MainData.MB);
 
 		var bucketName2 = getNewBucket();
-		checkConfigureVersioningRetry(bucketName2, BucketVersioningConfiguration.ENABLED);
-		var key4 = "dstmultipart3";
-		client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName2, key4).withSourceVersionId(key1VersionId));
-		response = client.getObjectMetadata(bucketName2, key4);
-		assertEquals(key1Size, response.getContentLength());
-		assertEquals(key1Metadata.getUserMetadata(), response.getUserMetadata());
-		assertEquals(contentType, response.getContentType());
+		checkConfigureVersioningRetry(bucketName2, BucketVersioningStatus.ENABLED);
+		var key4 = "dst_multipart3";
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName2).destinationKey(key4)
+				.sourceVersionId(key1VersionId)
+				.build());
+		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName2).key(key4).build());
+		assertEquals(key1Size, response.contentLength());
+		assertEquals(key1Metadata, response.metadata());
+		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName2, key4, uploads.getBody(), MainData.MB);
 
 		var bucketName3 = getNewBucket();
-		checkConfigureVersioningRetry(bucketName3, BucketVersioningConfiguration.ENABLED);
-		var key5 = "dstmultipart4";
-		client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName3, key5).withSourceVersionId(key1VersionId));
-		response = client.getObjectMetadata(bucketName3, key5);
-		assertEquals(key1Size, response.getContentLength());
-		assertEquals(key1Metadata.getUserMetadata(), response.getUserMetadata());
-		assertEquals(contentType, response.getContentType());
+		checkConfigureVersioningRetry(bucketName3, BucketVersioningStatus.ENABLED);
+		var key5 = "dst_multipart4";
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName3).destinationKey(key5)
+				.sourceVersionId(key1VersionId)
+				.build());
+		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName3).key(key5).build());
+		assertEquals(key1Size, response.contentLength());
+		assertEquals(key1Metadata, response.metadata());
+		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName3, key5, uploads.getBody(), MainData.MB);
 
-		var key6 = "dstmultipart5";
-		client.copyObject(bucketName3, key5, bucketName, key6);
-		response = client.getObjectMetadata(bucketName, key6);
-		assertEquals(key1Size, response.getContentLength());
-		assertEquals(key1Metadata.getUserMetadata(), response.getUserMetadata());
-		assertEquals(contentType, response.getContentType());
+		var key6 = "dst_multipart5";
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName3).sourceKey(key5)
+				.destinationBucket(bucketName).destinationKey(key6)
+				.build());
+		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key6).build());
+		assertEquals(key1Size, response.contentLength());
+		assertEquals(key1Metadata, response.metadata());
+		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName, key6, uploads.getBody(), MainData.MB);
 	}
 
 	@Test
 	@Tag("If Match")
-	//ifmatch 값을 추가하여 오브젝트를 복사할 경우 성공확인
-	public void test_copy_object_ifmatch_good()
-	{
+	// if match 값을 추가하여 오브젝트를 복사할 경우 성공확인
+	public void testCopyObjectIfMatchGood() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var putResponse = client.putObject(bucketName, "foo", "bar");
+		var putResponse = client.putObject(PutObjectRequest.builder().bucket(bucketName).key("foo").build(),
+				RequestBody.fromString("bar"));
 
-		client.copyObject(new CopyObjectRequest(bucketName, "foo", bucketName, "bar").withMatchingETagConstraint(putResponse.getETag()));
-		var getResponse = client.getObject(bucketName, "bar");
-		var body = getBody(getResponse.getObjectContent());
-		assertEquals("bar", body);
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey("foo")
+				.destinationBucket(bucketName).destinationKey("bar")
+				.sourceVersionId(putResponse.versionId())
+				.copySourceIfMatch(putResponse.eTag())
+				.build());
+		var getResponse = client.getObject(GetObjectRequest.builder().bucket(bucketName).key("bar").build());
+		assertEquals("bar", getBody(getResponse));
 	}
 
 	@Test
 	@Tag("If Match")
-	//ifmatch에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패 확인
-	public void test_copy_object_ifmatch_failed()
-	{
+	// if match에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패 확인
+	public void testCopyObjectIfMatchFailed() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(bucketName, "foo", "bar");
+		var putResponse = client.putObject(PutObjectRequest.builder().bucket(bucketName).key("foo").build(),
+				RequestBody.fromString("bar"));
 
-		var result = client.copyObject(new CopyObjectRequest(bucketName, "foo", bucketName, "bar").withMatchingETagConstraint("ABC"));
-		assertNull(result);
+		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey("foo")
+				.destinationBucket(bucketName).destinationKey("bar")
+				.sourceVersionId(putResponse.versionId())
+				.copySourceIfMatch(putResponse.eTag())
+				.build()));
+		var statusCode = e.statusCode();
+		assertEquals(412, statusCode);
+
 	}
 
 	@Test
 	@Tag("encryption")
-	//[source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인
-	public void test_copy_nor_src_to_nor_bucket_and_obj()
-	{
+	// [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인
+	public void testCopyNorSrcToNorBucketAndObj() {
 		testObjectCopy(false, false, false, false, 1024);
 		testObjectCopy(false, false, false, false, 256 * 1024);
 		testObjectCopy(false, false, false, false, 1024 * 1024);
@@ -526,9 +620,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공 확인
-	public void test_copy_nor_src_to_nor_bucket_encryption_obj()
-	{
+	// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공
+	// 확인
+	public void testCopyNorSrcToNorBucketEncryptionObj() {
 		testObjectCopy(false, false, false, true, 1024);
 		testObjectCopy(false, false, false, true, 256 * 1024);
 		testObjectCopy(false, false, false, true, 1024 * 1024);
@@ -536,9 +630,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공 확인
-	public void test_copy_nor_src_to_encryption_bucket_nor_obj()
-	{
+	// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공
+	// 확인
+	public void testCopyNorSrcToEncryptionBucketNorObj() {
 		testObjectCopy(false, false, true, false, 1024);
 		testObjectCopy(false, false, true, false, 256 * 1024);
 		testObjectCopy(false, false, true, false, 1024 * 1024);
@@ -546,9 +640,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공 확인
-	public void test_copy_nor_src_to_encryption_bucket_and_obj()
-	{
+	// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
+	// 복사 성공 확인
+	public void testCopyNorSrcToEncryptionBucketAndObj() {
 		testObjectCopy(false, false, true, true, 1024);
 		testObjectCopy(false, false, true, true, 256 * 1024);
 		testObjectCopy(false, false, true, true, 1024 * 1024);
@@ -556,9 +650,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_src_to_nor_bucket_and_obj()
-	{
+	// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공
+	// 확인
+	public void testCopyEncryptionSrcToNorBucketAndObj() {
 		testObjectCopy(true, false, false, false, 1024);
 		testObjectCopy(true, false, false, false, 256 * 1024);
 		testObjectCopy(true, false, false, false, 1024 * 1024);
@@ -566,9 +660,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_src_to_nor_bucket_encryption_obj()
-	{
+	// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
+	// 복사 성공 확인
+	public void testCopyEncryptionSrcToNorBucketEncryptionObj() {
 		testObjectCopy(true, false, false, true, 1024);
 		testObjectCopy(true, false, false, true, 256 * 1024);
 		testObjectCopy(true, false, false, true, 1024 * 1024);
@@ -576,9 +670,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_src_to_encryption_bucket_nor_obj()
-	{
+	// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
+	// 복사 성공 확인
+	public void testCopyEncryptionSrcToEncryptionBucketNorObj() {
 		testObjectCopy(true, false, true, false, 1024);
 		testObjectCopy(true, false, true, false, 256 * 1024);
 		testObjectCopy(true, false, true, false, 1024 * 1024);
@@ -586,20 +680,19 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_src_to_encryption_bucket_and_obj()
-	{
+	// [source obj : encryption, dest bucket : encryption, dest obj : encryption]
+	// 오브젝트 복사 성공 확인
+	public void testCopyEncryptionSrcToEncryptionBucketAndObj() {
 		testObjectCopy(true, false, true, true, 1024);
 		testObjectCopy(true, false, true, true, 256 * 1024);
 		testObjectCopy(true, false, true, true, 1024 * 1024);
 	}
 
-
 	@Test
 	@Tag("encryption")
-	//[source bucket : encryption, source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_bucket_nor_obj_to_nor_bucket_and_obj()
-	{
+	// [source bucket : encryption, source obj : normal, dest bucket : normal, dest
+	// obj : normal] 오브젝트 복사 성공 확인
+	public void testCopyEncryptionBucketNorObjToNorBucketAndObj() {
 		testObjectCopy(false, true, false, false, 1024);
 		testObjectCopy(false, true, false, false, 256 * 1024);
 		testObjectCopy(false, true, false, false, 1024 * 1024);
@@ -607,9 +700,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_bucket_nor_obj_to_nor_bucket_encryption_obj()
-	{
+	// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공
+	// 확인
+	public void testCopyEncryptionBucketNorObjToNorBucketEncryptionObj() {
 		testObjectCopy(false, true, false, true, 1024);
 		testObjectCopy(false, true, false, true, 256 * 1024);
 		testObjectCopy(false, true, false, true, 1024 * 1024);
@@ -617,9 +710,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_bucket_nor_obj_to_encryption_bucket_nor_obj()
-	{
+	// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공
+	// 확인
+	public void testCopyEncryptionBucketNorObjToEncryptionBucketNorObj() {
 		testObjectCopy(false, true, true, false, 1024);
 		testObjectCopy(false, true, true, false, 256 * 1024);
 		testObjectCopy(false, true, true, false, 1024 * 1024);
@@ -627,9 +720,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_bucket_nor_obj_to_encryption_bucket_and_obj()
-	{
+	// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
+	// 복사 성공 확인
+	public void testCopyEncryptionBucketNorObjToEncryptionBucketAndObj() {
 		testObjectCopy(false, true, true, true, 1024);
 		testObjectCopy(false, true, true, true, 256 * 1024);
 		testObjectCopy(false, true, true, true, 1024 * 1024);
@@ -637,9 +730,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_bucket_and_obj_to_nor_bucket_and_obj()
-	{
+	// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공
+	// 확인
+	public void testCopyEncryptionBucketAndObjToNorBucketAndObj() {
 		testObjectCopy(true, true, false, false, 1024);
 		testObjectCopy(true, true, false, false, 256 * 1024);
 		testObjectCopy(true, true, false, false, 1024 * 1024);
@@ -647,9 +740,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_bucket_and_obj_to_nor_bucket_encryption_obj()
-	{
+	// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
+	// 복사 성공 확인
+	public void testCopyEncryptionBucketAndObjToNorBucketEncryptionObj() {
 		testObjectCopy(true, true, false, true, 1024);
 		testObjectCopy(true, true, false, true, 256 * 1024);
 		testObjectCopy(true, true, false, true, 1024 * 1024);
@@ -657,9 +750,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_bucket_and_obj_to_encryption_bucket_nor_obj()
-	{
+	// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
+	// 복사 성공 확인
+	public void testCopyEncryptionBucketAndObjToEncryptionBucketNorObj() {
 		testObjectCopy(true, true, true, false, 1024);
 		testObjectCopy(true, true, true, false, 256 * 1024);
 		testObjectCopy(true, true, true, false, 1024 * 1024);
@@ -667,9 +760,9 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//[source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공 확인
-	public void test_copy_encryption_bucket_and_obj_to_encryption_bucket_and_obj()
-	{
+	// [source obj : encryption, dest bucket : encryption, dest obj : encryption]
+	// 오브젝트 복사 성공 확인
+	public void testCopyEncryptionBucketAndObjToEncryptionBucketAndObj() {
 		testObjectCopy(true, true, true, true, 1024);
 		testObjectCopy(true, true, true, true, 256 * 1024);
 		testObjectCopy(true, true, true, true, 1024 * 1024);
@@ -677,9 +770,8 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//일반 오브젝트에서 다양한 방식으로 복사 성공 확인
-	public void test_copy_to_normal_source()
-	{
+	// 일반 오브젝트에서 다양한 방식으로 복사 성공 확인
+	public void testCopyToNormalSource() {
 		var size1 = 1024;
 		var size2 = 256 * 1024;
 		var size3 = 1024 * 1024;
@@ -699,9 +791,8 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//SSE-S3암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
-	public void test_copy_to_sse_s3_source()
-	{
+	// SSE-S3암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
+	public void testCopyToSseS3Source() {
 		var size1 = 1024;
 		var size2 = 256 * 1024;
 		var size3 = 1024 * 1024;
@@ -721,9 +812,8 @@ public class CopyObject extends TestBase
 
 	@Test
 	@Tag("encryption")
-	//SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
-	public void test_copy_to_sse_c_source()
-	{
+	// SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
+	public void testCopyToSseCSource() {
 		var size1 = 1024;
 		var size2 = 256 * 1024;
 		var size3 = 1024 * 1024;
@@ -744,18 +834,22 @@ public class CopyObject extends TestBase
 	@Test
 	@Tag("ERROR")
 	// 삭제된 오브젝트 복사 실패 확인
-	public void test_copy_to_deleted_object(){
+	public void testCopyToDeletedObject() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key1 = "foo123bar";
 		var ker2 = "bar321foo";
 
-		client.putObject(bucketName, key1, key1);
-		client.deleteObject(bucketName, key1);
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(),
+				RequestBody.fromString("foo"));
+		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key1).build());
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key1, bucketName, ker2));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
+		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName).destinationKey(ker2)
+				.build()));
+		var statusCode = e.statusCode();
+		var errorCode = e.getMessage();
 		assertEquals(404, statusCode);
 		assertEquals("NoSuchKey", errorCode);
 	}
@@ -763,89 +857,107 @@ public class CopyObject extends TestBase
 	@Test
 	@Tag("ERROR")
 	// 버저닝된 버킷에서 삭제된 오브젝트 복사 실패 확인
-	public void test_copy_to_delete_marker_object(){
+	public void testCopyToDeleteMarkerObject() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key1 = "foo123bar";
 		var ker2 = "bar321foo";
 
-		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		client.putObject(bucketName, key1, key1);
-		client.deleteObject(bucketName, key1);
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(),
+				RequestBody.fromString("foo"));
+		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key1).build());
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key1, bucketName, ker2));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
+		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key1)
+				.destinationBucket(bucketName).destinationKey(ker2)
+				.build()));
+		var statusCode = e.statusCode();
+		var errorCode = e.getMessage();
 		assertEquals(404, statusCode);
 		assertEquals("NoSuchKey", errorCode);
 	}
 
-	
 	@Test
 	@Tag("Overwrite")
-	//복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인(Versioning 설정)
-	public void test_object_versioning_copy_to_itself_with_metadata()
-	{
+	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지
+	// 확인(Versioning 설정)
+	public void testObjectVersioningCopyToItselfWithMetadata() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo123bar";
 
-		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		client.putObject(bucketName, key, "foo");
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("foo"));
 
-		var metaData = new ObjectMetadata();
-		metaData.addUserMetadata("foo", "bar");
+		var metaData = new HashMap<String, String>();
+		metaData.put("foo", "bar");
 
-		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key).withNewObjectMetadata(metaData).withMetadataDirective(MetadataDirective.REPLACE));
-		var response = client.getObject(bucketName, key);
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(key)
+				.metadata(metaData)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.build());
+		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
 
-		assertEquals(metaData.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
+		assertEquals(metaData, response.response().metadata());
 	}
 
 	@Test
 	@Tag("Overwrite")
-	//복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
-	public void test_object_copy_to_itself_with_metadata_overwrite()
-	{
+	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
+	public void testObjectCopyToItselfWithMetadataOverwrite() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo123bar";
-		var metadata = new ObjectMetadata();
-		metadata.addUserMetadata("foo", "bar");
+		var metadata = new HashMap<String, String>();
+		metadata.put("foo", "bar");
 
-		client.putObject(bucketName, key, createBody(key), metadata);
-		var response = client.getObjectMetadata(bucketName, key);
-		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).metadata(metadata).build(), RequestBody.fromString("foo"));
+		var response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+		assertEquals(metadata, response.metadata());
 
-		metadata.addUserMetadata("foo", "bar2");
-		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key).withNewObjectMetadata(metadata).withMetadataDirective(MetadataDirective.REPLACE));
-		response = client.getObjectMetadata(bucketName, key);
+		metadata.put("foo", "bar2");
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(key)
+				.metadata(metadata)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.build());
+		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
 
-		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
+		assertEquals(metadata, response.metadata());
 	}
+
 	@Test
 	@Tag("Overwrite")
-	//복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인(Versioning 설정)
-	public void test_object_versioning_copy_to_itself_with_metadata_overwrite()
-	{
+	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지
+	// 확인(Versioning 설정)
+	public void testObjectVersioningCopyToItselfWithMetadataOverwrite() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo123bar";
-		var metadata = new ObjectMetadata();
-		metadata.addUserMetadata("foo", "bar");
+		var metadata = new HashMap<String, String>();
+		metadata.put("foo", "bar");
 
-		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		client.putObject(bucketName, key, createBody(key), metadata);
-		var response = client.getObjectMetadata(bucketName, key);
-		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).metadata(metadata).build(), RequestBody.fromString("foo"));
+		var response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+		assertEquals(metadata, response.metadata());
 
-		metadata.addUserMetadata("foo", "bar2");
-		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key).withNewObjectMetadata(metadata).withMetadataDirective(MetadataDirective.REPLACE));
-		response = client.getObjectMetadata(bucketName, key);
+		metadata.put("foo", "bar2");
+		client.copyObject(CopyObjectRequest.builder()
+				.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(key)
+				.metadata(metadata)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.build());
+		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
 
-		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
+		assertEquals(metadata, response.metadata());
 	}
 }
