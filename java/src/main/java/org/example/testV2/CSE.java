@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 import org.example.Data.AES256;
@@ -25,75 +26,79 @@ import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PartETag;
-import com.amazonaws.services.s3.model.UploadPartRequest;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
+
 
 public class CSE extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("CSE SDK V2 Start");
+		System.out.println("CSE Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("CSE SDK V2 End");
+		System.out.println("CSE End");
 	}
 
 	@Test
 	@Tag("PutGet")
-	// @Tag("[AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	public void test_cse_encrypted_transfer_1b() {
+	// [AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+	public void testCseEncryptedTransfer1b() {
 		testEncryptionCSEWrite(1);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// @Tag("[AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	public void test_cse_encrypted_transfer_1kb() {
+	// [AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+	public void testCseEncryptedTransfer1kb() {
 		testEncryptionCSEWrite(1024);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// @Tag("[AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	public void test_cse_encrypted_transfer_1MB() {
+	// [AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+	public void testCseEncryptedTransfer1MB() {
 		testEncryptionCSEWrite(1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// @Tag("[AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	public void test_cse_encrypted_transfer_13b() {
+	// [AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+	public void testCseEncryptedTransfer13b() {
 		testEncryptionCSEWrite(13);
 	}
 
 	@Test
 	@Tag("Metadata")
-	// @Tag("[AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인 
-	public void test_cse_encryption_method_head() {
+	// [AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인 
+	public void testCseEncryptionMethodHead() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var key = "testobj";
+		var key = "obj";
 		var size = 1000;
+		var contentType = "text/plain";
 		var data = Utils.randomTextToLong(size);
 
 		// AES
 		var aesKey = Utils.randomTextToLong(32);
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new ObjectMetadata();
-			metadata.addUserMetadata("x-amz-meta-key", aesKey);
-			metadata.setContentType("text/plain");
-			metadata.setContentLength(encoding.length());
+			var metadata = new HashMap<String,String>();
+			metadata.put("x-amz-meta-key", aesKey);
 
-			client.putObject(bucketName, key, createBody(encoding), metadata);
+			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
 
-			var getMetadata = client.getObjectMetadata(bucketName, key);
-			assertEquals(metadata.getUserMetadata(), getMetadata.getUserMetadata());
+			var getMetadata = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+			assertEquals(metadata, getMetadata.metadata());
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
@@ -101,12 +106,13 @@ public class CSE extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("[AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치
-	public void test_cse_encryption_non_decryption() {
+	// [AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치
+	public void testCseEncryptionNonDecryption() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var key = "testobj";
+		var key = "obj";
 		var size = 1000;
+		var contentType = "text/plain";
 		var data = Utils.randomTextToLong(size);
 
 		// AES
@@ -114,15 +120,13 @@ public class CSE extends TestBase {
 
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new ObjectMetadata();
-			metadata.addUserMetadata("x-amz-meta-key", aesKey);
-			metadata.setContentType("text/plain");
-			metadata.setContentLength(encoding.length());
+			var metadata = new HashMap<String,String>();
+			metadata.put("x-amz-meta-key", aesKey);
 
-			client.putObject(bucketName, key, createBody(encoding), metadata);
+			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
 
-			var response = client.getObject(bucketName, key);
-			var body = getBody(response.getObjectContent());
+			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+			var body = getBody(response);
 			assertNotEquals(data, body);
 		} catch (Exception e) {
 			fail(e.getMessage());
@@ -131,35 +135,36 @@ public class CSE extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("[AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인
-	public void test_cse_non_encryption_decryption() {
+	// [AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인
+	public void testCseNonEncryptionDecryption() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var key = "testobj";
+		var key = "obj";
 		var size = 1000;
+		var contentType = "text/plain";
 		var data = Utils.randomTextToLong(size);
 
 		// AES
 		var aesKey = Utils.randomTextToLong(32);
 
-		var metadata = new ObjectMetadata();
-		metadata.addUserMetadata("x-amz-meta-key", aesKey);
-		metadata.setContentType("text/plain");
-		metadata.setContentLength(size);
-		client.putObject(bucketName, key, createBody(data), metadata);
+		var metadata = new HashMap<String,String>();
+		metadata.put("x-amz-meta-key", aesKey);
+		
+		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentType(contentType).build(), RequestBody.fromString(data));
 
-		var response = client.getObject(bucketName, key);
-		var encodingBody = getBody(response.getObjectContent());
+		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		var encodingBody = getBody(response);
 		assertThrows(Exception.class, () -> AES256.decrypt(encodingBody, aesKey));
 	}
 
 	@Test
 	@Tag("RangeRead")
-	// @Tag("[AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공
-	public void test_cse_encryption_range_read() {
+	// [AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공
+	public void testCseEncryptionRangeRead() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var key = "testobj";
+		var key = "obj";
+		var contentType = "text/plain";
 
 		// AES
 		var aesKey = Utils.randomTextToLong(32);
@@ -167,17 +172,16 @@ public class CSE extends TestBase {
 		try {
 			var data = Utils.randomTextToLong(1024 * 1024);
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new ObjectMetadata();
-			metadata.addUserMetadata("x-amz-meta-key", aesKey);
-			metadata.setContentType("text/plain");
-			metadata.setContentLength(encoding.length());
-			client.putObject(bucketName, key, createBody(encoding), metadata);
+			var metadata = new HashMap<String,String>();
+			metadata.put("x-amz-meta-key", aesKey);
+			
+			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
 
-			var r = new Random();
+			var r = new Random(System.currentTimeMillis());
 			var startPoint = r.nextInt(1024 * 1024 - 1001);
 			var endPoint = startPoint + 999;
-			var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(startPoint, endPoint));
-			var encodingBody = getBody(response.getObjectContent());
+			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).range("bytes=" + startPoint + "-" + endPoint).build());
+			var encodingBody = getBody(response);
 			assertTrue(encoding.substring(startPoint, startPoint + 1000).equals(encodingBody),
 					MainData.NOT_MATCHED);
 		} catch (Exception e) {
@@ -187,11 +191,11 @@ public class CSE extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// @Tag("[AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인
-	public void test_cse_encryption_multipart_upload() {
+	// [AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인
+	public void testCseEncryptionMultipartUpload() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var key = "multipart_enc";
+		var key = "multipartEnc";
 		var size = 50 * MainData.MB;
 		var contentType = "text/plain";
 		var data = Utils.randomTextToLong(size);
@@ -201,37 +205,33 @@ public class CSE extends TestBase {
 
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new ObjectMetadata();
-			metadata.addUserMetadata("x-amz-meta-key", aesKey);
-			metadata.setContentType(contentType);
+			var metadata = new HashMap<String,String>();
+			metadata.put("x-amz-meta-key", aesKey);
 
 			var initMultiPartResponse = client
-					.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, metadata));
-			var uploadID = initMultiPartResponse.getUploadId();
+					.createMultipartUpload(CreateMultipartUploadRequest.builder().bucket(bucketName).key(key).contentType(contentType).metadata(metadata).build());
+			var uploadId = initMultiPartResponse.uploadId();
 
-			var parts = CutStringData(encoding, 5 * MainData.MB);
-			var partETags = new ArrayList<PartETag>();
+			var parts = cutStringData(encoding, 5 * MainData.MB);
+			var partETags = new ArrayList<CompletedPart>();
 			int partNumber = 1;
 			for (var part : parts) {
-				var partResPonse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
-						.withUploadId(uploadID).withPartNumber(partNumber++).withInputStream(createBody(part))
-						.withPartSize(part.length()));
-				partETags.add(partResPonse.getPartETag());
+				var partResPonse = client.uploadPart(UploadPartRequest.builder().bucket(bucketName).key(key).uploadId(uploadId).partNumber(partNumber).build(), RequestBody.fromString(part));
+				partETags.add(CompletedPart.builder().partNumber(partNumber++).eTag(partResPonse.eTag()).build());
 			}
 
-			client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadID, partETags));
+			client.completeMultipartUpload(CompleteMultipartUploadRequest.builder().bucket(bucketName).key(key).uploadId(uploadId).multipartUpload(CompletedMultipartUpload.builder().parts(partETags).build()).build());
 
-			var headResponse = client.listObjectsV2(bucketName);
-			var objectCount = headResponse.getKeyCount();
-			assertEquals(1, objectCount);
-			assertEquals(encoding.length(), GetBytesUsed(headResponse));
+			var headResponse = client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build());
+			assertEquals(1, headResponse.keyCount());
+			assertEquals(encoding.length(), getBytesUsed(headResponse));
 
-			var getResponse = client.getObjectMetadata(bucketName, key);
-			assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
-			assertEquals(contentType, getResponse.getContentType());
+			var getResponse = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+			assertEquals(metadata, getResponse.metadata());
+			assertEquals(contentType, getResponse.contentType());
 
 			checkContentUsingRange(bucketName, key, encoding, MainData.MB);
-			checkContentUsingRange(bucketName, key, encoding, 10 * MainData.MB);
+			checkContentUsingRange(bucketName, key, encoding, 10L * MainData.MB);
 			checkContentUsingRandomRange(bucketName, key, encoding, 100);
 		} catch (Exception e) {
 			fail(e.getMessage());
@@ -240,26 +240,25 @@ public class CSE extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// @Tag("CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
-	public void test_cse_get_object_many() {
+	// CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
+	public void testCseGetObjectMany() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
+		var contentType = "text/plain";
 		// AES
 		var aesKey = Utils.randomTextToLong(32);
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new ObjectMetadata();
-			metadata.addUserMetadata("AESkey", aesKey);
-			metadata.setContentType("text/plain");
-			metadata.setContentLength(encoding.length());
+			var metadata = new HashMap<String,String>();
+			metadata.put("AESkey", aesKey);
 
-			client.putObject(bucketName, key, createBody(encoding), metadata);
+			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
 
-			var response = client.getObject(bucketName, key);
-			var encodingBody = getBody(response.getObjectContent());
+			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+			var encodingBody = getBody(response);
 			var body = AES256.decrypt(encodingBody, aesKey);
 			assertTrue(data.equals(body), MainData.NOT_MATCHED);
 			checkContent(bucketName, key, encoding, 50);
@@ -271,11 +270,12 @@ public class CSE extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// @Tag("CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
-	public void test_cse_range_object_many() {
+	// CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+	public void testCseRangeObjectMany() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
+		var contentType = "text/plain";
 
 		// AES
 		var aesKey = Utils.randomTextToLong(32);
@@ -284,15 +284,13 @@ public class CSE extends TestBase {
 
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new ObjectMetadata();
-			metadata.addUserMetadata("AESkey", aesKey);
-			metadata.setContentType("text/plain");
-			metadata.setContentLength(encoding.length());
+			var metadata = new HashMap<String,String>();
+			metadata.put("AESkey", aesKey);
 
-			client.putObject(bucketName, key, createBody(encoding), metadata);
+			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
 
-			var response = client.getObject(bucketName, key);
-			var encodingBody = getBody(response.getObjectContent());
+			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+			var encodingBody = getBody(response);
 			var body = AES256.decrypt(encodingBody, aesKey);
 			assertTrue(data.equals(body), MainData.NOT_MATCHED);
 
