@@ -34,7 +34,6 @@ import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.Grant;
-import software.amazon.awssdk.services.s3.model.Grantee;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
@@ -229,8 +228,7 @@ public class CopyObject extends TestBase {
 		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(),
 				RequestBody.fromString("foo"));
 
-		var altUserId = config.altUser.userId;
-		var myGrant = Grant.builder().grantee(Grantee.builder().id(altUserId).build())
+		var myGrant = Grant.builder().grantee(config.altUser.toGrantee())
 				.permission(Permission.FULL_CONTROL)
 				.build();
 		var grants = addObjectUserGrant(bucketName, key1, myGrant);
