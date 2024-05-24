@@ -292,24 +292,24 @@ public class CopyObject extends TestBase
 			var key1 = "foo123bar";
 			var key2 = "bar321foo";
 
-			var metaData = new ObjectMetadata();
-			metaData.addUserMetadata("x-amz-meta-key1", "value1");
-			metaData.addUserMetadata("x-amz-meta-key2", "value2");
-			metaData.setContentType(contentType);
-			metaData.setContentLength(size);
+			var metadata = new ObjectMetadata();
+			metadata.addUserMetadata("x-amz-meta-key1", "value1");
+			metadata.addUserMetadata("x-amz-meta-key2", "value2");
+			metadata.setContentType(contentType);
+			metadata.setContentLength(size);
 
-			client.putObject(new PutObjectRequest(bucketName, key1, createBody(Utils.randomTextToLong(size)), metaData));
+			client.putObject(new PutObjectRequest(bucketName, key1, createBody(Utils.randomTextToLong(size)), metadata));
 
-			metaData = new ObjectMetadata();
-			metaData.addUserMetadata("x-amz-meta-key1", "value1");
-			metaData.addUserMetadata("x-amz-meta-key2", "value2");
-			metaData.setContentType(contentType);
+			var metadata2 = new ObjectMetadata();
+			metadata2.addUserMetadata("x-amz-meta-key3", "value3");
+			metadata2.addUserMetadata("x-amz-meta-key4", "value4");
+			metadata2.setContentType(contentType);
 
-			client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName, key2).withNewObjectMetadata(metaData).withMetadataDirective(MetadataDirective.REPLACE));
+			client.copyObject(new CopyObjectRequest(bucketName, key1, bucketName, key2).withNewObjectMetadata(metadata2).withMetadataDirective(MetadataDirective.REPLACE));
 
 			var response = client.getObject(bucketName, key2);
 			assertEquals(contentType, response.getObjectMetadata().getContentType());
-			assertEquals(metaData.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
+			assertEquals(metadata2.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
 			assertEquals(size, response.getObjectMetadata().getContentLength());
 		}
 	}

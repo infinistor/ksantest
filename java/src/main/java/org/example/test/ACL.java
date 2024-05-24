@@ -161,25 +161,24 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.Private, key);
 		var client = getClient();
 
-		var Date = new Date();
+		var date = new Date();
 		SimpleDateFormat rfc822format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss 'GMT'", Locale.ENGLISH);
-		// rfc822format.setTimeZone(TimeZone.getTimeZone("UTC"));
-		String Str_Date = rfc822format.format(Date);
+		String strDate = rfc822format.format(date);
 
-		var Response = client.getObject(new GetObjectRequest(bucketName, key).withResponseHeaders(
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withResponseHeaders(
 				new ResponseHeaderOverrides()
 						.withCacheControl("no-cache")
 						.withContentDisposition("bla")
 						.withContentEncoding("aaa")
 						.withContentLanguage("esperanto")
 						.withContentType("foo/bar")
-						.withExpires(Str_Date)));
+						.withExpires(strDate)));
 
-		assertEquals("no-cache", Response.getObjectMetadata().getCacheControl());
-		assertEquals("bla", Response.getObjectMetadata().getContentDisposition());
-		assertEquals("aaa", Response.getObjectMetadata().getContentEncoding());
-		assertEquals("esperanto", Response.getObjectMetadata().getContentLanguage());
-		assertEquals("foo/bar", Response.getObjectMetadata().getContentType());
+		assertEquals("no-cache", response.getObjectMetadata().getCacheControl());
+		assertEquals("bla", response.getObjectMetadata().getContentDisposition());
+		assertEquals("aaa", response.getObjectMetadata().getContentEncoding());
+		assertEquals("esperanto", response.getObjectMetadata().getContentLanguage());
+		assertEquals("foo/bar", response.getObjectMetadata().getContentType());
 	}
 
 	@Test
@@ -253,10 +252,10 @@ public class ACL extends TestBase {
 				key);
 		var client = getClient();
 
-		var Address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var Response = getObject(Address);
+		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
+		var response = getObject(address);
 
-		assertEquals(200, Response.getStatusLine().getStatusCode());
+		assertEquals(200, response.getStatusLine().getStatusCode());
 	}
 
 	@Test
@@ -269,9 +268,9 @@ public class ACL extends TestBase {
 				key);
 		var client = getClient();
 
-		var Address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.GET);
-		var Response = getObject(Address);
-		assertEquals(403, Response.getStatusLine().getStatusCode());
+		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.GET);
+		var response = getObject(address);
+		assertEquals(403, response.getStatusLine().getStatusCode());
 	}
 
 	@Test
@@ -347,10 +346,10 @@ public class ACL extends TestBase {
 		var key = "foo";
 		client.putObject(bucketName, key, "");
 
-		var Address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.PUT);
+		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.PUT);
 
-		var Response = putObject(Address, null);
-		assertEquals(403, Response.getStatusLine().getStatusCode());
+		var response = putObject(address, null);
+		assertEquals(403, response.getStatusLine().getStatusCode());
 	}
 
 	@Test
@@ -364,8 +363,8 @@ public class ACL extends TestBase {
 		var client = getClient();
 		aclTest(bucketName, key, client, true);
 
-		var AltClient = getAltClient();
-		aclTest(bucketName, key, AltClient, true);
+		var altClient = getAltClient();
+		aclTest(bucketName, key, altClient, true);
 
 		var unauthenticatedClient = getPublicClient();
 		aclTest(bucketName, key, unauthenticatedClient, true);

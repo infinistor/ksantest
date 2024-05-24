@@ -253,12 +253,6 @@ public class Inventory extends TestBase {
 				new ListBucketInventoryConfigurationsRequest().withBucketName(bucketName));
 
 		assertEquals(2, response.getInventoryConfigurationList().size());
-
-		// var e = assertThrows(AmazonServiceException.class,
-		// () -> client.setBucketInventoryConfiguration(bucketName, inventory));
-
-		// assertEquals(409, e.getStatusCode());
-		// assertEquals(MainData.DuplicateInventory, e.getErrorCode());
 	}
 
 	@Ignore("aws에서 타깃 버킷이 존재하는지 확인하지 않음")

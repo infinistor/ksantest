@@ -14,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
 
@@ -82,8 +82,8 @@ public class LifeCycle extends TestBase {
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 
 		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
-		var Response = client.getBucketLifecycleConfiguration(bucketName);
-		prefixLifecycleConfigurationCheck(rules, Response.getRules());
+		var response = client.getBucketLifecycleConfiguration(bucketName);
+		prefixLifecycleConfigurationCheck(rules, response.getRules());
 	}
 
 	@Test
@@ -104,16 +104,16 @@ public class LifeCycle extends TestBase {
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 
 		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
-		var Response = client.getBucketLifecycleConfiguration(bucketName);
-		var CurrentLifeCycle = Response.getRules();
+		var response = client.getBucketLifecycleConfiguration(bucketName);
+		var getRules = response.getRules();
 
 		for (int i = 0; i < rules.size(); i++) {
-			assertNotNull(CurrentLifeCycle.get(i).getId());
-			assertEquals(rules.get(i).getExpirationDate(), CurrentLifeCycle.get(i).getExpirationDate());
-			assertEquals(rules.get(i).getExpirationInDays(), CurrentLifeCycle.get(i).getExpirationInDays());
+			assertNotNull(getRules.get(i).getId());
+			assertEquals(rules.get(i).getExpirationDate(), getRules.get(i).getExpirationDate());
+			assertEquals(rules.get(i).getExpirationInDays(), getRules.get(i).getExpirationInDays());
 			assertEquals(((LifecyclePrefixPredicate) rules.get(i).getFilter().getPredicate()).getPrefix(),
-					((LifecyclePrefixPredicate) CurrentLifeCycle.get(i).getFilter().getPredicate()).getPrefix());
-			assertEquals(rules.get(i).getStatus(), CurrentLifeCycle.get(i).getStatus());
+					((LifecyclePrefixPredicate) getRules.get(i).getFilter().getPredicate()).getPrefix());
+			assertEquals(rules.get(i).getStatus(), getRules.get(i).getStatus());
 		}
 	}
 
@@ -123,10 +123,10 @@ public class LifeCycle extends TestBase {
 	public void testLifecycleExpirationVersioningEnabled() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var Key = "test1/a";
+		var key = "test1/a";
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
-		createMultipleVersions(client, bucketName, Key, 1, true);
-		client.deleteObject(bucketName, Key);
+		createMultipleVersions(client, bucketName, key, 1, true);
+		client.deleteObject(bucketName, key);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
@@ -137,11 +137,11 @@ public class LifeCycle extends TestBase {
 
 		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 
-		var Response = client.listVersions(bucketName, null);
-		var Versions = getVersions(Response.getVersionSummaries());
-		var DeleteMarkers = getDeleteMarkers(Response.getVersionSummaries());
-		assertEquals(1, Versions.size());
-		assertEquals(1, DeleteMarkers.size());
+		var response = client.listVersions(bucketName, null);
+		var versions = getVersions(response.getVersionSummaries());
+		var deleteMarkers = getDeleteMarkers(response.getVersionSummaries());
+		assertEquals(1, versions.size());
+		assertEquals(1, deleteMarkers.size());
 	}
 
 	@Test
@@ -246,7 +246,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Version")
 	// 버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인
 	public void testLifecycleSetNoncurrent() {
-		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "past/foo", "future/bar" })));
+		var bucketName = createObjects(List.of("past/foo", "future/bar"));
 		var client = getClient();
 
 		var rules = new ArrayList<Rule>();
@@ -266,7 +266,7 @@ public class LifeCycle extends TestBase {
 	@Test
 	@Tag("Version")
 	// 버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
-	public void testLifecycleNoncurExpiration() {
+	public void testLifecycleNoncurrentExpiration() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -274,8 +274,8 @@ public class LifeCycle extends TestBase {
 		createMultipleVersions(client, bucketName, "test1/a", 3, true);
 		createMultipleVersions(client, bucketName, "test2/abc", 3, false);
 
-		var Response = client.listVersions(bucketName, null);
-		var InitVersions = Response.getVersionSummaries();
+		var response = client.listVersions(bucketName, null);
+		var initVersions = response.getVersionSummaries();
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1")
@@ -286,13 +286,13 @@ public class LifeCycle extends TestBase {
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 
-		assertEquals(6, InitVersions.size());
+		assertEquals(6, initVersions.size());
 	}
 
 	@Test
 	@Tag("DeleteMarker")
 	// DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
-	public void testLifecycleSetDeletemarker() {
+	public void testLifecycleSetDeleteMarker() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -343,7 +343,7 @@ public class LifeCycle extends TestBase {
 	@Test
 	@Tag("DeleteMarker")
 	// DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
-	public void testLifecycleDeletemarkerExpiration() {
+	public void testLifecycleDeleteMarkerExpiration() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
@@ -353,8 +353,8 @@ public class LifeCycle extends TestBase {
 		client.deleteObject(bucketName, "test1/a");
 		client.deleteObject(bucketName, "test2/abc");
 
-		var Response = client.listVersions(bucketName, null);
-		var TotalVersions = Response.getVersionSummaries();
+		var response = client.listVersions(bucketName, null);
+		var totalVersions = response.getVersionSummaries();
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1")
@@ -366,7 +366,7 @@ public class LifeCycle extends TestBase {
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 
-		assertEquals(4, TotalVersions.size());
+		assertEquals(4, totalVersions.size());
 	}
 
 	@Test
@@ -398,26 +398,28 @@ public class LifeCycle extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var KeyNames = new ArrayList<>(Arrays.asList(new String[] { "test1/a", "test2/b" }));
-		var UploadIDs = new ArrayList<String>();
+		var keyNames = List.of("test1/a", "test2/b");
 
-		for (var Key : KeyNames) {
-			var Response = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, Key));
-			UploadIDs.add(Response.getUploadId());
+		var uploadIds = new ArrayList<String>();
+
+		for (var key : keyNames) {
+			var response = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+			uploadIds.add(response.getUploadId());
 		}
 
-		var ListResponse = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
-		var InitUploads = ListResponse.getMultipartUploads();
+		var listResponse = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
+		var initUploads = listResponse.getMultipartUploads();
 
 		var rules = new ArrayList<Rule>();
-		rules.add(new Rule().withId("rule1")
-				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
+		rules.add(new Rule().withId("rule1").withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
 				.withStatus(BucketLifecycleConfiguration.ENABLED)
 				.withAbortIncompleteMultipartUpload(new AbortIncompleteMultipartUpload().withDaysAfterInitiation(2)));
 
-		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		var myLifeCycle = new BucketLifecycleConfiguration(
+				rules);
 		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
-		assertEquals(2, InitUploads.size());
+
+		assertEquals(2, initUploads.size());
 	}
 
 	@Test

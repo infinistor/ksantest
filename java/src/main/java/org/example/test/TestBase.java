@@ -223,23 +223,16 @@ public class TestBase {
 	// endregion
 
 	// region Create Data
-	public AccessControlList getGrantList(String userId, Permission[] perms) {
+	public AccessControlList getGrantList() {
 		Permission[] allHeaders = new Permission[] { Permission.Read, Permission.Write, Permission.ReadAcp,
 				Permission.WriteAcp, Permission.FullControl };
 
 		var accessControlList = new AccessControlList();
 		accessControlList.setOwner(new Owner(config.mainUser.userId, config.mainUser.displayName));
 
-		if (StringUtils.isBlank(userId))
-			userId = config.altUser.userId;
-		var user = new CanonicalGrantee(userId);
-		if (perms == null) {
-			for (var perm : allHeaders)
-				accessControlList.grantAllPermissions(new Grant(user, perm));
-		} else {
-			for (var Perm : perms)
-				accessControlList.grantAllPermissions(new Grant(user, Perm));
-		}
+		var user = new CanonicalGrantee(config.altUser.userId);
+		for (var perm : allHeaders)
+			accessControlList.grantAllPermissions(new Grant(user, perm));
 		return accessControlList;
 	}
 
@@ -2003,7 +1996,8 @@ public class TestBase {
 			checkObjVersions(client, bucketName, key, versionIds, contents);
 	}
 
-	public void createMultipleVersions(AmazonS3 client, String bucketName, String key, int numVersions, boolean checkVersion) {
+	public void createMultipleVersions(AmazonS3 client, String bucketName, String key, int numVersions,
+			boolean checkVersion) {
 		var versionIds = new ArrayList<String>();
 		var contents = new ArrayList<String>();
 
@@ -2020,7 +2014,8 @@ public class TestBase {
 			checkObjVersions(client, bucketName, key, versionIds, contents);
 	}
 
-	public void createMultipleVersion(AmazonS3 client, String bucketName, String key, int numVersions, boolean checkVersion, String body) {
+	public void createMultipleVersion(AmazonS3 client, String bucketName, String key, int numVersions,
+			boolean checkVersion, String body) {
 		var versionIds = new ArrayList<String>();
 		var contents = new ArrayList<String>();
 

@@ -129,10 +129,13 @@ public class ListObjectsV2 extends TestBase {
 				List.of("asdf"), new ArrayList<>(), false);
 		continuationToken = validateListObjectV2(bucketName, prefix, delimiter, continuationToken, 1, true,
 				new ArrayList<>(), List.of("boo/"), false);
-		validateListObjectV2(bucketName, prefix, delimiter, continuationToken, 1, false, new ArrayList<>(), List.of("cquux/"), true);
+		validateListObjectV2(bucketName, prefix, delimiter, continuationToken, 1, false, new ArrayList<>(),
+				List.of("cquux/"), true);
 
-		continuationToken = validateListObjectV2(bucketName, prefix, delimiter, null, 2, true, List.of("asdf"), List.of("boo/"), false);
-		validateListObjectV2(bucketName, prefix, delimiter, continuationToken, 2, false, new ArrayList<>(), List.of("cquux/"), true);
+		continuationToken = validateListObjectV2(bucketName, prefix, delimiter, null, 2, true, List.of("asdf"),
+				List.of("boo/"), false);
+		validateListObjectV2(bucketName, prefix, delimiter, continuationToken, 2, false, new ArrayList<>(),
+				List.of("cquux/"), true);
 
 		prefix = "boo/";
 
@@ -141,7 +144,8 @@ public class ListObjectsV2 extends TestBase {
 		validateListObjectV2(bucketName, prefix, delimiter, continuationToken, 1, false,
 				new ArrayList<>(), List.of("boo/baz/"), true);
 
-		validateListObjectV2(bucketName, prefix, delimiter, null, 2, false, List.of("boo/bar"), List.of("boo/baz/"), true);
+		validateListObjectV2(bucketName, prefix, delimiter, null, 2, false, List.of("boo/bar"), List.of("boo/baz/"),
+				true);
 	}
 
 	@Test
@@ -166,12 +170,12 @@ public class ListObjectsV2 extends TestBase {
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter));
 		assertEquals(delimiter, response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(List.of("foo"), Keys);
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(List.of("foo"), keys);
 
-		var Profixes = response.getCommonPrefixes();
-		assertEquals(2, Profixes.size());
-		assertEquals(List.of("ba", "ca"), Profixes);
+		var prefixes = response.getCommonPrefixes();
+		assertEquals(2, prefixes.size());
+		assertEquals(List.of("ba", "ca"), prefixes);
 	}
 
 	@Test
@@ -188,23 +192,23 @@ public class ListObjectsV2 extends TestBase {
 				List.of("Obj1_"), new ArrayList<>(), false);
 		continuationToken = validateListObjectV2(bucketName, prefix, delim, continuationToken, 1, true,
 				new ArrayList<>(), List.of("Under1/"), false);
-		continuationToken = validateListObjectV2(bucketName, prefix, delim, continuationToken, 1, false,
+		validateListObjectV2(bucketName, prefix, delim, continuationToken, 1, false,
 				new ArrayList<>(), List.of("Under2/"), true);
 
 		continuationToken = validateListObjectV2(bucketName, prefix, delim, null, 2, true,
 				List.of("Obj1_"),
 				List.of("Under1/"), false);
-		continuationToken = validateListObjectV2(bucketName, prefix, delim, continuationToken, 2, false,
+		validateListObjectV2(bucketName, prefix, delim, continuationToken, 2, false,
 				new ArrayList<>(), List.of("Under2/"), true);
 
 		prefix = "Under1/";
 
 		continuationToken = validateListObjectV2(bucketName, prefix, delim, null, 1, true,
 				List.of("Under1/bar"), new ArrayList<>(), false);
-		continuationToken = validateListObjectV2(bucketName, prefix, delim, continuationToken, 1, false,
+		validateListObjectV2(bucketName, prefix, delim, continuationToken, 1, false,
 				new ArrayList<>(), List.of("Under1/baz/"), true);
 
-		continuationToken = validateListObjectV2(bucketName, prefix, delim, null, 2, false,
+		validateListObjectV2(bucketName, prefix, delim, null, 2, false,
 				List.of("Under1/bar"),
 				List.of("Under1/baz/"), true);
 	}
@@ -222,8 +226,8 @@ public class ListObjectsV2 extends TestBase {
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter));
 		assertEquals(delimiter, response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(List.of("foo"), Keys);
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(List.of("foo"), keys);
 
 		var prefixes = response.getCommonPrefixes();
 		assertEquals(2, prefixes.size());
@@ -243,8 +247,8 @@ public class ListObjectsV2 extends TestBase {
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter));
 		assertEquals(delimiter, response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(List.of("foo"), Keys);
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(List.of("foo"), keys);
 
 		var prefixes = response.getCommonPrefixes();
 		assertEquals(2, prefixes.size());
@@ -264,8 +268,8 @@ public class ListObjectsV2 extends TestBase {
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter));
 		assertEquals(delimiter, response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(List.of("foo"), Keys);
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(List.of("foo"), keys);
 
 		var prefixes = response.getCommonPrefixes();
 		assertEquals(2, prefixes.size());
@@ -276,8 +280,8 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("delimiter")
 	// 오브젝트 목록을 가져올때 읽을수 없는 구분자[\n]로 필터링 되는지 확인(ListObjectsV2)
 	public void testBucketListV2DelimiterUnreadable() {
-		var KeyNames = List.of("bar", "baz", "cab", "foo");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "cab", "foo");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		String delimiter = "\n";
@@ -286,10 +290,10 @@ public class ListObjectsV2 extends TestBase {
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter));
 		assertEquals(delimiter, response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
 
-		assertEquals(KeyNames, Keys);
+		assertEquals(keyNames, keys);
 		assertEquals(0, prefixes.size());
 	}
 
@@ -297,8 +301,8 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("delimiter")
 	// 오브젝트 목록을 가져올때 구분자가 빈문자일때 필터링 되는지 확인(ListObjectsV2)
 	public void testBucketListV2DelimiterEmpty() {
-		var KeyNames = List.of("bar", "baz", "cab", "foo");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "cab", "foo");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		String delimiter = "";
@@ -307,10 +311,10 @@ public class ListObjectsV2 extends TestBase {
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter));
 		assertNull(response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
 
-		assertEquals(KeyNames, Keys);
+		assertEquals(keyNames, keys);
 		assertEquals(0, prefixes.size());
 	}
 
@@ -318,17 +322,17 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("delimiter")
 	// 오브젝트 목록을 가져올때 구분자를 입력하지 않아도 문제없는지 확인(ListObjectsV2)
 	public void testBucketListV2DelimiterNone() {
-		var KeyNames = List.of("bar", "baz", "cab", "foo");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "cab", "foo");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		var response = client.listObjectsV2(bucketName);
 		assertNull(response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
 
-		assertEquals(KeyNames, Keys);
+		assertEquals(keyNames, keys);
 		assertEquals(0, prefixes.size());
 	}
 
@@ -336,14 +340,14 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Fetchowner")
 	// [권한정보를 가져오도록 설정] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지 확인(ListObjectsV2)
 	public void testBucketListV2FetchownerNotempty() {
-		var KeyNames = List.of("foo/bar", "foo/baz", "quux");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("foo/bar", "foo/baz", "quux");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withFetchOwner(true));
-		var ObjectList = response.getObjectSummaries();
+		var objectList = response.getObjectSummaries();
 
-		assertNotNull(ObjectList.get(0).getOwner());
+		assertNotNull(objectList.get(0).getOwner());
 	}
 
 	@Test
@@ -351,37 +355,37 @@ public class ListObjectsV2 extends TestBase {
 	// @Tag( "[default = 권한정보를 가져오지 않음] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지
 	// 확인(ListObjectsV2)
 	public void testBucketListV2FetchownerDefaultempty() {
-		var KeyNames = List.of("foo/bar", "foo/baz", "quux");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("foo/bar", "foo/baz", "quux");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		var response = client.listObjectsV2(bucketName);
-		var ObjectList = response.getObjectSummaries();
+		var objectList = response.getObjectSummaries();
 
-		assertNull(ObjectList.get(0).getOwner());
+		assertNull(objectList.get(0).getOwner());
 	}
 
 	@Test
 	@Tag("Fetchowner")
 	// [권한정보를 가져오지 않도록 설정] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지 확인(ListObjectsV2)
 	public void testBucketListV2FetchownerEmpty() {
-		var KeyNames = List.of("foo/bar", "foo/baz", "quux");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("foo/bar", "foo/baz", "quux");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		var response = client
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withFetchOwner(false));
-		var ObjectList = response.getObjectSummaries();
+		var objectList = response.getObjectSummaries();
 
-		assertNull(ObjectList.get(0).getOwner());
+		assertNull(objectList.get(0).getOwner());
 	}
 
 	@Test
 	@Tag("delimiter")
 	// [폴더가 존재하지 않는 환경] 오브젝트 목록을 가져올때 폴더 구분자[/]로 필터링 되는지 확인(ListObjectsV2)
 	public void testBucketListV2DelimiterNotExist() {
-		var KeyNames = List.of("bar", "baz", "cab", "foo");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "cab", "foo");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		String delimiter = "/";
@@ -390,10 +394,10 @@ public class ListObjectsV2 extends TestBase {
 				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter));
 		assertEquals(delimiter, response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
 
-		assertEquals(KeyNames, Keys);
+		assertEquals(keyNames, keys);
 		assertEquals(0, prefixes.size());
 	}
 
@@ -404,13 +408,13 @@ public class ListObjectsV2 extends TestBase {
 		var bucketName = createObjects(List.of("foo/bar", "foo/baz", "quux"));
 		var client = getClient();
 
-		String Prefix = "foo/";
-		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
-		assertEquals(Prefix, response.getPrefix());
+		String prefix = "foo/";
+		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(prefix));
+		assertEquals(prefix, response.getPrefix());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(List.of("foo/bar", "foo/baz"), Keys);
+		assertEquals(List.of("foo/bar", "foo/baz"), keys);
 		assertEquals(0, prefixes.size());
 	}
 
@@ -421,13 +425,13 @@ public class ListObjectsV2 extends TestBase {
 		var bucketName = createObjects(List.of("bar", "baz", "foo"));
 		var client = getClient();
 
-		String Prefix = "ba";
-		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
-		assertEquals(Prefix, response.getPrefix());
+		String prefix = "ba";
+		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(prefix));
+		assertEquals(prefix, response.getPrefix());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(List.of("bar", "baz"), Keys);
+		assertEquals(List.of("bar", "baz"), keys);
 		assertEquals(0, prefixes.size());
 	}
 
@@ -435,17 +439,17 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Prefix")
 	// 접두어를 빈문자로 입력할 경우 모든 오브젝트 목록을 받아오는지 확인(ListObjectsV2)
 	public void testBucketListV2PrefixEmpty() {
-		var KeyNames = List.of("foo/bar", "foo/baz", "quux");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("foo/bar", "foo/baz", "quux");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		String Prefix = "";
-		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
+		String prefix = "";
+		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(prefix));
 		assertNull(response.getPrefix());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(KeyNames, Keys);
+		assertEquals(keyNames, keys);
 		assertEquals(0, prefixes.size());
 	}
 
@@ -453,16 +457,16 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Prefix")
 	// 접두어를 입력하지 않을 경우 모든 오브젝트 목록을 받아오는지 확인(ListObjectsV2)
 	public void testBucketListV2PrefixNone() {
-		var KeyNames = List.of("foo/bar", "foo/baz", "quux");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("foo/bar", "foo/baz", "quux");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		var response = client.listObjectsV2(bucketName);
 		assertNull(response.getPrefix());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(KeyNames, Keys);
+		assertEquals(keyNames, keys);
 		assertEquals(0, prefixes.size());
 	}
 
@@ -470,17 +474,17 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Prefix")
 	// [접두어와 일치하는 오브젝트가 없는 경우] 접두어를 입력할 경우 빈 오브젝트 목록을 받아오는지 확인(ListObjectsV2)
 	public void testBucketListV2PrefixNotExist() {
-		var KeyNames = List.of("foo/bar", "foo/baz", "quux");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("foo/bar", "foo/baz", "quux");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		String Prefix = "d";
-		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
-		assertEquals(Prefix, response.getPrefix());
+		String prefix = "d";
+		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(prefix));
+		assertEquals(prefix, response.getPrefix());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(0, Keys.size());
+		assertEquals(0, keys.size());
 		assertEquals(0, prefixes.size());
 	}
 
@@ -488,17 +492,17 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Prefix")
 	// 읽을수 없는 접두어를 입력할 경우 빈 오브젝트 목록을 받아오는지 확인(ListObjectsV2)
 	public void testBucketListV2PrefixUnreadable() {
-		var KeyNames = List.of("foo/bar", "foo/baz", "quux");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("foo/bar", "foo/baz", "quux");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		String Prefix = "\n";
-		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(Prefix));
-		assertEquals(Prefix, response.getPrefix());
+		String prefix = "\n";
+		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(prefix));
+		assertEquals(prefix, response.getPrefix());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(0, Keys.size());
+		assertEquals(0, keys.size());
 		assertEquals(0, prefixes.size());
 	}
 
@@ -506,20 +510,20 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	// 접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인(ListObjectsV2)
 	public void testBucketListV2PrefixDelimiterBasic() {
-		var KeyNames = List.of("foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		String Prefix = "foo/";
+		String prefix = "foo/";
 		String delimiter = "/";
 		var response = client.listObjectsV2(
-				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter).withPrefix(Prefix));
-		assertEquals(Prefix, response.getPrefix());
+				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter).withPrefix(prefix));
+		assertEquals(prefix, response.getPrefix());
 		assertEquals(delimiter, response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(List.of("foo/bar"), Keys);
+		assertEquals(List.of("foo/bar"), keys);
 		assertEquals(List.of("foo/baz/"), prefixes);
 	}
 
@@ -527,21 +531,21 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	// [구분자가 '/' 아닐 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인(ListObjectsV2)
 	public void testBucketListV2PrefixDelimiterAlt() {
-		var KeyNames = List.of("bar", "bazar", "cab", "foo");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "bazar", "cab", "foo");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		String delimiter = "a";
-		String Prefix = "ba";
+		String prefix = "ba";
 
 		var response = client.listObjectsV2(
-				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter).withPrefix(Prefix));
-		assertEquals(Prefix, response.getPrefix());
+				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter).withPrefix(prefix));
+		assertEquals(prefix, response.getPrefix());
 		assertEquals(delimiter, response.getDelimiter());
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(List.of("bar"), Keys);
+		assertEquals(List.of("bar"), keys);
 		assertEquals(List.of("baza"), prefixes);
 	}
 
@@ -555,9 +559,9 @@ public class ListObjectsV2 extends TestBase {
 		var response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("d").withPrefix("/"));
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(0, Keys.size());
+		assertEquals(0, keys.size());
 		assertEquals(0, prefixes.size());
 	}
 
@@ -571,9 +575,9 @@ public class ListObjectsV2 extends TestBase {
 		var response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("z").withPrefix("b"));
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(List.of("b/a/c", "b/a/g", "b/a/r"), Keys);
+		assertEquals(List.of("b/a/c", "b/a/g", "b/a/r"), keys);
 		assertEquals(0, prefixes.size());
 	}
 
@@ -588,161 +592,160 @@ public class ListObjectsV2 extends TestBase {
 		var response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("z").withPrefix("y"));
 
-		var Keys = getKeys(response.getObjectSummaries());
+		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
-		assertEquals(0, Keys.size());
+		assertEquals(0, keys.size());
 		assertEquals(0, prefixes.size());
 	}
 
 	@Test
-	@Tag("MaxKeys")
+	@Tag("maxKeys")
 	// 오브젝트 목록의 최대갯수를 1로 지정하고 불러올때 올바르게 가져오는지 확인(ListObjectsV2)
 	public void testBucketListV2MaxKeysOne() {
-		var KeyNames = List.of("bar", "baz", "foo", "quxx");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "foo", "quxx");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(1));
 		assertTrue(response.isTruncated());
 
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(KeyNames.subList(0, 1), Keys);
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(keyNames.subList(0, 1), keys);
 
 		response = client
-				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(KeyNames.get(0)));
+				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(keyNames.get(0)));
 		assertFalse(response.isTruncated());
 
-		Keys = getKeys(response.getObjectSummaries());
-		assertEquals(KeyNames.subList(1, KeyNames.size()), Keys);
+		keys = getKeys(response.getObjectSummaries());
+		assertEquals(keyNames.subList(1, keyNames.size()), keys);
 	}
 
 	@Test
-	@Tag("MaxKeys")
+	@Tag("maxKeys")
 	// 오브젝트 목록의 최대갯수를 0으로 지정하고 불러올때 목록이 비어있는지 확인(ListObjectsV2)
 	public void testBucketListV2MaxKeysZero() {
-		var KeyNames = List.of("bar", "baz", "foo", "quxx");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "foo", "quxx");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(0));
 
 		assertFalse(response.isTruncated());
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(0, Keys.size());
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(0, keys.size());
 	}
 
 	@Test
-	@Tag("MaxKeys")
+	@Tag("maxKeys")
 	// [default = 1000] 오브젝트 목록의 최대갯수를 지정하지않고 불러올때 올바르게 가져오는지 확인(ListObjectsV2)
 	public void testBucketListV2MaxKeysNone() {
-		var KeyNames = List.of("bar", "baz", "foo", "quxx");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "foo", "quxx");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
 		var response = client.listObjectsV2(bucketName);
 		assertFalse(response.isTruncated());
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(KeyNames, Keys);
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(keyNames, keys);
 		assertEquals(1000, response.getMaxKeys());
 	}
 
 	@Test
-	@Tag("Continuationtoken")
+	@Tag("ContinuationToken")
 	// 오브젝트 목록을 가져올때 다음 토큰값을 올바르게 가져오는지 확인
-	public void testBucketListV2Continuationtoken() {
-		var KeyNames = List.of("bar", "baz", "foo", "quxx");
-		var bucketName = createObjects(KeyNames);
+	public void testBucketListV2ContinuationToken() {
+		var keyNames = List.of("bar", "baz", "foo", "quxx");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var Response1 = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(1));
-		var NextContinuationToken = Response1.getNextContinuationToken();
+		var response1 = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(1));
+		var nextContinuationToken = response1.getNextContinuationToken();
 
-		var Response2 = client.listObjectsV2(
-				new ListObjectsV2Request().withBucketName(bucketName).withContinuationToken(NextContinuationToken));
-		assertEquals(NextContinuationToken, Response2.getContinuationToken());
-		assertFalse(Response2.isTruncated());
-		var KeyNames2 = List.of("baz", "foo", "quxx");
-		var Keys = getKeys(Response2.getObjectSummaries());
-		assertEquals(KeyNames2, Keys);
+		var response2 = client.listObjectsV2(
+				new ListObjectsV2Request().withBucketName(bucketName).withContinuationToken(nextContinuationToken));
+		assertEquals(nextContinuationToken, response2.getContinuationToken());
+		assertFalse(response2.isTruncated());
+		var keyNames2 = List.of("baz", "foo", "quxx");
+		var keys = getKeys(response2.getObjectSummaries());
+		assertEquals(keyNames2, keys);
 	}
 
 	@Test
-	@Tag("ContinuationtokenAndStartAfter")
-	// 오브젝트 목록을 가져올때 Startafter와 토큰이 재대로 동작하는지 확인
-	public void testBucketListV2BothContinuationtokenStartafter() {
-		var KeyNames = List.of("bar", "baz", "foo", "quxx");
-		var bucketName = createObjects(KeyNames);
+	@Tag("ContinuationTokenAndStartAfter")
+	// 오브젝트 목록을 가져올때 StartAfter와 토큰이 재대로 동작하는지 확인
+	public void testBucketListV2BothContinuationTokenStartAfter() {
+		var keyNames = List.of("bar", "baz", "foo", "quxx");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var StartAfter = "bar";
+		var startAfter = "bar";
 
-		var Response1 = client.listObjectsV2(
-				new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(StartAfter).withMaxKeys(1));
-		var NextContinuationToken = Response1.getNextContinuationToken();
+		var response1 = client.listObjectsV2(
+				new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(startAfter).withMaxKeys(1));
+		var nextContinuationToken = response1.getNextContinuationToken();
 
-		var Response2 = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName)
-				.withStartAfter(StartAfter).withContinuationToken(NextContinuationToken));
-		assertEquals(NextContinuationToken, Response2.getContinuationToken());
-		// assertEquals(StartAfter, Response2.getStartAfter());
-		assertFalse(Response2.isTruncated());
-		var KeyNames2 = List.of("foo", "quxx");
-		var Keys = getKeys(Response2.getObjectSummaries());
-		assertEquals(KeyNames2, Keys);
+		var response2 = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName)
+				.withStartAfter(startAfter).withContinuationToken(nextContinuationToken));
+		assertEquals(nextContinuationToken, response2.getContinuationToken());
+		assertFalse(response2.isTruncated());
+		var keyNames2 = List.of("foo", "quxx");
+		var keys = getKeys(response2.getObjectSummaries());
+		assertEquals(keyNames2, keys);
 	}
 
 	@Test
-	@Tag("StartAfter")
+	@Tag("startAfter")
 	// startafter에 읽을수 없는 값[\n]을 설정한 경우 오브젝트 목록을 올바르게 가져오는지 확인
 	public void testBucketListV2StartafterUnreadable() {
-		var KeyNames = List.of("bar", "baz", "foo", "quxx");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "foo", "quxx");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var StartAfter = "\n";
+		var startAfter = "\n";
 
 		var response = client
-				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(StartAfter));
+				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(startAfter));
 		assertTrue(response.getStartAfter().isBlank());
 		assertFalse(response.isTruncated());
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(KeyNames, Keys);
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(keyNames, keys);
 	}
 
 	@Test
-	@Tag("StartAfter")
+	@Tag("startAfter")
 	// [startafter와 일치하는 오브젝트가 존재하지 않는 환경 해당 startafter보다 정렬순서가 낮은 오브젝트는 존재하는 환경]
 	// startafter를 설정하고 오브젝트 목록을 불러올때 재대로 가져오는지 확인
 	public void testBucketListV2StartafterNotInList() {
-		var KeyNames = List.of("bar", "baz", "foo", "quxx");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "foo", "quxx");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var StartAfter = "blah";
+		var startAfter = "blah";
 
 		var response = client
-				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(StartAfter));
-		assertEquals(StartAfter, response.getStartAfter());
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(List.of("foo", "quxx"), Keys);
+				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(startAfter));
+		assertEquals(startAfter, response.getStartAfter());
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(List.of("foo", "quxx"), keys);
 	}
 
 	@Test
-	@Tag("StartAfter")
+	@Tag("startAfter")
 	// [startafter와 일치하는 오브젝트도 정렬순서가 같은 오브젝트도 존재하지 않는 환경] startafter를 설정하고 오브젝트 목록을
 	// 불러올때 재대로 가져오는지 확인
 	public void testBucketListV2StartafterAfterList() {
-		var KeyNames = List.of("bar", "baz", "foo", "quxx");
-		var bucketName = createObjects(KeyNames);
+		var keyNames = List.of("bar", "baz", "foo", "quxx");
+		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var StartAfter = "zzz";
+		var startAfter = "zzz";
 
 		var response = client
-				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(StartAfter));
-		assertEquals(StartAfter, response.getStartAfter());
+				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withStartAfter(startAfter));
+		assertEquals(startAfter, response.getStartAfter());
 		assertFalse(response.isTruncated());
-		var Keys = getKeys(response.getObjectSummaries());
-		assertEquals(0, Keys.size());
+		var keys = getKeys(response.getObjectSummaries());
+		assertEquals(0, keys.size());
 	}
 
 	@Test
@@ -753,8 +756,8 @@ public class ListObjectsV2 extends TestBase {
 		var client = getClient();
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 
-		var UnauthenticatedClient = getPublicClient();
-		UnauthenticatedClient.listObjectsV2(bucketName);
+		var unauthenticatedClient = getPublicClient();
+		unauthenticatedClient.listObjectsV2(bucketName);
 	}
 
 	@Test
@@ -763,15 +766,15 @@ public class ListObjectsV2 extends TestBase {
 	public void testBucketListV2ObjectsAnonymousFail() {
 		var bucketName = getNewBucket();
 
-		var UnauthenticatedClient = getPublicClient();
+		var unauthenticatedClient = getPublicClient();
 
-		var e = assertThrows(AmazonServiceException.class, () -> UnauthenticatedClient.listObjectsV2(bucketName));
+		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.listObjectsV2(bucketName));
 
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
 
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.AccessDenied, ErrorCode);
+		assertEquals(403, statusCode);
+		assertEquals(MainData.AccessDenied, errorCode);
 	}
 
 	@Test
@@ -783,11 +786,11 @@ public class ListObjectsV2 extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.listObjectsV2(bucketName));
 
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
 
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchBucket, ErrorCode);
+		assertEquals(404, statusCode);
+		assertEquals(MainData.NoSuchBucket, errorCode);
 		deleteBucketList(bucketName);
 	}
 
@@ -801,15 +804,15 @@ public class ListObjectsV2 extends TestBase {
 
 		var marker = "test3";
 		var delimiter = "/";
-		var MaxKeys = 3;
+		var maxKeys = 3;
 
 		var response = client.listObjectsV2(
-				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter).withMaxKeys(MaxKeys));
+				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter).withMaxKeys(maxKeys));
 		assertEquals(delimiter, response.getDelimiter());
-		assertEquals(MaxKeys, response.getMaxKeys());
+		assertEquals(maxKeys, response.getMaxKeys());
 		assertEquals(marker, response.getNextContinuationToken());
 		assertEquals(true, response.isTruncated());
-		assertEquals(MaxKeys, response.getKeyCount());
+		assertEquals(maxKeys, response.getKeyCount());
 
 		var keys = getKeys(response.getObjectSummaries());
 		var prefixes = response.getCommonPrefixes();
@@ -817,9 +820,9 @@ public class ListObjectsV2 extends TestBase {
 		assertLinesMatch(List.of("test1/", "test2/"), prefixes);
 
 		response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter)
-				.withMaxKeys(MaxKeys).withContinuationToken(marker));
+				.withMaxKeys(maxKeys).withContinuationToken(marker));
 		assertEquals(delimiter, response.getDelimiter());
-		assertEquals(MaxKeys, response.getMaxKeys());
+		assertEquals(maxKeys, response.getMaxKeys());
 		assertEquals(false, response.isTruncated());
 	}
 }

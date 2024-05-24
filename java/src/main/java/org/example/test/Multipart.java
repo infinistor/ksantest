@@ -385,7 +385,7 @@ public class Multipart extends TestBase {
 		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
 		var uploadId = initResponse.getUploadId();
 		var parts = new ArrayList<PartETag>();
-		var totalContent = "";
+		var totalContent = new StringBuilder();
 
 		for (int i = 0; i < partCount; i++) {
 			var partNumber = i + 1;
@@ -393,14 +393,14 @@ public class Multipart extends TestBase {
 					.withUploadId(uploadId).withInputStream(createBody(content)).withPartNumber(partNumber)
 					.withPartSize(content.length()));
 			parts.add(new PartETag(partNumber, partResponse.getETag()));
-			totalContent += content;
+			totalContent.append(content);
 		}
 
 		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId, parts));
 
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
-		assertTrue(totalContent.equals(body), MainData.NOT_MATCHED);
+		assertTrue(totalContent.toString().equals(body), MainData.NOT_MATCHED);
 	}
 
 	@Test

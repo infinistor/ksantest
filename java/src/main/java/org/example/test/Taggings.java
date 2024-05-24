@@ -257,7 +257,7 @@ public class Taggings extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "test tag obj1";
-		var Data = Utils.randomTextToLong(100);
+		var data = Utils.randomTextToLong(100);
 
 		var tags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
 		tags.add(new com.amazonaws.services.s3.model.Tag("bar", ""));
@@ -266,13 +266,13 @@ public class Taggings extends TestBase {
 		var headers = new ObjectMetadata();
 		headers.setHeader("x-amz-tagging", "foo=bar&bar");
 
-		client.putObject(bucketName, key, createBody(Data), headers);
+		client.putObject(bucketName, key, createBody(data), headers);
 		var response = client.getObject(bucketName, key);
-		var Body = getBody(response.getObjectContent());
-		assertEquals(Data, Body);
+		var body = getBody(response.getObjectContent());
+		assertEquals(data, body);
 
-		var GetResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
-		tagCompare(tags, GetResponse.getTagSet());
+		var getResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		tagCompare(tags, getResponse.getTagSet());
 	}
 
 	@Test
@@ -291,45 +291,45 @@ public class Taggings extends TestBase {
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var Conditions = new JsonArray();
+		var conditions = new JsonArray();
 
-		var Bucket = new JsonObject();
-		Bucket.addProperty("bucket", bucketName);
-		Conditions.add(Bucket);
+		var bucket = new JsonObject();
+		bucket.addProperty("bucket", bucketName);
+		conditions.add(bucket);
 
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
 		starts1.add("foo");
-		Conditions.add(starts1);
+		conditions.add(starts1);
 
-		var ACL = new JsonObject();
-		ACL.addProperty("acl", "private");
-		Conditions.add(ACL);
+		var acl = new JsonObject();
+		acl.addProperty("acl", "private");
+		conditions.add(acl);
 
 		var starts2 = new JsonArray();
 		starts2.add("starts-with");
 		starts2.add("$Content-Type");
 		starts2.add(contentType);
-		Conditions.add(starts2);
+		conditions.add(starts2);
 
-		var ContentLengthRange = new JsonArray();
-		ContentLengthRange.add("content-length-range");
-		ContentLengthRange.add(0);
-		ContentLengthRange.add(1024);
-		Conditions.add(ContentLengthRange);
+		var contentLengthRange = new JsonArray();
+		contentLengthRange.add("content-length-range");
+		contentLengthRange.add(0);
+		contentLengthRange.add(1024);
+		conditions.add(contentLengthRange);
 
 		var starts3 = new JsonArray();
 		starts3.add("starts-with");
 		starts3.add("$tagging");
 		starts3.add("");
-		Conditions.add(starts3);
+		conditions.add(starts3);
 
-		policyDocument.add("conditions", Conditions);
+		policyDocument.add("conditions", conditions);
 
-		var BytesJsonPolicyDocument = policyDocument.toString().getBytes();
+		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(BytesJsonPolicyDocument);
+		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
 		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
 		var fileData = new FormFile(key, contentType, "bar");
@@ -363,7 +363,7 @@ public class Taggings extends TestBase {
 		var client = getClient();
 
 		var putObjectRequest = new PutObjectRequest(bucketName, key, createBody("00"), new ObjectMetadata());
-		putObjectRequest.setTagging(new ObjectTagging(new ArrayList<com.amazonaws.services.s3.model.Tag>()));
+		putObjectRequest.setTagging(new ObjectTagging(new ArrayList<>()));
 		client.putObject(putObjectRequest);
 	}
 }

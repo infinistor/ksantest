@@ -115,9 +115,9 @@ public class SSE_S3 extends TestBase {
 		var parts = Utils.generateRandomString(size, 5 * MainData.MB);
 		var partETags = new ArrayList<PartETag>();
 		int partNumber = 1;
-		var data = "";
+		var data = new StringBuilder();
 		for (var part : parts) {
-			data += part;
+			data.append(part);
 			var partResPonse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
 					.withUploadId(uploadId).withPartNumber(partNumber++).withInputStream(createBody(part))
 					.withPartSize(part.length()));
@@ -136,9 +136,9 @@ public class SSE_S3 extends TestBase {
 		assertEquals(contentType, getResponse.getContentType());
 		assertEquals("AES256", getResponse.getSSEAlgorithm());
 
-		checkContentUsingRange(bucketName, key, data, MainData.MB);
-		checkContentUsingRange(bucketName, key, data, 10L * MainData.MB);
-		checkContentUsingRandomRange(bucketName, key, data, 100);
+		checkContentUsingRange(bucketName, key, data.toString(), MainData.MB);
+		checkContentUsingRange(bucketName, key, data.toString(), 10L * MainData.MB);
+		checkContentUsingRandomRange(bucketName, key, data.toString(), 100);
 	}
 
 	@Test

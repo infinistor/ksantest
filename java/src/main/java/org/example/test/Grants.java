@@ -655,7 +655,7 @@ public class Grants extends TestBase {
 		var altUser = new CanonicalGrantee(config.altUser.userId);
 		altUser.setDisplayName(config.altUser.displayName);
 
-		var grants = getGrantList(null, null);
+		var grants = getGrantList();
 
 		client.putObject(
 				new PutObjectRequest(bucketName, key, createBody("bar"), metadata).withAccessControlList(grants));
@@ -681,7 +681,7 @@ public class Grants extends TestBase {
 		var altUser = new CanonicalGrantee(config.altUser.userId);
 		altUser.setDisplayName(config.altUser.displayName);
 
-		var headers = getGrantList(null, null);
+		var headers = getGrantList();
 
 		client.createBucket(new CreateBucketRequest(bucketName).withAccessControlList(headers));
 		var response = client.getBucketAcl(bucketName);

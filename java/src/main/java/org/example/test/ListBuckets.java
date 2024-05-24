@@ -67,14 +67,14 @@ public class ListBuckets extends TestBase
 	//존재하지 않는 사용자가 버킷목록 조회시 에러 확인
 	public void testListBucketsInvalidAuth()
 	{
-		var BadAuthClient = getBadAuthClient(null, null);
+		var badAuthClient = getBadAuthClient(null, null);
 
-		var e = assertThrows(AmazonServiceException.class, () -> BadAuthClient.listBuckets());
+		var e = assertThrows(AmazonServiceException.class, () -> badAuthClient.listBuckets());
 		
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.InvalidAccessKeyId, ErrorCode);
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(403, statusCode);
+		assertEquals(MainData.InvalidAccessKeyId, errorCode);
 	}
 
 	@Test
@@ -82,14 +82,14 @@ public class ListBuckets extends TestBase
 	//로그인정보를 잘못입력한 사용자가 버킷목록 조회시 에러 확인
 	public void testListBucketsBadAuth()
 	{
-		var MainAccessKey = config.mainUser.accessKey;
-		var BadAuthClient = getBadAuthClient(MainAccessKey, null);
+		var mainAccessKey = config.mainUser.accessKey;
+		var badAuthClient = getBadAuthClient(mainAccessKey, null);
 
-		var e = assertThrows(AmazonServiceException.class, () -> BadAuthClient.listBuckets());
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.SignatureDoesNotMatch, ErrorCode);
+		var e = assertThrows(AmazonServiceException.class, () -> badAuthClient.listBuckets());
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
+		assertEquals(403, statusCode);
+		assertEquals(MainData.SignatureDoesNotMatch, errorCode);
 	}
 	
 	@Test
