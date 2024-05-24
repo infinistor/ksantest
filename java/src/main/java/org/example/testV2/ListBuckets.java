@@ -21,34 +21,32 @@ import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 public class ListBuckets extends TestBase
 {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll()
 	{
-		System.out.println("ListBuckets SDK V2 Start");
+		System.out.println("ListBuckets Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll()
 	{
-		System.out.println("ListBuckets SDK V2 End");
+		System.out.println("ListBuckets End");
 	}
 
 	@Test
 	@Tag("Get")
 	//여러개의 버킷 생성해서 목록 조회 확인
-	public void test_buckets_create_then_list()
+	public void testBucketsCreateThenList()
 	{
 		var client = getClient();
 		var bucketNames = new ArrayList<String>();
 		for (int i = 0; i < 5; i++)
 		{
-			var bucketName = getNewBucketName();
-			client.createBucket(bucketName);
+			var bucketName = getNewBucket();
 			bucketNames.add(bucketName);
 		}
 
@@ -65,42 +63,42 @@ public class ListBuckets extends TestBase
 	@Test
 	@Tag("ERROR")
 	//존재하지 않는 사용자가 버킷목록 조회시 에러 확인
-	public void test_list_buckets_invalid_auth()
+	public void testListBucketsInvalidAuth()
 	{
-		var BadAuthClient = getBadAuthClient(null, null);
+		var badAuthClient = getBadAuthClient(null, null);
 
-		var e = assertThrows(AmazonServiceException.class, () -> BadAuthClient.listBuckets());
+		var e = assertThrows(AwsServiceException.class, () -> badAuthClient.listBuckets());
 		
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.InvalidAccessKeyId, ErrorCode);
+		var statusCode = e.statusCode();
+		var errorCode = e.getMessage();
+		assertEquals(403, statusCode);
+		assertEquals(MainData.InvalidAccessKeyId, errorCode);
 	}
 
 	@Test
 	@Tag("ERROR")
 	//로그인정보를 잘못입력한 사용자가 버킷목록 조회시 에러 확인
-	public void test_list_buckets_bad_auth()
+	public void testListBucketsBadAuth()
 	{
-		var MainAccessKey = config.mainUser.accessKey;
-		var BadAuthClient = getBadAuthClient(MainAccessKey, null);
+		var mainAccessKey = config.mainUser.accessKey;
+		var badAuthClient = getBadAuthClient(mainAccessKey, null);
 
-		var e = assertThrows(AmazonServiceException.class, () -> BadAuthClient.listBuckets());
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(403, StatusCode);
-		assertEquals(MainData.SignatureDoesNotMatch, ErrorCode);
+		var e = assertThrows(AwsServiceException.class, () -> badAuthClient.listBuckets());
+		var statusCode = e.statusCode();
+		var errorCode = e.getMessage();
+		assertEquals(403, statusCode);
+		assertEquals(MainData.SignatureDoesNotMatch, errorCode);
 	}
 	
 	@Test
 	@Tag("Metadata")
 	//Tag("버킷의 메타데이터를 가져올 수 있는지 확인
-	public void test_head_bucket()
+	public void testHeadBucket()
 	{
 		var bucketName = getNewBucket();
 		var client = getClient();
 		
-		var response = client.headBucket(new HeadBucketRequest(bucketName));
+		var response = client.headBucket(h -> h.bucket(bucketName));
 		assertNotNull(response);
 	}
 }

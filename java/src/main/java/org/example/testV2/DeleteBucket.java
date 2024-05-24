@@ -42,7 +42,7 @@ public class DeleteBucket extends TestBase
 		var bucketName = getNewBucketNameOnly();
 		var client = getClient();
 
-		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName).build()));
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchBucket, e.getMessage());
@@ -56,7 +56,7 @@ public class DeleteBucket extends TestBase
 		var bucketName = createObjects(List.of("foo"));
 		var client = getClient();
 
-		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName).build()));
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
 
 		assertEquals(409, e.statusCode());
 		assertEquals(MainData.BucketNotEmpty, e.getMessage());
@@ -69,9 +69,9 @@ public class DeleteBucket extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.deleteBucket(d->d.bucket(bucketName).build());
+		client.deleteBucket(d->d.bucket(bucketName));
 
-		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName).build()));
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchBucket, e.getMessage());

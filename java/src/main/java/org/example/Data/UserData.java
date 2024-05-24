@@ -43,4 +43,11 @@ public class UserData {
 			.type("CanonicalUser")
 			.build();
 	}
+
+	public software.amazon.awssdk.services.s3.model.Owner toOwner() {
+		return software.amazon.awssdk.services.s3.model.Owner.builder()
+			.displayName(displayName)
+			.id(userId)
+			.build();
+	}
 }

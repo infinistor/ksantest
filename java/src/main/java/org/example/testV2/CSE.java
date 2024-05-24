@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
 
 public class CSE extends TestBase {
@@ -88,9 +87,9 @@ public class CSE extends TestBase {
 			metadata.put("x-amz-meta-key", aesKey);
 
 			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
-					.contentType(contentType).build(), RequestBody.fromString(encoding));
+					.contentType(contentType), RequestBody.fromString(encoding));
 
-			var getMetadata = client.headObject(h -> h.bucket(bucketName).key(key).build());
+			var getMetadata = client.headObject(h -> h.bucket(bucketName).key(key));
 			assertEquals(metadata, getMetadata.metadata());
 		} catch (Exception e) {
 			fail(e.getMessage());
@@ -117,9 +116,9 @@ public class CSE extends TestBase {
 			metadata.put("x-amz-meta-key", aesKey);
 
 			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
-					.contentType(contentType).build(), RequestBody.fromString(encoding));
+					.contentType(contentType), RequestBody.fromString(encoding));
 
-			var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
+			var response = client.getObject(g -> g.bucket(bucketName).key(key));
 			var body = getBody(response);
 			assertNotEquals(data, body);
 		} catch (Exception e) {
@@ -144,10 +143,10 @@ public class CSE extends TestBase {
 		var metadata = new HashMap<String, String>();
 		metadata.put("x-amz-meta-key", aesKey);
 
-		client.putObject(p -> p.bucket(bucketName).key(key).contentType(contentType).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key).contentType(contentType),
 				RequestBody.fromString(data));
 
-		var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
 		var encodingBody = getBody(response);
 		assertThrows(Exception.class, () -> AES256.decrypt(encodingBody, aesKey));
 	}
@@ -171,13 +170,13 @@ public class CSE extends TestBase {
 			metadata.put("x-amz-meta-key", aesKey);
 
 			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
-					.contentType(contentType).build(), RequestBody.fromString(encoding));
+					.contentType(contentType), RequestBody.fromString(encoding));
 
 			var r = new Random(System.currentTimeMillis());
 			var startPoint = r.nextInt(1024 * 1024 - 1001);
 			var endPoint = startPoint + 999;
 			var response = client.getObject(
-					g -> g.bucket(bucketName).key(key).range("bytes=" + startPoint + "-" + endPoint).build());
+					g -> g.bucket(bucketName).key(key).range("bytes=" + startPoint + "-" + endPoint));
 			var encodingBody = getBody(response);
 			assertTrue(encoding.substring(startPoint, startPoint + 1000).equals(encodingBody),
 					MainData.NOT_MATCHED);
@@ -207,7 +206,7 @@ public class CSE extends TestBase {
 
 			var initMultiPartResponse = client
 					.createMultipartUpload(
-							c -> c.bucket(bucketName).key(key).contentType(contentType).metadata(metadata).build());
+							c -> c.bucket(bucketName).key(key).contentType(contentType).metadata(metadata));
 			var uploadId = initMultiPartResponse.uploadId();
 
 			var parts = cutStringData(encoding, 5 * MainData.MB);
@@ -215,19 +214,19 @@ public class CSE extends TestBase {
 			for (var part : parts) {
 				int partNumber = partETags.size() + 1;
 				var partResPonse = client.uploadPart(
-						u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(partNumber).build(),
+						u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(partNumber),
 						RequestBody.fromString(part));
 				partETags.add(CompletedPart.builder().partNumber(partNumber).eTag(partResPonse.eTag()).build());
 			}
 
 			client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadId)
-					.multipartUpload(CompletedMultipartUpload.builder().parts(partETags).build()).build());
+					.multipartUpload(p->p.parts(partETags)));
 
-			var headResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
+			var headResponse = client.listObjectsV2(l -> l.bucket(bucketName));
 			assertEquals(1, headResponse.keyCount());
 			assertEquals(encoding.length(), getBytesUsed(headResponse));
 
-			var getResponse = client.headObject(h -> h.bucket(bucketName).key(key).build());
+			var getResponse = client.headObject(h -> h.bucket(bucketName).key(key));
 			assertEquals(metadata, getResponse.metadata());
 			assertEquals(contentType, getResponse.contentType());
 
@@ -257,9 +256,9 @@ public class CSE extends TestBase {
 			metadata.put("AESkey", aesKey);
 
 			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
-					.contentType(contentType).build(), RequestBody.fromString(encoding));
+					.contentType(contentType), RequestBody.fromString(encoding));
 
-			var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
+			var response = client.getObject(g -> g.bucket(bucketName).key(key));
 			var encodingBody = getBody(response);
 			var body = AES256.decrypt(encodingBody, aesKey);
 			assertTrue(data.equals(body), MainData.NOT_MATCHED);
@@ -290,9 +289,9 @@ public class CSE extends TestBase {
 			metadata.put("AESkey", aesKey);
 
 			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
-					.contentType(contentType).build(), RequestBody.fromString(encoding));
+					.contentType(contentType), RequestBody.fromString(encoding));
 
-			var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
+			var response = client.getObject(g -> g.bucket(bucketName).key(key));
 			var encodingBody = getBody(response);
 			var body = AES256.decrypt(encodingBody, aesKey);
 			assertTrue(data.equals(body), MainData.NOT_MATCHED);

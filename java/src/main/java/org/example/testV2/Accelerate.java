@@ -41,7 +41,8 @@ public class Accelerate extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAccelerateConfiguration(p -> p.bucket(bucketName).accelerateConfiguration(a -> a.status("Enabled").build()).build());
+		client.putBucketAccelerateConfiguration(
+				p -> p.bucket(bucketName).accelerateConfiguration(a -> a.status("Enabled")));
 	}
 
 	@Test
@@ -52,13 +53,10 @@ public class Accelerate extends TestBase {
 		var client = getClient();
 
 		client.putBucketAccelerateConfiguration(p -> p.bucket(bucketName)
-				.accelerateConfiguration(a -> a.status(BucketAccelerateStatus.ENABLED)
-						.build())
-				.build());
+				.accelerateConfiguration(a -> a.status(BucketAccelerateStatus.ENABLED)));
 
 		var response = client.getBucketAccelerateConfiguration(g -> g
-				.bucket(bucketName)
-				.build());
+				.bucket(bucketName));
 		assertEquals(BucketAccelerateStatus.ENABLED, response.status());
 	}
 
@@ -71,24 +69,18 @@ public class Accelerate extends TestBase {
 
 		client.putBucketAccelerateConfiguration(p -> p
 				.bucket(bucketName)
-				.accelerateConfiguration(a -> a.status(BucketAccelerateStatus.ENABLED)
-						.build())
-				.build());
+				.accelerateConfiguration(a -> a.status(BucketAccelerateStatus.ENABLED)));
 
 		var response = client.getBucketAccelerateConfiguration(g -> g
-				.bucket(bucketName)
-				.build());
+				.bucket(bucketName));
 		assertEquals(BucketAccelerateStatus.ENABLED, response.status());
 
 		client.putBucketAccelerateConfiguration(p -> p
 				.bucket(bucketName)
-				.accelerateConfiguration(a -> a.status(BucketAccelerateStatus.SUSPENDED)
-						.build())
-				.build());
+				.accelerateConfiguration(a -> a.status(BucketAccelerateStatus.SUSPENDED)));
 
 		response = client.getBucketAccelerateConfiguration(g -> g
-				.bucket(bucketName)
-				.build());
+				.bucket(bucketName));
 		assertEquals(BucketAccelerateStatus.SUSPENDED, response.status());
 	}
 
@@ -102,9 +94,7 @@ public class Accelerate extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAccelerateConfiguration(p -> p
 						.bucket(bucketName)
-						.accelerateConfiguration(a -> a.status("Invalid")
-								.build())
-						.build()));
+						.accelerateConfiguration(a -> a.status("Invalid"))));
 		assertEquals(400, e.statusCode());
 		assertEquals("MalformedXML", e.getMessage());
 	}

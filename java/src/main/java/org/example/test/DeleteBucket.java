@@ -13,8 +13,7 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
@@ -22,56 +21,53 @@ import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
 
-public class DeleteBucket extends TestBase
-{
+public class DeleteBucket extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll()
-	{
+	public static void beforeAll() {
 		System.out.println("DeleteBucket Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	public static void afterAll()
-	{
+	public static void afterAll() {
 		System.out.println("DeleteBucket End");
 	}
 
 	@Test
 	@Tag("ERROR")
-	//존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인
-	public void testBucketDeleteNotexist() {
+	// 존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인
+	public void testBucketDeleteNotExist() {
 		var bucketName = getNewBucketNameOnly();
 		var client = getClient();
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
 
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchBucket, ErrorCode);
+		assertEquals(404, statusCode);
+		assertEquals(MainData.NoSuchBucket, errorCode);
 		deleteBucketList(bucketName);
 	}
 
 	@Test
 	@Tag("ERROR")
-	//내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인
+	// 내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인
 	public void testBucketDeleteNonempty() {
-		var bucketName = createObjects(new ArrayList<>(Arrays.asList(new String[] { "foo" })));
+		var bucketName = createObjects(List.of("foo"));
 		var client = getClient();
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
 
-		assertEquals(409, StatusCode);
-		assertEquals(MainData.BucketNotEmpty, ErrorCode);
+		assertEquals(409, statusCode);
+		assertEquals(MainData.BucketNotEmpty, errorCode);
 	}
 
 	@Test
 	@Tag("ERROR")
-	//이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인
+	// 이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인
 	public void testBucketCreateDelete() {
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -80,11 +76,11 @@ public class DeleteBucket extends TestBase
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var statusCode = e.getStatusCode();
+		var errorCode = e.getErrorCode();
 
-		assertEquals(404, StatusCode);
-		assertEquals(MainData.NoSuchBucket, ErrorCode);
+		assertEquals(404, statusCode);
+		assertEquals(MainData.NoSuchBucket, errorCode);
 		deleteBucketList(bucketName);
 	}
 }

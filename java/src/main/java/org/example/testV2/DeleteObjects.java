@@ -18,82 +18,74 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
-import software.amazon.awssdk.services.s3.model.Delete;
 
-
-public class DeleteObjects extends TestBase
-{
+public class DeleteObjects extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll()
-	{
+	public static void beforeAll() {
 		System.out.println("DeleteObjects Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	public static void afterAll()
-	{
+	public static void afterAll() {
 		System.out.println("DeleteObjects End");
 	}
 
 	@Test
 	@Tag("ListObject")
-	//버킷에 존재하는 오브젝트 여러개를 한번에 삭제
-	public void testMultiObjectDelete()
-	{
+	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
+	public void testMultiObjectDelete() {
 		var keyNames = List.of("key0", "key1", "key2");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
 		var objectList = getKeyVersions(keyNames);
-		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
 
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.contents().size());
 
-		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.contents().size());
 	}
 
 	@Test
 	@Tag("ListObjectsV2")
-	//버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
-	public void testMultiObjectv2Delete()
-	{
-		var keyNames = List.of( "key0", "key1", "key2");
+	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
+	public void testMultiObjectv2Delete() {
+		var keyNames = List.of("key0", "key1", "key2");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
+		var listResponse = client.listObjectsV2(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
 		var objectList = getKeyVersions(keyNames);
-		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
 
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjectsV2(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.contents().size());
 
-		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjectsV2(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.contents().size());
 	}
 
 	@Test
 	@Tag("Versioning")
 	// 버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제
-	public void testMultiObjectDeleteVersions()
-	{
+	public void testMultiObjectDeleteVersions() {
 		var keyNames = List.of("key0", "key1", "key2");
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -102,77 +94,75 @@ public class DeleteObjects extends TestBase
 		for (var Key : keyNames)
 			createMultipleVersions(client, bucketName, Key, 3, false);
 
-		var listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
+		var listResponse = client.listObjectsV2(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
 		var objectList = getKeyVersions(keyNames);
-		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
 
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjectsV2(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.contents().size());
 
-		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjectsV2(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.contents().size());
 	}
 
 	@Test
 	@Tag("quiet")
-	//quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
-	public void testMultiObjectDeleteQuiet()
-	{
+	// quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
+	public void testMultiObjectDeleteQuiet() {
 		var keyNames = List.of("key0", "key1", "key2");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
 		var objectList = getKeyVersions(keyNames);
-		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).quiet(true).build()).build());
+		var delResponse = client
+				.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList).quiet(true)));
 
 		assertEquals(0, delResponse.deleted().size());
 
-		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.contents().size());
 	}
 
 	@Test
 	@Tag("Directory")
-	//업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
-	public void testDirectoryDelete()
-	{
+	// 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
+	public void testDirectoryDelete() {
 		var keyNames = List.of("a/b/", "a/b/c/d/obj1", "a/b/c/d/obj2", "1/2/", "1/2/3/4/obj1", "q/w/e/r/obj");
 		var bucketName = createObjectsToBody(keyNames, "");
 		var client = getClient();
 
-		var listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
-		client.deleteObject(d -> d.bucket(bucketName).key("a/b/").build());
-		client.deleteObject(d -> d.bucket(bucketName).key("1/2/").build());
-		client.deleteObject(d -> d.bucket(bucketName).key("q/w/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("a/b/"));
+		client.deleteObject(d -> d.bucket(bucketName).key("1/2/"));
+		client.deleteObject(d -> d.bucket(bucketName).key("q/w/"));
 
-		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(4, listResponse.contents().size());
 
-		client.deleteObject(d -> d.bucket(bucketName).key("a/b/").build());
-		client.deleteObject(d -> d.bucket(bucketName).key("1/2/").build());
-		client.deleteObject(d -> d.bucket(bucketName).key("q/w/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("a/b/"));
+		client.deleteObject(d -> d.bucket(bucketName).key("1/2/"));
+		client.deleteObject(d -> d.bucket(bucketName).key("q/w/"));
 
-		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(4, listResponse.contents().size());
 	}
 
 	@Test
 	@Tag("versioning")
-	//버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
-	public void testDirectoryDeleteVersions()
-	{
+	// 버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
+	public void testDirectoryDeleteVersions() {
 		var keyNames = List.of("a/", "a/obj1", "a/obj2", "b/", "b/obj1");
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -181,27 +171,27 @@ public class DeleteObjects extends TestBase
 		for (var Key : keyNames)
 			createMultipleVersions(client, bucketName, Key, 3, false);
 
-		var listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
-		
-		var versResponse = client.listObjectVersions(l -> l.bucket(bucketName).build());
+
+		var versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(15, versResponse.versions().size());
 
-		client.deleteObject(d -> d.bucket(bucketName).key("a/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("a/"));
 
-		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(4, listResponse.contents().size());
 
-		versResponse = client.listObjectVersions(l -> l.bucket(bucketName).build());
+		versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(16, versResponse.versions().size());
 
 		var deleteList = List.of("a/obj1", "a/obj2");
 		var objectList = getKeyVersions(deleteList);
 
-		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
 		assertEquals(2, delResponse.deleted().size());
-		
-		versResponse = client.listObjectVersions(l -> l.bucket(bucketName).build());
+
+		versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(18, versResponse.versions().size());
 	}
 }

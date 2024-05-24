@@ -43,13 +43,7 @@ public class Analytics extends TestBase {
 								.dataExport(data -> data.outputSchemaVersion("V_1")
 										.destination(destination -> destination
 												.s3BucketDestination(s3 -> s3
-														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
-														.build())
-												.build())
-										.build())
-								.build())
-						.build())
-				.build());
+														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))))));
 	}
 
 	@Test
@@ -66,15 +60,9 @@ public class Analytics extends TestBase {
 								.dataExport(data -> data.outputSchemaVersion("V_1")
 										.destination(destination -> destination
 												.s3BucketDestination(s3 -> s3
-														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
-														.build())
-												.build())
-										.build())
-								.build())
-						.build())
-				.build());
+														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))))));
 
-		var response = client.getBucketAnalyticsConfiguration(g -> g.bucket(bucketName).id("test").build());
+		var response = client.getBucketAnalyticsConfiguration(g -> g.bucket(bucketName).id("test"));
 		assertEquals("test", response.analyticsConfiguration().id());
 		assertEquals("V_1", response.analyticsConfiguration().storageClassAnalysis().dataExport()
 				.outputSchemaVersion());
@@ -98,14 +86,8 @@ public class Analytics extends TestBase {
 								.dataExport(data -> data.outputSchemaVersion("V_1")
 										.destination(destination -> destination
 												.s3BucketDestination(s3 -> s3
-														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
-														.build())
-												.build())
-										.build())
-								.build())
-						.build())
-				.build());
-		var response = client.listBucketAnalyticsConfigurations(l -> l.bucket(bucketName).build());
+														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))))));
+		var response = client.listBucketAnalyticsConfigurations(l -> l.bucket(bucketName));
 		assertEquals(1, response.analyticsConfigurationList().size());
 
 		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
@@ -114,14 +96,8 @@ public class Analytics extends TestBase {
 								.dataExport(data -> data.outputSchemaVersion("V_1")
 										.destination(destination -> destination
 												.s3BucketDestination(s3 -> s3
-														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
-														.build())
-												.build())
-										.build())
-								.build())
-						.build())
-				.build());
-		response = client.listBucketAnalyticsConfigurations(l -> l.bucket(bucketName).build());
+														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))))));
+		response = client.listBucketAnalyticsConfigurations(l -> l.bucket(bucketName));
 		assertEquals(2, response.analyticsConfigurationList().size());
 	}
 
@@ -139,14 +115,8 @@ public class Analytics extends TestBase {
 								.dataExport(data -> data.outputSchemaVersion("V_1")
 										.destination(destination -> destination
 												.s3BucketDestination(s3 -> s3
-														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
-														.build())
-												.build())
-										.build())
-								.build())
-						.build())
-				.build());
-		var response = client.listBucketAnalyticsConfigurations(l -> l.bucket(bucketName).build());
+														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))))));
+		var response = client.listBucketAnalyticsConfigurations(l -> l.bucket(bucketName));
 		assertEquals(1, response.analyticsConfigurationList().size());
 		assertEquals("test", response.analyticsConfigurationList().get(0).id());
 		assertEquals("V_1", response.analyticsConfigurationList().get(0).storageClassAnalysis().dataExport()
@@ -171,16 +141,10 @@ public class Analytics extends TestBase {
 								.dataExport(data -> data.outputSchemaVersion("V_1")
 										.destination(destination -> destination
 												.s3BucketDestination(s3 -> s3
-														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
-														.build())
-												.build())
-										.build())
-								.build())
-						.build())
-				.build());
-		client.deleteBucketAnalyticsConfiguration(d -> d.bucket(bucketName).id("test").build());
+														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))))));
+		client.deleteBucketAnalyticsConfiguration(d -> d.bucket(bucketName).id("test"));
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.getBucketAnalyticsConfiguration(g -> g.bucket(bucketName).id("test").build()));
+				() -> client.getBucketAnalyticsConfiguration(g -> g.bucket(bucketName).id("test")));
 		assertEquals(404, e.statusCode());
 		assertEquals("NoSuchConfiguration", e.getMessage());
 	}
@@ -201,13 +165,7 @@ public class Analytics extends TestBase {
 												.destination(destination -> destination
 														.s3BucketDestination(s3 -> s3
 																.bucket("arn:aws:s3:::" + targetBucketName)
-																.format("CSV")
-																.build())
-														.build())
-												.build())
-										.build())
-								.build())
-						.build()));
+																.format("CSV"))))))));
 		assertEquals(400, e.statusCode());
 		assertEquals("MalformedXML", e.getMessage());
 
@@ -219,13 +177,7 @@ public class Analytics extends TestBase {
 												.destination(destination -> destination
 														.s3BucketDestination(s3 -> s3
 																.bucket("arn:aws:s3:::" + targetBucketName)
-																.format("CSV")
-																.build())
-														.build())
-												.build())
-										.build())
-								.build())
-						.build()));
+																.format("CSV"))))))));
 		assertEquals(400, e.statusCode());
 		assertEquals("InvalidConfigurationId", e.getMessage());
 
@@ -237,13 +189,7 @@ public class Analytics extends TestBase {
 												.destination(destination -> destination
 														.s3BucketDestination(s3 -> s3
 																.bucket("arn:aws:s3:::" + targetBucketName)
-																.format("JSON")
-																.build())
-														.build())
-												.build())
-										.build())
-								.build())
-						.build()));
+																.format("JSON"))))))));
 		assertEquals(400, e.statusCode());
 		assertEquals("MalformedXML", e.getMessage());
 	}

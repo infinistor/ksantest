@@ -29,7 +29,6 @@ import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.Grant;
 import software.amazon.awssdk.services.s3.model.Grantee;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
-import software.amazon.awssdk.services.s3.model.Owner;
 import software.amazon.awssdk.services.s3.model.Permission;
 
 public class Grants extends TestBase {
@@ -50,7 +49,7 @@ public class Grants extends TestBase {
 		var bucketName = getNewBucket();
 
 		var client = getClient();
-		var response = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
 
 		var user = config.mainUser.toGrantee();
 
@@ -71,8 +70,8 @@ public class Grants extends TestBase {
 		var bucketName = getNewBucketName();
 
 		var client = getClient();
-		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
-		var response = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
 
 		var user = config.mainUser.toGrantee();
 
@@ -91,8 +90,8 @@ public class Grants extends TestBase {
 		var bucketName = getNewBucketName();
 
 		var client = getClient();
-		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
-		var response = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
 
 		var user = config.mainUser.toGrantee();
 
@@ -102,8 +101,8 @@ public class Grants extends TestBase {
 		myGrants.add(Grant.builder().grantee(createPublicGrantee()).permission(Permission.READ).build());
 		checkGrants(myGrants, new ArrayList<>(getGrants));
 
-		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE).build());
-		response = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE));
+		response = client.getBucketAcl(g -> g.bucket(bucketName));
 		getGrants = response.grants();
 
 		myGrants.clear();
@@ -118,9 +117,8 @@ public class Grants extends TestBase {
 		var bucketName = getNewBucketName();
 
 		var client = getClient();
-		client.createBucket(
-				c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE).build());
-		var response = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
 
 		var user = config.mainUser.toGrantee();
 
@@ -140,9 +138,8 @@ public class Grants extends TestBase {
 		var bucketName = getNewBucketName();
 
 		var client = getClient();
-		client.createBucket(
-				c -> c.bucket(bucketName).acl(BucketCannedACL.AUTHENTICATED_READ).build());
-		var response = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.AUTHENTICATED_READ));
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
 
 		var user = config.mainUser.toGrantee();
 
@@ -161,8 +158,8 @@ public class Grants extends TestBase {
 		var client = getClient();
 
 		var key = "foo";
-		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		var user = config.mainUser.toGrantee();
 
@@ -180,10 +177,9 @@ public class Grants extends TestBase {
 		var client = getClient();
 
 		var key = "foo";
-		client.putObject(
-				p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
 				RequestBody.fromString("bar"));
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		var user = config.mainUser.toGrantee();
 
@@ -203,10 +199,9 @@ public class Grants extends TestBase {
 		var client = getClient();
 
 		var key = "foo";
-		client.putObject(
-				p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
 				RequestBody.fromString("bar"));
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		var user = config.mainUser.toGrantee();
 
@@ -216,9 +211,8 @@ public class Grants extends TestBase {
 		myGrants.add(Grant.builder().grantee(user).permission(Permission.READ).build());
 		checkGrants(myGrants, new ArrayList<>(getGrants));
 
-		client.putObjectAcl(
-				p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PRIVATE).build());
-		response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PRIVATE));
+		response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		getGrants = response.grants();
 		myGrants.clear();
@@ -235,10 +229,9 @@ public class Grants extends TestBase {
 		var client = getClient();
 
 		var key = "foo";
-		client.putObject(
-				p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ_WRITE).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ_WRITE),
 				RequestBody.fromString("bar"));
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		var user = config.mainUser.toGrantee();
 
@@ -259,10 +252,9 @@ public class Grants extends TestBase {
 		var client = getClient();
 
 		var key = "foo";
-		client.putObject(
-				p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.AUTHENTICATED_READ).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.AUTHENTICATED_READ),
 				RequestBody.fromString("bar"));
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		var user = config.mainUser.toGrantee();
 
@@ -285,25 +277,18 @@ public class Grants extends TestBase {
 		var altClient = getAltClient();
 		var key = "foo";
 
-		mainClient.createBucket(
-				c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE).build());
-		altClient.putObject(p -> p.bucket(bucketName).key(key).build(),
-				RequestBody.fromString("bar"));
+		mainClient.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
+		altClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var bucketACLResponse = mainClient.getBucketAcl(g -> g.bucket(bucketName).build());
+		var bucketACLResponse = mainClient.getBucketAcl(g -> g.bucket(bucketName));
 		var owner = Grantee.builder()
 				.id(bucketACLResponse.owner().id())
 				.displayName(bucketACLResponse.owner().displayName())
 				.build();
 
-		altClient.putObject(
-				p -> p
-						.bucket(bucketName)
-						.key(key)
-						.acl(ObjectCannedACL.BUCKET_OWNER_READ)
-						.build(),
+		altClient.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.BUCKET_OWNER_READ),
 				RequestBody.fromString("bar"));
-		var response = altClient.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		var response = altClient.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		var user = config.altUser.toGrantee();
 
@@ -326,25 +311,18 @@ public class Grants extends TestBase {
 		var altClient = getAltClient();
 		var key = "foo";
 
-		mainClient.createBucket(
-				c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE).build());
-		altClient.putObject(p -> p.bucket(bucketName).key(key).build(),
-				RequestBody.fromString("bar"));
+		mainClient.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
+		altClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var bucketACLResponse = mainClient.getBucketAcl(g -> g.bucket(bucketName).build());
+		var bucketACLResponse = mainClient.getBucketAcl(g -> g.bucket(bucketName));
 		var owner = Grantee.builder()
 				.id(bucketACLResponse.owner().id())
 				.displayName(bucketACLResponse.owner().displayName())
 				.build();
 
-		altClient.putObject(
-				p -> p
-						.bucket(bucketName)
-						.key(key)
-						.acl(ObjectCannedACL.BUCKET_OWNER_FULL_CONTROL)
-						.build(),
+		altClient.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.BUCKET_OWNER_FULL_CONTROL),
 				RequestBody.fromString("bar"));
-		var response = altClient.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		var response = altClient.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		var user = config.altUser.toGrantee();
 
@@ -367,10 +345,8 @@ public class Grants extends TestBase {
 		var altClient = getAltClient();
 		var key = "foo";
 
-		mainClient.createBucket(
-				c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE).build());
-		mainClient.putObject(p -> p.bucket(bucketName).key(key).build(),
-				RequestBody.fromString("bar"));
+		mainClient.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
+		mainClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
 		var altUser = config.altUser.toGrantee();
 
@@ -378,16 +354,14 @@ public class Grants extends TestBase {
 				.owner(config.mainUser.toOwner())
 				.grants(Grant.builder().grantee(altUser).permission(Permission.FULL_CONTROL).build()).build();
 
-		mainClient.putObjectAcl(p -> p.bucket(bucketName).key(key)
-				.accessControlPolicy(accessControlList).build());
+		mainClient.putObjectAcl(p -> p.bucket(bucketName).key(key).accessControlPolicy(accessControlList));
 		var accessControlList2 = AccessControlPolicy.builder()
 				.owner(config.mainUser.toOwner())
 				.grants(Grant.builder().grantee(altUser).permission(Permission.READ_ACP).build()).build();
 
-		altClient.putObjectAcl(p -> p.bucket(bucketName).key(key)
-				.accessControlPolicy(accessControlList2).build());
+		altClient.putObjectAcl(p -> p.bucket(bucketName).key(key).accessControlPolicy(accessControlList2).build());
 
-		var response = altClient.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		var response = altClient.getObjectAcl(g -> g.bucket(bucketName).key(key));
 		assertEquals(config.mainUser.userId, response.owner().id());
 	}
 
@@ -399,13 +373,10 @@ public class Grants extends TestBase {
 		var mainClient = getClient();
 		var key = "foo";
 
-		mainClient.createBucket(
-				c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE).build());
+		mainClient.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
+		mainClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		mainClient.putObject(p -> p.bucket(bucketName).key(key).build(),
-				RequestBody.fromString("bar"));
-
-		var response = mainClient.getObject(g -> g.bucket(bucketName).key(key).build());
+		var response = mainClient.getObject(g -> g.bucket(bucketName).key(key));
 		var contentType = response.response().contentType();
 		var eTag = response.response().eTag();
 
@@ -414,10 +385,9 @@ public class Grants extends TestBase {
 		var accessControlList = addObjectUserGrant(bucketName, key,
 				Grant.builder().grantee(altUser).permission(Permission.FULL_CONTROL).build());
 
-		mainClient.putObjectAcl(p -> p.bucket(bucketName).key(key)
-				.accessControlPolicy(accessControlList).build());
+		mainClient.putObjectAcl(p -> p.bucket(bucketName).key(key).accessControlPolicy(accessControlList));
 
-		response = mainClient.getObject(g -> g.bucket(bucketName).key(key).build());
+		response = mainClient.getObject(g -> g.bucket(bucketName).key(key));
 		assertEquals(contentType, response.response().contentType());
 		assertEquals(eTag, response.response().eTag());
 	}
@@ -429,7 +399,7 @@ public class Grants extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE).build());
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE));
 	}
 
 	@Test
@@ -480,7 +450,7 @@ public class Grants extends TestBase {
 
 		var client = getClient();
 
-		var bucketACLResponse = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		var bucketACLResponse = client.getBucketAcl(g -> g.bucket(bucketName));
 		var ownerId = bucketACLResponse.owner().id();
 		var ownerDisplayName = bucketACLResponse.owner().displayName();
 
@@ -551,8 +521,8 @@ public class Grants extends TestBase {
 		var accessControlList = addBucketUserGrant(bucketName,
 				Grant.builder().grantee(badUser).permission(Permission.FULL_CONTROL).build());
 
-		var e = assertThrows(AwsServiceException.class, () -> client.putBucketAcl(
-				p -> p.bucket(bucketName).accessControlPolicy(accessControlList).build()));
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(accessControlList)));
 		var statusCode = e.statusCode();
 		var errorCode = e.getMessage();
 		assertEquals(400, statusCode);
@@ -567,8 +537,8 @@ public class Grants extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
-		var response = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
 		var oldGrants = response.grants();
 		var policy = AccessControlPolicy.builder().owner(response.owner());
 
@@ -576,12 +546,11 @@ public class Grants extends TestBase {
 				p -> p.bucket(bucketName).accessControlPolicy(policy.build()).build());
 
 		assertThrows(AwsServiceException.class,
-				() -> client.putObject(p -> p.bucket(bucketName).key(key).build(),
-						RequestBody.fromString("A")));
+				() -> client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("A")));
 
 		var client2 = getClient();
-		client2.getBucketAcl(g -> g.bucket(bucketName).build());
-		client2.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE).build());
+		client2.getBucketAcl(g -> g.bucket(bucketName));
+		client2.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE));
 
 		policy.grants(oldGrants);
 		client2.putBucketAcl(
@@ -597,18 +566,14 @@ public class Grants extends TestBase {
 		var key = "foo";
 		var altUser = config.altUser.toGrantee();
 
-		client.putObject(
-				p -> p
-						.bucket(bucketName)
-						.key(key)
-						.grantFullControl(config.altUser.userId)
-						.grantRead(config.altUser.userId)
-						.grantReadACP(config.altUser.userId)
-						.grantWriteACP(config.altUser.userId)
-						.build(),
+		client.putObject(p -> p.bucket(bucketName).key(key)
+				.grantFullControl(config.altUser.userId)
+				.grantRead(config.altUser.userId)
+				.grantReadACP(config.altUser.userId)
+				.grantWriteACP(config.altUser.userId),
 				RequestBody.fromString("bar"));
 
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
+		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		var getGrants = response.grants();
 		var myGrants = new ArrayList<Grant>();
@@ -634,7 +599,7 @@ public class Grants extends TestBase {
 				.grantWrite(config.altUser.userId)
 				.grantWriteACP(config.altUser.userId)
 				.build());
-		var response = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
 
 		var getGrants = response.grants();
 		var myGrants = new ArrayList<Grant>();
@@ -653,28 +618,12 @@ public class Grants extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(p -> p.bucket(bucketName).key("foo").build(),
-				RequestBody.fromString("bar"));
-		var response = client.getBucketAcl(g -> g.bucket(bucketName).build());
+		client.putObject(p -> p.bucket(bucketName).key("foo"), RequestBody.fromString("bar"));
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
 
-		var acl1 = AccessControlPolicy.builder();
-		acl1.owner(Owner.builder().build());
-		acl1.grants(response.grants());
-
-		assertThrows(AwsServiceException.class, () -> client.putBucketAcl(
-				p -> p.bucket(bucketName).accessControlPolicy(acl1.build()).build()));
-
-		var acl2 = AccessControlPolicy.builder();
-		acl2.owner(response.owner());
-
-		client.putBucketAcl(
-				p -> p.bucket(bucketName).accessControlPolicy(acl2.build()).build());
-
-		var acl3 = AccessControlPolicy.builder();
-		acl3.owner(Owner.builder().build());
-
-		assertThrows(AwsServiceException.class, () -> client.putBucketAcl(
-				p -> p.bucket(bucketName).accessControlPolicy(acl3.build()).build()));
+		assertThrows(AwsServiceException.class,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName)
+						.accessControlPolicy(a -> a.owner(o -> o.build()).grants(response.grants()))));
 	}
 
 	@Test
@@ -685,16 +634,13 @@ public class Grants extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).build());
-
-		var acl1 = AccessControlPolicy.builder();
-		acl1.owner(Owner.builder().build());
-		acl1.grants(response.grants());
+		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
 		assertThrows(AwsServiceException.class, () -> client.putObjectAcl(
-				p -> p.bucket(bucketName).key(key).accessControlPolicy(acl1.build()).build()));
+				p -> p.bucket(bucketName).key(key)
+						.accessControlPolicy(a -> a.owner(o -> o.build()).grants(response.grants()))));
 	}
 
 	@Test
@@ -710,21 +656,20 @@ public class Grants extends TestBase {
 		var altClient = getAltClient();
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.getObject(g -> g.bucket(bucketName).key(key1).build()));
+				() -> altClient.getObject(g -> g.bucket(bucketName).key(key1)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.listObjects(l -> l.bucket(bucketName).build()));
+				() -> altClient.listObjects(l -> l.bucket(bucketName)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		var altClient2 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey),
 						RequestBody.fromString("new-content")));
 	}
 
@@ -741,22 +686,21 @@ public class Grants extends TestBase {
 		var altClient = getAltClient();
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.getObject(g -> g.bucket(bucketName).key(key1).build()));
+				() -> altClient.getObject(g -> g.bucket(bucketName).key(key1)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.listObjects(l -> l.bucket(bucketName).build()));
+				() -> altClient.listObjects(l -> l.bucket(bucketName)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		var altClient2 = getAltClient();
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey),
 						RequestBody.fromString("new-content")));
 	}
 
@@ -771,27 +715,26 @@ public class Grants extends TestBase {
 		var newKey = "new";
 		var bucketName = setupAccessTest(key1, key2, BucketCannedACL.PRIVATE, ObjectCannedACL.PUBLIC_READ);
 		var altClient = getAltClient();
-		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1).build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1));
 
 		var body = getBody(response);
 		assertEquals(key1, body);
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		var altClient2 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var altClient3 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient3.listObjects(l -> l.bucket(bucketName).build()));
+				() -> altClient3.listObjects(l -> l.bucket(bucketName)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey),
 						RequestBody.fromString("new-content")));
 	}
 
@@ -807,27 +750,26 @@ public class Grants extends TestBase {
 		var newKey = "new";
 		var bucketName = setupAccessTest(key1, key2, BucketCannedACL.PRIVATE, ObjectCannedACL.PUBLIC_READ);
 		var altClient = getAltClient();
-		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1).build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1));
 
 		var body = getBody(response);
 		assertEquals(key1, body);
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		var altClient2 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var altClient3 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient3.listObjects(l -> l.bucket(bucketName).build()));
+				() -> altClient3.listObjects(l -> l.bucket(bucketName)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey),
 						RequestBody.fromString("new-content")));
 	}
 
@@ -843,27 +785,26 @@ public class Grants extends TestBase {
 		var newKey = "new";
 		var bucketName = setupAccessTest(key1, key2, BucketCannedACL.PRIVATE, ObjectCannedACL.PUBLIC_READ_WRITE);
 		var altClient = getAltClient();
-		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1).build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1));
 
 		var body = getBody(response);
 		assertEquals(key1, body);
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		var altClient2 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var altClient3 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient3.listObjects(l -> l.bucket(bucketName).build()));
+				() -> altClient3.listObjects(l -> l.bucket(bucketName)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey),
 						RequestBody.fromString("new-content")));
 	}
 
@@ -880,27 +821,26 @@ public class Grants extends TestBase {
 		var newKey = "new";
 		var bucketName = setupAccessTest(key1, key2, BucketCannedACL.PRIVATE, ObjectCannedACL.PUBLIC_READ_WRITE);
 		var altClient = getAltClient();
-		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1).build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1));
 
 		var body = getBody(response);
 		assertEquals(key1, body);
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		var altClient2 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var altClient3 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient3.listObjects(l -> l.bucket(bucketName).build()));
+				() -> altClient3.listObjects(l -> l.bucket(bucketName)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey),
 						RequestBody.fromString("new-content")));
 	}
 
@@ -916,24 +856,23 @@ public class Grants extends TestBase {
 		var altClient = getAltClient();
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.getObject(g -> g.bucket(bucketName).key(key1).build()));
+				() -> altClient.getObject(g -> g.bucket(bucketName).key(key1)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		var altClient2 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var altClient3 = getAltClient();
 		var objList = getKeys(
-				altClient3.listObjects(l -> l.bucket(bucketName).build()).contents());
+				altClient3.listObjects(l -> l.bucket(bucketName)).contents());
 		assertEquals(List.of(key2, key1), objList);
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey),
 						RequestBody.fromString("new-content")));
 	}
 
@@ -950,27 +889,26 @@ public class Grants extends TestBase {
 				ObjectCannedACL.PUBLIC_READ);
 		var altClient = getAltClient();
 
-		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1).build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1));
 		var body = getBody(response);
 		assertEquals(key1, body);
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		var altClient2 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var altClient3 = getAltClient();
 		var objList = getKeys(
-				altClient3.listObjects(l -> l.bucket(bucketName).build()).contents());
+				altClient3.listObjects(l -> l.bucket(bucketName)).contents());
 		assertEquals(List.of(key2, key1), objList);
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey),
 						RequestBody.fromString("new-content")));
 	}
 
@@ -989,27 +927,26 @@ public class Grants extends TestBase {
 				ObjectCannedACL.PUBLIC_READ_WRITE);
 		var altClient = getAltClient();
 
-		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1).build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1));
 		var body = getBody(response);
 		assertEquals(key1, body);
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		var altClient2 = getAltClient();
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient2.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var altClient3 = getAltClient();
 		var objList = getKeys(
-				altClient3.listObjects(l -> l.bucket(bucketName).build()).contents());
+				altClient3.listObjects(l -> l.bucket(bucketName)).contents());
 		assertEquals(List.of(key2, key1), objList);
 		assertThrows(AwsServiceException.class,
-				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey).build(),
+				() -> altClient2.putObject(p -> p.bucket(bucketName).key(newKey),
 						RequestBody.fromString("new-content")));
 	}
 
@@ -1027,22 +964,20 @@ public class Grants extends TestBase {
 		var altClient = getAltClient();
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.getObject(g -> g.bucket(bucketName).key(key1).build()));
+				() -> altClient.getObject(g -> g.bucket(bucketName).key(key1)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var objList = getKeys(
-				altClient.listObjects(l -> l.bucket(bucketName).build()).contents());
+				altClient.listObjects(l -> l.bucket(bucketName)).contents());
 		assertEquals(List.of(key2, key1), objList);
-		altClient.putObject(p -> p.bucket(bucketName).key(newKey).build(),
-				RequestBody.fromString("new-content"));
+		altClient.putObject(p -> p.bucket(bucketName).key(newKey), RequestBody.fromString("new-content"));
 	}
 
 	@SuppressWarnings("resource")
@@ -1059,24 +994,22 @@ public class Grants extends TestBase {
 				ObjectCannedACL.PUBLIC_READ);
 		var altClient = getAltClient();
 
-		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1).build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1));
 		var body = getBody(response);
 		assertEquals(key1, body);
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var objects = getKeys(
-				altClient.listObjects(l -> l.bucket(bucketName).build()).contents());
+				altClient.listObjects(l -> l.bucket(bucketName)).contents());
 		assertEquals(List.of(key2, key1), objects);
-		altClient.putObject(p -> p.bucket(bucketName).key(newKey).build(),
-				RequestBody.fromString("new-content"));
+		altClient.putObject(p -> p.bucket(bucketName).key(newKey), RequestBody.fromString("new-content"));
 	}
 
 	@SuppressWarnings("resource")
@@ -1094,23 +1027,21 @@ public class Grants extends TestBase {
 				ObjectCannedACL.PUBLIC_READ_WRITE);
 		var altClient = getAltClient();
 
-		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1).build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key1));
 		var body = getBody(response);
 		assertEquals(key1, body);
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1).build(),
-						RequestBody.fromString("overwrite")));
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("overwrite")));
 
 		assertThrows(AwsServiceException.class,
-				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2).build()));
+				() -> altClient.getObject(g -> g.bucket(bucketName).key(key2)));
 		assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key2).build(),
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key2),
 						RequestBody.fromString("alt-overwrite")));
 
 		var objects = getKeys(
-				altClient.listObjects(l -> l.bucket(bucketName).build()).contents());
+				altClient.listObjects(l -> l.bucket(bucketName)).contents());
 		assertEquals(List.of(key2, key1), objects);
-		altClient.putObject(p -> p.bucket(bucketName).key(newKey).build(),
-				RequestBody.fromString("new-content"));
+		altClient.putObject(p -> p.bucket(bucketName).key(newKey), RequestBody.fromString("new-content"));
 	}
 }

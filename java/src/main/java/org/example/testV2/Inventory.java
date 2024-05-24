@@ -22,17 +22,10 @@ import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.services.s3.model.DeleteBucketInventoryConfigurationRequest;
-import software.amazon.awssdk.services.s3.model.GetBucketInventoryConfigurationRequest;
 import software.amazon.awssdk.services.s3.model.InventoryConfiguration;
-import software.amazon.awssdk.services.s3.model.InventoryDestination;
 import software.amazon.awssdk.services.s3.model.InventoryFrequency;
 import software.amazon.awssdk.services.s3.model.InventoryIncludedObjectVersions;
 import software.amazon.awssdk.services.s3.model.InventoryOptionalField;
-import software.amazon.awssdk.services.s3.model.InventoryS3BucketDestination;
-import software.amazon.awssdk.services.s3.model.InventorySchedule;
-import software.amazon.awssdk.services.s3.model.ListBucketInventoryConfigurationsRequest;
-import software.amazon.awssdk.services.s3.model.PutBucketInventoryConfigurationRequest;
 
 public class Inventory extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -52,8 +45,7 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = getNewBucket();
 
-		var response = client.listBucketInventoryConfigurations(
-				ListBucketInventoryConfigurationsRequest.builder().bucket(bucketName).build());
+		var response = client.listBucketInventoryConfigurations(l -> l.bucket(bucketName));
 		assertNull(response.inventoryConfigurationList());
 	}
 
@@ -69,20 +61,11 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
-		client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
-				.bucket(bucketName)
-				.inventoryConfiguration(inventory)
-				.build());
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
+		client.putBucketInventoryConfiguration(p -> p.bucket(bucketName).inventoryConfiguration(inventory.build()));
 	}
 
 	@Test
@@ -97,23 +80,15 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
-		client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
+		client.putBucketInventoryConfiguration(p -> p
 				.bucket(bucketName)
-				.inventoryConfiguration(inventory)
-				.build());
+				.inventoryConfiguration(inventory.build()));
 
-		var response = client.listBucketInventoryConfigurations(
-				ListBucketInventoryConfigurationsRequest.builder().bucket(bucketName).build());
+		var response = client.listBucketInventoryConfigurations(l -> l.bucket(bucketName));
 		assertEquals(1, response.inventoryConfigurationList().size());
 	}
 
@@ -129,25 +104,15 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
-		client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
+		client.putBucketInventoryConfiguration(p -> p
 				.bucket(bucketName)
-				.inventoryConfiguration(inventory)
-				.build());
+				.inventoryConfiguration(inventory.build()));
 
-		var response = client.getBucketInventoryConfiguration(GetBucketInventoryConfigurationRequest.builder()
-				.bucket(bucketName)
-				.id(inventoryId)
-				.build());
+		var response = client.getBucketInventoryConfiguration(g -> g.bucket(bucketName).id(inventoryId));
 		assertEquals(inventoryId, response.inventoryConfiguration().id());
 	}
 
@@ -163,27 +128,16 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
-		client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
+		client.putBucketInventoryConfiguration(p -> p
 				.bucket(bucketName)
-				.inventoryConfiguration(inventory)
-				.build());
+				.inventoryConfiguration(inventory.build()));
 
-		client.deleteBucketInventoryConfiguration(DeleteBucketInventoryConfigurationRequest.builder()
-				.bucket(bucketName)
-				.id(inventoryId)
-				.build());
-		var response = client.listBucketInventoryConfigurations(
-				ListBucketInventoryConfigurationsRequest.builder().bucket(bucketName).build());
+		client.deleteBucketInventoryConfiguration(d -> d.bucket(bucketName).id(inventoryId));
+		var response = client.listBucketInventoryConfigurations(l -> l.bucket(bucketName));
 		assertNull(response.inventoryConfigurationList());
 	}
 
@@ -196,10 +150,9 @@ public class Inventory extends TestBase {
 		var inventoryId = "my-inventory";
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.getBucketInventoryConfiguration(GetBucketInventoryConfigurationRequest.builder()
+				() -> client.getBucketInventoryConfiguration(g -> g
 						.bucket(bucketName)
-						.id(inventoryId)
-						.build()));
+						.id(inventoryId)));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchConfiguration, e.getMessage());
@@ -214,10 +167,7 @@ public class Inventory extends TestBase {
 		var inventoryId = "my-inventory";
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.deleteBucketInventoryConfiguration(DeleteBucketInventoryConfigurationRequest.builder()
-						.bucket(bucketName)
-						.id(inventoryId)
-						.build()));
+				() -> client.deleteBucketInventoryConfiguration(d -> d.bucket(bucketName).id(inventoryId)));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchConfiguration, e.getMessage());
@@ -235,22 +185,14 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
-						.bucket(bucketName)
-						.inventoryConfiguration(inventory)
-						.build()));
+				() -> client.putBucketInventoryConfiguration(
+						p -> p.bucket(bucketName).inventoryConfiguration(inventory.build())));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchBucket, e.getMessage());
@@ -268,22 +210,15 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+				() -> client.putBucketInventoryConfiguration(p -> p
 						.bucket(bucketName)
-						.inventoryConfiguration(inventory)
-						.build()));
+						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
 		assertEquals(MainData.InvalidConfigurationId, e.getMessage());
@@ -300,44 +235,27 @@ public class Inventory extends TestBase {
 
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
-				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+				.destination(d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
-		client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+		client.putBucketInventoryConfiguration(p -> p
 				.bucket(bucketName)
-				.inventoryConfiguration(inventory)
-				.build());
+				.inventoryConfiguration(inventory.build()));
 
 		var inventory2 = InventoryConfiguration.builder()
 				.id(inventoryId)
-				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+				.destination(d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
-		client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+		client.putBucketInventoryConfiguration(p -> p
 				.bucket(bucketName)
-				.inventoryConfiguration(inventory2)
-				.build());
+				.inventoryConfiguration(inventory2.build()));
 
-		var response = client.listBucketInventoryConfigurations(
-				ListBucketInventoryConfigurationsRequest.builder().bucket(bucketName).build());
+		var response = client.listBucketInventoryConfigurations(l -> l.bucket(bucketName));
 
 		assertEquals(2, response.inventoryConfigurationList().size());
 	}
@@ -355,22 +273,15 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+				() -> client.putBucketInventoryConfiguration(p -> p
 						.bucket(bucketName)
-						.inventoryConfiguration(inventory)
-						.build()));
+						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchBucket, e.getMessage());
@@ -388,22 +299,15 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("JSON")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("JSON")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+				() -> client.putBucketInventoryConfiguration(p -> p
 						.bucket(bucketName)
-						.inventoryConfiguration(inventory)
-						.build()));
+						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
 		assertEquals(MainData.MalformedXML, e.getMessage());
@@ -421,22 +325,15 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency("Hourly").build())
-				.build();
+				.schedule(s -> s.frequency("Hourly"));
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+				() -> client.putBucketInventoryConfiguration(p -> p
 						.bucket(bucketName)
-						.inventoryConfiguration(inventory)
-						.build()));
+						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
 		assertEquals(MainData.MalformedXML, e.getMessage());
@@ -454,22 +351,15 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions("CUrrENT")
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+				() -> client.putBucketInventoryConfiguration(p -> p
 						.bucket(bucketName)
-						.inventoryConfiguration(inventory)
-						.build()));
+						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
 		assertEquals(MainData.MalformedXML, e.getMessage());
@@ -489,27 +379,19 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.prefix(inventoryPrefix)
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
+								.prefix(inventoryPrefix)))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
-		client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+		client.putBucketInventoryConfiguration(p -> p
 				.bucket(bucketName)
-				.inventoryConfiguration(inventory)
-				.build());
+				.inventoryConfiguration(inventory.build()));
 
-		var result = client.getBucketInventoryConfiguration(GetBucketInventoryConfigurationRequest.builder()
+		var result = client.getBucketInventoryConfiguration(g -> g
 				.bucket(bucketName)
-				.id(inventoryId)
-				.build());
+				.id(inventoryId));
 
 		assertEquals(inventoryId, result.inventoryConfiguration().id());
 		assertEquals(inventoryPrefix,
@@ -533,28 +415,20 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.prefix(inventoryPrefix)
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
+								.prefix(inventoryPrefix)))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.optionalFields(inventoryOptionalFields)
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY))
+				.optionalFields(inventoryOptionalFields);
 
-		client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+		client.putBucketInventoryConfiguration(p -> p
 				.bucket(bucketName)
-				.inventoryConfiguration(inventory)
-				.build());
+				.inventoryConfiguration(inventory.build()));
 
-		var result = client.getBucketInventoryConfiguration(GetBucketInventoryConfigurationRequest.builder()
+		var result = client.getBucketInventoryConfiguration(g -> g
 				.bucket(bucketName)
-				.id(inventoryId)
-				.build());
+				.id(inventoryId));
 
 		assertEquals(inventoryId, result.inventoryConfiguration().id());
 		assertEquals(inventoryPrefix,
@@ -579,24 +453,17 @@ public class Inventory extends TestBase {
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
 				.destination(
-						InventoryDestination.builder()
-								.s3BucketDestination(InventoryS3BucketDestination.builder()
-										.bucket("arn:aws:s3:::" + targetBucketName)
-										.format("CSV")
-										.prefix(inventoryPrefix)
-										.build())
-								.build())
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
+								.prefix(inventoryPrefix)))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(InventorySchedule.builder().frequency(InventoryFrequency.DAILY).build())
-				.optionalFields(inventoryOptionalFields)
-				.build();
+				.schedule(s -> s.frequency(InventoryFrequency.DAILY))
+				.optionalFields(inventoryOptionalFields);
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketInventoryConfiguration(PutBucketInventoryConfigurationRequest.builder()
+				() -> client.putBucketInventoryConfiguration(p -> p
 						.bucket(bucketName)
-						.inventoryConfiguration(inventory)
-						.build()));
+						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
 		assertEquals(MainData.MalformedXML, e.getMessage());
