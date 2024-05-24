@@ -26,21 +26,11 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
-import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
-import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.Grant;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.Permission;
-import software.amazon.awssdk.services.s3.model.PutBucketAclRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectAclRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Execution(ExecutionMode.CONCURRENT)
 public class CopyObject extends TestBase {
@@ -63,14 +53,14 @@ public class CopyObject extends TestBase {
 		var bucketName = createObjects(List.of(key));
 		var client = getClient();
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.empty());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.empty());
 
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key)
 				.destinationBucket(bucketName).destinationKey(newKey)
 				.build());
 
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(newKey).build());
+		var response = client.getObject(g -> g.bucket(bucketName).key(newKey).build());
 		assertEquals(0, response.response().contentLength());
 	}
 
@@ -83,14 +73,14 @@ public class CopyObject extends TestBase {
 		var key = "foo123bar";
 		var newKey = "bar321foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("foo"));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("foo"));
 
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key)
 				.destinationBucket(bucketName).destinationKey(newKey)
 				.build());
 
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(newKey).build());
+		var response = client.getObject(g -> g.bucket(bucketName).key(newKey).build());
 		assertEquals("foo", getBody(response));
 	}
 
@@ -104,14 +94,14 @@ public class CopyObject extends TestBase {
 		var newKey = "bar321foo";
 		var contentType = "text/bla";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentType(contentType).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key).contentType(contentType).build(),
 				RequestBody.fromString("foo"));
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key)
 				.destinationBucket(bucketName).destinationKey(newKey)
 				.build());
 
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(newKey).build());
+		var response = client.getObject(g -> g.bucket(bucketName).key(newKey).build());
 		assertEquals("foo", getBody(response));
 		assertEquals(contentType, response.response().contentType());
 	}
@@ -124,9 +114,9 @@ public class CopyObject extends TestBase {
 		var client = getClient();
 		var key = "foo123bar";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.empty());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.empty());
 
-		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(CopyObjectRequest.builder()
+		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key).destinationBucket(bucketName).destinationKey(key).build()));
 		var statusCode = e.statusCode();
 		var errorCode = e.getMessage();
@@ -143,17 +133,17 @@ public class CopyObject extends TestBase {
 		var client = getClient();
 		var key = "foo123bar";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("foo"));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("foo"));
 
 		var metaData = new HashMap<String, String>();
 		metaData.put("foo", "bar");
 
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key)
 				.destinationBucket(bucketName).destinationKey(key)
 				.metadataDirective(MetadataDirective.REPLACE)
 				.metadata(metaData).build());
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
 
 		assertEquals(metaData, response.response().metadata());
 	}
@@ -169,15 +159,15 @@ public class CopyObject extends TestBase {
 		var key2 = "bar321foo";
 
 		var client = getClient();
-		client.putObject(PutObjectRequest.builder().bucket(bucketName1).key(key1).build(),
+		client.putObject(p -> p.bucket(bucketName1).key(key1).build(),
 				RequestBody.fromString("foo"));
 
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName1).sourceKey(key1)
 				.destinationBucket(bucketName2).destinationKey(key2)
 				.build());
 
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName2).key(key2).build());
+		var response = client.getObject(g -> g.bucket(bucketName2).key(key2).build());
 		assertEquals("foo", getBody(response));
 	}
 
@@ -191,24 +181,24 @@ public class CopyObject extends TestBase {
 		var bucketName1 = getNewBucketName();
 		var bucketName2 = getNewBucketName();
 
-		client.createBucket(CreateBucketRequest.builder().bucket(bucketName1).build());
-		altClient.createBucket(CreateBucketRequest.builder().bucket(bucketName2).build());
+		client.createBucket(c -> c.bucket(bucketName1).build());
+		altClient.createBucket(c -> c.bucket(bucketName2).build());
 
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName1).key(key1).build(),
+		client.putObject(p -> p.bucket(bucketName1).key(key1).build(),
 				RequestBody.fromString("foo"));
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> altClient.copyObject(CopyObjectRequest.builder()
+				() -> altClient.copyObject(c -> c
 						.sourceBucket(bucketName1).sourceKey(key1)
 						.destinationBucket(bucketName2).destinationKey(key2)
 						.build()));
 		var statusCode = e.statusCode();
 
 		assertEquals(403, statusCode);
-		altClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName2).build());
+		altClient.deleteBucket(d -> d.bucket(bucketName2).build());
 		deleteBucketList(bucketName2);
 	}
 
@@ -220,12 +210,12 @@ public class CopyObject extends TestBase {
 		var client = getClient();
 		var altClient = getAltClient();
 		var bucketName = getNewBucketName();
-		client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
+		client.createBucket(c -> c.bucket(bucketName).build());
 
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key1).build(),
 				RequestBody.fromString("foo"));
 
 		var myGrant = Grant.builder().grantee(config.altUser.toGrantee())
@@ -233,14 +223,14 @@ public class CopyObject extends TestBase {
 				.build();
 		var grants = addObjectUserGrant(bucketName, key1, myGrant);
 		client.putObjectAcl(
-				PutObjectAclRequest.builder().bucket(bucketName).key(key1).accessControlPolicy(grants).build());
+				p -> p.bucket(bucketName).key(key1).accessControlPolicy(grants).build());
 
-		grants = addBucketUserGrant(bucketName, myGrant);
-		client.putBucketAcl(PutBucketAclRequest.builder().bucket(bucketName).accessControlPolicy(grants).build());
+		var grants2 = addBucketUserGrant(bucketName, myGrant);
+		client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(grants2).build());
 
-		altClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key1).build());
+		altClient.getObject(g -> g.bucket(bucketName).key(key1).build());
 
-		altClient.copyObject(CopyObjectRequest.builder()
+		altClient.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(key2)
 				.build());
@@ -256,27 +246,27 @@ public class CopyObject extends TestBase {
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key1).build(),
 				RequestBody.fromString("foo"));
 
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(key2)
 				.acl(ObjectCannedACL.PUBLIC_READ)
 				.build());
-		altClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
+		altClient.getObject(g -> g.bucket(bucketName).key(key2).build());
 
 		var metaData = new HashMap<String, String>();
 		metaData.put("x-amz-meta-abc", "def");
 
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(key2)
 				.acl(ObjectCannedACL.PUBLIC_READ)
 				.metadata(metaData)
 				.metadataDirective(MetadataDirective.REPLACE)
 				.build());
-		var response = altClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key2).build());
 
 		assertEquals("foo", getBody(response));
 		assertEquals("def", response.response().metadata().get("x-amz-meta-abc"));
@@ -294,22 +284,20 @@ public class CopyObject extends TestBase {
 			var key1 = "foo123bar";
 			var key2 = "bar321foo";
 
-			var metaData = new HashMap<String, String>();
-			metaData.put("x-amz-meta-key1", "value1");
-			metaData.put("x-amz-meta-key2", "value2");
+			var metadata = new HashMap<String, String>();
+			metadata.put("x-amz-meta-key1", "value1");
+			metadata.put("x-amz-meta-key2", "value2");
 
-			client.putObject(
-					PutObjectRequest.builder().bucket(bucketName).key(key1).metadata(metaData).contentType(contentType)
-							.build(),
+			client.putObject(p -> p.bucket(bucketName).key(key1).metadata(metadata).contentType(contentType).build(),
 					RequestBody.fromString(Utils.randomTextToLong(size)));
-			client.copyObject(CopyObjectRequest.builder()
+			client.copyObject(c -> c
 					.sourceBucket(bucketName).sourceKey(key1)
 					.destinationBucket(bucketName).destinationKey(key2)
 					.build());
 
-			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
+			var response = client.getObject(g -> g.bucket(bucketName).key(key2).build());
 			assertEquals(contentType, response.response().contentType());
-			assertEquals(metaData, response.response().metadata());
+			assertEquals(metadata, response.response().metadata());
 			assertEquals(size, response.response().contentLength());
 		}
 	}
@@ -330,25 +318,23 @@ public class CopyObject extends TestBase {
 			metadata.put("x-amz-meta-key1", "value1");
 			metadata.put("x-amz-meta-key2", "value2");
 
-			client.putObject(
-					PutObjectRequest.builder().bucket(bucketName).key(key1).metadata(metadata).contentType(contentType)
-							.build(),
+			client.putObject(p -> p.bucket(bucketName).key(key1).metadata(metadata).contentType(contentType).build(),
 					RequestBody.fromString(Utils.randomTextToLong(size)));
 
-			metadata = new HashMap<String, String>();
-			metadata.put("x-amz-meta-key1", "value1");
-			metadata.put("x-amz-meta-key2", "value2");
+			var metadata2 = new HashMap<String, String>();
+			metadata2.put("x-amz-meta-key3", "value3");
+			metadata2.put("x-amz-meta-key4", "value4");
 
-			client.copyObject(CopyObjectRequest.builder()
+			client.copyObject(c -> c
 					.sourceBucket(bucketName).sourceKey(key1)
 					.destinationBucket(bucketName).destinationKey(key2)
-					.metadata(metadata)
+					.metadata(metadata2)
 					.metadataDirective(MetadataDirective.REPLACE)
 					.build());
 
-			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
+			var response = client.getObject(g -> g.bucket(bucketName).key(key2).build());
 			assertEquals(contentType, response.response().contentType());
-			assertEquals(metadata, response.response().metadata());
+			assertEquals(metadata2, response.response().metadata());
 			assertEquals(size, response.response().contentLength());
 		}
 	}
@@ -360,7 +346,7 @@ public class CopyObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.copyObject(CopyObjectRequest.builder()
+				() -> client.copyObject(c -> c
 						.sourceBucket(bucketName).sourceKey("foo123bar")
 						.destinationBucket(bucketName + "-fake").destinationKey("bar321foo")
 						.build()));
@@ -376,7 +362,7 @@ public class CopyObject extends TestBase {
 		var client = getClient();
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.copyObject(CopyObjectRequest.builder()
+				() -> client.copyObject(c -> c
 						.sourceBucket(bucketName).sourceKey("foo123bar")
 						.destinationBucket(bucketName).destinationKey("bar321foo")
 						.build()));
@@ -396,60 +382,60 @@ public class CopyObject extends TestBase {
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 		var key3 = "bar321foo2";
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(), RequestBody.fromString(data));
+		client.putObject(p -> p.bucket(bucketName).key(key1).build(), RequestBody.fromString(data));
 
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key1).build());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key1).build());
 		var versionId = response.response().versionId();
 
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(key2)
 				.sourceVersionId(versionId)
 				.build());
-		response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key2).build());
+		response = client.getObject(g -> g.bucket(bucketName).key(key2).build());
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
 
 		var versionId2 = response.response().versionId();
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(key3)
 				.sourceVersionId(versionId2)
 				.build());
-		response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key3).build());
+		response = client.getObject(g -> g.bucket(bucketName).key(key3).build());
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
 
 		var bucketName2 = getNewBucket();
 		checkConfigureVersioningRetry(bucketName2, BucketVersioningStatus.ENABLED);
 		var key4 = "bar321foo3";
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName2).destinationKey(key4)
 				.sourceVersionId(versionId)
 				.build());
-		response = client.getObject(GetObjectRequest.builder().bucket(bucketName2).key(key4).build());
+		response = client.getObject(g -> g.bucket(bucketName2).key(key4).build());
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
 
 		var bucketName3 = getNewBucket();
 		checkConfigureVersioningRetry(bucketName3, BucketVersioningStatus.ENABLED);
 		var key5 = "bar321foo4";
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName3).destinationKey(key5)
 				.sourceVersionId(versionId)
 				.build());
-		response = client.getObject(GetObjectRequest.builder().bucket(bucketName3).key(key5).build());
+		response = client.getObject(g -> g.bucket(bucketName3).key(key5).build());
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
 
 		var key6 = "foo123bar2";
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(key6)
 				.build());
-		response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key6).build());
+		response = client.getObject(g -> g.bucket(bucketName).key(key6).build());
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
 	}
@@ -463,17 +449,17 @@ public class CopyObject extends TestBase {
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var sourceKey = "foo?bar";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(sourceKey).build(),
+		client.putObject(p -> p.bucket(bucketName).key(sourceKey).build(),
 				RequestBody.fromString("foo"));
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(sourceKey).build());
+		var response = client.getObject(g -> g.bucket(bucketName).key(sourceKey).build());
 
 		var targetKey = "bar&foo";
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(sourceKey)
 				.destinationBucket(bucketName).destinationKey(targetKey)
 				.sourceVersionId(response.response().versionId())
 				.build());
-		client.getObject(GetObjectRequest.builder().bucket(bucketName).key(targetKey).build());
+		client.getObject(g -> g.bucket(bucketName).key(targetKey).build());
 	}
 
 	@Test
@@ -491,22 +477,22 @@ public class CopyObject extends TestBase {
 		key1Metadata.put("x-amz-meta-foo", "bar");
 
 		var uploads = setupMultipartUpload(client, bucketName, key1, size, contentType, key1Metadata);
-		client.completeMultipartUpload(CompleteMultipartUploadRequest.builder()
+		client.completeMultipartUpload(c -> c
 				.bucket(bucketName).key(key1).uploadId(uploads.uploadId)
 				.multipartUpload(CompletedMultipartUpload.builder().parts(uploads.parts).build())
 				.build());
 
-		var response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key1).build());
+		var response = client.headObject(h -> h.bucket(bucketName).key(key1).build());
 		var key1Size = response.contentLength();
 		var key1VersionId = response.versionId();
 
 		var key2 = "dst_multipart";
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(key2)
 				.sourceVersionId(key1VersionId)
 				.build());
-		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key2).build());
+		response = client.headObject(h -> h.bucket(bucketName).key(key2).build());
 		var key2VersionId = response.versionId();
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
@@ -514,12 +500,12 @@ public class CopyObject extends TestBase {
 		checkContentUsingRange(bucketName, key2, uploads.getBody(), MainData.MB);
 
 		var key3 = "dst_multipart2";
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key2)
 				.destinationBucket(bucketName).destinationKey(key3)
 				.sourceVersionId(key2VersionId)
 				.build());
-		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key3).build());
+		response = client.headObject(h -> h.bucket(bucketName).key(key3).build());
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
 		assertEquals(contentType, response.contentType());
@@ -528,12 +514,12 @@ public class CopyObject extends TestBase {
 		var bucketName2 = getNewBucket();
 		checkConfigureVersioningRetry(bucketName2, BucketVersioningStatus.ENABLED);
 		var key4 = "dst_multipart3";
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName2).destinationKey(key4)
 				.sourceVersionId(key1VersionId)
 				.build());
-		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName2).key(key4).build());
+		response = client.headObject(h -> h.bucket(bucketName2).key(key4).build());
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
 		assertEquals(contentType, response.contentType());
@@ -542,23 +528,23 @@ public class CopyObject extends TestBase {
 		var bucketName3 = getNewBucket();
 		checkConfigureVersioningRetry(bucketName3, BucketVersioningStatus.ENABLED);
 		var key5 = "dst_multipart4";
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName3).destinationKey(key5)
 				.sourceVersionId(key1VersionId)
 				.build());
-		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName3).key(key5).build());
+		response = client.headObject(h -> h.bucket(bucketName3).key(key5).build());
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
 		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName3, key5, uploads.getBody(), MainData.MB);
 
 		var key6 = "dst_multipart5";
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName3).sourceKey(key5)
 				.destinationBucket(bucketName).destinationKey(key6)
 				.build());
-		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key6).build());
+		response = client.headObject(h -> h.bucket(bucketName).key(key6).build());
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
 		assertEquals(contentType, response.contentType());
@@ -572,16 +558,16 @@ public class CopyObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var putResponse = client.putObject(PutObjectRequest.builder().bucket(bucketName).key("foo").build(),
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key("foo").build(),
 				RequestBody.fromString("bar"));
 
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey("foo")
 				.destinationBucket(bucketName).destinationKey("bar")
 				.sourceVersionId(putResponse.versionId())
 				.copySourceIfMatch(putResponse.eTag())
 				.build());
-		var getResponse = client.getObject(GetObjectRequest.builder().bucket(bucketName).key("bar").build());
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key("bar").build());
 		assertEquals("bar", getBody(getResponse));
 	}
 
@@ -592,10 +578,10 @@ public class CopyObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var putResponse = client.putObject(PutObjectRequest.builder().bucket(bucketName).key("foo").build(),
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key("foo").build(),
 				RequestBody.fromString("bar"));
 
-		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(CopyObjectRequest.builder()
+		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey("foo")
 				.destinationBucket(bucketName).destinationKey("bar")
 				.sourceVersionId(putResponse.versionId())
@@ -837,11 +823,11 @@ public class CopyObject extends TestBase {
 		var key1 = "foo123bar";
 		var ker2 = "bar321foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key1).build(),
 				RequestBody.fromString("foo"));
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key1).build());
+		client.deleteObject(d -> d.bucket(bucketName).key(key1).build());
 
-		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(CopyObjectRequest.builder()
+		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(ker2)
 				.build()));
@@ -862,11 +848,11 @@ public class CopyObject extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key1).build(),
+		client.putObject(p -> p.bucket(bucketName).key(key1).build(),
 				RequestBody.fromString("foo"));
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key1).build());
+		client.deleteObject(d -> d.bucket(bucketName).key(key1).build());
 
-		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(CopyObjectRequest.builder()
+		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(ker2)
 				.build()));
@@ -887,18 +873,18 @@ public class CopyObject extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("foo"));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("foo"));
 
 		var metaData = new HashMap<String, String>();
 		metaData.put("foo", "bar");
 
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key)
 				.destinationBucket(bucketName).destinationKey(key)
 				.metadata(metaData)
 				.metadataDirective(MetadataDirective.REPLACE)
 				.build());
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
 
 		assertEquals(metaData, response.response().metadata());
 	}
@@ -913,18 +899,18 @@ public class CopyObject extends TestBase {
 		var metadata = new HashMap<String, String>();
 		metadata.put("foo", "bar");
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).metadata(metadata).build(), RequestBody.fromString("foo"));
-		var response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata).build(), RequestBody.fromString("foo"));
+		var response = client.headObject(h -> h.bucket(bucketName).key(key).build());
 		assertEquals(metadata, response.metadata());
 
 		metadata.put("foo", "bar2");
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key)
 				.destinationBucket(bucketName).destinationKey(key)
 				.metadata(metadata)
 				.metadataDirective(MetadataDirective.REPLACE)
 				.build());
-		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+		response = client.headObject(h -> h.bucket(bucketName).key(key).build());
 
 		assertEquals(metadata, response.metadata());
 	}
@@ -942,18 +928,18 @@ public class CopyObject extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).metadata(metadata).build(), RequestBody.fromString("foo"));
-		var response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata).build(), RequestBody.fromString("foo"));
+		var response = client.headObject(h -> h.bucket(bucketName).key(key).build());
 		assertEquals(metadata, response.metadata());
 
 		metadata.put("foo", "bar2");
-		client.copyObject(CopyObjectRequest.builder()
+		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key)
 				.destinationBucket(bucketName).destinationKey(key)
 				.metadata(metadata)
 				.metadataDirective(MetadataDirective.REPLACE)
 				.build());
-		response = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+		response = client.headObject(h -> h.bucket(bucketName).key(key).build());
 
 		assertEquals(metadata, response.metadata());
 	}

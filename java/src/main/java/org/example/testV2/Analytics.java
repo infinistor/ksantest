@@ -17,15 +17,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.services.s3.model.AnalyticsConfiguration;
-import software.amazon.awssdk.services.s3.model.AnalyticsExportDestination;
-import software.amazon.awssdk.services.s3.model.AnalyticsS3BucketDestination;
-import software.amazon.awssdk.services.s3.model.DeleteBucketAnalyticsConfigurationRequest;
-import software.amazon.awssdk.services.s3.model.GetBucketAnalyticsConfigurationRequest;
-import software.amazon.awssdk.services.s3.model.ListBucketAnalyticsConfigurationsRequest;
-import software.amazon.awssdk.services.s3.model.PutBucketAnalyticsConfigurationRequest;
-import software.amazon.awssdk.services.s3.model.StorageClassAnalysis;
-import software.amazon.awssdk.services.s3.model.StorageClassAnalysisDataExport;
 
 public class Analytics extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -46,12 +37,12 @@ public class Analytics extends TestBase {
 		var targetBucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-				.analyticsConfiguration(AnalyticsConfiguration.builder().id("test")
-						.storageClassAnalysis(StorageClassAnalysis.builder()
-								.dataExport(StorageClassAnalysisDataExport.builder().outputSchemaVersion("V_1")
-										.destination(AnalyticsExportDestination.builder()
-												.s3BucketDestination(AnalyticsS3BucketDestination.builder()
+		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
+				.analyticsConfiguration(analytics -> analytics.id("test")
+						.storageClassAnalysis(storage -> storage
+								.dataExport(data -> data.outputSchemaVersion("V_1")
+										.destination(destination -> destination
+												.s3BucketDestination(s3 -> s3
 														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
 														.build())
 												.build())
@@ -69,12 +60,12 @@ public class Analytics extends TestBase {
 		var targetBucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-				.analyticsConfiguration(AnalyticsConfiguration.builder().id("test")
-						.storageClassAnalysis(StorageClassAnalysis.builder()
-								.dataExport(StorageClassAnalysisDataExport.builder().outputSchemaVersion("V_1")
-										.destination(AnalyticsExportDestination.builder()
-												.s3BucketDestination(AnalyticsS3BucketDestination.builder()
+		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
+				.analyticsConfiguration(analytics -> analytics.id("test")
+						.storageClassAnalysis(storage -> storage
+								.dataExport(data -> data.outputSchemaVersion("V_1")
+										.destination(destination -> destination
+												.s3BucketDestination(s3 -> s3
 														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
 														.build())
 												.build())
@@ -83,8 +74,7 @@ public class Analytics extends TestBase {
 						.build())
 				.build());
 
-		var response = client.getBucketAnalyticsConfiguration(GetBucketAnalyticsConfigurationRequest.builder()
-				.bucket(bucketName).id("test").build());
+		var response = client.getBucketAnalyticsConfiguration(g -> g.bucket(bucketName).id("test").build());
 		assertEquals("test", response.analyticsConfiguration().id());
 		assertEquals("V_1", response.analyticsConfiguration().storageClassAnalysis().dataExport()
 				.outputSchemaVersion());
@@ -102,12 +92,12 @@ public class Analytics extends TestBase {
 		var targetBucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-				.analyticsConfiguration(AnalyticsConfiguration.builder().id("test")
-						.storageClassAnalysis(StorageClassAnalysis.builder()
-								.dataExport(StorageClassAnalysisDataExport.builder().outputSchemaVersion("V_1")
-										.destination(AnalyticsExportDestination.builder()
-												.s3BucketDestination(AnalyticsS3BucketDestination.builder()
+		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
+				.analyticsConfiguration(analytics -> analytics.id("test")
+						.storageClassAnalysis(storage -> storage
+								.dataExport(data -> data.outputSchemaVersion("V_1")
+										.destination(destination -> destination
+												.s3BucketDestination(s3 -> s3
 														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
 														.build())
 												.build())
@@ -115,15 +105,15 @@ public class Analytics extends TestBase {
 								.build())
 						.build())
 				.build());
-		var response = client.listBucketAnalyticsConfigurations(ListBucketAnalyticsConfigurationsRequest.builder().bucket(bucketName).build());
+		var response = client.listBucketAnalyticsConfigurations(l -> l.bucket(bucketName).build());
 		assertEquals(1, response.analyticsConfigurationList().size());
 
-		client.putBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-				.analyticsConfiguration(AnalyticsConfiguration.builder().id("test2")
-						.storageClassAnalysis(StorageClassAnalysis.builder()
-								.dataExport(StorageClassAnalysisDataExport.builder().outputSchemaVersion("V_1")
-										.destination(AnalyticsExportDestination.builder()
-												.s3BucketDestination(AnalyticsS3BucketDestination.builder()
+		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
+				.analyticsConfiguration(analytics -> analytics.id("test2")
+						.storageClassAnalysis(storage -> storage
+								.dataExport(data -> data.outputSchemaVersion("V_1")
+										.destination(destination -> destination
+												.s3BucketDestination(s3 -> s3
 														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
 														.build())
 												.build())
@@ -131,7 +121,7 @@ public class Analytics extends TestBase {
 								.build())
 						.build())
 				.build());
-		response = client.listBucketAnalyticsConfigurations(ListBucketAnalyticsConfigurationsRequest.builder().bucket(bucketName).build());
+		response = client.listBucketAnalyticsConfigurations(l -> l.bucket(bucketName).build());
 		assertEquals(2, response.analyticsConfigurationList().size());
 	}
 
@@ -143,12 +133,12 @@ public class Analytics extends TestBase {
 		var targetBucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-				.analyticsConfiguration(AnalyticsConfiguration.builder().id("test")
-						.storageClassAnalysis(StorageClassAnalysis.builder()
-								.dataExport(StorageClassAnalysisDataExport.builder().outputSchemaVersion("V_1")
-										.destination(AnalyticsExportDestination.builder()
-												.s3BucketDestination(AnalyticsS3BucketDestination.builder()
+		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
+				.analyticsConfiguration(analytics -> analytics.id("test")
+						.storageClassAnalysis(storage -> storage
+								.dataExport(data -> data.outputSchemaVersion("V_1")
+										.destination(destination -> destination
+												.s3BucketDestination(s3 -> s3
 														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
 														.build())
 												.build())
@@ -156,8 +146,7 @@ public class Analytics extends TestBase {
 								.build())
 						.build())
 				.build());
-		var response = client.listBucketAnalyticsConfigurations(
-				ListBucketAnalyticsConfigurationsRequest.builder().bucket(bucketName).build());
+		var response = client.listBucketAnalyticsConfigurations(l -> l.bucket(bucketName).build());
 		assertEquals(1, response.analyticsConfigurationList().size());
 		assertEquals("test", response.analyticsConfigurationList().get(0).id());
 		assertEquals("V_1", response.analyticsConfigurationList().get(0).storageClassAnalysis().dataExport()
@@ -176,12 +165,12 @@ public class Analytics extends TestBase {
 		var targetBucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-				.analyticsConfiguration(AnalyticsConfiguration.builder().id("test")
-						.storageClassAnalysis(StorageClassAnalysis.builder()
-								.dataExport(StorageClassAnalysisDataExport.builder().outputSchemaVersion("V_1")
-										.destination(AnalyticsExportDestination.builder()
-												.s3BucketDestination(AnalyticsS3BucketDestination.builder()
+		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
+				.analyticsConfiguration(analytics -> analytics.id("test")
+						.storageClassAnalysis(storage -> storage
+								.dataExport(data -> data.outputSchemaVersion("V_1")
+										.destination(destination -> destination
+												.s3BucketDestination(s3 -> s3
 														.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
 														.build())
 												.build())
@@ -189,11 +178,9 @@ public class Analytics extends TestBase {
 								.build())
 						.build())
 				.build());
-		client.deleteBucketAnalyticsConfiguration(DeleteBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-				.id("test").build());
+		client.deleteBucketAnalyticsConfiguration(d -> d.bucket(bucketName).id("test").build());
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.getBucketAnalyticsConfiguration(GetBucketAnalyticsConfigurationRequest.builder()
-						.bucket(bucketName).id("test").build()));
+				() -> client.getBucketAnalyticsConfiguration(g -> g.bucket(bucketName).id("test").build()));
 		assertEquals(404, e.statusCode());
 		assertEquals("NoSuchConfiguration", e.getMessage());
 	}
@@ -207,14 +194,14 @@ public class Analytics extends TestBase {
 		var client = getClient();
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> 
-				client.putBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-						.analyticsConfiguration(AnalyticsConfiguration.builder().id("test")
-								.storageClassAnalysis(StorageClassAnalysis.builder()
-										.dataExport(StorageClassAnalysisDataExport.builder().outputSchemaVersion("V_2")
-												.destination(AnalyticsExportDestination.builder()
-														.s3BucketDestination(AnalyticsS3BucketDestination.builder()
-																.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
+				() -> client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
+						.analyticsConfiguration(analytics -> analytics.id("test")
+								.storageClassAnalysis(storage -> storage
+										.dataExport(data -> data.outputSchemaVersion("V_2")
+												.destination(destination -> destination
+														.s3BucketDestination(s3 -> s3
+																.bucket("arn:aws:s3:::" + targetBucketName)
+																.format("CSV")
 																.build())
 														.build())
 												.build())
@@ -225,14 +212,14 @@ public class Analytics extends TestBase {
 		assertEquals("MalformedXML", e.getMessage());
 
 		e = assertThrows(AwsServiceException.class,
-				() ->
-				client.putBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-						.analyticsConfiguration(AnalyticsConfiguration.builder().id("")
-								.storageClassAnalysis(StorageClassAnalysis.builder()
-										.dataExport(StorageClassAnalysisDataExport.builder().outputSchemaVersion("V_1")
-												.destination(AnalyticsExportDestination.builder()
-														.s3BucketDestination(AnalyticsS3BucketDestination.builder()
-																.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")
+				() -> client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
+						.analyticsConfiguration(analytics -> analytics.id("")
+								.storageClassAnalysis(storage -> storage
+										.dataExport(data -> data.outputSchemaVersion("V_1")
+												.destination(destination -> destination
+														.s3BucketDestination(s3 -> s3
+																.bucket("arn:aws:s3:::" + targetBucketName)
+																.format("CSV")
 																.build())
 														.build())
 												.build())
@@ -243,14 +230,14 @@ public class Analytics extends TestBase {
 		assertEquals("InvalidConfigurationId", e.getMessage());
 
 		e = assertThrows(AwsServiceException.class,
-				() -> 
-				client.putBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest.builder().bucket(bucketName)
-						.analyticsConfiguration(AnalyticsConfiguration.builder().id("test")
-								.storageClassAnalysis(StorageClassAnalysis.builder()
-										.dataExport(StorageClassAnalysisDataExport.builder().outputSchemaVersion("V_1")
-												.destination(AnalyticsExportDestination.builder()
-														.s3BucketDestination(AnalyticsS3BucketDestination.builder()
-																.bucket("arn:aws:s3:::" + targetBucketName).format("JSON")
+				() -> client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
+						.analyticsConfiguration(analytics -> analytics.id("test")
+								.storageClassAnalysis(storage -> storage
+										.dataExport(data -> data.outputSchemaVersion("V_1")
+												.destination(destination -> destination
+														.s3BucketDestination(s3 -> s3
+																.bucket("arn:aws:s3:::" + targetBucketName)
+																.format("JSON")
 																.build())
 														.build())
 												.build())

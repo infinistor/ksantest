@@ -17,10 +17,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.services.s3.model.AccelerateConfiguration;
 import software.amazon.awssdk.services.s3.model.BucketAccelerateStatus;
-import software.amazon.awssdk.services.s3.model.GetBucketAccelerateConfigurationRequest;
-import software.amazon.awssdk.services.s3.model.PutBucketAccelerateConfigurationRequest;
 
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -44,12 +41,7 @@ public class Accelerate extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
-				.bucket(bucketName)
-				.accelerateConfiguration(AccelerateConfiguration.builder()
-						.status("Enabled")
-						.build())
-				.build());
+		client.putBucketAccelerateConfiguration(p -> p.bucket(bucketName).accelerateConfiguration(a -> a.status("Enabled").build()).build());
 	}
 
 	@Test
@@ -59,14 +51,12 @@ public class Accelerate extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
-				.bucket(bucketName)
-				.accelerateConfiguration(AccelerateConfiguration.builder()
-						.status(BucketAccelerateStatus.ENABLED)
+		client.putBucketAccelerateConfiguration(p -> p.bucket(bucketName)
+				.accelerateConfiguration(a -> a.status(BucketAccelerateStatus.ENABLED)
 						.build())
 				.build());
 
-		var response = client.getBucketAccelerateConfiguration(GetBucketAccelerateConfigurationRequest.builder()
+		var response = client.getBucketAccelerateConfiguration(g -> g
 				.bucket(bucketName)
 				.build());
 		assertEquals(BucketAccelerateStatus.ENABLED, response.status());
@@ -79,26 +69,24 @@ public class Accelerate extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
+		client.putBucketAccelerateConfiguration(p -> p
 				.bucket(bucketName)
-				.accelerateConfiguration(AccelerateConfiguration.builder()
-						.status(BucketAccelerateStatus.ENABLED)
+				.accelerateConfiguration(a -> a.status(BucketAccelerateStatus.ENABLED)
 						.build())
 				.build());
 
-		var response = client.getBucketAccelerateConfiguration(GetBucketAccelerateConfigurationRequest.builder()
+		var response = client.getBucketAccelerateConfiguration(g -> g
 				.bucket(bucketName)
 				.build());
 		assertEquals(BucketAccelerateStatus.ENABLED, response.status());
 
-		client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
+		client.putBucketAccelerateConfiguration(p -> p
 				.bucket(bucketName)
-				.accelerateConfiguration(AccelerateConfiguration.builder()
-						.status(BucketAccelerateStatus.SUSPENDED)
+				.accelerateConfiguration(a -> a.status(BucketAccelerateStatus.SUSPENDED)
 						.build())
 				.build());
 
-		response = client.getBucketAccelerateConfiguration(GetBucketAccelerateConfigurationRequest.builder()
+		response = client.getBucketAccelerateConfiguration(g -> g
 				.bucket(bucketName)
 				.build());
 		assertEquals(BucketAccelerateStatus.SUSPENDED, response.status());
@@ -112,10 +100,9 @@ public class Accelerate extends TestBase {
 		var client = getClient();
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketAccelerateConfiguration(PutBucketAccelerateConfigurationRequest.builder()
+				() -> client.putBucketAccelerateConfiguration(p -> p
 						.bucket(bucketName)
-						.accelerateConfiguration(AccelerateConfiguration.builder()
-								.status("Invalid")
+						.accelerateConfiguration(a -> a.status("Invalid")
 								.build())
 						.build()));
 		assertEquals(400, e.statusCode());

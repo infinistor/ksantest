@@ -19,16 +19,8 @@ import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
-import software.amazon.awssdk.services.s3.model.DeletePublicAccessBlockRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetPublicAccessBlockRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PublicAccessBlockConfiguration;
-import software.amazon.awssdk.services.s3.model.PutBucketAclRequest;
-import software.amazon.awssdk.services.s3.model.PutBucketPolicyRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutPublicAccessBlockRequest;
 
 import org.junit.jupiter.api.Tag;
 
@@ -53,12 +45,9 @@ public class Access extends TestBase {
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(true)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
 
-		client.putPublicAccessBlock(PutPublicAccessBlockRequest.builder()
-				.bucket(bucketName)
-				.publicAccessBlockConfiguration(accessConf)
-				.build());
+		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf).build());
 
-		var response = client.getPublicAccessBlock(GetPublicAccessBlockRequest.builder().bucket(bucketName).build());
+		var response = client.getPublicAccessBlock(g -> g.bucket(bucketName).build());
 		assertEquals(accessConf.blockPublicAcls(), response.publicAccessBlockConfiguration().blockPublicAcls());
 		assertEquals(accessConf.blockPublicPolicy(), response.publicAccessBlockConfiguration().blockPublicPolicy());
 		assertEquals(accessConf.ignorePublicAcls(), response.publicAccessBlockConfiguration().ignorePublicAcls());
@@ -76,30 +65,24 @@ public class Access extends TestBase {
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(false)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
 
-		client.putPublicAccessBlock(PutPublicAccessBlockRequest.builder()
-				.bucket(bucketName)
-				.publicAccessBlockConfiguration(accessConf)
-				.build());
+		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf).build());
 
-		var response = client.getPublicAccessBlock(GetPublicAccessBlockRequest.builder().bucket(bucketName).build());
+		var response = client.getPublicAccessBlock(g -> g.bucket(bucketName).build());
 		assertEquals(accessConf.blockPublicAcls(), response.publicAccessBlockConfiguration().blockPublicAcls());
 		assertEquals(accessConf.blockPublicPolicy(), response.publicAccessBlockConfiguration().blockPublicPolicy());
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketAcl(
-						PutBucketAclRequest.builder().bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build()));
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build()));
 		var statusCode = e.statusCode();
 		assertEquals(403, statusCode);
 
 		e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketAcl(PutBucketAclRequest.builder().bucket(bucketName)
-						.acl(BucketCannedACL.PUBLIC_READ_WRITE).build()));
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE).build()));
 		statusCode = e.statusCode();
 		assertEquals(403, statusCode);
 
 		e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketAcl(PutBucketAclRequest.builder().bucket(bucketName)
-						.acl(BucketCannedACL.AUTHENTICATED_READ).build()));
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.AUTHENTICATED_READ).build()));
 		statusCode = e.statusCode();
 		assertEquals(403, statusCode);
 	}
@@ -114,26 +97,27 @@ public class Access extends TestBase {
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(false)
 				.blockPublicPolicy(false).restrictPublicBuckets(false).build();
 
-		client.putPublicAccessBlock(PutPublicAccessBlockRequest.builder()
-				.bucket(bucketName)
-				.publicAccessBlockConfiguration(accessConf)
-				.build());
+		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf).build());
 
-		var response = client.getPublicAccessBlock(GetPublicAccessBlockRequest.builder().bucket(bucketName).build());
+		var response = client.getPublicAccessBlock(g -> g.bucket(bucketName).build());
 		assertEquals(accessConf.blockPublicAcls(), response.publicAccessBlockConfiguration().blockPublicAcls());
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putObject(
-				PutObjectRequest.builder().bucket(bucketName).key("foo1").acl(ObjectCannedACL.PUBLIC_READ).build(),
+				p -> p.bucket(bucketName).key("foo1").acl(ObjectCannedACL.PUBLIC_READ).build(),
 				RequestBody.fromString("foo1")));
 		var statusCode = e.statusCode();
 		assertEquals(403, statusCode);
 
-		e = assertThrows(AwsServiceException.class, () -> client.putObject(PutObjectRequest.builder().bucket(bucketName)
-				.key("foo2").acl(ObjectCannedACL.PUBLIC_READ_WRITE).build(), RequestBody.fromString("foo2")));
+		e = assertThrows(AwsServiceException.class,
+				() -> client.putObject(
+						p -> p.bucket(bucketName).key("foo2").acl(ObjectCannedACL.PUBLIC_READ_WRITE).build(),
+						RequestBody.fromString("foo2")));
 		statusCode = e.statusCode();
 		assertEquals(403, statusCode);
-		e = assertThrows(AwsServiceException.class, () -> client.putObject(PutObjectRequest.builder().bucket(bucketName)
-				.key("foo3").acl(ObjectCannedACL.AUTHENTICATED_READ).build(), RequestBody.fromString("foo3")));
+		e = assertThrows(AwsServiceException.class,
+				() -> client.putObject(
+						p -> p.bucket(bucketName).key("foo3").acl(ObjectCannedACL.AUTHENTICATED_READ).build(),
+						RequestBody.fromString("foo3")));
 		statusCode = e.statusCode();
 		assertEquals(403, statusCode);
 	}
@@ -147,15 +131,12 @@ public class Access extends TestBase {
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(false).ignorePublicAcls(false)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
 
-		client.putPublicAccessBlock(PutPublicAccessBlockRequest.builder()
-				.bucket(bucketName)
-				.publicAccessBlockConfiguration(accessConf)
-				.build());
+		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf).build());
 
 		var resource = makeArnResource(String.format("%s/*", bucketName));
 		var policyDocument = makeJsonPolicy("s3:GetObject", resource, null, null);
-		assertThrows(AwsServiceException.class, () -> client.putBucketPolicy(
-				PutBucketPolicyRequest.builder().bucket(bucketName).policy(policyDocument.toString()).build()));
+		assertThrows(AwsServiceException.class,
+				() -> client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()).build()));
 	}
 
 	@Test
@@ -166,30 +147,27 @@ public class Access extends TestBase {
 		var client = getClient();
 		var altClient = getAltClient();
 
-		client.putBucketAcl(PutBucketAclRequest.builder().bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
-		altClient.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
+		altClient.listObjects(l -> l.bucket(bucketName).build());
 
 		client.putObject(
-				PutObjectRequest.builder().bucket(bucketName).key("key1").acl(ObjectCannedACL.PUBLIC_READ).build(),
+				p -> p.bucket(bucketName).key("key1").acl(ObjectCannedACL.PUBLIC_READ).build(),
 				RequestBody.fromString("abcde"));
-		var response = altClient.getObject(GetObjectRequest.builder().bucket(bucketName).key("key1").build());
+		var response = altClient.getObject(g -> g.bucket(bucketName).key("key1").build());
 		assertEquals("abcde", getBody(response));
 
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(false).ignorePublicAcls(true)
 				.blockPublicPolicy(false).restrictPublicBuckets(false).build();
 
-		client.putPublicAccessBlock(PutPublicAccessBlockRequest.builder()
-				.bucket(bucketName)
-				.publicAccessBlockConfiguration(accessConf)
-				.build());
+		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf).build());
 
-		client.putBucketAcl(PutBucketAclRequest.builder().bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
 
 		var publicClient = getPublicClient();
 		assertThrows(AwsServiceException.class,
-				() -> publicClient.listObjects(ListObjectsRequest.builder().bucket(bucketName).build()));
+				() -> publicClient.listObjects(l -> l.bucket(bucketName).build()));
 		assertThrows(AwsServiceException.class,
-				() -> publicClient.getObject(GetObjectRequest.builder().bucket(bucketName).key("key1").build()));
+				() -> publicClient.getObject(g -> g.bucket(bucketName).key("key1").build()));
 	}
 
 	@Test
@@ -202,21 +180,18 @@ public class Access extends TestBase {
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(true)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
 
-		client.putPublicAccessBlock(PutPublicAccessBlockRequest.builder()
-				.bucket(bucketName)
-				.publicAccessBlockConfiguration(accessConf)
-				.build());
+		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf).build());
 
-		var response = client.getPublicAccessBlock(GetPublicAccessBlockRequest.builder().bucket(bucketName).build());
+		var response = client.getPublicAccessBlock(g -> g.bucket(bucketName).build());
 		assertEquals(accessConf.blockPublicAcls(), response.publicAccessBlockConfiguration().blockPublicAcls());
 		assertEquals(accessConf.blockPublicPolicy(), response.publicAccessBlockConfiguration().blockPublicPolicy());
 		assertEquals(accessConf.ignorePublicAcls(), response.publicAccessBlockConfiguration().ignorePublicAcls());
 		assertEquals(accessConf.restrictPublicBuckets(),
 				response.publicAccessBlockConfiguration().restrictPublicBuckets());
 
-		client.deletePublicAccessBlock(DeletePublicAccessBlockRequest.builder().bucket(bucketName).build());
+		client.deletePublicAccessBlock(d -> d.bucket(bucketName).build());
 
 		assertThrows(SdkClientException.class,
-				() -> client.getPublicAccessBlock(GetPublicAccessBlockRequest.builder().bucket(bucketName).build()));
+				() -> client.getPublicAccessBlock(g -> g.bucket(bucketName).build()));
 	}
 }

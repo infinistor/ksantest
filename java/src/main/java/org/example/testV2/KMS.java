@@ -18,19 +18,19 @@ public class KMS {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll()
 	{
-		System.out.println("KMS SDK V2 Start");
+		System.out.println("KMS Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll()
 	{
-		System.out.println("KMS SDK V2 End");
+		System.out.println("KMS End");
 	}
 
 	@Test
 	@Tag("PutGet")
 	//1Byte 오브젝트를 SSE-KMS 설정하여 업/다운로드가 올바르게 동작하는지 확인
-	public void test_sse_kms_encrypted_transfer_1b(){
+	public void testSseKmsEncryptedTransfer1b(){
 		
 	}
 	

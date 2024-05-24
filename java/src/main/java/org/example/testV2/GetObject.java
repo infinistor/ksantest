@@ -25,9 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.RestoreObjectRequest;
 
 public class GetObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -47,7 +44,8 @@ public class GetObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var e = assertThrows(AwsServiceException.class, () -> client.getObject(GetObjectRequest.builder().bucket(bucketName).key("foo").build()));
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getObject(g -> g.bucket(bucketName).key("foo").build()));
 		var statusCode = e.statusCode();
 		var errorCode = e.getMessage();
 
@@ -63,10 +61,10 @@ public class GetObject extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		var putResponse = client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
 		var eTag = putResponse.eTag();
 
-		var getResponse = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).ifMatch(eTag).build());
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key).ifMatch(eTag).build());
 		var body = getBody(getResponse);
 		assertEquals("bar", body);
 	}
@@ -79,8 +77,9 @@ public class GetObject extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ").build());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+		var response = client
+				.getObject(g -> g.bucket(bucketName).key(key).ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ").build());
 		assertNull(response);
 	}
 
@@ -92,10 +91,10 @@ public class GetObject extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		var putResponse = client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
 		var eTag = putResponse.eTag();
 
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).ifNoneMatch(eTag).build());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).ifNoneMatch(eTag).build());
 		assertNull(response);
 	}
 
@@ -107,9 +106,10 @@ public class GetObject extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
 
-		var getResponse = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).ifNoneMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ").build());
+		var getResponse = client
+				.getObject(g -> g.bucket(bucketName).key(key).ifNoneMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ").build());
 		var body = getBody(getResponse);
 		assertEquals("bar", body);
 	}
@@ -122,12 +122,12 @@ public class GetObject extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
 
 		var days = Calendar.getInstance();
 		days.set(1994, 8, 29, 19, 43, 31);
 		var response = client
-				.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).ifModifiedSince(days.toInstant()).build());
+				.getObject(g -> g.bucket(bucketName).key(key).ifModifiedSince(days.toInstant()).build());
 		var body = getBody(response);
 		assertEquals("bar", body);
 	}
@@ -140,14 +140,14 @@ public class GetObject extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
 		var after = response.response().lastModified().plus(1, ChronoUnit.SECONDS);
 
 		delay(1000);
 
 		response = client
-				.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).ifUnmodifiedSince(after).build());
+				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(after).build());
 		assertNull(response);
 	}
 
@@ -159,13 +159,13 @@ public class GetObject extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
 
 		var days = Calendar.getInstance();
 		days.set(1994, 8, 29, 19, 43, 31);
 
 		var response = client
-				.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant()).build());
+				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant()).build());
 		assertNull(response);
 	}
 
@@ -177,12 +177,12 @@ public class GetObject extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
 
 		var days = Calendar.getInstance();
 		days.set(2100, 8, 29, 19, 43, 31);
 		var response = client
-				.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant()).build());
+				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant()).build());
 		var body = getBody(response);
 		assertEquals("bar", body);
 	}
@@ -197,8 +197,8 @@ public class GetObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(content));
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).range("bytes=4-7").build());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=4-7").build());
 
 		var fetchedContent = getBody(response);
 		assertEquals(content.substring(4, 8), fetchedContent);
@@ -215,8 +215,8 @@ public class GetObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(content));
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).range("bytes=3145728-5242880").build());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=3145728-5242880").build());
 
 		var fetchedContent = getBody(response);
 		assertTrue(content.substring(3145728, 5242881).equals(fetchedContent), MainData.NOT_MATCHED);
@@ -234,8 +234,8 @@ public class GetObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(content));
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).range("bytes=4-").build());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=4-").build());
 
 		var fetchedContent = getBody(response);
 		assertEquals(content.substring(4), fetchedContent);
@@ -252,8 +252,8 @@ public class GetObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(content));
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).range("bytes=-7").build());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=-7").build());
 
 		var fetchedContent = getBody(response);
 		assertEquals(content.substring(content.length() - 7), fetchedContent);
@@ -270,8 +270,9 @@ public class GetObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(content));
-		var e = assertThrows(AwsServiceException.class, () -> client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).range("bytes=40-50").build()));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=40-50").build()));
 		var statusCode = e.statusCode();
 		var errorCode = e.getMessage();
 		assertEquals(416, statusCode);
@@ -288,9 +289,9 @@ public class GetObject extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(content));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).range("bytes=40-50").build()));
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=40-50").build()));
 		var statusCode = e.statusCode();
 		var errorCode = e.getMessage();
 		assertEquals(416, statusCode);
@@ -306,7 +307,7 @@ public class GetObject extends TestBase {
 		var key = "foo";
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(data));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(data));
 		checkContent(bucketName, key, data, 50);
 	}
 
@@ -320,20 +321,20 @@ public class GetObject extends TestBase {
 		var fileSize = 1024 * 1024 * 15;
 		var data = Utils.randomTextToLong(fileSize);
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString(data));
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(data));
 		checkContentUsingRandomRange(bucketName, key, data, 50);
 	}
 
 	@Test
 	@Tag("Restore")
-	//오브젝트 복구 명령이 성공하는지 확인
+	// 오브젝트 복구 명령이 성공하는지 확인
 	public void testRestoreObject() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
-		
-		client.restoreObject(RestoreObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
+
+		client.restoreObject(r -> r.bucket(bucketName).key(key).build());
 	}
 }

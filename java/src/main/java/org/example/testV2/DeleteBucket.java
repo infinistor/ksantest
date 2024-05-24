@@ -20,8 +20,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
-
 
 public class DeleteBucket extends TestBase
 {
@@ -44,7 +42,7 @@ public class DeleteBucket extends TestBase
 		var bucketName = getNewBucketNameOnly();
 		var client = getClient();
 
-		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build()));
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName).build()));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchBucket, e.getMessage());
@@ -58,7 +56,7 @@ public class DeleteBucket extends TestBase
 		var bucketName = createObjects(List.of("foo"));
 		var client = getClient();
 
-		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build()));
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName).build()));
 
 		assertEquals(409, e.statusCode());
 		assertEquals(MainData.BucketNotEmpty, e.getMessage());
@@ -71,9 +69,9 @@ public class DeleteBucket extends TestBase
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build());
+		client.deleteBucket(d->d.bucket(bucketName).build());
 
-		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build()));
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName).build()));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchBucket, e.getMessage());

@@ -19,11 +19,6 @@ import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.Delete;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectVersionsRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 
 
 public class DeleteObjects extends TestBase
@@ -49,21 +44,21 @@ public class DeleteObjects extends TestBase
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		var listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
 		var objectList = getKeyVersions(keyNames);
-		var delResponse = client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
 
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(0, listResponse.contents().size());
 
-		delResponse = client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(0, listResponse.contents().size());
 	}
 
@@ -76,21 +71,21 @@ public class DeleteObjects extends TestBase
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var listResponse = client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build());
+		var listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
 		var objectList = getKeyVersions(keyNames);
-		var delResponse = client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
 
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build());
+		listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
 		assertEquals(0, listResponse.contents().size());
 
-		delResponse = client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build());
+		listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
 		assertEquals(0, listResponse.contents().size());
 	}
 
@@ -107,21 +102,21 @@ public class DeleteObjects extends TestBase
 		for (var Key : keyNames)
 			createMultipleVersions(client, bucketName, Key, 3, false);
 
-		var listResponse = client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build());
+		var listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
 		var objectList = getKeyVersions(keyNames);
-		var delResponse = client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
 
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build());
+		listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
 		assertEquals(0, listResponse.contents().size());
 
-		delResponse = client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
 		assertEquals(keyNames.size(), delResponse.deleted().size());
 
-		listResponse = client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build());
+		listResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
 		assertEquals(0, listResponse.contents().size());
 	}
 
@@ -134,15 +129,15 @@ public class DeleteObjects extends TestBase
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
 
-		var listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		var listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
 		var objectList = getKeyVersions(keyNames);
-		var delResponse = client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucketName).delete(Delete.builder().objects(objectList).quiet(true).build()).build());
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).quiet(true).build()).build());
 
 		assertEquals(0, delResponse.deleted().size());
 
-		listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(0, listResponse.contents().size());
 	}
 
@@ -155,21 +150,21 @@ public class DeleteObjects extends TestBase
 		var bucketName = createObjectsToBody(keyNames, "");
 		var client = getClient();
 
-		var listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		var listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(keyNames.size(), listResponse.contents().size());
 
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key("a/b/").build());
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key("1/2/").build());
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key("q/w/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("a/b/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("1/2/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("q/w/").build());
 
-		listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(4, listResponse.contents().size());
 
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key("a/b/").build());
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key("1/2/").build());
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key("q/w/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("a/b/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("1/2/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("q/w/").build());
 
-		listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(4, listResponse.contents().size());
 	}
 
@@ -186,27 +181,27 @@ public class DeleteObjects extends TestBase
 		for (var Key : keyNames)
 			createMultipleVersions(client, bucketName, Key, 3, false);
 
-		var listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		var listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(keyNames.size(), listResponse.contents().size());
 		
-		var versResponse = client.listObjectVersions(ListObjectVersionsRequest.builder().bucket(bucketName).build());
+		var versResponse = client.listObjectVersions(l -> l.bucket(bucketName).build());
 		assertEquals(15, versResponse.versions().size());
 
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key("a/").build());
+		client.deleteObject(d -> d.bucket(bucketName).key("a/").build());
 
-		listResponse = client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
+		listResponse = client.listObjects(l -> l.bucket(bucketName).build());
 		assertEquals(4, listResponse.contents().size());
 
-		versResponse = client.listObjectVersions(ListObjectVersionsRequest.builder().bucket(bucketName).build());
+		versResponse = client.listObjectVersions(l -> l.bucket(bucketName).build());
 		assertEquals(16, versResponse.versions().size());
 
 		var deleteList = List.of("a/obj1", "a/obj2");
 		var objectList = getKeyVersions(deleteList);
 
-		var delResponse = client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(Delete.builder().objects(objectList).build()).build());
 		assertEquals(2, delResponse.deleted().size());
 		
-		versResponse = client.listObjectVersions(ListObjectVersionsRequest.builder().bucket(bucketName).build());
+		versResponse = client.listObjectVersions(l -> l.bucket(bucketName).build());
 		assertEquals(18, versResponse.versions().size());
 	}
 }

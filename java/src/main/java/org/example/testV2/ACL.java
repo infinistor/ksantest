@@ -23,11 +23,7 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
-import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class ACL extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -49,7 +45,7 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(BucketCannedACL.PUBLIC_READ, ObjectCannedACL.PUBLIC_READ, key);
 
 		var unauthenticatedClient = getPublicClient();
-		unauthenticatedClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key).build());
 	}
 
 	@Test
@@ -61,12 +57,12 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(BucketCannedACL.PUBLIC_READ, ObjectCannedACL.PUBLIC_READ, key);
 		var client = getClient();
 
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build());
-		client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build());
+		client.deleteObject(d -> d.bucket(bucketName).key(key).build());
+		client.deleteBucket(d -> d.bucket(bucketName).build());
 
 		var unauthenticatedClient = getPublicClient();
 		var e = assertThrows(AwsServiceException.class,
-				() -> unauthenticatedClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build()));
+				() -> unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key).build()));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchBucket, e.getMessage());
@@ -83,12 +79,12 @@ public class ACL extends TestBase {
 				key);
 		var client = getClient();
 
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build());
-		client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build());
+		client.deleteObject(d -> d.bucket(bucketName).key(key).build());
+		client.deleteBucket(d -> d.bucket(bucketName).build());
 
 		var unauthenticatedClient = getPublicClient();
 		var e = assertThrows(AwsServiceException.class, () -> unauthenticatedClient
-				.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build()));
+				.deleteObject(d -> d.bucket(bucketName).key(key).build()));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchBucket, e.getMessage());
@@ -105,11 +101,11 @@ public class ACL extends TestBase {
 				key);
 		var client = getClient();
 
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.deleteObject(d -> d.bucket(bucketName).key(key).build());
 
 		var unauthenticatedClient = getPublicClient();
 		var e = assertThrows(AwsServiceException.class,
-				() -> unauthenticatedClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build()));
+				() -> unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key).build()));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchKey, e.getMessage());
@@ -124,7 +120,7 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(BucketCannedACL.PRIVATE, ObjectCannedACL.PUBLIC_READ, key);
 
 		var unauthenticatedClient = getPublicClient();
-		unauthenticatedClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key).build());
 	}
 
 	@Test
@@ -137,7 +133,7 @@ public class ACL extends TestBase {
 
 		var unauthenticatedClient = getPublicClient();
 		var e = assertThrows(AwsServiceException.class,
-				() -> unauthenticatedClient.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build()));
+				() -> unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key).build()));
 
 		assertEquals(403, e.statusCode());
 		assertEquals(MainData.AccessDenied, e.getMessage());
@@ -153,7 +149,7 @@ public class ACL extends TestBase {
 				key);
 
 		var client = getClient();
-		client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.getObject(g -> g.bucket(bucketName).key(key).build());
 	}
 
 	@Test
@@ -166,7 +162,7 @@ public class ACL extends TestBase {
 		var client = getClient();
 
 		var response = client.getObject(
-				GetObjectRequest.builder()
+				g -> g
 						.bucket(bucketName)
 						.key(key)
 						.responseCacheControl("no-cache")
@@ -193,7 +189,7 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(BucketCannedACL.PRIVATE, ObjectCannedACL.PUBLIC_READ, key);
 
 		var client = getAltClient();
-		client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.getObject(g -> g.bucket(bucketName).key(key).build());
 	}
 
 	@Test
@@ -205,7 +201,7 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(BucketCannedACL.PUBLIC_READ, ObjectCannedACL.AUTHENTICATED_READ, key);
 
 		var client = getAltClient();
-		client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.getObject(g -> g.bucket(bucketName).key(key).build());
 	}
 
 	@Test
@@ -218,11 +214,11 @@ public class ACL extends TestBase {
 				key);
 		var client = getClient();
 
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build());
-		client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build());
+		client.deleteObject(d -> d.bucket(bucketName).key(key).build());
+		client.deleteBucket(d -> d.bucket(bucketName).build());
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build()));
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).build()));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchBucket, e.getMessage());
@@ -239,10 +235,10 @@ public class ACL extends TestBase {
 				key);
 		var client = getClient();
 
-		client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.deleteObject(d -> d.bucket(bucketName).key(key).build());
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build()));
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).build()));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NoSuchKey, e.getMessage());
@@ -257,13 +253,10 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(BucketCannedACL.PUBLIC_READ, ObjectCannedACL.PUBLIC_READ, key);
 		var presigner = getS3Presigner();
 
-		var getObjectRequest = GetObjectRequest.builder()
-				.bucket(bucketName)
-				.key(key)
-				.build();
-
 		var presignedGetObjectRequest = presigner
-				.presignGetObject(z -> z.signatureDuration(Duration.ofMinutes(10)).getObjectRequest(getObjectRequest));
+				.presignGetObject(z -> z
+						.signatureDuration(Duration.ofMinutes(10))
+						.getObjectRequest(g -> g.bucket(bucketName).key(key).build()));
 
 		var address = presignedGetObjectRequest.url();
 		var response = getObject(address);
@@ -280,13 +273,10 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(BucketCannedACL.PUBLIC_READ, ObjectCannedACL.PUBLIC_READ, key);
 		var presigner = getS3Presigner();
 
-		var getObjectRequest = GetObjectRequest.builder()
-				.bucket(bucketName)
-				.key(key)
-				.build();
-
 		var presignedGetObjectRequest = presigner
-				.presignGetObject(z -> z.signatureDuration(Duration.ofMinutes(10)).getObjectRequest(getObjectRequest));
+				.presignGetObject(z -> z
+						.signatureDuration(Duration.ofMinutes(10))
+						.getObjectRequest(g -> g.bucket(bucketName).key(key).build()));
 
 		var response = getObject(presignedGetObjectRequest.url());
 		assertEquals(403, response.getStatusLine().getStatusCode());
@@ -301,13 +291,10 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(BucketCannedACL.PUBLIC_READ, ObjectCannedACL.PUBLIC_READ, key);
 		var presigner = getS3Presigner();
 
-		var getObjectRequest = GetObjectRequest.builder()
-				.bucket(bucketName)
-				.key(key)
-				.build();
-
 		var presignedGetObjectRequest = presigner
-				.presignGetObject(z -> z.signatureDuration(Duration.ofMinutes(-1)).getObjectRequest(getObjectRequest));
+				.presignGetObject(z -> z
+						.signatureDuration(Duration.ofMinutes(-1))
+						.getObjectRequest(g -> g.bucket(bucketName).key(key).build()));
 
 		var response = getObject(presignedGetObjectRequest.url());
 		assertEquals(403, response.getStatusLine().getStatusCode());
@@ -322,12 +309,13 @@ public class ACL extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.empty());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.empty());
 
 		var unauthenticatedClient = getPublicClient();
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> unauthenticatedClient.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar")));
+				() -> unauthenticatedClient.putObject(p -> p.bucket(bucketName).key(key).build(),
+						RequestBody.fromString("bar")));
 		assertEquals(403, e.statusCode());
 		assertEquals(MainData.AccessDenied, e.getMessage());
 	}
@@ -341,12 +329,13 @@ public class ACL extends TestBase {
 		var client = getClient();
 		var key = "foo";
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.empty());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.empty());
 
 		var unauthenticatedClient = getPublicClient();
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> unauthenticatedClient.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.fromString("bar")));
+				() -> unauthenticatedClient.putObject(p -> p.bucket(bucketName).key(key).build(),
+						RequestBody.fromString("bar")));
 		assertEquals(403, e.statusCode());
 		assertEquals(MainData.AccessDenied, e.getMessage());
 	}
@@ -358,7 +347,8 @@ public class ACL extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key("foo").build(), RequestBody.fromString("foo"));
+		client.putObject(p -> p.bucket(bucketName).key("foo").build(),
+				RequestBody.fromString("foo"));
 	}
 
 	@Test
@@ -369,18 +359,14 @@ public class ACL extends TestBase {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).build(), RequestBody.empty());
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.empty());
 
 		var presigner = getS3Presigner();
 
-		var petObjectRequest = PutObjectRequest.builder()
-				.bucket(bucketName)
-				.key(key)
-				.build();
-
 		var presignedPutObjectRequest = presigner
-				.presignPutObject(z -> z.signatureDuration(Duration.ofMinutes(-1)).putObjectRequest(petObjectRequest));
-
+				.presignPutObject(z -> z
+						.signatureDuration(Duration.ofMinutes(-1))
+						.putObjectRequest(p -> p.bucket(bucketName).key(key).build()));
 
 		var response = putObject(presignedPutObjectRequest.url(), null);
 		assertEquals(403, response.getStatusLine().getStatusCode());

@@ -27,16 +27,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.UploadPartRequest;
-
 
 public class CSE extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -79,7 +71,7 @@ public class CSE extends TestBase {
 
 	@Test
 	@Tag("Metadata")
-	// [AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인 
+	// [AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인
 	public void testCseEncryptionMethodHead() {
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -92,12 +84,13 @@ public class CSE extends TestBase {
 		var aesKey = Utils.randomTextToLong(32);
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new HashMap<String,String>();
+			var metadata = new HashMap<String, String>();
 			metadata.put("x-amz-meta-key", aesKey);
 
-			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
+			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
+					.contentType(contentType).build(), RequestBody.fromString(encoding));
 
-			var getMetadata = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+			var getMetadata = client.headObject(h -> h.bucket(bucketName).key(key).build());
 			assertEquals(metadata, getMetadata.metadata());
 		} catch (Exception e) {
 			fail(e.getMessage());
@@ -120,12 +113,13 @@ public class CSE extends TestBase {
 
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new HashMap<String,String>();
+			var metadata = new HashMap<String, String>();
 			metadata.put("x-amz-meta-key", aesKey);
 
-			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
+			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
+					.contentType(contentType).build(), RequestBody.fromString(encoding));
 
-			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+			var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
 			var body = getBody(response);
 			assertNotEquals(data, body);
 		} catch (Exception e) {
@@ -147,12 +141,13 @@ public class CSE extends TestBase {
 		// AES
 		var aesKey = Utils.randomTextToLong(32);
 
-		var metadata = new HashMap<String,String>();
+		var metadata = new HashMap<String, String>();
 		metadata.put("x-amz-meta-key", aesKey);
-		
-		client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentType(contentType).build(), RequestBody.fromString(data));
 
-		var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+		client.putObject(p -> p.bucket(bucketName).key(key).contentType(contentType).build(),
+				RequestBody.fromString(data));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
 		var encodingBody = getBody(response);
 		assertThrows(Exception.class, () -> AES256.decrypt(encodingBody, aesKey));
 	}
@@ -172,15 +167,17 @@ public class CSE extends TestBase {
 		try {
 			var data = Utils.randomTextToLong(1024 * 1024);
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new HashMap<String,String>();
+			var metadata = new HashMap<String, String>();
 			metadata.put("x-amz-meta-key", aesKey);
-			
-			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
+
+			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
+					.contentType(contentType).build(), RequestBody.fromString(encoding));
 
 			var r = new Random(System.currentTimeMillis());
 			var startPoint = r.nextInt(1024 * 1024 - 1001);
 			var endPoint = startPoint + 999;
-			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).range("bytes=" + startPoint + "-" + endPoint).build());
+			var response = client.getObject(
+					g -> g.bucket(bucketName).key(key).range("bytes=" + startPoint + "-" + endPoint).build());
 			var encodingBody = getBody(response);
 			assertTrue(encoding.substring(startPoint, startPoint + 1000).equals(encodingBody),
 					MainData.NOT_MATCHED);
@@ -205,28 +202,32 @@ public class CSE extends TestBase {
 
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new HashMap<String,String>();
+			var metadata = new HashMap<String, String>();
 			metadata.put("x-amz-meta-key", aesKey);
 
 			var initMultiPartResponse = client
-					.createMultipartUpload(CreateMultipartUploadRequest.builder().bucket(bucketName).key(key).contentType(contentType).metadata(metadata).build());
+					.createMultipartUpload(
+							c -> c.bucket(bucketName).key(key).contentType(contentType).metadata(metadata).build());
 			var uploadId = initMultiPartResponse.uploadId();
 
 			var parts = cutStringData(encoding, 5 * MainData.MB);
 			var partETags = new ArrayList<CompletedPart>();
-			int partNumber = 1;
 			for (var part : parts) {
-				var partResPonse = client.uploadPart(UploadPartRequest.builder().bucket(bucketName).key(key).uploadId(uploadId).partNumber(partNumber).build(), RequestBody.fromString(part));
-				partETags.add(CompletedPart.builder().partNumber(partNumber++).eTag(partResPonse.eTag()).build());
+				int partNumber = partETags.size() + 1;
+				var partResPonse = client.uploadPart(
+						u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(partNumber).build(),
+						RequestBody.fromString(part));
+				partETags.add(CompletedPart.builder().partNumber(partNumber).eTag(partResPonse.eTag()).build());
 			}
 
-			client.completeMultipartUpload(CompleteMultipartUploadRequest.builder().bucket(bucketName).key(key).uploadId(uploadId).multipartUpload(CompletedMultipartUpload.builder().parts(partETags).build()).build());
+			client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadId)
+					.multipartUpload(CompletedMultipartUpload.builder().parts(partETags).build()).build());
 
-			var headResponse = client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).build());
+			var headResponse = client.listObjectsV2(l -> l.bucket(bucketName).build());
 			assertEquals(1, headResponse.keyCount());
 			assertEquals(encoding.length(), getBytesUsed(headResponse));
 
-			var getResponse = client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+			var getResponse = client.headObject(h -> h.bucket(bucketName).key(key).build());
 			assertEquals(metadata, getResponse.metadata());
 			assertEquals(contentType, getResponse.contentType());
 
@@ -252,12 +253,13 @@ public class CSE extends TestBase {
 
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new HashMap<String,String>();
+			var metadata = new HashMap<String, String>();
 			metadata.put("AESkey", aesKey);
 
-			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
+			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
+					.contentType(contentType).build(), RequestBody.fromString(encoding));
 
-			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+			var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
 			var encodingBody = getBody(response);
 			var body = AES256.decrypt(encodingBody, aesKey);
 			assertTrue(data.equals(body), MainData.NOT_MATCHED);
@@ -284,12 +286,13 @@ public class CSE extends TestBase {
 
 		try {
 			var encoding = AES256.encrypt(data, aesKey);
-			var metadata = new HashMap<String,String>();
+			var metadata = new HashMap<String, String>();
 			metadata.put("AESkey", aesKey);
 
-			client.putObject(PutObjectRequest.builder().bucket(bucketName).key(key).contentLength((long)encoding.length()).contentType(contentType).build(), RequestBody.fromString(encoding));
+			client.putObject(p -> p.bucket(bucketName).key(key).contentLength((long) encoding.length())
+					.contentType(contentType).build(), RequestBody.fromString(encoding));
 
-			var response = client.getObject(GetObjectRequest.builder().bucket(bucketName).key(key).build());
+			var response = client.getObject(g -> g.bucket(bucketName).key(key).build());
 			var encodingBody = getBody(response);
 			var body = AES256.decrypt(encodingBody, aesKey);
 			assertTrue(data.equals(body), MainData.NOT_MATCHED);

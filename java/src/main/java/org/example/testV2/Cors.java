@@ -21,15 +21,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 
-
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.CORSConfiguration;
 import software.amazon.awssdk.services.s3.model.CORSRule;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteBucketCorsRequest;
-import software.amazon.awssdk.services.s3.model.GetBucketCorsRequest;
-import software.amazon.awssdk.services.s3.model.PutBucketCorsRequest;
-
 
 public class Cors extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -59,16 +53,16 @@ public class Cors extends TestBase {
 						.build())
 				.build();
 
-		var response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
+		var response = client.getBucketCors(g -> g.bucket(bucketName).build());
 		assertNull(response);
 
-		client.putBucketCors(PutBucketCorsRequest.builder().bucket(bucketName).corsConfiguration(corsConfig).build());
-		response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig).build());
+		response = client.getBucketCors(g -> g.bucket(bucketName).build());
 		assertEquals(allowedMethods, response.corsRules().get(0).allowedHeaders());
 		assertEquals(allowedOrigins, response.corsRules().get(0).allowedOrigins());
 
-		client.deleteBucketCors(DeleteBucketCorsRequest.builder().bucket(bucketName).build());
-		response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
+		client.deleteBucketCors(d -> d.bucket(bucketName).build());
+		response = client.getBucketCors(g -> g.bucket(bucketName).build());
 		assertNull(response);
 	}
 
@@ -79,7 +73,7 @@ public class Cors extends TestBase {
 	public void testCorsOriginResponse() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(CreateBucketRequest.builder().bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
 
 		var corsConfig = CORSConfiguration.builder();
 		var rules = new ArrayList<CORSRule>();
@@ -97,10 +91,10 @@ public class Cors extends TestBase {
 				.allowedOrigins(List.of("*.put")).build());
 		corsConfig.corsRules(rules);
 
-		var response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
+		var response = client.getBucketCors(g -> g.bucket(bucketName).build());
 		assertNull(response);
 
-		client.putBucketCors(PutBucketCorsRequest.builder().bucket(bucketName).corsConfiguration(corsConfig.build()).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig.build()).build());
 
 		var headers = new HashMap<String, String>();
 
@@ -234,7 +228,7 @@ public class Cors extends TestBase {
 	public void testCorsOriginWildcard() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(CreateBucketRequest.builder().bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
 
 		var corsConfig = CORSConfiguration.builder();
 		var rules = new ArrayList<CORSRule>();
@@ -242,10 +236,10 @@ public class Cors extends TestBase {
 				.allowedOrigins(List.of("*")).build());
 		corsConfig.corsRules(rules);
 
-		var response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
+		var response = client.getBucketCors(g -> g.bucket(bucketName).build());
 		assertNull(response);
 
-		client.putBucketCors(PutBucketCorsRequest.builder().bucket(bucketName).corsConfiguration(corsConfig.build()).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig.build()).build());
 
 		var headers = new HashMap<String, String>();
 		corsRequestAndCheck("GET", bucketName, new HashMap<>(), 200, null, null, null);
@@ -261,7 +255,7 @@ public class Cors extends TestBase {
 	public void testCorsHeaderOption() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(CreateBucketRequest.builder().bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ).build());
 
 		var corsConfig = CORSConfiguration.builder();
 		var rules = new ArrayList<CORSRule>();
@@ -272,10 +266,10 @@ public class Cors extends TestBase {
 				.build());
 		corsConfig.corsRules(rules);
 
-		var response = client.getBucketCors(GetBucketCorsRequest.builder().bucket(bucketName).build());
+		var response = client.getBucketCors(g -> g.bucket(bucketName).build());
 		assertNull(response);
 
-		client.putBucketCors(PutBucketCorsRequest.builder().bucket(bucketName).corsConfiguration(corsConfig.build()).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig.build()).build());
 
 		var headers = new HashMap<String, String>();
 		headers.clear();
