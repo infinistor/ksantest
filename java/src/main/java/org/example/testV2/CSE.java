@@ -92,7 +92,7 @@ public class CSE extends TestBase {
 			var getMetadata = client.headObject(h -> h.bucket(bucketName).key(key));
 			assertEquals(metadata, getMetadata.metadata());
 		} catch (Exception e) {
-			fail(e.getMessage());
+			fail(e);
 		}
 	}
 
@@ -122,7 +122,7 @@ public class CSE extends TestBase {
 			var body = getBody(response);
 			assertNotEquals(data, body);
 		} catch (Exception e) {
-			fail(e.getMessage());
+			fail(e);
 		}
 	}
 
@@ -181,7 +181,7 @@ public class CSE extends TestBase {
 			assertTrue(encoding.substring(startPoint, startPoint + 1000).equals(encodingBody),
 					MainData.NOT_MATCHED);
 		} catch (Exception e) {
-			fail(e.getMessage());
+			fail(e);
 		}
 	}
 
@@ -234,7 +234,7 @@ public class CSE extends TestBase {
 			checkContentUsingRange(bucketName, key, encoding, 10L * MainData.MB);
 			checkContentUsingRandomRange(bucketName, key, encoding, 100);
 		} catch (Exception e) {
-			fail(e.getMessage());
+			fail(e);
 		}
 	}
 
@@ -265,7 +265,7 @@ public class CSE extends TestBase {
 			checkContent(bucketName, key, encoding, 50);
 
 		} catch (Exception e) {
-			fail(e.getMessage());
+			fail(e);
 		}
 	}
 
@@ -299,7 +299,7 @@ public class CSE extends TestBase {
 			checkContentUsingRandomRange(bucketName, key, encoding, 50);
 
 		} catch (Exception e) {
-			fail(e.getMessage());
+			fail(e);
 		}
 	}
 }

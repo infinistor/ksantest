@@ -155,7 +155,7 @@ public class Inventory extends TestBase {
 						.id(inventoryId)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchConfiguration, e.getMessage());
+		assertEquals(MainData.NoSuchConfiguration, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -170,7 +170,7 @@ public class Inventory extends TestBase {
 				() -> client.deleteBucketInventoryConfiguration(d -> d.bucket(bucketName).id(inventoryId)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchConfiguration, e.getMessage());
+		assertEquals(MainData.NoSuchConfiguration, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -195,7 +195,7 @@ public class Inventory extends TestBase {
 						p -> p.bucket(bucketName).inventoryConfiguration(inventory.build())));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.getMessage());
+		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -221,7 +221,7 @@ public class Inventory extends TestBase {
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidConfigurationId, e.getMessage());
+		assertEquals(MainData.InvalidConfigurationId, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -284,7 +284,7 @@ public class Inventory extends TestBase {
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.getMessage());
+		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -310,7 +310,7 @@ public class Inventory extends TestBase {
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.getMessage());
+		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -336,7 +336,7 @@ public class Inventory extends TestBase {
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.getMessage());
+		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -362,7 +362,7 @@ public class Inventory extends TestBase {
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.getMessage());
+		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -466,6 +466,6 @@ public class Inventory extends TestBase {
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.getMessage());
+		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
 	}
 }

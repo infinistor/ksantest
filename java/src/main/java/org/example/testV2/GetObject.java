@@ -47,7 +47,7 @@ public class GetObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key("foo")));
 		var statusCode = e.statusCode();
-		var errorCode = e.getMessage();
+		var errorCode = e.awsErrorDetails().errorCode();
 
 		assertEquals(404, statusCode);
 		assertEquals(MainData.NoSuchKey, errorCode);
@@ -274,7 +274,7 @@ public class GetObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=40-50")));
 		var statusCode = e.statusCode();
-		var errorCode = e.getMessage();
+		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(416, statusCode);
 		assertEquals(MainData.InvalidRange, errorCode);
 	}
@@ -293,7 +293,7 @@ public class GetObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=40-50")));
 		var statusCode = e.statusCode();
-		var errorCode = e.getMessage();
+		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(416, statusCode);
 		assertEquals(MainData.InvalidRange, errorCode);
 	}

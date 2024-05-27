@@ -146,7 +146,7 @@ public class Analytics extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getBucketAnalyticsConfiguration(g -> g.bucket(bucketName).id("test")));
 		assertEquals(404, e.statusCode());
-		assertEquals("NoSuchConfiguration", e.getMessage());
+		assertEquals("NoSuchConfiguration", e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -167,7 +167,7 @@ public class Analytics extends TestBase {
 																.bucket("arn:aws:s3:::" + targetBucketName)
 																.format("CSV"))))))));
 		assertEquals(400, e.statusCode());
-		assertEquals("MalformedXML", e.getMessage());
+		assertEquals("MalformedXML", e.awsErrorDetails().errorCode());
 
 		e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
@@ -179,7 +179,7 @@ public class Analytics extends TestBase {
 																.bucket("arn:aws:s3:::" + targetBucketName)
 																.format("CSV"))))))));
 		assertEquals(400, e.statusCode());
-		assertEquals("InvalidConfigurationId", e.getMessage());
+		assertEquals("InvalidConfigurationId", e.awsErrorDetails().errorCode());
 
 		e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
@@ -191,6 +191,6 @@ public class Analytics extends TestBase {
 																.bucket("arn:aws:s3:::" + targetBucketName)
 																.format("JSON"))))))));
 		assertEquals(400, e.statusCode());
-		assertEquals("MalformedXML", e.getMessage());
+		assertEquals("MalformedXML", e.awsErrorDetails().errorCode());
 	}
 }

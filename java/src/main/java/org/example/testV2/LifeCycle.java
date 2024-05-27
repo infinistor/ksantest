@@ -149,7 +149,7 @@ public class LifeCycle extends TestBase {
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidArgument, e.getMessage());
+		assertEquals(MainData.InvalidArgument, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -171,7 +171,7 @@ public class LifeCycle extends TestBase {
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidArgument, e.getMessage());
+		assertEquals(MainData.InvalidArgument, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -190,7 +190,7 @@ public class LifeCycle extends TestBase {
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.getMessage());
+		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -237,7 +237,7 @@ public class LifeCycle extends TestBase {
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidArgument, e.getMessage());
+		assertEquals(MainData.InvalidArgument, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -447,7 +447,7 @@ public class LifeCycle extends TestBase {
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidArgument, e.getMessage());
+		assertEquals(MainData.InvalidArgument, e.awsErrorDetails().errorCode());
 	}
 
 	@Test

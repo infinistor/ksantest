@@ -45,7 +45,7 @@ public class DeleteBucket extends TestBase
 		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.getMessage());
+		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -59,7 +59,7 @@ public class DeleteBucket extends TestBase
 		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
 
 		assertEquals(409, e.statusCode());
-		assertEquals(MainData.BucketNotEmpty, e.getMessage());
+		assertEquals(MainData.BucketNotEmpty, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -74,7 +74,7 @@ public class DeleteBucket extends TestBase
 		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.getMessage());
+		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
 }

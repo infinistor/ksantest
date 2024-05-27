@@ -96,6 +96,6 @@ public class Accelerate extends TestBase {
 						.bucket(bucketName)
 						.accelerateConfiguration(a -> a.status("Invalid"))));
 		assertEquals(400, e.statusCode());
-		assertEquals("MalformedXML", e.getMessage());
+		assertEquals("MalformedXML", e.awsErrorDetails().errorCode());
 	}
 }

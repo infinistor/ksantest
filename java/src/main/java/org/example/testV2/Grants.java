@@ -524,7 +524,7 @@ public class Grants extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(accessControlList)));
 		var statusCode = e.statusCode();
-		var errorCode = e.getMessage();
+		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(400, statusCode);
 		assertEquals(MainData.InvalidArgument, errorCode);
 	}

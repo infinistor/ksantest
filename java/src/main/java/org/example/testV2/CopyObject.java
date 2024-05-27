@@ -115,7 +115,7 @@ public class CopyObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key).destinationBucket(bucketName).destinationKey(key)));
 		var statusCode = e.statusCode();
-		var errorCode = e.getMessage();
+		var errorCode = e.awsErrorDetails().errorCode();
 
 		assertEquals(400, statusCode);
 		assertEquals(MainData.InvalidRequest, errorCode);
@@ -802,7 +802,7 @@ public class CopyObject extends TestBase {
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(ker2)));
 		var statusCode = e.statusCode();
-		var errorCode = e.getMessage();
+		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(404, statusCode);
 		assertEquals("NoSuchKey", errorCode);
 	}
@@ -826,7 +826,7 @@ public class CopyObject extends TestBase {
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(ker2)));
 		var statusCode = e.statusCode();
-		var errorCode = e.getMessage();
+		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(404, statusCode);
 		assertEquals("NoSuchKey", errorCode);
 	}

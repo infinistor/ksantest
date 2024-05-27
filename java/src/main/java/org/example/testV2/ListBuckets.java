@@ -70,7 +70,7 @@ public class ListBuckets extends TestBase
 		var e = assertThrows(AwsServiceException.class, () -> badAuthClient.listBuckets());
 		
 		var statusCode = e.statusCode();
-		var errorCode = e.getMessage();
+		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(403, statusCode);
 		assertEquals(MainData.InvalidAccessKeyId, errorCode);
 	}
@@ -85,7 +85,7 @@ public class ListBuckets extends TestBase
 
 		var e = assertThrows(AwsServiceException.class, () -> badAuthClient.listBuckets());
 		var statusCode = e.statusCode();
-		var errorCode = e.getMessage();
+		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(403, statusCode);
 		assertEquals(MainData.SignatureDoesNotMatch, errorCode);
 	}

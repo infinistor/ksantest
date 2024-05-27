@@ -65,7 +65,7 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.getMessage());
+		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -87,7 +87,7 @@ public class ACL extends TestBase {
 				.deleteObject(d -> d.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.getMessage());
+		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -108,7 +108,7 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchKey, e.getMessage());
+		assertEquals(MainData.NoSuchKey, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -136,7 +136,7 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.getMessage());
+		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -221,7 +221,7 @@ public class ACL extends TestBase {
 				() -> client.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.getMessage());
+		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -241,7 +241,7 @@ public class ACL extends TestBase {
 				() -> client.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchKey, e.getMessage());
+		assertEquals(MainData.NoSuchKey, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -317,7 +317,7 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.putObject(p -> p.bucket(bucketName).key(key),
 						RequestBody.fromString("bar")));
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.getMessage());
+		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -337,7 +337,7 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.putObject(p -> p.bucket(bucketName).key(key),
 						RequestBody.fromString("bar")));
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.getMessage());
+		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
