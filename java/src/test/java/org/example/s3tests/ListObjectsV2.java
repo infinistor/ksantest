@@ -284,44 +284,44 @@ class ListObjectsV2 {
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Continuationtoken")
+	@Tag("ContinuationToken")
 	// 오브젝트 목록을 가져올때 다음 토큰값을 올바르게 가져오는지 확인
-	void testBucketListV2Continuationtoken() {
-		Test.testBucketListV2Continuationtoken();
+	void testBucketListV2ContinuationToken() {
+		Test.testBucketListV2ContinuationToken();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("ContinuationtokenAndStartAfter")
-	// 오브젝트 목록을 가져올때 Startafter와 토큰이 재대로 동작하는지 확인
-	void testBucketListV2BothContinuationtokenStartafter() {
-		Test.testBucketListV2BothContinuationtokenStartafter();
-	}
-
-	@Test
-	@Tag("KSAN")
-	@Tag("StartAfter")
-	// startafter에 읽을수 없는 값[\n]을 설정한 경우 오브젝트 목록을 올바르게 가져오는지 확인
-	void testBucketListV2StartafterUnreadable() {
-		Test.testBucketListV2StartafterUnreadable();
+	@Tag("ContinuationTokenAndStartAfter")
+	// 오브젝트 목록을 가져올때 StartAfter와 토큰이 재대로 동작하는지 확인
+	void testBucketListV2BothContinuationTokenStartAfter() {
+		Test.testBucketListV2BothContinuationTokenStartAfter();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("StartAfter")
-	// [startafter와 일치하는 오브젝트가 존재하지 않는 환경 해당 startafter보다 정렬순서가 낮은 오브젝트는 존재하는 환경]
-	// startafter를 설정하고 오브젝트 목록을 불러올때 재대로 가져오는지 확인
-	void testBucketListV2StartafterNotInList() {
-		Test.testBucketListV2StartafterNotInList();
+	// startAfter에 읽을수 없는 값[\n]을 설정한 경우 오브젝트 목록을 올바르게 가져오는지 확인
+	void testBucketListV2StartAfterUnreadable() {
+		Test.testBucketListV2StartAfterUnreadable();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("StartAfter")
-	// [startafter와 일치하는 오브젝트도 정렬순서가 같은 오브젝트도 존재하지 않는 환경] startafter를 설정하고 오브젝트 목록을
+	// [startAfter와 일치하는 오브젝트가 존재하지 않는 환경 해당 startAfter보다 정렬순서가 낮은 오브젝트는 존재하는 환경]
+	// startAfter를 설정하고 오브젝트 목록을 불러올때 재대로 가져오는지 확인
+	void testBucketListV2StartAfterNotInList() {
+		Test.testBucketListV2StartAfterNotInList();
+	}
+
+	@Test
+	@Tag("KSAN")
+	@Tag("StartAfter")
+	// [startAfter와 일치하는 오브젝트도 정렬순서가 같은 오브젝트도 존재하지 않는 환경] startAfter를 설정하고 오브젝트 목록을
 	// 불러올때 재대로 가져오는지 확인
-	void testBucketListV2StartafterAfterList() {
-		Test.testBucketListV2StartafterAfterList();
+	void testBucketListV2StartAfterAfterList() {
+		Test.testBucketListV2StartAfterAfterList();
 	}
 
 	@Test
@@ -344,8 +344,8 @@ class ListObjectsV2 {
 	@Tag("KSAN")
 	@Tag("ERROR")
 	// 존재하지 않는 버킷 내 오브젝트들을 가져오려 했을 경우 실패 확인(ListObjectsV2)
-	void testBucketv2Notexist() {
-		Test.testBucketv2Notexist();
+	void testBucketV2NotExist() {
+		Test.testBucketV2NotExist();
 	}
 
 	@Test

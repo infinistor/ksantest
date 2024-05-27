@@ -107,16 +107,16 @@ class LifeCycle {
 	@Tag("KSAN")
 	@Tag("Version")
 	// 버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
-	void testLifecycleNoncurExpiration() {
-		Test.testLifecycleNoncurExpiration();
+	void testLifecycleNoncurrentExpiration() {
+		Test.testLifecycleNoncurrentExpiration();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("DeleteMarker")
 	// DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
-	void testLifecycleSetDeletemarker() {
-		Test.testLifecycleSetDeletemarker();
+	void testLifecycleSetDeleteMarker() {
+		Test.testLifecycleSetDeleteMarker();
 	}
 
 	@Test
@@ -140,7 +140,7 @@ class LifeCycle {
 	@Tag("DeleteMarker")
 	// DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
 	void testLifecycleDeletemarkerExpiration() {
-		Test.testLifecycleDeletemarkerExpiration();
+		Test.testLifecycleDeleteMarkerExpiration();
 	}
 
 	@Test
