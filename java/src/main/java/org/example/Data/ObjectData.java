@@ -22,72 +22,73 @@ public class ObjectData {
 	public long contentLength;
 	public String versionId;
 
-	public ObjectData()
-	{
-		Init();
+	private ObjectData(Builder builder) {
+		this.bucketName = builder.bucketName;
+		this.key = builder.key;
+		this.displayName = builder.displayName;
+		this.id = builder.id;
+		this.eTag = builder.eTag;
+		this.lastModified = builder.lastModified;
+		this.contentLength = builder.contentLength;
+		this.versionId = builder.versionId;
 	}
 
-	public void Init()
-	{
-		bucketName = null;
-		key = null;
-		displayName = null;
-		id = null;
-		eTag = null;
-		lastModified = null;
-		contentLength = -1;
-		versionId = null;
+	public static Builder builder() {
+		return new Builder();
 	}
 
+	public static class Builder {
+		private String bucketName;
+		private String key;
+		private String displayName;
+		private String id;
+		private String eTag;
+		private Date lastModified;
+		private long contentLength;
+		private String versionId;
 
-	public ObjectData withBucketName(String bucketName) {
-		setBucketName(bucketName);
-		return this;
-	}
-	public ObjectData withKey(String key) {
-		setKey(key);
-		return this;
-	}
-	public ObjectData withDisplayName(String displayName) {
-		setDisplayName(displayName);
-		return this;
-	}
-	public ObjectData withID(String id) {
-		setId(id);
-		return this;
-	}
-	public ObjectData withETag(String eTag) {
-		setETag(eTag);
-		return this;
-	}
-	public ObjectData withLastModified(Date lastModified) {
-		setLastModified(lastModified);
-		return this;
-	}
-	public ObjectData withContentLength(long contentLength) {
-		setContentLength(contentLength);
-		return this;
-	}
-	public ObjectData withVersionId(String versionId) {
-		setVersionId(versionId);
-		return this;
-	}
+		public Builder bucketName(String bucketName) {
+			this.bucketName = bucketName;
+			return this;
+		}
 
+		public Builder key(String key) {
+			this.key = key;
+			return this;
+		}
 
-	public void setBucketName(String bucketName) { this.bucketName = bucketName; }
-	public String getBucketName() { return bucketName; }
-	public void setKey(String key) { this.key = key; }
-	public String getKey() { return key; }
-	public void setDisplayName(String displayName) { this.displayName = displayName; }
-	public String getDisplayName() { return displayName; }
-	public void setId(String id) { this.id = id; }
-	public String getId() { return id; }
-	public void setETag(String eTag) { this.eTag = eTag; }
-	public String getETag() { return eTag; }
-	public void setLastModified(Date lastModified) { this.lastModified = lastModified; }
-	public Date getLastModified() { return lastModified; }
-	public void setContentLength(long contentLength) { this.contentLength = contentLength; }
-	public long getContentLength() { return contentLength; }
-	public void setVersionId(String versionId) { this.versionId = versionId; }
-	public String getVersionId() { return versionId; }
+		public Builder displayName(String displayName) {
+			this.displayName = displayName;
+			return this;
+		}
+
+		public Builder id(String id) {
+			this.id = id;
+			return this;
+		}
+
+		public Builder eTag(String eTag) {
+			this.eTag = eTag;
+			return this;
+		}
+
+		public Builder lastModified(Date lastModified) {
+			this.lastModified = lastModified;
+			return this;
+		}
+
+		public Builder contentLength(long contentLength) {
+			this.contentLength = contentLength;
+			return this;
+		}
+
+		public Builder versionId(String versionId) {
+			this.versionId = versionId;
+			return this;
+		}
+
+		public ObjectData build() {
+			return new ObjectData(this);
+		}
+	}
 }
