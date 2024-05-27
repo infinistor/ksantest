@@ -10,123 +10,120 @@
 */
 package org.example.testV2;
 
-import java.util.EnumSet;
+import static org.junit.Assert.assertEquals;
+
+import java.util.List;
 
 import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 
-import com.amazonaws.services.s3.model.BucketNotificationConfiguration;
-import com.amazonaws.services.s3.model.LambdaConfiguration;
-import com.amazonaws.services.s3.model.S3Event;
-import com.amazonaws.services.s3.model.SetBucketNotificationConfigurationRequest;
+import software.amazon.awssdk.services.s3.model.Event;
+import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
+import software.amazon.awssdk.services.s3.model.NotificationConfiguration;
 
 public class Notification extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Notification SDK V2 Start");
+		System.out.println("Notification Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Notification SDK V2 End");
+		System.out.println("Notification End");
 	}
 
 	@Test
 	@Tag("Get")
 	// 버킷에 알람 설정이 없는지 확인
-	public void test_notification_get_empty() {
+	public void testNotificationGetEmpty() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var result = client.getBucketNotificationConfiguration(bucketName);
+		var result = client.getBucketNotificationConfiguration(g -> g.bucket(bucketName));
 
-		assert result.getConfigurations().size() == 0;
+		assertEquals(0, result.lambdaFunctionConfigurations().size());
+		assertEquals(0, result.queueConfigurations().size());
+		assertEquals(0, result.topicConfigurations().size());
+		assertEquals(0, result.queueConfigurations().size());
 	}
 
 	@Test
 	@Tag("Put")
 	// 버킷에 알람 설정이 가능한지 확인
-	public void test_notification_put() {
+	public void testNotificationPut() {
 		var bucketName = getNewBucket();
 		var client = getClient();
+		var roleId = "my-lambda";
 		var mainUserId = config.mainUser.userId;
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
+		var s3Events = List.of(Event.S3_OBJECT_CREATED, Event.S3_OBJECT_REMOVED);
 
-		var s3Events = EnumSet.noneOf(S3Event.class);
-		s3Events.add(S3Event.ObjectCreated);
-		s3Events.add(S3Event.ObjectRemoved);
 		// 알람 설정
-		var notification = new BucketNotificationConfiguration();
-		var lambdaFunction = new LambdaConfiguration(functionARN, s3Events);
-		notification.addConfiguration("my-lambda", lambdaFunction);
+		var notification = NotificationConfiguration.builder();
+		notification.lambdaFunctionConfigurations(
+				LambdaFunctionConfiguration.builder().id(roleId).lambdaFunctionArn(functionARN).events(s3Events)
+						.build());
 
-		var request = new SetBucketNotificationConfigurationRequest(bucketName, notification);
-
-		client.setBucketNotificationConfiguration(request);
+		client.putBucketNotificationConfiguration(
+				p -> p.bucket(bucketName).notificationConfiguration(notification.build()));
 	}
 
 	@Test
 	@Tag("Get")
 	// 버킷에 알람 설정이 되어있는지 확인
-	public void test_notification_get() {
+	public void testNotificationGet() {
 		var bucketName = getNewBucket();
 		var client = getClient();
+		var roleId = "my-lambda";
 		var mainUserId = config.mainUser.userId;
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
+		var s3Events = List.of(Event.S3_OBJECT_CREATED, Event.S3_OBJECT_REMOVED);
 
-		var s3Events = EnumSet.noneOf(S3Event.class);
-		s3Events.add(S3Event.ObjectCreated);
-		s3Events.add(S3Event.ObjectRemoved);
 		// 알람 설정
-		var notification = new BucketNotificationConfiguration();
-		var lambdaFunction = new LambdaConfiguration(functionARN, s3Events);
-		notification.addConfiguration("my-lambda", lambdaFunction);
+		var notification = NotificationConfiguration.builder();
+		notification.lambdaFunctionConfigurations(
+				LambdaFunctionConfiguration.builder().id(roleId).lambdaFunctionArn(functionARN).events(s3Events)
+						.build());
 
-		var request = new SetBucketNotificationConfigurationRequest(bucketName, notification);
+		client.putBucketNotificationConfiguration(
+				p -> p.bucket(bucketName).notificationConfiguration(notification.build()));
 
-		client.setBucketNotificationConfiguration(request);
+		var result = client.getBucketNotificationConfiguration(g -> g.bucket(bucketName));
+		var resultLambda = result.lambdaFunctionConfigurations().get(0);
 
-		var result = client.getBucketNotificationConfiguration(bucketName);
-		var resultLambda = result.getConfigurationByName("my-lambda");
-
-		s3eventCompare(s3Events.toArray(), resultLambda.getEvents().toArray());
+		s3eventCompare(s3Events, resultLambda.events());
 	}
 
 	@Test
 	@Tag("Delete")
 	// 버킷에 알람 설정이 삭제되는지 확인
-	public void test_notification_delete() {
+	public void testNotificationDelete() {
 		var bucketName = getNewBucket();
 		var client = getClient();
+		var roleId = "my-lambda";
 		var mainUserId = config.mainUser.userId;
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
+		var s3Events = List.of(Event.S3_OBJECT_CREATED, Event.S3_OBJECT_REMOVED);
 
-		var s3Events = EnumSet.noneOf(S3Event.class);
-		s3Events.add(S3Event.ObjectCreated);
-		s3Events.add(S3Event.ObjectRemoved);
 		// 알람 설정
-		var notification = new BucketNotificationConfiguration();
-		var lambdaFunction = new LambdaConfiguration(functionARN, s3Events);
-		notification.addConfiguration("my-lambda", lambdaFunction);
+		var notification = NotificationConfiguration.builder();
+		notification.lambdaFunctionConfigurations(
+				LambdaFunctionConfiguration.builder().id(roleId).lambdaFunctionArn(functionARN).events(s3Events)
+						.build());
 
-		var request = new SetBucketNotificationConfigurationRequest(bucketName, notification);
+		client.putBucketNotificationConfiguration(
+				p -> p.bucket(bucketName).notificationConfiguration(notification.build()));
 
-		client.setBucketNotificationConfiguration(request);
-
-		var result = client.getBucketNotificationConfiguration(bucketName);
-		var resultLambda = result.getConfigurationByName("my-lambda");
-		s3eventCompare(s3Events.toArray(), resultLambda.getEvents().toArray());
+		var result = client.getBucketNotificationConfiguration(g -> g.bucket(bucketName));
+		var resultLambda = result.lambdaFunctionConfigurations().get(0);
+		s3eventCompare(s3Events, resultLambda.events());
 
 		// 알람 삭제
-		var deleteNotification = new BucketNotificationConfiguration();
+		client.putBucketNotificationConfiguration(
+				p -> p.bucket(bucketName).notificationConfiguration(NotificationConfiguration.builder().build()));
 
-		var deleteRequest = new SetBucketNotificationConfigurationRequest(bucketName, deleteNotification);
-
-		client.setBucketNotificationConfiguration(deleteRequest);
-
-		var deleteResult = client.getBucketNotificationConfiguration(bucketName);
-		var deleteResultLambda = deleteResult.getConfigurationByName("my-lambda");
-
-		assert deleteResultLambda == null;
+		var deleteResult = client.getBucketNotificationConfiguration(g -> g.bucket(bucketName));
+		
+		assertEquals(0, deleteResult.lambdaFunctionConfigurations().size());
 	}
 }

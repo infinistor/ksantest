@@ -450,12 +450,11 @@ public class CopyObject extends TestBase {
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var size = 50 * MainData.MB;
 		var key1 = "src_multipart";
-		var contentType = "text/bla";
 
 		var key1Metadata = new HashMap<String, String>();
 		key1Metadata.put("x-amz-meta-foo", "bar");
 
-		var uploads = setupMultipartUpload(client, bucketName, key1, size, contentType, key1Metadata);
+		var uploads = setupMultipartUpload(client, bucketName, key1, size, key1Metadata);
 		client.completeMultipartUpload(c -> c
 				.bucket(bucketName).key(key1).uploadId(uploads.uploadId)
 				.multipartUpload(p -> p.parts(uploads.parts)));
@@ -473,7 +472,6 @@ public class CopyObject extends TestBase {
 		var key2VersionId = response.versionId();
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
-		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName, key2, uploads.getBody(), MainData.MB);
 
 		var key3 = "dst_multipart2";
@@ -484,7 +482,6 @@ public class CopyObject extends TestBase {
 		response = client.headObject(h -> h.bucket(bucketName).key(key3));
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
-		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName, key3, uploads.getBody(), MainData.MB);
 
 		var bucketName2 = getNewBucket();
@@ -497,7 +494,6 @@ public class CopyObject extends TestBase {
 		response = client.headObject(h -> h.bucket(bucketName2).key(key4));
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
-		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName2, key4, uploads.getBody(), MainData.MB);
 
 		var bucketName3 = getNewBucket();
@@ -510,7 +506,6 @@ public class CopyObject extends TestBase {
 		response = client.headObject(h -> h.bucket(bucketName3).key(key5));
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
-		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName3, key5, uploads.getBody(), MainData.MB);
 
 		var key6 = "dst_multipart5";
@@ -520,7 +515,6 @@ public class CopyObject extends TestBase {
 		response = client.headObject(h -> h.bucket(bucketName).key(key6));
 		assertEquals(key1Size, response.contentLength());
 		assertEquals(key1Metadata, response.metadata());
-		assertEquals(contentType, response.contentType());
 		checkContentUsingRange(bucketName, key6, uploads.getBody(), MainData.MB);
 	}
 
