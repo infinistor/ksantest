@@ -380,7 +380,7 @@ public class ListObjects extends TestBase {
 		String delimiter = "/";
 
 		var response = client.listObjects(
-				new ListObjectsRequest().withBucketName(bucketName).withDelimiter(delimiter).withMaxKeys(2000));
+				new ListObjectsRequest().withBucketName(bucketName).withDelimiter(delimiter));
 
 		assertEquals(delimiter, response.getDelimiter());
 
@@ -776,9 +776,9 @@ public class ListObjects extends TestBase {
 			var objResponse = client.getObjectMetadata(bucketName, Key);
 			var aclResponse = client.getObjectAcl(bucketName, Key);
 
-			data.add(new ObjectData().withKey(Key).withDisplayName(aclResponse.getOwner().getDisplayName())
-					.withID(aclResponse.getOwner().getId()).withETag(objResponse.getETag())
-					.withLastModified(objResponse.getLastModified()).withContentLength(objResponse.getContentLength()));
+			data.add(ObjectData.builder().key(Key).displayName(aclResponse.getOwner().getDisplayName())
+					.id(aclResponse.getOwner().getId()).eTag(objResponse.getETag())
+					.lastModified(objResponse.getLastModified()).contentLength(objResponse.getContentLength()).build());
 		}
 
 		var response = client.listObjects(bucketName);

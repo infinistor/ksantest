@@ -193,10 +193,13 @@ public class ListObjectsVersions extends TestBase {
 
 		prefix = "Under1/";
 
-		marker = validateListObject(bucketName, prefix, delimiter, "", 1, true, List.of("Under1/bar"), new ArrayList<>(), "Under1/bar");
-		validateListObject(bucketName, prefix, delimiter, marker, 1, false, new ArrayList<>(), List.of("Under1/baz/"), null);
+		marker = validateListObject(bucketName, prefix, delimiter, "", 1, true, List.of("Under1/bar"),
+				new ArrayList<>(), "Under1/bar");
+		validateListObject(bucketName, prefix, delimiter, marker, 1, false, new ArrayList<>(), List.of("Under1/baz/"),
+				null);
 
-		validateListObject(bucketName, prefix, delimiter, "", 2, false, List.of("Under1/bar"), List.of("Under1/baz/"), null);
+		validateListObject(bucketName, prefix, delimiter, "", 2, false, List.of("Under1/bar"), List.of("Under1/baz/"),
+				null);
 	}
 
 	@Test
@@ -378,8 +381,8 @@ public class ListObjectsVersions extends TestBase {
 
 		String delimiter = "/";
 
-		var response = client.listVersions(
-				new ListVersionsRequest().withBucketName(bucketName).withDelimiter(delimiter).withMaxResults(2000));
+		var response = client
+				.listVersions(new ListVersionsRequest().withBucketName(bucketName).withDelimiter(delimiter));
 
 		assertEquals(delimiter, response.getDelimiter());
 
@@ -782,10 +785,10 @@ public class ListObjectsVersions extends TestBase {
 			var objResponse = client.getObjectMetadata(bucketName, key);
 			var aclResponse = client.getObjectAcl(bucketName, key);
 
-			dataList.add(new ObjectData().withKey(key).withDisplayName(aclResponse.getOwner().getDisplayName())
-					.withID(aclResponse.getOwner().getId()).withETag(objResponse.getETag())
-					.withLastModified(objResponse.getLastModified()).withContentLength(objResponse.getContentLength())
-					.withVersionId(objResponse.getVersionId()));
+			dataList.add(ObjectData.builder().key(key).displayName(aclResponse.getOwner().getDisplayName())
+					.id(aclResponse.getOwner().getId()).eTag(objResponse.getETag())
+					.versionId(objResponse.getVersionId())
+					.lastModified(objResponse.getLastModified()).contentLength(objResponse.getContentLength()).build());
 		}
 
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
