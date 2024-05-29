@@ -296,12 +296,25 @@ public class Multipart extends TestBase {
 		var bucketName = getNewBucket();
 		var key = "multipart";
 		var client = getClient();
+		var content = Utils.randomTextToLong(10 * MainData.KB);
 
-		var size = 1 * MainData.MB;
-		var uploadData = setupMultipartUpload(client, bucketName, key, size, 10 * MainData.KB, null, null);
+		var initResponse = client.createMultipartUpload(c -> c.bucket(bucketName).key(key));
+		var uploadId = initResponse.uploadId();
+		var parts = new ArrayList<CompletedPart>();
+		var totalContent = new StringBuilder();
+
+		for (int i = 0; i < 10; i++) {
+			var partNumber = i + 1;
+			var partResponse = client.uploadPart(
+					u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(partNumber),
+					RequestBody.fromString(content));
+			parts.add(CompletedPart.builder().partNumber(partNumber).eTag(partResponse.eTag()).build());
+			totalContent.append(content);
+		}
+
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
-						.multipartUpload(p -> p.parts(uploadData.parts))));
+				() -> client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadId)
+						.multipartUpload(p -> p.parts(parts))));
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(400, statusCode);
@@ -576,7 +589,7 @@ public class Multipart extends TestBase {
 		var metadata = new HashMap<String, String>();
 		var client = getClient();
 
-		var uploadData = setupMultipartUpload(client, bucketName, key, size, 1 * MainData.MB, metadata, null);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 
 		for (int i = 0; i < 41; i += 10) {
 			var partNumber = i;

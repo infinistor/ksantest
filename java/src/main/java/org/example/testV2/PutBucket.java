@@ -18,248 +18,238 @@ import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
+import java.util.List;
 
-import com.amazonaws.AmazonServiceException;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
-public class PutBucket extends TestBase
-{
+public class PutBucket extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll()
-	{
-		System.out.println("PutBucket SDK V2 Start");
+	public static void beforeAll() {
+		System.out.println("PutBucket Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	public static void afterAll()
-	{
-		System.out.println("PutBucket SDK V2 End");
+	public static void afterAll() {
+		System.out.println("PutBucket End");
 	}
 
 	@Test
 	@Tag("PUT")
-	//생성한 버킷이 비어있는지 확인
-	public void test_bucket_list_empty() {
+	// 생성한 버킷이 비어있는지 확인
+	public void testBucketListEmpty() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Response = client.listObjects(bucketName);
+		var response = client.listObjects(l->l.bucket(bucketName));
 
-		assertEquals(0, Response.getObjectSummaries().size());
+		assertEquals(0, response.contents().size());
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름의 맨앞에 [_]가 있을 경우 버킷 생성 실패 확인
-	public void test_bucket_create_naming_bad_starts_nonalpha() {
+	// 생성할 버킷이름의 맨앞에 [_]가 있을 경우 버킷 생성 실패 확인
+	public void testBucketCreateNamingBadStartsNonAlpha() {
 		var bucketName = getNewBucketName();
 		checkBadBucketName("_" + bucketName);
-		DeleteBucketList(bucketName);
+		deleteBucketList(bucketName);
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 한글자인 경우 버킷 생성 실패 확인
-	public void test_bucket_create_naming_bad_short_one() {
+	// 생성할 버킷이름이 한글자인 경우 버킷 생성 실패 확인
+	public void testBucketCreateNamingBadShortOne() {
 		checkBadBucketName("a");
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 두글자인 경우 버킷 생성 실패 확인
-	public void test_bucket_create_naming_bad_short_two() {
+	// 생성할 버킷이름이 두글자인 경우 버킷 생성 실패 확인
+	public void testBucketCreateNamingBadShortTwo() {
 		checkBadBucketName("aa");
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 60자인 경우 버킷 생성 확인
-	public void test_bucket_create_naming_good_long_60() {
+	// 생성할 버킷이름이 60자인 경우 버킷 생성 확인
+	public void testBucketCreateNamingGoodLong60() {
 		testBucketCreateNamingGoodLong(60);
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 61자인 경우 버킷 생성 확인
-	public void test_bucket_create_naming_good_long_61() {
+	// 생성할 버킷이름이 61자인 경우 버킷 생성 확인
+	public void testBucketCreateNamingGoodLong61() {
 		testBucketCreateNamingGoodLong(61);
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 62자인 경우 버킷 생성 확인
-	public void test_bucket_create_naming_good_long_62() {
+	// 생성할 버킷이름이 62자인 경우 버킷 생성 확인
+	public void testBucketCreateNamingGoodLong62() {
 		testBucketCreateNamingGoodLong(62);
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 63자인 경우 버킷 생성 확인
-	public void test_bucket_create_naming_good_long_63() {
+	// 생성할 버킷이름이 63자인 경우 버킷 생성 확인
+	public void testBucketCreateNamingGoodLong63() {
 		testBucketCreateNamingGoodLong(63);
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 64자인 경우 버킷 생성 실패
-	public void test_bucket_create_naming_good_long_64() {
+	// 생성할 버킷이름이 64자인 경우 버킷 생성 실패
+	public void testBucketCreateNamingGoodLong64() {
 		testBucketCreateNamingBadLong(64);
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//버킷이름의 길이 긴 경우 버킷 목록을 읽어올 수 있는지 확인
-	public void test_bucket_list_long_name() {
+	// 버킷이름의 길이 긴 경우 버킷 목록을 읽어올 수 있는지 확인
+	public void testBucketListLongName() {
 		var bucketName = getNewBucketName(61);
 		var client = getClient();
-		client.createBucket(bucketName);
-		var Response = client.listObjects(bucketName);
+		client.createBucket(c->c.bucket(bucketName));
+		var response = client.listObjects(l->l.bucket(bucketName));
 
-		assertEquals(0, Response.getObjectSummaries().size());
+		assertEquals(0, response.contents().size());
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 IP 주소로 되어 있을 경우 버킷 생성 실패 확인
-	public void test_bucket_create_naming_bad_ip() {
+	// 생성할 버킷이름이 IP 주소로 되어 있을 경우 버킷 생성 실패 확인
+	public void testBucketCreateNamingBadIp() {
 		checkBadBucketName("192.168.11.123");
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름에 문자와 [_]가 포함되어 있을 경우 버킷 생성 실패 확인
-	public void test_bucket_create_naming_dns_underscore() {
-		checkBadBucketName("foo_bar");
+	// 생성할 버킷이름에 문자와 [_]가 포함되어 있을 경우 버킷 생성 실패 확인
+	public void testBucketCreateNamingDnsUnderscore() {
+		checkBadBucketName("fooBar");
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 랜덤 알파벳 63자로 구성된 경우 버킷 생성 확인
-	public void test_bucket_create_naming_dns_long() {
-		var Prefix = getPrefix();
-		var AddLength = 63 - Prefix.length();
-		Prefix = Utils.randomText(AddLength);
-		checkGoodBucketName(Prefix, null);
+	// 생성할 버킷이름이 랜덤 알파벳 63자로 구성된 경우 버킷 생성 확인
+	public void testBucketCreateNamingDnsLong() {
+		var prefix = getPrefix();
+		var addLength = 63 - prefix.length();
+		prefix = Utils.randomText(addLength);
+		checkGoodBucketName(prefix, null);
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름의 끝이 [-]로 끝날 경우 버킷 생성 실패 확인
-	public void test_bucket_create_naming_dns_dash_at_end() {
+	// 생성할 버킷이름의 끝이 [-]로 끝날 경우 버킷 생성 실패 확인
+	public void testBucketCreateNamingDnsDashAtEnd() {
 		checkBadBucketName("foo-");
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름에 문자와 [..]가 포함되어 있을 경우 버킷 생성 실패 확인
-	public void test_bucket_create_naming_dns_dot_dot() {
+	// 생성할 버킷이름에 문자와 [..]가 포함되어 있을 경우 버킷 생성 실패 확인
+	public void testBucketCreateNamingDnsDotDot() {
 		checkBadBucketName("foo..bar");
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름의 사이에 [.-]가 포함되어 있을 경우 버킷 생성 실패 확인
-	public void test_bucket_create_naming_dns_dot_dash() {
+	// 생성할 버킷이름의 사이에 [.-]가 포함되어 있을 경우 버킷 생성 실패 확인
+	public void testBucketCreateNamingDnsDotDash() {
 		checkBadBucketName("foo.-bar");
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름의 사이에 [-.]가 포함되어 있을 경우 버킷 생성 실패 확인
-	public void test_bucket_create_naming_dns_dash_dot() {
+	// 생성할 버킷이름의 사이에 [-.]가 포함되어 있을 경우 버킷 생성 실패 확인
+	public void testBucketCreateNamingDnsDashDot() {
 		checkBadBucketName("foo-.bar");
 	}
 
 	@Test
 	@Tag("Duplicate")
-	//버킷 중복 생성시 실패 확인
-	public void test_bucket_create_exists() {
+	// 버킷 중복 생성시 실패 확인
+	public void testBucketCreateExists() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 
-		client.createBucket(bucketName);
+		client.createBucket(c->c.bucket(bucketName));
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.createBucket(bucketName));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var e = assertThrows(AwsServiceException.class, () -> client.createBucket(c->c.bucket(bucketName)));
 
-		assertEquals(409, StatusCode);
-		assertEquals(MainData.BucketAlreadyOwnedByYou, ErrorCode);
+		assertEquals(409, e.statusCode());
+		assertEquals(MainData.BucketAlreadyOwnedByYou, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("Duplicate")
-	//[다른 2명의 사용자가 버킷 생성하려고 할 경우] 메인유저가 버킷을 생성하고 서브유저가가 같은 이름으로 버킷 생성하려고 할 경우 실패 확인
-	public void test_bucket_create_exists_nonowner() {
+	// [다른 2명의 사용자가 버킷 생성하려고 할 경우] 메인유저가 버킷을 생성하고 서브유저가가 같은 이름으로 버킷 생성하려고 할 경우 실패 확인
+	public void testBucketCreateExistsNonowner() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		var AltClient = getAltClient();
+		var altClient = getAltClient();
 
-		client.createBucket(bucketName);
+		client.createBucket(c->c.bucket(bucketName));
 
-		var e = assertThrows(AmazonServiceException.class, () -> AltClient.createBucket(bucketName));
-		var StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
+		var e = assertThrows(AwsServiceException.class, () -> altClient.createBucket(c->c.bucket(bucketName)));
 
-		assertEquals(409, StatusCode);
-		assertEquals(MainData.BucketAlreadyExists, ErrorCode);
+		assertEquals(409, e.statusCode());
+		assertEquals(MainData.BucketAlreadyExists, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷의 이름이 알파벳으로 시작할 경우 생성되는지 확인
-	public void test_bucket_create_naming_good_starts_alpha() {
+	// 생성할 버킷의 이름이 알파벳으로 시작할 경우 생성되는지 확인
+	public void testBucketCreateNamingGoodStartsAlpha() {
 		checkGoodBucketName("foo", "a" + getPrefix());
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷의 이름이 숫자로 시작할 경우 생성되는지 확인
-	public void test_bucket_create_naming_good_starts_digit() {
+	// 생성할 버킷의 이름이 숫자로 시작할 경우 생성되는지 확인
+	public void testBucketCreateNamingGoodStartsDigit() {
 		checkGoodBucketName("foo", "0" + getPrefix());
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷의 이름 중간에 [.]이 포함된 이름일 경우 생성되는지 확인
-	public void test_bucket_create_naming_good_contains_period() {
+	// 생성할 버킷의 이름 중간에 [.]이 포함된 이름일 경우 생성되는지 확인
+	public void testBucketCreateNamingGoodContainsPeriod() {
 		checkGoodBucketName("aaa.111", null);
 	}
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷의 이름 중간에 [-]이 포함된 이름일 경우 생성되는지 확인
-	public void test_bucket_create_naming_good_contains_hyphen() {
+	// 생성할 버킷의 이름 중간에 [-]이 포함된 이름일 경우 생성되는지 확인
+	public void testBucketCreateNamingGoodContainsHyphen() {
 		checkGoodBucketName("aaa-111", null);
 	}
 
 	@Test
 	@Tag("Duplicate")
-	//버킷 생성하고 오브젝트를 업로드한뒤 같은 이름의 버킷 생성하면 기존정보가 그대로 유지되는지 확인 (버킷은 중복 생성 할 수 없음을 확인)
-	public void test_bucket_recreate_not_overriding() {
-		var KeyNames = new ArrayList<String>();
-		KeyNames.add("mykey1");
-		KeyNames.add("mykey2");
+	// 버킷 생성하고 오브젝트를 업로드한뒤 같은 이름의 버킷 생성하면 기존정보가 그대로 유지되는지 확인 (버킷은 중복 생성 할 수 없음을 확인)
+	public void testBucketRecreateNotOverriding() {
+		var keys = List.of("my_key1", "my_key2");
 
-		var bucketName = createObjects(KeyNames);
+		var bucketName = createObjects(keys);
 
-		var ObjectList = getObjectList(bucketName, null);
-		assertEquals(KeyNames, ObjectList);
+		var objects = getObjectList(bucketName, null);
+		assertEquals(keys, objects);
 
 		var client = getClient();
-		assertThrows(AmazonServiceException.class, () -> client.createBucket(bucketName));
+		assertThrows(AwsServiceException.class, () -> client.createBucket(c->c.bucket(bucketName)));
 
-		ObjectList = getObjectList(bucketName, null);
-		assertEquals(KeyNames, ObjectList);
+		objects = getObjectList(bucketName, null);
+		assertEquals(keys, objects);
 	}
 
 	@Test
 	@Tag("location")
 	// 버킷의 location 정보 조회
-	public void test_get_bucket_location()
-	{
+	public void testGetBucketLocation() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		client.getBucketLocation(bucketName);
+		client.getBucketLocation(g->g.bucket(bucketName));
 	}
 }

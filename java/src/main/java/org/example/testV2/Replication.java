@@ -13,14 +13,12 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.BucketReplicationConfiguration;
-import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
-import com.amazonaws.services.s3.model.ReplicationDestinationConfig;
-import com.amazonaws.services.s3.model.ReplicationRule;
-import com.amazonaws.services.s3.model.replication.ReplicationFilter;
-import com.amazonaws.services.s3.model.replication.ReplicationPrefixPredicate;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.Destination;
+import software.amazon.awssdk.services.s3.model.ReplicationConfiguration;
+import software.amazon.awssdk.services.s3.model.ReplicationRule;
+import software.amazon.awssdk.services.s3.model.ReplicationRuleFilter;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -28,170 +26,140 @@ import org.junit.jupiter.api.Test;
 public class Replication extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Replication SDK V2 Start");
+		System.out.println("Replication Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Replication SDK V2 End");
+		System.out.println("Replication End");
 	}
 
 	@Test
 	@Tag("Check")
 	// @Tag("버킷의 Replication 설정이 되는지 확인(put/get/delete)")
-	public void test_replication_set() {
-		var SourceBucketName = getNewBucket();
-		var TargetBucketName = getNewBucket();
+	public void testReplicationSet() {
+		var sourceBucketName = getNewBucket();
+		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var prefix = "test/";
 
-		checkConfigureVersioningRetry(SourceBucketName, BucketVersioningConfiguration.ENABLED);
-		checkConfigureVersioningRetry(TargetBucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
+		checkConfigureVersioningRetry(targetBucketName, BucketVersioningStatus.ENABLED);
 
-		String TargetBucketARN = "arn:aws:s3:::" + TargetBucketName;
+		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		ReplicationDestinationConfig destination = new ReplicationDestinationConfig().withBucketARN(TargetBucketARN);
-		ReplicationRule rule = new ReplicationRule().withStatus("Enabled").withDestinationConfig(destination);
-		BucketReplicationConfiguration Config = new BucketReplicationConfiguration();
-		Config.setRoleARN("arn:aws:iam::635518764071:role/awsreplicationtest");
-		Config.addRule("rule1", rule);
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+				.rules(ReplicationRule.builder().status("Enabled")
+						.destination(Destination.builder().bucket(targetBucketARN).build())
+						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
+						.build())
+				.build();
 
-		client.setBucketReplicationConfiguration(SourceBucketName, Config);
-		BucketReplicationConfiguration GetConfig = client.getBucketReplicationConfiguration(SourceBucketName);
-		ReplicationConfigCompare(Config, GetConfig);
+		client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config));
+		var getConfig = client.getBucketReplication(get -> get.bucket(sourceBucketName));
+		replicationConfigCompare(config, getConfig.replicationConfiguration());
 
-		client.deleteBucketReplicationConfiguration(SourceBucketName);
+		client.deleteBucketReplication(delete -> delete.bucket(sourceBucketName));
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.getBucketReplicationConfiguration(SourceBucketName));
-		var StatusCode = e.getStatusCode();
-		assertEquals(404, StatusCode);
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getBucketReplication(get -> get.bucket(sourceBucketName)));
+		assertEquals(404, e.statusCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
-	public void test_replication_invalid_source_bucket_name() {
+	public void testReplicationInvalidSourceBucketName() {
 
-		var SourceBucketName = getNewBucketNameOnly();
-		var TargetBucketName = getNewBucketNameOnly();
+		var sourceBucketName = getNewBucketNameOnly();
+		var targetBucketName = getNewBucketNameOnly();
 		var client = getClient();
-		var Prefix = "test1";
 
-		String TargetBucketARN = "arn:aws:s3:::" + TargetBucketName;
+		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		ReplicationDestinationConfig destination = new ReplicationDestinationConfig().withBucketARN(TargetBucketARN);
-		ReplicationRule rule = new ReplicationRule()
-				.withStatus("Enabled")
-				.withDestinationConfig(destination)
-				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(Prefix)));
-		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/awsreplicationtest");
-		config.addRule("rule1", rule);
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+				.rules(ReplicationRule.builder().status("Enabled")
+						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
+				.build();
 
-		var e = assertThrows(AmazonS3Exception.class,
-				() -> client.setBucketReplicationConfiguration(SourceBucketName, config));
-		int StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(404, StatusCode);
-		assertEquals("NoSuchBucket", ErrorCode);
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
+		assertEquals(404, e.statusCode());
+		assertEquals("NoSuchBucket", e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// @Tag("원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
-	public void test_replication_invalid_source_bucket_versioning() {
+	public void testReplicationInvalidSourceBucketVersioning() {
 
-		var SourceBucketName = getNewBucket();
-		var TargetBucketName = getNewBucket();
+		var sourceBucketName = getNewBucket();
+		var targetBucketName = getNewBucket();
 		var client = getClient();
-		var Prefix = "test1";
 
-		String TargetBucketARN = "arn:aws:s3:::" + TargetBucketName;
+		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		ReplicationDestinationConfig destination = new ReplicationDestinationConfig().withBucketARN(
-				TargetBucketARN);
-		ReplicationRule rule = new ReplicationRule()
-				.withStatus("Enabled")
-				.withDestinationConfig(destination)
-				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(Prefix)));
-		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/awsreplicationtest");
-		config.addRule("rule1", rule);
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+				.rules(ReplicationRule.builder().status("Enabled")
+						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
+				.build();
 
 		var e = assertThrows(
-				AmazonS3Exception.class,
-				() -> client.setBucketReplicationConfiguration(SourceBucketName, config));
-		int StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals("InvalidRequest", ErrorCode);
+				AwsServiceException.class,
+				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
+		assertEquals(400, e.statusCode());
+		assertEquals("InvalidRequest", e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// @Tag("대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
-	public void test_replication_invalid_target_bucket_name() {
+	public void testReplicationInvalidTargetBucketName() {
 
-		var SourceBucketName = getNewBucket();
-		var TargetBucketName = getNewBucketNameOnly();
+		var sourceBucketName = getNewBucket();
+		var targetBucketName = getNewBucketNameOnly();
 		var client = getClient();
-		var Prefix = "test1";
 
-		checkConfigureVersioningRetry(
-				SourceBucketName,
-				BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
 
-		String TargetBucketARN = "arn:aws:s3:::" + TargetBucketName;
+		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		ReplicationDestinationConfig destination = new ReplicationDestinationConfig().withBucketARN(
-				TargetBucketARN);
-		ReplicationRule rule = new ReplicationRule()
-				.withStatus("Enabled")
-				.withDestinationConfig(destination)
-				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(Prefix)));
-		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/awsreplicationtest");
-		config.addRule("rule1", rule);
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+				.rules(ReplicationRule.builder().status("Enabled")
+						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
+				.build();
 
 		var e = assertThrows(
-				AmazonS3Exception.class,
-				() -> client.setBucketReplicationConfiguration(SourceBucketName, config));
-		int StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals("InvalidRequest", ErrorCode);
+				AwsServiceException.class,
+				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
+		assertEquals(400, e.statusCode());
+		assertEquals("InvalidRequest", e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	// @Tag("대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
-	public void test_replication_invalid_target_bucket_versioning() {
+	public void testReplicationInvalidTargetBucketVersioning() {
 
-		var SourceBucketName = getNewBucket();
-		var TargetBucketName = getNewBucket();
+		var sourceBucketName = getNewBucket();
+		var targetBucketName = getNewBucket();
 		var client = getClient();
-		var Prefix = "test1";
 
 		checkConfigureVersioningRetry(
-				SourceBucketName,
-				BucketVersioningConfiguration.ENABLED);
+				sourceBucketName,
+				BucketVersioningStatus.ENABLED);
 
-		String TargetBucketARN = "arn:aws:s3:::" + TargetBucketName;
+		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		ReplicationDestinationConfig destination = new ReplicationDestinationConfig().withBucketARN(TargetBucketARN);
-		ReplicationRule rule = new ReplicationRule()
-				.withStatus("Enabled")
-				.withDestinationConfig(destination)
-				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(Prefix)));
-		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/awsreplicationtest");
-		config.addRule("rule1", rule);
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+				.rules(ReplicationRule.builder().status("Enabled")
+						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
+				.build();
 
 		var e = assertThrows(
-				AmazonS3Exception.class,
-				() -> client.setBucketReplicationConfiguration(SourceBucketName, config));
-		int StatusCode = e.getStatusCode();
-		var ErrorCode = e.getErrorCode();
-		assertEquals(400, StatusCode);
-		assertEquals("InvalidRequest", ErrorCode);
+				AwsServiceException.class,
+				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
+		assertEquals(400, e.statusCode());
+		assertEquals("InvalidRequest", e.awsErrorDetails().errorCode());
 	}
 }

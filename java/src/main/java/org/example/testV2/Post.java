@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.net.MalformedURLException;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.HashMap;
 
@@ -29,32 +30,32 @@ import org.example.auth.AWS4SignerForChunkedUpload;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import com.amazonaws.HttpMethod;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.CreateBucketRequest;
-import com.amazonaws.util.BinaryUtils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.BucketCannedACL;
+import software.amazon.awssdk.utils.BinaryUtils;
 
 public class Post extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Post SDK V2 Start");
+		System.out.println("Post Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Post SDK V2 End");
+		System.out.println("Post End");
 	}
 
 	@Test
 	@Tag("Upload")
 	// post 방식으로 권한없는 사용자가 파일 업로드할 경우 성공 확인
-	public void test_post_object_anonymous_request() throws MalformedURLException {
+	public void testPostObjectAnonymousRequest() throws MalformedURLException {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		var key = "foo.txt";
-		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
 
 		var contentType = "text/plain";
 		var fileData = new FormFile(key, contentType, "bar");
@@ -66,15 +67,15 @@ public class Post extends TestBase {
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var response = client.getObject(bucketName, key);
-		var body = getBody(response.getObjectContent());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
 		assertEquals("bar", body);
 	}
 
 	@Test
 	@Tag("Upload")
 	// post 방식으로 로그인 정보를 포함한 파일 업로드할 경우 성공 확인
-	public void test_post_object_authenticated_request() throws MalformedURLException {
+	public void testPostObjectAuthenticatedRequest() throws MalformedURLException {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var contentType = "text/plain";
@@ -132,19 +133,19 @@ public class Post extends TestBase {
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var response = client.getObject(bucketName, key);
-		var body = getBody(response.getObjectContent());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
 		assertEquals("bar", body);
 	}
 
 	@Test
 	@Tag("Upload")
 	// content-type 헤더 정보 없이 post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_authenticated_no_content_type() throws MalformedURLException {
+	public void testPostObjectAuthenticatedNoContentType() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
 		var contentType = "text/plain";
 		var key = "foo.txt";
 
@@ -190,19 +191,19 @@ public class Post extends TestBase {
 
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
-		var response = client.getObject(bucketName, key);
-		var body = getBody(response.getObjectContent());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
 		assertEquals("bar", body);
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [AccessKey 값이 틀린 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_authenticated_request_bad_access_key() throws MalformedURLException {
+	public void testPostObjectAuthenticatedRequestBadAccessKey() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -261,11 +262,11 @@ public class Post extends TestBase {
 	@Test
 	@Tag("StatusCode")
 	// [성공시 반환상태값을 201로 설정] post 방식으로 권한없는 사용자가 파일 업로드시 에러체크가 올바른지 확인
-	public void test_post_object_set_success_code() throws MalformedURLException {
+	public void testPostObjectSetSuccessCode() throws MalformedURLException {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		var key = "foo.txt";
-		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
 
 		var contentType = "text/plain";
 		var fileData = new FormFile(key, contentType, "bar");
@@ -273,25 +274,25 @@ public class Post extends TestBase {
 		payload.put("key", key);
 		payload.put("acl", "public-read");
 		payload.put("Content-Type", contentType);
-		payload.put("success_action_status", "201");
+		payload.put("successActionStatus", "201");
 
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(201, result.statusCode, result.getErrorCode());
 
-		var response = client.getObject(bucketName, key);
-		var body = getBody(response.getObjectContent());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
 		assertEquals("bar", body);
 	}
 
 	@Test
 	@Tag("StatusCode")
 	// [성공시 반환상태값을 에러코드인 404로 설정] post 방식으로 권한없는 사용자가 파일 업로드시 에러체크가 올바른지 확인
-	public void test_post_object_set_invalid_success_code() throws MalformedURLException {
+	public void testPostObjectSetInvalidSuccessCode() throws MalformedURLException {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		var key = "foo.txt";
 
-		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
 		var contentType = "text/plain";
 
 		var fileData = new FormFile(key, contentType, "bar");
@@ -299,20 +300,20 @@ public class Post extends TestBase {
 		payload.put("key", key);
 		payload.put("acl", "public-read");
 		payload.put("Content-Type", contentType);
-		payload.put("success_action_status", "404");
+		payload.put("successActionStatus", "404");
 
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var response = client.getObject(bucketName, key);
-		var body = getBody(response.getObjectContent());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
 		assertEquals("bar", body);
 	}
 
 	@Test
 	@Tag("Upload")
 	// post 방식으로 로그인정보를 포함한 대용량 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_upload_larger_than_chunk() throws MalformedURLException {
+	public void testPostObjectUploadLargerThanChunk() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -372,8 +373,8 @@ public class Post extends TestBase {
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var response = client.getObject(bucketName, key);
-		var body = getBody(response.getObjectContent());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
 		assertTrue(data.equals(body), MainData.NOT_MATCHED);
 	}
 
@@ -381,7 +382,7 @@ public class Post extends TestBase {
 	@Tag("Upload")
 	// [오브젝트 이름을 로그인정보에 포함되어 있는 key값으로 대체할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드
 	// 되는지 확인
-	public void test_post_object_set_key_from_filename() throws MalformedURLException {
+	public void testPostObjectSetKeyFromFilename() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -438,15 +439,15 @@ public class Post extends TestBase {
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var response = client.getObject(bucketName, key);
-		var body = getBody(response.getObjectContent());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
 		assertEquals("bar", body);
 	}
 
 	@Test
 	@Tag("Upload")
 	// post 방식으로 로그인, 헤더 정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_ignored_header() throws MalformedURLException {
+	public void testPostObjectIgnoredHeader() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -507,7 +508,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Upload")
 	// [헤더정보에 대소문자를 섞어서 사용할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_case_insensitive_condition_fields() throws MalformedURLException {
+	public void testPostObjectCaseInsensitiveConditionFields() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -567,7 +568,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Upload")
 	// [오브젝트 이름에 '\'를 사용할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_escaped_field_values() throws MalformedURLException {
+	public void testPostObjectEscapedFieldValues() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -625,19 +626,19 @@ public class Post extends TestBase {
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var response = client.getObject(bucketName, key);
-		var body = getBody(response.getObjectContent());
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
 		assertEquals("bar", body);
 	}
 
 	@Test
 	@Tag("Upload")
 	// [redirect url설정하여 체크] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_success_redirect_action() throws MalformedURLException {
+	public void testPostObjectSuccessRedirectAction() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(new CreateBucketRequest(bucketName).withCannedAcl(CannedAccessControlList.PublicReadWrite));
+		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -670,7 +671,7 @@ public class Post extends TestBase {
 
 		var starts3 = new JsonArray();
 		starts3.add("eq");
-		starts3.add("$success_action_redirect");
+		starts3.add("$successActionRedirect");
 		starts3.add(redirectURL.toString());
 		conditions.add(starts3);
 
@@ -695,20 +696,20 @@ public class Post extends TestBase {
 		payload.put("signature", signature);
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
-		payload.put("success_action_redirect", redirectURL.toString());
+		payload.put("successActionRedirect", redirectURL.toString());
 
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(200, result.statusCode, result.getErrorCode());
 
-		var response = client.getObject(bucketName, key);
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
 		assertEquals(String.format("%s?bucket=%s&key=%s&etag=%s%s%s", redirectURL, bucketName, key, "%22",
-				response.getObjectMetadata().getETag().replace("\"", ""), "%22"), result.URL);
+				response.response().eTag().replace("\"", ""), "%22"), result.URL);
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [SecretKey Hash 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_invalid_signature() throws MalformedURLException {
+	public void testPostObjectInvalidSignature() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -768,7 +769,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [AccessKey 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_invalid_access_key() throws MalformedURLException {
+	public void testPostObjectInvalidAccessKey() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -829,7 +830,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [로그인 정보의 날짜포맷이 다를경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_invalid_date_format() throws MalformedURLException {
+	public void testPostObjectInvalidDateFormat() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -890,7 +891,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [오브젝트 이름을 입력하지 않을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_no_key_specified() throws MalformedURLException {
+	public void testPostObjectNoKeySpecified() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -943,7 +944,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [signature 정보를 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_signature() throws MalformedURLException {
+	public void testPostObjectMissingSignature() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1002,7 +1003,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [policy에 버킷 이름을 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_policy_condition() throws MalformedURLException {
+	public void testPostObjectMissingPolicyCondition() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1059,7 +1060,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Metadata")
 	// [사용자가 추가 메타데이터를 입력한 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-	public void test_post_object_user_specified_header() throws MalformedURLException {
+	public void testPostObjectUserSpecifiedHeader() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 		var client = getClient();
@@ -1117,21 +1118,21 @@ public class Post extends TestBase {
 		payload.put("acl", "private");
 		payload.put("signature", signature);
 		payload.put("policy", policy);
-		payload.put("x-amz-meta-foo", "barclamp");
+		payload.put("x-amz-meta-foo", "bar-clamp");
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
-		var response = client.getObject(bucketName, key);
-		assertEquals("barclamp", response.getObjectMetadata().getUserMetadata().get(("foo")));
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("bar-clamp", response.response().metadata().get(("foo")));
 	}
 
 	@Test
 	@Tag("ERROR")
 	// [사용자가 추가 메타데이터를 policy에 설정하였으나 오브젝트에 해당 정보가 누락된 경우] post 방식으로 로그인정보를 포함한 파일
 	// 업로드시 실패하는지 확인
-	public void test_post_object_request_missing_policy_specified_field() throws MalformedURLException {
+	public void testPostObjectRequestMissingPolicySpecifiedField() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1199,7 +1200,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	// [policy의 condition을 대문자(CONDITIONS)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시
 	// 실패하는지 확인
-	public void test_post_object_condition_is_case_sensitive() throws MalformedURLException {
+	public void testPostObjectConditionIsCaseSensitive() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1261,7 +1262,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	// [policy의 expiration을 대문자(EXPIRATION)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시
 	// 실패하는지 확인
-	public void test_post_object_expires_is_case_sensitive() throws MalformedURLException {
+	public void testPostObjectExpiresIsCaseSensitive() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1322,7 +1323,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [policy의 expiration을 만료된 값으로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_expired_policy() throws MalformedURLException {
+	public void testPostObjectExpiredPolicy() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1384,7 +1385,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	// [사용자가 추가 메타데이터를 policy에 설정하였으나 설정정보가 올바르지 않을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시
 	// 실패하는지 확인
-	public void test_post_object_invalid_request_field_value() throws MalformedURLException {
+	public void testPostObjectInvalidRequestFieldValue() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1441,7 +1442,7 @@ public class Post extends TestBase {
 		payload.put("acl", "private");
 		payload.put("signature", signature);
 		payload.put("policy", policy);
-		payload.put("x-amz-meta-foo", "barclamp");
+		payload.put("x-amz-meta-foo", "bar-clamp");
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
@@ -1451,7 +1452,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [policy의 expiration값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_expires_condition() throws MalformedURLException {
+	public void testPostObjectMissingExpiresCondition() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1509,7 +1510,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [policy의 conditions값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_conditions_list() throws MalformedURLException {
+	public void testPostObjectMissingConditionsList() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1538,7 +1539,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [policy에 설정한 용량보다 큰 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_upload_size_limit_exceeded() throws MalformedURLException {
+	public void testPostObjectUploadSizeLimitExceeded() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1599,7 +1600,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [policy에 용량정보 설정을 누락할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_missing_content_length_argument() throws MalformedURLException {
+	public void testPostObjectMissingContentLengthArgument() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1659,7 +1660,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [policy에 용량정보 설정값이 틀렸을 경우(용량값을 음수로 입력) post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_invalid_content_length_argument() throws MalformedURLException {
+	public void testPostObjectInvalidContentLengthArgument() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1720,7 +1721,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [policy에 설정한 용량보다 작은 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_upload_size_below_minimum() throws MalformedURLException {
+	public void testPostObjectUploadSizeBelowMinimum() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1781,7 +1782,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [policy의 conditions값이 비어있을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-	public void test_post_object_empty_conditions() throws MalformedURLException {
+	public void testPostObjectEmptyConditions() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var bucketName = getNewBucket();
 
@@ -1813,64 +1814,48 @@ public class Post extends TestBase {
 	@Test
 	@Tag("PresignedURL")
 	// PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_presigned_url_put_get() {
+	public void testPresignedUrlPutGet() {
 		var bucketName = getNewBucket();
-		var client = getClient();
+		var client = getS3Presigner();
 		var key = "foo";
 
-		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var putResponse = putObject(putURL, key);
+		var putURL = client.presignPutObject(
+				s -> s.signatureDuration(Duration.ofMinutes(10)).putObjectRequest(p -> p.bucket(bucketName).key(key)));
+		var putResponse = putObject(putURL.url(), key);
 		assertEquals(200, putResponse.getStatusLine().getStatusCode());
 
-		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var getResponse = getObject(getURL);
+		var getURL = client.presignGetObject(
+				s -> s.signatureDuration(Duration.ofMinutes(10)).getObjectRequest(p -> p.bucket(bucketName).key(key)));
+		var getResponse = getObject(getURL.url());
 		assertEquals(200, getResponse.getStatusLine().getStatusCode());
 
-	}
-
-	@Test
-	@Tag("PresignedURL")
-	// [SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-	public void test_presigned_url_put_get_v4() {
-		var bucketName = getNewBucketName();
-		var client = getClientV4(true);
-		var key = "foo";
-
-		client.createBucket(bucketName);
-
-		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
-		var putResponse = putObject(putURL, key);
-		assertEquals(200, putResponse.getStatusLine().getStatusCode());
-
-		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var getResponse = getObject(getURL);
-		assertEquals(200, getResponse.getStatusLine().getStatusCode());
 	}
 
 	@Test
 	@Tag("signV4")
 	// [SignatureVersion4] post 방식으로 오브젝트 업로드 성공 확인
-	public void test_put_object_v4() throws MalformedURLException {
+	public void testPutObjectV4() throws MalformedURLException {
 		var bucketName = getNewBucket();
 		var key = "foo";
 		var endPoint = getURL(bucketName, key);
 		var size = 100;
-		var Content = Utils.randomTextToLong(size);
+		var content = Utils.randomTextToLong(size);
 
-		// precompute hash of the body content
-		byte[] contentHash = AWS4SignerBase.hash(Content);
+		// pre compute hash of the body content
+		byte[] contentHash = AWS4SignerBase.hash(content);
 		String contentHashString = BinaryUtils.toHex(contentHash);
 
 		var headers = new HashMap<String, String>();
 		headers.put("x-amz-content-sha256", contentHashString);
-		headers.put("x-amz-decoded-content-length", "" + Content.length());
+		headers.put("x-amz-decoded-content-length", "" + content.length());
 
 		var signer = new AWS4SignerForAuthorizationHeader(endPoint, "PUT", "s3", config.regionName);
 
-		var authorization = signer.computeSignature(headers, null, contentHashString, config.mainUser.accessKey, config.mainUser.secretKey);
+		var authorization = signer.computeSignature(headers, null, contentHashString, config.mainUser.accessKey,
+				config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
-		
-		var result = NetUtils.putUpload(endPoint, "PUT", headers, Content);
+
+		var result = NetUtils.putUpload(endPoint, "PUT", headers, content);
 
 		assertEquals(200, result.statusCode, result.getErrorCode());
 	}
@@ -1878,22 +1863,22 @@ public class Post extends TestBase {
 	@Test
 	@Tag("signV4")
 	// [SignatureVersion4] post 방식으로 내용을 chunked 하여 오브젝트 업로드 성공 확인
-	public void test_put_object_chunked_v4() throws MalformedURLException {
+	public void testPutObjectChunkedV4() throws MalformedURLException {
 		var bucketName = getNewBucket();
 		var key = "foo";
-		var EndPoint = getURL(bucketName, key);
+		var endPoint = getURL(bucketName, key);
 		var size = 100;
-		var Content = Utils.randomTextToLong(size);
+		var content = Utils.randomTextToLong(size);
 
 		var headers = new HashMap<String, String>();
 		headers.put("x-amz-content-sha256", AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256);
 		headers.put("content-encoding", "" + "aws-chunked");
-		headers.put("x-amz-decoded-content-length", "" + Content.length());
+		headers.put("x-amz-decoded-content-length", "" + content.length());
 
-		var signer = new AWS4SignerForChunkedUpload(EndPoint, "PUT", "s3", config.regionName);
+		var signer = new AWS4SignerForChunkedUpload(endPoint, "PUT", "s3", config.regionName);
 
 		// Content Encoding
-		long totalLength = AWS4SignerForChunkedUpload.calculateChunkedContentLength(Content.length(),
+		long totalLength = AWS4SignerForChunkedUpload.calculateChunkedContentLength(content.length(),
 				NetUtils.USER_DATE_BLOCK_SIZE);
 		headers.put("content-length", "" + totalLength);
 
@@ -1901,23 +1886,23 @@ public class Post extends TestBase {
 				config.mainUser.accessKey, config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
 
-		var result = NetUtils.putUploadChunked(EndPoint, "PUT", headers, signer, Content);
+		var result = NetUtils.putUploadChunked(endPoint, "PUT", headers, signer, content);
 		assertEquals(200, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
 	@Tag("signV4")
 	// [SignatureVersion4] post 방식으로 오브젝트 다운로드 성공 확인
-	public void test_get_object_v4() throws MalformedURLException {
+	public void testGetObjectV4() throws MalformedURLException {
 		var bucketName = getNewBucket();
 		var client = getClient();
 		var key = "foo";
 		var endPoint = getURL(bucketName, key);
 		var httpMethod = "GET";
 		var size = 100;
-		var Content = Utils.randomTextToLong(size);
+		var content = Utils.randomTextToLong(size);
 
-		client.putObject(bucketName, key, Content);
+		client.putObject(g -> g.bucket(bucketName).key(key), RequestBody.fromString(content));
 
 		var headers = new HashMap<String, String>();
 		headers.put("x-amz-content-sha256", AWS4SignerBase.EMPTY_BODY_SHA256);
@@ -1931,14 +1916,14 @@ public class Post extends TestBase {
 		var result = NetUtils.putUpload(endPoint, httpMethod, headers, null);
 		assertEquals(200, result.statusCode, result.getErrorCode());
 		assertEquals(size, result.GetContent().length());
-		assertEquals(Content, result.GetContent());
-		assertTrue(Content.equals(result.GetContent()), MainData.NOT_MATCHED);
+		assertEquals(content, result.GetContent());
+		assertTrue(content.equals(result.GetContent()), MainData.NOT_MATCHED);
 	}
 
 	@Test
 	@Tag("ERROR")
 	// 잘못된 버킷이름으로 오브젝트 업로드시 실패하는지 확인
-	public void test_post_object_wrong_bucket() throws MalformedURLException {
+	public void testPostObjectWrongBucket() throws MalformedURLException {
 		var bucketName = getNewBucket();
 		var badBucketName = getNewBucketName();
 
