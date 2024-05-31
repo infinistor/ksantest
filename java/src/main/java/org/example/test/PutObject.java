@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.DeleteVersionRequest;
 import com.amazonaws.services.s3.model.ObjectLockLegalHold;
@@ -297,7 +296,6 @@ public class PutObject extends TestBase {
 			var response = client.getObject(bucketName, key);
 			var body = getBody(response.getObjectContent());
 			assertEquals(key, body);
-			client.setObjectAcl(bucketName, key, CannedAccessControlList.Private);
 		}
 	}
 

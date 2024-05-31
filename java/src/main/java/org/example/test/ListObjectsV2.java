@@ -695,8 +695,8 @@ public class ListObjectsV2 extends TestBase {
 
 	@Test
 	@Tag("startAfter")
-	// startafter에 읽을수 없는 값[\n]을 설정한 경우 오브젝트 목록을 올바르게 가져오는지 확인
-	public void testBucketListV2StartafterUnreadable() {
+	// startAfter에 읽을수 없는 값[\n]을 설정한 경우 오브젝트 목록을 올바르게 가져오는지 확인
+	public void testBucketListV2StartAfterUnreadable() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
@@ -713,9 +713,9 @@ public class ListObjectsV2 extends TestBase {
 
 	@Test
 	@Tag("startAfter")
-	// [startafter와 일치하는 오브젝트가 존재하지 않는 환경 해당 startafter보다 정렬순서가 낮은 오브젝트는 존재하는 환경]
-	// startafter를 설정하고 오브젝트 목록을 불러올때 재대로 가져오는지 확인
-	public void testBucketListV2StartafterNotInList() {
+	// [startAfter와 일치하는 오브젝트가 존재하지 않는 환경 해당 startAfter보다 정렬순서가 낮은 오브젝트는 존재하는 환경]
+	// startAfter를 설정하고 오브젝트 목록을 불러올때 재대로 가져오는지 확인
+	public void testBucketListV2StartAfterNotInList() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
@@ -731,9 +731,9 @@ public class ListObjectsV2 extends TestBase {
 
 	@Test
 	@Tag("startAfter")
-	// [startafter와 일치하는 오브젝트도 정렬순서가 같은 오브젝트도 존재하지 않는 환경] startafter를 설정하고 오브젝트 목록을
+	// [startAfter와 일치하는 오브젝트도 정렬순서가 같은 오브젝트도 존재하지 않는 환경] startAfter를 설정하고 오브젝트 목록을
 	// 불러올때 재대로 가져오는지 확인
-	public void testBucketListV2StartafterAfterList() {
+	public void testBucketListV2StartAfterAfterList() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
@@ -780,7 +780,7 @@ public class ListObjectsV2 extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// 존재하지 않는 버킷 내 오브젝트들을 가져오려 했을 경우 실패 확인(ListObjectsV2)
-	public void testBucketv2Notexist() {
+	public void testBucketV2NotExist() {
 		var bucketName = getNewBucketNameOnly();
 		var client = getClient();
 
