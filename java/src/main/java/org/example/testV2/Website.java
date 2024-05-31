@@ -14,67 +14,65 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
+
+import software.amazon.awssdk.services.s3.model.WebsiteConfiguration;
+
 import org.junit.jupiter.api.Tag;
 
-import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
-
-public class Website extends TestBase
-{
+public class Website extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll()
-	{
-		System.out.println("Website SDK V2 Start");
+	public static void beforeAll() {
+		System.out.println("Website Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	public static void afterAll()
-	{
-		System.out.println("Website SDK V2 End");
+	public static void afterAll() {
+		System.out.println("Website End");
 	}
 
 	@Test
 	@Tag("Check")
-	//버킷의 Websize 설정 조회 확인
-	public void test_webiste_get_buckets()
-	{
+	// 버킷의 Website 설정 조회 확인
+	public void testWebsiteGetBuckets() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var Response = client.getBucketWebsiteConfiguration(bucketName);
-		assertNull(Response);
+		var response = client.getBucketWebsite(g -> g.bucket(bucketName));
+		assertNull(response);
 	}
 
 	@Test
 	@Tag("Check")
-	//버킷의 Websize 설정이 가능한지 확인
-	public void test_webiste_put_buckets()
-	{
+	// 버킷의 Website 설정이 가능한지 확인
+	public void testWebsitePutBuckets() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var webConfig = new BucketWebsiteConfiguration();
-		webConfig.setErrorDocument("400");
-		webConfig.setIndexDocumentSuffix("a");
+		var webConfig = WebsiteConfiguration.builder()
+				.errorDocument(d -> d.key("400"))
+				.indexDocument(d -> d.suffix("a"))
+				.build();
 
-		client.setBucketWebsiteConfiguration(bucketName, webConfig);
+		client.putBucketWebsite(g -> g.bucket(bucketName).websiteConfiguration(webConfig));
 
-		var GetResponse = client.getBucketWebsiteConfiguration(bucketName);
-		assertEquals(webConfig.getErrorDocument(), GetResponse.getErrorDocument());
+		var response = client.getBucketWebsite(g -> g.bucket(bucketName));
+		assertEquals(webConfig.errorDocument(), response.errorDocument());
+		assertEquals(webConfig.indexDocument(), response.indexDocument());
 	}
 
 	@Test
 	@Tag("Delete")
-	//버킷의 Websize 설정이 삭제가능한지 확인
-	public void test_webiste_delete_buckets()
-	{
+	// 버킷의 Website 설정이 삭제가능한지 확인
+	public void testWebsiteDeleteBuckets() {
 		var bucketName = getNewBucket();
 		var client = getClient();
 
-		var webConfig = new BucketWebsiteConfiguration();
-		webConfig.setErrorDocument("400");
-		webConfig.setIndexDocumentSuffix("a");
+		var webConfig = WebsiteConfiguration.builder()
+				.errorDocument(d -> d.key("400"))
+				.indexDocument(d -> d.suffix("a"))
+				.build();
 
-		client.setBucketWebsiteConfiguration(bucketName, webConfig);
-		client.deleteBucketWebsiteConfiguration(bucketName);
+		client.putBucketWebsite(g -> g.bucket(bucketName).websiteConfiguration(webConfig));
+		client.deleteBucketWebsite(d -> d.bucket(bucketName));
 	}
 }

@@ -227,7 +227,7 @@ public class Policy extends TestBase {
 	// 정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void testGetTagsAclPublic() {
 		var key = "acl";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
+		var bucketName = createKeyWithRandomContent(key, 0, null);
 		var client = getClient();
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
@@ -249,7 +249,7 @@ public class Policy extends TestBase {
 	// 정책설정으로 오브젝트의 태그 입력을 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void testPutTagsAclPublic() {
 		var key = "acl";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
+		var bucketName = createKeyWithRandomContent(key, 0, null);
 		var client = getClient();
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
@@ -270,7 +270,7 @@ public class Policy extends TestBase {
 	// 정책설정으로 오브젝트의 태그 삭제를 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void testDeleteTagsObjPublic() {
 		var key = "acl";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
+		var bucketName = createKeyWithRandomContent(key, 0, null);
 		var client = getClient();
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
@@ -288,7 +288,6 @@ public class Policy extends TestBase {
 		assertEquals(0, getResponse.tagSet().size());
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("TagOptions")
 	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용] 조건부 정책설정시

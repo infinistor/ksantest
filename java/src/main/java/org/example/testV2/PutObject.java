@@ -175,17 +175,32 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	// 오브젝트에 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
 	public void testObjectSetGetMetadataNoneToGood() {
-		var value = "my";
-		var got = setGetMetadata(value, null);
-		assertEquals(value, got);
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo";
+		var metadata = new HashMap<String, String>();
+		metadata.put("x-amz-meta-meta1", "my");
+
+		client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata), RequestBody.fromString(key));
+
+		var response = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(metadata, response.metadata());
 	}
 
 	@Test
 	@Tag("metadata")
 	// 오브젝트에 빈 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
 	public void testObjectSetGetMetadataNoneToEmpty() {
-		var got = setGetMetadata("", null);
-		assertEquals("", got);
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo";
+		var metadata = new HashMap<String, String>();
+		metadata.put("x-amz-meta-meta1", "");
+
+		client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata), RequestBody.fromString(key));
+
+		var response = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(metadata, response.metadata());
 	}
 
 	@Test
@@ -193,13 +208,23 @@ public class PutObject extends TestBase {
 	// 메타 데이터 업데이트가 올바르게 적용되었는지 확인
 	public void testObjectSetGetMetadataOverwriteToEmpty() {
 		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo";
+		var metadata = new HashMap<String, String>();
+		metadata.put("x-amz-meta-meta1", "my");
 
-		var myMeta = "old_meta";
-		var got = setGetMetadata(myMeta, bucketName);
-		assertEquals(myMeta, got);
+		client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata), RequestBody.fromString(key));
 
-		got = setGetMetadata("", bucketName);
-		assertEquals("", got);
+		var response = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(metadata, response.metadata());
+
+		var metadata2 = new HashMap<String, String>();
+		metadata2.put("x-amz-meta-meta1", "");
+
+		client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata2), RequestBody.fromString(key));
+
+		response = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(metadata2, response.metadata());
 	}
 
 	@Test
@@ -207,8 +232,16 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	// 메타데이터에 올바르지 않는 문자열[EOF(\x04)를 사용할 경우 실패 확인
 	public void testObjectSetGetNonUtf8Metadata() {
-		var metadata = "\nmy_meta";
-		var e = setGetMetadataUnreadable(metadata, null);
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo";
+		var metadata = new HashMap<String, String>();
+		metadata.put("x-amz-meta-meta1", "\nmy_meta");
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata),
+						RequestBody.fromString("bar")));
+
 		assertTrue(errorCheck(e.statusCode()));
 	}
 
@@ -217,8 +250,17 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	// 메타데이터에 올바르지 않는 문자[EOF(\x04)를 문자열 맨앞에 사용할 경우 실패 확인
 	public void testObjectSetGetMetadataEmptyToUnreadablePrefix() {
-		var metadata = "\nw";
-		var e = setGetMetadataUnreadable(metadata, null);
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo";
+		var metadataKey = "x-amz-meta-meta1";
+		var metadata = new HashMap<String, String>();
+		metadata.put(metadataKey, "\nasdf");
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata),
+						RequestBody.fromString("bar")));
+
 		assertTrue(errorCheck(e.statusCode()));
 	}
 
@@ -227,8 +269,16 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	// 메타데이터에 올바르지 않는 문자[EOF(\x04)를 문자열 맨뒤에 사용할 경우 실패 확인
 	public void testObjectSetGetMetadataEmptyToUnreadableSuffix() {
-		var metadata = "h\n";
-		var e = setGetMetadataUnreadable(metadata, null);
+		var bucketName = getNewBucket();
+		var client = getClient();
+		var key = "foo";
+		var metadata = new HashMap<String, String>();
+		metadata.put("x-amz-meta-meta1", "asdf\n");
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata),
+						RequestBody.fromString("bar")));
+
 		assertTrue(errorCheck(e.statusCode()));
 	}
 

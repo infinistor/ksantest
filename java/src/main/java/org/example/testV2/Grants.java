@@ -704,7 +704,6 @@ public class Grants extends TestBase {
 						RequestBody.fromString("new-content")));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:private, objectAcl:private, public-read] 메인유저가 private권한으로 생성한 버킷과
@@ -738,7 +737,6 @@ public class Grants extends TestBase {
 						RequestBody.fromString("new-content")));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:private, objectAcl:private, public-read] 메인유저가 private권한으로 생성한 버킷과
@@ -773,7 +771,6 @@ public class Grants extends TestBase {
 						RequestBody.fromString("new-content")));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:private, objectAcl:private, public-read-write] 메인유저가 private권한으로
@@ -808,7 +805,6 @@ public class Grants extends TestBase {
 						RequestBody.fromString("new-content")));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:private, objectAcl:private, public-read-write] 메인유저가 private권한으로
@@ -876,7 +872,6 @@ public class Grants extends TestBase {
 						RequestBody.fromString("new-content")));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:public-read, objectAcl:public-read, private] 메인유저가 public-read권한으로
@@ -912,7 +907,6 @@ public class Grants extends TestBase {
 						RequestBody.fromString("new-content")));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:public-read, objectAcl:public-read-write, private] 메인유저가
@@ -980,7 +974,6 @@ public class Grants extends TestBase {
 		altClient.putObject(p -> p.bucket(bucketName).key(newKey), RequestBody.fromString("new-content"));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:public-read-write, objectAcl:public-read, private] 메인유저가
@@ -1012,7 +1005,6 @@ public class Grants extends TestBase {
 		altClient.putObject(p -> p.bucket(bucketName).key(newKey), RequestBody.fromString("new-content"));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Ignore
 	@Tag("Access")

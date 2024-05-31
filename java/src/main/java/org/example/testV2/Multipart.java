@@ -79,7 +79,7 @@ public class Multipart extends TestBase {
 	// 버킷a에서 버킷b로 멀티파트 복사 성공확인
 	public void testMultipartCopySmall() {
 		var sourceKey = "foo";
-		var bucketName = createKeyWithRandomContent(sourceKey, 0, null, null);
+		var bucketName = createKeyWithRandomContent(sourceKey, 0, null);
 
 		var targetBucketName = getNewBucket();
 		var targetKey = "multipart";
@@ -100,7 +100,7 @@ public class Multipart extends TestBase {
 	public void testMultipartCopyInvalidRange() {
 		var client = getClient();
 		var sourceKey = "source";
-		var bucketName = createKeyWithRandomContent(sourceKey, 5, null, client);
+		var bucketName = createKeyWithRandomContent(sourceKey, 5, client);
 
 		var targetKey = "dest";
 		var response = client.createMultipartUpload(c -> c.bucket(bucketName).key(targetKey));
@@ -124,7 +124,7 @@ public class Multipart extends TestBase {
 	public void testMultipartCopyWithoutRange() {
 		var client = getClient();
 		var sourceKey = "source";
-		var sourceBucketName = createKeyWithRandomContent(sourceKey, 10, null, client);
+		var sourceBucketName = createKeyWithRandomContent(sourceKey, 10, client);
 		var targetBucketName = getNewBucket();
 		var targetKey = "my_multipart_copy";
 
@@ -270,7 +270,7 @@ public class Multipart extends TestBase {
 	// 한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인
 	public void testMultipartCopyMultipleSizes() {
 		var sourceKey = "source";
-		var sourceBucketName = createKeyWithRandomContent(sourceKey, 12 * MainData.MB, null, null);
+		var sourceBucketName = createKeyWithRandomContent(sourceKey, 12 * MainData.MB, null);
 
 		var targetBucketName = getNewBucket();
 		var targetKey = "target";
