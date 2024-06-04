@@ -28,32 +28,32 @@ class CSE {
 	@Tag("KSAN")
 	@Tag("PutGet")
 	// @Tag("[AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	void testCseEncryptedTransfer_1b() {
-		Test.testCseEncryptedTransfer_1b();
+	void testCseEncryptedTransfer1b() {
+		Test.testCseEncryptedTransfer1b();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("PutGet")
 	// @Tag("[AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	void testCseEncryptedTransfer_1kb() {
-		Test.testCseEncryptedTransfer_1kb();
+	void testCseEncryptedTransfer1kb() {
+		Test.testCseEncryptedTransfer1kb();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("PutGet")
 	// @Tag("[AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	void testCseEncryptedTransfer_1MB() {
-		Test.testCseEncryptedTransfer_1MB();
+	void testCseEncryptedTransfer1MB() {
+		Test.testCseEncryptedTransfer1MB();
 	}
 
 	@Test
 	@Tag("KSAN")
 	@Tag("PutGet")
 	// @Tag("[AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	void testCseEncryptedTransfer_13b() {
-		Test.testCseEncryptedTransfer_13b();
+	void testCseEncryptedTransfer13b() {
+		Test.testCseEncryptedTransfer13b();
 	}
 
 	@Test

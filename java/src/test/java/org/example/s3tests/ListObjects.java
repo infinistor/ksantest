@@ -12,7 +12,6 @@ package org.example.s3tests;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -256,15 +255,6 @@ class ListObjects {
 	// [default = 1000] 오브젝트 목록의 최대갯수를 지정하지않고 불러올때 올바르게 가져오는지 확인
 	void testBucketListMaxKeysNone() {
 		Test.testBucketListMaxKeysNone();
-	}
-
-	@Test
-	@Tag("KSAN")
-	@Disabled("JAVA에서는 BeforeRequestEvent 사용이 불가능하여 테스트 하지 못함")
-	@Tag("MaxKeys")
-	// [함수가 호출되기 전에 URL에 유효하지 않은 최대목록갯수를 추가할 경우] 오브젝트 목록 조회 실패 확인
-	void testBucketListMaxKeysInvalid() {
-		Test.testBucketListMaxKeysInvalid();
 	}
 
 	@Test

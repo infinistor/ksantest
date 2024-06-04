@@ -138,27 +138,27 @@ class ListObjectsV2 {
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Fetchowner")
+	@Tag("FetchOwner")
 	// [권한정보를 가져오도록 설정] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지 확인(ListObjectsV2)
-	void testBucketListV2FetchownerNotempty() {
-		Test.testBucketListV2FetchownerNotempty();
+	void testBucketListV2FetchOwnerNotEmpty() {
+		Test.testBucketListV2FetchOwnerNotEmpty();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Fetchowner")
+	@Tag("FetchOwner")
 	// @Tag( "[default = 권한정보를 가져오지 않음] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지
 	// 확인(ListObjectsV2)
-	void testBucketListV2FetchownerDefaultempty() {
-		Test.testBucketListV2FetchownerDefaultempty();
+	void testBucketListV2FetchOwnerDefaultEmpty() {
+		Test.testBucketListV2FetchOwnerDefaultEmpty();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Fetchowner")
+	@Tag("FetchOwner")
 	// [권한정보를 가져오지 않도록 설정] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지 확인(ListObjectsV2)
-	void testBucketListV2FetchownerEmpty() {
-		Test.testBucketListV2FetchownerEmpty();
+	void testBucketListV2FetchOwnerEmpty() {
+		Test.testBucketListV2FetchOwnerEmpty();
 	}
 
 	@Test

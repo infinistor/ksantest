@@ -59,7 +59,7 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("ListObjectsV2")
 	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
-	public void testMultiObjectv2Delete() {
+	public void testMultiObjectV2Delete() {
 		var keyNames = List.of("key0", "key1", "key2");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();

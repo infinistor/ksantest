@@ -67,7 +67,7 @@ public class ListBuckets extends TestBase
 	{
 		var badAuthClient = getBadAuthClient(null, null);
 
-		var e = assertThrows(AwsServiceException.class, () -> badAuthClient.listBuckets());
+		var e = assertThrows(AwsServiceException.class, badAuthClient::listBuckets);
 		
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
@@ -83,7 +83,7 @@ public class ListBuckets extends TestBase
 		var mainAccessKey = config.mainUser.accessKey;
 		var badAuthClient = getBadAuthClient(mainAccessKey, null);
 
-		var e = assertThrows(AwsServiceException.class, () -> badAuthClient.listBuckets());
+		var e = assertThrows(AwsServiceException.class, badAuthClient::listBuckets);
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(403, statusCode);

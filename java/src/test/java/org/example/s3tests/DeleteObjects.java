@@ -36,8 +36,8 @@ class DeleteObjects {
 	@Tag("KSAN")
 	@Tag("ListObjectsV2")
 	// @Tag("버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
-	void testMultiObjectv2Delete() {
-		Test.testMultiObjectv2Delete();
+	void testMultiObjectV2Delete() {
+		Test.testMultiObjectV2Delete();
 	}
 
 	@Test

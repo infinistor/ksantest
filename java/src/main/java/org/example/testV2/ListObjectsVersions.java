@@ -130,7 +130,7 @@ public class ListObjectsVersions extends TestBase {
 	@Test
 	@Tag("Filtering")
 	// 비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인
-	public void testBucketListVersionsDelimiterPrefixEndsdelimiter() {
+	public void testBucketListVersionsDelimiterPrefixEndsDelimiter() {
 		var bucketName = createObjectsToBody(List.of("asdf/"), "");
 
 		validateListObject(bucketName, "asdf/", "/", "", 1000, false,

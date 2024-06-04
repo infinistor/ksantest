@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.example.Data.MainData;
 import org.example.Data.ObjectDataV2;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -598,13 +597,6 @@ public class ListObjects extends TestBase {
 		var keys = getKeys(response.contents());
 		assertLinesMatch(keyNames, keys);
 		assertEquals(1000, response.maxKeys());
-	}
-
-	@Test
-	@Disabled("JAVA에서는 BeforeRequestEvent 사용이 불가능하여 테스트 하지 못함")
-	@Tag("maxKeys")
-	// [함수가 호출되기 전에 URL에 유효하지 않은 최대목록갯수를 추가할 경우] 오브젝트 목록 조회 실패 확인
-	public void testBucketListMaxKeysInvalid() {
 	}
 
 	@Test

@@ -34,68 +34,68 @@ class GetObject {
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Ifmatch")
+	@Tag("IfMatch")
 	// @Tag("존재하는 오브젝트 이름과 ETag 값으로 오브젝트를 가져오는지 확인
-	void testGetObjectIfmatchGood() {
-		Test.testGetObjectIfmatchGood();
+	void testGetObjectIfMatchGood() {
+		Test.testGetObjectIfMatchGood();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Ifmatch")
+	@Tag("IfMatch")
 	// @Tag("오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
-	void testGetObjectIfmatchFailed() {
-		Test.testGetObjectIfmatchFailed();
+	void testGetObjectIfMatchFailed() {
+		Test.testGetObjectIfMatchFailed();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Ifnonematch")
+	@Tag("IfNoneMatch")
 	// @Tag("오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
-	void testGetObjectIfnonematchGood() {
-		Test.testGetObjectIfnonematchGood();
+	void testGetObjectIfNoneMatchGood() {
+		Test.testGetObjectIfNoneMatchGood();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Ifnonematch")
+	@Tag("IfNoneMatch")
 	// @Tag("오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
-	void testGetObjectIfnonematchFailed() {
-		Test.testGetObjectIfnonematchFailed();
+	void testGetObjectIfNoneMatchFailed() {
+		Test.testGetObjectIfNoneMatchFailed();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Ifmodifiedsince")
-	// @Tag("[지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifmodifiedsince)보다 이후에 수정된 오브젝트를 조회 성공
-	void testGetObjectIfmodifiedsinceGood() {
-		Test.testGetObjectIfmodifiedsinceGood();
+	@Tag("IfModifiedSince")
+	// @Tag("[지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifModifiedSince)보다 이후에 수정된 오브젝트를 조회 성공
+	void testGetObjectIfModifiedSinceGood() {
+		Test.testGetObjectIfModifiedSinceGood();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Ifmodifiedsince")
-	// @Tag("[지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifmodifiedsince)보다 이전에 수정된 오브젝트 조회 실패
-	void testGetObjectIfmodifiedsinceFailed() {
-		Test.testGetObjectIfmodifiedsinceFailed();
+	@Tag("IfModifiedSince")
+	// @Tag("[지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 실패
+	void testGetObjectIfModifiedSinceFailed() {
+		Test.testGetObjectIfModifiedSinceFailed();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Ifunmodifiedsince")
-	// @Tag("[지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifunmodifiedsince) 이후 수정되지 않은 오브젝트 조회
+	@Tag("IfUnmodifiedSince")
+	// @Tag("[지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회
 	// 실패
-	void testGetObjectIfunmodifiedsinceGood() {
-		Test.testGetObjectIfunmodifiedsinceGood();
+	void testGetObjectIfUnmodifiedSinceGood() {
+		Test.testGetObjectIfUnmodifiedSinceGood();
 	}
 
 	@Test
 	@Tag("KSAN")
-	@Tag("Ifunmodifiedsince")
-	// @Tag("[지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifunmodifiedsince) 이후 수정되지 않은 오브젝트 조회
+	@Tag("IfUnmodifiedSince")
+	// @Tag("[지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회
 	// 성공
-	void testGetObjectIfunmodifiedsinceFailed() {
-		Test.testGetObjectIfunmodifiedsinceFailed();
+	void testGetObjectIfUnmodifiedSinceFailed() {
+		Test.testGetObjectIfUnmodifiedSinceFailed();
 	}
 
 	@Test
