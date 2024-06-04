@@ -46,28 +46,28 @@ public class CSE extends TestBase {
 	@Test
 	@Tag("PutGet")
 	// @Tag("[AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	public void testCseEncryptedTransfer_1b() {
+	public void testCseEncryptedTransfer1b() {
 		testEncryptionCSEWrite(1);
 	}
 
 	@Test
 	@Tag("PutGet")
 	// @Tag("[AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	public void testCseEncryptedTransfer_1kb() {
+	public void testCseEncryptedTransfer1kb() {
 		testEncryptionCSEWrite(1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	// @Tag("[AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	public void testCseEncryptedTransfer_1MB() {
+	public void testCseEncryptedTransfer1MB() {
 		testEncryptionCSEWrite(1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	// @Tag("[AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-	public void testCseEncryptedTransfer_13b() {
+	public void testCseEncryptedTransfer13b() {
 		testEncryptionCSEWrite(13);
 	}
 
@@ -77,7 +77,7 @@ public class CSE extends TestBase {
 	public void testCseEncryptionMethodHead() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var key = "testobj";
+		var key = "obj";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
 
@@ -105,7 +105,7 @@ public class CSE extends TestBase {
 	public void testCseEncryptionNonDecryption() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var key = "testobj";
+		var key = "obj";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
 
@@ -135,7 +135,7 @@ public class CSE extends TestBase {
 	public void testCseNonEncryptionDecryption() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var key = "testobj";
+		var key = "obj";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
 
@@ -159,7 +159,7 @@ public class CSE extends TestBase {
 	public void testCseEncryptionRangeRead() {
 		var bucketName = getNewBucket();
 		var client = getClient();
-		var key = "testobj";
+		var key = "obj";
 
 		// AES
 		var aesKey = Utils.randomTextToLong(32);
@@ -173,7 +173,7 @@ public class CSE extends TestBase {
 			metadata.setContentLength(encoding.length());
 			client.putObject(bucketName, key, createBody(encoding), metadata);
 
-			var r = new Random();
+			var r = new Random(System.currentTimeMillis());
 			var startPoint = r.nextInt(1024 * 1024 - 1001);
 			var endPoint = startPoint + 999;
 			var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(startPoint, endPoint));
@@ -231,7 +231,7 @@ public class CSE extends TestBase {
 			assertEquals(contentType, getResponse.getContentType());
 
 			checkContentUsingRange(bucketName, key, encoding, MainData.MB);
-			checkContentUsingRange(bucketName, key, encoding, 10 * MainData.MB);
+			checkContentUsingRange(bucketName, key, encoding, 10L * MainData.MB);
 			checkContentUsingRandomRange(bucketName, key, encoding, 100);
 		} catch (Exception e) {
 			fail(e.getMessage());

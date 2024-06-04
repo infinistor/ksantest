@@ -2092,9 +2092,9 @@ public class TestBase {
 				url = getURL(bucketName, key);
 
 			System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
-			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-			for (String Item : headers.keySet()) {
-				connection.setRequestProperty(Item, headers.get(Item));
+			var connection = (HttpURLConnection) url.openConnection();
+			for (var Item : headers.entrySet()) {
+				connection.setRequestProperty(Item.getKey(), Item.getValue());
 			}
 			connection.setRequestMethod(method);
 			connection.setDoInput(true);
@@ -2208,6 +2208,8 @@ public class TestBase {
 		try {
 			Thread.sleep(milliseconds);
 		} catch (InterruptedException e) {
+			e.printStackTrace();
+			Thread.currentThread().interrupt();
 		}
 	}
 

@@ -772,8 +772,8 @@ public class Grants extends TestBase {
 		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, key2));
 
 		var altClient2 = getAltClient();
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, newKey, "newcontent"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, newKey, "new-content"));
 	}
 
 	@Test
@@ -795,11 +795,10 @@ public class Grants extends TestBase {
 
 		var altClient2 = getAltClient();
 
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, newKey, "newcontent"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, newKey, "new-content"));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:private, objectAcl:private, public-read] 메인유저가 private권한으로 생성한 버킷과
@@ -816,18 +815,17 @@ public class Grants extends TestBase {
 		var body = getBody(response.getObjectContent());
 		assertEquals(key1, body);
 
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		var altClient2 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
 
 		var altClient3 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient3.listObjects(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
+		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:private, objectAcl:private, public-read] 메인유저가 private권한으로 생성한 버킷과
@@ -845,18 +843,17 @@ public class Grants extends TestBase {
 		var body = getBody(response.getObjectContent());
 		assertEquals(key1, body);
 
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		var altClient2 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
 
 		var altClient3 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient3.listObjectsV2(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
+		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:private, objectAcl:private, public-read-write] 메인유저가 private권한으로
@@ -874,18 +871,17 @@ public class Grants extends TestBase {
 		var body = getBody(response.getObjectContent());
 		assertEquals(key1, body);
 
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		var altClient2 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
 
 		var altClient3 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient3.listObjects(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
+		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:private, objectAcl:private, public-read-write] 메인유저가 private권한으로
@@ -904,15 +900,15 @@ public class Grants extends TestBase {
 		var body = getBody(response.getObjectContent());
 		assertEquals(key1, body);
 
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		var altClient2 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
 
 		var altClient3 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient3.listObjectsV2(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
+		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
 	}
 
 	@Test
@@ -928,19 +924,18 @@ public class Grants extends TestBase {
 		var altClient = getAltClient();
 
 		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key1));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		var altClient2 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
 
 		var altClient3 = getAltClient();
 		var objList = getKeys(altClient3.listObjects(bucketName).getObjectSummaries());
 		assertEquals(List.of(key2, key1), objList);
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
+		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:public-read, objectAcl:public-read, private] 메인유저가 public-read권한으로
@@ -957,19 +952,18 @@ public class Grants extends TestBase {
 		var body = getBody(response.getObjectContent());
 		assertEquals(key1, body);
 
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		var altClient2 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
 
 		var altClient3 = getAltClient();
 		var objList = getKeys(altClient3.listObjects(bucketName).getObjectSummaries());
 		assertEquals(List.of(key2, key1), objList);
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
+		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:public-read, objectAcl:public-read-write, private] 메인유저가
@@ -988,16 +982,16 @@ public class Grants extends TestBase {
 		var body = getBody(response.getObjectContent());
 		assertEquals(key1, body);
 
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		var altClient2 = getAltClient();
 		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
 
 		var altClient3 = getAltClient();
 		var objList = getKeys(altClient3.listObjects(bucketName).getObjectSummaries());
 		assertEquals(List.of(key2, key1), objList);
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "newcontent"));
+		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
 	}
 
 	@Test
@@ -1014,17 +1008,16 @@ public class Grants extends TestBase {
 		var altClient = getAltClient();
 
 		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key1));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "overwrite2"));
 
 		var objList = getKeys(altClient.listObjects(bucketName).getObjectSummaries());
 		assertEquals(List.of(key2, key1), objList);
-		altClient.putObject(bucketName, newKey, "newcontent");
+		altClient.putObject(bucketName, newKey, "new-content");
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Access")
 	// [bucketAcl:public-read-write, objectAcl:public-read, private] 메인유저가
@@ -1041,17 +1034,16 @@ public class Grants extends TestBase {
 		var response = altClient.getObject(bucketName, key1);
 		var body = getBody(response.getObjectContent());
 		assertEquals(key1, body);
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "overwrite2"));
 
 		var objects = getKeys(altClient.listObjects(bucketName).getObjectSummaries());
 		assertEquals(List.of(key2, key1), objects);
-		altClient.putObject(bucketName, newKey, "newcontent");
+		altClient.putObject(bucketName, newKey, "new-content");
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Ignore
 	@Tag("Access")
@@ -1069,13 +1061,13 @@ public class Grants extends TestBase {
 		var response = altClient.getObject(bucketName, key1);
 		var body = getBody(response.getObjectContent());
 		assertEquals(key1, body);
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "foooverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
 
 		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "baroverwrite"));
+		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "overwrite2"));
 
 		var objects = getKeys(altClient.listObjects(bucketName).getObjectSummaries());
 		assertEquals(List.of(key2, key1), objects);
-		altClient.putObject(bucketName, newKey, "newcontent");
+		altClient.putObject(bucketName, newKey, "new-content");
 	}
 }

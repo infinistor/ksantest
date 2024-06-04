@@ -337,9 +337,9 @@ public class ListObjectsV2 extends TestBase {
 	}
 
 	@Test
-	@Tag("Fetchowner")
+	@Tag("FetchOwner")
 	// [권한정보를 가져오도록 설정] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지 확인(ListObjectsV2)
-	public void testBucketListV2FetchownerNotempty() {
+	public void testBucketListV2FetchOwnerNotEmpty() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
@@ -351,10 +351,10 @@ public class ListObjectsV2 extends TestBase {
 	}
 
 	@Test
-	@Tag("Fetchowner")
+	@Tag("FetchOwner")
 	// @Tag( "[default = 권한정보를 가져오지 않음] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지
 	// 확인(ListObjectsV2)
-	public void testBucketListV2FetchownerDefaultempty() {
+	public void testBucketListV2FetchOwnerDefaultEmpty() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();
@@ -366,9 +366,9 @@ public class ListObjectsV2 extends TestBase {
 	}
 
 	@Test
-	@Tag("Fetchowner")
+	@Tag("FetchOwner")
 	// [권한정보를 가져오지 않도록 설정] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지 확인(ListObjectsV2)
-	public void testBucketListV2FetchownerEmpty() {
+	public void testBucketListV2FetchOwnerEmpty() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 		var bucketName = createObjects(keyNames);
 		var client = getClient();

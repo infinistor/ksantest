@@ -146,7 +146,6 @@ public class Access extends TestBase {
 		assertThrows(AmazonServiceException.class, () -> client.setBucketPolicy(bucketName, policyDocument.toString()));
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Denied")
 	// 버킷의 접근권한블록으로 개인버킷처럼 설정한뒤 버킷의acl권한을 public-read로 변경해도 적용되지 않음을 확인

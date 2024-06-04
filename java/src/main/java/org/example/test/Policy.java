@@ -292,7 +292,6 @@ public class Policy extends TestBase {
 		assertEquals(0, getResponse.getTagSet().size());
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("TagOptions")
 	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용] 조건부 정책설정시

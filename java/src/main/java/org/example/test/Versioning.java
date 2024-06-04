@@ -142,7 +142,6 @@ public class Versioning extends TestBase {
 		assertEquals(0, listResponse.getVersionSummaries().size());
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Object")
 	// [버킷에 버저닝 설정이 되어있는 상태] null 버전 오브젝트를 덮어쓰기 할경우 버전 정보가 추가됨을 확인

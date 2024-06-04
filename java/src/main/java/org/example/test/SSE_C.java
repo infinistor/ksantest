@@ -283,7 +283,6 @@ public class SSE_C extends TestBase {
 		checkContentUsingRandomRangeEnc(client, bucketName, key, body, size, 100, sse);
 	}
 
-	@SuppressWarnings("resource")
 	@Test
 	@Tag("Multipart")
 	// SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
