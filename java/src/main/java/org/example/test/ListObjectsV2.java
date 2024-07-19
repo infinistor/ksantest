@@ -152,7 +152,8 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Filtering")
 	// 비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)
 	public void testBucketListV2DelimiterPrefixEndsWithDelimiter() {
-		var bucketName = createEmptyObjects(null, List.of("asdf/"));
+		var client = getClient();
+		var bucketName = createEmptyObjects(client, List.of("asdf/"));
 		validateListObjectV2(bucketName, "asdf/", "/", null, 1000, false,
 				List.of("asdf/"), new ArrayList<>(), true);
 	}
