@@ -46,8 +46,8 @@ public class ListObjects extends TestBase {
 	@Tag("Check")
 	// 버킷의 오브젝트 목록을 올바르게 가져오는지 확인
 	public void testBucketListMany() {
-		var bucketName = createObjects(List.of("foo", "bar", "baz"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("foo", "bar", "baz"));
 
 		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMaxKeys(2));
 		assertLinesMatch(List.of("bar", "baz"),
@@ -92,8 +92,8 @@ public class ListObjects extends TestBase {
 	@Tag("Encoding")
 	// 오브젝트 목록을 가져올때 인코딩이 올바르게 동작하는지 확인
 	public void testBucketListEncodingBasic() {
-		var bucketName = createObjects(List.of("foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"));
 
 		String delimiter = "/";
 
@@ -146,7 +146,7 @@ public class ListObjects extends TestBase {
 	@Tag("Filtering")
 	// 비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인
 	public void testBucketListDelimiterPrefixEndsWithDelimiter() {
-		var bucketName = createObjectsToBody(List.of("asdf/"), "");
+		var bucketName = createEmptyObjects(null, List.of("asdf/"));
 
 		validateListObject(bucketName, "asdf/", "/", "", 1000, false,
 				List.of("asdf/"), new ArrayList<>(), null);
@@ -157,8 +157,8 @@ public class ListObjects extends TestBase {
 	@Tag("delimiter")
 	// 오브젝트 목록을 가져올때 문자 구분자[a]로 필터링 되는지 확인
 	public void testBucketListDelimiterAlt() {
-		var bucketName = createObjects(List.of("bar", "baz", "cab", "foo"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("bar", "baz", "cab", "foo"));
 
 		String delimiter = "a";
 
@@ -215,8 +215,8 @@ public class ListObjects extends TestBase {
 	@Tag("delimiter")
 	// 오브젝트 목록을 가져올때 특수문자 구분자[%]로 필터링 되는지 확인
 	public void testBucketListDelimiterPercentage() {
-		var bucketName = createObjects(List.of("b%ar", "b%az", "c%ab", "foo"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("b%ar", "b%az", "c%ab", "foo"));
 
 		String delimiter = "%";
 
@@ -237,8 +237,8 @@ public class ListObjects extends TestBase {
 	@Tag("delimiter")
 	// 오브젝트 목록을 가져올때 공백문자 구분자[ ]로 필터링 되는지 확인
 	public void testBucketListDelimiterWhitespace() {
-		var bucketName = createObjects(List.of("b ar", "b az", "c ab", "foo"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("b ar", "b az", "c ab", "foo"));
 
 		String delimiter = " ";
 
@@ -259,8 +259,8 @@ public class ListObjects extends TestBase {
 	@Tag("delimiter")
 	// 오브젝트 목록을 가져올때 구분자[.]로 필터링 되는지 확인
 	public void testBucketListDelimiterDot() {
-		var bucketName = createObjects(List.of("b.ar", "b.az", "c.ab", "foo"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("b.ar", "b.az", "c.ab", "foo"));
 
 		String delimiter = ".";
 
@@ -282,9 +282,8 @@ public class ListObjects extends TestBase {
 	// 오브젝트 목록을 가져올때 읽을수 없는 구분자[\n]로 필터링 되는지 확인
 	public void testBucketListDelimiterUnreadable() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "\n";
 
@@ -304,9 +303,8 @@ public class ListObjects extends TestBase {
 	// 오브젝트 목록을 가져올때 구분자가 빈문자일때 필터링 되는지 확인
 	public void testBucketListDelimiterEmpty() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "";
 
@@ -326,9 +324,8 @@ public class ListObjects extends TestBase {
 	// 오브젝트 목록을 가져올때 구분자를 입력하지 않아도 문제없는지 확인
 	public void testBucketListDelimiterNone() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjects(bucketName);
 
@@ -346,9 +343,8 @@ public class ListObjects extends TestBase {
 	// [폴더가 존재하지 않는 환경] 오브젝트 목록을 가져올때 폴더 구분자[/]로 필터링 되는지 확인
 	public void testBucketListDelimiterNotExist() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "/";
 
@@ -373,8 +369,8 @@ public class ListObjects extends TestBase {
 		var keyNames2 = List.of("1999", "1999#", "1999+", "2000");
 		keyNames.addAll(keyNames2);
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "/";
 
@@ -395,8 +391,8 @@ public class ListObjects extends TestBase {
 	@Tag("prefix")
 	// [접두어에 '/'가 포함] 오브젝트 목록을 가져올때 선택한 폴더 목록만 가져오는지 확인
 	public void testBucketListPrefixBasic() {
-		var bucketName = createObjects(List.of("foo/bar", "foo/baz", "quux"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("foo/bar", "foo/baz", "quux"));
 
 		String prefix = "foo/";
 		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -413,8 +409,8 @@ public class ListObjects extends TestBase {
 	@Tag("prefix")
 	// 접두어가 [/]가 아닌 경우 구분기호와 접두사 논리를 수행할 수 있는지 확인
 	public void testBucketListPrefixAlt() {
-		var bucketName = createObjects(List.of("bar", "baz", "foo"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("bar", "baz", "foo"));
 
 		String prefix = "ba";
 		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -432,9 +428,8 @@ public class ListObjects extends TestBase {
 	// 접두어를 빈문자로 입력할 경우 모든 오브젝트 목록을 받아오는지 확인
 	public void testBucketListPrefixEmpty() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String prefix = "";
 		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -452,9 +447,8 @@ public class ListObjects extends TestBase {
 	// 접두어를 입력하지 않을 경우 모든 오브젝트 목록을 받아오는지 확인
 	public void testBucketListPrefixNone() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjects(bucketName);
 
@@ -471,9 +465,8 @@ public class ListObjects extends TestBase {
 	// [접두어와 일치하는 오브젝트가 없는 경우] 접두어를 입력할 경우 빈 오브젝트 목록을 받아오는지 확인
 	public void testBucketListPrefixNotExist() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String prefix = "d";
 		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -491,9 +484,8 @@ public class ListObjects extends TestBase {
 	// 읽을수 없는 접두어를 입력할 경우 빈 오브젝트 목록을 받아오는지 확인
 	public void testBucketListPrefixUnreadable() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String prefix = "\n";
 		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -511,9 +503,8 @@ public class ListObjects extends TestBase {
 	// 접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인
 	public void testBucketListPrefixDelimiterBasic() {
 		var keyNames = List.of("foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String prefix = "foo/";
 		String delimiter = "/";
@@ -536,9 +527,8 @@ public class ListObjects extends TestBase {
 	// [구분자가 '/' 아닐 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인
 	public void testBucketListPrefixDelimiterAlt() {
 		var keyNames = List.of("bar", "bazar", "cab", "foo");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "a";
 		String prefix = "ba";
@@ -561,8 +551,8 @@ public class ListObjects extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	// [입력한 접두어와 일치하는 오브젝트가 없을 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록이 비어있는지 확인
 	public void testBucketListPrefixDelimiterPrefixNotExist() {
-		var bucketName = createObjects(List.of("b/a/r", "b/a/c", "b/a/g", "g"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("b/a/r", "b/a/c", "b/a/g", "g"));
 
 		var response = client
 				.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter("d").withPrefix("/"));
@@ -577,8 +567,8 @@ public class ListObjects extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	// [구분자가 '/'가 아닐 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인
 	public void testBucketListPrefixDelimiterDelimiterNotExist() {
-		var bucketName = createObjects(List.of("b/a/c", "b/a/g", "b/a/r", "g"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("b/a/c", "b/a/g", "b/a/r", "g"));
 
 		var response = client
 				.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter("z").withPrefix("b"));
@@ -595,8 +585,8 @@ public class ListObjects extends TestBase {
 	// [구분자가 '/'가 아니며, 접두어와 일치하는 오브젝트가 존재하지 않는 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록이 비어있는지
 	// 확인
 	public void testBucketListPrefixDelimiterPrefixDelimiterNotExist() {
-		var bucketName = createObjects(List.of("b/a/r", "b/a/c", "b/a/g", "g"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("b/a/r", "b/a/c", "b/a/g", "g"));
 
 		var response = client
 				.listObjects(new ListObjectsRequest().withBucketName(bucketName).withDelimiter("z").withPrefix("y"));
@@ -612,9 +602,8 @@ public class ListObjects extends TestBase {
 	// 오브젝트 목록의 최대갯수를 1로 지정하고 불러올때 올바르게 가져오는지 확인
 	public void testBucketListMaxKeysOne() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMaxKeys(1));
 
@@ -635,9 +624,8 @@ public class ListObjects extends TestBase {
 	// 오브젝트 목록의 최대갯수를 0으로 지정하고 불러올때 목록이 비어있는지 확인
 	public void testBucketListMaxKeysZero() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMaxKeys(0));
 
@@ -651,9 +639,8 @@ public class ListObjects extends TestBase {
 	// [default = 1000] 오브젝트 목록의 최대갯수를 지정하지않고 불러올때 올바르게 가져오는지 확인
 	public void testBucketListMaxKeysNone() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjects(bucketName);
 
@@ -668,9 +655,8 @@ public class ListObjects extends TestBase {
 	// 오브젝트 목록을 가져올때 모든 목록을 가져왓을 경우 마커가 비어있는지 확인
 	public void testBucketListMarkerNone() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMarker(""));
 
@@ -699,9 +685,8 @@ public class ListObjects extends TestBase {
 	// 마커에 읽을수 없는 값[\n]을 설정한 경우 오브젝트 목록을 올바르게 가져오는지 확인
 	public void testBucketListMarkerUnreadable() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var marker = "\n";
 
@@ -719,9 +704,8 @@ public class ListObjects extends TestBase {
 	// 불러올때 재대로 가져오는지 확인
 	public void testBucketListMarkerNotInList() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var marker = "blah";
 
@@ -739,9 +723,8 @@ public class ListObjects extends TestBase {
 	// 확인
 	public void testBucketListMarkerAfterList() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var marker = "zzz";
 
@@ -758,9 +741,8 @@ public class ListObjects extends TestBase {
 	// ListObjects으로 가져온 Metadata와 HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
 	public void testBucketListReturnData() {
 		var keyNames = List.of("bar", "baz", "foo");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var data = new ArrayList<ObjectData>();
 
@@ -794,8 +776,8 @@ public class ListObjects extends TestBase {
 	@Tag("ACL")
 	// 권한없는 사용자가 공용읽기설정된 버킷의 오브젝트 목록을 읽을수 있는지 확인
 	public void testBucketListObjectsAnonymous() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		client.setBucketAcl(new SetBucketAclRequest(bucketName, CannedAccessControlList.PublicRead));
 
 		var unauthenticatedClient = getPublicClient();
@@ -806,7 +788,7 @@ public class ListObjects extends TestBase {
 	@Tag("ACL")
 	// 권한없는 사용자가 버킷의 오브젝트 목록을 읽지 못하는지 확인
 	public void testBucketListObjectsAnonymousFail() {
-		var bucketName = getNewBucket();
+		var bucketName = createBucket();
 		var unauthenticatedClient = getPublicClient();
 
 		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.listObjects(bucketName));
@@ -814,7 +796,7 @@ public class ListObjects extends TestBase {
 		var errorCode = e.getErrorCode();
 
 		assertEquals(403, statusCode);
-		assertEquals(MainData.AccessDenied, errorCode);
+		assertEquals(MainData.ACCESS_DENIED, errorCode);
 	}
 
 	@Test
@@ -830,7 +812,7 @@ public class ListObjects extends TestBase {
 		var errorCode = e.getErrorCode();
 
 		assertEquals(404, statusCode);
-		assertEquals(MainData.NoSuchBucket, errorCode);
+		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 		deleteBucketList(bucketName);
 	}
 
@@ -839,9 +821,8 @@ public class ListObjects extends TestBase {
 	// delimiter, prefix, max-keys, marker를 조합하여 오브젝트 목록을 가져올때 올바르게 가져오는지 확인
 	public void testBucketListFilteringAll() {
 		var keyNames = List.of("test1/f1", "test2/f2", "test3", "test4/f3", "testF4");
-
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var marker = "test3";
 		var delimiter = "/";

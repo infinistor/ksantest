@@ -65,7 +65,7 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -87,7 +87,7 @@ public class ACL extends TestBase {
 				.deleteObject(d -> d.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -108,7 +108,7 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchKey, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -136,7 +136,7 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -170,8 +170,7 @@ public class ACL extends TestBase {
 						.responseContentEncoding("aaa")
 						.responseContentLanguage("esperanto")
 						.responseContentType("foo/bar")
-						.responseExpires(Instant.now())
-						);
+						.responseExpires(Instant.now()));
 
 		assertEquals("no-cache", response.response().cacheControl());
 		assertEquals("bla", response.response().contentDisposition());
@@ -221,7 +220,7 @@ public class ACL extends TestBase {
 				() -> client.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -241,7 +240,7 @@ public class ACL extends TestBase {
 				() -> client.getObject(g -> g.bucket(bucketName).key(key)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchKey, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -275,8 +274,11 @@ public class ACL extends TestBase {
 
 		var presignedGetObjectRequest = presigner
 				.presignGetObject(z -> z
-						.signatureDuration(Duration.ofMinutes(10))
+						.signatureDuration(Duration.ofSeconds(1))
 						.getObjectRequest(g -> g.bucket(bucketName).key(key)));
+
+		// Wait for the presigned URL to expire
+		delay(1000);
 
 		var response = getObject(presignedGetObjectRequest.url());
 		assertEquals(403, response.getStatusLine().getStatusCode());
@@ -293,9 +295,11 @@ public class ACL extends TestBase {
 
 		var presignedGetObjectRequest = presigner
 				.presignGetObject(z -> z
-						.signatureDuration(Duration.ofMinutes(-1))
+						.signatureDuration(Duration.ofSeconds(1))
 						.getObjectRequest(g -> g.bucket(bucketName).key(key)));
 
+		// Wait for the presigned URL to expire
+		delay(1000);
 		var response = getObject(presignedGetObjectRequest.url());
 		assertEquals(403, response.getStatusLine().getStatusCode());
 	}
@@ -305,8 +309,8 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = Default, Object_ACL = Default] 로그인한 사용자가 버켓을 만들고 업로드한 오브젝트를
 	// 권한없는 사용자가 업데이트하려고 할때 실패 확인
 	public void testObjectAnonPut() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.empty());
@@ -317,7 +321,7 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.putObject(p -> p.bucket(bucketName).key(key),
 						RequestBody.fromString("bar")));
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -325,8 +329,8 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read-write] 로그인한 사용자가 공용버켓(w/r)을 만들고 업로드한 오브젝트를 권한없는
 	// 사용자가 업데이트했을때 올바르게 적용 되는지 확인
 	public void testObjectAnonPutWriteAccess() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.empty());
@@ -337,15 +341,15 @@ public class ACL extends TestBase {
 				() -> unauthenticatedClient.putObject(p -> p.bucket(bucketName).key(key),
 						RequestBody.fromString("bar")));
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("Default")
 	// [Bucket_ACL = Default, Object_ACL = Default] 로그인한 사용자가 버켓을 만들고 업로드
 	public void testObjectPutAuthenticated() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putObject(p -> p.bucket(bucketName).key("foo"),
 				RequestBody.fromString("foo"));
@@ -356,8 +360,8 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = Default, Object_ACL = Default] Post방식으로 만료된 로그인 정보를 설정하여 오브젝트
 	// 업데이트 실패 확인
 	public void testObjectRawPutAuthenticatedExpired() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.empty());
 
@@ -365,9 +369,10 @@ public class ACL extends TestBase {
 
 		var presignedPutObjectRequest = presigner
 				.presignPutObject(z -> z
-						.signatureDuration(Duration.ofMinutes(-1))
+						.signatureDuration(Duration.ofSeconds(1))
 						.putObjectRequest(p -> p.bucket(bucketName).key(key)));
 
+		delay(1000);
 		var response = putObject(presignedPutObjectRequest.url(), null);
 		assertEquals(403, response.getStatusLine().getStatusCode());
 	}

@@ -16,74 +16,76 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class Logging {
-	org.example.test.Logging Test = new org.example.test.Logging();
+	org.example.test.Logging test = new org.example.test.Logging();
+	org.example.testV2.Logging testV2 = new org.example.testV2.Logging();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Put/Get")
 	// 버킷에 로깅 설정 조회 가능한지 확인
 	void testLoggingGet() {
-		Test.testLoggingGet();
+		test.testLoggingGet();
+		testV2.testLoggingGet();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Put/Get")
 	// 버킷에 로깅 설정 가능한지 확인
 	void testLoggingSet() {
-		Test.testLoggingSet();
+		test.testLoggingSet();
+		testV2.testLoggingSet();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Put/Get")
 	// 버킷에 설정한 로깅 정보 조회가 가능한지 확인
 	void testLoggingSetGet() {
-		Test.testLoggingSetGet();
+		test.testLoggingSetGet();
+		testV2.testLoggingSetGet();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Put/Get")
 	// 버킷의 로깅에 Prefix가 설정되는지 확인
 	void testLoggingPrefix() {
-		Test.testLoggingPrefix();
+		test.testLoggingPrefix();
+		testV2.testLoggingPrefix();
 	}
 	
 	@Test
-	@Tag("KSAN")
 	@Tag("Versioning")
 	// 버저닝 설정된 버킷의 로깅이 설정되는지 확인
 	void testLoggingVersioning(){
-		Test.testLoggingVersioning();
+		test.testLoggingVersioning();
+		testV2.testLoggingVersioning();
 	}
 	
 	@Test
-	@Tag("KSAN")
 	@Tag("Encryption")
 	// SSE-s3설정된 버킷의 로깅이 설정되는지 확인
 	void testLoggingEncryption(){
-		Test.testLoggingEncryption();
+		test.testLoggingEncryption();
+		testV2.testLoggingEncryption();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Error")
 	// 존재하지 않는 버킷에 로깅 설정 실패 확인
 	void testLoggingBucketNotFound() {
-		Test.testLoggingBucketNotFound();
+		test.testLoggingBucketNotFound();
+		testV2.testLoggingBucketNotFound();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Error")
 	// 타깃 버킷이 존재하지 않을때 로깅 설정 실패 확인
 	void testLoggingTargetBucketNotFound() {
-		Test.testLoggingTargetBucketNotFound();
+		test.testLoggingTargetBucketNotFound();
+		testV2.testLoggingTargetBucketNotFound();
 	}
 }

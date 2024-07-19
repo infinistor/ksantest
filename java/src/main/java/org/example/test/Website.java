@@ -37,8 +37,8 @@ public class Website extends TestBase
 	//버킷의 Website 설정 조회 확인
 	public void testWebsiteGetBuckets()
 	{
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var response = client.getBucketWebsiteConfiguration(bucketName);
 		assertNull(response);
@@ -49,8 +49,8 @@ public class Website extends TestBase
 	//버킷의 Website 설정이 가능한지 확인
 	public void testWebsitePutBuckets()
 	{
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var webConfig = new BucketWebsiteConfiguration();
 		webConfig.setErrorDocument("400");
@@ -67,8 +67,8 @@ public class Website extends TestBase
 	//버킷의 Website 설정이 삭제가능한지 확인
 	public void testWebsiteDeleteBuckets()
 	{
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var webConfig = new BucketWebsiteConfiguration();
 		webConfig.setErrorDocument("400");

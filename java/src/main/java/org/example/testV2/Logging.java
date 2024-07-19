@@ -38,8 +38,8 @@ public class Logging extends TestBase {
 	@Tag("Put/Get")
 	// 버킷에 로깅 설정 조회 가능한지 확인
 	public void testLoggingGet() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var response = client.getBucketLogging(g -> g.bucket(bucketName));
 		assertNull(response.loggingEnabled());
@@ -49,24 +49,24 @@ public class Logging extends TestBase {
 	@Tag("Put/Get")
 	// 버킷에 로깅 설정 가능한지 확인
 	public void testLoggingSet() {
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		client.putBucketLogging(p -> p.bucket(sourceBucketName)
-				.bucketLoggingStatus(c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName))));
+				.bucketLoggingStatus(c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(""))));
 	}
 
 	@Test
 	@Tag("Put/Get")
 	// 버킷에 설정한 로깅 정보 조회가 가능한지 확인
 	public void testLoggingSetGet() {
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		client.putBucketLogging(p -> p.bucket(sourceBucketName)
-				.bucketLoggingStatus(c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName))));
+				.bucketLoggingStatus(c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(""))));
 
 		var response = client.getBucketLogging(g -> g.bucket(sourceBucketName));
 		assertEquals("", response.loggingEnabled().targetPrefix());
@@ -77,10 +77,10 @@ public class Logging extends TestBase {
 	@Tag("Put/Get")
 	// 버킷의 로깅에 Prefix가 설정되는지 확인
 	public void testLoggingPrefix() {
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var prefix = "logs/";
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		client.putBucketLogging(p -> p.bucket(sourceBucketName).bucketLoggingStatus(
 				c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(prefix))));
@@ -94,10 +94,10 @@ public class Logging extends TestBase {
 	@Tag("Versioning")
 	// 버저닝 설정된 버킷의 로깅이 설정되는지 확인
 	public void testLoggingVersioning() {
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var prefix = "logs/";
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
 
@@ -113,10 +113,10 @@ public class Logging extends TestBase {
 	@Tag("Encryption")
 	// SSE-s3설정된 버킷의 로깅이 설정되는지 확인
 	public void testLoggingEncryption() {
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var prefix = "logs/";
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		client.putBucketEncryption(p -> p.bucket(sourceBucketName)
 				.serverSideEncryptionConfiguration(s -> s.rules(ServerSideEncryptionRule.builder()
@@ -144,23 +144,23 @@ public class Logging extends TestBase {
 			c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(prefix)))));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("Error")
 	// 타깃 버킷이 존재하지 않을때 로깅 설정 실패 확인
 	public void testLoggingTargetBucketNotFound() {
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucketNameOnly();
 		var prefix = "logs/";
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = getNewBucketNameOnly();
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putBucketLogging(p -> p.bucket(sourceBucketName).bucketLoggingStatus(
 			c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(prefix)))));
 
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidTargetBucketForLogging, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.INVALID_TARGET_BUCKET_FOR_LOGGING, e.awsErrorDetails().errorCode());
 	}
 
 }

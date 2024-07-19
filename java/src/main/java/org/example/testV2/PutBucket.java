@@ -37,8 +37,8 @@ public class PutBucket extends TestBase {
 	@Tag("PUT")
 	// 생성한 버킷이 비어있는지 확인
 	public void testBucketListEmpty() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var response = client.listObjects(l->l.bucket(bucketName));
 
@@ -179,7 +179,7 @@ public class PutBucket extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client.createBucket(c->c.bucket(bucketName)));
 
 		assertEquals(409, e.statusCode());
-		assertEquals(MainData.BucketAlreadyOwnedByYou, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.BUCKET_ALREADY_OWNED_BY_YOU, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -195,7 +195,7 @@ public class PutBucket extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> altClient.createBucket(c->c.bucket(bucketName)));
 
 		assertEquals(409, e.statusCode());
-		assertEquals(MainData.BucketAlreadyExists, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.BUCKET_ALREADY_EXISTS, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -232,15 +232,15 @@ public class PutBucket extends TestBase {
 	public void testBucketRecreateNotOverriding() {
 		var keys = List.of("my_key1", "my_key2");
 
-		var bucketName = createObjects(keys);
+		var client = getClient();
+		var bucketName = createObjects(client, keys);
 
-		var objects = getObjectList(bucketName, null);
+		var objects = getObjectList(client, bucketName, null);
 		assertEquals(keys, objects);
 
-		var client = getClient();
 		assertThrows(AwsServiceException.class, () -> client.createBucket(c->c.bucket(bucketName)));
 
-		objects = getObjectList(bucketName, null);
+		objects = getObjectList(client, bucketName, null);
 		assertEquals(keys, objects);
 	}
 
@@ -248,8 +248,8 @@ public class PutBucket extends TestBase {
 	@Tag("location")
 	// 버킷의 location 정보 조회
 	public void testGetBucketLocation() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		client.getBucketLocation(g->g.bucket(bucketName));
 	}
 }

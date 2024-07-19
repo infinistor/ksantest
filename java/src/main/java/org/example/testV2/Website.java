@@ -10,11 +10,13 @@
 */
 package org.example.testV2;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Test;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.model.WebsiteConfiguration;
 
 import org.junit.jupiter.api.Tag;
@@ -34,19 +36,20 @@ public class Website extends TestBase {
 	@Tag("Check")
 	// 버킷의 Website 설정 조회 확인
 	public void testWebsiteGetBuckets() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
-		var response = client.getBucketWebsite(g -> g.bucket(bucketName));
-		assertNull(response);
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketWebsite(g -> g.bucket(bucketName)));
+		assertEquals(404, e.statusCode());
+		assertEquals(MainData.NO_SUCH_WEBSITE_CONFIGURATION, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("Check")
 	// 버킷의 Website 설정이 가능한지 확인
 	public void testWebsitePutBuckets() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var webConfig = WebsiteConfiguration.builder()
 				.errorDocument(d -> d.key("400"))
@@ -64,8 +67,8 @@ public class Website extends TestBase {
 	@Tag("Delete")
 	// 버킷의 Website 설정이 삭제가능한지 확인
 	public void testWebsiteDeleteBuckets() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var webConfig = WebsiteConfiguration.builder()
 				.errorDocument(d -> d.key("400"))

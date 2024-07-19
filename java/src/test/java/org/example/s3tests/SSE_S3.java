@@ -17,222 +17,221 @@ import org.junit.jupiter.api.Test;
 
 class SSE_S3 {
 
-	org.example.test.SSE_S3 Test = new org.example.test.SSE_S3();
+	org.example.test.SSE_S3 test = new org.example.test.SSE_S3();
+	org.example.testV2.SSE_S3 testV2 = new org.example.testV2.SSE_S3();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("1Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	//1Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testSseS3EncryptedTransfer1b() {
-		Test.testSseS3EncryptedTransfer1b();
+		test.testSseS3EncryptedTransfer1b();
+		testV2.testSseS3EncryptedTransfer1b();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("1KB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	//1KB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testSseS3EncryptedTransfer1kb() {
-		Test.testSseS3EncryptedTransfer1kb();
+		test.testSseS3EncryptedTransfer1kb();
+		testV2.testSseS3EncryptedTransfer1kb();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("1MB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	//1MB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testSseS3EncryptedTransfer1MB() {
-		Test.testSseS3EncryptedTransfer1MB();
+		test.testSseS3EncryptedTransfer1MB();
+		testV2.testSseS3EncryptedTransfer1MB();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("13Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	//13Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testSseS3EncryptedTransfer13b() {
-		Test.testSseS3EncryptedTransfer13b();
+		test.testSseS3EncryptedTransfer13b();
+		testV2.testSseS3EncryptedTransfer13b();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Metadata")
-	// @Tag("SSE-S3 설정하여 업로드한 오브젝트의 헤더정보읽기가 가능한지 확인
+	//SSE-S3 설정하여 업로드한 오브젝트의 헤더정보읽기가 가능한지 확인
 	void testSseS3EncryptionMethodHead() {
-		Test.testSseS3EncryptionMethodHead();
+		test.testSseS3EncryptionMethodHead();
+		testV2.testSseS3EncryptionMethodHead();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Multipart")
-	// @Tag("멀티파트업로드를 SSE-S3 설정하여 업로드 가능 확인
+	//멀티파트업로드를 SSE-S3 설정하여 업로드 가능 확인
 	void testSseS3EncryptionMultipartUpload() {
-		Test.testSseS3EncryptionMultipartUpload();
+		test.testSseS3EncryptionMultipartUpload();
+		testV2.testSseS3EncryptionMultipartUpload();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("encryption")
-	// @Tag("버킷의 SSE-S3 설정 확인
+	//버킷의 SSE-S3 설정 확인
 	void testGetBucketEncryption() {
-		Test.testGetBucketEncryption();
+		test.testGetBucketEncryption();
+		testV2.testGetBucketEncryption();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("encryption")
-	// @Tag("버킷의 SSE-S3 설정이 가능한지 확인
+	//버킷의 SSE-S3 설정이 가능한지 확인
 	void testPutBucketEncryption() {
-		Test.testPutBucketEncryption();
+		test.testPutBucketEncryption();
+		testV2.testPutBucketEncryption();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("encryption")
-	// @Tag("버킷의 SSE-S3 설정 삭제가 가능한지 확인
+	//버킷의 SSE-S3 설정 삭제가 가능한지 확인
 	void testDeleteBucketEncryption() {
-		Test.testDeleteBucketEncryption();
+		test.testDeleteBucketEncryption();
+		testV2.testDeleteBucketEncryption();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("encryption")
-	// @Tag("버킷의 SSE-S3 설정이 오브젝트에 반영되는지 확인
+	//버킷의 SSE-S3 설정이 오브젝트에 반영되는지 확인
 	void testPutBucketEncryptionAndObjectSetCheck() {
-		Test.testPutBucketEncryptionAndObjectSetCheck();
+		test.testPutBucketEncryptionAndObjectSetCheck();
+		testV2.testPutBucketEncryptionAndObjectSetCheck();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CopyObject")
-	// @Tag("버킷에 SSE-S3 설정하여 업로드한 1kb 오브젝트를 복사 가능한지 확인
+	//버킷에 SSE-S3 설정하여 업로드한 1kb 오브젝트를 복사 가능한지 확인
 	void testCopyObjectEncryption1kb() {
-		Test.testCopyObjectEncryption1kb();
+		test.testCopyObjectEncryption1kb();
+		testV2.testCopyObjectEncryption1kb();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CopyObject")
-	// @Tag("버킷에 SSE-S3 설정하여 업로드한 256kb 오브젝트를 복사 가능한지 확인
+	//버킷에 SSE-S3 설정하여 업로드한 256kb 오브젝트를 복사 가능한지 확인
 	void testCopyObjectEncryption_256kb() {
-		Test.testCopyObjectEncryption256kb();
+		test.testCopyObjectEncryption256kb();
+		testV2.testCopyObjectEncryption256kb();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CopyObject")
-	// @Tag("버킷에 SSE-S3 설정하여 업로드한 1mb 오브젝트를 복사 가능한지 확인
+	//버킷에 SSE-S3 설정하여 업로드한 1mb 오브젝트를 복사 가능한지 확인
 	void testCopyObjectEncryption1mb() {
-		Test.testCopyObjectEncryption1mb();
+		test.testCopyObjectEncryption1mb();
+		testV2.testCopyObjectEncryption1mb();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("[버킷에 SSE-S3 설정] 업로드, 다운로드 성공 확인
+	//[버킷에 SSE-S3 설정] 업로드, 다운로드 성공 확인
 	void testSseS3BucketPutGet() {
-		Test.testSseS3BucketPutGet();
+		test.testSseS3BucketPutGet();
+		testV2.testSseS3BucketPutGet();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("[버킷에 SSE-S3 설정, SignatureVersion4] 업로드, 다운로드 성공 확인
+	//[버킷에 SSE-S3 설정, SignatureVersion4] 업로드, 다운로드 성공 확인
 	void testSseS3BucketPutGetV4() {
-		Test.testSseS3BucketPutGetV4();
+		test.testSseS3BucketPutGetV4();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true] 업로드, 다운로드
+	//[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true] 업로드, 다운로드
 	// 성공 확인
 	void testSseS3BucketPutGetUseChunkEncoding() {
-		Test.testSseS3BucketPutGetUseChunkEncoding();
+		test.testSseS3BucketPutGetUseChunkEncoding();
+		testV2.testSseS3BucketPutGetUseChunkEncoding();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true,
+	//[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true,
 	// DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	void testSseS3BucketPutGetUseChunkEncodingAndDisablePayloadSigning() {
-		Test.testSseS3BucketPutGetUseChunkEncodingAndDisablePayloadSigning();
+		test.testSseS3BucketPutGetUseChunkEncodingAndDisablePayloadSigning();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false] 업로드, 다운로드
+	//[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false] 업로드, 다운로드
 	// 성공 확인
 	void testSseS3BucketPutGetNotChunkEncoding() {
-		Test.testSseS3BucketPutGetNotChunkEncoding();
+		test.testSseS3BucketPutGetNotChunkEncoding();
+		testV2.testSseS3BucketPutGetNotChunkEncoding();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false,
+	//[버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false,
 	// DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	void testSseS3BucketPutGetNotChunkEncodingAndDisablePayloadSigning() {
-		Test.testSseS3BucketPutGetNotChunkEncodingAndDisablePayloadSigning();
+		test.testSseS3BucketPutGetNotChunkEncodingAndDisablePayloadSigning();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PresignedURL")
-	// @Tag("[버킷에 SSE-S3 설정]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
+	//[버킷에 SSE-S3 설정]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	void testSseS3BucketPresignedUrlPutGet() {
-		Test.testSseS3BucketPresignedUrlPutGet();
+		test.testSseS3BucketPresignedUrlPutGet();
+		testV2.testSseS3BucketPresignedUrlPutGet();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PresignedURL")
-	// @Tag("[버킷에 SSE-S3 설정, SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
+	//[버킷에 SSE-S3 설정, SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	void testSseS3BucketPresignedUrlPutGetV4() {
-		Test.testSseS3BucketPresignedUrlPutGetV4();
+		test.testSseS3BucketPresignedUrlPutGetV4();
+		testV2.testSseS3BucketPresignedUrlPutGetV4();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Get")
-	// @Tag("SSE-S3설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
+	//SSE-S3설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	void testSseS3GetObjectMany() {
-		Test.testSseS3GetObjectMany();
+		test.testSseS3GetObjectMany();
+		testV2.testSseS3GetObjectMany();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Get")
-	// @Tag("SSE-S3설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+	//SSE-S3설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	void testSseS3RangeObjectMany() {
-		Test.testSseS3RangeObjectMany();
+		test.testSseS3RangeObjectMany();
+		testV2.testSseS3RangeObjectMany();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Multipart")
 	// SSE-S3 설정하여 멀티파트로 업로드한 오브젝트를 multi copy 로 복사 가능한지 확인
 	void testSseS3EncryptionMultipartCopyPartUpload() {
-		Test.testSseS3EncryptionMultipartCopyPartUpload();
+		test.testSseS3EncryptionMultipartCopyPartUpload();
+		testV2.testSseS3EncryptionMultipartCopyPartUpload();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Multipart")
 	// SSE-S3 설정하여 Multipart와 Copy Part를 모두 사용하여 오브젝트가 업로드 가능한지 확인
 	void testSseS3EncryptionMultipartCopyMany() {
-		Test.testSseS3EncryptionMultipartCopyMany();
+		test.testSseS3EncryptionMultipartCopyMany();
+		testV2.testSseS3EncryptionMultipartCopyMany();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
 	//sse-s3설정은 소급적용 되지 않음을 확인
 	void testSseS3NotRetroactive() {
-		Test.testSseS3NotRetroactive();
+		test.testSseS3NotRetroactive();
+		testV2.testSseS3NotRetroactive();
 	}
 }

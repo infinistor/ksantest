@@ -14,153 +14,152 @@ import java.net.MalformedURLException;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class SSE_C {
 
-	org.example.test.SSE_C Test = new org.example.test.SSE_C();
+	org.example.test.SSE_C test = new org.example.test.SSE_C();
+	org.example.testV2.SSE_C testV2 = new org.example.testV2.SSE_C();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("1Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	//1Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testEncryptedTransfer1b() {
-		Test.testEncryptedTransfer1b();
+		test.testEncryptedTransfer1b();
+		testV2.testEncryptedTransfer1b();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("1KB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	//1KB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testEncryptedTransfer1kb() {
-		Test.testEncryptedTransfer1kb();
+		test.testEncryptedTransfer1kb();
+		testV2.testEncryptedTransfer1kb();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("1MB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	//1MB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testEncryptedTransfer1MB() {
-		Test.testEncryptedTransfer1MB();
+		test.testEncryptedTransfer1MB();
+		testV2.testEncryptedTransfer1MB();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutGet")
-	// @Tag("13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	//13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testEncryptedTransfer13b() {
-		Test.testEncryptedTransfer13b();
+		test.testEncryptedTransfer13b();
+		testV2.testEncryptedTransfer13b();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Metadata")
-	// @Tag("SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인
+	//SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인
 	void testEncryptionSseCMethodHead() {
-		Test.testEncryptionSseCMethodHead();
+		test.testEncryptionSseCMethodHead();
+		testV2.testEncryptionSseCMethodHead();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인
+	//SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인
 	void testEncryptionSseCPresent() {
-		Test.testEncryptionSseCPresent();
+		test.testEncryptionSseCPresent();
+		testV2.testEncryptionSseCPresent();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
+	//SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 	void testEncryptionSseCOtherKey() {
-		Test.testEncryptionSseCOtherKey();
+		test.testEncryptionSseCOtherKey();
+		testV2.testEncryptionSseCOtherKey();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("SSE-C 설정값중 key-md5값이 올바르지 않을 경우 업로드 실패 확인
+	//SSE-C 설정값중 key-md5값이 올바르지 않을 경우 업로드 실패 확인
 	void testEncryptionSseCInvalidMd5() {
-		Test.testEncryptionSseCInvalidMd5();
+		test.testEncryptionSseCInvalidMd5();
+		testV2.testEncryptionSseCInvalidMd5();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("SSE-C 설정값중 key-md5값을 누락했을 경우 업로드 성공 확인
+	//SSE-C 설정값중 key-md5값을 누락했을 경우 업로드 확인
 	void testEncryptionSseCNoMd5() {
-		Test.testEncryptionSseCNoMd5();
+		test.testEncryptionSseCNoMd5();
+		testV2.testEncryptionSseCNoMd5();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("SSE-C 설정값중 key값을 누락했을 경우 업로드 실패 확인
+	//SSE-C 설정값중 key값을 누락했을 경우 업로드 실패 확인
 	void testEncryptionSseCNoKey() {
-		Test.testEncryptionSseCNoKey();
+		test.testEncryptionSseCNoKey();
+		testV2.testEncryptionSseCNoKey();
 	}
 
 	@Test
-	@Tag("KSAN")
-	@Disabled("JAVA 에서는 algorithm값을 누락해도 기본값이 지정되어 있어 에러가 발생하지 않음")
 	@Tag("ERROR")
-	// @Tag("SSE-C 설정값중 algorithm값을 누락했을 경우 업로드 실패 확인
+	//SSE-C 설정값중 algorithm값을 누락했을 경우 업로드 실패 확인
 	void testEncryptionKeyNoSseC() {
-		Test.testEncryptionKeyNoSseC();
+		testV2.testEncryptionKeyNoSseC();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Multipart")
-	// @Tag("멀티파트업로드를 SSE-C 설정하여 업로드 가능 확인
+	//멀티파트업로드를 SSE-C 설정하여 업로드 가능 확인
 	void testEncryptionSseCMultipartUpload() {
-		Test.testEncryptionSseCMultipartUpload();
+		test.testEncryptionSseCMultipartUpload();
+		testV2.testEncryptionSseCMultipartUpload();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Multipart")
-	// @Tag("SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
+	//SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 	void testEncryptionSseCMultipartBadDownload() {
-		Test.testEncryptionSseCMultipartBadDownload();
+		test.testEncryptionSseCMultipartBadDownload();
+		testV2.testEncryptionSseCMultipartBadDownload();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Post")
-	// @Tag("Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인
+	//Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인
 	void testEncryptionSseCPostObjectAuthenticatedRequest() throws MalformedURLException {
-		Test.testEncryptionSseCPostObjectAuthenticatedRequest();
+		test.testEncryptionSseCPostObjectAuthenticatedRequest();
+		testV2.testEncryptionSseCPostObjectAuthenticatedRequest();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Get")
-	// @Tag("SSE-C설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
+	//SSE-C설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	void testEncryptionSseCGetObjectMany() {
-		Test.testEncryptionSseCGetObjectMany();
+		test.testEncryptionSseCGetObjectMany();
+		testV2.testEncryptionSseCGetObjectMany();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Get")
-	// @Tag("SSE-C설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+	//SSE-C설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	void testEncryptionSseCRangeObjectMany() {
-		Test.testEncryptionSseCRangeObjectMany();
+		test.testEncryptionSseCRangeObjectMany();
+		testV2.testEncryptionSseCRangeObjectMany();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Multipart")
 	// SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 multi copy 로 복사 가능한지 확인
 	void testSseCEncryptionMultipartCopyPartUpload() {
-		Test.testSseCEncryptionMultipartCopyPartUpload();
+		test.testSseCEncryptionMultipartCopyPartUpload();
+		testV2.testSseCEncryptionMultipartCopyPartUpload();
 	}
 }

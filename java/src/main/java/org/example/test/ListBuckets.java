@@ -74,7 +74,7 @@ public class ListBuckets extends TestBase
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 		assertEquals(403, statusCode);
-		assertEquals(MainData.InvalidAccessKeyId, errorCode);
+		assertEquals(MainData.INVALID_ACCESS_KEY_ID, errorCode);
 	}
 
 	@Test
@@ -89,7 +89,7 @@ public class ListBuckets extends TestBase
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 		assertEquals(403, statusCode);
-		assertEquals(MainData.SignatureDoesNotMatch, errorCode);
+		assertEquals(MainData.SIGNATURE_DOES_NOT_MATCH, errorCode);
 	}
 	
 	@Test
@@ -97,8 +97,8 @@ public class ListBuckets extends TestBase
 	//Tag("버킷의 메타데이터를 가져올 수 있는지 확인
 	public void testHeadBucket()
 	{
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		
 		var response = client.headBucket(new HeadBucketRequest(bucketName));
 		assertNotNull(response);

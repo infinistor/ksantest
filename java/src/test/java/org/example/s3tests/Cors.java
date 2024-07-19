@@ -16,42 +16,44 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class Cors {
-	org.example.test.Cors Test = new org.example.test.Cors();
+	org.example.test.Cors test = new org.example.test.Cors();
+	org.example.testV2.Cors testV2 = new org.example.testV2.Cors();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
-	// @Tag("버킷의 cors정보 세팅 성공 확인
+	// 버킷의 cors정보 세팅 성공 확인
 	void testSetCors() {
-		Test.testSetCors();
+		test.testSetCors();
+		testV2.testSetCors();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Post")
-	// @Tag("버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인
+	// 버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인
 	void testCorsOriginResponse() {
-		Test.testCorsOriginResponse();
+		test.testCorsOriginResponse();
+		testV2.testCorsOriginResponse();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Post")
-	// @Tag("와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인
+	// 와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인
 	void testCorsOriginWildcard() {
-		Test.testCorsOriginWildcard();
+		test.testCorsOriginWildcard();
+		testV2.testCorsOriginWildcard();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Post")
-	// @Tag("cors옵션에서 사용자 추가 헤더를 설정하고 존재하지 않는 헤더를 request 설정한 채로 cors호출하면 실패하는지 확인
+	// cors옵션에서 사용자 추가 헤더를 설정하고 존재하지 않는 헤더를 request 설정한 채로 cors호출하면 실패하는지 확인
 	void testCorsHeaderOption() {
-		Test.testCorsHeaderOption();
+		test.testCorsHeaderOption();
+		testV2.testCorsHeaderOption();
 	}
 }

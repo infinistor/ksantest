@@ -11,7 +11,7 @@
 package org.example.Data;
 public class UserData {
 	public String displayName;
-	public String userId;
+	public String id;
 	public String email;
 	public String accessKey;
 	public String secretKey;
@@ -19,7 +19,7 @@ public class UserData {
 
 	public UserData() {
 		displayName = "";
-		userId = "";
+		id = "";
 		email = "";
 		accessKey = "";
 		secretKey = "";
@@ -28,26 +28,30 @@ public class UserData {
 
 	public UserData(String displayName, String userId, String email, String accessKey, String secretKey, String kms) {
 		this.displayName = displayName;
-		this.userId = userId;
+		this.id = userId;
 		this.email = email;
 		this.accessKey = accessKey;
 		this.secretKey = secretKey;
 		this.kms = kms;
 	}
 
-	public software.amazon.awssdk.services.s3.model.Grantee toGrantee() {
+
+	public com.amazonaws.services.s3.model.Grantee toGrantee() {
+		return new com.amazonaws.services.s3.model.CanonicalGrantee(id);
+	}
+	public software.amazon.awssdk.services.s3.model.Grantee toGranteeV2() {
 		return software.amazon.awssdk.services.s3.model.Grantee.builder()
-			.displayName(displayName)
-			.id(userId)
-			.emailAddress(email)
-			.type("CanonicalUser")
+			.id(id)
+			.type(software.amazon.awssdk.services.s3.model.Type.CANONICAL_USER)
 			.build();
 	}
 
-	public software.amazon.awssdk.services.s3.model.Owner toOwner() {
+	public com.amazonaws.services.s3.model.Owner toOwner() {
+		return new com.amazonaws.services.s3.model.Owner(id, displayName);
+	}
+	public software.amazon.awssdk.services.s3.model.Owner toOwnerV2() {
 		return software.amazon.awssdk.services.s3.model.Owner.builder()
-			.displayName(displayName)
-			.id(userId)
+			.id(id)
 			.build();
 	}
 }

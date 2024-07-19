@@ -49,8 +49,8 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyZeroSize() {
 		var key = "foo123bar";
 		var newKey = "bar321foo";
-		var bucketName = createObjects(List.of(key));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of(key));
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.empty());
 
@@ -66,8 +66,8 @@ public class CopyObject extends TestBase {
 	@Tag("Check")
 	// 동일한 버킷에서 오브젝트 복사가 가능한지 확인
 	public void testObjectCopySameBucket() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo123bar";
 		var newKey = "bar321foo";
 
@@ -85,8 +85,8 @@ public class CopyObject extends TestBase {
 	@Tag("ContentType")
 	// ContentType을 설정한 오브젝트를 복사할 경우 복사된 오브젝트도 ContentType값이 일치하는지 확인
 	public void testObjectCopyVerifyContentType() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo123bar";
 		var newKey = "bar321foo";
 		var contentType = "text/bla";
@@ -106,8 +106,8 @@ public class CopyObject extends TestBase {
 	@Tag("Overwrite")
 	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러 확인
 	public void testObjectCopyToItself() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo123bar";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.empty());
@@ -118,15 +118,15 @@ public class CopyObject extends TestBase {
 		var errorCode = e.awsErrorDetails().errorCode();
 
 		assertEquals(400, statusCode);
-		assertEquals(MainData.InvalidRequest, errorCode);
+		assertEquals(MainData.INVALID_REQUEST, errorCode);
 	}
 
 	@Test
 	@Tag("Overwrite")
 	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
 	public void testObjectCopyToItselfWithMetadata() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo123bar";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("foo"));
@@ -148,13 +148,13 @@ public class CopyObject extends TestBase {
 	@Tag("Check")
 	// 다른 버킷으로 오브젝트 복사가 가능한지 확인
 	public void testObjectCopyDiffBucket() {
-		var bucketName1 = getNewBucket();
-		var bucketName2 = getNewBucket();
+		var client = getClient();
+		var bucketName1 = createBucket(client);
+		var bucketName2 = createBucket(client);
 
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 
-		var client = getClient();
 		client.putObject(p -> p.bucket(bucketName1).key(key1),
 				RequestBody.fromString("foo"));
 
@@ -173,11 +173,8 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyNotOwnedBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName1 = getNewBucketName();
-		var bucketName2 = getNewBucketName();
-
-		client.createBucket(c -> c.bucket(bucketName1));
-		altClient.createBucket(c -> c.bucket(bucketName2));
+		var bucketName1 = createBucket(client);
+		var bucketName2 = createBucket(altClient);
 
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
@@ -203,15 +200,14 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyNotOwnedObjectBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = getNewBucketName();
-		client.createBucket(c -> c.bucket(bucketName));
+		var bucketName = createBucketCannedACL(client);
 
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString("foo"));
 
-		var myGrant = Grant.builder().grantee(config.altUser.toGrantee())
+		var myGrant = Grant.builder().grantee(config.altUser.toGranteeV2())
 				.permission(Permission.FULL_CONTROL).build();
 		var grants = addObjectUserGrant(bucketName, key1, myGrant);
 		client.putObjectAcl(
@@ -231,11 +227,11 @@ public class CopyObject extends TestBase {
 	@Tag("Overwrite")
 	// 권한정보를 포함하여 복사할때 올바르게 적용되는지 확인 메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인
 	public void testObjectCopyCannedAcl() {
-		var bucketName = getNewBucket();
-		var client = getClient();
-		var altClient = getAltClient();
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucketCannedACL(client);
 
 		client.putObject(p -> p.bucket(bucketName).key(key1),
 				RequestBody.fromString("foo"));
@@ -247,7 +243,7 @@ public class CopyObject extends TestBase {
 		altClient.getObject(g -> g.bucket(bucketName).key(key2));
 
 		var metaData = new HashMap<String, String>();
-		metaData.put("x-amz-meta-abc", "def");
+		metaData.put("abc", "def");
 
 		client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
@@ -258,7 +254,7 @@ public class CopyObject extends TestBase {
 		var response = altClient.getObject(g -> g.bucket(bucketName).key(key2));
 
 		assertEquals("foo", getBody(response));
-		assertEquals("def", response.response().metadata().get("x-amz-meta-abc"));
+		assertEquals("def", response.response().metadata().get("abc"));
 	}
 
 	@Test
@@ -266,16 +262,16 @@ public class CopyObject extends TestBase {
 	// 크고 작은 용량의 오브젝트가 복사되는지 확인
 	public void testObjectCopyRetainingMetadata() {
 		for (var size : new int[] { 3, 1024 * 1024 }) {
-			var bucketName = getNewBucket();
 			var client = getClient();
+			var bucketName = createBucket(client);
 			var contentType = "audio/ogg";
 
 			var key1 = "foo123bar";
 			var key2 = "bar321foo";
 
 			var metadata = new HashMap<String, String>();
-			metadata.put("x-amz-meta-key1", "value1");
-			metadata.put("x-amz-meta-key2", "value2");
+			metadata.put("key1", "value1");
+			metadata.put("key2", "value2");
 
 			client.putObject(p -> p.bucket(bucketName).key(key1).metadata(metadata).contentType(contentType),
 					RequestBody.fromString(Utils.randomTextToLong(size)));
@@ -295,31 +291,35 @@ public class CopyObject extends TestBase {
 	// 크고 작은 용량의 오브젝트및 메타데이터가 복사되는지 확인
 	public void testObjectCopyReplacingMetadata() {
 		for (var size : new int[] { 3, 1024 * 1024 }) {
-			var bucketName = getNewBucket();
 			var client = getClient();
+			var bucketName = createBucket(client);
 			var contentType = "audio/ogg";
 
 			var key1 = "foo123bar";
 			var key2 = "bar321foo";
 
 			var metadata = new HashMap<String, String>();
-			metadata.put("x-amz-meta-key1", "value1");
-			metadata.put("x-amz-meta-key2", "value2");
+			metadata.put("key1", "value1");
+			metadata.put("key2", "value2");
 
 			client.putObject(p -> p.bucket(bucketName).key(key1).metadata(metadata).contentType(contentType),
 					RequestBody.fromString(Utils.randomTextToLong(size)));
 
+			var response = client.getObject(g -> g.bucket(bucketName).key(key1));
+			assertEquals(contentType, response.response().contentType());
+			assertEquals(metadata, response.response().metadata());
+
 			var metadata2 = new HashMap<String, String>();
-			metadata2.put("x-amz-meta-key3", "value3");
-			metadata2.put("x-amz-meta-key4", "value4");
+			metadata2.put("key3", "value3");
+			metadata2.put("key4", "value4");
 
 			client.copyObject(c -> c
 					.sourceBucket(bucketName).sourceKey(key1)
 					.destinationBucket(bucketName).destinationKey(key2)
-					.metadata(metadata2)
+					.metadata(metadata2).contentType(contentType)
 					.metadataDirective(MetadataDirective.REPLACE));
 
-			var response = client.getObject(g -> g.bucket(bucketName).key(key2));
+			response = client.getObject(g -> g.bucket(bucketName).key(key2));
 			assertEquals(contentType, response.response().contentType());
 			assertEquals(metadata2, response.response().metadata());
 			assertEquals(size, response.response().contentLength());
@@ -330,8 +330,8 @@ public class CopyObject extends TestBase {
 	@Tag("ERROR")
 	// 존재하지 않는 버킷에서 존재하지 않는 오브젝트 복사 실패 확인
 	public void testObjectCopyBucketNotFound() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.copyObject(c -> c
 						.sourceBucket(bucketName).sourceKey("foo123bar")
@@ -344,8 +344,8 @@ public class CopyObject extends TestBase {
 	@Tag("ERROR")
 	// 존재하지않는 오브젝트 복사 실패 확인
 	public void testObjectCopyKeyNotFound() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.copyObject(c -> c
@@ -359,8 +359,8 @@ public class CopyObject extends TestBase {
 	@Tag("Version")
 	// 버저닝된 오브젝트 복사 확인
 	public void testObjectCopyVersionedBucket() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var size = 1 * 5;
 		var data = Utils.randomTextToLong(size);
@@ -382,14 +382,14 @@ public class CopyObject extends TestBase {
 
 		var versionId2 = response.response().versionId();
 		client.copyObject(c -> c
-				.sourceBucket(bucketName).sourceKey(key1)
+				.sourceBucket(bucketName).sourceKey(key2)
 				.destinationBucket(bucketName).destinationKey(key3)
 				.sourceVersionId(versionId2));
 		response = client.getObject(g -> g.bucket(bucketName).key(key3));
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
 
-		var bucketName2 = getNewBucket();
+		var bucketName2 = createBucket(client);
 		checkConfigureVersioningRetry(bucketName2, BucketVersioningStatus.ENABLED);
 		var key4 = "bar321foo3";
 		client.copyObject(c -> c
@@ -400,7 +400,7 @@ public class CopyObject extends TestBase {
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
 
-		var bucketName3 = getNewBucket();
+		var bucketName3 = createBucket(client);
 		checkConfigureVersioningRetry(bucketName3, BucketVersioningStatus.ENABLED);
 		var key5 = "bar321foo4";
 		client.copyObject(c -> c
@@ -424,8 +424,8 @@ public class CopyObject extends TestBase {
 	@Tag("Version")
 	// [버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공 확인
 	public void testObjectCopyVersionedUrlEncoding() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var sourceKey = "foo?bar";
 
@@ -445,14 +445,14 @@ public class CopyObject extends TestBase {
 	@Tag("Multipart")
 	// [버킷에 버저닝 설정] 멀티파트로 업로드된 오브젝트 복사 확인
 	public void testObjectCopyVersioningMultipartUpload() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var size = 50 * MainData.MB;
 		var key1 = "src_multipart";
 
 		var key1Metadata = new HashMap<String, String>();
-		key1Metadata.put("x-amz-meta-foo", "bar");
+		key1Metadata.put("foo", "bar");
 
 		var uploads = setupMultipartUpload(client, bucketName, key1, size, key1Metadata);
 		client.completeMultipartUpload(c -> c
@@ -484,7 +484,7 @@ public class CopyObject extends TestBase {
 		assertEquals(key1Metadata, response.metadata());
 		checkContentUsingRange(bucketName, key3, uploads.getBody(), MainData.MB);
 
-		var bucketName2 = getNewBucket();
+		var bucketName2 = createBucket(client);
 		checkConfigureVersioningRetry(bucketName2, BucketVersioningStatus.ENABLED);
 		var key4 = "dst_multipart3";
 		client.copyObject(c -> c
@@ -496,7 +496,7 @@ public class CopyObject extends TestBase {
 		assertEquals(key1Metadata, response.metadata());
 		checkContentUsingRange(bucketName2, key4, uploads.getBody(), MainData.MB);
 
-		var bucketName3 = getNewBucket();
+		var bucketName3 = createBucket(client);
 		checkConfigureVersioningRetry(bucketName3, BucketVersioningStatus.ENABLED);
 		var key5 = "dst_multipart4";
 		client.copyObject(c -> c
@@ -522,8 +522,8 @@ public class CopyObject extends TestBase {
 	@Tag("If Match")
 	// if match 값을 추가하여 오브젝트를 복사할 경우 성공확인
 	public void testCopyObjectIfMatchGood() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var putResponse = client.putObject(p -> p.bucket(bucketName).key("foo"),
 				RequestBody.fromString("bar"));
@@ -541,8 +541,8 @@ public class CopyObject extends TestBase {
 	@Tag("If Match")
 	// if match에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패 확인
 	public void testCopyObjectIfMatchFailed() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var putResponse = client.putObject(p -> p.bucket(bucketName).key("foo"),
 				RequestBody.fromString("bar"));
@@ -551,7 +551,7 @@ public class CopyObject extends TestBase {
 				.sourceBucket(bucketName).sourceKey("foo")
 				.destinationBucket(bucketName).destinationKey("bar")
 				.sourceVersionId(putResponse.versionId())
-				.copySourceIfMatch(putResponse.eTag())));
+				.copySourceIfMatch("ABC")));
 		var statusCode = e.statusCode();
 		assertEquals(412, statusCode);
 
@@ -783,8 +783,8 @@ public class CopyObject extends TestBase {
 	@Tag("ERROR")
 	// 삭제된 오브젝트 복사 실패 확인
 	public void testCopyToDeletedObject() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key1 = "foo123bar";
 		var ker2 = "bar321foo";
 
@@ -805,8 +805,8 @@ public class CopyObject extends TestBase {
 	@Tag("ERROR")
 	// 버저닝된 버킷에서 삭제된 오브젝트 복사 실패 확인
 	public void testCopyToDeleteMarkerObject() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key1 = "foo123bar";
 		var ker2 = "bar321foo";
 
@@ -830,8 +830,8 @@ public class CopyObject extends TestBase {
 	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지
 	// 확인(Versioning 설정)
 	public void testObjectVersioningCopyToItselfWithMetadata() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo123bar";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
@@ -855,8 +855,8 @@ public class CopyObject extends TestBase {
 	@Tag("Overwrite")
 	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
 	public void testObjectCopyToItselfWithMetadataOverwrite() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo123bar";
 		var metadata = new HashMap<String, String>();
 		metadata.put("foo", "bar");
@@ -881,8 +881,8 @@ public class CopyObject extends TestBase {
 	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지
 	// 확인(Versioning 설정)
 	public void testObjectVersioningCopyToItselfWithMetadataOverwrite() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo123bar";
 		var metadata = new HashMap<String, String>();
 		metadata.put("foo", "bar");
@@ -902,5 +902,27 @@ public class CopyObject extends TestBase {
 		response = client.headObject(h -> h.bucket(bucketName).key(key));
 
 		assertEquals(metadata, response.metadata());
+	}
+
+	@Test
+	@Tag("ERROR")
+	// sse-c로 암호화된 오브젝트를 복사할때 Algorithm을 누락하면 오류가 발생하는지 확인
+	public void testCopyRevokeSseAlgorithm() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var sourceKey = "sourceKey";
+		var targetKey = "targetKey";
+		var data = Utils.randomTextToLong(1024);
+
+		client.putObject(
+				p -> p.bucket(bucketName).key(sourceKey)
+						.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM).sseCustomerKey(SSE_KEY).sseCustomerKeyMD5(SSE_KEY_MD5),
+				RequestBody.fromString(data));
+
+		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
+				.sourceBucket(bucketName).sourceKey(sourceKey).copySourceSSECustomerKey(SSE_KEY).copySourceSSECustomerKeyMD5(SSE_KEY_MD5)
+				.destinationBucket(bucketName).destinationKey(targetKey)));
+		var statusCode = e.statusCode();
+		assertEquals(400, statusCode);
 	}
 }

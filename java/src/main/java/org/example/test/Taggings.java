@@ -55,8 +55,8 @@ public class Taggings extends TestBase {
 	@Tag("Check")
 	// 버킷에 사용자 추가 태그값을 설정할경우 성공확인
 	public void testSetTagging() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var tags = new ArrayList<TagSet>();
 		var tag = new TagSet();
@@ -84,8 +84,8 @@ public class Taggings extends TestBase {
 	// 오브젝트에 태그 설정이 올바르게 적용되는지 확인
 	public void testGetObjTagging() {
 		var key = "obj";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, key, 0);
 
 		var inputTagSet = new ObjectTagging(createSimpleTagSet(2));
 
@@ -100,8 +100,8 @@ public class Taggings extends TestBase {
 	// 오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
 	public void testGetObjHeadTagging() {
 		var key = "obj";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, key, 0);
 		var count = 2;
 
 		var inputTagSet = new ObjectTagging(createSimpleTagSet(count));
@@ -116,9 +116,9 @@ public class Taggings extends TestBase {
 	@Tag("Max")
 	// 추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)
 	public void testPutMaxTags() {
-		var key = "testputmaxtags";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
+		var key = "test put max tags";
 		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, key, 0);
 
 		var inputTagSet = new ObjectTagging(createSimpleTagSet(10));
 
@@ -133,8 +133,8 @@ public class Taggings extends TestBase {
 	// 추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인
 	public void testPutExcessTags() {
 		var key = "test put max tags";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, key, 0);
 
 		var inputTagSet = new ObjectTagging(createSimpleTagSet(11));
 
@@ -143,7 +143,7 @@ public class Taggings extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 		assertEquals(400, statusCode);
-		assertEquals(MainData.BadRequest, errorCode);
+		assertEquals(MainData.BAD_REQUEST, errorCode);
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
 		assertEquals(0, response.getTagSet().size());
@@ -152,10 +152,10 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Max")
 	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인
-	public void testPutMaxKvsizeTags() {
+	public void testPutMaxSizeTags() {
 		var key = "test put max key size";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, key, 0);
 
 		var inputTagSet = new ObjectTagging(createDetailTagSet(10, 128, 256));
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
@@ -169,8 +169,8 @@ public class Taggings extends TestBase {
 	// 태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인
 	public void testPutExcessKeyTags() {
 		var key = "test put excess key tags";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, key, 0);
 
 		var inputTagSet = new ObjectTagging(createDetailTagSet(10, 129, 256));
 
@@ -179,7 +179,7 @@ public class Taggings extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 		assertEquals(400, statusCode);
-		assertEquals(MainData.InvalidTag, errorCode);
+		assertEquals(MainData.INVALID_TAG, errorCode);
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
 		assertEquals(0, response.getTagSet().size());
@@ -190,8 +190,8 @@ public class Taggings extends TestBase {
 	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인
 	public void testPutExcessValTags() {
 		var key = "test put excess value tags";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, key, 0);
 
 		var inputTagSet = new ObjectTagging(createDetailTagSet(10, 128, 259));
 
@@ -200,7 +200,7 @@ public class Taggings extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 		assertEquals(400, statusCode);
-		assertEquals(MainData.InvalidTag, errorCode);
+		assertEquals(MainData.INVALID_TAG, errorCode);
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
 		assertEquals(0, response.getTagSet().size());
@@ -211,8 +211,8 @@ public class Taggings extends TestBase {
 	// 오브젝트의 태그목록을 덮어쓰기 가능한지 확인
 	public void testPutModifyTags() {
 		var key = "test put modify tags";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, key, 0);
 
 		var inputTagSet = new ObjectTagging(createSimpleTagSet(2));
 
@@ -234,8 +234,8 @@ public class Taggings extends TestBase {
 	// 오브젝트의 태그를 삭제 가능한지 확인
 	public void testPutDeleteTags() {
 		var key = "test delete tags";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, key, 0);
 
 		var inputTagSet = new ObjectTagging(createSimpleTagSet(2));
 
@@ -254,8 +254,8 @@ public class Taggings extends TestBase {
 	@Tag("PutObject")
 	// 헤더에 태그정보를 포함한 오브젝트 업로드 성공 확인
 	public void testPutObjWithTags() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "test tag obj1";
 		var data = Utils.randomTextToLong(100);
 
@@ -280,8 +280,8 @@ public class Taggings extends TestBase {
 	// 로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
 	public void testPostObjectTagsAuthenticatedRequest() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var contentType = "text/plain";
 		var key = "foo.txt";
 
@@ -359,8 +359,8 @@ public class Taggings extends TestBase {
 	// 업로드시 오브젝트의 태그 정보를 빈 값으로 올릴 경우 성공 확인
 	public void testGetObjNonTagging() {
 		var key = "obj";
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var putObjectRequest = new PutObjectRequest(bucketName, key, createBody("00"), new ObjectMetadata());
 		putObjectRequest.setTagging(new ObjectTagging(new ArrayList<>()));

@@ -40,9 +40,9 @@ public class Replication extends TestBase {
 	@Tag("Check")
 	// @Tag("버킷의 Replication 설정이 되는지 확인(put/get/delete)")
 	public void testReplicationSet() {
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningConfiguration.ENABLED);
 		checkConfigureVersioningRetry(targetBucketName, BucketVersioningConfiguration.ENABLED);
@@ -69,11 +69,10 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	// @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
 	public void testReplicationInvalidSourceBucketName() {
-
+		var prefix = "test1";
+		var client = getClient();
 		var sourceBucketName = getNewBucketNameOnly();
 		var targetBucketName = getNewBucketNameOnly();
-		var client = getClient();
-		var prefix = "test1";
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
@@ -96,11 +95,10 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	// @Tag("원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
 	public void testReplicationInvalidSourceBucketVersioning() {
-
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
-		var client = getClient();
 		var prefix = "test1";
+		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
@@ -125,11 +123,10 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	// @Tag("대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
 	public void testReplicationInvalidTargetBucketName() {
-
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucketNameOnly();
-		var client = getClient();
 		var prefix = "test1";
+		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = getNewBucketNameOnly();
 
 		checkConfigureVersioningRetry(
 				sourceBucketName,
@@ -158,11 +155,10 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	// @Tag("대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
 	public void testReplicationInvalidTargetBucketVersioning() {
-
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
-		var client = getClient();
 		var prefix = "test1";
+		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(
 				sourceBucketName,

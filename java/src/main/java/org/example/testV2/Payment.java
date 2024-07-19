@@ -32,8 +32,8 @@ public class Payment extends TestBase {
 	@Tag("Put")
 	// 버킷 과금 설정이 가능한지 확인
 	public void testPutBucketRequestPayment() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putBucketRequestPayment(
 				p -> p.bucket(bucketName).requestPaymentConfiguration(r -> r.payer(Payer.REQUESTER)));
@@ -43,8 +43,8 @@ public class Payment extends TestBase {
 	@Tag("Get")
 	// 버킷 과금 설정 조회 확인
 	public void testGetBucketRequestPayment() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var result = client.getBucketRequestPayment(p -> p.bucket(bucketName));
 		assertEquals(false, result);
@@ -54,8 +54,8 @@ public class Payment extends TestBase {
 	@Tag("Get")
 	// 버킷 과금 설정이 올바르게 적용되는지 확인
 	public void testSetGetBucketRequestPayment() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putBucketRequestPayment(p -> p.bucket(bucketName).requestPaymentConfiguration(r -> r.payer(Payer.REQUESTER)));
 		var result = client.getBucketRequestPayment(p -> p.bucket(bucketName));

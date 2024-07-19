@@ -17,42 +17,44 @@ import org.junit.jupiter.api.Test;
 
 class ListBuckets {
 
-	org.example.test.ListBuckets Test = new org.example.test.ListBuckets();
+	org.example.test.ListBuckets test = new org.example.test.ListBuckets();
+	org.example.testV2.ListBuckets testV2 = new org.example.testV2.ListBuckets();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Get")
-	// @Tag("여러개의 버킷 생성해서 목록 조회 확인
+	//여러개의 버킷 생성해서 목록 조회 확인
 	void testBucketsCreateThenList() {
-		Test.testBucketsCreateThenList();
+		test.testBucketsCreateThenList();
+		testV2.testBucketsCreateThenList();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("존재하지 않는 사용자가 버킷목록 조회시 에러 확인
+	//존재하지 않는 사용자가 버킷목록 조회시 에러 확인
 	void testListBucketsInvalidAuth() {
-		Test.testListBucketsInvalidAuth();
+		test.testListBucketsInvalidAuth();
+		testV2.testListBucketsInvalidAuth();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("로그인정보를 잘못입력한 사용자가 버킷목록 조회시 에러 확인
+	//로그인정보를 잘못입력한 사용자가 버킷목록 조회시 에러 확인
 	void testListBucketsBadAuth() {
-		Test.testListBucketsBadAuth();
+		test.testListBucketsBadAuth();
+		testV2.testListBucketsBadAuth();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Metadata")
 	// Tag("버킷의 메타데이터를 가져올 수 있는지 확인
 	void testHeadBucket() {
-		Test.testHeadBucket();
+		test.testHeadBucket();
+		testV2.testHeadBucket();
 	}
 }

@@ -35,8 +35,8 @@ public class DeleteObjects extends TestBase {
 	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 	public void testMultiObjectDelete() {
 		var keyNames = List.of("key0", "key1", "key2");
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
@@ -61,8 +61,8 @@ public class DeleteObjects extends TestBase {
 	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
 	public void testMultiObjectV2Delete() {
 		var keyNames = List.of("key0", "key1", "key2");
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var listResponse = client.listObjectsV2(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
@@ -87,8 +87,8 @@ public class DeleteObjects extends TestBase {
 	// 버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제
 	public void testMultiObjectDeleteVersions() {
 		var keyNames = List.of("key0", "key1", "key2");
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		for (var Key : keyNames)
@@ -117,8 +117,8 @@ public class DeleteObjects extends TestBase {
 	// quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 	public void testMultiObjectDeleteQuiet() {
 		var keyNames = List.of("key0", "key1", "key2");
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
@@ -138,8 +138,8 @@ public class DeleteObjects extends TestBase {
 	// 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 	public void testDirectoryDelete() {
 		var keyNames = List.of("a/b/", "a/b/c/d/obj1", "a/b/c/d/obj2", "1/2/", "1/2/3/4/obj1", "q/w/e/r/obj");
-		var bucketName = createObjectsToBody(keyNames, "");
 		var client = getClient();
+		var bucketName = createEmptyObjects(client, keyNames);
 
 		var listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());
@@ -164,8 +164,8 @@ public class DeleteObjects extends TestBase {
 	// 버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 	public void testDirectoryDeleteVersions() {
 		var keyNames = List.of("a/", "a/obj1", "a/obj2", "b/", "b/obj1");
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		for (var Key : keyNames)
@@ -183,15 +183,18 @@ public class DeleteObjects extends TestBase {
 		assertEquals(4, listResponse.contents().size());
 
 		versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
-		assertEquals(16, versResponse.versions().size());
-
+		assertEquals(15, versResponse.versions().size());
+		assertEquals(1, versResponse.deleteMarkers().size());
+		
 		var deleteList = List.of("a/obj1", "a/obj2");
 		var objectList = getKeyVersions(deleteList);
-
+		
 		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
 		assertEquals(2, delResponse.deleted().size());
-
+		
 		versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
-		assertEquals(18, versResponse.versions().size());
+		assertEquals(15, versResponse.versions().size());
+		assertEquals(3, versResponse.deleteMarkers().size());
+
 	}
 }

@@ -1,11 +1,8 @@
 package org.example.Utility;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -15,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
@@ -36,24 +34,28 @@ import org.example.auth.AWS4SignerForChunkedUpload;
  */
 public class NetUtils {
 
-	public final static int USER_DATE_BLOCK_SIZE = 64 * 1024;
+	NetUtils() {
+	}
+
+	public static final int USER_DATE_BLOCK_SIZE = 64 * 1024;
+	public static final String LINE_FEED = "\r\n";
 
 	public static String createURLToHTTP(String address, int port) {
-		var URL = MainData.HTTP + address;
+		var url = MainData.HTTP + address;
 
-		if (URL.endsWith("/"))
-			URL = URL.substring(0, URL.length() - 1);
+		if (url.endsWith("/"))
+			url = url.substring(0, url.length() - 1);
 
-		return String.format("%s:%d", URL, port);
+		return String.format("%s:%d", url, port);
 	}
 
 	public static String createURLToHTTPS(String address, int port) {
-		var URL = MainData.HTTPS + address;
+		var url = MainData.HTTPS + address;
 
-		if (URL.endsWith("/"))
-			URL = URL.substring(0, URL.length() - 1);
+		if (url.endsWith("/"))
+			url = url.substring(0, url.length() - 1);
 
-		return String.format("%s:%d", URL, port);
+		return String.format("%s:%d", url, port);
 	}
 
 	public static URL getEndPoint(String protocol, String address, int port, String bucketName)
@@ -65,14 +67,14 @@ public class NetUtils {
 		return new URL(String.format("%s%s.s3-%s.amazonaws.com", protocol, bucketName, regionName));
 	}
 
-	public static URL getEndPoint(String protocol, String address, int port, String bucketName, String Key)
+	public static URL getEndPoint(String protocol, String address, int port, String bucketName, String key)
 			throws MalformedURLException {
-		return new URL(String.format("%s%s:%d/%s/%s", protocol, address, port, bucketName, Key));
+		return new URL(String.format("%s%s:%d/%s/%s", protocol, address, port, bucketName, key));
 	}
 
-	public static URL getEndPoint(String protocol, String regionName, String bucketName, String Key)
+	public static URL getEndPoint(String protocol, String regionName, String bucketName, String key)
 			throws MalformedURLException {
-		return new URL(String.format("%s%s.s3-%s.amazonaws.com/%s", protocol, bucketName, regionName, Key));
+		return new URL(String.format("%s%s.s3-%s.amazonaws.com/%s", protocol, bucketName, regionName, key));
 	}
 
 	public static MyResult postUpload(URL sendURL, Map<String, String> headers, FormFile fileData) {
@@ -84,7 +86,6 @@ public class NetUtils {
 			}
 
 			var boundary = Long.toHexString(System.currentTimeMillis());
-			var LINE_FEED = "\r\n";
 			var connection = (HttpURLConnection) sendURL.openConnection();
 
 			connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
@@ -94,13 +95,14 @@ public class NetUtils {
 			connection.setUseCaches(false);
 			connection.setConnectTimeout(15000);
 
-			var writer = new PrintWriter(new OutputStreamWriter(connection.getOutputStream(), "UTF-8"));
+			var writer = new PrintWriter(new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8));
 
-			for (var Header : headers.keySet()) {
+			for (var header : headers.entrySet()) {
 				writer.append("--" + boundary).append(LINE_FEED);
-				writer.append(String.format("Content-Disposition: form-data; name=\"%s\"", Header)).append(LINE_FEED);
+				writer.append(String.format("Content-Disposition: form-data; name=\"%s\"", header.getKey()))
+						.append(LINE_FEED);
 				writer.append(LINE_FEED);
-				writer.append(headers.get(Header)).append(LINE_FEED);
+				writer.append(header.getValue()).append(LINE_FEED);
 			}
 
 			writer.append("--" + boundary).append(LINE_FEED);
@@ -120,25 +122,23 @@ public class NetUtils {
 					&& result.statusCode != HttpURLConnection.HTTP_OK) {
 				var in = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
 				var inputLine = "";
-				var response = new StringBuffer();
+				var response = new StringBuilder();
 				while ((inputLine = in.readLine()) != null) {
 					response.append(inputLine);
 				}
 				in.close();
 				result.message = response.toString();
 			}
-		} catch (IOException e) {
-			fail(e.getMessage());
 		} catch (Exception e) {
-			fail(e.getMessage());
+			e.printStackTrace();
 		}
 
 		return result;
 	}
 
-	public static MyResult putUpload(URL EndPoint, String httpMethod, Map<String, String> headers, String requestBody) {
+	public static MyResult putUpload(URL endpoint, String httpMethod, Map<String, String> headers, String requestBody) {
 		try {
-			var connection = createHttpConnection(EndPoint, httpMethod, headers);
+			var connection = createHttpConnection(endpoint, httpMethod, headers);
 			if (requestBody != null) {
 				var wr = new DataOutputStream(connection.getOutputStream());
 				wr.writeBytes(requestBody);
@@ -154,16 +154,16 @@ public class NetUtils {
 		return null;
 	}
 
-	public static MyResult putUploadChunked(URL EndPoint, String httpMethod, Map<String, String> headers,
+	public static MyResult putUploadChunked(URL endpoint, String httpMethod, Map<String, String> headers,
 			AWS4SignerForChunkedUpload signer, String requestBody) {
 
 		try {
-			var connection = NetUtils.createHttpConnection(EndPoint, httpMethod, headers);
+			var connection = NetUtils.createHttpConnection(endpoint, httpMethod, headers);
 
 			var buffer = new byte[USER_DATE_BLOCK_SIZE];
 			var outputStream = new DataOutputStream(connection.getOutputStream());
 
-			var inputStream = new ByteArrayInputStream(requestBody.getBytes("UTF-8"));
+			var inputStream = new ByteArrayInputStream(requestBody.getBytes(StandardCharsets.UTF_8));
 			int bytesRead = 0;
 			while ((bytesRead = inputStream.read(buffer, 0, buffer.length)) != -1) {
 				byte[] chunk = signer.constructSignedChunk(bytesRead, buffer);
@@ -185,35 +185,30 @@ public class NetUtils {
 	}
 
 	public static MyResult send(HttpURLConnection connection) {
-		var Result = new MyResult();
-		try {
-			// Get Response
-			InputStream is;
-			try {
-				is = connection.getInputStream();
-			} catch (IOException e) {
-				is = connection.getErrorStream();
-			}
+		var result = new MyResult();
 
-			BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-			String line;
-			StringBuffer response = new StringBuffer();
+		try (InputStream is = connection.getResponseCode() == HttpURLConnection.HTTP_OK ? connection.getInputStream()
+				: connection.getErrorStream();) {
+
+			var rd = new BufferedReader(new InputStreamReader(is));
+			var line = "";
+			var response = new StringBuilder();
 			while ((line = rd.readLine()) != null) {
 				response.append(line);
 				response.append('\r');
 			}
 			rd.close();
-			Result.message = response.toString();
-			Result.statusCode = connection.getResponseCode();
+			result.message = response.toString();
+			result.statusCode = connection.getResponseCode();
 		} catch (Exception e) {
 			e.printStackTrace();
-			Result.message = e.getMessage();
+			result.message = e.getMessage();
 		} finally {
 			if (connection != null) {
 				connection.disconnect();
 			}
 		}
-		return Result;
+		return result;
 	}
 
 	public static HttpURLConnection createHttpConnection(URL endpointUrl, String httpMethod,
@@ -223,8 +218,8 @@ public class NetUtils {
 			connection.setRequestMethod(httpMethod);
 
 			if (headers != null) {
-				for (String headerKey : headers.keySet()) {
-					connection.setRequestProperty(headerKey, headers.get(headerKey));
+				for (var header : headers.entrySet()) {
+					connection.setRequestProperty(header.getKey(), header.getValue());
 				}
 			}
 
@@ -251,10 +246,10 @@ public class NetUtils {
 	}
 
 	private static void trustAllHttpsCertificates() throws Exception {
-		TrustManager[] trustAllCerts = new TrustManager[1];
-		TrustManager tm = new miTM();
+		var trustAllCerts = new TrustManager[1];
+		var tm = new miTM();
 		trustAllCerts[0] = tm;
-		SSLContext sc = SSLContext.getInstance("SSL");
+		var sc = SSLContext.getInstance("SSL");
 		sc.init(null, trustAllCerts, null);
 		HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
 	}

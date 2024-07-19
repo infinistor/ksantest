@@ -35,8 +35,8 @@ public class Notification extends TestBase {
 	@Tag("Get")
 	// 버킷에 알람 설정이 없는지 확인
 	public void testNotificationGetEmpty() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var result = client.getBucketNotificationConfiguration(bucketName);
 
@@ -47,9 +47,9 @@ public class Notification extends TestBase {
 	@Tag("Put")
 	// 버킷에 알람 설정이 가능한지 확인
 	public void testNotificationPut() {
-		var bucketName = getNewBucket();
 		var client = getClient();
-		var mainUserId = config.mainUser.userId;
+		var bucketName = createBucket(client);
+		var mainUserId = config.mainUser.id;
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
 
 		var s3Events = EnumSet.noneOf(S3Event.class);
@@ -69,9 +69,9 @@ public class Notification extends TestBase {
 	@Tag("Get")
 	// 버킷에 알람 설정이 되어있는지 확인
 	public void testNotificationGet() {
-		var bucketName = getNewBucket();
 		var client = getClient();
-		var mainUserId = config.mainUser.userId;
+		var bucketName = createBucket(client);
+		var mainUserId = config.mainUser.id;
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
 
 		var s3Events = EnumSet.noneOf(S3Event.class);
@@ -96,9 +96,9 @@ public class Notification extends TestBase {
 	@Tag("Delete")
 	// 버킷에 알람 설정이 삭제되는지 확인
 	public void testNotificationDelete() {
-		var bucketName = getNewBucket();
 		var client = getClient();
-		var mainUserId = config.mainUser.userId;
+		var bucketName = createBucket(client);
+		var mainUserId = config.mainUser.id;
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
 
 		var s3Events = EnumSet.noneOf(S3Event.class);

@@ -39,8 +39,8 @@ public class Accelerate extends TestBase {
 	@Tag("Put")
 	// 버킷 가속 설정이 가능한지 확인
 	public void testPutBucketAccelerate() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
 				.withBucketName(bucketName)
@@ -51,8 +51,8 @@ public class Accelerate extends TestBase {
 	@Tag("Get")
 	// 버킷 가속 설정이 올바르게 적용되는지 확인
 	public void testGetBucketAccelerate() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
 				.withBucketName(bucketName)
@@ -66,8 +66,8 @@ public class Accelerate extends TestBase {
 	@Tag("Change")
 	// 버킷 가속 설정이 변경되는지 확인
 	public void testChangeBucketAccelerate() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
 				.withBucketName(bucketName)
@@ -88,17 +88,15 @@ public class Accelerate extends TestBase {
 	@Tag("Error")
 	// 버킷 가속 설정을 잘못 입력했을 때 에러가 발생하는지 확인
 	public void testPutBucketAccelerateInvalid() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client
 						.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
 								.withBucketName(bucketName)
 								.withAccelerateConfiguration(new BucketAccelerateConfiguration("Invalid"))));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(400, statusCode);
-		assertEquals("MalformedXML", errorCode);
+		assertEquals(400, e.getStatusCode());
+		assertEquals("MalformedXML", e.getErrorCode());
 	}
 }

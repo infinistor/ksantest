@@ -52,8 +52,8 @@ public class Policy extends TestBase {
 	@Tag("Check")
 	// 버킷에 정책 설정이 올바르게 적용되는지 확인
 	public void testBucketPolicy() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		var key = "asdf";
 		client.putObject(bucketName, key, key);
 
@@ -61,23 +61,23 @@ public class Policy extends TestBase {
 		var resource2 = "arn:aws:s3:::" + bucketName + "/*";
 
 		var policyDocument = new JsonObject();
-		policyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
 
 		var statements = new JsonArray();
 
 		var statement = new JsonObject();
-		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectAllow);
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
 
-		statement.addProperty(MainData.PolicyPrincipal, "*");
-		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
+		statement.addProperty(MainData.POLICY_PRINCIPAL, "*");
+		statement.addProperty(MainData.POLICY_ACTION, "s3:ListBucket");
 
 		var resources = new JsonArray();
 		resources.add(resource1);
 		resources.add(resource2);
-		statement.add(MainData.PolicyResource, resources);
+		statement.add(MainData.POLICY_RESOURCE, resources);
 
 		statements.add(statement);
-		policyDocument.add(MainData.PolicyStatement, statements);
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
 
@@ -93,8 +93,8 @@ public class Policy extends TestBase {
 	@Tag("Check")
 	// 버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)
 	public void testBucketV2Policy() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		var key = "asdf";
 		client.putObject(bucketName, key, key);
 
@@ -102,22 +102,22 @@ public class Policy extends TestBase {
 		var resource2 = "arn:aws:s3:::" + bucketName + "/*";
 
 		var policyDocument = new JsonObject();
-		policyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
 
 		var statements = new JsonArray();
 
 		var statement = new JsonObject();
-		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectAllow);
-		statement.addProperty(MainData.PolicyPrincipal, "*");
-		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
+		statement.addProperty(MainData.POLICY_PRINCIPAL, "*");
+		statement.addProperty(MainData.POLICY_ACTION, "s3:ListBucket");
 
 		var resources = new JsonArray();
 		resources.add(resource1);
 		resources.add(resource2);
-		statement.add(MainData.PolicyResource, resources);
+		statement.add(MainData.POLICY_RESOURCE, resources);
 
 		statements.add(statement);
-		policyDocument.add(MainData.PolicyStatement, statements);
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
 
@@ -133,8 +133,8 @@ public class Policy extends TestBase {
 	@Tag("Priority")
 	// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인
 	public void testBucketPolicyAcl() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		var key = "asdf";
 		client.putObject(bucketName, key, key);
 
@@ -142,26 +142,26 @@ public class Policy extends TestBase {
 		var resource2 = "arn:aws:s3:::" + bucketName + "/*";
 
 		var policyDocument = new JsonObject();
-		policyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
 
 		var statements = new JsonArray();
 
 		var statement = new JsonObject();
-		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectDeny);
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_DENY);
 
 		var principal = new JsonObject();
 		principal.addProperty("AWS", "*");
-		statement.add(MainData.PolicyPrincipal, principal);
+		statement.add(MainData.POLICY_PRINCIPAL, principal);
 
-		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
+		statement.addProperty(MainData.POLICY_ACTION, "s3:ListBucket");
 
 		var resources = new JsonArray();
 		resources.add(resource1);
 		resources.add(resource2);
-		statement.add(MainData.PolicyResource, resources);
+		statement.add(MainData.POLICY_RESOURCE, resources);
 
 		statements.add(statement);
-		policyDocument.add(MainData.PolicyStatement, statements);
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
 
 		client.setBucketAcl(bucketName, CannedAccessControlList.AuthenticatedRead);
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -171,7 +171,7 @@ public class Policy extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 		assertEquals(403, statusCode);
-		assertEquals(MainData.AccessDenied, errorCode);
+		assertEquals(MainData.ACCESS_DENIED, errorCode);
 
 		client.deleteBucketPolicy(bucketName);
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
@@ -182,8 +182,8 @@ public class Policy extends TestBase {
 	// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인(ListObjectsV2)
 	public void testBucketV2PolicyAcl() {
 
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		var key = "asdf";
 		client.putObject(bucketName, key, key);
 
@@ -191,26 +191,26 @@ public class Policy extends TestBase {
 		var resource2 = "arn:aws:s3:::" + bucketName + "/*";
 
 		var policyDocument = new JsonObject();
-		policyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
 
 		var statements = new JsonArray();
 
 		var statement = new JsonObject();
-		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectDeny);
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_DENY);
 
 		var principal = new JsonObject();
 		principal.addProperty("AWS", "*");
-		statement.add(MainData.PolicyPrincipal, principal);
+		statement.add(MainData.POLICY_PRINCIPAL, principal);
 
-		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
+		statement.addProperty(MainData.POLICY_ACTION, "s3:ListBucket");
 
 		var resources = new JsonArray();
 		resources.add(resource1);
 		resources.add(resource2);
-		statement.add(MainData.PolicyResource, resources);
+		statement.add(MainData.POLICY_RESOURCE, resources);
 
 		statements.add(statement);
-		policyDocument.add(MainData.PolicyStatement, statements);
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
 
 		client.setBucketAcl(bucketName, CannedAccessControlList.AuthenticatedRead);
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -220,7 +220,7 @@ public class Policy extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 		assertEquals(403, statusCode);
-		assertEquals(MainData.AccessDenied, errorCode);
+		assertEquals(MainData.ACCESS_DENIED, errorCode);
 
 		client.deleteBucketPolicy(bucketName);
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
@@ -231,8 +231,9 @@ public class Policy extends TestBase {
 	// 정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void testGetTagsAclPublic() {
 		var key = "acl";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
+		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
 		var policyDocument = makeJsonPolicy("s3:GetObjectTagging", resource, null, null);
@@ -253,8 +254,9 @@ public class Policy extends TestBase {
 	// 정책설정으로 오브젝트의 태그 입력을 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void testPutTagsAclPublic() {
 		var key = "acl";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
+		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
 		var policyDocument = makeJsonPolicy("s3:PutObjectTagging", resource, null, null);
@@ -274,8 +276,9 @@ public class Policy extends TestBase {
 	// 정책설정으로 오브젝트의 태그 삭제를 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void testDeleteTagsObjPublic() {
 		var key = "acl";
-		var bucketName = createKeyWithRandomContent(key, 0, null, null);
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
+		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
 		var policyDocument = makeJsonPolicy("s3:DeleteObjectTagging", resource, null, null);
@@ -300,8 +303,9 @@ public class Policy extends TestBase {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
-		var bucketName = createObjects(List.of(publicTag, privateTag, invalidTag));
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
+		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:ExistingObjectTag/security", "public");
@@ -351,8 +355,9 @@ public class Policy extends TestBase {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
-		var bucketName = createObjects(List.of(publicTag, privateTag, invalidTag));
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
+		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:ExistingObjectTag/security", "public");
@@ -408,9 +413,9 @@ public class Policy extends TestBase {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
-		var bucketName = createObjects(
-				List.of(publicTag, privateTag, invalidTag));
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
+		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:ExistingObjectTag/security", "public");
@@ -477,14 +482,15 @@ public class Policy extends TestBase {
 		var publicFoo = "public/foo";
 		var publicBar = "public/bar";
 		var privateFoo = "private/foo";
-		var sourceBucketName = createObjects(List.of(publicFoo, publicBar, privateFoo));
 		var client = getClient();
+		var sourceBucketName = createBucketCannedACL(client);
+		createObjects(client, sourceBucketName, List.of(publicFoo, publicBar, privateFoo));
 
 		var sourceResource = makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObject", sourceResource, null, null);
 		client.setBucketPolicy(sourceBucketName, policyDocument.toString());
 
-		var targetBucketName = getNewBucket();
+		var targetBucketName = createBucketCannedACL(client);
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:x-amz-copy-source", String.format("/%s/public/*", sourceBucketName));
@@ -521,14 +527,15 @@ public class Policy extends TestBase {
 	public void testBucketPolicyPutObjCopySourceMeta() {
 		var publicFoo = "public/foo";
 		var publicBar = "public/bar";
-		var sourceBucketName = createObjects(List.of(publicFoo, publicBar));
 		var client = getClient();
+		var sourceBucketName = createBucketCannedACL(client);
+		createObjects(client, sourceBucketName, List.of(publicFoo, publicBar));
 
 		var sourceResource = makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObject", sourceResource, null, null);
 		client.setBucketPolicy(sourceBucketName, policyDocument.toString());
 
-		var targetBucketName = getNewBucket();
+		var targetBucketName = createBucketCannedACL(client);
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:x-amz-metadata-directive", "COPY");
@@ -562,8 +569,8 @@ public class Policy extends TestBase {
 	// [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시 올바르게
 	// 동작하는지 확
 	public void testBucketPolicyPutObjAcl() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:x-amz-acl", "public*");
@@ -572,7 +579,7 @@ public class Policy extends TestBase {
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var s1 = makeJsonStatement("s3:PutObject", resource, null, null, null);
-		var s2 = makeJsonStatement("s3:PutObject", resource, MainData.PolicyEffectDeny, null, tagConditional);
+		var s2 = makeJsonStatement("s3:PutObject", resource, MainData.POLICY_EFFECT_DENY, null, tagConditional);
 		var policyDocument = makeJsonPolicy(s1, s2);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -599,12 +606,12 @@ public class Policy extends TestBase {
 	// [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게
 	// 동작하는지 확인
 	public void testBucketPolicyPutObjGrant() {
-		var bucketName1 = getNewBucket();
-		var bucketName2 = getNewBucket();
 		var client = getClient();
+		var bucketName1 = createBucketCannedACL(client);
+		var bucketName2 = createBucketCannedACL(client);
 
-		var mainUserId = config.mainUser.userId;
-		var altUserId = config.altUser.userId;
+		var mainUserId = config.mainUser.id;
+		var altUserId = config.altUser.id;
 
 		var ownerId = "id=" + mainUserId;
 
@@ -653,9 +660,9 @@ public class Policy extends TestBase {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
-		var bucketName = createObjects(
-				List.of(publicTag, privateTag, invalidTag));
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
+		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:ExistingObjectTag/security", "public");
@@ -707,36 +714,36 @@ public class Policy extends TestBase {
 	@Tag("Status")
 	// [모든 사용자가 버킷에 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
 	public void testGetPublicPolicyAclBucketPolicyStatus() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		assertThrows(AmazonServiceException.class,
 				() -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
 
-		var resource1 = MainData.PolicyResourcePrefix + bucketName;
-		var resource2 = MainData.PolicyResourcePrefix + bucketName + "/*";
+		var resource1 = MainData.POLICY_RESOURCE_PREFIX + bucketName;
+		var resource2 = MainData.POLICY_RESOURCE_PREFIX + bucketName + "/*";
 
 		var policyDocument = new JsonObject();
-		policyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
 
 		var statements = new JsonArray();
 
 		var statement = new JsonObject();
-		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectAllow);
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
 
 		var principal = new JsonObject();
 		principal.addProperty("AWS", "*");
-		statement.add(MainData.PolicyPrincipal, principal);
+		statement.add(MainData.POLICY_PRINCIPAL, principal);
 
-		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
+		statement.addProperty(MainData.POLICY_ACTION, "s3:ListBucket");
 
 		var resources = new JsonArray();
 		resources.add(resource1);
 		resources.add(resource2);
-		statement.add(MainData.PolicyResource, resources);
+		statement.add(MainData.POLICY_RESOURCE, resources);
 
 		statements.add(statement);
-		policyDocument.add(MainData.PolicyStatement, statements);
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
 		var response = client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName));
@@ -747,42 +754,42 @@ public class Policy extends TestBase {
 	@Tag("Status")
 	// [특정 ip로 접근했을때만 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
 	public void testGetNonpublicPolicyAclBucketPolicyStatus() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		assertThrows(AmazonServiceException.class,
 				() -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
 
-		var resource1 = MainData.PolicyResourcePrefix + bucketName;
-		var resource2 = MainData.PolicyResourcePrefix + bucketName + "/*";
+		var resource1 = MainData.POLICY_RESOURCE_PREFIX + bucketName;
+		var resource2 = MainData.POLICY_RESOURCE_PREFIX + bucketName + "/*";
 
 		var policyDocument = new JsonObject();
-		policyDocument.addProperty(MainData.PolicyVersion, MainData.PolicyVersionDate);
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
 
 		var statements = new JsonArray();
 
 		var statement = new JsonObject();
-		statement.addProperty(MainData.PolicyEffect, MainData.PolicyEffectAllow);
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
 
 		var principal = new JsonObject();
 		principal.addProperty("AWS", "*");
-		statement.add(MainData.PolicyPrincipal, principal);
+		statement.add(MainData.POLICY_PRINCIPAL, principal);
 
-		statement.addProperty(MainData.PolicyAction, "s3:ListBucket");
+		statement.addProperty(MainData.POLICY_ACTION, "s3:ListBucket");
 
 		var resources = new JsonArray();
 		resources.add(resource1);
 		resources.add(resource2);
-		statement.add(MainData.PolicyResource, resources);
+		statement.add(MainData.POLICY_RESOURCE, resources);
 
 		var ipAddress = new JsonObject();
 		ipAddress.addProperty("aws:SourceIp", "10.0.0.0/32");
 		var condition = new JsonObject();
 		condition.add("IpAddress", ipAddress);
-		statement.add(MainData.PolicyCondition, condition);
+		statement.add(MainData.POLICY_CONDITION, condition);
 
 		statements.add(statement);
-		policyDocument.add(MainData.PolicyStatement, statements);
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
 		var response = client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName));

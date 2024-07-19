@@ -13,16 +13,15 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.example.Data.MainData;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PublicAccessBlockConfiguration;
-
-import org.junit.jupiter.api.Tag;
 
 public class Access extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -39,8 +38,8 @@ public class Access extends TestBase {
 	@Tag("Check")
 	// 버킷의 접근권한 블록 설정 확인
 	public void testPutPublicBlock() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(true)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
@@ -57,10 +56,10 @@ public class Access extends TestBase {
 
 	@Test
 	@Tag("Denied")
-	// 버킷의 접근권한 블록을 설정한뒤 acl로 버킷의 권한정보를 덮어씌우기 실패 확인
+	// [접근권한 설정에 public 무시 설정] 버킷의 권한설정 실패 확인
 	public void testBlockPublicPutBucketAcls() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(false)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
@@ -89,10 +88,10 @@ public class Access extends TestBase {
 
 	@Test
 	@Tag("Denied")
-	// 버킷의 접근권한 블록에서 acl권한 설정금지로 설정한뒤 오브젝트에 acl정보를 추가한뒤 업로드 실패 확인
+	// [접근권한 설정에 public 무시 설정] 오브젝트에 acl정보를 추가한뒤 업로드 실패 확인
 	public void testBlockPublicObjectCannedAcls() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(false)
 				.blockPublicPolicy(false).restrictPublicBuckets(false).build();
@@ -124,10 +123,10 @@ public class Access extends TestBase {
 
 	@Test
 	@Tag("Denied")
-	// 버킷의 접근권한블록으로 권한 설정을 할 수 없도록 막은 뒤 버킷의 정책을 추가하려고 할때 실패 확인
+	// [접근권한설정에 정책으로 설정한 public 권한 무시를 설정] 버킷의 정책을 추가하려고 할때 실패 확인
 	public void testBlockPublicPolicy() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(false).ignorePublicAcls(false)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
 
@@ -141,13 +140,12 @@ public class Access extends TestBase {
 
 	@Test
 	@Tag("Denied")
-	// 버킷의 접근권한블록으로 개인버킷처럼 설정한뒤 버킷의acl권한을 public-read로 변경해도 적용되지 않음을 확인
+	// [접근권한블록에 ACL로 설정한 public 권한 무시를 설정] 오브젝트 권한을 public-read로 설정할 경우 접근되지 않음을 확인
 	public void testIgnorePublicAcls() {
-		var bucketName = getNewBucket();
 		var client = getClient();
 		var altClient = getAltClient();
+		var bucketName = createBucketCannedACL(client, BucketCannedACL.PUBLIC_READ);
 
-		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
 		altClient.listObjects(l -> l.bucket(bucketName));
 
 		client.putObject(
@@ -174,8 +172,8 @@ public class Access extends TestBase {
 	@Tag("Check")
 	// 버킷의 접근권한 블록 삭제 확인
 	public void testDeletePublicBlock() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(true)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
@@ -191,7 +189,9 @@ public class Access extends TestBase {
 
 		client.deletePublicAccessBlock(d -> d.bucket(bucketName));
 
-		assertThrows(SdkClientException.class,
-				() -> client.getPublicAccessBlock(g -> g.bucket(bucketName)));
+		var e = assertThrows(AwsServiceException.class, () -> client.getPublicAccessBlock(g -> g.bucket(bucketName)));
+		
+		assertEquals(404, e.statusCode());
+		assertEquals(MainData.NO_SUCH_PUBLIC_ACCESS_BLOCK_CONFIGURATION, e.awsErrorDetails().errorCode());
 	}
 }

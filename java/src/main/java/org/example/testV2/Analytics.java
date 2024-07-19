@@ -33,9 +33,9 @@ public class Analytics extends TestBase {
 	@Tag("Put")
 	// 버킷 분석 설정이 가능한지 확인
 	public void testPutBucketAnalytics() {
-		var bucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
 				.analyticsConfiguration(analytics -> analytics.id("test")
@@ -50,9 +50,9 @@ public class Analytics extends TestBase {
 	@Tag("Get")
 	// 버킷 분석 설정이 올바르게 적용되는지 확인
 	public void testGetBucketAnalytics() {
-		var bucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
 				.analyticsConfiguration(analytics -> analytics.id("test")
@@ -76,9 +76,9 @@ public class Analytics extends TestBase {
 	@Tag("Put")
 	// 버킷 분석 설정이 여러개 가능한지 확인
 	public void testAddBucketAnalytics() {
-		var bucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
 				.analyticsConfiguration(analytics -> analytics.id("test")
@@ -105,9 +105,9 @@ public class Analytics extends TestBase {
 	@Tag("List")
 	// 버킷 분석 설정이 목록으로 조회되는지 확인
 	public void testListBucketAnalytics() {
-		var bucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
 				.analyticsConfiguration(analytics -> analytics.id("test")
@@ -131,9 +131,9 @@ public class Analytics extends TestBase {
 	@Tag("Delete")
 	// 버킷 분석 설정이 삭제되는지 확인
 	public void testDeleteBucketAnalytics() {
-		var bucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)
 				.analyticsConfiguration(analytics -> analytics.id("test")
@@ -153,9 +153,9 @@ public class Analytics extends TestBase {
 	@Tag("Error")
 	// 버킷 분석 설정을 잘못 입력했을 때 에러가 발생하는지 확인
 	public void testPutBucketAnalyticsInvalid() {
-		var bucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAnalyticsConfiguration(p -> p.bucket(bucketName)

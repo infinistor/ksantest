@@ -17,202 +17,204 @@ import org.junit.jupiter.api.Test;
 
 class Multipart {
 
-	org.example.test.Multipart Test = new org.example.test.Multipart();
+	org.example.test.Multipart test = new org.example.test.Multipart();
+	org.example.testV2.Multipart testV2 = new org.example.testV2.Multipart();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("비어있는 오브젝트를 멀티파트로 업로드 실패 확인
 	void testMultipartUploadEmpty() {
-		Test.testMultipartUploadEmpty();
+		test.testMultipartUploadEmpty();
+		testV2.testMultipartUploadEmpty();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
 	// @Tag("파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인
 	void testMultipartUploadSmall() {
-		Test.testMultipartUploadSmall();
+		test.testMultipartUploadSmall();
+		testV2.testMultipartUploadSmall();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Copy")
 	// @Tag("버킷a에서 버킷b로 멀티파트 복사 성공확인
 	void testMultipartCopySmall() {
-		Test.testMultipartCopySmall();
+		test.testMultipartCopySmall();
+		testV2.testMultipartCopySmall();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("범위설정을 잘못한 멀티파트 복사 실패 확인
 	void testMultipartCopyInvalidRange() {
-		Test.testMultipartCopyInvalidRange();
+		test.testMultipartCopyInvalidRange();
+		testV2.testMultipartCopyInvalidRange();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Range")
 	// @Tag("범위를 지정한 멀티파트 복사 성공확인
 	void testMultipartCopyWithoutRange() {
-		Test.testMultipartCopyWithoutRange();
+		test.testMultipartCopyWithoutRange();
+		testV2.testMultipartCopyWithoutRange();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("SpecialNames")
 	// @Tag("특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인
 	void testMultipartCopySpecialNames() {
-		Test.testMultipartCopySpecialNames();
+		test.testMultipartCopySpecialNames();
+		testV2.testMultipartCopySpecialNames();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Put")
 	// @Tag("멀티파트 업로드 확인
 	void testMultipartUpload() {
-		Test.testMultipartUpload();
+		test.testMultipartUpload();
+		testV2.testMultipartUpload();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Copy")
 	// @Tag("버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인
 	void testMultipartCopyVersioned() {
-		Test.testMultipartCopyVersioned();
+		test.testMultipartCopyVersioned();
+		testV2.testMultipartCopyVersioned();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Duplicate")
 	// @Tag("멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
 	void testMultipartUploadResendPart() {
-		Test.testMultipartUploadResendPart();
+		test.testMultipartUploadResendPart();
+		testV2.testMultipartUploadResendPart();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Put")
 	// @Tag("한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
 	void testMultipartUploadMultipleSizes() {
-		Test.testMultipartUploadMultipleSizes();
+		test.testMultipartUploadMultipleSizes();
+		testV2.testMultipartUploadMultipleSizes();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Copy")
 	// @Tag("한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인
 	void testMultipartCopyMultipleSizes() {
-		Test.testMultipartCopyMultipleSizes();
+		test.testMultipartCopyMultipleSizes();
+		testV2.testMultipartCopyMultipleSizes();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
 	void testMultipartUploadSizeTooSmall() {
-		Test.testMultipartUploadSizeTooSmall();
+		test.testMultipartUploadSizeTooSmall();
+		testV2.testMultipartUploadSizeTooSmall();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
 	// @Tag("내용물을 채운 멀티파트 업로드 성공 확인
 	void testMultipartUploadContents() {
-		Test.testMultipartUploadContents();
+		test.testMultipartUploadContents();
+		testV2.testMultipartUploadContents();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("OverWrite")
 	// @Tag("업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
 	void testMultipartUploadOverwriteExistingObject() {
-		Test.testMultipartUploadOverwriteExistingObject();
+		test.testMultipartUploadOverwriteExistingObject();
+		testV2.testMultipartUploadOverwriteExistingObject();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Cancel")
 	// @Tag("멀티파트 업로드하는 도중 중단 성공 확인
 	void testAbortMultipartUpload() {
-		Test.testAbortMultipartUpload();
+		test.testAbortMultipartUpload();
+		testV2.testAbortMultipartUpload();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("존재하지 않은 멀티파트 업로드 중단 실패 확인
 	void testAbortMultipartUploadNotFound() {
-		Test.testAbortMultipartUploadNotFound();
+		test.testAbortMultipartUploadNotFound();
+		testV2.testAbortMultipartUploadNotFound();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("List")
 	// @Tag("멀티파트 업로드 중인 목록 확인
 	void testListMultipartUpload() {
-		Test.testListMultipartUpload();
+		test.testListMultipartUpload();
+		testV2.testListMultipartUpload();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인
 	void testMultipartUploadMissingPart() {
-		Test.testMultipartUploadMissingPart();
+		test.testMultipartUploadMissingPart();
+		testV2.testMultipartUploadMissingPart();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인
 	void testMultipartUploadIncorrectEtag() {
-		Test.testMultipartUploadIncorrectEtag();
+		test.testMultipartUploadIncorrectEtag();
+		testV2.testMultipartUploadIncorrectEtag();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Overwrite")
 	// @Tag("버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인
 	void testAtomicMultipartUploadWrite() {
-		Test.testAtomicMultipartUploadWrite();
+		test.testAtomicMultipartUploadWrite();
+		testV2.testAtomicMultipartUploadWrite();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("List")
 	// @Tag("멀티파트 업로드 목록 확인
 	void testMultipartUploadList() {
-		Test.testMultipartUploadList();
+		test.testMultipartUploadList();
+		testV2.testMultipartUploadList();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Cancel")
 	// @Tag("멀티파트 업로드하는 도중 중단 성공 확인
 	void testAbortMultipartUploadList() {
-		Test.testAbortMultipartUploadList();
+		test.testAbortMultipartUploadList();
+		testV2.testAbortMultipartUploadList();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Copy")
 	// 멀티파트업로드와 멀티파티 카피로 오브젝트가 업로드 가능한지 확인
 	void testMultipartCopyMany() {
-		Test.testMultipartCopyMany();
+		test.testMultipartCopyMany();
+		testV2.testMultipartCopyMany();
 	}
 
 	@Test
 	@Tag("List")
-	@Tag("KSAN")
 	// 멀티파트 목록 확인
 	void testMultipartListParts() {
-		Test.testMultipartListParts();
+		test.testMultipartListParts();
+		testV2.testMultipartListParts();
 	}
 }

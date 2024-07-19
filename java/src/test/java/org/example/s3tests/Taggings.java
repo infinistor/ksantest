@@ -19,107 +19,109 @@ import org.junit.jupiter.api.Test;
 
 class Taggings {
 
-	org.example.test.Taggings Test = new org.example.test.Taggings();
+	org.example.test.Taggings test = new org.example.test.Taggings();
+	org.example.testV2.Taggings testV2 = new org.example.testV2.Taggings();
 
 	@AfterEach
 	void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
-	// @Tag("버킷에 사용자 추가 태그값을 설정할경우 성공확인
+	// 버킷에 사용자 추가 태그값을 설정할경우 성공확인
 	void testSetTagging() {
-		Test.testSetTagging();
+		test.testSetTagging();
+		testV2.testSetTagging();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
-	// @Tag("오브젝트에 태그 설정이 올바르게 적용되는지 확인
+	// 오브젝트에 태그 설정이 올바르게 적용되는지 확인
 	void testGetObjTagging() {
-		Test.testGetObjTagging();
+		test.testGetObjTagging();
+		testV2.testGetObjTagging();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
-	// @Tag("오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
+	// 오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
 	void testGetObjHeadTagging() {
-		Test.testGetObjHeadTagging();
+		test.testGetObjHeadTagging();
+		testV2.testGetObjHeadTagging();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Max")
-	// @Tag("추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)
+	// 추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)
 	void testPutMaxTags() {
-		Test.testPutMaxTags();
+		test.testPutMaxTags();
+		testV2.testPutMaxTags();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Overflow")
-	// @Tag("추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인
+	// 추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인
 	void testPutExcessTags() {
-		Test.testPutExcessTags();
+		test.testPutExcessTags();
+		testV2.testPutExcessTags();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Max")
-	// @Tag("태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인
-	void testPutMaxKvsizeTags() {
-		Test.testPutMaxKvsizeTags();
+	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인
+	void testPutMaxSizeTags() {
+		test.testPutMaxSizeTags();
+		testV2.testPutMaxSizeTags();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Overflow")
-	// @Tag("태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인
+	// 태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인
 	void testPutExcessKeyTags() {
-		Test.testPutExcessKeyTags();
+		test.testPutExcessKeyTags();
+		testV2.testPutExcessKeyTags();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Overflow")
-	// @Tag("태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인
+	// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인
 	void testPutExcessValTags() {
-		Test.testPutExcessValTags();
+		test.testPutExcessValTags();
+		testV2.testPutExcessValTags();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Overwrite")
-	// @Tag("오브젝트의 태그목록을 덮어쓰기 가능한지 확인
+	// 오브젝트의 태그목록을 덮어쓰기 가능한지 확인
 	void testPutModifyTags() {
-		Test.testPutModifyTags();
+		test.testPutModifyTags();
+		testV2.testPutModifyTags();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Delete")
-	// @Tag("오브젝트의 태그를 삭제 가능한지 확인
+	// 오브젝트의 태그를 삭제 가능한지 확인
 	void testPutDeleteTags() {
-		Test.testPutDeleteTags();
+		test.testPutDeleteTags();
+		testV2.testPutDeleteTags();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PutObject")
-	// @Tag("헤더에 태그정보를 포함한 오브젝트 업로드 성공 확인
+	// 헤더에 태그정보를 포함한 오브젝트 업로드 성공 확인
 	void testPutObjWithTags() {
-		Test.testPutObjWithTags();
+		test.testPutObjWithTags();
+		testV2.testPutObjWithTags();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Post")
-	// @Tag("로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
+	// 로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
 	void testPostObjectTagsAuthenticatedRequest() throws MalformedURLException {
-		Test.testPostObjectTagsAuthenticatedRequest();
+		test.testPostObjectTagsAuthenticatedRequest();
+		testV2.testPostObjectTagsAuthenticatedRequest();
 	}
 
 	
@@ -127,6 +129,7 @@ class Taggings {
 	@Tag("Check")
 	// 업로드시 오브젝트의 태그 정보를 빈 값으로 올릴 경우 성공 확인
 	void testGetObjNonTagging() {
-		Test.testGetObjNonTagging();
+		test.testGetObjNonTagging();
+		testV2.testGetObjNonTagging();
 	}
 }

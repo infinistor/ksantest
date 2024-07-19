@@ -3,6 +3,10 @@ package org.example.Utility;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -14,10 +18,11 @@ import java.util.Collections;
 
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 
-
 public class Utils {
 	private Utils() {
 	}
+
+	private static Random rand = new Random(System.currentTimeMillis());
 
 	protected static final char[] TEXT = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
 			'p',
@@ -28,7 +33,6 @@ public class Utils {
 			'4', '5', '6', '7', '8', '9' };
 
 	public static String randomText(int length) {
-		Random rand = new Random(System.currentTimeMillis());
 		var sb = new StringBuilder();
 
 		for (int i = 0; i < length; i++)
@@ -37,7 +41,6 @@ public class Utils {
 	}
 
 	public static String randomTextToLong(int length) {
-		Random rand = new Random(System.currentTimeMillis());
 		var sb = new StringBuilder();
 
 		for (int i = 0; i < length; i++)
@@ -95,7 +98,6 @@ public class Utils {
 
 	// create dummy file
 	public static void createDummyFile(String filePath, int size) {
-		Random rand = new Random(System.currentTimeMillis());
 		byte[] bytes = new byte[size];
 		rand.nextBytes(bytes);
 
@@ -104,5 +106,12 @@ public class Utils {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static String getUTCTime2String(int expireTime) {
+		var now = Instant.now();
+		var secondsBefore = now.minus(expireTime, ChronoUnit.SECONDS);
+		var formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
+		return formatter.format(secondsBefore);
 	}
 }

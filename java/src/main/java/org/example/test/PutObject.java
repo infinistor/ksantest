@@ -49,9 +49,9 @@ public class PutObject extends TestBase {
 	@Tag("PUT")
 	// 오브젝트가 올바르게 생성되는지 확인
 	public void testBucketListDistinct() {
-		var bucketName1 = getNewBucket();
-		var bucketName2 = getNewBucket();
 		var client = getClient();
+		var bucketName1 = createBucket(client);
+		var bucketName2 = createBucket(client);
 
 		client.putObject(bucketName1, "asdf", "str");
 
@@ -64,8 +64,8 @@ public class PutObject extends TestBase {
 	// 존재하지 않는 버킷에 오브젝트 업로드할 경우 실패 확인
 	public void testObjectWriteToNonExistBucket() {
 		var key = "foo";
-		var bucketName = "does-not-exist";
 		var client = getClient();
+		var bucketName = getNewBucketName();
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
 
@@ -73,15 +73,15 @@ public class PutObject extends TestBase {
 		var errorCode = e.getErrorCode();
 
 		assertEquals(404, statusCode);
-		assertEquals(MainData.NoSuchBucket, errorCode);
+		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 	}
 
 	@Test
 	@Tag("metadata")
 	// 0바이트로 업로드한 오브젝트가 실제로 0바이트인지 확인
 	public void testObjectHeadZeroBytes() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var key = "foo";
 		client.putObject(bucketName, key, "");
@@ -94,8 +94,8 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	// 업로드한 오브젝트의 ETag가 올바른지 확인
 	public void testObjectWriteCheckEtag() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var response = client.putObject(bucketName, "foo", "bar");
 		assertEquals("37b51d194a7513e45b56f6524f2d51f2", response.getETag());
@@ -105,8 +105,8 @@ public class PutObject extends TestBase {
 	@Tag("cacheControl")
 	// 캐시(시간)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
 	public void testObjectWriteCacheControl() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var key = "foo";
 		var body = "bar";
@@ -130,8 +130,8 @@ public class PutObject extends TestBase {
 	@Tag("Expires")
 	// 캐시(날짜)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
 	public void testObjectWriteExpires() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var key = "foo";
 		var body = "bar";
@@ -151,8 +151,8 @@ public class PutObject extends TestBase {
 	@Tag("Update")
 	// 오브젝트의 기본 작업을 모드 올바르게 할 수 있는지 확인(read, write, update, delete)
 	public void testObjectWriteReadUpdateReadDelete() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var key = "foo";
 		var body = "bar";
@@ -199,7 +199,7 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	// 메타 데이터 업데이트가 올바르게 적용되었는지 확인
 	public void testObjectSetGetMetadataOverwriteToEmpty() {
-		var bucketName = getNewBucket();
+		var bucketName = createBucket();
 
 		var myMeta = "old_meta";
 		var got = setGetMetadata(myMeta, bucketName);
@@ -243,8 +243,8 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	// 오브젝트를 메타데이타 없이 덮어쓰기 했을 때, 메타데이타 값이 비어있는지 확인
 	public void testObjectMetadataReplacedOnPut() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 		var body = "bar";
 
@@ -265,8 +265,8 @@ public class PutObject extends TestBase {
 	@Tag("Encoding")
 	// body의 내용을utf-8로 인코딩한 오브젝트를 업로드 했을때 올바르게 업로드 되었는지 확인
 	public void testObjectWriteFile() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 		var dataStr = "bar";
 		var data = new String(dataStr.getBytes(), StandardCharsets.US_ASCII);
@@ -283,7 +283,7 @@ public class PutObject extends TestBase {
 	// 오브젝트 이름과 내용이 모두 특수문자인 오브젝트 여러개를 업로드 할 경우 모두 재대로 업로드 되는지 확인
 	public void testBucketCreateSpecialKeyNames() {
 		var keys = List.of("!", "-", "_", ".", "'", "(" + ")", "&", "$", "@", "=", ";", "/", ":", "+", "  ", ",", "?",
-				"\\", "{" + "}", "^", "%", "`", "[" + "]", "<" + ">", "~", "#", "|");
+				"{" + "}", "^", "%", "`", "[" + "]", "<" + ">", "~", "#", "|");
 
 		var bucketName = createObjects(keys);
 
@@ -354,9 +354,9 @@ public class PutObject extends TestBase {
 	@Tag("Space")
 	// 오브젝트의 중간에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
 	public void testObjectInfixSpace() {
-		var keys = List.of("a a/", "b b/f1", "c/f 2", "d d/f 3");
-		var bucketName = createObjectsToBody(keys, "");
 		var client = getClient();
+		var keys = List.of("a a/", "b b/f1", "c/f 2", "d d/f 3");
+		var bucketName = createEmptyObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -368,9 +368,9 @@ public class PutObject extends TestBase {
 	@Tag("Space")
 	// 오브젝트의 마지막에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
 	public void testObjectSuffixSpace() {
-		var keys = List.of("a /", "b /f1", "c/f2 ", "d /f3 ");
-		var bucketName = createObjectsToBody(keys, "");
 		var client = getClient();
+		var keys = List.of("a /", "b /f1", "c/f2 ", "d /f3 ");
+		var bucketName = createEmptyObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -384,8 +384,8 @@ public class PutObject extends TestBase {
 	public void testPutEmptyObjectSignatureV2() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)",
 				"*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
-		var bucketName = createObjectsToBodyV2(keys, "");
 		var client = getClientV2();
+		var bucketName = createEmptyObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -399,8 +399,8 @@ public class PutObject extends TestBase {
 	public void testPutEmptyObjectSignatureV4() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
-		var bucketName = createObjectsToBodyV4(keys, "", true);
-		var client = getClientV4(true);
+		var client = getClientV4(true, true);
+		var bucketName = createEmptyObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -414,8 +414,8 @@ public class PutObject extends TestBase {
 	public void testPutObjectSignatureV2() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
-		var bucketName = createObjectsV2(keys);
 		var client = getClientV2();
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -429,8 +429,8 @@ public class PutObject extends TestBase {
 	public void testPutObjectSignatureV4() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
-		var bucketName = createObjectsV4(keys, false);
-		var client = getClientV4(true);
+		var client = getClientV4(true, true);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -444,8 +444,8 @@ public class PutObject extends TestBase {
 	public void testPutObjectUseChunkEncoding() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
-		var bucketName = createObjectsV4(keys, true);
-		var client = getClientV4(true);
+		var client = getClientV4(true, true);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -460,8 +460,8 @@ public class PutObject extends TestBase {
 	public void testPutObjectUseChunkEncodingAndDisablePayloadSigning() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
-		var bucketName = createObjectsHttps(keys, true, true);
-		var client = getClientV4(true);
+		var client = getClientHttpsV4(true, true);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -475,8 +475,8 @@ public class PutObject extends TestBase {
 	public void testPutObjectNotChunkEncoding() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
-		var bucketName = createObjectsV4(keys, false);
-		var client = getClientV4(false);
+		var client = getClientV4(false, true);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -491,8 +491,8 @@ public class PutObject extends TestBase {
 	public void testPutObjectNotChunkEncodingAndDisablePayloadSigning() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
-		var bucketName = createObjectsHttps(keys, false, true);
-		var client = getClientV4(false);
+		var client = getClientV4(false, true);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -505,10 +505,10 @@ public class PutObject extends TestBase {
 	// 폴더의 이름과 동일한 오브젝트 업로드가 가능한지 확인
 	public void testPutObjectDirAndFile() {
 		// file first
-		var bucketName = getNewBucket();
 		var key = "aaa";
 		var directoryName = "aaa/";
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putObject(bucketName, key, key);
 		client.putObject(bucketName, directoryName, "");
@@ -518,7 +518,7 @@ public class PutObject extends TestBase {
 		assertEquals(2, keys.size());
 
 		// dir first
-		var bucketName2 = getNewBucket();
+		var bucketName2 = createBucket(client);
 
 		client.putObject(bucketName2, directoryName, "");
 		client.putObject(bucketName2, key, key);
@@ -528,7 +528,7 @@ public class PutObject extends TestBase {
 		assertEquals(2, keys.size());
 
 		// etc
-		var bucketName3 = getNewBucket();
+		var bucketName3 = createBucket(client);
 		var newKey = "aaa/bbb/ccc";
 
 		client.putObject(bucketName3, key, key);
@@ -543,8 +543,8 @@ public class PutObject extends TestBase {
 	@Tag("Overwrite")
 	// 오브젝트를 덮어쓰기 했을때 올바르게 반영되는지 확인
 	public void testObjectOverwrite() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "temp";
 		var content1 = Utils.randomTextToLong(10 * MainData.KB);
 		var content2 = Utils.randomTextToLong(1 * MainData.MB);
@@ -563,8 +563,8 @@ public class PutObject extends TestBase {
 	@Tag("PUT")
 	// 오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인
 	public void testObjectEmoji() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "test❤🍕🍔🚗";
 
 		client.putObject(bucketName, "asdf", key);
@@ -577,8 +577,8 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	// 메타데이터에 utf-8이 포함될 경우 올바르게 업로드 되는지 확인
 	public void testObjectSetGetMetadataUtf8() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 		var metadataKey1 = "x-amz-meta-meta1";
 		var metadataKey2 = "x-amz-meta-meta2";

@@ -78,8 +78,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("Metadata")
 	// SSE-S3 설정하여 업로드한 오브젝트의 헤더정보읽기가 가능한지 확인
 	public void testSseS3EncryptionMethodHead() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "obj";
 		var data = Utils.randomTextToLong(1000);
 		var metadata = new ObjectMetadata();
@@ -98,8 +98,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("Multipart")
 	// 멀티파트업로드를 SSE-S3 설정하여 업로드 가능 확인
 	public void testSseS3EncryptionMultipartUpload() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "multipartEnc";
 		var size = 50 * MainData.MB;
 		var contentType = "text/plain";
@@ -145,19 +145,18 @@ public class SSE_S3 extends TestBase {
 	@Tag("encryption")
 	// 버킷의 SSE-S3 설정 확인
 	public void testGetBucketEncryption() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		assertThrows(AmazonS3Exception.class, () -> client.getBucketEncryption(bucketName));
 	}
 
 	@Test
 	@Tag("encryption")
-	@Tag("KSAN")
 	// 버킷의 SSE-S3 설정이 가능한지 확인
 	public void testPutBucketEncryption() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
 				.withRules(new ServerSideEncryptionRule()
@@ -173,8 +172,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("encryption")
 	// 버킷의 SSE-S3 설정 삭제가 가능한지 확인
 	public void testDeleteBucketEncryption() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
 				.withRules(new ServerSideEncryptionRule()
@@ -197,8 +196,9 @@ public class SSE_S3 extends TestBase {
 	@Tag("encryption")
 	// 버킷의 SSE-S3 설정이 오브젝트에 반영되는지 확인
 	public void testPutBucketEncryptionAndObjectSetCheck() {
-		var bucketName = getNewBucket();
+		var keys = List.of("for/bar", "test/");
 		var client = getClient();
+		var bucketName = createEmptyObjects(client, keys);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
 				.withRules(new ServerSideEncryptionRule()
@@ -212,11 +212,10 @@ public class SSE_S3 extends TestBase {
 		var response = client.getBucketEncryption(bucketName);
 		assertEquals(sseS3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		var keys = List.of("for/bar", "test/");
-		createObjectsToBody(bucketName, keys, "");
-
-		var getHeadResponse = client.getObjectMetadata(bucketName, keys.get(1));
-		assertEquals(SSEAlgorithm.AES256.toString(), getHeadResponse.getSSEAlgorithm());
+		for (var key : keys) {
+			var getResponse = client.getObjectMetadata(bucketName, key);
+			assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getSSEAlgorithm());
+		}
 	}
 
 	@Test
@@ -244,8 +243,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("PutGet")
 	// [버킷에 SSE-S3 설정] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGet() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -273,8 +272,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("PutGet")
 	// [버킷에 SSE-S3 설정, SignatureVersion4] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetV4() {
-		var bucketName = getNewBucket();
-		var client = getClientV4(true);
+		var client = getClientV4(true, true);
+		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -302,8 +301,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("PutGet")
 	// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetUseChunkEncoding() {
-		var bucketName = getNewBucket();
 		var client = getClientHttpsV4(true, false);
+		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -332,8 +331,8 @@ public class SSE_S3 extends TestBase {
 	// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true,
 	// DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetUseChunkEncodingAndDisablePayloadSigning() {
-		var bucketName = getNewBucket();
 		var client = getClientHttpsV4(true, true);
+		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -361,8 +360,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("PutGet")
 	// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetNotChunkEncoding() {
-		var bucketName = getNewBucket();
 		var client = getClientHttpsV4(false, false);
+		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -391,8 +390,8 @@ public class SSE_S3 extends TestBase {
 	// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false,
 	// DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetNotChunkEncodingAndDisablePayloadSigning() {
-		var bucketName = getNewBucket();
 		var client = getClientHttpsV4(false, true);
+		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -420,8 +419,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("PresignedURL")
 	// [버킷에 SSE-S3 설정]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPresignedUrlPutGet() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -450,8 +449,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("PresignedURL")
 	// [버킷에 SSE-S3 설정, SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPresignedUrlPutGetV4() {
-		var bucketName = getNewBucket();
-		var client = getClientV4(true);
+		var client = getClientV4(true, true);
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -479,8 +478,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("Get")
 	// SSE-S3설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	public void testSseS3GetObjectMany() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
@@ -501,8 +500,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("Get")
 	// SSE-S3설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	public void testSseS3RangeObjectMany() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 		var size = 15 * 1024 * 1024;
 		var data = Utils.randomTextToLong(size);
@@ -524,8 +523,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("Multipart")
 	// SSE-S3 설정하여 멀티파트로 업로드한 오브젝트를 multipart copy 로 복사 가능한지 확인
 	public void testSseS3EncryptionMultipartCopyPartUpload() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var sourceKey = "multipartEnc";
 		var size = 50 * MainData.MB;
 		var contentType = "text/plain";
@@ -567,8 +566,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("Multipart")
 	// SSE-S3 설정하여 Multipart와 Copy part를 모두 사용하여 오브젝트가 업로드 가능한지 확인
 	public void testSseS3EncryptionMultipartCopyMany() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var sourceKey = "multipartEnc";
 		var size = 10 * MainData.MB;
 		var contentType = "text/plain";
@@ -615,8 +614,8 @@ public class SSE_S3 extends TestBase {
 	@Tag("Retroactive")
 	// sse-s3설정은 소급적용 되지 않음을 확인
 	public void testSseS3NotRetroactive() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(1000);
 
 		var putKey = "put";
@@ -669,7 +668,7 @@ public class SSE_S3 extends TestBase {
 		client.copyObject(bucketName, putKey, bucketName, copyKey2);
 
 		// 멀티파트 업로드
-		var uploadData2 = setupMultipartUpload(client, bucketName, multiKey2, 5 * MainData.MB, null);
+		var uploadData2 = setupMultipartUpload(client, bucketName, multiKey2, 5 * MainData.MB);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, multiKey2, uploadData2.uploadId, uploadData2.parts));
 

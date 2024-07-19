@@ -17,156 +17,158 @@ import org.junit.jupiter.api.Test;
 
 class GetObject {
 
-	org.example.test.GetObject Test = new org.example.test.GetObject();
+	org.example.test.GetObject test = new org.example.test.GetObject();
+	org.example.testV2.GetObject testV2 = new org.example.testV2.GetObject();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// @Tag("버킷에 존재하지 않는 오브젝트 다운로드를 할 경우 실패 확인
 	void testObjectReadNotExist() {
-		Test.testObjectReadNotExist();
+		test.testObjectReadNotExist();
+		testV2.testObjectReadNotExist();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("IfMatch")
 	// @Tag("존재하는 오브젝트 이름과 ETag 값으로 오브젝트를 가져오는지 확인
 	void testGetObjectIfMatchGood() {
-		Test.testGetObjectIfMatchGood();
+		test.testGetObjectIfMatchGood();
+		testV2.testGetObjectIfMatchGood();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("IfMatch")
 	// @Tag("오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
 	void testGetObjectIfMatchFailed() {
-		Test.testGetObjectIfMatchFailed();
+		test.testGetObjectIfMatchFailed();
+		testV2.testGetObjectIfMatchFailed();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("IfNoneMatch")
 	// @Tag("오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
 	void testGetObjectIfNoneMatchGood() {
-		Test.testGetObjectIfNoneMatchGood();
+		test.testGetObjectIfNoneMatchGood();
+		testV2.testGetObjectIfNoneMatchGood();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("IfNoneMatch")
 	// @Tag("오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
 	void testGetObjectIfNoneMatchFailed() {
-		Test.testGetObjectIfNoneMatchFailed();
+		test.testGetObjectIfNoneMatchFailed();
+		testV2.testGetObjectIfNoneMatchFailed();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("IfModifiedSince")
 	// @Tag("[지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifModifiedSince)보다 이후에 수정된 오브젝트를 조회 성공
 	void testGetObjectIfModifiedSinceGood() {
-		Test.testGetObjectIfModifiedSinceGood();
+		test.testGetObjectIfModifiedSinceGood();
+		testV2.testGetObjectIfModifiedSinceGood();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("IfModifiedSince")
 	// @Tag("[지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 실패
 	void testGetObjectIfModifiedSinceFailed() {
-		Test.testGetObjectIfModifiedSinceFailed();
+		test.testGetObjectIfModifiedSinceFailed();
+		testV2.testGetObjectIfModifiedSinceFailed();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("IfUnmodifiedSince")
 	// @Tag("[지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회
 	// 실패
 	void testGetObjectIfUnmodifiedSinceGood() {
-		Test.testGetObjectIfUnmodifiedSinceGood();
+		test.testGetObjectIfUnmodifiedSinceGood();
+		testV2.testGetObjectIfUnmodifiedSinceGood();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("IfUnmodifiedSince")
 	// @Tag("[지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회
 	// 성공
 	void testGetObjectIfUnmodifiedSinceFailed() {
-		Test.testGetObjectIfUnmodifiedSinceFailed();
+		test.testGetObjectIfUnmodifiedSinceFailed();
+		testV2.testGetObjectIfUnmodifiedSinceFailed();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Range")
 	// @Tag("지정한 범위로 오브젝트 다운로드가 가능한지 확인
 	void testRangedRequestResponseCode() {
-		Test.testRangedRequestResponseCode();
+		test.testRangedRequestResponseCode();
+		testV2.testRangedRequestResponseCode();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Range")
 	// @Tag("지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
 	void testRangedBigRequestResponseCode() {
-		Test.testRangedBigRequestResponseCode();
+		test.testRangedBigRequestResponseCode();
+		testV2.testRangedBigRequestResponseCode();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Range")
 	// @Tag("특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
 	void testRangedRequestSkipLeadingBytesResponseCode() {
-		Test.testRangedRequestSkipLeadingBytesResponseCode();
+		test.testRangedRequestSkipLeadingBytesResponseCode();
+		testV2.testRangedRequestSkipLeadingBytesResponseCode();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Range")
 	// @Tag("끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
 	void testRangedRequestReturnTrailingBytesResponseCode() {
-		Test.testRangedRequestReturnTrailingBytesResponseCode();
+		test.testRangedRequestReturnTrailingBytesResponseCode();
+		testV2.testRangedRequestReturnTrailingBytesResponseCode();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Range")
 	// @Tag("오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
 	void testRangedRequestInvalidRange() {
-		Test.testRangedRequestInvalidRange();
+		test.testRangedRequestInvalidRange();
+		testV2.testRangedRequestInvalidRange();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Range")
 	// @Tag("비어있는 오브젝트를 범위를 지정하여 다운로드 실패 확인
 	void testRangedRequestEmptyObject() {
-		Test.testRangedRequestEmptyObject();
+		test.testRangedRequestEmptyObject();
+		testV2.testRangedRequestEmptyObject();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Get")
 	// @Tag("같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	void testGetObjectMany() {
-		Test.testGetObjectMany();
+		test.testGetObjectMany();
+		testV2.testGetObjectMany();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Get")
 	// @Tag("같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	void testRangeObjectMany() {
-		Test.testRangeObjectMany();
+		test.testRangeObjectMany();
+		testV2.testRangeObjectMany();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Restore")
 	//오브젝트 복구 명령이 성공하는지 확인
 	void testRestoreObject() {
-		Test.testRestoreObject();
+		test.testRestoreObject();
+		testV2.testRestoreObject();
 	}
 }

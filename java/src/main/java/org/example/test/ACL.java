@@ -68,7 +68,7 @@ public class ACL extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.getObject(bucketName, key));
 
 		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -89,7 +89,7 @@ public class ACL extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.deleteObject(bucketName, key));
 
 		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -109,7 +109,7 @@ public class ACL extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.getObject(bucketName, key));
 
 		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NoSuchKey, e.getErrorCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 	}
 
 	@Test
@@ -136,7 +136,7 @@ public class ACL extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.getObject(bucketName, key));
 
 		assertEquals(403, e.getStatusCode());
-		assertEquals(MainData.AccessDenied, e.getErrorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 
 	@Test
@@ -220,7 +220,7 @@ public class ACL extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
 
 		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -239,7 +239,7 @@ public class ACL extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
 
 		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NoSuchKey, e.getErrorCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 	}
 
 	@Test
@@ -268,7 +268,7 @@ public class ACL extends TestBase {
 				key);
 		var client = getClient();
 
-		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.GET);
+		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-100), HttpMethod.GET);
 		var response = getObject(address);
 		assertEquals(403, response.getStatusLine().getStatusCode());
 	}
@@ -282,7 +282,7 @@ public class ACL extends TestBase {
 		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead, key);
 		var client = getClient();
 
-		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.GET);
+		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-100), HttpMethod.GET);
 
 		var response = getObject(address);
 		assertEquals(403, response.getStatusLine().getStatusCode());
@@ -293,8 +293,8 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = Default, Object_ACL = Default] 로그인한 사용자가 버켓을 만들고 업로드한 오브젝트를
 	// 권한없는 사용자가 업데이트하려고 할때 실패 확인
 	public void testObjectAnonPut() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		var key = "foo";
 
 		client.putObject(bucketName, key, "");
@@ -304,7 +304,7 @@ public class ACL extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> unauthenticatedClient.putObject(bucketName, key, "bar"));
 		assertEquals(403, e.getStatusCode());
-		assertEquals(MainData.AccessDenied, e.getErrorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 
 	@Test
@@ -312,8 +312,8 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = public-read-write] 로그인한 사용자가 공용버켓(w/r)을 만들고 업로드한 오브젝트를 권한없는
 	// 사용자가 업데이트했을때 올바르게 적용 되는지 확인
 	public void testObjectAnonPutWriteAccess() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		var key = "foo";
 
 		client.putObject(bucketName, key, "");
@@ -323,15 +323,15 @@ public class ACL extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> unauthenticatedClient.putObject(bucketName, key, "bar"));
 		assertEquals(403, e.getStatusCode());
-		assertEquals(MainData.AccessDenied, e.getErrorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("Default")
 	// [Bucket_ACL = Default, Object_ACL = Default] 로그인한 사용자가 버켓을 만들고 업로드
 	public void testObjectPutAuthenticated() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		client.putObject(bucketName, "foo", "foo");
 	}
@@ -341,12 +341,12 @@ public class ACL extends TestBase {
 	// [Bucket_ACL = Default, Object_ACL = Default] Post방식으로 만료된 로그인 정보를 설정하여 오브젝트
 	// 업데이트 실패 확인
 	public void testObjectRawPutAuthenticatedExpired() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		var key = "foo";
 		client.putObject(bucketName, key, "");
 
-		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-1), HttpMethod.PUT);
+		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-100), HttpMethod.PUT);
 
 		var response = putObject(address, null);
 		assertEquals(403, response.getStatusLine().getStatusCode());

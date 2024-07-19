@@ -21,8 +21,8 @@ public class S3Config
 	// static final String STR_FILENAME = "s3tests-227.ini";
 	// static final String STR_FILENAME = "s3tests-gw.ini";
 	// static final String STR_FILENAME = "s3tests-ksan.ini";
-	// static final String STR_FILENAME = "awstests.ini";
-	static final String STR_FILENAME = "config.ini";
+	static final String STR_FILENAME = "awstests.ini";
+	// static final String STR_FILENAME = "config.ini";
 	//////////////////////////////SIGNATURE VERSION////////////////////////////////////
 	public static final String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
 	public static final String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";
@@ -113,7 +113,7 @@ public class S3Config
 		UserData user = new UserData();
 
 		user.displayName = readKeyToString(section, STR_DISPLAY_NAME);
-		user.userId 	 = readKeyToString(section, STR_USER_ID);
+		user.id 	 = readKeyToString(section, STR_USER_ID);
 		user.email 		 = readKeyToString(section, STR_EMAIL);
 		user.accessKey 	 = readKeyToString(section, STR_ACCESS_KEY);
 		user.secretKey 	 = readKeyToString(section, STR_SECRET_KEY);

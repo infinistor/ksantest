@@ -17,154 +17,156 @@ import org.junit.jupiter.api.Test;
 
 class Policy {
 
-	org.example.test.Policy Test = new org.example.test.Policy();
+	org.example.test.Policy test = new org.example.test.Policy();
+	org.example.testV2.Policy testV2 = new org.example.testV2.Policy();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
 	// @Tag("버킷에 정책 설정이 올바르게 적용되는지 확인
 	void testBucketPolicy() {
-		Test.testBucketPolicy();
+		test.testBucketPolicy();
+		testV2.testBucketPolicy();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
 	// @Tag("버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)
 	void testBucketV2Policy() {
-		Test.testBucketV2Policy();
+		test.testBucketV2Policy();
+		testV2.testBucketV2Policy();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Priority")
 	// @Tag("버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인
 	void testBucketPolicyAcl() {
-		Test.testBucketPolicyAcl();
+		test.testBucketPolicyAcl();
+		testV2.testBucketPolicyAcl();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Priority")
 	// @Tag("버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인(ListObjectsV2)
 	void testBucketV2PolicyAcl() {
-		Test.testBucketV2PolicyAcl();
+		test.testBucketV2PolicyAcl();
+		testV2.testBucketV2PolicyAcl();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Tagging")
 	// @Tag("정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인
 	void testGetTagsAclPublic() {
-		Test.testGetTagsAclPublic();
+		test.testGetTagsAclPublic();
+		testV2.testGetTagsAclPublic();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Tagging")
 	// @Tag("정책설정으로 오브젝트의 태그 입력을 public-read로 설정했을때 올바르게 동작하는지 확인
 	void testPutTagsAclPublic() {
-		Test.testPutTagsAclPublic();
+		test.testPutTagsAclPublic();
+		testV2.testPutTagsAclPublic();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Tagging")
 	// @Tag("정책설정으로 오브젝트의 태그 삭제를 public-read로 설정했을때 올바르게 동작하는지 확인
 	void testDeleteTagsObjPublic() {
-		Test.testDeleteTagsObjPublic();
+		test.testDeleteTagsObjPublic();
+		testV2.testDeleteTagsObjPublic();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("TagOptions")
 	// @Tag("[오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용] 조건부
 	// 정책설정시 올바르게 동작하는지 확인
 	void testBucketPolicyGetObjExistingTag() {
-		Test.testBucketPolicyGetObjExistingTag();
+		test.testBucketPolicyGetObjExistingTag();
+		testV2.testBucketPolicyGetObjExistingTag();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("TagOptions")
 	// @Tag("[오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게
 	// GetObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
 	void testBucketPolicyGetObjTaggingExistingTag() {
-		Test.testBucketPolicyGetObjTaggingExistingTag();
+		test.testBucketPolicyGetObjTaggingExistingTag();
+		testV2.testBucketPolicyGetObjTaggingExistingTag();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("TagOptions")
 	// @Tag("[오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게
 	// PutObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
 	void testBucketPolicyPutObjTaggingExistingTag() {
-		Test.testBucketPolicyPutObjTaggingExistingTag();
+		test.testBucketPolicyPutObjTaggingExistingTag();
+		testV2.testBucketPolicyPutObjTaggingExistingTag();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PathOptions")
 	// @Tag("[복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부
 	// 정책설정시 올바르게 동작하는지 확인
 	void testBucketPolicyPutObjCopySource() {
-		Test.testBucketPolicyPutObjCopySource();
+		test.testBucketPolicyPutObjCopySource();
+		testV2.testBucketPolicyPutObjCopySource();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("MetadataOptions")
 	// @Tag("[오브젝트의 메타데이터값이 'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게
 	// PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
 	void testBucketPolicyPutObjCopySourceMeta() {
-		Test.testBucketPolicyPutObjCopySourceMeta();
+		test.testBucketPolicyPutObjCopySourceMeta();
+		testV2.testBucketPolicyPutObjCopySourceMeta();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ACLOptions")
 	// @Tag("[PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시
 	// 올바르게 동작하는지 확인
 	void testBucketPolicyPutObjAcl() {
-		Test.testBucketPolicyPutObjAcl();
+		test.testBucketPolicyPutObjAcl();
+		testV2.testBucketPolicyPutObjAcl();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("GrantOptions")
 	// @Tag("[오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시
 	// 올바르게 동작하는지 확인
 	void testBucketPolicyPutObjGrant() {
-		Test.testBucketPolicyPutObjGrant();
+		test.testBucketPolicyPutObjGrant();
+		testV2.testBucketPolicyPutObjGrant();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("TagOptions")
 	// @Tag("[오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용]
 	// 조건부 정책설정시 올바르게 동작하는지 확인
 	void testBucketPolicyGetObjAclExistingTag() {
-		Test.testBucketPolicyGetObjAclExistingTag();
+		test.testBucketPolicyGetObjAclExistingTag();
+		testV2.testBucketPolicyGetObjAclExistingTag();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Status")
 	// @Tag("[모든 사용자가 버킷에 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
 	void testGetPublicPolicyAclBucketPolicyStatus() {
-		Test.testGetPublicPolicyAclBucketPolicyStatus();
+		test.testGetPublicPolicyAclBucketPolicyStatus();
+		testV2.testGetPublicPolicyAclBucketPolicyStatus();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Status")
 	// @Tag("[특정 ip로 접근했을때만 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
 	void testGetNonpublicPolicyAclBucketPolicyStatus() {
-		Test.testGetNonpublicPolicyAclBucketPolicyStatus();
+		test.testGetNonpublicPolicyAclBucketPolicyStatus();
+		testV2.testGetNonpublicPolicyAclBucketPolicyStatus();
 	}
 }

@@ -17,51 +17,53 @@ import org.junit.jupiter.api.Test;
 
 class Replication {
 
-	org.example.test.Replication Test = new org.example.test.Replication();
+	org.example.test.Replication test = new org.example.test.Replication();
+	org.example.testV2.Replication testV2 = new org.example.testV2.Replication();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
-	// @Tag("버킷의 Replication 설정이 되는지 확인(put/get/delete)
+	// 버킷의 Replication 설정이 되는지 확인(put/get/delete)
 	void testReplicationSet() {
-		Test.testReplicationSet();
+		test.testReplicationSet();
+		testV2.testReplicationSet();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
+	// 원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
 	void testReplicationInvalidSourceBucketName() {
-		Test.testReplicationInvalidSourceBucketName();
+		test.testReplicationInvalidSourceBucketName();
+		testV2.testReplicationInvalidSourceBucketName();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
+	// 원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
 	void testReplicationInvalidSourceBucketVersioning() {
-		Test.testReplicationInvalidSourceBucketVersioning();
+		test.testReplicationInvalidSourceBucketVersioning();
+		testV2.testReplicationInvalidSourceBucketVersioning();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
+	// 대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
 	void testReplicationInvalidTargetBucketName() {
-		Test.testReplicationInvalidTargetBucketName();
+		test.testReplicationInvalidTargetBucketName();
+		testV2.testReplicationInvalidTargetBucketName();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
-	// @Tag("대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
+	// 대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
 	void testReplicationInvalidTargetBucketVersioning() {
-		Test.testReplicationInvalidTargetBucketVersioning();
+		test.testReplicationInvalidTargetBucketVersioning();
+		testV2.testReplicationInvalidTargetBucketVersioning();
 	}
 
 }

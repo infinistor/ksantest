@@ -16,34 +16,36 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 
 class Website {
-	org.example.test.Website Test = new org.example.test.Website();
+	org.example.test.Website test = new org.example.test.Website();
+	org.example.testV2.Website testV2 = new org.example.testV2.Website();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
 	// 버킷의 Website 설정 조회 확인
 	void testWebsiteGetBuckets() {
-		Test.testWebsiteGetBuckets();
+		test.testWebsiteGetBuckets();
+		testV2.testWebsiteGetBuckets();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
 	// 버킷의 Website 설정이 가능한지 확인
 	void testWebsitePutBuckets() {
-		Test.testWebsitePutBuckets();
+		test.testWebsitePutBuckets();
+		testV2.testWebsitePutBuckets();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Delete")
 	// 버킷의 Website 설정이 삭제가능한지 확인
 	void testWebsiteDeleteBuckets() {
-		Test.testWebsiteDeleteBuckets();
+		test.testWebsiteDeleteBuckets();
+		testV2.testWebsiteDeleteBuckets();
 	}
 }

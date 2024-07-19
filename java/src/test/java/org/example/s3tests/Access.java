@@ -17,58 +17,60 @@ import org.junit.jupiter.api.Test;
 
 class Access {
 
-	org.example.test.Access Test = new org.example.test.Access();
+	org.example.test.Access test = new org.example.test.Access();
+	org.example.testV2.Access testV2 = new org.example.testV2.Access();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	// 버킷의 접근권한 블록 설정 확인
 	void testPutPublicBlock() {
-		Test.testPutPublicBlock();
+		test.testPutPublicBlock();
+		testV2.testPutPublicBlock();
 	}
 
 	@Test
 	@Tag("Denied")
-	@Tag("KSAN")
-	// 버킷의 접근권한 블록을 설정한뒤 acl로 버킷의 권한정보를 덮어씌우기 실패 확인
+	// [접근권한 설정에 public 무시 설정] 버킷의 권한설정 실패 확인
 	void testBlockPublicPutBucketAcls() {
-		Test.testBlockPublicPutBucketAcls();
+		test.testBlockPublicPutBucketAcls();
+		testV2.testBlockPublicPutBucketAcls();
 	}
 
 	@Test
 	@Tag("Denied")
-	@Tag("KSAN")
-	// 버킷의 접근권한 블록에서 acl권한 설정금지로 설정한뒤 오브젝트에 acl정보를 추가한뒤 업로드 실패 확인
+	// [접근권한 설정에 public 무시 설정] 오브젝트에 acl정보를 추가한뒤 업로드 실패 확인
 	void testBlockPublicObjectCannedAcls() {
-		Test.testBlockPublicObjectCannedAcls();
+		test.testBlockPublicObjectCannedAcls();
+		testV2.testBlockPublicObjectCannedAcls();
 	}
 
 	@Test
 	@Tag("Denied")
-	@Tag("KSAN")
-	// 버킷의 접근권한블록으로 권한 설정을 할 수 없도록 막은 뒤 버킷의 정책을 추가하려고 할때 실패 확인
+	// [접근권한설정에 정책으로 설정한 public 권한 무시를 설정] 버킷의 정책을 추가하려고 할때 실패 확인
 	void testBlockPublicPolicy() {
-		Test.testBlockPublicPolicy();
+		test.testBlockPublicPolicy();
+		testV2.testBlockPublicPolicy();
 	}
 
 	@Test
 	@Tag("Denied")
-	@Tag("KSAN")
-	// 버킷의 접근권한블록으로 개인버킷처럼 설정한뒤 버킷의acl권한을 public-read로 변경해도 적용되지 않음을 확인
+	// [접근권한블록에 ACL로 설정한 public 권한 무시를 설정] 오브젝트 권한을 public-read로 설정할 경우 접근되지 않음을 확인
 	void testIgnorePublicAcls() {
-		Test.testIgnorePublicAcls();
+		test.testIgnorePublicAcls();
+		testV2.testIgnorePublicAcls();
 	}
 
 	@Test
 	@Tag("Check")
-	@Tag("KSAN")
 	// 버킷의 접근권한 블록 삭제 확인
 	void testDeletePublicBlock() {
-		Test.testDeletePublicBlock();
+		test.testDeletePublicBlock();
+		testV2.testDeletePublicBlock();
 	}
 }

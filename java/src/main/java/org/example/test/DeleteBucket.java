@@ -36,8 +36,8 @@ public class DeleteBucket extends TestBase {
 	@Tag("ERROR")
 	// 존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인
 	public void testBucketDeleteNotExist() {
-		var bucketName = getNewBucketNameOnly();
 		var client = getClient();
+		var bucketName = getNewBucketNameOnly();
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
@@ -45,7 +45,7 @@ public class DeleteBucket extends TestBase {
 		var errorCode = e.getErrorCode();
 
 		assertEquals(404, statusCode);
-		assertEquals(MainData.NoSuchBucket, errorCode);
+		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 		deleteBucketList(bucketName);
 	}
 
@@ -53,8 +53,8 @@ public class DeleteBucket extends TestBase {
 	@Tag("ERROR")
 	// 내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인
 	public void testBucketDeleteNonempty() {
-		var bucketName = createObjects(List.of("foo"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("foo"));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
@@ -62,15 +62,15 @@ public class DeleteBucket extends TestBase {
 		var errorCode = e.getErrorCode();
 
 		assertEquals(409, statusCode);
-		assertEquals(MainData.BucketNotEmpty, errorCode);
+		assertEquals(MainData.BUCKET_NOT_EMPTY, errorCode);
 	}
 
 	@Test
 	@Tag("ERROR")
 	// 이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인
 	public void testBucketCreateDelete() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.deleteBucket(bucketName);
 
@@ -80,7 +80,7 @@ public class DeleteBucket extends TestBase {
 		var errorCode = e.getErrorCode();
 
 		assertEquals(404, statusCode);
-		assertEquals(MainData.NoSuchBucket, errorCode);
+		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 		deleteBucketList(bucketName);
 	}
 }

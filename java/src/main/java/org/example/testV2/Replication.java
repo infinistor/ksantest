@@ -38,10 +38,10 @@ public class Replication extends TestBase {
 	@Tag("Check")
 	// @Tag("버킷의 Replication 설정이 되는지 확인(put/get/delete)")
 	public void testReplicationSet() {
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
-		var client = getClient();
 		var prefix = "test/";
+		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
 		checkConfigureVersioningRetry(targetBucketName, BucketVersioningStatus.ENABLED);
@@ -49,9 +49,10 @@ public class Replication extends TestBase {
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
 		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
-				.rules(ReplicationRule.builder().status("Enabled")
+				.rules(ReplicationRule.builder().status("Enabled").priority(1)
 						.destination(Destination.builder().bucket(targetBucketARN).build())
 						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
+						.deleteMarkerReplication(d -> d.status("Disabled"))
 						.build())
 				.build();
 
@@ -70,10 +71,9 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	// @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
 	public void testReplicationInvalidSourceBucketName() {
-
+		var client = getClient();
 		var sourceBucketName = getNewBucketNameOnly();
 		var targetBucketName = getNewBucketNameOnly();
-		var client = getClient();
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
@@ -92,10 +92,9 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	// @Tag("원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
 	public void testReplicationInvalidSourceBucketVersioning() {
-
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
@@ -115,20 +114,22 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	// @Tag("대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
 	public void testReplicationInvalidTargetBucketName() {
-
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucketNameOnly();
+		var prefix = "test/";
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = getNewBucketNameOnly();
 
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
 		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
-				.rules(ReplicationRule.builder().status("Enabled")
-						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
+				.rules(ReplicationRule.builder().status("Enabled").priority(1)
+						.destination(Destination.builder().bucket(targetBucketARN).build())
+						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
+						.deleteMarkerReplication(d -> d.status("Disabled"))
+						.build())
 				.build();
-
 		var e = assertThrows(
 				AwsServiceException.class,
 				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
@@ -140,10 +141,10 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	// @Tag("대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
 	public void testReplicationInvalidTargetBucketVersioning() {
-
-		var sourceBucketName = getNewBucket();
-		var targetBucketName = getNewBucket();
+		var prefix = "test/";
 		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(
 				sourceBucketName,
@@ -152,10 +153,12 @@ public class Replication extends TestBase {
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
 		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
-				.rules(ReplicationRule.builder().status("Enabled")
-						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
+				.rules(ReplicationRule.builder().status("Enabled").priority(1)
+						.destination(Destination.builder().bucket(targetBucketARN).build())
+						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
+						.deleteMarkerReplication(d -> d.status("Disabled"))
+						.build())
 				.build();
-
 		var e = assertThrows(
 				AwsServiceException.class,
 				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));

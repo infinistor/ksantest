@@ -11,16 +11,18 @@
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.junit.Ignore;
+import org.example.Data.MainData;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.CORSConfiguration;
 import software.amazon.awssdk.services.s3.model.CORSRule;
@@ -40,8 +42,8 @@ public class Cors extends TestBase {
 	@Tag("Check")
 	// 버킷의 cors정보 세팅 성공 확인
 	public void testSetCors() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var allowedMethods = List.of("GET", "PUT");
 		var allowedOrigins = List.of("*.get", "*.put");
@@ -53,27 +55,32 @@ public class Cors extends TestBase {
 						.build())
 				.build();
 
-		var response = client.getBucketCors(g -> g.bucket(bucketName));
-		assertNull(response);
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(404, e.statusCode());
+		assertEquals(MainData.NO_SUCH_CORS_CONFIGURATION, e.awsErrorDetails().errorCode());
 
 		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig));
-		response = client.getBucketCors(g -> g.bucket(bucketName));
-		assertEquals(allowedMethods, response.corsRules().get(0).allowedHeaders());
+
+		var response = client.getBucketCors(g -> g.bucket(bucketName));
+
+		assertEquals(allowedMethods, response.corsRules().get(0).allowedMethods());
 		assertEquals(allowedOrigins, response.corsRules().get(0).allowedOrigins());
 
 		client.deleteBucketCors(d -> d.bucket(bucketName));
-		response = client.getBucketCors(g -> g.bucket(bucketName));
-		assertNull(response);
+		e = assertThrows(AwsServiceException.class, () -> client.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(404, e.statusCode());
+		assertEquals(MainData.NO_SUCH_CORS_CONFIGURATION, e.awsErrorDetails().errorCode());
+
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	@Tag("Post")
 	// 버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인
 	public void testCorsOriginResponse() {
-		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var bucketName = createBucketCannedACL(client);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
 
 		var corsConfig = CORSConfiguration.builder();
 		var rules = new ArrayList<CORSRule>();
@@ -91,8 +98,9 @@ public class Cors extends TestBase {
 				.allowedOrigins(List.of("*.put")).build());
 		corsConfig.corsRules(rules);
 
-		var response = client.getBucketCors(g -> g.bucket(bucketName));
-		assertNull(response);
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(404, e.statusCode());
+		assertEquals(MainData.NO_SUCH_CORS_CONFIGURATION, e.awsErrorDetails().errorCode());
 
 		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig.build()));
 
@@ -166,10 +174,10 @@ public class Cors extends TestBase {
 		corsRequestAndCheck("OPTIONS", bucketName, headers, 400, null, null, null);
 		headers.clear();
 		headers.put("Origin", "foo.suffix");
-		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);// 403 => 400
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
 		headers.clear();
 		headers.put("Origin", "foo.bla");
-		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);// 403 => 400
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 403, null, null, null);
 		headers.clear();
 		headers.put("Origin", "foo.suffix");
 		headers.put("Access-Control-Request-Method", "GET");
@@ -222,13 +230,13 @@ public class Cors extends TestBase {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	@Tag("Post")
 	// 와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인
 	public void testCorsOriginWildcard() {
-		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var bucketName = createBucketCannedACL(client);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
 
 		var corsConfig = CORSConfiguration.builder();
 		var rules = new ArrayList<CORSRule>();
@@ -236,8 +244,9 @@ public class Cors extends TestBase {
 				.allowedOrigins(List.of("*")).build());
 		corsConfig.corsRules(rules);
 
-		var response = client.getBucketCors(g -> g.bucket(bucketName));
-		assertNull(response);
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(404, e.statusCode());
+		assertEquals(MainData.NO_SUCH_CORS_CONFIGURATION, e.awsErrorDetails().errorCode());
 
 		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig.build()));
 
@@ -249,13 +258,13 @@ public class Cors extends TestBase {
 	}
 
 	@Test
-	@Ignore
+	@Disabled
 	@Tag("Post")
 	// @Tag("cors옵션에서 사용자 추가 헤더를 설정하고 존재하지 않는 헤더를 request 설정한 채로 cors호출하면 실패하는지 확인
 	public void testCorsHeaderOption() {
-		var bucketName = getNewBucketName();
 		var client = getClient();
-		client.createBucket(c -> c.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var bucketName = createBucketCannedACL(client);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
 
 		var corsConfig = CORSConfiguration.builder();
 		var rules = new ArrayList<CORSRule>();
@@ -266,8 +275,9 @@ public class Cors extends TestBase {
 				.build());
 		corsConfig.corsRules(rules);
 
-		var response = client.getBucketCors(g -> g.bucket(bucketName));
-		assertNull(response);
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(404, e.statusCode());
+		assertEquals(MainData.NO_SUCH_CORS_CONFIGURATION, e.awsErrorDetails().errorCode());
 
 		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig.build()));
 

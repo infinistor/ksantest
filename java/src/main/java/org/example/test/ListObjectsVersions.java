@@ -137,7 +137,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Filtering")
 	// 비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인
 	public void testBucketListVersionsDelimiterPrefixEndsWithDelimiter() {
-		var bucketName = createObjectsToBody(List.of("asdf/"), "");
+		var bucketName = createEmptyObjects(null, List.of("asdf/"));
 
 		validateListObject(bucketName, "asdf/", "/", "", 1000, false,
 				List.of("asdf/"), new ArrayList<>(), null);
@@ -771,14 +771,12 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Metadata")
 	// ListObjects으로 가져온 Metadata와 HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
 	public void testBucketListVersionsReturnData() {
-		var bucketName = getNewBucket();
-		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		var keys = List.of("bar", "baz", "foo");
-		bucketName =
-
-				createObjects(keys, bucketName);
-
 		var client = getClient();
+		var bucketName = createBucket(client);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		createObjects(client, bucketName, keys);
+
 		var dataList = new ArrayList<ObjectData>();
 
 		for (var key : keys) {
@@ -812,8 +810,8 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("ACL")
 	// 권한없는 사용자가 공용읽기설정된 버킷의 오브젝트 목록을 읽을수 있는지 확인
 	public void testBucketListVersionsObjectsAnonymous() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		client.setBucketAcl(new SetBucketAclRequest(bucketName, CannedAccessControlList.PublicRead));
 
 		var unauthenticatedClient = getPublicClient();
@@ -824,14 +822,14 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("ACL")
 	// 권한없는 사용자가 버킷의 오브젝트 목록을 읽지 못하는지 확인
 	public void testBucketListVersionsObjectsAnonymousFail() {
-		var bucketName = getNewBucket();
+		var bucketName = createBucket();
 		var unauthenticatedClient = getPublicClient();
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> unauthenticatedClient.listVersions(new ListVersionsRequest().withBucketName(bucketName)));
 
 		assertEquals(403, e.getStatusCode());
-		assertEquals(MainData.AccessDenied, e.getErrorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 
 	@Test
@@ -845,7 +843,7 @@ public class ListObjectsVersions extends TestBase {
 				() -> client.listVersions(new ListVersionsRequest().withBucketName(bucketName)));
 
 		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NoSuchBucket, e.getErrorCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 		deleteBucketList(bucketName);
 	}
 

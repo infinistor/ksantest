@@ -46,7 +46,7 @@ public class ListBuckets extends TestBase
 		var bucketNames = new ArrayList<String>();
 		for (int i = 0; i < 5; i++)
 		{
-			var bucketName = getNewBucket();
+			var bucketName = createBucket(client);
 			bucketNames.add(bucketName);
 		}
 
@@ -72,7 +72,7 @@ public class ListBuckets extends TestBase
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(403, statusCode);
-		assertEquals(MainData.InvalidAccessKeyId, errorCode);
+		assertEquals(MainData.INVALID_ACCESS_KEY_ID, errorCode);
 	}
 
 	@Test
@@ -87,7 +87,7 @@ public class ListBuckets extends TestBase
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(403, statusCode);
-		assertEquals(MainData.SignatureDoesNotMatch, errorCode);
+		assertEquals(MainData.SIGNATURE_DOES_NOT_MATCH, errorCode);
 	}
 	
 	@Test
@@ -95,8 +95,8 @@ public class ListBuckets extends TestBase
 	//Tag("버킷의 메타데이터를 가져올 수 있는지 확인
 	public void testHeadBucket()
 	{
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		
 		var response = client.headBucket(h -> h.bucket(bucketName));
 		assertNotNull(response);

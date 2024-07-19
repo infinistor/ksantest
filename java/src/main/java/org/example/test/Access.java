@@ -26,6 +26,7 @@ import com.amazonaws.services.s3.model.PublicAccessBlockConfiguration;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.SetPublicAccessBlockRequest;
 
+
 public class Access extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
@@ -41,8 +42,8 @@ public class Access extends TestBase {
 	@Tag("Check")
 	// 버킷의 접근권한 블록 설정 확인
 	public void testPutPublicBlock() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(true).withIgnorePublicAcls(true)
 				.withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
@@ -62,10 +63,10 @@ public class Access extends TestBase {
 
 	@Test
 	@Tag("Denied")
-	// 버킷의 접근권한 블록을 설정한뒤 acl로 버킷의 권한정보를 덮어씌우기 실패 확인
+	// [접근권한 설정에 public 무시 설정] 버킷의 권한설정 실패 확인
 	public void testBlockPublicPutBucketAcls() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(true).withIgnorePublicAcls(false)
 				.withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
@@ -93,10 +94,10 @@ public class Access extends TestBase {
 
 	@Test
 	@Tag("Denied")
-	// 버킷의 접근권한 블록에서 acl권한 설정금지로 설정한뒤 오브젝트에 acl정보를 추가한뒤 업로드 실패 확인
+	// [접근권한 설정에 public 무시 설정] 오브젝트에 acl정보를 추가한뒤 업로드 실패 확인
 	public void testBlockPublicObjectCannedAcls() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 		var metadata = new ObjectMetadata();
 		metadata.setContentType("text/plain");
 		metadata.setContentLength(4);
@@ -131,10 +132,10 @@ public class Access extends TestBase {
 
 	@Test
 	@Tag("Denied")
-	// 버킷의 접근권한블록으로 권한 설정을 할 수 없도록 막은 뒤 버킷의 정책을 추가하려고 할때 실패 확인
+	// [접근권한설정에 정책으로 설정한 public 권한 무시를 설정] 버킷의 정책을 추가하려고 할때 실패 확인
 	public void testBlockPublicPolicy() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(false).withIgnorePublicAcls(false)
 				.withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
@@ -148,13 +149,12 @@ public class Access extends TestBase {
 
 	@Test
 	@Tag("Denied")
-	// 버킷의 접근권한블록으로 개인버킷처럼 설정한뒤 버킷의acl권한을 public-read로 변경해도 적용되지 않음을 확인
+	// [접근권한블록에 ACL로 설정한 public 권한 무시를 설정] 오브젝트 권한을 public-read로 설정할 경우 접근되지 않음을 확인
 	public void testIgnorePublicAcls() {
-		var bucketName = getNewBucket();
 		var client = getClient();
 		var altClient = getAltClient();
+		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicRead);
 
-		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 		altClient.listObjects(bucketName);
 
 		var metadata = new ObjectMetadata();
@@ -184,8 +184,8 @@ public class Access extends TestBase {
 	@Tag("Check")
 	// 버킷의 접근권한 블록 삭제 확인
 	public void testDeletePublicBlock() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		var accessConf = new PublicAccessBlockConfiguration()
 				.withBlockPublicAcls(true)

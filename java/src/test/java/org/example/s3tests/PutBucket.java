@@ -17,210 +17,213 @@ import org.junit.jupiter.api.Test;
 
 class PutBucket {
 
-	org.example.test.PutBucket Test = new org.example.test.PutBucket();
+	org.example.test.PutBucket test = new org.example.test.PutBucket();
+	org.example.testV2.PutBucket testV2 = new org.example.testV2.PutBucket();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("PUT")
 	// 생성한 버킷이 비어있는지 확인
 	void testBucketListEmpty() {
-		Test.testBucketListEmpty();
+		test.testBucketListEmpty();
+		testV2.testBucketListEmpty();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름의 맨앞에 [_]가 있을 경우 버킷 생성 실패 확인
 	void testBucketCreateNamingBadStartsNonAlpha() {
-		Test.testBucketCreateNamingBadStartsNonAlpha();
+		test.testBucketCreateNamingBadStartsNonAlpha();
+		testV2.testBucketCreateNamingBadStartsNonAlpha();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름이 한글자인 경우 버킷 생성 실패 확인
 	void testBucketCreateNamingBadShortOne() {
-		Test.testBucketCreateNamingBadShortOne();
+		test.testBucketCreateNamingBadShortOne();
+		testV2.testBucketCreateNamingBadShortOne();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름이 두글자인 경우 버킷 생성 실패 확인
 	void testBucketCreateNamingBadShortTwo() {
-		Test.testBucketCreateNamingBadShortTwo();
+		test.testBucketCreateNamingBadShortTwo();
+		testV2.testBucketCreateNamingBadShortTwo();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름이 60자인 경우 버킷 생성 확인
 	void testBucketCreateNamingGoodLong60() {
-		Test.testBucketCreateNamingGoodLong60();
+		test.testBucketCreateNamingGoodLong60();
+		testV2.testBucketCreateNamingGoodLong60();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름이 61자인 경우 버킷 생성 확인
 	void testBucketCreateNamingGoodLong61() {
-		Test.testBucketCreateNamingGoodLong61();
+		test.testBucketCreateNamingGoodLong61();
+		testV2.testBucketCreateNamingGoodLong61();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름이 62자인 경우 버킷 생성 확인
 	void testBucketCreateNamingGoodLong62() {
-		Test.testBucketCreateNamingGoodLong62();
+		test.testBucketCreateNamingGoodLong62();
+		testV2.testBucketCreateNamingGoodLong62();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름이 63자인 경우 버킷 생성 확인
 	void testBucketCreateNamingGoodLong63() {
-		Test.testBucketCreateNamingGoodLong63();
+		test.testBucketCreateNamingGoodLong63();
+		testV2.testBucketCreateNamingGoodLong63();
 	}
 
 	@Test
 	@Tag("CreationRules")
 	//생성할 버킷이름이 64자인 경우 버킷 생성 실패
 	void testBucketCreateNamingGoodLong64() {
-		Test.testBucketCreateNamingGoodLong64();
+		test.testBucketCreateNamingGoodLong64();
+		testV2.testBucketCreateNamingGoodLong64();
 	}
 
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 버킷이름의 길이 긴 경우 버킷 목록을 읽어올 수 있는지 확인
 	void testBucketListLongName() {
-		Test.testBucketListLongName();
+		test.testBucketListLongName();
+		testV2.testBucketListLongName();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름이 IP 주소로 되어 있을 경우 버킷 생성 실패 확인
 	void testBucketCreateNamingBadIp() {
-		Test.testBucketCreateNamingBadIp();
+		test.testBucketCreateNamingBadIp();
+		testV2.testBucketCreateNamingBadIp();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름에 문자와 [_]가 포함되어 있을 경우 버킷 생성 실패 확인
 	void testBucketCreateNamingDnsUnderscore() {
-		Test.testBucketCreateNamingDnsUnderscore();
+		test.testBucketCreateNamingDnsUnderscore();
+		testV2.testBucketCreateNamingDnsUnderscore();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름이 랜덤 알파벳 63자로 구성된 경우 버킷 생성 확인
 	void testBucketCreateNamingDnsLong() {
-		Test.testBucketCreateNamingDnsLong();
+		test.testBucketCreateNamingDnsLong();
+		testV2.testBucketCreateNamingDnsLong();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름의 끝이 [-]로 끝날 경우 버킷 생성 실패 확인
 	void testBucketCreateNamingDnsDashAtEnd() {
-		Test.testBucketCreateNamingDnsDashAtEnd();
+		test.testBucketCreateNamingDnsDashAtEnd();
+		testV2.testBucketCreateNamingDnsDashAtEnd();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름에 문자와 [..]가 포함되어 있을 경우 버킷 생성 실패 확인
 	void testBucketCreateNamingDnsDotDot() {
-		Test.testBucketCreateNamingDnsDotDot();
+		test.testBucketCreateNamingDnsDotDot();
+		testV2.testBucketCreateNamingDnsDotDot();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름의 사이에 [.-]가 포함되어 있을 경우 버킷 생성 실패 확인
 	void testBucketCreateNamingDnsDotDash() {
-		Test.testBucketCreateNamingDnsDotDash();
+		test.testBucketCreateNamingDnsDotDash();
+		testV2.testBucketCreateNamingDnsDotDash();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷이름의 사이에 [-.]가 포함되어 있을 경우 버킷 생성 실패 확인
 	void testBucketCreateNamingDnsDashDot() {
-		Test.testBucketCreateNamingDnsDashDot();
+		test.testBucketCreateNamingDnsDashDot();
+		testV2.testBucketCreateNamingDnsDashDot();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Duplicate")
 	// 버킷 중복 생성시 실패 확인
 	void testBucketCreateExists() {
-		Test.testBucketCreateExists();
+		test.testBucketCreateExists();
+		testV2.testBucketCreateExists();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Duplicate")
 	// [다른 2명의 사용자가 버킷 생성하려고 할 경우] 메인유저가 버킷을 생성하고 서브유저가가 같은 이름으로 버킷 생성하려고 할 경우 실패 확인
 	void testBucketCreateExistsNonowner() {
-		Test.testBucketCreateExistsNonowner();
+		test.testBucketCreateExistsNonowner();
+		testV2.testBucketCreateExistsNonowner();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷의 이름이 알파벳으로 시작할 경우 생성되는지 확인
 	void testBucketCreateNamingGoodStartsAlpha() {
-		Test.testBucketCreateNamingGoodStartsAlpha();
+		test.testBucketCreateNamingGoodStartsAlpha();
+		testV2.testBucketCreateNamingGoodStartsAlpha();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷의 이름이 숫자로 시작할 경우 생성되는지 확인
 	void testBucketCreateNamingGoodStartsDigit() {
-		Test.testBucketCreateNamingGoodStartsDigit();
+		test.testBucketCreateNamingGoodStartsDigit();
+		testV2.testBucketCreateNamingGoodStartsDigit();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷의 이름 중간에 [.]이 포함된 이름일 경우 생성되는지 확인
 	void testBucketCreateNamingGoodContainsPeriod() {
-		Test.testBucketCreateNamingGoodContainsPeriod();
+		test.testBucketCreateNamingGoodContainsPeriod();
+		testV2.testBucketCreateNamingGoodContainsPeriod();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("CreationRules")
 	// 생성할 버킷의 이름 중간에 [-]이 포함된 이름일 경우 생성되는지 확인
 	void testBucketCreateNamingGoodContainsHyphen() {
-		Test.testBucketCreateNamingGoodContainsHyphen();
+		test.testBucketCreateNamingGoodContainsHyphen();
+		testV2.testBucketCreateNamingGoodContainsHyphen();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Duplicate")
 	// 버킷 생성하고 오브젝트를 업로드한뒤 같은 이름의 버킷 생성하면 기존정보가 그대로 유지되는지 확인 (버킷은 중복 생성 할 수 없음을 확인)
 	void testBucketRecreateNotOverriding() {
-		Test.testBucketRecreateNotOverriding();
+		test.testBucketRecreateNotOverriding();
+		testV2.testBucketRecreateNotOverriding();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("location")
 	// 버킷의 location 정보 조회
 	void testGetBucketLocation() {
-		Test.testGetBucketLocation();
+		test.testGetBucketLocation();
+		testV2.testGetBucketLocation();
 	}
 }

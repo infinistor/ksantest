@@ -17,6 +17,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -62,8 +63,8 @@ public class Lock extends TestBase {
 	@Tag("ERROR")
 	// 버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정이 실패
 	public void testObjectLockPutObjLockInvalidBucket() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var conf = ObjectLockConfiguration.builder().objectLockEnabled(ObjectLockEnabled.ENABLED)
 				.rule(r -> r.defaultRetention(retention -> retention.mode(ObjectLockRetentionMode.GOVERNANCE).years(1)))
@@ -72,7 +73,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
 		assertEquals(409, e.statusCode());
-		assertEquals(MainData.InvalidBucketState, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.INVALID_BUCKET_STATE, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -89,7 +90,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -107,7 +108,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidArgument, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -125,7 +126,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidArgument, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -142,7 +143,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -160,7 +161,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -174,7 +175,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client.putBucketVersioning(
 				p -> p.bucket(bucketName).versioningConfiguration(v -> v.status(BucketVersioningStatus.SUSPENDED))));
 		assertEquals(409, e.statusCode());
-		assertEquals(MainData.InvalidBucketState, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.INVALID_BUCKET_STATE, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -206,7 +207,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObjectLockConfiguration(g -> g.bucket(bucketName)));
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.ObjectLockConfigurationNotFoundError, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.OBJECT_LOCK_CONFIGURATION_NOT_FOUND_ERROR, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -235,8 +236,8 @@ public class Lock extends TestBase {
 	@Tag("retention")
 	// 버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 설정 실패
 	public void testObjectLockPutObjRetentionInvalidBucket() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "file1";
 
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("abc"));
@@ -249,7 +250,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidRequest, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -269,7 +270,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -299,8 +300,8 @@ public class Lock extends TestBase {
 	@Tag("retention")
 	// 버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 조회 실패
 	public void testObjectLockGetObjRetentionInvalidBucket() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "file1";
 
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("abc"));
@@ -308,7 +309,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.getObjectRetention(g -> g.bucket(bucketName).key(key)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidRequest, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -352,7 +353,8 @@ public class Lock extends TestBase {
 		var key = "file1";
 		var body = "abc";
 
-		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(body));
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key).contentMD5(Utils.getMD5(body)).contentLength((long)body.length()),
+				RequestBody.fromString(body));
 		var versionId = putResponse.versionId();
 
 		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
@@ -425,7 +427,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention2)));
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
@@ -465,7 +467,7 @@ public class Lock extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한내에 삭제를 시도할 경우 실패 확인
-	public void testObjectLockDeleteObjectRetention() {
+	public void testObjectLockDeleteObjectWithRetention() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
@@ -483,7 +485,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId)));
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
@@ -511,8 +513,8 @@ public class Lock extends TestBase {
 	@Tag("LegalHold")
 	// [버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold를 활성화 실패 확인
 	public void testObjectLockPutLegalHoldInvalidBucket() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var key = "file1";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("abc"));
@@ -521,7 +523,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).legalHold(legalHold)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidRequest, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -539,7 +541,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).legalHold(legalHold)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.MalformedXML, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -561,15 +563,15 @@ public class Lock extends TestBase {
 		var legalHold2 = ObjectLockLegalHold.builder().status(ObjectLockLegalHoldStatus.OFF).build();
 		client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).legalHold(legalHold2));
 		response = client.getObjectLegalHold(g -> g.bucket(bucketName).key(key));
-		assertEquals(legalHold.status(), response.legalHold().status());
+		assertEquals(legalHold2.status(), response.legalHold().status());
 	}
 
 	@Test
 	@Tag("LegalHold")
 	// [버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold설정 조회 실패 확인
 	public void testObjectLockGetLegalHoldInvalidBucket() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var key = "file1";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("abc"));
@@ -577,7 +579,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObjectLegalHold(g -> g.bucket(bucketName).key(key)));
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.InvalidRequest, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -597,7 +599,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(putResponse.versionId())));
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		var legalHold2 = ObjectLockLegalHold.builder().status(ObjectLockLegalHoldStatus.OFF).build();
 		client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).legalHold(legalHold2));
@@ -641,7 +643,7 @@ public class Lock extends TestBase {
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention));
 
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
-		assertEquals(retention.mode(), response.objectLockMode());
+		assertEquals(retention.mode().toString(), response.objectLockMode().toString());
 		assertEquals(retention.retainUntilDate(), response.objectLockRetainUntilDate());
 		assertEquals(legalHold.status(), response.objectLockLegalHoldStatus());
 

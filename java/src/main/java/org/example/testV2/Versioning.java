@@ -47,7 +47,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	// 버킷의 버저닝 옵션 변경 가능 확인
 	public void testVersioningBucketCreateSuspend() {
-		var bucketName = getNewBucket();
+		var bucketName = createBucket();
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
@@ -59,8 +59,8 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	// 버저닝 오브젝트의 생성/읽기/삭제 확인
 	public void testVersioningObjCreateReadRemove() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		client.putBucketVersioning(
 				p -> p.bucket(bucketName).versioningConfiguration(v -> v.status(BucketVersioningStatus.ENABLED)));
 		var key = "obj";
@@ -75,9 +75,9 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	// 버저닝 오브젝트의 해더 정보를 사용하여 읽기/쓰기/삭제확인
 	public void testVersioningObjCreateReadRemoveHead() {
-		var bucketName = getNewBucket();
-
 		var client = getClient();
+		var bucketName = createBucket(client);
+
 		client.putBucketVersioning(
 				p -> p.bucket(bucketName).versioningConfiguration(v -> v.status(BucketVersioningStatus.ENABLED)));
 		var key = "obj";
@@ -114,9 +114,9 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	// 버킷에 버저닝 설정을 할 경우 소급적용되지 않음을 확인
 	public void testVersioningObjPlainNullVersionRemoval() {
-		var bucketName = getNewBucket();
-
 		var client = getClient();
+		var bucketName = createBucket(client);
+
 		var key = "foo";
 		var content = "foo data";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
@@ -128,7 +128,7 @@ public class Versioning extends TestBase {
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(404, statusCode);
-		assertEquals(MainData.NoSuchKey, errorCode);
+		assertEquals(MainData.NO_SUCH_KEY, errorCode);
 
 		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.versions().size());
@@ -138,9 +138,9 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	// [버킷에 버저닝 설정이 되어있는 상태] null 버전 오브젝트를 덮어쓰기 할경우 버전 정보가 추가됨을 확인
 	public void testVersioningObjPlainNullVersionOverwrite() {
-		var bucketName = getNewBucket();
-
 		var client = getClient();
+		var bucketName = createBucket(client);
+
 		var key = "foo";
 		var content = "foo zzz";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
@@ -163,7 +163,7 @@ public class Versioning extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchKey, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
 
 		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.versions().size());
@@ -173,9 +173,9 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	// [버킷에 버저닝 설정이 되어있지만 중단된 상태일때] null 버전 오브젝트를 덮어쓰기 할경우 버전정보가 추가되지 않음을 확인
 	public void testVersioningObjPlainNullVersionOverwriteSuspended() {
-		var bucketName = getNewBucket();
-
 		var client = getClient();
+		var bucketName = createBucket(client);
+
 		var key = "foo";
 		var content = "foo zzz";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
@@ -196,15 +196,15 @@ public class Versioning extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchKey, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("Object")
 	// 버전관리를 일시중단했을때 올바르게 동작하는지 확인
 	public void testVersioningObjSuspendVersions() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var key = "obj";
@@ -241,8 +241,8 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	// 오브젝트하나의 여러버전을 모두 삭제 가능한지 확인
 	public void testVersioningObjCreateVersionsRemoveAll() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -264,8 +264,8 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	// 이름에 특수문자가 들어간 오브젝트에 대해 버전관리가 올바르게 동작하는지 확인
 	public void testVersioningObjCreateVersionsRemoveSpecialNames() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -289,8 +289,8 @@ public class Versioning extends TestBase {
 	@Tag("Multipart")
 	// 오브젝트를 멀티파트 업로드하였을 경우 버전관리가 올바르게 동작하는지 확인
 	public void testVersioningObjCreateOverwriteMultipart() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -320,8 +320,8 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	// 오브젝트의 해당 버전 정보가 올바른지 확인
 	public void testVersioningObjListMarker() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -353,8 +353,7 @@ public class Versioning extends TestBase {
 		}
 
 		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
-		var versions = listResponse.versions();
-		Collections.reverse(versions);
+		var versions = reverseVersions(listResponse.versions());
 
 		int index = 0;
 		for (int i = 0; i < 5; i++, index++) {
@@ -376,8 +375,8 @@ public class Versioning extends TestBase {
 	@Tag("Copy")
 	// 오브젝트의 버전별 복사가 가능한지 화인
 	public void testVersioningCopyObjVersion() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -399,7 +398,7 @@ public class Versioning extends TestBase {
 			assertEquals(contents.get(index), content);
 		}
 
-		var anotherBucketName = getNewBucket();
+		var anotherBucketName = createBucket(client);
 
 		for (int i = 0; i < numVersions; i++) {
 			var index = i;
@@ -425,8 +424,8 @@ public class Versioning extends TestBase {
 	@Tag("Delete")
 	// 버전이 여러개인 오브젝트에 대한 삭제가 올바르게 동작하는지 확인
 	public void testVersioningMultiObjectDelete() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -438,8 +437,7 @@ public class Versioning extends TestBase {
 		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
 		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
-		var versions = listResponse.versions();
-		Collections.reverse(versions);
+		var versions = reverseVersions(listResponse.versions());
 
 		for (var version : versions)
 			client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(version.versionId()));
@@ -458,8 +456,8 @@ public class Versioning extends TestBase {
 	@Tag("DeleteMarker")
 	// 버전이 여러개인 오브젝트에 대한 삭제마커가 올바르게 동작하는지 확인
 	public void testVersioningMultiObjectDeleteWithMarker() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -504,8 +502,8 @@ public class Versioning extends TestBase {
 	@Tag("DeleteMarker")
 	// 존재하지않는 오브젝트를 삭제할경우 삭제마커가 생성되는지 확인
 	public void testVersioningMultiObjectDeleteWithMarkerCreate() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -524,8 +522,8 @@ public class Versioning extends TestBase {
 	@Tag("ACL")
 	// 오브젝트 버전의 acl이 올바르게 관리되고 있는지 확인
 	public void testVersionedObjectAcl() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -540,7 +538,7 @@ public class Versioning extends TestBase {
 
 		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId(versionId));
 
-		var user = config.mainUser.toOwner();
+		var user = config.mainUser.toOwnerV2();
 
 		if (!StringUtils.isBlank(config.url))
 			assertEquals(user.displayName(), response.owner().displayName());
@@ -548,7 +546,7 @@ public class Versioning extends TestBase {
 
 		var getGrants = response.grants();
 		var myGrants = new ArrayList<Grant>();
-		myGrants.add(Grant.builder().grantee(config.mainUser.toGrantee()).permission(Permission.FULL_CONTROL).build());
+		myGrants.add(Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build());
 		checkGrants(myGrants, getGrants);
 	}
 
@@ -556,8 +554,8 @@ public class Versioning extends TestBase {
 	@Tag("ACL")
 	// 버전정보를 입력하지 않고 오브젝트의 acl정보를 수정할 경우 가장 최신 버전에 반영되는지 확인
 	public void testVersionedObjectAclNoVersionSpecified() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -573,7 +571,7 @@ public class Versioning extends TestBase {
 
 		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId(versionId));
 
-		var user = config.mainUser.toOwner();
+		var user = config.mainUser.toOwnerV2();
 
 		if (!StringUtils.isBlank(config.url))
 			assertEquals(user.displayName(), response.owner().displayName());
@@ -581,7 +579,7 @@ public class Versioning extends TestBase {
 
 		var getGrants = response.grants();
 		var myGrants = new ArrayList<Grant>();
-		myGrants.add(Grant.builder().grantee(config.mainUser.toGrantee()).permission(Permission.FULL_CONTROL).build());
+		myGrants.add(Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build());
 		checkGrants(myGrants, getGrants);
 
 		client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ));
@@ -590,7 +588,7 @@ public class Versioning extends TestBase {
 		getGrants = response.grants();
 
 		myGrants = new ArrayList<Grant>();
-		myGrants.add(Grant.builder().grantee(config.mainUser.toGrantee()).permission(Permission.FULL_CONTROL).build());
+		myGrants.add(Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build());
 		myGrants.add(Grant.builder().grantee(createPublicGrantee()).permission(Permission.READ).build());
 		checkGrants(myGrants, getGrants);
 	}
@@ -599,8 +597,8 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	// 오브젝트 버전을 추가/삭제를 여러번 했을 경우 올바르게 동작하는지 확인
 	public void testVersionedConcurrentObjectCreateAndRemove() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -644,8 +642,8 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	// 버킷의 버저닝 설정이 업로드시 올바르게 동작하는지 확인
 	public void testVersioningBucketAtomicUploadReturnVersionId() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "bar";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
@@ -664,8 +662,8 @@ public class Versioning extends TestBase {
 	public void testVersioningBucketMultipartUploadReturnVersionId() {
 		var size = 50 * MainData.MB;
 
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "bar";
 		var metadata = new HashMap<String, String>();
 		metadata.put("foo", "baz");
@@ -688,8 +686,8 @@ public class Versioning extends TestBase {
 	@Tag("metadata")
 	// 업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인
 	public void testVersioningGetObjectHead() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
 		var key = "foo";
@@ -711,8 +709,8 @@ public class Versioning extends TestBase {
 	@Tag("Delete")
 	// 버전이 여러개인 오브젝트의 최신 버전을 삭제 했을때 이전버전이 최신버전으로 변경되는지 확인
 	public void testVersioningLatest() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
 		var key = "foo";

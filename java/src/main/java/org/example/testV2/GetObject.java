@@ -40,9 +40,9 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("ERROR")
 	// 버킷에 존재하지 않는 오브젝트 다운로드를 할 경우 실패 확인
-	public void objectReadNotExist() {
-		var bucketName = getNewBucket();
+	public void testObjectReadNotExist() {
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key("foo")));
@@ -50,15 +50,15 @@ public class GetObject extends TestBase {
 		var errorCode = e.awsErrorDetails().errorCode();
 
 		assertEquals(404, statusCode);
-		assertEquals(MainData.NoSuchKey, errorCode);
+		assertEquals(MainData.NO_SUCH_KEY, errorCode);
 	}
 
 	@Test
 	@Tag("IfMatch")
 	// 존재하는 오브젝트 이름과 ETag 값으로 오브젝트를 가져오는지 확인
 	public void testGetObjectIfMatchGood() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -73,37 +73,42 @@ public class GetObject extends TestBase {
 	@Tag("IfMatch")
 	// 오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
 	public void testGetObjectIfMatchFailed() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
-		var response = client
-				.getObject(g -> g.bucket(bucketName).key(key).ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
-		assertNull(response);
+		var e = assertThrows(AwsServiceException.class, () -> client
+				.getObject(g -> g.bucket(bucketName).key(key).ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ")));
+
+		assertEquals(412, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("IfNoneMatch")
 	// 오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
 	public void testGetObjectIfNoneMatchGood() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 		var eTag = putResponse.eTag();
 
-		var response = client.getObject(g -> g.bucket(bucketName).key(key).ifNoneMatch(eTag));
-		assertNull(response);
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).ifNoneMatch(eTag)));
+
+		assertEquals(304, e.statusCode());
+		assertNull(e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("IfNoneMatch")
 	// 오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
 	public void testGetObjectIfNoneMatchFailed() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -118,8 +123,8 @@ public class GetObject extends TestBase {
 	@Tag("IfModifiedSince")
 	// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifModifiedSince)보다 이후에 수정된 오브젝트를 조회 성공
 	public void testGetObjectIfModifiedSinceGood() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -134,29 +139,33 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("IfModifiedSince")
-	// [지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 실패
+	// [지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 성공
 	public void testGetObjectIfModifiedSinceFailed() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+
 		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+
 		var after = response.response().lastModified().plus(1, ChronoUnit.SECONDS);
 
 		delay(1000);
 
-		response = client
-				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(after));
-		assertNull(response);
+		var e = assertThrows(AwsServiceException.class, () -> client
+				.getObject(g -> g.bucket(bucketName).key(key).ifModifiedSince(after)));
+
+		assertEquals(304, e.statusCode());
+		assertNull(e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("ifUnmodifiedSince")
 	// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 실패
 	public void testGetObjectIfUnmodifiedSinceGood() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -164,17 +173,19 @@ public class GetObject extends TestBase {
 		var days = Calendar.getInstance();
 		days.set(1994, 8, 29, 19, 43, 31);
 
-		var response = client
-				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant()));
-		assertNull(response);
+		var e = assertThrows(AwsServiceException.class, () -> client
+				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant())));
+
+		assertEquals(412, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("ifUnmodifiedSince")
 	// [지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 성공
 	public void testGetObjectIfUnmodifiedSinceFailed() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -192,10 +203,10 @@ public class GetObject extends TestBase {
 	// 지정한 범위로 오브젝트 다운로드가 가능한지 확인
 	public void testRangedRequestResponseCode() {
 		var key = "obj";
-		var content = "content";
+		var content = "contentData";
 
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=4-7"));
@@ -212,8 +223,8 @@ public class GetObject extends TestBase {
 		var key = "obj";
 		var content = Utils.randomTextToLong(8 * MainData.MB);
 
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=3145728-5242880"));
@@ -229,10 +240,10 @@ public class GetObject extends TestBase {
 	// 특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
 	public void testRangedRequestSkipLeadingBytesResponseCode() {
 		var key = "obj";
-		var content = "content";
+		var content = "contentData";
 
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=4-"));
@@ -247,10 +258,10 @@ public class GetObject extends TestBase {
 	// 끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
 	public void testRangedRequestReturnTrailingBytesResponseCode() {
 		var key = "obj";
-		var content = "content";
+		var content = "contentData";
 
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=-7"));
@@ -265,10 +276,10 @@ public class GetObject extends TestBase {
 	// 오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
 	public void testRangedRequestInvalidRange() {
 		var key = "obj";
-		var content = "content";
+		var content = "contentData";
 
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var e = assertThrows(AwsServiceException.class,
@@ -276,7 +287,7 @@ public class GetObject extends TestBase {
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(416, statusCode);
-		assertEquals(MainData.InvalidRange, errorCode);
+		assertEquals(MainData.INVALID_RANGE, errorCode);
 	}
 
 	@Test
@@ -286,8 +297,8 @@ public class GetObject extends TestBase {
 		var key = "obj";
 		var content = "";
 
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var e = assertThrows(AwsServiceException.class,
@@ -295,15 +306,15 @@ public class GetObject extends TestBase {
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 		assertEquals(416, statusCode);
-		assertEquals(MainData.InvalidRange, errorCode);
+		assertEquals(MainData.INVALID_RANGE, errorCode);
 	}
 
 	@Test
 	@Tag("Get")
 	// 같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	public void testGetObjectMany() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
@@ -315,8 +326,8 @@ public class GetObject extends TestBase {
 	@Tag("Get")
 	// 같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	public void testRangeObjectMany() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 		var fileSize = 1024 * 1024 * 15;
 		var data = Utils.randomTextToLong(fileSize);
@@ -329,8 +340,8 @@ public class GetObject extends TestBase {
 	@Tag("Restore")
 	// 오브젝트 복구 명령이 성공하는지 확인
 	public void testRestoreObject() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));

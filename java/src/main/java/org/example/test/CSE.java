@@ -75,8 +75,8 @@ public class CSE extends TestBase {
 	@Tag("Metadata")
 	// @Tag("[AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인 
 	public void testCseEncryptionMethodHead() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "obj";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
@@ -103,8 +103,8 @@ public class CSE extends TestBase {
 	@Tag("ERROR")
 	// @Tag("[AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치
 	public void testCseEncryptionNonDecryption() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "obj";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
@@ -133,8 +133,8 @@ public class CSE extends TestBase {
 	@Tag("ERROR")
 	// @Tag("[AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인
 	public void testCseNonEncryptionDecryption() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "obj";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
@@ -157,8 +157,8 @@ public class CSE extends TestBase {
 	@Tag("RangeRead")
 	// @Tag("[AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공
 	public void testCseEncryptionRangeRead() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "obj";
 
 		// AES
@@ -189,8 +189,8 @@ public class CSE extends TestBase {
 	@Tag("Multipart")
 	// @Tag("[AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인
 	public void testCseEncryptionMultipartUpload() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "multipartEnc";
 		var size = 50 * MainData.MB;
 		var contentType = "text/plain";
@@ -242,8 +242,8 @@ public class CSE extends TestBase {
 	@Tag("Get")
 	// @Tag("CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	public void testCseGetObjectMany() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 		// AES
 		var aesKey = Utils.randomTextToLong(32);
@@ -273,8 +273,8 @@ public class CSE extends TestBase {
 	@Tag("Get")
 	// @Tag("CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	public void testCseRangeObjectMany() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		var key = "foo";
 
 		// AES

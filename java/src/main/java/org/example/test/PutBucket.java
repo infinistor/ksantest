@@ -37,8 +37,8 @@ public class PutBucket extends TestBase {
 	@Tag("PUT")
 	// 생성한 버킷이 비어있는지 확인
 	public void testBucketListEmpty() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 
 		var response = client.listObjects(bucketName);
 
@@ -179,7 +179,7 @@ public class PutBucket extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.createBucket(bucketName));
 
 		assertEquals(409, e.getStatusCode());
-		assertEquals(MainData.BucketAlreadyOwnedByYou, e.getErrorCode());
+		assertEquals(MainData.BUCKET_ALREADY_OWNED_BY_YOU, e.getErrorCode());
 	}
 
 	@Test
@@ -195,7 +195,7 @@ public class PutBucket extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.createBucket(bucketName));
 
 		assertEquals(409, e.getStatusCode());
-		assertEquals(MainData.BucketAlreadyExists, e.getErrorCode());
+		assertEquals(MainData.BUCKET_ALREADY_EXISTS, e.getErrorCode());
 	}
 
 	@Test
@@ -248,8 +248,8 @@ public class PutBucket extends TestBase {
 	@Tag("location")
 	// 버킷의 location 정보 조회
 	public void testGetBucketLocation() {
-		var bucketName = getNewBucket();
 		var client = getClient();
+		var bucketName = createBucket(client);
 		client.getBucketLocation(bucketName);
 	}
 }

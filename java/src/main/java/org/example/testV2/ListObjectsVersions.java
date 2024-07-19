@@ -45,8 +45,8 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Check")
 	// 버킷의 오브젝트 목록을 올바르게 가져오는지 확인
 	public void testBucketListVersionsMany() {
-		var bucketName = createObjects(List.of("foo", "bar", "baz"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("foo", "bar", "baz"));
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).maxKeys(2));
 		assertLinesMatch(List.of("bar", "baz"), getKeys2(response.versions()));
@@ -63,8 +63,8 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	// 오브젝트 목록을 가져올때 폴더 구분자[/]로 필터링 되는지 확인
 	public void testBucketListVersionsDelimiterBasic() {
-		var bucketName = createObjects(List.of("foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf"));
 
 		String delimiter = "/";
 
@@ -82,18 +82,18 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Encoding")
 	// 오브젝트 목록을 가져올때 인코딩이 올바르게 동작하는지 확인
 	public void testBucketListVersionsEncodingBasic() {
-		var bucketName = createObjects(List.of("foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"));
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"));
 
 		String delimiter = "/";
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).delimiter(delimiter).encodingType("url"));
 		assertEquals(delimiter, response.delimiter());
-		assertLinesMatch(List.of("asdf%2Bb"), getKeys2(response.versions()));
+		assertLinesMatch(List.of("asdf+b"), getKeys2(response.versions()));
 
 		var prefixes = getPrefixList(response.commonPrefixes());
 		assertEquals(3, prefixes.size());
-		assertLinesMatch(List.of("foo%2B1/", "foo/", "quux+ab/"), prefixes);
+		assertLinesMatch(List.of("foo+1/", "foo/", "quux ab/"), prefixes);
 
 	}
 
@@ -130,8 +130,9 @@ public class ListObjectsVersions extends TestBase {
 	@Test
 	@Tag("Filtering")
 	// 비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인
-	public void testBucketListVersionsDelimiterPrefixEndsDelimiter() {
-		var bucketName = createObjectsToBody(List.of("asdf/"), "");
+	public void testBucketListVersionsDelimiterPrefixEndsWithDelimiter() {
+		var client = getClient();
+		var bucketName = createEmptyObjects(client, List.of("asdf/"));
 
 		validateListObject(bucketName, "asdf/", "/", "", 1000, false,
 				List.of("asdf/"), new ArrayList<>(), null);
@@ -142,11 +143,9 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	// 오브젝트 목록을 가져올때 문자 구분자[a]로 필터링 되는지 확인
 	public void testBucketListVersionsDelimiterAlt() {
-		var bucketName = createObjects(List.of("bar", "baz", "cab", "foo"));
-
-		var client = getClient();
-
 		String delimiter = "a";
+		var client = getClient();
+		var bucketName = createObjects(client, List.of("bar", "baz", "cab", "foo"));
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).delimiter(delimiter));
 
@@ -199,11 +198,9 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	// 오브젝트 목록을 가져올때 특수문자 구분자[%]로 필터링 되는지 확인
 	public void testBucketListVersionsDelimiterPercentage() {
-		var bucketName = createObjects(List.of("b%ar", "b%az", "c%ab", "foo"));
-
-		var client = getClient();
-
 		String delimiter = "%";
+		var client = getClient();
+		var bucketName = createObjects(client, List.of("b%ar", "b%az", "c%ab", "foo"));
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).delimiter(delimiter));
 
@@ -223,11 +220,9 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	// 오브젝트 목록을 가져올때 공백문자 구분자[ ]로 필터링 되는지 확인
 	public void testBucketListVersionsDelimiterWhitespace() {
-		var bucketName = createObjects(List.of("b ar", "b az", "c ab", "foo"));
-
-		var client = getClient();
-
 		String delimiter = " ";
+		var client = getClient();
+		var bucketName = createObjects(client, List.of("b ar", "b az", "c ab", "foo"));
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).delimiter(delimiter));
 
@@ -247,11 +242,9 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	// 오브젝트 목록을 가져올때 구분자[.]로 필터링 되는지 확인
 	public void testBucketListVersionsDelimiterDot() {
-		var bucketName = createObjects(List.of("b.ar", "b.az", "c.ab", "foo"));
-
-		var client = getClient();
-
 		String delimiter = ".";
+		var client = getClient();
+		var bucketName = createObjects(client, List.of("b.ar", "b.az", "c.ab", "foo"));
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).delimiter(delimiter));
 
@@ -273,8 +266,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsDelimiterUnreadable() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "\n";
 
@@ -295,14 +288,14 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsDelimiterEmpty() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "";
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).delimiter(delimiter));
 
-		assertNull(response.delimiter());
+		assertEquals("", response.delimiter());
 
 		var keys = getKeys2(response.versions());
 		var prefixes = getPrefixList(response.commonPrefixes());
@@ -317,8 +310,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsDelimiterNone() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName));
 
@@ -337,8 +330,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsDelimiterNotExist() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "/";
 
@@ -363,8 +356,8 @@ public class ListObjectsVersions extends TestBase {
 		var keyNames2 = List.of("1999", "1999#", "1999+", "2000");
 		keyNames.addAll(keyNames2);
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "/";
 
@@ -384,11 +377,10 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("prefix")
 	// [접두어에 '/'가 포함] 오브젝트 목록을 가져올때 선택한 폴더 목록만 가져오는지 확인
 	public void testBucketListVersionsPrefixBasic() {
-		var bucketName = createObjects(List.of("foo/bar", "foo/baz", "quux"));
-
-		var client = getClient();
-
 		String prefix = "foo/";
+		var client = getClient();
+		var bucketName = createObjects(client, List.of("foo/bar", "foo/baz", "quux"));
+
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).prefix(prefix));
 
 		assertEquals(prefix, response.prefix());
@@ -404,11 +396,10 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("prefix")
 	// 접두어가 [/]가 아닌 경우 구분기호와 접두사 논리를 수행할 수 있는지 확인
 	public void testBucketListVersionsPrefixAlt() {
-		var bucketName = createObjects(List.of("bar", "baz", "foo"));
-
-		var client = getClient();
-
 		String prefix = "ba";
+		var client = getClient();
+		var bucketName = createObjects(client, List.of("bar", "baz", "foo"));
+
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).prefix(prefix));
 
 		assertEquals(prefix, response.prefix());
@@ -426,13 +417,13 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixEmpty() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String prefix = "";
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).prefix(prefix));
 
-		assertNull(response.prefix());
+		assertEquals("", response.prefix());
 
 		var keys = getKeys2(response.versions());
 		var prefixes = getPrefixList(response.commonPrefixes());
@@ -446,12 +437,12 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixNone() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName));
 
-		assertNull(response.prefix());
+		assertEquals("", response.prefix());
 
 		var keys = getKeys2(response.versions());
 		var prefixes = getPrefixList(response.commonPrefixes());
@@ -465,8 +456,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixNotExist() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String prefix = "d";
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).prefix(prefix));
@@ -485,8 +476,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixUnreadable() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String prefix = "\n";
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).prefix(prefix));
@@ -505,8 +496,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixDelimiterBasic() {
 		var keyNames = List.of("foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String prefix = "foo/";
 		String delimiter = "/";
@@ -530,8 +521,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixDelimiterAlt() {
 		var keyNames = List.of("bar", "bazar", "cab", "foo");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		String delimiter = "a";
 		String prefix = "ba";
@@ -554,9 +545,8 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	// [입력한 접두어와 일치하는 오브젝트가 없을 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록이 비어있는지 확인
 	public void testBucketListVersionsPrefixDelimiterPrefixNotExist() {
-		var bucketName = createObjects(List.of("b/a/r", "b/a/c", "b/a/g", "g"));
-
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("b/a/r", "b/a/c", "b/a/g", "g"));
 
 		var response = client
 				.listObjectVersions(l -> l.bucket(bucketName).delimiter("d").prefix("/"));
@@ -572,9 +562,8 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	// [구분자가 '/'가 아닐 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인
 	public void testBucketListVersionsPrefixDelimiterDelimiterNotExist() {
-		var bucketName = createObjects(List.of("b/a/c", "b/a/g", "b/a/r", "g"));
-
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("b/a/c", "b/a/g", "b/a/r", "g"));
 
 		var response = client
 				.listObjectVersions(l -> l.bucket(bucketName).delimiter("z").prefix("b"));
@@ -592,9 +581,8 @@ public class ListObjectsVersions extends TestBase {
 	// [구분자가 '/'가 아니며, 접두어와 일치하는 오브젝트가 존재하지 않는 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록이 비어있는지
 	// 확인
 	public void testBucketListVersionsPrefixDelimiterPrefixDelimiterNotExist() {
-		var bucketName = createObjects(List.of("b/a/r", "b/a/c", "b/a/g", "g"));
-
 		var client = getClient();
+		var bucketName = createObjects(client, List.of("b/a/r", "b/a/c", "b/a/g", "g"));
 
 		var response = client
 				.listObjectVersions(l -> l.bucket(bucketName).delimiter("z").prefix("y"));
@@ -612,8 +600,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMaxKeysOne() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).maxKeys(1));
 
@@ -636,8 +624,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMaxKeysZero() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).maxKeys(0));
 
@@ -652,8 +640,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMaxKeysNone() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName));
 
@@ -669,8 +657,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerNone() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).keyMarker(""));
 
@@ -683,8 +671,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerEmpty() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName).keyMarker(""));
 
@@ -700,8 +688,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerUnreadable() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var marker = "\n";
 
@@ -720,8 +708,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerNotInList() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var marker = "blah";
 
@@ -740,8 +728,8 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerAfterList() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var marker = "zzz";
 
@@ -757,12 +745,13 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Metadata")
 	// ListObjects으로 가져온 Metadata와 HeadObject, GetObjectAcl로 가져온 Metadata 일치 확인
 	public void testBucketListVersionsReturnData() {
-		var bucketName = getNewBucket();
-		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var keys = List.of("bar", "baz", "foo");
-		createObjects(keys, bucketName);
-
 		var client = getClient();
+		var bucketName = createBucket(client);
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		createObjects(client, bucketName, keys);
+
 		var dataList = new ArrayList<ObjectDataV2>();
 
 		for (var key : keys) {
@@ -796,9 +785,8 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("ACL")
 	// 권한없는 사용자가 공용읽기설정된 버킷의 오브젝트 목록을 읽을수 있는지 확인
 	public void testBucketListVersionsObjectsAnonymous() {
-		var bucketName = getNewBucket();
 		var client = getClient();
-		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var bucketName = createBucketCannedACL(client, BucketCannedACL.PUBLIC_READ);
 
 		var unauthenticatedClient = getPublicClient();
 		unauthenticatedClient.listObjectVersions(l -> l.bucket(bucketName));
@@ -808,14 +796,14 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("ACL")
 	// 권한없는 사용자가 버킷의 오브젝트 목록을 읽지 못하는지 확인
 	public void testBucketListVersionsObjectsAnonymousFail() {
-		var bucketName = getNewBucket();
+		var bucketName = createBucket();
 		var unauthenticatedClient = getPublicClient();
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> unauthenticatedClient.listObjectVersions(l -> l.bucket(bucketName)));
 
 		assertEquals(403, e.statusCode());
-		assertEquals(MainData.AccessDenied, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -829,7 +817,7 @@ public class ListObjectsVersions extends TestBase {
 				() -> client.listObjectVersions(l -> l.bucket(bucketName)));
 
 		assertEquals(404, e.statusCode());
-		assertEquals(MainData.NoSuchBucket, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -838,8 +826,8 @@ public class ListObjectsVersions extends TestBase {
 	// delimiter, prefix, max-keys, marker를 조합하여 오브젝트 목록을 가져올때 올바르게 가져오는지 확인
 	public void testVersioningBucketListFilteringAll() {
 		var keyNames = List.of("test1/f1", "test2/f2", "test3", "test4/f3", "testF4");
-		var bucketName = createObjects(keyNames);
 		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var marker = "test3";
 		var delimiter = "/";

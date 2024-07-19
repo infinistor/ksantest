@@ -16,171 +16,173 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class LifeCycle {
-	org.example.test.LifeCycle Test = new org.example.test.LifeCycle();
+	org.example.test.LifeCycle test = new org.example.test.LifeCycle();
+	org.example.testV2.LifeCycle testV2 = new org.example.testV2.LifeCycle();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
 	// 버킷의 Lifecycle 규칙을 추가 가능한지 확인
 	void testLifecycleSet() {
-		Test.testLifecycleSet();
+		test.testLifecycleSet();
+		testV2.testLifecycleSet();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Get")
 	// 버킷에 설정한 Lifecycle 규칙을 가져올 수 있는지 확인
 	void testLifecycleGet() {
-		Test.testLifecycleGet();
+		test.testLifecycleGet();
+		testV2.testLifecycleGet();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
 	// ID 없이 버킷에 Lifecycle 규칙을 설정 할 수 있는지 확인
 	void testLifecycleGetNoId() {
-		Test.testLifecycleGetNoId();
+		test.testLifecycleGetNoId();
+		testV2.testLifecycleGetNoId();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Version")
 	// 버킷에 버저닝 설정이 되어있는 상태에서 Lifecycle 규칙을 추가 가능한지 확인
 	void testLifecycleExpirationVersioningEnabled() {
-		Test.testLifecycleExpirationVersioningEnabled();
+		test.testLifecycleExpirationVersioningEnabled();
+		testV2.testLifecycleExpirationVersioningEnabled();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Check")
 	// 버킷에 Lifecycle 규칙을 설정할때 ID의 길이가 너무 길면 실패하는지 확인
 	void testLifecycleIdTooLong() {
-		Test.testLifecycleIdTooLong();
+		test.testLifecycleIdTooLong();
+		testV2.testLifecycleIdTooLong();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Duplicate")
 	// 버킷에 Lifecycle 규칙을 설정할때 같은 ID로 규칙을 여러개 설정할경우 실패하는지 확인
 	void testLifecycleSameId() {
-		Test.testLifecycleSameId();
+		test.testLifecycleSameId();
+		testV2.testLifecycleSameId();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// 버킷에 Lifecycle 규칙중 status를 잘못 설정할때 실패하는지 확인
 	void testLifecycleInvalidStatus() {
-		Test.testLifecycleInvalidStatus();
+		test.testLifecycleInvalidStatus();
+		testV2.testLifecycleInvalidStatus();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Date")
 	// 버킷의 Lifecycle규칙에 날짜를 입력가능한지 확인
 	void testLifecycleSetDate() {
-		Test.testLifecycleSetDate();
+		test.testLifecycleSetDate();
+		testV2.testLifecycleSetDate();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// 버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식으로 입력했을때 실패 확인
 	void testLifecycleSetInvalidDate() {
-		Test.testLifecycleSetInvalidDate();
+		test.testLifecycleSetInvalidDate();
+		testV2.testLifecycleSetInvalidDate();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Version")
 	// 버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인
 	void testLifecycleSetNoncurrent() {
-		Test.testLifecycleSetNoncurrent();
+		test.testLifecycleSetNoncurrent();
+		testV2.testLifecycleSetNoncurrent();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Version")
 	// 버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
 	void testLifecycleNoncurrentExpiration() {
-		Test.testLifecycleNoncurrentExpiration();
+		test.testLifecycleNoncurrentExpiration();
+		testV2.testLifecycleNoncurrentExpiration();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("DeleteMarker")
 	// DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
 	void testLifecycleSetDeleteMarker() {
-		Test.testLifecycleSetDeleteMarker();
+		test.testLifecycleSetDeleteMarker();
+		testV2.testLifecycleSetDeleteMarker();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Filter")
 	// Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인
 	void testLifecycleSetFilter() {
-		Test.testLifecycleSetFilter();
+		test.testLifecycleSetFilter();
+		testV2.testLifecycleSetFilter();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Filter")
 	// Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인
 	void testLifecycleSetEmptyFilter() {
-		Test.testLifecycleSetEmptyFilter();
+		test.testLifecycleSetEmptyFilter();
+		testV2.testLifecycleSetEmptyFilter();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("DeleteMarker")
 	// DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
-	void testLifecycleDeletemarkerExpiration() {
-		Test.testLifecycleDeleteMarkerExpiration();
+	void testLifecycleDeleteMarkerExpiration() {
+		test.testLifecycleDeleteMarkerExpiration();
+		testV2.testLifecycleDeleteMarkerExpiration();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Multipart")
 	// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
 	void testLifecycleSetMultipart() {
-		Test.testLifecycleSetMultipart();
+		test.testLifecycleSetMultipart();
+		testV2.testLifecycleSetMultipart();
 
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Multipart")
 	// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
 	void testLifecycleMultipartExpiration() {
-		Test.testLifecycleMultipartExpiration();
+		test.testLifecycleMultipartExpiration();
+		testV2.testLifecycleMultipartExpiration();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("Delete")
 	// @Tag("버킷의 Lifecycle 규칙을 삭제 가능한지 확인
 	void testLifecycleDelete() {
-		Test.testLifecycleDelete();
+		test.testLifecycleDelete();
+		testV2.testLifecycleDelete();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// Lifecycle 규칙에 0일을 설정할때 실패하는지 확인
 	void testLifecycleSetExpirationZero(){
-		Test.testLifecycleSetExpirationZero();
+		test.testLifecycleSetExpirationZero();
+		testV2.testLifecycleSetExpirationZero();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("metadata")
 	// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
 	void testLifecycleSetExpiration(){
-		Test.testLifecycleSetExpiration();
+		test.testLifecycleSetExpiration();
+		testV2.testLifecycleSetExpiration();
 	}
 }

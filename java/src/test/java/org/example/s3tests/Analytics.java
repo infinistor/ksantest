@@ -16,52 +16,60 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class Analytics {
-	org.example.test.Analytics Test = new org.example.test.Analytics();
+	org.example.test.Analytics test = new org.example.test.Analytics();
+	org.example.testV2.Analytics testV2 = new org.example.testV2.Analytics();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
 	@Tag("Put")
 	// 버킷 분석 설정이 가능한지 확인
 	void testPutBucketAnalytics() {
-		Test.testPutBucketAnalytics();
+		// test.testPutBucketAnalytics();
+		testV2.testPutBucketAnalytics();
 	}
 
 	@Test
 	@Tag("Get")
 	// 버킷 분석 설정이 올바르게 적용되는지 확인
 	void testGetBucketAnalytics() {
-		Test.testGetBucketAnalytics();
+		test.testGetBucketAnalytics();
+		testV2.testGetBucketAnalytics();
 	}
 
 	@Test
 	@Tag("Put")
 	// 버킷 분석 설정이 여러개 가능한지 확인
 	void testAddBucketAnalytics() {
-		Test.testAddBucketAnalytics();
+		test.testAddBucketAnalytics();
+		testV2.testAddBucketAnalytics();
 	}
 	
 	@Test
 	@Tag("List")
 	// 버킷 분석 설정이 목록으로 조회되는지 확인
 	void testListBucketAnalytics() {
-		Test.testListBucketAnalytics();
+		test.testListBucketAnalytics();
+		testV2.testListBucketAnalytics();
 	}
 
 	@Test
 	@Tag("Delete")
 	// 버킷 분석 설정이 삭제되는지 확인
 	void testDeleteBucketAnalytics() {
-		Test.testDeleteBucketAnalytics();
+		test.testDeleteBucketAnalytics();
+		testV2.testDeleteBucketAnalytics();
 	}
 
 	@Test
 	@Tag("Error")
 	// 버킷 분석 설정을 잘못 입력했을 때 에러가 발생하는지 확인
 	void testPutBucketAnalyticsInvalid() {
-		Test.testPutBucketAnalyticsInvalid();
+		test.testPutBucketAnalyticsInvalid();
+		testV2.testPutBucketAnalyticsInvalid();
 	}
 }

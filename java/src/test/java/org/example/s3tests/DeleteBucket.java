@@ -17,34 +17,36 @@ import org.junit.jupiter.api.Test;
 
 class DeleteBucket {
 
-	org.example.test.DeleteBucket Test = new org.example.test.DeleteBucket();
+	org.example.test.DeleteBucket test = new org.example.test.DeleteBucket();
+	org.example.testV2.DeleteBucket testV2 = new org.example.testV2.DeleteBucket();
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		Test.clear(testInfo);
+		test.clear(testInfo);
+		testV2.clear(testInfo);
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// 존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인
 	void testBucketDeleteNotExist() {
-		Test.testBucketDeleteNotExist();
+		test.testBucketDeleteNotExist();
+		testV2.testBucketDeleteNotExist();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// 내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인
 	void testBucketDeleteNonempty() {
-		Test.testBucketDeleteNonempty();
+		test.testBucketDeleteNonempty();
+		testV2.testBucketDeleteNonempty();
 	}
 
 	@Test
-	@Tag("KSAN")
 	@Tag("ERROR")
 	// 이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인
 	void testBucketCreateDelete() {
-		Test.testBucketCreateDelete();
+		test.testBucketCreateDelete();
+		testV2.testBucketCreateDelete();
 	}
 }
