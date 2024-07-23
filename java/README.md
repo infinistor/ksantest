@@ -6,7 +6,7 @@
 
 ## 구동환경
 
-*  Java : 11 이상
+*  Java : 17 이상
 *  maven : 3.6.3 이상
 *  OS : Window 10, Centos 7.5 이상
 

@@ -47,7 +47,7 @@ public class Payment extends TestBase {
 		var bucketName = createBucket(client);
 
 		var result = client.getBucketRequestPayment(p -> p.bucket(bucketName));
-		assertEquals(false, result);
+		assertEquals(Payer.BUCKET_OWNER, result.payer());
 	}
 
 	@Test

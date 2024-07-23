@@ -47,14 +47,14 @@ def main():
     merge_results(args[:])
 
 
-def merge_results(xml_files):
+def merge_results(xmlFiles):
     failures = 0
     tests = 0
     errors = 0
     time = 0.0
     cases = []
 
-    for file_name in xml_files:
+    for file_name in xmlFiles:
         tree = ET.parse(file_name)
         test_suite = tree.getroot()
         failures += int(test_suite.attrib['failures'])
@@ -75,8 +75,8 @@ def merge_results(xml_files):
 
 
 def usage():
-    this_file = os.path.basename(__file__)
-    print ('Usage:  %s results1.xml results2.xml' % this_file)
+    thisFile = os.path.basename(_File__)
+    print ('Usage:  %s results1.xml results2.xml' % thisFile)
 
 
 if __name__ == '__main__':

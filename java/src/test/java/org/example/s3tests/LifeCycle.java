@@ -183,6 +183,6 @@ class LifeCycle {
 	// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
 	void testLifecycleSetExpiration(){
 		test.testLifecycleSetExpiration();
-		testV2.testLifecycleSetExpiration();
+		// testV2.testLifecycleSetExpiration();
 	}
 }

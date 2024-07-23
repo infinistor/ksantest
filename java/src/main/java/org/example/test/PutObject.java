@@ -323,18 +323,17 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
-		var key = "file1";
-		var body = "abc";
-		var md5 = Utils.getMD5(body);
+		var key = "testObjectLockUploadingObj";
+		var md5 = Utils.getMD5(key);
 		var days = Calendar.getInstance();
 		days.set(2030, 1, 1, 0, 0, 0);
 
 		var metadata = new ObjectMetadata();
 		metadata.setContentMD5(md5);
 		metadata.setContentType("text/plain");
-		metadata.setContentLength(body.length());
+		metadata.setContentLength(key.length());
 
-		var putResponse = client.putObject(new PutObjectRequest(bucketName, key, createBody(body), metadata)
+		var putResponse = client.putObject(new PutObjectRequest(bucketName, key, createBody(key), metadata)
 				.withObjectLockMode(ObjectLockMode.GOVERNANCE).withObjectLockRetainUntilDate(days.getTime())
 				.withObjectLockLegalHoldStatus(ObjectLockLegalHoldStatus.ON));
 

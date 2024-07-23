@@ -16,14 +16,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.Tagging;
 
 import org.example.Data.MainData;
@@ -33,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+@SuppressWarnings("unchecked")
 public class Policy extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
@@ -228,7 +228,8 @@ public class Policy extends TestBase {
 	public void testGetTagsAclPublic() {
 		var key = "acl";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createBucketCannedACL(client);
+		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
 		var policyDocument = makeJsonPolicy("s3:GetObjectTagging", resource, null, null);
@@ -250,7 +251,8 @@ public class Policy extends TestBase {
 	public void testPutTagsAclPublic() {
 		var key = "acl";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createBucketCannedACL(client);
+		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
 		var policyDocument = makeJsonPolicy("s3:PutObjectTagging", resource, null, null);
@@ -271,7 +273,8 @@ public class Policy extends TestBase {
 	public void testDeleteTagsObjPublic() {
 		var key = "acl";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createBucketCannedACL(client);
+		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
 		var policyDocument = makeJsonPolicy("s3:DeleteObjectTagging", resource, null, null);
@@ -358,14 +361,13 @@ public class Policy extends TestBase {
 		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()));
 
 		client.putObjectTagging(p -> p.bucket(bucketName).key(publicTag).tagging(t -> t.tagSet(
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("security").value("public").build(),
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("foo").value("bar").build())));
+				tag1 -> tag1.key("security").value("public"), tag2 -> tag2.key("foo").value("bar"))));
 
 		client.putObjectTagging(p -> p.bucket(bucketName).key(privateTag).tagging(t -> t.tagSet(
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("security").value("private").build())));
+				tag -> tag.key("security").value("private").build())));
 
 		client.putObjectTagging(p -> p.bucket(bucketName).key(invalidTag).tagging(t -> t.tagSet(
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("security1").value("public").build())));
+				tag -> tag.key("security1").value("public").build())));
 
 		var altClient = getAltClient();
 		var getResponse = altClient.getObjectTagging(g -> g.bucket(bucketName).key(publicTag));
@@ -409,21 +411,16 @@ public class Policy extends TestBase {
 
 		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()));
 
-		client.putObjectTagging(p -> p.bucket(bucketName).key(publicTag).tagging(t -> t.tagSet(
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("security").value("public").build(),
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("foo").value("bar").build())));
+		client.putObjectTagging(p -> p.bucket(bucketName).key(publicTag).tagging(
+				t -> t.tagSet(tag1 -> tag1.key("security").value("public"), tag2 -> tag2.key("foo").value("bar"))));
+		client.putObjectTagging(
+				p -> p.bucket(bucketName).key(privateTag).tagging(t -> t.tagSet(tag -> tag.key("security").value("private"))));
 
-		client.putObjectTagging(p -> p.bucket(bucketName).key(privateTag).tagging(t -> t.tagSet(
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("security").value("private").build())));
+		client.putObjectTagging(p -> p.bucket(bucketName).key(invalidTag)
+				.tagging(t -> t.tagSet(tag -> tag.key("security1").value("public"))));
 
-		client.putObjectTagging(p -> p.bucket(bucketName).key(invalidTag).tagging(t -> t.tagSet(
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("security1").value("public").build())));
-
-		var testTags = new ArrayList<software.amazon.awssdk.services.s3.model.Tag>();
-		testTags.add(
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("security").value("public").build());
-		testTags.add(software.amazon.awssdk.services.s3.model.Tag.builder().key("foo").value("bar").build());
-		var testTagSet = Tagging.builder().tagSet(testTags).build();
+		var testTagSet = Tagging.builder()
+				.tagSet(tag1 -> tag1.key("security").value("public"), tag2 -> tag2.key("foo").value("bar")).build();
 
 		var altClient = getAltClient();
 		altClient.putObjectTagging(p -> p.bucket(bucketName).key(publicTag).tagging(testTagSet));
@@ -433,21 +430,12 @@ public class Policy extends TestBase {
 		var statusCode = e.statusCode();
 		assertEquals(403, statusCode);
 
-		testTags = new ArrayList<software.amazon.awssdk.services.s3.model.Tag>();
-		testTags.add(
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("security").value("private").build());
-		var testTagSet2 = Tagging.builder().tagSet(testTags).build();
-
-		altClient.putObjectTagging(p -> p.bucket(bucketName).key(privateTag).tagging(testTagSet2));
-
-		testTags = new ArrayList<software.amazon.awssdk.services.s3.model.Tag>();
-		testTags.add(
-				software.amazon.awssdk.services.s3.model.Tag.builder().key("security").value("public").build());
-		testTags.add(software.amazon.awssdk.services.s3.model.Tag.builder().key("foo").value("bar").build());
-		var testTagSet3 = Tagging.builder().tagSet(testTags).build();
+		altClient.putObjectTagging(p -> p.bucket(bucketName).key(publicTag)
+				.tagging(t -> t.tagSet(tag -> tag.key("security").value("private").build())));
 
 		e = assertThrows(AwsServiceException.class,
-				() -> altClient.putObjectTagging(p -> p.bucket(bucketName).key(invalidTag).tagging(testTagSet3)));
+				() -> altClient.putObjectTagging(p -> p.bucket(bucketName).key(invalidTag).tagging(t -> t.tagSet(
+						tag1 -> tag1.key("security").value("public"), tag2 -> tag2.key("foo").value("bar")))));
 		statusCode = e.statusCode();
 		assertEquals(403, statusCode);
 	}
@@ -461,17 +449,18 @@ public class Policy extends TestBase {
 		var publicBar = "public/bar";
 		var privateFoo = "private/foo";
 		var client = getClient();
+		var altClient = getAltClient();
 		var sourceBucketName = createBucketCannedACL(client);
+		var targetBucketName = createBucketCannedACL(client);
+
 		createObjects(client, sourceBucketName, List.of(publicFoo, publicBar, privateFoo));
 
 		var sourceResource = makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObject", sourceResource, null, null);
 		client.putBucketPolicy(p -> p.bucket(sourceBucketName).policy(policyDocument.toString()));
 
-		var targetBucketName = createBucketCannedACL(client);
-
 		var conditional = new JsonObject();
-		conditional.addProperty("s3:x-amz-copy-source", String.format("/%s/public/*", sourceBucketName));
+		conditional.addProperty("s3:x-amz-copy-source", String.format("%s/public/*", sourceBucketName));
 		var tagConditional = new JsonObject();
 		tagConditional.add("StringLike", conditional);
 
@@ -479,7 +468,6 @@ public class Policy extends TestBase {
 		var policyDocument2 = makeJsonPolicy("s3:PutObject", resource, null, tagConditional);
 		client.putBucketPolicy(p -> p.bucket(targetBucketName).policy(policyDocument2.toString()));
 
-		var altClient = getAltClient();
 		var newFoo = "newFoo";
 		altClient.copyObject(c -> c.sourceBucket(sourceBucketName).sourceKey(publicFoo)
 				.destinationBucket(targetBucketName).destinationKey(newFoo));
@@ -554,6 +542,7 @@ public class Policy extends TestBase {
 	// 동작하는지 확
 	public void testBucketPolicyPutObjAcl() {
 		var client = getClient();
+		var altClient = getAltClient();
 		var bucketName = createBucketCannedACL(client);
 
 		var conditional = new JsonObject();
@@ -568,20 +557,14 @@ public class Policy extends TestBase {
 
 		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()));
 
-		var altClient = getAltClient();
 		var key1 = "private-key";
-
 		altClient.putObject(p -> p.bucket(bucketName).key(key1), RequestBody.fromString(key1));
 
 		var key2 = "public-key";
-		var headers = new HashMap<String, String>();
-		headers.put("x-amz-acl", "public-read");
-
 		var e = assertThrows(AwsServiceException.class,
-				() -> altClient.putObject(p -> p.bucket(bucketName).key(key2).metadata(headers),
+				() -> altClient.putObject(p -> p.bucket(bucketName).key(key2).acl(ObjectCannedACL.PUBLIC_READ),
 						RequestBody.fromString(key2)));
-		var statusCode = e.statusCode();
-		assertEquals(403, statusCode);
+		assertEquals(403, e.statusCode());
 	}
 
 	@Test
@@ -615,10 +598,7 @@ public class Policy extends TestBase {
 		var altClient = getAltClient();
 		var key1 = "key1";
 
-		var headers = new HashMap<String, String>();
-		headers.put("x-amz-grant-full-control", ownerId);
-
-		altClient.putObject(p -> p.bucket(bucketName1).key(key1).metadata(headers), RequestBody.fromString(key1));
+		altClient.putObject(p -> p.bucket(bucketName1).key(key1).grantFullControl(ownerId), RequestBody.fromString(key1));
 
 		var key2 = "key2";
 		altClient.putObject(p -> p.bucket(bucketName2).key(key2), RequestBody.fromString(key2));

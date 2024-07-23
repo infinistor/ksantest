@@ -471,8 +471,6 @@ public class LifeCycle extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 
-		delay(1000);
-
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
 		var expiredTime = getExpiredDate(response.lastModified(), 1);
 		assertEquals(expiredTime, response.expires());

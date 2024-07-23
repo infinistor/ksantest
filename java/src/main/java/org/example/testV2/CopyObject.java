@@ -908,7 +908,7 @@ public class CopyObject extends TestBase {
 	@Tag("ERROR")
 	// sse-c로 암호화된 오브젝트를 복사할때 Algorithm을 누락하면 오류가 발생하는지 확인
 	public void testCopyRevokeSseAlgorithm() {
-		var client = getClient();
+		var client = getClientHttps(true);
 		var bucketName = createBucket(client);
 		var sourceKey = "sourceKey";
 		var targetKey = "targetKey";

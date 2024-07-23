@@ -350,16 +350,16 @@ public class TestBase {
 		var protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
 		var port = config.isSecure ? config.sslPort : config.port;
 
-		return config.isAWS() ? NetUtils.getEndPoint(protocol, config.regionName, bucketName)
-				: NetUtils.getEndPoint(protocol, config.url, port, bucketName);
+		return config.isAWS() ? NetUtils.getEndpoint(protocol, config.regionName, bucketName)
+				: NetUtils.getEndpoint(protocol, config.url, port, bucketName);
 	}
 
 	public URL getURL(String bucketName, String key) throws MalformedURLException {
 		var protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
 		var port = config.isSecure ? config.sslPort : config.port;
 
-		return config.isAWS() ? NetUtils.getEndPoint(protocol, config.regionName, bucketName, key)
-				: NetUtils.getEndPoint(protocol, config.url, port, bucketName, key);
+		return config.isAWS() ? NetUtils.getEndpoint(protocol, config.regionName, bucketName, key)
+				: NetUtils.getEndpoint(protocol, config.url, port, bucketName, key);
 	}
 
 	public String makeArnResource(String path) {
@@ -1767,7 +1767,9 @@ public class TestBase {
 
 	public void checkBucketACLGrantCanWrite(String bucketName) {
 		var altClient = getAltClient();
-		altClient.putObject(bucketName, "foo-write", "bar");
+		var key = "foo-write";
+		altClient.putObject(bucketName, key, key);
+		altClient.deleteObject(bucketName, key);
 	}
 
 	public void checkBucketACLGrantCantWrite(String bucketName) {

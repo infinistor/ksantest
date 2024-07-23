@@ -364,9 +364,8 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
 
-		var key = "file1";
-		var body = "abc";
-		var md5 = Utils.getMD5(body);
+		var key = "testObjectLockUploadingObjV2";
+		var md5 = Utils.getMD5(key);
 		var days = Calendar.getInstance();
 		days.set(2030, 1, 1, 0, 0, 0);
 
@@ -375,11 +374,11 @@ public class PutObject extends TestBase {
 				.key(key)
 				.contentMD5(md5)
 				.contentType("text/plain")
-				.contentLength((long) body.length())
+				.contentLength((long) key.length())
 				.objectLockMode(ObjectLockMode.GOVERNANCE)
 				.objectLockRetainUntilDate(days.toInstant())
 				.objectLockLegalHoldStatus(ObjectLockLegalHoldStatus.ON),
-				RequestBody.fromString(body));
+				RequestBody.fromString(key));
 
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
 		assertEquals(ObjectLockMode.GOVERNANCE.toString(), response.objectLockMode());

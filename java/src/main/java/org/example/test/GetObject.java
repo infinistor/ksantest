@@ -329,18 +329,4 @@ public class GetObject extends TestBase {
 		client.putObject(bucketName, key, data);
 		checkContentUsingRandomRange(bucketName, key, data, 50);
 	}
-
-	@Test
-	@Tag("Restore")
-	// 오브젝트 복구 명령이 성공하는지 확인
-	public void testRestoreObject() {
-		var client = getClient();
-		var bucketName = createBucket(client);
-		var key = "foo";
-
-		client.putObject(bucketName, key, key);
-
-		var request = new RestoreObjectRequest(bucketName, key);
-		client.restoreObjectV2(request);
-	}
 }

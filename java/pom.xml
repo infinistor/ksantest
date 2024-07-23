@@ -104,6 +104,16 @@
 			<artifactId>apache-client</artifactId>
 			<version>${aws.java.sdk.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>netty-nio-client</artifactId>
+			<version>${aws.java.sdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>apache-client</artifactId>
+			<version>${aws.java.sdk.version}</version>
+		</dependency>
 	</dependencies>
 
 	<build>

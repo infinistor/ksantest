@@ -9,25 +9,20 @@
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
 package org.example.s3tests;
+
 import java.io.File;
 import java.io.FileReader;
 
 import org.example.Data.UserData;
 import org.ini4j.Ini;
 
-public class S3Config
-{
-	// static final String STR_FILENAME = "s3tests-229.ini";
-	// static final String STR_FILENAME = "s3tests-227.ini";
-	// static final String STR_FILENAME = "s3tests-gw.ini";
-	// static final String STR_FILENAME = "s3tests-ksan.ini";
-	static final String STR_FILENAME = "awstests.ini";
-	// static final String STR_FILENAME = "config.ini";
-	//////////////////////////////SIGNATURE VERSION////////////////////////////////////
+public class S3Config {
+	static final String STR_FILENAME = "s3tests-229.ini";
+	// static final String STR_FILENAME = "awstests.ini";
+	
 	public static final String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
 	public static final String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";
-
-	/////////////////////////////////////S3///////////////////////////////////////////
+	///////////////////////////////////// S3///////////////////////////////////////////
 	static final String STR_S3 = "S3";
 	static final String STR_URL = "URL";
 	static final String STR_PORT = "Port";
@@ -36,11 +31,12 @@ public class S3Config
 	static final String STR_IS_SECURE = "IsSecure";
 	static final String STR_REGION = "RegionName";
 
-	/////////////////////////////////////Fixtures///////////////////////////////////////////
+	///////////////////////////////////// Fixtures///////////////////////////////////////////
 	static final String STR_FIXTURES = "Fixtures";
 	static final String STR_BUCKET_PREFIX = "BucketPrefix";
 	static final String STR_BUCKET_DELETE = "NotDelete";
-	/////////////////////////////////////User Data///////////////////////////////////////////
+	///////////////////////////////////// User
+	///////////////////////////////////// Data///////////////////////////////////////////
 	static final String STR_MAIN_USER = "Main User";
 	static final String STR_ALT_USER = "Alt User";
 
@@ -66,15 +62,16 @@ public class S3Config
 	public UserData mainUser;
 	public UserData altUser;
 
-	public S3Config(String fileName)
-	{
-		if(fileName == null) this.fileName = STR_FILENAME;
-		else if(fileName.isBlank()) this.fileName = STR_FILENAME;
-		else this.fileName = fileName;
+	public S3Config(String fileName) {
+		if (fileName == null)
+			this.fileName = STR_FILENAME;
+		else if (fileName.isBlank())
+			this.fileName = STR_FILENAME;
+		else
+			this.fileName = fileName;
 	}
 
-	public boolean getConfig()
-	{
+	public boolean getConfig() {
 		File file = new File(fileName);
 		try {
 			ini.load(new FileReader(file));
@@ -98,31 +95,38 @@ public class S3Config
 		return true;
 	}
 
-	public String getSignatureVersion()
-	{
-		if (signatureVersion.equals("2")) return STR_SIGNATURE_VERSION_V2;
+	public String getSignatureVersion() {
+		if (signatureVersion.equals("2"))
+			return STR_SIGNATURE_VERSION_V2;
 		return STR_SIGNATURE_VERSION_V4;
 	}
-	public boolean isAWS()
-	{
+
+	public boolean isAWS() {
 		return url == null || url.length() == 0;
 	}
 
-	UserData readUser(String section)
-	{
+	UserData readUser(String section) {
 		UserData user = new UserData();
 
 		user.displayName = readKeyToString(section, STR_DISPLAY_NAME);
-		user.id 	 = readKeyToString(section, STR_USER_ID);
-		user.email 		 = readKeyToString(section, STR_EMAIL);
-		user.accessKey 	 = readKeyToString(section, STR_ACCESS_KEY);
-		user.secretKey 	 = readKeyToString(section, STR_SECRET_KEY);
-		user.kms 		 = readKeyToString(section, STR_KMS);
+		user.id = readKeyToString(section, STR_USER_ID);
+		user.email = readKeyToString(section, STR_EMAIL);
+		user.accessKey = readKeyToString(section, STR_ACCESS_KEY);
+		user.secretKey = readKeyToString(section, STR_SECRET_KEY);
+		user.kms = readKeyToString(section, STR_KMS);
 
 		return user;
 	}
 
-	String readKeyToString(String section, String key) { return ini.get(section, key); }
-	int readKeyToInt(String section, String key) { return Integer.parseInt(ini.get(section, key)); }
-	boolean readKeyToBoolean(String section, String key) { return Boolean.parseBoolean(ini.get(section, key)); }
+	String readKeyToString(String section, String key) {
+		return ini.get(section, key);
+	}
+
+	int readKeyToInt(String section, String key) {
+		return Integer.parseInt(ini.get(section, key));
+	}
+
+	boolean readKeyToBoolean(String section, String key) {
+		return Boolean.parseBoolean(ini.get(section, key));
+	}
 }

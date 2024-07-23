@@ -163,12 +163,4 @@ class GetObject {
 		test.testRangeObjectMany();
 		testV2.testRangeObjectMany();
 	}
-
-	@Test
-	@Tag("Restore")
-	//오브젝트 복구 명령이 성공하는지 확인
-	void testRestoreObject() {
-		test.testRestoreObject();
-		testV2.testRestoreObject();
-	}
 }

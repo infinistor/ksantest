@@ -592,7 +592,6 @@ public class Multipart extends TestBase {
 		partsETagCompare(uploadData.parts, response.getParts());
 
 		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
-
 	}
 
 	@Test

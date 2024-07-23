@@ -23,6 +23,9 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -42,9 +45,13 @@ import java.util.TreeMap;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.example.Data.AES256;
 import org.example.Data.MainData;
 import org.example.Data.MultipartUploadV2Data;
@@ -61,6 +68,7 @@ import org.junit.platform.commons.util.StringUtils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import io.netty.handler.ssl.SslProvider;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -68,8 +76,11 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.internal.http.loader.DefaultSdkHttpClientBuilder;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.SdkHttpConfigurationOption;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -109,6 +120,8 @@ import software.amazon.awssdk.services.s3.model.ServerSideEncryptionConfiguratio
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.model.Type;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.utils.AttributeMap;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 
 @SuppressWarnings("unchecked")
 public class TestBase {
@@ -143,14 +156,33 @@ public class TestBase {
 
 	public S3Client createClient(boolean isSecure, UserData user, boolean useChunkEncoding) {
 		String address = "";
-
+		var httpClient = ApacheHttpClient.builder()
+				.connectionTimeout(Duration.ofSeconds(10))
+				.socketTimeout(Duration.ofSeconds(10));
 		if (isSecure) {
-			address = NetUtils.createURLToHTTPS(config.url, config.sslPort);
-			System.setProperty(
-					"software.amazon.awssdk.http.SdkHttpConfigurationOption#DISABLE_CERT_CHECKING_SYSTEM_PROPERTY",
-					"true");
+			try {
+				SSLContextBuilder sslContextBuilder = SSLContextBuilder.create();
+				sslContextBuilder.loadTrustMaterial(new TrustAllStrategy());
+
+				var sslSocketFactory = new SSLConnectionSocketFactory(
+						sslContextBuilder.build(),
+						new String[] { "TLSv1.2", "TLSv1.1", "TLSv1" },
+						null,
+						NoopHostnameVerifier.INSTANCE);
+				httpClient.socketFactory(sslSocketFactory);
+			} catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+				e.printStackTrace();
+				return null;
+			}
+			if (config.url.isEmpty())
+				address = NetUtils.createRegion2Https(config.regionName);
+			else
+				address = NetUtils.createURLToHTTPS(config.url, config.sslPort);
 		} else {
-			address = NetUtils.createURLToHTTP(config.url, config.port);
+			if (config.url.isEmpty())
+				address = NetUtils.createRegion2Http(config.regionName);
+			else
+				address = NetUtils.createURLToHTTP(config.url, config.port);
 		}
 		AwsCredentialsProvider awsCred = null;
 		if (user == null)
@@ -164,18 +196,14 @@ public class TestBase {
 				.pathStyleAccessEnabled(true)
 				.build();
 
-		var client = S3Client.builder()
+		return S3Client.builder()
 				.region(config.regionName != null ? Region.of(config.regionName) : Region.AP_NORTHEAST_2)
 				.credentialsProvider(awsCred)
-				.httpClientBuilder(ApacheHttpClient.builder()
-						.connectionTimeout(Duration.ofSeconds(10))
-						.socketTimeout(Duration.ofSeconds(10)))
+				.httpClientBuilder(httpClient)
 				.overrideConfiguration(ClientOverrideConfiguration.builder()
 						.retryPolicy(RetryPolicy.builder().numRetries(1).build()).build())
-				.serviceConfiguration(s3Config);
-		if (!config.url.isEmpty())
-			client.endpointOverride(URI.create(address));
-		return client.build();
+				.serviceConfiguration(s3Config)
+				.endpointOverride(URI.create(address)).build();
 	}
 
 	public S3Client getClient() {
@@ -242,10 +270,9 @@ public class TestBase {
 	}
 
 	public AccessControlPolicy createACL(Permission permission) {
-		var list = AccessControlPolicy.builder().owner(config.mainUser.toOwnerV2());
-		list.grants(Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build());
-		list.grants(Grant.builder().grantee(config.altUser.toGranteeV2()).permission(permission).build());
-		return list.build();
+		return AccessControlPolicy.builder().owner(config.mainUser.toOwnerV2()).grants(
+				Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build(),
+				Grant.builder().grantee(config.altUser.toGranteeV2()).permission(permission).build()).build();
 	}
 
 	public String getPrefix() {
@@ -343,16 +370,16 @@ public class TestBase {
 		var protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
 		var port = config.isSecure ? config.sslPort : config.port;
 
-		return config.isAWS() ? NetUtils.getEndPoint(protocol, config.regionName, bucketName)
-				: NetUtils.getEndPoint(protocol, config.url, port, bucketName);
+		return config.isAWS() ? NetUtils.getEndpoint(protocol, config.regionName, bucketName)
+				: NetUtils.getEndpoint(protocol, config.url, port, bucketName);
 	}
 
 	public URL getURL(String bucketName, String key) throws MalformedURLException {
 		var protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
 		var port = config.isSecure ? config.sslPort : config.port;
 
-		return config.isAWS() ? NetUtils.getEndPoint(protocol, config.regionName, bucketName, key)
-				: NetUtils.getEndPoint(protocol, config.url, port, bucketName, key);
+		return config.isAWS() ? NetUtils.getEndpoint(protocol, config.regionName, bucketName, key)
+				: NetUtils.getEndpoint(protocol, config.url, port, bucketName, key);
 	}
 
 	public String makeArnResource(String path) {
@@ -904,7 +931,7 @@ public class TestBase {
 					.uploadId(uploadData.uploadId)
 					.partNumber(uploadData.nextPartNumber()),
 					RequestBody.fromString(Part));
-			uploadData.addPart(partResponse.eTag());
+			uploadData.addPart(partResponse.eTag().replace("\"", ""));
 		}
 
 		return uploadData;
@@ -928,7 +955,7 @@ public class TestBase {
 					.uploadId(uploadData.uploadId)
 					.partNumber(uploadData.nextPartNumber()),
 					RequestBody.fromString(Part));
-			uploadData.addPart(partResponse.eTag());
+			uploadData.addPart(partResponse.eTag().replace("\"", ""));
 		}
 
 		return uploadData;
@@ -1470,8 +1497,8 @@ public class TestBase {
 	}
 
 	public void testEncryptionSSECustomerWrite(int fileSize) {
-		var bucketName = createBucket();
 		var client = getClientHttps(false);
+		var bucketName = createBucket(client);
 		var key = "test";
 		var data = Utils.randomTextToLong(fileSize);
 
@@ -1611,7 +1638,7 @@ public class TestBase {
 	public void testObjectCopy(EncryptionType source, EncryptionType target, int size) {
 		var sourceKey = "sourceKey";
 		var targetKey = "targetKey";
-		var client = getClient(false);
+		var client = getClientHttps(true);
 		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(size);
 
@@ -1768,11 +1795,9 @@ public class TestBase {
 
 	public void checkBucketACLGrantCanWrite(String bucketName) {
 		var altClient = getAltClient();
-		altClient.putObject(
-				p -> p
-						.bucket(bucketName)
-						.key("foo-write"),
-				RequestBody.fromString("bar"));
+		var key = "foo-write";
+		altClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
+		altClient.deleteObject(d -> d.bucket(bucketName).key(key));
 	}
 
 	public void checkBucketACLGrantCantWrite(String bucketName) {

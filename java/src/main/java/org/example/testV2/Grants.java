@@ -327,19 +327,19 @@ public class Grants extends TestBase {
 	// [bucketAcl: public-read-write] 권한정보를 추가한 오브젝트의 eTag값이 변경되지 않는지 확인
 	public void testObjectAclFullControlVerifyAttributes() {
 		var key = "foo";
-		var mainClient = getClient();
-		var bucketName = createBucketCannedACL(mainClient, BucketCannedACL.PUBLIC_READ_WRITE);
+		var client = getClient();
+		var bucketName = createBucketCannedACL(client, BucketCannedACL.PUBLIC_READ_WRITE);
 
-		mainClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var response = mainClient.getObject(g -> g.bucket(bucketName).key(key));
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
 		var contentType = response.response().contentType();
 		var eTag = response.response().eTag();
 
 		var acl = createACL(Permission.FULL_CONTROL);
-		mainClient.putObjectAcl(p -> p.bucket(bucketName).key(key).accessControlPolicy(acl));
+		client.putObjectAcl(p -> p.bucket(bucketName).key(key).accessControlPolicy(acl));
 
-		response = mainClient.getObject(g -> g.bucket(bucketName).key(key));
+		response = client.getObject(g -> g.bucket(bucketName).key(key));
 		assertEquals(contentType, response.response().contentType());
 		assertEquals(eTag, response.response().eTag());
 	}

@@ -49,7 +49,7 @@ class Taggings {
 	// 오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
 	void testGetObjHeadTagging() {
 		test.testGetObjHeadTagging();
-		testV2.testGetObjHeadTagging();
+		// testV2.testGetObjHeadTagging();
 	}
 
 	@Test

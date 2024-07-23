@@ -40,6 +40,14 @@ public class NetUtils {
 	public static final int USER_DATE_BLOCK_SIZE = 64 * 1024;
 	public static final String LINE_FEED = "\r\n";
 
+	public static String createRegion2Http(String region) {
+		return String.format("http://s3.%s.amazonaws.com", region);
+	}
+
+	public static String createRegion2Https(String regionName) {
+		return String.format("https://s3.%s.amazonaws.com", regionName);
+	}
+
 	public static String createURLToHTTP(String address, int port) {
 		var url = MainData.HTTP + address;
 
@@ -58,21 +66,21 @@ public class NetUtils {
 		return String.format("%s:%d", url, port);
 	}
 
-	public static URL getEndPoint(String protocol, String address, int port, String bucketName)
+	public static URL getEndpoint(String protocol, String address, int port, String bucketName)
 			throws MalformedURLException {
 		return new URL(String.format("%s%s:%d/%s", protocol, address, port, bucketName));
 	}
 
-	public static URL getEndPoint(String protocol, String regionName, String bucketName) throws MalformedURLException {
+	public static URL getEndpoint(String protocol, String regionName, String bucketName) throws MalformedURLException {
 		return new URL(String.format("%s%s.s3-%s.amazonaws.com", protocol, bucketName, regionName));
 	}
 
-	public static URL getEndPoint(String protocol, String address, int port, String bucketName, String key)
+	public static URL getEndpoint(String protocol, String address, int port, String bucketName, String key)
 			throws MalformedURLException {
 		return new URL(String.format("%s%s:%d/%s/%s", protocol, address, port, bucketName, key));
 	}
 
-	public static URL getEndPoint(String protocol, String regionName, String bucketName, String key)
+	public static URL getEndpoint(String protocol, String regionName, String bucketName, String key)
 			throws MalformedURLException {
 		return new URL(String.format("%s%s.s3-%s.amazonaws.com/%s", protocol, bucketName, regionName, key));
 	}
@@ -250,7 +258,7 @@ public class NetUtils {
 		var tm = new miTM();
 		trustAllCerts[0] = tm;
 		var sc = SSLContext.getInstance("SSL");
-		sc.init(null, trustAllCerts, null);
+		sc.init(null, trustAllCerts, new java.security.SecureRandom());
 		HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
 	}
 
