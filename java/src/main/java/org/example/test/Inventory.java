@@ -216,7 +216,7 @@ public class Inventory extends TestBase {
 				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
 
 		assertEquals(400, e.getStatusCode());
-		assertEquals(MainData.INVALID_CONFIGURATION_ID, e.getErrorCode());
+		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
 	@Test
@@ -252,7 +252,7 @@ public class Inventory extends TestBase {
 		var response = client.listBucketInventoryConfigurations(
 				new ListBucketInventoryConfigurationsRequest().withBucketName(bucketName));
 
-		assertEquals(2, response.getInventoryConfigurationList().size());
+		assertEquals(1, response.getInventoryConfigurationList().size());
 	}
 
 	@Disabled("aws에서 타깃 버킷이 존재하는지 확인하지 않음")

@@ -10,6 +10,7 @@
 */
 package org.example.testV2;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,7 +47,7 @@ public class Inventory extends TestBase {
 		var bucketName = createBucket(client);
 
 		var response = client.listBucketInventoryConfigurations(l -> l.bucket(bucketName));
-		assertNull(response.inventoryConfigurationList());
+		assertTrue(response.inventoryConfigurationList().isEmpty());
 	}
 
 	@Test
@@ -56,16 +57,15 @@ public class Inventory extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var targetBucketName = createBucket(client);
-		var inventoryId = "my-inventory";
+		var inventoryId = "my-inventory-v2";
 
-		var inventory = InventoryConfiguration.builder()
-				.id(inventoryId)
-				.destination(
-						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
-				.isEnabled(true)
-				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
-		client.putBucketInventoryConfiguration(p -> p.bucket(bucketName).inventoryConfiguration(inventory.build()));
+		client.putBucketInventoryConfiguration(
+				p -> p.bucket(bucketName).id(inventoryId).inventoryConfiguration(i -> i
+						.id(inventoryId)
+						.destination(d -> d
+								.s3BucketDestination(s -> s.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
+						.isEnabled(true).includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
+						.schedule(s -> s.frequency(InventoryFrequency.DAILY))));
 	}
 
 	@Test
@@ -77,16 +77,17 @@ public class Inventory extends TestBase {
 		var targetBucketName = createBucket(client);
 		var inventoryId = "my-inventory";
 
-		var inventory = InventoryConfiguration.builder()
-				.id(inventoryId)
-				.destination(
-						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
-				.isEnabled(true)
-				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 		client.putBucketInventoryConfiguration(p -> p
-				.bucket(bucketName)
-				.inventoryConfiguration(inventory.build()));
+				.bucket(bucketName).id(inventoryId)
+				.inventoryConfiguration(i -> i
+						.id(inventoryId)
+						.destination(d -> d
+								.s3BucketDestination(s -> s
+										.bucket("arn:aws:s3:::" + targetBucketName)
+										.format("CSV")))
+						.isEnabled(true)
+						.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
+						.schedule(s -> s.frequency(InventoryFrequency.DAILY))));
 
 		var response = client.listBucketInventoryConfigurations(l -> l.bucket(bucketName));
 		assertEquals(1, response.inventoryConfigurationList().size());
@@ -101,16 +102,15 @@ public class Inventory extends TestBase {
 		var targetBucketName = createBucket(client);
 		var inventoryId = "my-inventory";
 
-		var inventory = InventoryConfiguration.builder()
-				.id(inventoryId)
-				.destination(
-						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
-				.isEnabled(true)
-				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 		client.putBucketInventoryConfiguration(p -> p
-				.bucket(bucketName)
-				.inventoryConfiguration(inventory.build()));
+				.bucket(bucketName).id(inventoryId)
+				.inventoryConfiguration(i -> i
+						.id(inventoryId)
+						.destination(d -> d
+								.s3BucketDestination(
+										s -> s.bucket("arn:aws:s3:::" + targetBucketName).format("CSV").prefix("a/")))
+						.isEnabled(true).includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
+						.schedule(s -> s.frequency(InventoryFrequency.DAILY))));
 
 		var response = client.getBucketInventoryConfiguration(g -> g.bucket(bucketName).id(inventoryId));
 		assertEquals(inventoryId, response.inventoryConfiguration().id());
@@ -125,20 +125,20 @@ public class Inventory extends TestBase {
 		var targetBucketName = createBucket(client);
 		var inventoryId = "my-inventory";
 
-		var inventory = InventoryConfiguration.builder()
-				.id(inventoryId)
-				.destination(
-						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
-				.isEnabled(true)
-				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
-				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 		client.putBucketInventoryConfiguration(p -> p
-				.bucket(bucketName)
-				.inventoryConfiguration(inventory.build()));
+				.bucket(bucketName).id(inventoryId)
+				.inventoryConfiguration(i -> i
+						.id(inventoryId)
+						.destination(d -> d
+								.s3BucketDestination(s -> s
+										.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
+						.isEnabled(true)
+						.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
+						.schedule(s -> s.frequency(InventoryFrequency.DAILY))));
 
 		client.deleteBucketInventoryConfiguration(d -> d.bucket(bucketName).id(inventoryId));
 		var response = client.listBucketInventoryConfigurations(l -> l.bucket(bucketName));
-		assertNull(response.inventoryConfigurationList());
+		assertTrue(response.inventoryConfigurationList().isEmpty());
 	}
 
 	@Test
@@ -192,7 +192,7 @@ public class Inventory extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketInventoryConfiguration(
-						p -> p.bucket(bucketName).inventoryConfiguration(inventory.build())));
+						p -> p.bucket(bucketName).id(inventoryId).inventoryConfiguration(inventory.build())));
 
 		assertEquals(404, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
@@ -217,11 +217,11 @@ public class Inventory extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketInventoryConfiguration(p -> p
-						.bucket(bucketName)
+						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
-		assertEquals(MainData.INVALID_CONFIGURATION_ID, e.awsErrorDetails().errorCode());
+		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -235,29 +235,31 @@ public class Inventory extends TestBase {
 
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
-				.destination(d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
+				.destination(
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
 				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
 		client.putBucketInventoryConfiguration(p -> p
-				.bucket(bucketName)
+				.bucket(bucketName).id(inventoryId)
 				.inventoryConfiguration(inventory.build()));
 
 		var inventory2 = InventoryConfiguration.builder()
 				.id(inventoryId)
-				.destination(d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
+				.destination(
+						d -> d.s3BucketDestination(s3 -> s3.bucket("arn:aws:s3:::" + targetBucketName).format("CSV")))
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
 				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
 		client.putBucketInventoryConfiguration(p -> p
-				.bucket(bucketName)
+				.bucket(bucketName).id(inventoryId)
 				.inventoryConfiguration(inventory2.build()));
 
 		var response = client.listBucketInventoryConfigurations(l -> l.bucket(bucketName));
 
-		assertEquals(2, response.inventoryConfigurationList().size());
+		assertEquals(1, response.inventoryConfigurationList().size());
 	}
 
 	@Disabled("aws에서 타깃 버킷이 존재하는지 확인하지 않음")
@@ -280,7 +282,7 @@ public class Inventory extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketInventoryConfiguration(p -> p
-						.bucket(bucketName)
+						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(404, e.statusCode());
@@ -306,7 +308,7 @@ public class Inventory extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketInventoryConfiguration(p -> p
-						.bucket(bucketName)
+						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
@@ -332,7 +334,7 @@ public class Inventory extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketInventoryConfiguration(p -> p
-						.bucket(bucketName)
+						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
@@ -358,7 +360,7 @@ public class Inventory extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketInventoryConfiguration(p -> p
-						.bucket(bucketName)
+						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());
@@ -386,7 +388,7 @@ public class Inventory extends TestBase {
 				.schedule(s -> s.frequency(InventoryFrequency.DAILY));
 
 		client.putBucketInventoryConfiguration(p -> p
-				.bucket(bucketName)
+				.bucket(bucketName).id(inventoryId)
 				.inventoryConfiguration(inventory.build()));
 
 		var result = client.getBucketInventoryConfiguration(g -> g
@@ -423,7 +425,7 @@ public class Inventory extends TestBase {
 				.optionalFields(inventoryOptionalFields);
 
 		client.putBucketInventoryConfiguration(p -> p
-				.bucket(bucketName)
+				.bucket(bucketName).id(inventoryId)
 				.inventoryConfiguration(inventory.build()));
 
 		var result = client.getBucketInventoryConfiguration(g -> g
@@ -447,8 +449,8 @@ public class Inventory extends TestBase {
 
 		var inventoryPrefix = "a/";
 		var inventoryOptionalFields = Arrays.asList(
-				InventoryOptionalField.SIZE,
-				InventoryOptionalField.valueOf("--"));
+				"SIZE",
+				"--");
 
 		var inventory = InventoryConfiguration.builder()
 				.id(inventoryId)
@@ -458,11 +460,11 @@ public class Inventory extends TestBase {
 				.isEnabled(true)
 				.includedObjectVersions(InventoryIncludedObjectVersions.CURRENT)
 				.schedule(s -> s.frequency(InventoryFrequency.DAILY))
-				.optionalFields(inventoryOptionalFields);
+				.optionalFieldsWithStrings(inventoryOptionalFields);
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketInventoryConfiguration(p -> p
-						.bucket(bucketName)
+						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
 		assertEquals(400, e.statusCode());

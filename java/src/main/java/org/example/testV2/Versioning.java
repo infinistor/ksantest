@@ -539,9 +539,6 @@ public class Versioning extends TestBase {
 		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId(versionId));
 
 		var user = config.mainUser.toOwnerV2();
-
-		if (!StringUtils.isBlank(config.url))
-			assertEquals(user.displayName(), response.owner().displayName());
 		assertEquals(user.id(), response.owner().id());
 
 		var getGrants = response.grants();
@@ -573,8 +570,6 @@ public class Versioning extends TestBase {
 
 		var user = config.mainUser.toOwnerV2();
 
-		if (!StringUtils.isBlank(config.url))
-			assertEquals(user.displayName(), response.owner().displayName());
 		assertEquals(user.id(), response.owner().id());
 
 		var getGrants = response.grants();

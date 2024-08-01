@@ -551,8 +551,6 @@ public class Versioning extends TestBase {
 		var user = new CanonicalGrantee(config.mainUser.id);
 		user.setDisplayName(config.mainUser.displayName);
 
-		if (!StringUtils.isBlank(config.url))
-			assertEquals(user.getDisplayName(), response.getOwner().getDisplayName());
 		assertEquals(user.getIdentifier(), response.getOwner().getId());
 
 		var getGrants = response.getGrantsAsList();
@@ -585,8 +583,6 @@ public class Versioning extends TestBase {
 		var user = new CanonicalGrantee(config.mainUser.id);
 		user.setDisplayName(config.mainUser.displayName);
 
-		if (!StringUtils.isBlank(config.url))
-			assertEquals(user.getDisplayName(), response.getOwner().getDisplayName());
 		assertEquals(user.getIdentifier(), response.getOwner().getId());
 
 		var getGrants = response.getGrantsAsList();

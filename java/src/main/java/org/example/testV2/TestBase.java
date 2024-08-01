@@ -276,7 +276,7 @@ public class TestBase {
 	}
 
 	public String getPrefix() {
-		return config.bucketPrefix.replace(STR_RANDOM, Utils.randomText(RANDOM_PREFIX_TEXT_LENGTH));
+		return "v2-" + config.bucketPrefix.replace(STR_RANDOM, Utils.randomText(RANDOM_PREFIX_TEXT_LENGTH));
 	}
 
 	public String getNewBucketNameOnly() {
