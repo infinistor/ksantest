@@ -145,6 +145,7 @@
 						<include>Lock.java</include>
 						<include>Logging.java</include>
 						<include>Multipart.java</include>
+						<include>Metrics.java</include>
 						<include>Notification.java</include>
 						<include>Payment.java</include>
 						<include>Policy.java</include>
