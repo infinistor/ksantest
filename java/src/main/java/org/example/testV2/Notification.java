@@ -24,12 +24,12 @@ import software.amazon.awssdk.services.s3.model.NotificationConfiguration;
 public class Notification extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Notification Start");
+		System.out.println("Notification V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Notification End");
+		System.out.println("Notification V2 End");
 	}
 
 	@Test

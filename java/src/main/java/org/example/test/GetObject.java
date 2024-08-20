@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.RestoreObjectRequest;
 
 public class GetObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll

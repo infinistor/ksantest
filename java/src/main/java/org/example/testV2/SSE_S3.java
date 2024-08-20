@@ -37,12 +37,12 @@ public class SSE_S3 extends TestBase {
 	// cSpell:enable
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("SSE_S3 Start");
+		System.out.println("SSE_S3 V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("SSE_S3 End");
+		System.out.println("SSE_S3 V2 End");
 	}
 
 	@Test

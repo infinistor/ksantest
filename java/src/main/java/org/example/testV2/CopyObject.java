@@ -35,12 +35,12 @@ import software.amazon.awssdk.services.s3.model.Permission;
 public class CopyObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("CopyObject Start");
+		System.out.println("CopyObject V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("CopyObject End");
+		System.out.println("CopyObject V2 End");
 	}
 
 	@Test

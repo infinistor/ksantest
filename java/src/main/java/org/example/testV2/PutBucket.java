@@ -25,12 +25,12 @@ import software.amazon.awssdk.awscore.exception.AwsServiceException;
 public class PutBucket extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("PutBucket Start");
+		System.out.println("PutBucket V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("PutBucket End");
+		System.out.println("PutBucket V2 End");
 	}
 
 	@Test

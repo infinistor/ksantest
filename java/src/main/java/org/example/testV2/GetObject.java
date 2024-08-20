@@ -29,12 +29,12 @@ import software.amazon.awssdk.core.sync.RequestBody;
 public class GetObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("GetObject Start");
+		System.out.println("GetObject V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("GetObject End");
+		System.out.println("GetObject V2 End");
 	}
 
 	@Test

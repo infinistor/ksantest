@@ -23,7 +23,6 @@ import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.commons.util.StringUtils;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -35,12 +34,12 @@ import software.amazon.awssdk.services.s3.model.Permission;
 public class Versioning extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Versioning Start");
+		System.out.println("Versioning V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Versioning End");
+		System.out.println("Versioning V2 End");
 	}
 
 	@Test

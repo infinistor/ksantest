@@ -42,12 +42,12 @@ public class SSE_C extends TestBase {
 
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("SSE_C Start");
+		System.out.println("SSE_C V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("SSE_C End");
+		System.out.println("SSE_C V2 End");
 	}
 
 	@Test

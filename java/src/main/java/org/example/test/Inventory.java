@@ -353,7 +353,7 @@ public class Inventory extends TestBase {
 	}
 
 	@Test
-	@Tag("Put")
+	@Tag("Filter")
 	// 접두어를 포함한 인벤토리 설정이 올바르게 적용되는지 확인
 	public void testPutBucketInventoryPrefix() {
 		var client = getClient();
@@ -382,7 +382,7 @@ public class Inventory extends TestBase {
 	}
 
 	@Test
-	@Tag("Put")
+	@Tag("Filter")
 	// 옵션을 포함한 인벤토리 설정이 올바르게 적용되는지 확인
 	public void testPutBucketInventoryOptional() {
 		var client = getClient();

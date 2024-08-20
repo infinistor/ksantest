@@ -26,13 +26,13 @@ public class DeleteBucket extends TestBase
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll()
 	{
-		System.out.println("DeleteBucket Start");
+		System.out.println("DeleteBucket V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll()
 	{
-		System.out.println("DeleteBucket End");
+		System.out.println("DeleteBucket V2 End");
 	}
 
 	@Test

@@ -38,12 +38,12 @@ import com.google.gson.JsonObject;
 public class Taggings extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Tagging Start");
+		System.out.println("Tagging V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Tagging End");
+		System.out.println("Tagging V2 End");
 	}
 
 	@Test

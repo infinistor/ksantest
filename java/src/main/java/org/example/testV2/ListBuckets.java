@@ -28,13 +28,13 @@ public class ListBuckets extends TestBase
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll()
 	{
-		System.out.println("ListBuckets Start");
+		System.out.println("ListBuckets V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll()
 	{
-		System.out.println("ListBuckets End");
+		System.out.println("ListBuckets V2 End");
 	}
 
 	@Test

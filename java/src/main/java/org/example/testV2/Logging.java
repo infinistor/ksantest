@@ -26,12 +26,12 @@ import software.amazon.awssdk.services.s3.model.ServerSideEncryptionRule;
 public class Logging extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Logging Start");
+		System.out.println("Logging V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Logging End");
+		System.out.println("Logging V2 End");
 	}
 
 	@Test

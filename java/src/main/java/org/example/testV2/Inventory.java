@@ -12,7 +12,6 @@ package org.example.testV2;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
@@ -31,12 +30,12 @@ import software.amazon.awssdk.services.s3.model.InventoryOptionalField;
 public class Inventory extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Inventory Start");
+		System.out.println("Inventory V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Inventory End");
+		System.out.println("Inventory V2 End");
 	}
 
 	@Test

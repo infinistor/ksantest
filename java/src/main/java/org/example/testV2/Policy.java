@@ -36,12 +36,12 @@ import com.google.gson.JsonObject;
 public class Policy extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Policy Start");
+		System.out.println("Policy V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Policy End");
+		System.out.println("Policy V2 End");
 	}
 
 	@Test

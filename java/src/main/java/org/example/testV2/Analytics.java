@@ -21,12 +21,12 @@ import software.amazon.awssdk.awscore.exception.AwsServiceException;
 public class Analytics extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Analytics Start");
+		System.out.println("Analytics V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Analytics End");
+		System.out.println("Analytics V2 End");
 	}
 
 	@Test

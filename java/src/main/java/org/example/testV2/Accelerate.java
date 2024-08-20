@@ -26,12 +26,12 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 public class Accelerate extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Accelerate Start");
+		System.out.println("Accelerate V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Accelerate End");
+		System.out.println("Accelerate V2 End");
 	}
 
 	@Test

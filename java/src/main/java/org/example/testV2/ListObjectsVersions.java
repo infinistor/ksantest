@@ -33,12 +33,12 @@ import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 public class ListObjectsVersions extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("ListObjectsVersions Start");
+		System.out.println("ListObjectsVersions V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("ListObjectsVersions End");
+		System.out.println("ListObjectsVersions V2 End");
 	}
 
 	@Test

@@ -40,12 +40,12 @@ import software.amazon.awssdk.utils.BinaryUtils;
 public class Post extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Post Start");
+		System.out.println("Post V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Post End");
+		System.out.println("Post V2 End");
 	}
 
 	@Test

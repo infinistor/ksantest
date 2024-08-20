@@ -28,12 +28,12 @@ import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 public class ACL extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("ACL Start");
+		System.out.println("ACL V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("ACL End");
+		System.out.println("ACL V2 End");
 	}
 
 	@Test

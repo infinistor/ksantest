@@ -24,12 +24,12 @@ import org.junit.jupiter.api.Tag;
 public class Website extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Website Start");
+		System.out.println("Website V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Website End");
+		System.out.println("Website V2 End");
 	}
 
 	@Test

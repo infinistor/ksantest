@@ -20,12 +20,12 @@ import software.amazon.awssdk.services.s3.model.Payer;
 public class Payment extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Payment Start");
+		System.out.println("Payment V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Payment End");
+		System.out.println("Payment V2 End");
 	}
 
 	@Test

@@ -26,12 +26,12 @@ import org.junit.jupiter.api.Test;
 public class Replication extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("Replication Start");
+		System.out.println("Replication V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("Replication End");
+		System.out.println("Replication V2 End");
 	}
 
 	@Test
