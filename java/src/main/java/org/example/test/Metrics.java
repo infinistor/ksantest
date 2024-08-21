@@ -160,8 +160,8 @@ public class Metrics extends TestBase {
 	}
 
 	@Test
-	@Tag("Override")
-	// Metrics 아이디를 중복으로 설정하려고 할 경우 재설정되는지 확인
+	@Tag("Overwrite")
+	// Metrics 아이디를 중복으로 설정하려고 할 경우 덮어쓰기 확인
 	public void testPutMetricsDuplicateId() {
 		var client = getClient();
 		var bucketName = createBucket(client);

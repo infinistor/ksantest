@@ -96,8 +96,8 @@ class Metrics {
 	}
 
 	@Test
-	@Tag("Error")
-	// Metrics 아이디를 중복으로 설정하려고 할 경우 실패하는지 확인
+	@Tag("Overwrite")
+	// Metrics 아이디를 중복으로 설정하려고 할 경우 덮어쓰기 확인
 	void testPutMetricsDuplicateId() {
 		test.testPutMetricsDuplicateId();
 		testV2.testPutMetricsDuplicateId();
