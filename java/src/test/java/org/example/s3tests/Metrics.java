@@ -104,7 +104,7 @@ class Metrics {
 	}
 
 	@Test
-	@Tag("Filter")
+	@Tag("Filtering")
 	// 접두어를 포함한 Metrics 설정이 올바르게 적용되는지 확인
 	void testMetricsPrefix() {
 		test.testMetricsPrefix();
@@ -112,7 +112,7 @@ class Metrics {
 	}
 
 	@Test
-	@Tag("Filter")
+	@Tag("Filtering")
 	// Metrics 설정에 태그를 적용할 수 있는지 확인
 	void testMetricsTag() {
 		test.testMetricsTag();
@@ -120,7 +120,7 @@ class Metrics {
 	}
 
 	@Test
-	@Tag("Filter")
+	@Tag("Filtering")
 	// Metrics 설정에 필터를 적용할 수 있는지 확인
 	void testMetricsFilter() {
 		test.testMetricsFilter();
