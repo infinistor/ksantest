@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
@@ -130,7 +131,7 @@ public class Versioning extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals(MainData.NO_SUCH_KEY, errorCode);
 
 		var listResponse = client.listVersions(bucketName, "");
@@ -166,7 +167,7 @@ public class Versioning extends TestBase {
 		client.deleteVersion(bucketName, key, "null");
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 
 		var listResponse = client.listVersions(bucketName, "");
@@ -200,7 +201,7 @@ public class Versioning extends TestBase {
 		client.deleteVersion(bucketName, key, "null");
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 	}
 

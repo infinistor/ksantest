@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ public class ListBuckets extends TestBase
 		
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 		assertEquals(MainData.INVALID_ACCESS_KEY_ID, errorCode);
 	}
 
@@ -83,7 +84,7 @@ public class ListBuckets extends TestBase
 		var e = assertThrows(AwsServiceException.class, badAuthClient::listBuckets);
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 		assertEquals(MainData.SIGNATURE_DOES_NOT_MATCH, errorCode);
 	}
 	

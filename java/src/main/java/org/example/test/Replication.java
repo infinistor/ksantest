@@ -13,6 +13,8 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.apache.hc.core5.http.HttpStatus;
+
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.BucketReplicationConfiguration;
@@ -61,7 +63,7 @@ public class Replication extends TestBase {
 		client.deleteBucketReplicationConfiguration(sourceBucketName);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.getBucketReplicationConfiguration(sourceBucketName));
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 	}
 
 	@Test
@@ -85,7 +87,7 @@ public class Replication extends TestBase {
 
 		var e = assertThrows(AmazonS3Exception.class,
 				() -> client.setBucketReplicationConfiguration(sourceBucketName, config));
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals("NoSuchBucket", e.getErrorCode());
 	}
 
@@ -112,7 +114,7 @@ public class Replication extends TestBase {
 		var e = assertThrows(
 				AmazonS3Exception.class,
 				() -> client.setBucketReplicationConfiguration(sourceBucketName, config));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals("InvalidRequest", e.getErrorCode());
 	}
 
@@ -143,7 +145,7 @@ public class Replication extends TestBase {
 		var e = assertThrows(
 				AmazonS3Exception.class,
 				() -> client.setBucketReplicationConfiguration(sourceBucketName, config));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals("InvalidRequest", e.getErrorCode());
 	}
 
@@ -173,7 +175,7 @@ public class Replication extends TestBase {
 		var e = assertThrows(
 				AmazonS3Exception.class,
 				() -> client.setBucketReplicationConfiguration(sourceBucketName, config));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals("InvalidRequest", e.getErrorCode());
 	}
 }

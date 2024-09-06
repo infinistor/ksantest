@@ -29,6 +29,7 @@ import com.amazonaws.services.s3.model.SSECustomerKey;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.FormFile;
 import org.example.Data.MainData;
 import org.example.Utility.NetUtils;
@@ -95,7 +96,7 @@ public class SSE_C extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObjectMetadata(bucketName, key));
 		var statusCode = e.getStatusCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 
 		client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(sse));
 	}
@@ -121,7 +122,7 @@ public class SSE_C extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
 		var statusCode = e.getStatusCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 	}
 
 	@Test
@@ -150,7 +151,7 @@ public class SSE_C extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(sseB)));
 		var statusCode = e.getStatusCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 	}
 
 	@Test
@@ -174,7 +175,7 @@ public class SSE_C extends TestBase {
 				.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(sse)));
 
 		var statusCode = e.getStatusCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 	}
 
 	@Test
@@ -227,7 +228,7 @@ public class SSE_C extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client
 				.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(sse)));
 		var statusCode = e.getStatusCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 	}
 
 	@Test
@@ -309,7 +310,7 @@ public class SSE_C extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(sseGet)));
 		var statusCode = e.getStatusCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 	}
 
 	@Test
@@ -389,7 +390,7 @@ public class SSE_C extends TestBase {
 		payload.put("x-amz-server-side-encryption-customer-key", SSE_KEY);
 		payload.put("x-amz-server-side-encryption-customer-key-md5", SSE_KEY_MD5);
 
-		var sendURL = getURL(bucketName);
+		var sendURL = createURL(bucketName);
 		var result = NetUtils.postUpload(sendURL, payload, fileData);
 		assertEquals(204, result.statusCode);
 

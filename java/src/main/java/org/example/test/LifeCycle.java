@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
@@ -81,7 +82,7 @@ public class LifeCycle extends TestBase {
 
 		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 		var response = client.getBucketLifecycleConfiguration(bucketName);
-		prefixLifecycleConfigurationCheck(rules, response.getRules());
+		checkPrefixLifecycleConfiguration(rules, response.getRules());
 	}
 
 	@Test
@@ -154,7 +155,7 @@ public class LifeCycle extends TestBase {
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 	}
 
@@ -175,7 +176,7 @@ public class LifeCycle extends TestBase {
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 	}
 
@@ -193,7 +194,7 @@ public class LifeCycle extends TestBase {
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -229,7 +230,7 @@ public class LifeCycle extends TestBase {
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 	}
 
@@ -439,7 +440,7 @@ public class LifeCycle extends TestBase {
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketLifecycleConfiguration(bucketName, myLifeCycle));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 	}
 

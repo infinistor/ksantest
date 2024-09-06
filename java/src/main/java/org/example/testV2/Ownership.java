@@ -13,6 +13,7 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -72,7 +73,7 @@ public class Ownership extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ)));
-		assertEquals(403, e.statusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
@@ -87,7 +88,7 @@ public class Ownership extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ)));
-		assertEquals(403, e.statusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
@@ -127,7 +128,7 @@ public class Ownership extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PRIVATE)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.ACCESS_CONTROL_LIST_NOT_SUPPORTED, e.awsErrorDetails().errorCode());
 	}
 }

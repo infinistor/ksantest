@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -136,7 +137,7 @@ public class Logging extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client.putBucketLogging(p -> p.bucket(sourceBucketName).bucketLoggingStatus(
 			c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(prefix)))));
 
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 	}
 
@@ -151,7 +152,7 @@ public class Logging extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client.putBucketLogging(p -> p.bucket(sourceBucketName).bucketLoggingStatus(
 			c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(prefix)))));
 
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_TARGET_BUCKET_FOR_LOGGING, e.awsErrorDetails().errorCode());
 	}
 

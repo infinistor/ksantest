@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.util.Base64;
 import java.util.HashMap;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.FormFile;
 import org.example.Data.MainData;
 import org.example.Utility.NetUtils;
@@ -89,7 +90,7 @@ public class SSE_C extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.headObject(h -> h.bucket(bucketName).key(key)));
 		var statusCode = e.statusCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 
 		client.headObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
 				.sseCustomerKey(SSE_KEY).sseCustomerKeyMD5(SSE_KEY_MD5));
@@ -112,7 +113,7 @@ public class SSE_C extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
 		var statusCode = e.statusCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 	}
 
 	@Test
@@ -138,7 +139,7 @@ public class SSE_C extends TestBase {
 						.getObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
 								.sseCustomerKey(sseB).sseCustomerKeyMD5(sseBMd5)));
 		var statusCode = e.statusCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 	}
 
 	@Test
@@ -158,7 +159,7 @@ public class SSE_C extends TestBase {
 						RequestBody.fromString(data)));
 
 		var statusCode = e.statusCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 	}
 
 	@Test
@@ -172,7 +173,7 @@ public class SSE_C extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putObject(p -> p.bucket(bucketName).key(key)
 				.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM).sseCustomerKey(SSE_KEY), RequestBody.fromString(data)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("InvalidArgument", e.awsErrorDetails().errorCode());
 	}
 
@@ -188,7 +189,7 @@ public class SSE_C extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObject(p -> p.bucket(bucketName).key(key).sseCustomerKeyMD5(SSE_KEY_MD5),
 						RequestBody.fromString(data)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("InvalidArgument", e.awsErrorDetails().errorCode());
 	}
 
@@ -203,7 +204,7 @@ public class SSE_C extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putObject(p -> p.bucket(bucketName).key(key)
 				.sseCustomerKey(SSE_KEY).sseCustomerKeyMD5(SSE_KEY_MD5), RequestBody.fromString(data)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("InvalidArgument", e.awsErrorDetails().errorCode());
 	}
 
@@ -275,7 +276,7 @@ public class SSE_C extends TestBase {
 				() -> client.getObject(
 						g -> g.bucket(bucketName).key(key).sseCustomerKey(sseGetKey).sseCustomerKeyMD5(sseGetMd5)));
 		var statusCode = e.statusCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals("InvalidArgument", e.awsErrorDetails().errorCode());
 	}
 
@@ -356,7 +357,7 @@ public class SSE_C extends TestBase {
 		payload.put("x-amz-server-side-encryption-customer-key", SSE_KEY);
 		payload.put("x-amz-server-side-encryption-customer-key-md5", SSE_KEY_MD5);
 
-		var sendURL = getURL(bucketName);
+		var sendURL = createURL(bucketName);
 		var result = NetUtils.postUpload(sendURL, payload, fileData);
 		assertEquals(204, result.statusCode);
 

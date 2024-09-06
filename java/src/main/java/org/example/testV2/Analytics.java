@@ -13,6 +13,8 @@ package org.example.testV2;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.apache.hc.core5.http.HttpStatus;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -140,7 +142,7 @@ public class Analytics extends TestBase {
 		client.deleteBucketAnalyticsConfiguration(d -> d.bucket(bucketName).id("test"));
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getBucketAnalyticsConfiguration(g -> g.bucket(bucketName).id("test")));
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals("NoSuchConfiguration", e.awsErrorDetails().errorCode());
 	}
 
@@ -160,7 +162,7 @@ public class Analytics extends TestBase {
 														.s3BucketDestination(s3 -> s3
 																.bucket("arn:aws:s3:::" + targetBucketName)
 																.format("CSV"))))))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("MalformedXML", e.awsErrorDetails().errorCode());
 
 		e = assertThrows(AwsServiceException.class,
@@ -172,7 +174,7 @@ public class Analytics extends TestBase {
 														.s3BucketDestination(s3 -> s3
 																.bucket("arn:aws:s3:::" + targetBucketName)
 																.format("CSV"))))))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("InvalidConfigurationId", e.awsErrorDetails().errorCode());
 
 		e = assertThrows(AwsServiceException.class,
@@ -184,7 +186,7 @@ public class Analytics extends TestBase {
 														.s3BucketDestination(s3 -> s3
 																.bucket("arn:aws:s3:::" + targetBucketName)
 																.format("JSON"))))))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("MalformedXML", e.awsErrorDetails().errorCode());
 	}
 }

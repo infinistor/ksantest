@@ -19,6 +19,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
@@ -68,7 +69,7 @@ public class PutObject extends TestBase {
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 	}
 
@@ -103,7 +104,7 @@ public class PutObject extends TestBase {
 
 		var key = "foo";
 		var body = "bar";
-		var cacheControl = "public, max-age=14400";
+		var cacheControl = "public, max-age=14HttpStatus.SC_BAD_REQUEST";
 		var contentType = "text/plain";
 
 		client.putObject(p -> p.bucket(bucketName).key(key).cacheControl(cacheControl).contentType(contentType)

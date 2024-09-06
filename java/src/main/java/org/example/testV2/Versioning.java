@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
@@ -122,7 +123,7 @@ public class Versioning extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals(MainData.NO_SUCH_KEY, errorCode);
 
 		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
@@ -156,7 +157,7 @@ public class Versioning extends TestBase {
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId("null"));
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
 
 		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
@@ -188,7 +189,7 @@ public class Versioning extends TestBase {
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId("null"));
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
 	}
 

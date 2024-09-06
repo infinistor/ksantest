@@ -13,6 +13,7 @@ package org.example.testV2;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +40,7 @@ public class Website extends TestBase {
 		var bucketName = createBucket(client);
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getBucketWebsite(g -> g.bucket(bucketName)));
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_WEBSITE_CONFIGURATION, e.awsErrorDetails().errorCode());
 	}
 
@@ -50,7 +51,7 @@ public class Website extends TestBase {
 		var bucketName = createBucket(client);
 
 		var webConfig = WebsiteConfiguration.builder()
-				.errorDocument(d -> d.key("400"))
+				.errorDocument(d -> d.key("HttpStatus.SC_BAD_REQUEST"))
 				.indexDocument(d -> d.suffix("a"))
 				.build();
 
@@ -68,7 +69,7 @@ public class Website extends TestBase {
 		var bucketName = createBucket(client);
 
 		var webConfig = WebsiteConfiguration.builder()
-				.errorDocument(d -> d.key("400"))
+				.errorDocument(d -> d.key("HttpStatus.SC_BAD_REQUEST"))
 				.indexDocument(d -> d.suffix("a"))
 				.build();
 

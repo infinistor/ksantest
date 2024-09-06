@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
@@ -146,7 +147,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.getBucketInventoryConfiguration(bucketName, inventoryId));
 
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
 	}
 
@@ -160,7 +161,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.deleteBucketInventoryConfiguration(bucketName, inventoryId));
 
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
 	}
 
@@ -183,7 +184,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
 
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 	}
 
@@ -206,7 +207,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
 
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -265,7 +266,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
 
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 	}
 
@@ -288,7 +289,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
 
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -311,7 +312,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
 
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -334,7 +335,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
 
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -421,7 +422,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
 
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 }

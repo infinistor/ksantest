@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ public class DeleteBucket extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 		deleteBucketList(bucketName);
 	}
@@ -59,7 +60,7 @@ public class DeleteBucket extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 
-		assertEquals(409, statusCode);
+		assertEquals(HttpStatus.SC_CONFLICT, statusCode);
 		assertEquals(MainData.BUCKET_NOT_EMPTY, errorCode);
 	}
 
@@ -76,7 +77,7 @@ public class DeleteBucket extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 		deleteBucketList(bucketName);
 	}

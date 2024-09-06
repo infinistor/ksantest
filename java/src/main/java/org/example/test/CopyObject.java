@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
@@ -116,7 +117,7 @@ public class CopyObject extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.INVALID_REQUEST, errorCode);
 	}
 
@@ -177,7 +178,7 @@ public class CopyObject extends TestBase {
 				() -> altClient.copyObject(bucketName1, key1, bucketName2, key2));
 		var statusCode = e.getStatusCode();
 
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 		altClient.deleteBucket(bucketName2);
 		deleteBucketList(bucketName2);
 	}
@@ -303,7 +304,7 @@ public class CopyObject extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.copyObject(bucketName + "-fake", "foo123bar", bucketName, "bar321foo"));
 		var statusCode = e.getStatusCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 	}
 
 	@Test
@@ -315,7 +316,7 @@ public class CopyObject extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.copyObject(bucketName, "foo123bar", bucketName, "bar321foo"));
 		var statusCode = e.getStatusCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 	}
 
 	@Test
@@ -690,7 +691,7 @@ public class CopyObject extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key1, bucketName, ker2));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals("NoSuchKey", errorCode);
 	}
 
@@ -710,7 +711,7 @@ public class CopyObject extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key1, bucketName, ker2));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals("NoSuchKey", errorCode);
 	}
 

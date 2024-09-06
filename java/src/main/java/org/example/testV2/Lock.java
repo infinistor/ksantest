@@ -18,6 +18,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.TimeZone;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
@@ -72,7 +73,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
-		assertEquals(409, e.statusCode());
+		assertEquals(HttpStatus.SC_CONFLICT, e.statusCode());
 		assertEquals(MainData.INVALID_BUCKET_STATE, e.awsErrorDetails().errorCode());
 	}
 
@@ -88,7 +89,7 @@ public class Lock extends TestBase {
 				.build();
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -105,7 +106,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
 	}
 
@@ -122,7 +123,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
 	}
 
@@ -138,7 +139,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -155,7 +156,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -168,7 +169,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putBucketVersioning(
 				p -> p.bucket(bucketName).versioningConfiguration(v -> v.status(BucketVersioningStatus.SUSPENDED))));
-		assertEquals(409, e.statusCode());
+		assertEquals(HttpStatus.SC_CONFLICT, e.statusCode());
 		assertEquals(MainData.INVALID_BUCKET_STATE, e.awsErrorDetails().errorCode());
 	}
 
@@ -198,7 +199,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObjectLockConfiguration(g -> g.bucket(bucketName)));
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.OBJECT_LOCK_CONFIGURATION_NOT_FOUND_ERROR, e.awsErrorDetails().errorCode());
 	}
 
@@ -236,7 +237,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
@@ -256,7 +257,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -298,7 +299,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.getObjectRetention(g -> g.bucket(bucketName).key(key)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
@@ -425,7 +426,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention2)));
-		assertEquals(403, e.statusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
@@ -490,7 +491,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId)));
-		assertEquals(403, e.statusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
@@ -528,7 +529,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLegalHold(
 						p -> p.bucket(bucketName).key(key).legalHold(l -> l.status(ObjectLockLegalHoldStatus.ON))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
@@ -545,7 +546,7 @@ public class Lock extends TestBase {
 		var legalHold = ObjectLockLegalHold.builder().status("abc").build();
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).legalHold(legalHold)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -581,7 +582,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObjectLegalHold(g -> g.bucket(bucketName).key(key)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
@@ -600,7 +601,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(putResponse.versionId())));
-		assertEquals(403, e.statusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		client.putObjectLegalHold(

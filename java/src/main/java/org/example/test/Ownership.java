@@ -16,8 +16,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
+
+import org.apache.hc.core5.http.HttpStatus;
+import org.example.Data.MainData;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -79,7 +81,7 @@ public class Ownership extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketAcl(bucketName, CannedAccessControlList.AuthenticatedRead));
-		assertEquals(403, e.getStatusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 
@@ -94,7 +96,7 @@ public class Ownership extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setObjectAcl(bucketName, key, CannedAccessControlList.AuthenticatedRead));
-		assertEquals(403, e.getStatusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 
@@ -135,7 +137,7 @@ public class Ownership extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setObjectAcl(bucketName, key, CannedAccessControlList.Private));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.ACCESS_CONTROL_LIST_NOT_SUPPORTED, e.getErrorCode());
 	}
 }

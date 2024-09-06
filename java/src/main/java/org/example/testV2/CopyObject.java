@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
@@ -113,7 +114,7 @@ public class CopyObject extends TestBase {
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.INVALID_REQUEST, errorCode);
 	}
 
@@ -180,7 +181,7 @@ public class CopyObject extends TestBase {
 						.destinationBucket(bucketName2).destinationKey(key2)));
 		var statusCode = e.statusCode();
 
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 		altClient.deleteBucket(d -> d.bucket(bucketName2));
 		deleteBucketList(bucketName2);
 	}
@@ -323,7 +324,7 @@ public class CopyObject extends TestBase {
 						.sourceBucket(bucketName).sourceKey("foo123bar")
 						.destinationBucket(bucketName + "-fake").destinationKey("bar321foo")));
 		var statusCode = e.statusCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 	}
 
 	@Test
@@ -337,7 +338,7 @@ public class CopyObject extends TestBase {
 						.sourceBucket(bucketName).sourceKey("foo123bar")
 						.destinationBucket(bucketName).destinationKey("bar321foo")));
 		var statusCode = e.statusCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 	}
 
 	@Test
@@ -742,7 +743,7 @@ public class CopyObject extends TestBase {
 				.destinationBucket(bucketName).destinationKey(ker2)));
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals("NoSuchKey", errorCode);
 	}
 
@@ -765,7 +766,7 @@ public class CopyObject extends TestBase {
 				.destinationBucket(bucketName).destinationKey(ker2)));
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals("NoSuchKey", errorCode);
 	}
 
@@ -861,6 +862,6 @@ public class CopyObject extends TestBase {
 				.sourceBucket(bucketName).sourceKey(sourceKey).copySourceSSECustomerKey(SSE_KEY).copySourceSSECustomerKeyMD5(SSE_KEY_MD5)
 				.destinationBucket(bucketName).destinationKey(targetKey)));
 		var statusCode = e.statusCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 	}
 }

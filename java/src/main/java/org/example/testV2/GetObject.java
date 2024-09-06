@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
@@ -48,7 +49,7 @@ public class GetObject extends TestBase {
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals(MainData.NO_SUCH_KEY, errorCode);
 	}
 

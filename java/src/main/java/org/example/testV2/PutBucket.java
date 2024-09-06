@@ -13,6 +13,7 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
@@ -160,7 +161,7 @@ public class PutBucket extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.createBucket(c->c.bucket(bucketName)));
 
-		assertEquals(409, e.statusCode());
+		assertEquals(HttpStatus.SC_CONFLICT, e.statusCode());
 		assertEquals(MainData.BUCKET_ALREADY_OWNED_BY_YOU, e.awsErrorDetails().errorCode());
 	}
 
@@ -175,7 +176,7 @@ public class PutBucket extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> altClient.createBucket(c->c.bucket(bucketName)));
 
-		assertEquals(409, e.statusCode());
+		assertEquals(HttpStatus.SC_CONFLICT, e.statusCode());
 		assertEquals(MainData.BUCKET_ALREADY_EXISTS, e.awsErrorDetails().errorCode());
 	}
 

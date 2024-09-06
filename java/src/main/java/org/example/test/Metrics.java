@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.Test;
 import org.junit.jupiter.api.Tag;
@@ -107,7 +108,7 @@ public class Metrics extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.getBucketMetricsConfiguration(bucketName, "metrics-id"));
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
 	}
 
@@ -119,7 +120,7 @@ public class Metrics extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.deleteBucketMetricsConfiguration(bucketName, "metrics-id"));
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
 	}
 
@@ -132,7 +133,7 @@ public class Metrics extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketMetricsConfiguration(bucketName, metrics));
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 	}
 
@@ -145,7 +146,7 @@ public class Metrics extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketMetricsConfiguration(bucketName, metrics));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_CONFIGURATION_ID, e.getErrorCode());
 	}
 

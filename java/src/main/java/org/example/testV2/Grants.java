@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
@@ -301,7 +302,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserFullControl() {
-		var bucketName = bucketACLGrantUserId(Permission.FULL_CONTROL);
+		var bucketName = setupBucketPermission(Permission.FULL_CONTROL);
 		var altClient = getAltClient();
 
 		checkBucketAclAllowRead(altClient, bucketName);
@@ -322,7 +323,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserRead() {
-		var bucketName = bucketACLGrantUserId(Permission.READ);
+		var bucketName = setupBucketPermission(Permission.READ);
 		var altClient = getAltClient();
 
 		checkBucketAclAllowRead(altClient, bucketName);
@@ -334,7 +335,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserReadAcp() {
-		var bucketName = bucketACLGrantUserId(Permission.READ_ACP);
+		var bucketName = setupBucketPermission(Permission.READ_ACP);
 		var altClient = getAltClient();
 
 		checkBucketAclDenyRead(altClient, bucketName);
@@ -346,7 +347,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserWrite() {
-		var bucketName = bucketACLGrantUserId(Permission.WRITE);
+		var bucketName = setupBucketPermission(Permission.WRITE);
 		var altClient = getAltClient();
 
 		checkBucketAclDenyRead(altClient, bucketName);
@@ -358,7 +359,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserWriteAcp() {
-		var bucketName = bucketACLGrantUserId(Permission.WRITE_ACP);
+		var bucketName = setupBucketPermission(Permission.WRITE_ACP);
 		var altClient = getAltClient();
 
 		checkBucketAclDenyRead(altClient, bucketName);
@@ -380,7 +381,7 @@ public class Grants extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(acl)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
 	}
 

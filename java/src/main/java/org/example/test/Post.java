@@ -19,6 +19,7 @@ import java.util.Base64;
 import java.util.HashMap;
 
 import org.example.Data.FormFile;
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
@@ -60,7 +61,7 @@ public class Post extends TestBase {
 		payload.put("acl", "public-read");
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
@@ -125,7 +126,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 		payload.put("x-amz-content-sha256", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD");
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
@@ -182,7 +183,7 @@ public class Post extends TestBase {
 		payload.put("signature", signature);
 		payload.put("policy", policy);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
@@ -246,8 +247,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(403, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_FORBIDDEN, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -265,7 +266,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 		payload.put("successActionStatus", "201");
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(201, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
@@ -286,9 +287,9 @@ public class Post extends TestBase {
 		payload.put("key", key);
 		payload.put("acl", "public-read");
 		payload.put("Content-Type", contentType);
-		payload.put("successActionStatus", "404");
+		payload.put("successActionStatus", "HttpStatus.SC_NOT_FOUND");
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
@@ -355,7 +356,7 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
@@ -419,7 +420,7 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
@@ -483,7 +484,7 @@ public class Post extends TestBase {
 		payload.put("x-ignore-foo", "bar");
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 	}
 
@@ -542,7 +543,7 @@ public class Post extends TestBase {
 		payload.put("pOLICy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 	}
 
@@ -603,7 +604,7 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
@@ -620,7 +621,7 @@ public class Post extends TestBase {
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
-		var redirectURL = getURL(bucketName);
+		var redirectURL = createURL(bucketName);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -676,7 +677,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 		payload.put("successActionRedirect", redirectURL.toString());
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(200, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
@@ -739,8 +740,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(403, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_FORBIDDEN, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -799,8 +800,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(403, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_FORBIDDEN, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -859,8 +860,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -911,8 +912,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -969,8 +970,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1025,8 +1026,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(403, result.statusCode, result.message);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_FORBIDDEN, result.statusCode, result.message);
 	}
 
 	@Test
@@ -1092,7 +1093,7 @@ public class Post extends TestBase {
 		payload.put("x-amz-meta-foo", "bar-clamp");
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
@@ -1161,8 +1162,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(403, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_FORBIDDEN, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1221,8 +1222,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1281,8 +1282,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1341,8 +1342,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(403, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_FORBIDDEN, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1407,8 +1408,8 @@ public class Post extends TestBase {
 		payload.put("x-amz-meta-foo", "bar-clamp");
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(403, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_FORBIDDEN, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1464,8 +1465,8 @@ public class Post extends TestBase {
 		payload.put("signature", signature);
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1492,8 +1493,8 @@ public class Post extends TestBase {
 		payload.put("signature", signature);
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1552,8 +1553,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1611,8 +1612,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1671,8 +1672,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1731,8 +1732,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1762,8 +1763,8 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
-		assertEquals(400, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1806,7 +1807,7 @@ public class Post extends TestBase {
 	public void testPutObjectV4() throws MalformedURLException {
 		var bucketName = createBucket();
 		var key = "foo";
-		var endPoint = getURL(bucketName, key);
+		var endPoint = createURL(bucketName, key);
 		var size = 100;
 		var content = Utils.randomTextToLong(size);
 
@@ -1832,7 +1833,7 @@ public class Post extends TestBase {
 	public void testPutObjectChunkedV4() throws MalformedURLException {
 		var bucketName = createBucket();
 		var key = "foo";
-		var endPoint = getURL(bucketName, key);
+		var endPoint = createURL(bucketName, key);
 		var size = 100;
 		var content = Utils.randomTextToLong(size);
 
@@ -1861,7 +1862,7 @@ public class Post extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var key = "foo";
-		var endPoint = getURL(bucketName, key);
+		var endPoint = createURL(bucketName, key);
 		var httpMethod = "GET";
 		var size = 100;
 		var content = Utils.randomTextToLong(size);
@@ -1940,7 +1941,7 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(badBucketName), payload, fileData);
-		assertEquals(404, result.statusCode, result.getErrorCode());
+		var result = NetUtils.postUpload(createURL(badBucketName), payload, fileData);
+		assertEquals(HttpStatus.SC_NOT_FOUND, result.statusCode, result.getErrorCode());
 	}
 }

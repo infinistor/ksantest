@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Data.ObjectDataV2;
 import org.junit.jupiter.api.Tag;
@@ -695,7 +696,7 @@ public class ListObjects extends TestBase {
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 		assertEquals(MainData.ACCESS_DENIED, errorCode);
 	}
 
@@ -710,7 +711,7 @@ public class ListObjects extends TestBase {
 		var statusCode = e.statusCode();
 		var errorCode = e.awsErrorDetails().errorCode();
 
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 		deleteBucketList(bucketName);
 	}

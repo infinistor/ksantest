@@ -19,6 +19,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
@@ -143,7 +144,7 @@ public class LifeCycle extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
 	}
 
@@ -164,7 +165,7 @@ public class LifeCycle extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
 	}
 
@@ -182,7 +183,7 @@ public class LifeCycle extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -227,7 +228,7 @@ public class LifeCycle extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
 	}
 
@@ -426,7 +427,7 @@ public class LifeCycle extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketLifecycleConfiguration(
 						p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
 	}
 

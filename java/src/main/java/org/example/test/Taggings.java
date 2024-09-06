@@ -21,6 +21,7 @@ import java.util.Base64;
 import java.util.HashMap;
 
 import org.example.Data.FormFile;
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
@@ -85,7 +86,7 @@ public class Taggings extends TestBase {
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, key, 0);
 
-		var inputTagSet = new ObjectTagging(createSimpleTagSet(2));
+		var inputTagSet = new ObjectTagging(makeSimpleTagSet(2));
 
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
@@ -101,7 +102,7 @@ public class Taggings extends TestBase {
 		var bucketName = createKeyWithRandomContent(client, key, 0);
 		var count = 2;
 
-		var inputTagSet = new ObjectTagging(createSimpleTagSet(count));
+		var inputTagSet = new ObjectTagging(makeSimpleTagSet(count));
 
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
@@ -116,7 +117,7 @@ public class Taggings extends TestBase {
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, key, 0);
 
-		var inputTagSet = new ObjectTagging(createSimpleTagSet(10));
+		var inputTagSet = new ObjectTagging(makeSimpleTagSet(10));
 
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
@@ -131,13 +132,13 @@ public class Taggings extends TestBase {
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, key, 0);
 
-		var inputTagSet = new ObjectTagging(createSimpleTagSet(11));
+		var inputTagSet = new ObjectTagging(makeSimpleTagSet(11));
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet)));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.BAD_REQUEST, errorCode);
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
@@ -151,7 +152,7 @@ public class Taggings extends TestBase {
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, key, 0);
 
-		var inputTagSet = new ObjectTagging(createDetailTagSet(10, 128, 256));
+		var inputTagSet = new ObjectTagging(makeDetailTagSet(10, 128, 256));
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
@@ -165,13 +166,13 @@ public class Taggings extends TestBase {
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, key, 0);
 
-		var inputTagSet = new ObjectTagging(createDetailTagSet(10, 129, 256));
+		var inputTagSet = new ObjectTagging(makeDetailTagSet(10, 129, 256));
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet)));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.INVALID_TAG, errorCode);
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
@@ -185,13 +186,13 @@ public class Taggings extends TestBase {
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, key, 0);
 
-		var inputTagSet = new ObjectTagging(createDetailTagSet(10, 128, 259));
+		var inputTagSet = new ObjectTagging(makeDetailTagSet(10, 128, 259));
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet)));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.INVALID_TAG, errorCode);
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
@@ -205,14 +206,14 @@ public class Taggings extends TestBase {
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, key, 0);
 
-		var inputTagSet = new ObjectTagging(createSimpleTagSet(2));
+		var inputTagSet = new ObjectTagging(makeSimpleTagSet(2));
 
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
 		tagCompare(inputTagSet.getTagSet(), response.getTagSet());
 
-		var inputTagSet2 = new ObjectTagging(createDetailTagSet(1, 128, 128));
+		var inputTagSet2 = new ObjectTagging(makeDetailTagSet(1, 128, 128));
 
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet2));
 
@@ -227,7 +228,7 @@ public class Taggings extends TestBase {
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, key, 0);
 
-		var inputTagSet = new ObjectTagging(createSimpleTagSet(2));
+		var inputTagSet = new ObjectTagging(makeSimpleTagSet(2));
 
 		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet));
 
@@ -273,7 +274,7 @@ public class Taggings extends TestBase {
 		var contentType = "text/plain";
 		var key = "foo.txt";
 
-		var tags = createSimpleTagSet(2);
+		var tags = makeSimpleTagSet(2);
 		var xmlInputTagSet = "<Tagging><TagSet><Tag><Key>0</Key><Value>0</Value></Tag><Tag><Key>1</Key><Value>1</Value></Tag></TagSet></Tagging>";
 
 		var policyDocument = new JsonObject();
@@ -331,7 +332,7 @@ public class Taggings extends TestBase {
 		payload.put("x-ignore-foo", "bar");
 		payload.put("Content-Type", contentType);
 
-		var result = NetUtils.postUpload(getURL(bucketName), payload, fileData);
+		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(204, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);

@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Calendar;
 import java.util.TimeZone;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
@@ -83,7 +84,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
 				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
-		assertEquals(409, e.getStatusCode());
+		assertEquals(HttpStatus.SC_CONFLICT, e.getStatusCode());
 		assertEquals(MainData.INVALID_BUCKET_STATE, e.getErrorCode());
 	}
 
@@ -99,7 +100,7 @@ public class Lock extends TestBase {
 						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withYears(1).withDays(1)));
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
 				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -116,7 +117,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
 				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 	}
 
@@ -133,7 +134,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
 				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 	}
 
@@ -149,7 +150,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
 				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -166,7 +167,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLockConfiguration(
 				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf)));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -180,7 +181,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
 						new BucketVersioningConfiguration(BucketVersioningConfiguration.SUSPENDED))));
-		assertEquals(409, e.getStatusCode());
+		assertEquals(HttpStatus.SC_CONFLICT, e.getStatusCode());
 		assertEquals(MainData.INVALID_BUCKET_STATE, e.getErrorCode());
 	}
 
@@ -212,7 +213,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
 				.getObjectLockConfiguration(new GetObjectLockConfigurationRequest().withBucketName(bucketName)));
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.OBJECT_LOCK_CONFIGURATION_NOT_FOUND_ERROR, e.getErrorCode());
 	}
 
@@ -253,7 +254,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectRetention(
 				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention)));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_REQUEST, e.getErrorCode());
 	}
 
@@ -273,7 +274,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectRetention(
 				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention)));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -312,7 +313,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
 				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(key)));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_REQUEST, e.getErrorCode());
 	}
 
@@ -434,7 +435,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectRetention(
 				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention2)));
-		assertEquals(403, e.getStatusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 
 		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
@@ -490,7 +491,7 @@ public class Lock extends TestBase {
 				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteVersion(bucketName, key, versionId));
-		assertEquals(403, e.getStatusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 
 		client.deleteVersion(new DeleteVersionRequest(bucketName, key, versionId).withBypassGovernanceRetention(true));
@@ -529,7 +530,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLegalHold(
 				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key)
 						.withLegalHold(new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON))));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_REQUEST, e.getErrorCode());
 	}
 
@@ -547,7 +548,7 @@ public class Lock extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectLegalHold(
 				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key)
 						.withLegalHold(new ObjectLockLegalHold().withStatus("abc"))));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 
@@ -589,7 +590,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
 				.getObjectLegalHold(new GetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key)));
-		assertEquals(400, e.getStatusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_REQUEST, e.getErrorCode());
 	}
 
@@ -609,7 +610,7 @@ public class Lock extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.deleteVersion(bucketName, key, response.getVersionId()));
-		assertEquals(403, e.getStatusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 
 		client.setObjectLegalHold(

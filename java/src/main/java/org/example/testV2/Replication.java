@@ -13,6 +13,8 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.apache.hc.core5.http.HttpStatus;
+
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.Destination;
@@ -63,7 +65,7 @@ public class Replication extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getBucketReplication(get -> get.bucket(sourceBucketName)));
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 	}
 
 	@Test
@@ -82,7 +84,7 @@ public class Replication extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals("NoSuchBucket", e.awsErrorDetails().errorCode());
 	}
 
@@ -103,7 +105,7 @@ public class Replication extends TestBase {
 		var e = assertThrows(
 				AwsServiceException.class,
 				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("InvalidRequest", e.awsErrorDetails().errorCode());
 	}
 
@@ -129,7 +131,7 @@ public class Replication extends TestBase {
 		var e = assertThrows(
 				AwsServiceException.class,
 				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("InvalidRequest", e.awsErrorDetails().errorCode());
 	}
 
@@ -157,7 +159,7 @@ public class Replication extends TestBase {
 		var e = assertThrows(
 				AwsServiceException.class,
 				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("InvalidRequest", e.awsErrorDetails().errorCode());
 	}
 }

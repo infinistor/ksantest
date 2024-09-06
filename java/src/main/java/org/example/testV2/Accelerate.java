@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.apache.hc.core5.http.HttpStatus;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.model.BucketAccelerateStatus;
@@ -91,7 +92,7 @@ public class Accelerate extends TestBase {
 				() -> client.putBucketAccelerateConfiguration(p -> p
 						.bucket(bucketName)
 						.accelerateConfiguration(a -> a.status("Invalid"))));
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("MalformedXML", e.awsErrorDetails().errorCode());
 	}
 }

@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
@@ -70,7 +71,7 @@ public class PutObject extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 	}
 
@@ -105,7 +106,7 @@ public class PutObject extends TestBase {
 
 		var key = "foo";
 		var body = "bar";
-		var cacheControl = "public, max-age=14400";
+		var cacheControl = "public, max-age=14HttpStatus.SC_BAD_REQUEST";
 		var metadata = new ObjectMetadata();
 		metadata.setCacheControl(cacheControl);
 		metadata.setContentType("text/plain");
@@ -170,14 +171,14 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectSetGetMetadataNoneToGood() {
 		var value = "my";
-		var got = setGetMetadata(value, null);
+		var got = setupMetadata(value, null);
 		assertEquals(value, got);
 	}
 
 	@Test
 	@Tag("metadata")
 	public void testObjectSetGetMetadataNoneToEmpty() {
-		var got = setGetMetadata("", null);
+		var got = setupMetadata("", null);
 		assertEquals("", got);
 	}
 
@@ -187,10 +188,10 @@ public class PutObject extends TestBase {
 		var bucketName = createBucket();
 
 		var myMeta = "old_meta";
-		var got = setGetMetadata(myMeta, bucketName);
+		var got = setupMetadata(myMeta, bucketName);
 		assertEquals(myMeta, got);
 
-		got = setGetMetadata("", bucketName);
+		got = setupMetadata("", bucketName);
 		assertEquals("", got);
 	}
 

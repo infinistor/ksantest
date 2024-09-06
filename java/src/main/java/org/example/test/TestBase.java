@@ -35,6 +35,7 @@ import java.util.Random;
 import java.util.TimeZone;
 import java.util.TreeMap;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
@@ -234,35 +235,6 @@ public class TestBase {
 
 	// region Create Data
 
-	public static Grant createPublicGrant(Permission permission) {
-		return new Grant(GroupGrantee.AllUsers, permission);
-	}
-
-	public static AccessControlList createAcl(Owner owner, Grantee grantee, Permission... permissions) {
-		var acl = new AccessControlList().withOwner(owner);
-		acl.grantPermission(new CanonicalGrantee(owner.getId()), Permission.FullControl);
-		if (permissions != null)
-			for (var permission : permissions)
-				acl.grantPermission(grantee, permission);
-		return acl;
-	}
-
-	public AccessControlList createAllAcl() {
-		return createAcl(config.mainUser.toOwner(), config.altUser.toGrantee(), Permission.values());
-	}
-
-	public AccessControlList createPublicAcl(Permission... permissions) {
-		return createAcl(config.mainUser.toOwner(), GroupGrantee.AllUsers, permissions);
-	}
-
-	public AccessControlList createAuthenticatedAcl(Permission... permissions) {
-		return createAcl(config.mainUser.toOwner(), GroupGrantee.AuthenticatedUsers, permissions);
-	}
-
-	public AccessControlList createAltACL(Permission... permissions) {
-		return createAcl(config.mainUser.toOwner(), config.altUser.toGrantee(), permissions);
-	}
-
 	public String getPrefix() {
 		return config.bucketPrefix.replace(STR_RANDOM, Utils.randomText(RANDOM_PREFIX_TEXT_LENGTH));
 	}
@@ -312,12 +284,13 @@ public class TestBase {
 		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
 				.withPublicAccessBlockConfiguration(new PublicAccessBlockConfiguration().withBlockPublicAcls(false)
 						.withIgnorePublicAcls(false).withBlockPublicPolicy(false).withRestrictPublicBuckets(false)));
-		client.setBucketAcl(bucketName, acl);
+		if (acl != null)
+			client.setBucketAcl(bucketName, acl);
 		return bucketName;
 	}
 
 	public String createBucketCannedACL(AmazonS3 client) {
-		return createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.Private);
+		return createBucket(client, ObjectOwnership.ObjectWriter, null);
 	}
 
 	public String createBucketCannedACL(AmazonS3 client, CannedAccessControlList acl) {
@@ -363,7 +336,63 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public URL getURL(String bucketName) throws MalformedURLException {
+	public static Grant createPublicGrant(Permission permission) {
+		return new Grant(GroupGrantee.AllUsers, permission);
+	}
+
+	public static AccessControlList createAcl(Owner owner, Grantee grantee, Permission... permissions) {
+		var acl = new AccessControlList().withOwner(owner);
+		acl.grantPermission(new CanonicalGrantee(owner.getId()), Permission.FullControl);
+		if (permissions != null)
+			for (var permission : permissions)
+				acl.grantPermission(grantee, permission);
+		return acl;
+	}
+
+	public AccessControlList createAllAcl() {
+		return createAcl(config.mainUser.toOwner(), config.altUser.toGrantee(), Permission.values());
+	}
+
+	public AccessControlList createPublicAcl(Permission... permissions) {
+		return createAcl(config.mainUser.toOwner(), GroupGrantee.AllUsers, permissions);
+	}
+
+	public AccessControlList createAuthenticatedAcl(Permission... permissions) {
+		return createAcl(config.mainUser.toOwner(), GroupGrantee.AuthenticatedUsers, permissions);
+	}
+
+	public AccessControlList createAltACL(Permission... permissions) {
+		return createAcl(config.mainUser.toOwner(), config.altUser.toGrantee(), permissions);
+	}
+
+	public InputStream createBody(String body) {
+		return new ByteArrayInputStream(body.getBytes());
+	}
+
+	public String createKeyWithRandomContent(AmazonS3 client, String key, int size) {
+		var bucketName = createBucket(client);
+		if (client == null)
+			client = getClient();
+		if (size < 1)
+			size = 7 * MainData.MB;
+
+		var data = Utils.randomTextToLong(size);
+		client.putObject(bucketName, key, data);
+
+		return bucketName;
+	}
+
+	public void createKeyWithRandomContent(AmazonS3 client, String key, int size, String bucketName) {
+		if (client == null)
+			client = getClient();
+		if (size < 1)
+			size = 7 * MainData.MB;
+
+		var data = Utils.randomTextToLong(size);
+		client.putObject(bucketName, key, data);
+	}
+
+	public URL createURL(String bucketName) throws MalformedURLException {
 		var protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
 		var port = config.isSecure ? config.sslPort : config.port;
 
@@ -371,7 +400,7 @@ public class TestBase {
 				: NetUtils.getEndpoint(protocol, config.url, port, bucketName);
 	}
 
-	public URL getURL(String bucketName, String key) throws MalformedURLException {
+	public URL createURL(String bucketName, String key) throws MalformedURLException {
 		var protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
 		var port = config.isSecure ? config.sslPort : config.port;
 
@@ -428,37 +457,87 @@ public class TestBase {
 		return policy;
 	}
 
-	public void checkConfigureVersioningRetry(String bucketName, String status) {
-		var client = getClient();
+	public List<Tag> makeSimpleTagSet(int count) {
+		var tagSets = new ArrayList<Tag>();
 
-		client.setBucketVersioningConfiguration(
-				new SetBucketVersioningConfigurationRequest(bucketName, new BucketVersioningConfiguration(status)));
-
-		String readStatus = null;
-
-		for (int i = 0; i < 5; i++) {
-			try {
-				var response = client.getBucketVersioningConfiguration(bucketName);
-				readStatus = response.getStatus();
-
-				if (readStatus.equals(status))
-					break;
-				delay(1000);
-			} catch (Exception e) {
-				readStatus = null;
-			}
-		}
-
-		assertEquals(status, readStatus);
+		for (int i = 0; i < count; i++)
+			tagSets.add(new Tag(Integer.toString(i), Integer.toString(i)));
+		return tagSets;
 	}
 
-	public String setupBucketObjectACL(CannedAccessControlList bucketACL, CannedAccessControlList objectACL,
+	public List<Tag> makeDetailTagSet(int count, int keySize, int valueSize) {
+		var tagSets = new ArrayList<Tag>();
+
+		for (int i = 0; i < count; i++)
+			tagSets.add(new Tag(Utils.randomTextToLong(keySize), Utils.randomTextToLong(valueSize)));
+		return tagSets;
+	}
+
+	public String setupAclTest(CannedAccessControlList bucketACL, CannedAccessControlList objectACL,
 			String key) {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client, bucketACL);
+		client.putObject(new PutObjectRequest(bucketName, key, key).withCannedAcl(objectACL));
 
-		client.putObject(bucketName, key, "");
-		client.setObjectAcl(bucketName, key, objectACL);
+		return bucketName;
+	}
+
+	public BucketLifecycleConfiguration setupLifecycleExpiration(AmazonS3 client, String bucketName, String ruleId,
+			int deltaDays, String rulePrefix) {
+		var rules = new ArrayList<Rule>();
+		rules.add(new Rule().withId(ruleId).withExpirationInDays(deltaDays)
+				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate(rulePrefix)))
+				.withStatus(BucketLifecycleConfiguration.ENABLED));
+
+		var myLifeCycle = new BucketLifecycleConfiguration(rules);
+		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
+
+		var key = rulePrefix + "/foo";
+		var body = "bar";
+		client.putObject(bucketName, key, body);
+
+		return client.getBucketLifecycleConfiguration(bucketName);
+	}
+
+	public String setupMetadata(String meta, String bucketName) {
+		if (StringUtils.isBlank(bucketName))
+			bucketName = createBucket();
+
+		var client = getClient();
+		var key = "foo";
+		var metadataKey = "x-amz-meta-meta1";
+
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata(metadataKey, meta);
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(3);
+		client.putObject(bucketName, key, createBody("bar"), metadata);
+
+		var response = client.getObject(bucketName, key);
+		return response.getObjectMetadata().getUserMetaDataOf(metadataKey);
+	}
+
+	public String setupBucketPermission(Permission permission) {
+		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
+
+		var acl = createAltACL(permission);
+		client.setBucketAcl(bucketName, acl);
+
+		var response = client.getBucketAcl(bucketName);
+		checkAcl(acl, response);
+
+		return bucketName;
+	}
+
+	public String setupAccessTest(String key1, String key2, CannedAccessControlList bucketACL,
+			CannedAccessControlList objectACL) {
+		var client = getClient();
+		var bucketName = createBucketCannedACL(client, bucketACL);
+
+		client.putObject(bucketName, key1, key1);
+		client.setObjectAcl(bucketName, key1, objectACL);
+		client.putObject(bucketName, key2, key2);
 
 		return bucketName;
 	}
@@ -475,10 +554,6 @@ public class TestBase {
 		var time = Calendar.getInstance();
 		time.add(Calendar.MINUTE, minutes);
 		return myFormat.format(time.getTime());
-	}
-
-	public InputStream createBody(String body) {
-		return new ByteArrayInputStream(body.getBytes());
 	}
 
 	public AccessControlList addObjectUserGrant(String bucketName, String key, Grant myGrant) {
@@ -513,111 +588,6 @@ public class TestBase {
 		return acl;
 	}
 
-	public String createKeyWithRandomContent(AmazonS3 client, String key, int size) {
-		var bucketName = createBucket(client);
-		if (client == null)
-			client = getClient();
-		if (size < 1)
-			size = 7 * MainData.MB;
-
-		var data = Utils.randomTextToLong(size);
-		client.putObject(bucketName, key, data);
-
-		return bucketName;
-	}
-
-	public void createKeyWithRandomContent(AmazonS3 client, String key, int size, String bucketName) {
-		if (client == null)
-			client = getClient();
-		if (size < 1)
-			size = 7 * MainData.MB;
-
-		var data = Utils.randomTextToLong(size);
-		client.putObject(bucketName, key, data);
-	}
-
-	public String setGetMetadata(String meta, String bucketName) {
-		if (StringUtils.isBlank(bucketName))
-			bucketName = createBucket();
-
-		var client = getClient();
-		var key = "foo";
-		var metadataKey = "x-amz-meta-meta1";
-
-		var metadata = new ObjectMetadata();
-		metadata.addUserMetadata(metadataKey, meta);
-		metadata.setContentType("text/plain");
-		metadata.setContentLength(3);
-		client.putObject(bucketName, key, createBody("bar"), metadata);
-
-		var response = client.getObject(bucketName, key);
-		return response.getObjectMetadata().getUserMetaDataOf(metadataKey);
-	}
-
-	public String bucketACLGrantUserId(Permission permission) {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
-
-		var acl = createAltACL(permission);
-		client.setBucketAcl(bucketName, acl);
-
-		var response = client.getBucketAcl(bucketName);
-		checkAcl(acl, response);
-
-		return bucketName;
-	}
-
-	public String setupAccessTest(String key1, String key2, CannedAccessControlList bucketACL, CannedAccessControlList objectACL) {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client, bucketACL);
-
-		client.putObject(bucketName, key1, key1);
-		client.setObjectAcl(bucketName, key1, objectACL);
-		client.putObject(bucketName, key2, key2);
-
-		return bucketName;
-	}
-
-	public void checkObjContent(AmazonS3 client, String bucketName, String key, String versionId, String content) {
-		var response = client.getObject(new GetObjectRequest(bucketName, key).withVersionId(versionId));
-		if (content != null) {
-			var body = getBody(response.getObjectContent());
-			assertTrue(content.equals(body), MainData.NOT_MATCHED);
-		} else
-			assertNull(response);
-	}
-
-	public void checkObjVersions(AmazonS3 client, String bucketName, String key, List<String> versionIds,
-			List<String> contents) {
-		var response = client.listVersions(bucketName, "");
-		var versions = getVersions(response.getVersionSummaries());
-
-		Collections.reverse(versions);
-
-		var index = 0;
-		for (var version : versions) {
-			assertEquals(version.getVersionId(), versionIds.get(index));
-			if (StringUtils.isNotBlank(key))
-				assertEquals(key, version.getKey());
-			checkObjContent(client, bucketName, key, version.getVersionId(), contents.get(index++));
-		}
-	}
-
-	public List<Tag> createSimpleTagSet(int count) {
-		var tagSets = new ArrayList<Tag>();
-
-		for (int i = 0; i < count; i++)
-			tagSets.add(new Tag(Integer.toString(i), Integer.toString(i)));
-		return tagSets;
-	}
-
-	public List<Tag> createDetailTagSet(int count, int keySize, int valueSize) {
-		var tagSets = new ArrayList<Tag>();
-
-		for (int i = 0; i < count; i++)
-			tagSets.add(new Tag(Utils.randomTextToLong(keySize), Utils.randomTextToLong(valueSize)));
-		return tagSets;
-	}
 	// endregion
 
 	// region Get Data
@@ -754,7 +724,7 @@ public class TestBase {
 	// endregion
 
 	// region Check Data
-	public void aclTest(String bucketName, String key, AmazonS3 client, boolean pass) {
+	public static void checkGetObject(AmazonS3 client, String bucketName, String key, boolean pass) {
 		if (pass) {
 			var response = client.getObject(bucketName, key);
 			assertEquals(key, response.getKey());
@@ -763,9 +733,23 @@ public class TestBase {
 			var statusCode = e.getStatusCode();
 			var errorCode = e.getErrorCode();
 
-			assertEquals(403, statusCode);
+			assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 			assertEquals(MainData.ACCESS_DENIED, errorCode);
 		}
+	}
+
+	public static void succeedGetObject(AmazonS3 client, String bucketName, String key, String content) {
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals(content, body);
+	}
+
+	public static void failedGetObject(AmazonS3 client, String bucketName, String key, int statusCode,
+			String errorCode) {
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
+
+		assertEquals(statusCode, e.getStatusCode());
+		assertEquals(errorCode, e.getErrorCode());
 	}
 
 	public String validateListObject(String bucketName, String prefix, String delimiter, String marker, int maxKeys,
@@ -826,6 +810,55 @@ public class TestBase {
 		var client = getClient();
 		var response = client.createBucket(bucketName);
 		assertTrue(StringUtils.isNotBlank(response.getName()));
+	}
+
+	public void checkConfigureVersioningRetry(String bucketName, String status) {
+		var client = getClient();
+
+		client.setBucketVersioningConfiguration(
+				new SetBucketVersioningConfigurationRequest(bucketName, new BucketVersioningConfiguration(status)));
+
+		String readStatus = null;
+
+		for (int i = 0; i < 5; i++) {
+			try {
+				var response = client.getBucketVersioningConfiguration(bucketName);
+				readStatus = response.getStatus();
+
+				if (readStatus.equals(status))
+					break;
+				delay(1000);
+			} catch (Exception e) {
+				readStatus = null;
+			}
+		}
+
+		assertEquals(status, readStatus);
+	}
+
+	public void checkObjContent(AmazonS3 client, String bucketName, String key, String versionId, String content) {
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withVersionId(versionId));
+		if (content != null) {
+			var body = getBody(response.getObjectContent());
+			assertTrue(content.equals(body), MainData.NOT_MATCHED);
+		} else
+			assertNull(response);
+	}
+
+	public void checkObjVersions(AmazonS3 client, String bucketName, String key, List<String> versionIds,
+			List<String> contents) {
+		var response = client.listVersions(bucketName, "");
+		var versions = getVersions(response.getVersionSummaries());
+
+		Collections.reverse(versions);
+
+		var index = 0;
+		for (var version : versions) {
+			assertEquals(version.getVersionId(), versionIds.get(index));
+			if (StringUtils.isNotBlank(key))
+				assertEquals(key, version.getKey());
+			checkObjContent(client, bucketName, key, version.getVersionId(), contents.get(index++));
+		}
 	}
 
 	public void testBucketCreateNamingGoodLong(int length) {
@@ -1431,7 +1464,7 @@ public class TestBase {
 	}
 
 	public boolean errorCheck(Integer statusCode) {
-		return statusCode.equals(400) || statusCode.equals(403);
+		return statusCode.equals(HttpStatus.SC_BAD_REQUEST) || statusCode.equals(HttpStatus.SC_FORBIDDEN);
 	}
 
 	public void testEncryptionCSEWrite(int fileSize) {
@@ -1797,7 +1830,7 @@ public class TestBase {
 				() -> client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead));
 	}
 
-	public void prefixLifecycleConfigurationCheck(List<Rule> expected, List<Rule> actual) {
+	public void checkPrefixLifecycleConfiguration(List<Rule> expected, List<Rule> actual) {
 		assertEquals(expected.size(), actual.size());
 
 		for (int i = 0; i < expected.size(); i++) {
@@ -1818,23 +1851,6 @@ public class TestBase {
 			assertEquals(expected.get(i).getAbortIncompleteMultipartUpload(),
 					actual.get(i).getAbortIncompleteMultipartUpload());
 		}
-	}
-
-	public BucketLifecycleConfiguration setupLifecycleExpiration(AmazonS3 client, String bucketName, String ruleId,
-			int deltaDays, String rulePrefix) {
-		var rules = new ArrayList<Rule>();
-		rules.add(new Rule().withId(ruleId).withExpirationInDays(deltaDays)
-				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate(rulePrefix)))
-				.withStatus(BucketLifecycleConfiguration.ENABLED));
-
-		var myLifeCycle = new BucketLifecycleConfiguration(rules);
-		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
-
-		var key = rulePrefix + "/foo";
-		var body = "bar";
-		client.putObject(bucketName, key, body);
-
-		return client.getBucketLifecycleConfiguration(bucketName);
 	}
 
 	public void lockCompare(ObjectLockConfiguration expected, ObjectLockConfiguration actual) {
@@ -2039,9 +2055,9 @@ public class TestBase {
 			String expectAllowOrigin, String expectAllowMethods, String key) {
 
 		try {
-			var url = getURL(bucketName);
+			var url = createURL(bucketName);
 			if (key != null)
-				url = getURL(bucketName, key);
+				url = createURL(bucketName, key);
 
 			System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 			var connection = (HttpURLConnection) url.openConnection();

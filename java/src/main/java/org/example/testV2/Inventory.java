@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
@@ -147,7 +148,7 @@ public class Inventory extends TestBase {
 						.bucket(bucketName)
 						.id(inventoryId)));
 
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.awsErrorDetails().errorCode());
 	}
 
@@ -161,7 +162,7 @@ public class Inventory extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.deleteBucketInventoryConfiguration(d -> d.bucket(bucketName).id(inventoryId)));
 
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.awsErrorDetails().errorCode());
 	}
 
@@ -185,7 +186,7 @@ public class Inventory extends TestBase {
 				() -> client.putBucketInventoryConfiguration(
 						p -> p.bucket(bucketName).id(inventoryId).inventoryConfiguration(inventory.build())));
 
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 	}
 
@@ -210,7 +211,7 @@ public class Inventory extends TestBase {
 						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -273,7 +274,7 @@ public class Inventory extends TestBase {
 						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 	}
 
@@ -298,7 +299,7 @@ public class Inventory extends TestBase {
 						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -323,7 +324,7 @@ public class Inventory extends TestBase {
 						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -348,7 +349,7 @@ public class Inventory extends TestBase {
 						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 
@@ -449,7 +450,7 @@ public class Inventory extends TestBase {
 						.bucket(bucketName).id(inventoryId)
 						.inventoryConfiguration(inventory.build())));
 
-		assertEquals(400, e.statusCode());
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 	}
 }

@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ public class DeleteBucket extends TestBase
 
 		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
 
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}
@@ -56,7 +57,7 @@ public class DeleteBucket extends TestBase
 
 		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
 
-		assertEquals(409, e.statusCode());
+		assertEquals(HttpStatus.SC_CONFLICT, e.statusCode());
 		assertEquals(MainData.BUCKET_NOT_EMPTY, e.awsErrorDetails().errorCode());
 	}
 
@@ -70,7 +71,7 @@ public class DeleteBucket extends TestBase
 
 		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
 
-		assertEquals(404, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 		deleteBucketList(bucketName);
 	}

@@ -17,8 +17,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
-import org.example.Data.MainData;
 import org.junit.Test;
+
+import org.apache.hc.core5.http.HttpStatus;
+import org.example.Data.MainData;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.AccessControlList;
@@ -304,7 +306,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserFullControl() {
-		var bucketName = bucketACLGrantUserId(Permission.FullControl);
+		var bucketName = setupBucketPermission(Permission.FullControl);
 		var altClient = getAltClient();
 
 		checkBucketAclAllowRead(altClient, bucketName);
@@ -323,7 +325,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserRead() {
-		var bucketName = bucketACLGrantUserId(Permission.Read);
+		var bucketName = setupBucketPermission(Permission.Read);
 		var altClient = getAltClient();
 
 		checkBucketAclAllowRead(altClient, bucketName);
@@ -335,7 +337,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserReadAcp() {
-		var bucketName = bucketACLGrantUserId(Permission.ReadAcp);
+		var bucketName = setupBucketPermission(Permission.ReadAcp);
 		var altClient = getAltClient();
 
 		checkBucketAclDenyRead(altClient, bucketName);
@@ -347,7 +349,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserWrite() {
-		var bucketName = bucketACLGrantUserId(Permission.Write);
+		var bucketName = setupBucketPermission(Permission.Write);
 		var altClient = getAltClient();
 
 		checkBucketAclDenyRead(altClient, bucketName);
@@ -359,7 +361,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Permission")
 	public void testBucketPermissionAltUserWriteAcp() {
-		var bucketName = bucketACLGrantUserId(Permission.WriteAcp);
+		var bucketName = setupBucketPermission(Permission.WriteAcp);
 		var altClient = getAltClient();
 
 		checkBucketAclDenyRead(altClient, bucketName);
@@ -380,7 +382,7 @@ public class Grants extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, acl));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.INVALID_ARGUMENT, errorCode);
 	}
 
@@ -577,7 +579,8 @@ public class Grants extends TestBase {
 		var key1 = "testAccessBucketPublicReadObjectPrivate";
 		var key2 = "testAccessBucketPublicReadObjectPrivate2";
 		var newKey = "testAccessBucketPublicReadObjectPrivateNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.PublicRead, CannedAccessControlList.Private);
+		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.PublicRead,
+				CannedAccessControlList.Private);
 		var altClient = getAltClient();
 
 		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key1));

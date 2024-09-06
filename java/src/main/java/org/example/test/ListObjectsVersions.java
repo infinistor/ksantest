@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Data.ObjectData;
 import org.junit.jupiter.api.Tag;
@@ -789,7 +790,7 @@ public class ListObjectsVersions extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> unauthenticatedClient.listVersions(new ListVersionsRequest().withBucketName(bucketName)));
 
-		assertEquals(403, e.getStatusCode());
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 
@@ -802,7 +803,7 @@ public class ListObjectsVersions extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.listVersions(new ListVersionsRequest().withBucketName(bucketName)));
 
-		assertEquals(404, e.getStatusCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 		deleteBucketList(bucketName);
 	}

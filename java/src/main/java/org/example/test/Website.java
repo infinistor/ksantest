@@ -51,7 +51,7 @@ public class Website extends TestBase
 		var bucketName = createBucket(client);
 
 		var webConfig = new BucketWebsiteConfiguration();
-		webConfig.setErrorDocument("400");
+		webConfig.setErrorDocument("HttpStatus.SC_BAD_REQUEST");
 		webConfig.setIndexDocumentSuffix("a");
 
 		client.setBucketWebsiteConfiguration(bucketName, webConfig);
@@ -68,7 +68,7 @@ public class Website extends TestBase
 		var bucketName = createBucket(client);
 
 		var webConfig = new BucketWebsiteConfiguration();
-		webConfig.setErrorDocument("400");
+		webConfig.setErrorDocument("HttpStatus.SC_BAD_REQUEST");
 		webConfig.setIndexDocumentSuffix("a");
 
 		client.setBucketWebsiteConfiguration(bucketName, webConfig);

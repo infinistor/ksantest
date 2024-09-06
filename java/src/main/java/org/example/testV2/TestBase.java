@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.TreeMap;
+import org.apache.hc.core5.http.HttpStatus;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -255,6 +256,107 @@ public class TestBase {
 	}
 	// endregion
 
+	// region Create data
+	public String getPrefix() {
+		return "v2-" + config.bucketPrefix.replace(STR_RANDOM, Utils.randomText(RANDOM_PREFIX_TEXT_LENGTH));
+	}
+
+	public String getNewBucketNameOnly() {
+		String bucketName = getPrefix() + Utils.randomText(RANDOM_SUFFIX_TEXT_LENGTH);
+		if (bucketName.length() > BUCKET_MAX_LENGTH)
+			bucketName = bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
+		return bucketName;
+	}
+
+	public String getNewBucketName() {
+		String bucketName = getPrefix() + Utils.randomText(RANDOM_SUFFIX_TEXT_LENGTH);
+		if (bucketName.length() > BUCKET_MAX_LENGTH)
+			bucketName = bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
+		buckets.add(bucketName);
+		return bucketName;
+	}
+
+	public String getNewBucketName(int length) {
+		String bucketName = getPrefix() + Utils.randomText(63);
+		bucketName = bucketName.substring(0, length);
+		buckets.add(bucketName);
+		return bucketName;
+	}
+
+	public String createBucket() {
+		var client = getClient();
+		return createBucket(client);
+	}
+
+	public String createBucket(S3Client client) {
+		var bucketName = getNewBucketName();
+		client.createBucket(c -> c.bucket(bucketName));
+		return bucketName;
+	}
+
+	public String createBucket(S3Client client, ObjectOwnership ownership) {
+		var bucketName = getNewBucketName();
+		client.createBucket(c -> c.bucket(bucketName).objectOwnership(ownership));
+		return bucketName;
+	}
+
+	public String createBucket(S3Client client, ObjectOwnership ownership, BucketCannedACL acl) {
+		var bucketName = createBucket(client, ownership);
+		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(c -> c
+				.blockPublicAcls(false).ignorePublicAcls(false).blockPublicPolicy(false).restrictPublicBuckets(false)));
+		if (acl != null)
+			client.putBucketAcl(p -> p.bucket(bucketName).acl(acl));
+		return bucketName;
+	}
+
+	public String createBucketCannedACL(S3Client client) {
+		return createBucket(client, ObjectOwnership.OBJECT_WRITER, null);
+	}
+
+	public String createBucketCannedACL(S3Client client, BucketCannedACL acl) {
+		return createBucket(client, ObjectOwnership.OBJECT_WRITER, acl);
+	}
+
+	public void createObjects(S3Client client, String bucketName, List<String> keys) {
+		if (keys != null) {
+			for (var key : keys) {
+				var body = RequestBody.fromString(key);
+				if (key.endsWith("/"))
+					body = RequestBody.empty();
+				client.putObject(p -> p.bucket(bucketName).key(key), body);
+			}
+		}
+	}
+
+	public String createObjects(S3Client client, List<String> keys) {
+		var bucketName = createBucket(client);
+
+		if (keys != null) {
+			for (var key : keys) {
+				var body = RequestBody.fromString(key);
+				client.putObject(p -> p.bucket(bucketName).key(key), body);
+			}
+		}
+
+		return bucketName;
+	}
+
+	public String createObjects(List<String> keys) {
+		var client = getClient();
+		return createObjects(client, keys);
+	}
+
+	public String createEmptyObjects(S3Client client, List<String> keys) {
+		var bucketName = createBucket(client);
+
+		if (keys != null) {
+			for (var key : keys)
+				client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(""));
+		}
+
+		return bucketName;
+	}
+
 	public static Grantee createPublicGrantee() {
 		return Grantee.builder().type(Type.GROUP).uri(MainData.ALL_USERS).build();
 	}
@@ -310,112 +412,7 @@ public class TestBase {
 		return createAcl(config.mainUser.toOwnerV2(), config.altUser.toGranteeV2(), permissions);
 	}
 
-	public String getPrefix() {
-		return "v2-" + config.bucketPrefix.replace(STR_RANDOM, Utils.randomText(RANDOM_PREFIX_TEXT_LENGTH));
-	}
-
-	public String getNewBucketNameOnly() {
-		String bucketName = getPrefix() + Utils.randomText(RANDOM_SUFFIX_TEXT_LENGTH);
-		if (bucketName.length() > BUCKET_MAX_LENGTH)
-			bucketName = bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
-		return bucketName;
-	}
-
-	public String getNewBucketName() {
-		String bucketName = getPrefix() + Utils.randomText(RANDOM_SUFFIX_TEXT_LENGTH);
-		if (bucketName.length() > BUCKET_MAX_LENGTH)
-			bucketName = bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
-		buckets.add(bucketName);
-		return bucketName;
-	}
-
-	public String getNewBucketName(int length) {
-		String bucketName = getPrefix() + Utils.randomText(63);
-		bucketName = bucketName.substring(0, length);
-		buckets.add(bucketName);
-		return bucketName;
-	}
-
-	public String createBucket() {
-		var client = getClient();
-		return createBucket(client);
-	}
-
-	public String createBucket(S3Client client) {
-		var bucketName = getNewBucketName();
-		client.createBucket(c -> c.bucket(bucketName));
-		return bucketName;
-	}
-
-	public String createBucket(S3Client client, ObjectOwnership ownership) {
-		var bucketName = getNewBucketName();
-		client.createBucket(c -> c.bucket(bucketName).objectOwnership(ownership));
-		return bucketName;
-	}
-
-	public String createBucket(S3Client client, ObjectOwnership ownership, BucketCannedACL acl) {
-		var bucketName = createBucket(client, ownership);
-		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(c -> c
-				.blockPublicAcls(false).ignorePublicAcls(false).blockPublicPolicy(false).restrictPublicBuckets(false)));
-		client.putBucketAcl(p -> p.bucket(bucketName).acl(acl));
-		return bucketName;
-	}
-
-	public String createBucketCannedACL(S3Client client) {
-		var bucketName = getNewBucketName();
-		client.createBucket(c -> c.bucket(bucketName).objectOwnership(ObjectOwnership.OBJECT_WRITER));
-		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(c -> c
-				.blockPublicAcls(false).ignorePublicAcls(false).blockPublicPolicy(false).restrictPublicBuckets(false)));
-		return bucketName;
-	}
-
-	public String createBucketCannedACL(S3Client client, BucketCannedACL acl) {
-		var bucketName = createBucketCannedACL(client);
-		client.putBucketAcl(p -> p.bucket(bucketName).acl(acl));
-		return bucketName;
-	}
-
-	public void createObjects(S3Client client, String bucketName, List<String> keys) {
-		if (keys != null) {
-			for (var key : keys) {
-				var body = RequestBody.fromString(key);
-				if (key.endsWith("/"))
-					body = RequestBody.empty();
-				client.putObject(p -> p.bucket(bucketName).key(key), body);
-			}
-		}
-	}
-
-	public String createObjects(S3Client client, List<String> keys) {
-		var bucketName = createBucket(client);
-
-		if (keys != null) {
-			for (var key : keys) {
-				var body = RequestBody.fromString(key);
-				client.putObject(p -> p.bucket(bucketName).key(key), body);
-			}
-		}
-
-		return bucketName;
-	}
-
-	public String createObjects(List<String> keys) {
-		var client = getClient();
-		return createObjects(client, keys);
-	}
-
-	public String createEmptyObjects(S3Client client, List<String> keys) {
-		var bucketName = createBucket(client);
-
-		if (keys != null) {
-			for (var key : keys)
-				client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(""));
-		}
-
-		return bucketName;
-	}
-
-	public URL getURL(String bucketName) throws MalformedURLException {
+	public URL createURL(String bucketName) throws MalformedURLException {
 		var protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
 		var port = config.isSecure ? config.sslPort : config.port;
 
@@ -423,7 +420,7 @@ public class TestBase {
 				: NetUtils.getEndpoint(protocol, config.url, port, bucketName);
 	}
 
-	public URL getURL(String bucketName, String key) throws MalformedURLException {
+	public URL createURL(String bucketName, String key) throws MalformedURLException {
 		var protocol = config.isSecure ? MainData.HTTPS : MainData.HTTP;
 		var port = config.isSecure ? config.sslPort : config.port;
 
@@ -480,6 +477,23 @@ public class TestBase {
 		return policy;
 	}
 
+	public List<Tag> makeSimpleTagSet(int count) {
+		var tagSets = new ArrayList<Tag>();
+
+		for (int i = 0; i < count; i++)
+			tagSets.add(Tag.builder().key(Integer.toString(i)).value(Integer.toString(i)).build());
+		return tagSets;
+	}
+
+	public List<Tag> makeDetailTagSet(int count, int keySize, int valueSize) {
+		var tagSets = new ArrayList<Tag>();
+
+		for (int i = 0; i < count; i++)
+			tagSets.add(Tag.builder().key(Utils.randomTextToLong(keySize)).value(Utils.randomTextToLong(valueSize))
+					.build());
+		return tagSets;
+	}
+
 	public void checkConfigureVersioningRetry(String bucketName, BucketVersioningStatus status) {
 		var client = getClient();
 
@@ -503,11 +517,29 @@ public class TestBase {
 		assertEquals(status, readStatus);
 	}
 
-	public String setupBucketObjectACL(BucketCannedACL bucketACL, ObjectCannedACL objectACL, String key) {
+	public String setupAclTest(BucketCannedACL bucketACL, ObjectCannedACL objectACL, String key) {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client, bucketACL);
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.empty());
-		client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(objectACL));
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(objectACL), RequestBody.fromString(key));
+
+		return bucketName;
+	}
+
+	public void createKeyWithRandomContent(S3Client client, String key, int size, String bucketName) {
+		if (size <= 0)
+			size = 7 * MainData.MB;
+
+		var data = Utils.randomTextToLong(size);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(data));
+	}
+
+	public String createKeyWithRandomContent(S3Client client, String key, int size) {
+		var bucketName = createBucket(client);
+		if (size < 1)
+			size = 7 * MainData.MB;
+
+		var data = Utils.randomTextToLong(size);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(data));
 
 		return bucketName;
 	}
@@ -556,26 +588,9 @@ public class TestBase {
 		return acl.build();
 	}
 
-	public void createKeyWithRandomContent(S3Client client, String key, int size, String bucketName) {
-		if (size <= 0)
-			size = 7 * MainData.MB;
+	// endregion
 
-		var data = Utils.randomTextToLong(size);
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(data));
-	}
-
-	public String createKeyWithRandomContent(S3Client client, String key, int size) {
-		var bucketName = createBucket(client);
-		if (size < 1)
-			size = 7 * MainData.MB;
-
-		var data = Utils.randomTextToLong(size);
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(data));
-
-		return bucketName;
-	}
-
-	public String bucketACLGrantUserId(Permission permission) {
+	public String setupBucketPermission(Permission permission) {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
 
@@ -606,32 +621,6 @@ public class TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(key2), RequestBody.fromString(key2));
 
 		return bucketName;
-	}
-
-	public void checkObjContent(S3Client client, String bucketName, String key, String versionId, String content) {
-		var response = client
-				.getObject(g -> g.bucket(bucketName).key(key).versionId(versionId));
-		if (content != null) {
-			var body = getBody(response);
-			assertTrue(content.equals(body), MainData.NOT_MATCHED);
-		} else
-			assertNull(response);
-	}
-
-	public void checkObjVersions(S3Client client, String bucketName, String key, List<String> versionIds,
-			List<String> contents) {
-		var response = client.listObjectVersions(l -> l.bucket(bucketName));
-		var versions = new ArrayList<>(response.versions());
-
-		Collections.reverse(versions);
-
-		var index = 0;
-		for (var version : versions) {
-			assertEquals(version.versionId(), versionIds.get(index));
-			if (StringUtils.isNotBlank(key))
-				assertEquals(key, version.key());
-			checkObjContent(client, bucketName, key, version.versionId(), contents.get(index++));
-		}
 	}
 
 	public void createMultipleVersion(S3Client client, String bucketName, String key, int numVersions,
@@ -669,23 +658,6 @@ public class TestBase {
 
 		if (checkVersion)
 			checkObjVersions(client, bucketName, key, versionIds, contents);
-	}
-
-	public List<Tag> createSimpleTagSet(int count) {
-		var tagSets = new ArrayList<Tag>();
-
-		for (int i = 0; i < count; i++)
-			tagSets.add(Tag.builder().key(Integer.toString(i)).value(Integer.toString(i)).build());
-		return tagSets;
-	}
-
-	public List<Tag> createDetailTagSet(int count, int keySize, int valueSize) {
-		var tagSets = new ArrayList<Tag>();
-
-		for (int i = 0; i < count; i++)
-			tagSets.add(Tag.builder().key(Utils.randomTextToLong(keySize)).value(Utils.randomTextToLong(valueSize))
-					.build());
-		return tagSets;
 	}
 
 	public List<ObjectVersion> reverseVersions(List<ObjectVersion> versions) {
@@ -814,7 +786,7 @@ public class TestBase {
 	// endregion
 
 	// region Check data
-	public void aclTest(String bucketName, String key, S3Client client, boolean pass) {
+	public static void checkGetObject(S3Client client, String bucketName, String key, boolean pass) {
 		if (pass) {
 			var response = client.getObject(g -> g.bucket(bucketName).key(key));
 			assertTrue(response != null);
@@ -824,8 +796,47 @@ public class TestBase {
 			var statusCode = e.statusCode();
 			var errorCode = e.awsErrorDetails().errorCode();
 
-			assertEquals(403, statusCode);
+			assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 			assertEquals(MainData.ACCESS_DENIED, errorCode);
+		}
+	}
+
+	public static void succeedGetObject(S3Client client, String bucketName, String key, String content) {
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
+		assertTrue(content.equals(body), MainData.NOT_MATCHED);
+	}
+
+	public static void failedGetObject(S3Client client, String bucketName, String key, int statusCode,
+			String errorCode) {
+		var e = assertThrows(S3Exception.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
+		assertEquals(statusCode, e.statusCode());
+		assertEquals(errorCode, e.awsErrorDetails().errorCode());
+	}
+
+	public void checkObjContent(S3Client client, String bucketName, String key, String versionId, String content) {
+		var response = client
+				.getObject(g -> g.bucket(bucketName).key(key).versionId(versionId));
+		if (content != null) {
+			var body = getBody(response);
+			assertTrue(content.equals(body), MainData.NOT_MATCHED);
+		} else
+			assertNull(response);
+	}
+
+	public void checkObjVersions(S3Client client, String bucketName, String key, List<String> versionIds,
+			List<String> contents) {
+		var response = client.listObjectVersions(l -> l.bucket(bucketName));
+		var versions = new ArrayList<>(response.versions());
+
+		Collections.reverse(versions);
+
+		var index = 0;
+		for (var version : versions) {
+			assertEquals(version.versionId(), versionIds.get(index));
+			if (StringUtils.isNotBlank(key))
+				assertEquals(key, version.key());
+			checkObjContent(client, bucketName, key, version.versionId(), contents.get(index++));
 		}
 	}
 
@@ -1507,7 +1518,7 @@ public class TestBase {
 	}
 
 	public boolean errorCheck(Integer statusCode) {
-		return statusCode.equals(400) || statusCode.equals(403);
+		return statusCode.equals(HttpStatus.SC_BAD_REQUEST) || statusCode.equals(HttpStatus.SC_FORBIDDEN);
 	}
 
 	public void testEncryptionCSEWrite(int fileSize) {
@@ -2079,9 +2090,9 @@ public class TestBase {
 			String expectAllowOrigin, String expectAllowMethods, String key) {
 
 		try {
-			var url = getURL(bucketName);
+			var url = createURL(bucketName);
 			if (key != null)
-				url = getURL(bucketName, key);
+				url = createURL(bucketName, key);
 
 			System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 			HttpURLConnection connection = (HttpURLConnection) url.openConnection();

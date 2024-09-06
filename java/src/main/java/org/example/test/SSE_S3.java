@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
@@ -141,7 +142,10 @@ public class SSE_S3 extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 
-		assertThrows(AmazonS3Exception.class, () -> client.getBucketEncryption(bucketName));
+		var e = assertThrows(AmazonS3Exception.class, () -> client.getBucketEncryption(bucketName));
+
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
 	}
 
 	@Test
@@ -180,7 +184,9 @@ public class SSE_S3 extends TestBase {
 
 		client.deleteBucketEncryption(bucketName);
 
-		assertThrows(AmazonS3Exception.class, () -> client.getBucketEncryption(bucketName));
+		var e = assertThrows(AmazonS3Exception.class, () -> client.getBucketEncryption(bucketName));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
 	}
 
 	@Test

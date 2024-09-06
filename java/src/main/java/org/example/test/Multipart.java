@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
@@ -58,7 +59,7 @@ public class Multipart extends TestBase {
 				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts)));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.MALFORMED_XML, errorCode);
 
 	}
@@ -118,7 +119,7 @@ public class Multipart extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 
-		assertTrue(statusCode == 400 || statusCode == 416);
+		assertTrue(statusCode == HttpStatus.SC_BAD_REQUEST || statusCode == 416);
 		assertEquals(MainData.INVALID_ARGUMENT, errorCode);
 
 	}
@@ -363,7 +364,7 @@ public class Multipart extends TestBase {
 				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts)));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.ENTITY_TOO_SMALL, errorCode);
 
 	}
@@ -440,7 +441,7 @@ public class Multipart extends TestBase {
 				() -> client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, "56788")));
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
-		assertEquals(404, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
 		assertEquals(MainData.NO_SUCH_UPLOAD, errorCode);
 
 	}
@@ -498,7 +499,7 @@ public class Multipart extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.INVALID_PART, errorCode);
 
 	}
@@ -523,7 +524,7 @@ public class Multipart extends TestBase {
 		var statusCode = e.getStatusCode();
 		var errorCode = e.getErrorCode();
 
-		assertEquals(400, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
 		assertEquals(MainData.INVALID_PART, errorCode);
 
 	}
