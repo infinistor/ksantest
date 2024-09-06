@@ -13,6 +13,7 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Tag;
 
@@ -38,30 +39,8 @@ public class Access extends TestBase {
 	}
 
 	@Test
-	@Tag("Check")
-	public void testPutPublicBlock() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
-
-		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(true).withIgnorePublicAcls(true)
-				.withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
-		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
-				.withPublicAccessBlockConfiguration(accessConf));
-
-		var response = client.getPublicAccessBlock(new GetPublicAccessBlockRequest().withBucketName(bucketName));
-		assertEquals(accessConf.getBlockPublicAcls(),
-				response.getPublicAccessBlockConfiguration().getBlockPublicAcls());
-		assertEquals(accessConf.getBlockPublicPolicy(),
-				response.getPublicAccessBlockConfiguration().getBlockPublicPolicy());
-		assertEquals(accessConf.getIgnorePublicAcls(),
-				response.getPublicAccessBlockConfiguration().getIgnorePublicAcls());
-		assertEquals(accessConf.getRestrictPublicBuckets(),
-				response.getPublicAccessBlockConfiguration().getRestrictPublicBuckets());
-	}
-
-	@Test
 	@Tag("Denied")
-	public void testBlockPublicPutBucketAcls() {
+	public void testBlockPublicAclAndPolicy() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
 
@@ -79,22 +58,22 @@ public class Access extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead));
 		var statusCode = e.getStatusCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 
 		e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketAcl(bucketName, CannedAccessControlList.PublicReadWrite));
 		statusCode = e.getStatusCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 
 		e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketAcl(bucketName, CannedAccessControlList.AuthenticatedRead));
 		statusCode = e.getStatusCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 	}
 
 	@Test
 	@Tag("Denied")
-	public void testBlockPublicObjectCannedAcls() {
+	public void testBlockPublicAcls() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
 		var metadata = new ObjectMetadata();
@@ -114,19 +93,19 @@ public class Access extends TestBase {
 				new PutObjectRequest(bucketName, "foo1", createBody("foo1"), metadata)
 						.withCannedAcl(CannedAccessControlList.PublicRead)));
 		var statusCode = e.getStatusCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 
 		e = assertThrows(AmazonServiceException.class, () -> client.putObject(
 				new PutObjectRequest(bucketName, "foo2", createBody("foo2"), metadata)
 						.withCannedAcl(CannedAccessControlList.PublicReadWrite)));
 		statusCode = e.getStatusCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 
 		e = assertThrows(AmazonServiceException.class, () -> client.putObject(
 				new PutObjectRequest(bucketName, "foo3", createBody("foo3"), metadata)
 						.withCannedAcl(CannedAccessControlList.AuthenticatedRead)));
 		statusCode = e.getStatusCode();
-		assertEquals(403, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 	}
 
 	@Test
@@ -143,31 +122,6 @@ public class Access extends TestBase {
 		var resource = makeArnResource(String.format("%s/*", bucketName));
 		var policyDocument = makeJsonPolicy("s3:GetObject", resource, null, null);
 		assertThrows(AmazonServiceException.class, () -> client.setBucketPolicy(bucketName, policyDocument.toString()));
-	}
-
-	@Test
-	@Tag("Denied")
-	public void testIgnorePublicAcls() {
-		var client = getClient();
-		var altClient = getAltClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicRead);
-
-		altClient.listObjects(bucketName);
-
-		client.putObject(new PutObjectRequest(bucketName, "key1", createBody("abcde"), new ObjectMetadata())
-				.withCannedAcl(CannedAccessControlList.PublicRead));
-		var response = altClient.getObject(bucketName, "key1");
-		assertEquals("abcde", getBody(response.getObjectContent()));
-
-		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
-				.withPublicAccessBlockConfiguration(new PublicAccessBlockConfiguration()
-						.withBlockPublicAcls(false).withIgnorePublicAcls(true)
-						.withBlockPublicPolicy(false).withRestrictPublicBuckets(false)));
-		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
-
-		var publicClient = getPublicClient();
-		assertThrows(AmazonServiceException.class, () -> publicClient.listObjects(bucketName));
-		assertThrows(AmazonServiceException.class, () -> publicClient.getObject(bucketName, "key1"));
 	}
 
 	@Test
@@ -199,5 +153,52 @@ public class Access extends TestBase {
 
 		assertThrows(SdkClientException.class,
 				() -> client.getPublicAccessBlock(new GetPublicAccessBlockRequest().withBucketName(bucketName)));
+	}
+
+	@Test
+	@Tag("Denied")
+	public void testIgnorePublicAcls() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicRead);
+
+		altClient.listObjects(bucketName);
+
+		client.putObject(new PutObjectRequest(bucketName, "key1", createBody("abcde"), new ObjectMetadata())
+				.withCannedAcl(CannedAccessControlList.PublicRead));
+		var response = altClient.getObject(bucketName, "key1");
+		assertEquals("abcde", getBody(response.getObjectContent()));
+
+		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
+				.withPublicAccessBlockConfiguration(new PublicAccessBlockConfiguration()
+						.withBlockPublicAcls(false).withIgnorePublicAcls(true)
+						.withBlockPublicPolicy(false).withRestrictPublicBuckets(false)));
+		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
+
+		var publicClient = getPublicClient();
+		assertThrows(AmazonServiceException.class, () -> publicClient.listObjects(bucketName));
+		assertThrows(AmazonServiceException.class, () -> publicClient.getObject(bucketName, "key1"));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testPutPublicBlock() {
+		var client = getClient();
+		var bucketName = createBucketCannedACL(client);
+
+		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(true).withIgnorePublicAcls(true)
+				.withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
+		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
+				.withPublicAccessBlockConfiguration(accessConf));
+
+		var response = client.getPublicAccessBlock(new GetPublicAccessBlockRequest().withBucketName(bucketName));
+		assertEquals(accessConf.getBlockPublicAcls(),
+				response.getPublicAccessBlockConfiguration().getBlockPublicAcls());
+		assertEquals(accessConf.getBlockPublicPolicy(),
+				response.getPublicAccessBlockConfiguration().getBlockPublicPolicy());
+		assertEquals(accessConf.getIgnorePublicAcls(),
+				response.getPublicAccessBlockConfiguration().getIgnorePublicAcls());
+		assertEquals(accessConf.getRestrictPublicBuckets(),
+				response.getPublicAccessBlockConfiguration().getRestrictPublicBuckets());
 	}
 }

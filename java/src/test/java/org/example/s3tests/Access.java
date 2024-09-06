@@ -27,43 +27,27 @@ class Access {
 	}
 
 	@Test
-	@Tag("Check")
-	// 버킷의 접근권한 블록 설정 확인
-	void testPutPublicBlock() {
-		test.testPutPublicBlock();
-		testV2.testPutPublicBlock();
+	@Tag("Denied")
+	// [BlockPublicAcls, BlockPublicPolicy] 접근권한블록이 정상적으로 동작하는지 확인
+	void testBlockPublicAclAndPolicy() {
+		test.testBlockPublicAclAndPolicy();
+		testV2.testBlockPublicAclAndPolicy();
 	}
 
 	@Test
 	@Tag("Denied")
-	// [접근권한 설정에 public 무시 설정] 버킷의 권한설정 실패 확인
-	void testBlockPublicPutBucketAcls() {
-		test.testBlockPublicPutBucketAcls();
-		testV2.testBlockPublicPutBucketAcls();
+	// [BlockPublicAcls] 접근권한블록이 정상적으로 동작하는지 확인
+	void testBlockPublicAcls() {
+		test.testBlockPublicAcls();
+		testV2.testBlockPublicAcls();
 	}
 
 	@Test
 	@Tag("Denied")
-	// [접근권한 설정에 public 무시 설정] 오브젝트에 acl정보를 추가한뒤 업로드 실패 확인
-	void testBlockPublicObjectCannedAcls() {
-		test.testBlockPublicObjectCannedAcls();
-		testV2.testBlockPublicObjectCannedAcls();
-	}
-
-	@Test
-	@Tag("Denied")
-	// [접근권한설정에 정책으로 설정한 public 권한 무시를 설정] 버킷의 정책을 추가하려고 할때 실패 확인
+	// [BlockPublicPolicy] 접근권한블록이 정상적으로 동작하는지 확인
 	void testBlockPublicPolicy() {
 		test.testBlockPublicPolicy();
 		testV2.testBlockPublicPolicy();
-	}
-
-	@Test
-	@Tag("Denied")
-	// [접근권한블록에 ACL로 설정한 public 권한 무시를 설정] 오브젝트 권한을 public-read로 설정할 경우 접근되지 않음을 확인
-	void testIgnorePublicAcls() {
-		test.testIgnorePublicAcls();
-		testV2.testIgnorePublicAcls();
 	}
 
 	@Test
@@ -72,5 +56,21 @@ class Access {
 	void testDeletePublicBlock() {
 		test.testDeletePublicBlock();
 		testV2.testDeletePublicBlock();
+	}
+
+	@Test
+	@Tag("Denied")
+	// [IgnorePublicAcls] 접근권한블록이 정상적으로 동작하는지 확인
+	void testIgnorePublicAcls() {
+		test.testIgnorePublicAcls();
+		testV2.testIgnorePublicAcls();
+	}
+
+	@Test
+	@Tag("Check")
+	// 버킷의 접근권한 블록 설정 확인
+	void testPutPublicBlock() {
+		test.testPutPublicBlock();
+		testV2.testPutPublicBlock();
 	}
 }
