@@ -542,7 +542,8 @@ public class Versioning extends TestBase {
 
 		var getGrants = response.grants();
 		var myGrants = new ArrayList<Grant>();
-		myGrants.add(Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build());
+		myGrants.add(
+				Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build());
 		checkGrants(myGrants, getGrants);
 	}
 
@@ -557,34 +558,22 @@ public class Versioning extends TestBase {
 
 		var key = "xyz";
 		var numVersions = 3;
-
 		var versionIds = new ArrayList<String>();
 		var contents = new ArrayList<String>();
+
 		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
-		var versionId = getResponse.response().versionId();
+		var acl = createPublicAcl();
+		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId(versionId));
-
-		var user = config.mainUser.toOwnerV2();
-
-		assertEquals(user.id(), response.owner().id());
-
-		var getGrants = response.grants();
-		var myGrants = new ArrayList<Grant>();
-		myGrants.add(Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build());
-		checkGrants(myGrants, getGrants);
+		checkAcl(acl, response);
 
 		client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ));
 
-		response = client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId(versionId));
-		getGrants = response.grants();
+		response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
 
-		myGrants = new ArrayList<Grant>();
-		myGrants.add(Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build());
-		myGrants.add(Grant.builder().grantee(createPublicGrantee()).permission(Permission.READ).build());
-		checkGrants(myGrants, getGrants);
+		acl = createPublicAcl(Permission.READ);
+		checkAcl(acl, response);
 	}
 
 	@Test
@@ -688,7 +677,8 @@ public class Versioning extends TestBase {
 		var versions = new ArrayList<String>();
 
 		for (int i = 1; i <= 5; i++) {
-			var response = client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(Utils.randomTextToLong(i)));
+			var response = client.putObject(p -> p.bucket(bucketName).key(key).build(),
+					RequestBody.fromString(Utils.randomTextToLong(i)));
 			versions.add(response.versionId());
 		}
 
@@ -711,7 +701,8 @@ public class Versioning extends TestBase {
 		var versions = new ArrayList<String>();
 
 		for (int i = 1; i <= 5; i++) {
-			var response = client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(Utils.randomTextToLong(i)));
+			var response = client.putObject(p -> p.bucket(bucketName).key(key).build(),
+					RequestBody.fromString(Utils.randomTextToLong(i)));
 			versions.add(0, response.versionId());
 		}
 

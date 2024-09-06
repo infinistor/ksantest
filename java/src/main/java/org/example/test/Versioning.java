@@ -32,7 +32,6 @@ import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.Grant;
-import com.amazonaws.services.s3.model.GroupGrantee;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
@@ -569,35 +568,22 @@ public class Versioning extends TestBase {
 
 		var key = "xyz";
 		var numVersions = 3;
-
 		var versionIds = new ArrayList<String>();
 		var contents = new ArrayList<String>();
+
 		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
-		var getResponse = client.getObject(bucketName, key);
-		var versionId = getResponse.getObjectMetadata().getVersionId();
+		var acl = createPublicAcl();
+		var response = client.getObjectAcl(bucketName, key);
 
-		var response = client.getObjectAcl(bucketName, key, versionId);
-
-		var user = new CanonicalGrantee(config.mainUser.id);
-		user.setDisplayName(config.mainUser.displayName);
-
-		assertEquals(user.getIdentifier(), response.getOwner().getId());
-
-		var getGrants = response.getGrantsAsList();
-		var myGrants = new ArrayList<Grant>();
-		myGrants.add(new Grant(user, Permission.FullControl));
-		checkGrants(myGrants, new ArrayList<>(getGrants));
+		checkAcl(acl, response);
 
 		client.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead);
 
-		response = client.getObjectAcl(bucketName, key, versionId);
-		getGrants = response.getGrantsAsList();
-
-		myGrants = new ArrayList<Grant>();
-		myGrants.add(new Grant(user, Permission.FullControl));
-		myGrants.add(new Grant(GroupGrantee.AllUsers, Permission.Read));
-		checkGrants(myGrants, new ArrayList<>(getGrants));
+		response = client.getObjectAcl(bucketName, key);
+		
+		acl = createPublicAcl(Permission.Read);
+		checkAcl(acl, response);
 	}
 
 	@Test

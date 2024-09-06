@@ -90,7 +90,9 @@ import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.Event;
 import software.amazon.awssdk.services.s3.model.ExpirationStatus;
+import software.amazon.awssdk.services.s3.model.GetBucketAclResponse;
 import software.amazon.awssdk.services.s3.model.GetBucketLifecycleConfigurationResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectAclResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.Grant;
@@ -105,6 +107,7 @@ import software.amazon.awssdk.services.s3.model.ObjectLockConfiguration;
 import software.amazon.awssdk.services.s3.model.ObjectLockRetention;
 import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 import software.amazon.awssdk.services.s3.model.ObjectVersion;
+import software.amazon.awssdk.services.s3.model.Owner;
 import software.amazon.awssdk.services.s3.model.Part;
 import software.amazon.awssdk.services.s3.model.Permission;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -252,21 +255,59 @@ public class TestBase {
 	}
 	// endregion
 
-	public AccessControlPolicy createACL() {
-		var allHeaders = new Permission[] { Permission.READ, Permission.WRITE, Permission.READ_ACP,
-				Permission.WRITE_ACP, Permission.FULL_CONTROL };
-
-		var list = AccessControlPolicy.builder().owner(config.mainUser.toOwnerV2());
-
-		for (var perm : allHeaders)
-			list.grants(Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(perm).build());
-		return list.build();
+	public static Grantee createPublicGrantee() {
+		return Grantee.builder().type(Type.GROUP).uri(MainData.ALL_USERS).build();
 	}
 
-	public AccessControlPolicy createACL(Permission permission) {
-		return AccessControlPolicy.builder().owner(config.mainUser.toOwnerV2()).grants(
-				Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(Permission.FULL_CONTROL).build(),
-				Grant.builder().grantee(config.altUser.toGranteeV2()).permission(permission).build()).build();
+	public static Grantee createAuthenticatedGrantee() {
+		return Grantee.builder().type(Type.GROUP).uri(MainData.AUTHENTICATED_USERS).build();
+	}
+
+	public static Grant createPublicGrant(Permission permission) {
+		return Grant.builder().grantee(createPublicGrantee()).permission(permission).build();
+	}
+
+	public static Grant createAuthenticatedGrant(Permission permission) {
+		return Grant.builder().grantee(createAuthenticatedGrantee()).permission(permission).build();
+	}
+
+	public static Grant owner2Grant(Owner owner, Permission permission) {
+		return Grant.builder()
+				.grantee(Grantee.builder().id(owner.id())
+						.type(Type.CANONICAL_USER).displayName(owner.displayName()).build())
+				.permission(permission).build();
+	}
+
+	public static AccessControlPolicy createAcl(Owner owner, Grantee grantee, Permission... permissions) {
+		var acl = AccessControlPolicy.builder().owner(owner);
+		var grants = new ArrayList<Grant>();
+		grants.add(owner2Grant(owner, Permission.FULL_CONTROL));
+		for (var permission : permissions)
+			grants.add(Grant.builder().grantee(grantee).permission(permission).build());
+		return acl.grants(grants).build();
+	}
+
+	public AccessControlPolicy createAcl() {
+		return createAcl(config.mainUser.toOwnerV2(), config.mainUser.toGranteeV2());
+	}
+
+	public AccessControlPolicy createAllAcl() {
+		return createAcl(config.mainUser.toOwnerV2(), config.altUser.toGranteeV2(), Permission.READ, Permission.WRITE,
+				Permission.READ_ACP, Permission.WRITE_ACP, Permission.FULL_CONTROL);
+	}
+
+	public AccessControlPolicy createPublicAcl(Permission... permissions) {
+		return createAcl(config.mainUser.toOwnerV2(), createPublicGrantee(), permissions);
+	}
+
+	public AccessControlPolicy createAuthenticatedAcl(Permission... permissions) {
+		return createAcl(config.mainUser.toOwnerV2(), Grantee.builder().type(Type.GROUP)
+				.uri(MainData.AUTHENTICATED_USERS)
+				.build(), permissions);
+	}
+
+	public AccessControlPolicy createAltAcl(Permission... permissions) {
+		return createAcl(config.mainUser.toOwnerV2(), config.altUser.toGranteeV2(), permissions);
 	}
 
 	public String getPrefix() {
@@ -295,15 +336,29 @@ public class TestBase {
 		return bucketName;
 	}
 
+	public String createBucket() {
+		var client = getClient();
+		return createBucket(client);
+	}
+
 	public String createBucket(S3Client client) {
 		var bucketName = getNewBucketName();
 		client.createBucket(c -> c.bucket(bucketName));
 		return bucketName;
 	}
 
-	public String createBucket() {
-		var client = getClient();
-		return createBucket(client);
+	public String createBucket(S3Client client, ObjectOwnership ownership) {
+		var bucketName = getNewBucketName();
+		client.createBucket(c -> c.bucket(bucketName).objectOwnership(ownership));
+		return bucketName;
+	}
+
+	public String createBucket(S3Client client, ObjectOwnership ownership, BucketCannedACL acl) {
+		var bucketName = createBucket(client, ownership);
+		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(c -> c
+				.blockPublicAcls(false).ignorePublicAcls(false).blockPublicPolicy(false).restrictPublicBuckets(false)));
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(acl));
+		return bucketName;
 	}
 
 	public String createBucketCannedACL(S3Client client) {
@@ -631,15 +686,6 @@ public class TestBase {
 			tagSets.add(Tag.builder().key(Utils.randomTextToLong(keySize)).value(Utils.randomTextToLong(valueSize))
 					.build());
 		return tagSets;
-	}
-
-	public Grantee createPublicGrantee() {
-		return Grantee.builder().type(Type.GROUP).uri("http://acs.amazonaws.com/groups/global/AllUsers").build();
-	}
-
-	public Grantee createAuthenticatedGrantee() {
-		return Grantee.builder().type(Type.GROUP).uri("http://acs.amazonaws.com/groups/global/AuthenticatedUsers")
-				.build();
 	}
 
 	public List<ObjectVersion> reverseVersions(List<ObjectVersion> versions) {
@@ -1724,13 +1770,47 @@ public class TestBase {
 		var kk = new TreeMap<String, Grant>(comparator);
 
 		for (var Temp : data) {
-			kk.put(Temp.grantee().type().toString() + Temp.permission().toString(), Temp);
+			kk.put(Temp.grantee().id() + Temp.permission().toString(), Temp);
 		}
 
 		for (Map.Entry<String, Grant> entry : kk.entrySet()) {
 			newList.add(entry.getValue());
 		}
 		return newList;
+	}
+
+	public void checkAcl(AccessControlPolicy expected, GetBucketAclResponse actual) {
+		checkAcl(expected,
+				AccessControlPolicy.builder().owner(actual.owner()).grants(actual.grants()).build());
+	}
+
+	public void checkAcl(AccessControlPolicy expected, GetObjectAclResponse actual) {
+		checkAcl(expected,
+				AccessControlPolicy.builder().owner(actual.owner()).grants(actual.grants()).build());
+	}
+
+	void checkAcl(AccessControlPolicy expected, AccessControlPolicy actual) {
+		if (config.isAWS())
+			assertEquals(expected.owner().id(), actual.owner().id());
+		else
+			assertEquals(expected.owner(), actual.owner());
+
+		var expectedGrants = expected.grants();
+		var actualGrants = actual.grants();
+
+		System.out.println(expectedGrants);
+		System.out.println(actualGrants);
+
+		assertEquals(expectedGrants.size(), actualGrants.size());
+
+		expectedGrants = grantsSort(expectedGrants);
+		actualGrants = grantsSort(actualGrants);
+
+		for (int i = 0; i < expectedGrants.size(); i++) {
+			assertEquals(expectedGrants.get(i).permission(), actualGrants.get(i).permission());
+			assertEquals(expectedGrants.get(i).grantee().id(), actualGrants.get(i).grantee().id());
+			assertEquals(expectedGrants.get(i).grantee().type(), actualGrants.get(i).grantee().type());
+		}
 	}
 
 	public void checkGrants(List<Grant> expected, List<Grant> actual) {
@@ -1749,73 +1829,52 @@ public class TestBase {
 	public void checkObjectACL(Permission permission) {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
-		var key = "foo";
+		var key = "testObjectPermission" + permission;
+		var acl = createAcl(config.mainUser.toOwnerV2(), config.mainUser.toGranteeV2(), permission);
 
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.empty());
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
-		var acl = AccessControlPolicy.builder().owner(response.owner())
-				.grants(Grant.builder().grantee(response.grants().get(0).grantee()).permission(permission).build())
-				.build();
-
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
 		client.putObjectAcl(p -> p.bucket(bucketName).key(key).accessControlPolicy(acl));
 
-		response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
-		var getGrants = response.grants();
-		var grants = List.of(Grant.builder().grantee(config.mainUser.toGranteeV2()).permission(permission).build());
-		checkGrants(grants, getGrants);
+		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
+		checkAcl(acl, response);
 	}
 
-	public void checkBucketACLGrantCanRead(String bucketName) {
-		var altClient = getAltClient();
-		altClient.headBucket(h -> h.bucket(bucketName));
+	public void checkBucketAclAllowRead(S3Client client, String bucketName) {
+		client.headBucket(h -> h.bucket(bucketName));
 	}
 
-	public void checkBucketACLGrantCantRead(String bucketName) {
-		var altClient = getAltClient();
+	public void checkBucketAclDenyRead(S3Client client, String bucketName) {
+		assertThrows(S3Exception.class, () -> client.headBucket(h -> h.bucket(bucketName)));
+	}
+
+	public void checkBucketAclAllowReadACP(S3Client client, String bucketName) {
+		client.getBucketAcl(g -> g.bucket(bucketName));
+	}
+
+	public void checkBucketAclDenyReadACP(S3Client client, String bucketName) {
 		assertThrows(S3Exception.class,
-				() -> altClient.headBucket(h -> h.bucket(bucketName)));
+				() -> client.getBucketAcl(g -> g.bucket(bucketName)));
 	}
 
-	public void checkBucketACLGrantCanReadACP(String bucketName) {
-		var altClient = getAltClient();
-		altClient.getBucketAcl(g -> g.bucket(bucketName));
+	public void checkBucketAclAllowWrite(S3Client client, String bucketName) {
+		var key = "checkBucketAclAllowWrite";
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
+		client.deleteObject(d -> d.bucket(bucketName).key(key));
 	}
 
-	public void checkBucketACLGrantCantReadACP(String bucketName) {
-		var altClient = getAltClient();
+	public void checkBucketAclDenyWrite(S3Client client, String bucketName) {
+		var key = "checkBucketAclDenyWrite";
 		assertThrows(S3Exception.class,
-				() -> altClient.getBucketAcl(g -> g.bucket(bucketName)));
+				() -> client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)));
 	}
 
-	public void checkBucketACLGrantCanWrite(String bucketName) {
-		var altClient = getAltClient();
-		var key = "foo-write";
-		altClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
-		altClient.deleteObject(d -> d.bucket(bucketName).key(key));
+	public void checkBucketAclAllowWriteACP(S3Client client, String bucketName) {
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
 	}
 
-	public void checkBucketACLGrantCantWrite(String bucketName) {
-		var altClient = getAltClient();
+	public void checkBucketAclDenyWriteACP(S3Client client, String bucketName) {
 		assertThrows(S3Exception.class,
-				() -> altClient.putObject(
-						p -> p
-								.bucket(bucketName)
-								.key("foo-write"),
-						RequestBody.fromString("bar")));
-	}
-
-	public void checkBucketACLGrantCanWriteACP(String bucketName) {
-		var altClient = getAltClient();
-		altClient.putBucketAcl(
-				p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
-	}
-
-	public void checkBucketACLGrantCantWriteACP(String bucketName) {
-		var altClient = getAltClient();
-		assertThrows(S3Exception.class,
-				() -> altClient.putBucketAcl(p -> p
-						.bucket(bucketName)
-						.acl(BucketCannedACL.PUBLIC_READ)));
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ)));
 	}
 
 	public void prefixLifecycleConfigurationCheck(List<LifecycleRule> expected, List<LifecycleRule> actual) {
