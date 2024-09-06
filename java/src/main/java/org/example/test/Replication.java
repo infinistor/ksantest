@@ -38,7 +38,6 @@ public class Replication extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// @Tag("버킷의 Replication 설정이 되는지 확인(put/get/delete)")
 	public void testReplicationSet() {
 		var client = getClient();
 		var sourceBucketName = createBucket(client);
@@ -67,7 +66,6 @@ public class Replication extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
 	public void testReplicationInvalidSourceBucketName() {
 		var prefix = "test1";
 		var client = getClient();
@@ -93,7 +91,6 @@ public class Replication extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
 	public void testReplicationInvalidSourceBucketVersioning() {
 		var prefix = "test1";
 		var client = getClient();
@@ -121,7 +118,6 @@ public class Replication extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인")
 	public void testReplicationInvalidTargetBucketName() {
 		var prefix = "test1";
 		var client = getClient();
@@ -153,7 +149,6 @@ public class Replication extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인")
 	public void testReplicationInvalidTargetBucketVersioning() {
 		var prefix = "test1";
 		var client = getClient();

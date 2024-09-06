@@ -48,35 +48,30 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("PutGet")
-	// 1Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void testSseS3EncryptedTransfer1b() {
 		testEncryptionSseS3CustomerWrite(1);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// 1KB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void testSseS3EncryptedTransfer1kb() {
 		testEncryptionSseS3CustomerWrite(1024);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// 1MB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void testSseS3EncryptedTransfer1MB() {
 		testEncryptionSseS3CustomerWrite(1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// 13Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void testSseS3EncryptedTransfer13b() {
 		testEncryptionSseS3CustomerWrite(13);
 	}
 
 	@Test
 	@Tag("Metadata")
-	// SSE-S3 설정하여 업로드한 오브젝트의 헤더정보읽기가 가능한지 확인
 	public void testSseS3EncryptionMethodHead() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -96,7 +91,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// 멀티파트업로드를 SSE-S3 설정하여 업로드 가능 확인
 	public void testSseS3EncryptionMultipartUpload() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -143,7 +137,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// 버킷의 SSE-S3 설정 확인
 	public void testGetBucketEncryption() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -153,7 +146,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// 버킷의 SSE-S3 설정이 가능한지 확인
 	public void testPutBucketEncryption() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -170,7 +162,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// 버킷의 SSE-S3 설정 삭제가 가능한지 확인
 	public void testDeleteBucketEncryption() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -194,7 +185,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// 버킷의 SSE-S3 설정이 오브젝트에 반영되는지 확인
 	public void testPutBucketEncryptionAndObjectSetCheck() {
 		var keys = List.of("for/bar", "test/");
 		var client = getClient();
@@ -220,28 +210,24 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("CopyObject")
-	// 버킷에 SSE-S3 설정하여 업로드한 1kb 오브젝트를 복사 가능한지 확인
 	public void testCopyObjectEncryption1kb() {
 		testEncryptionSseS3Copy(1024);
 	}
 
 	@Test
 	@Tag("CopyObject")
-	// 버킷에 SSE-S3 설정하여 업로드한 256kb 오브젝트를 복사 가능한지 확인
 	public void testCopyObjectEncryption256kb() {
 		testEncryptionSseS3Copy(256 * 1024);
 	}
 
 	@Test
 	@Tag("CopyObject")
-	// 버킷에 SSE-S3 설정하여 업로드한 1mb 오브젝트를 복사 가능한지 확인
 	public void testCopyObjectEncryption1mb() {
 		testEncryptionSseS3Copy(1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// [버킷에 SSE-S3 설정] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGet() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -270,7 +256,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("PutGet")
-	// [버킷에 SSE-S3 설정, SignatureVersion4] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetV4() {
 		var client = getClientV4(true, true);
 		var bucketName = createBucket(client);
@@ -299,7 +284,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("PutGet")
-	// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetUseChunkEncoding() {
 		var client = getClientHttpsV4(true, false);
 		var bucketName = createBucket(client);
@@ -328,8 +312,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("PutGet")
-	// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true,
-	// DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetUseChunkEncodingAndDisablePayloadSigning() {
 		var client = getClientHttpsV4(true, true);
 		var bucketName = createBucket(client);
@@ -358,7 +340,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("PutGet")
-	// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetNotChunkEncoding() {
 		var client = getClientHttpsV4(false, false);
 		var bucketName = createBucket(client);
@@ -387,8 +368,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("PutGet")
-	// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false,
-	// DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPutGetNotChunkEncodingAndDisablePayloadSigning() {
 		var client = getClientHttpsV4(false, true);
 		var bucketName = createBucket(client);
@@ -417,7 +396,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("PresignedURL")
-	// [버킷에 SSE-S3 설정]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPresignedUrlPutGet() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -447,7 +425,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("PresignedURL")
-	// [버킷에 SSE-S3 설정, SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	public void testSseS3BucketPresignedUrlPutGetV4() {
 		var client = getClientV4(true, true);
 		var bucketName = createBucket(client);
@@ -476,7 +453,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// SSE-S3설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	public void testSseS3GetObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -498,7 +474,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// SSE-S3설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	public void testSseS3RangeObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -521,7 +496,6 @@ public class SSE_S3 extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// SSE-S3 설정하여 멀티파트로 업로드한 오브젝트를 multipart copy 로 복사 가능한지 확인
 	public void testSseS3EncryptionMultipartCopyPartUpload() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -533,12 +507,10 @@ public class SSE_S3 extends TestBase {
 		metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
 		metadata.setContentType(contentType);
 
-		// 멀티파트 업로드
 		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size, metadata);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, sourceKey, uploadData.uploadId, uploadData.parts));
 
-		// 올바르게 업로드 되었는지 확인
 		var headResponse = client.listObjectsV2(bucketName);
 		var objectCount = headResponse.getKeyCount();
 		assertEquals(1, objectCount);
@@ -552,19 +524,16 @@ public class SSE_S3 extends TestBase {
 
 		checkContentUsingRange(bucketName, sourceKey, uploadData.getBody(), MainData.MB);
 
-		// 멀티파트 복사
 		var targetKey = "multipartEncCopy";
 		uploadData = multipartCopy(client, bucketName, sourceKey, bucketName, targetKey, size, metadata);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, targetKey, uploadData.uploadId, uploadData.parts));
 
-		// 올바르게 복사 되었는지 확인
 		checkCopyContentUsingRange(bucketName, sourceKey, bucketName, targetKey, MainData.MB);
 	}
 
 	@Test
 	@Tag("Multipart")
-	// SSE-S3 설정하여 Multipart와 Copy part를 모두 사용하여 오브젝트가 업로드 가능한지 확인
 	public void testSseS3EncryptionMultipartCopyMany() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -576,43 +545,34 @@ public class SSE_S3 extends TestBase {
 		metadata.setContentType(contentType);
 		var body = new StringBuilder();
 
-		// 멀티파트 업로드
 		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size, metadata);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, sourceKey, uploadData.uploadId, uploadData.parts));
 
-		// 업로드가 올바르게 되었는지 확인
 		body.append(uploadData.body);
 		checkContentUsingRange(bucketName, sourceKey, body.toString(), MainData.MB);
 
-		// 멀티파트 카피
 		var targetKey1 = "my_multipart1";
 		uploadData = multipartCopy(client, bucketName, sourceKey, bucketName, targetKey1, size, metadata);
-		// 추가파츠 업로드
 		uploadData = multipartUpload(client, bucketName, targetKey1, size, uploadData);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, targetKey1, uploadData.uploadId, uploadData.parts));
 
-		// 업로드가 올바르게 되었는지 확인
 		body.append(uploadData.body);
 		checkContentUsingRange(bucketName, targetKey1, body.toString(), MainData.MB);
 
-		// 멀티파트 카피
 		var targetKey2 = "my_multipart2";
 		uploadData = multipartCopy(client, bucketName, targetKey1, bucketName, targetKey2, size * 2, metadata);
-		// 추가파츠 업로드
 		uploadData = multipartUpload(client, bucketName, targetKey2, size, uploadData);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, targetKey2, uploadData.uploadId, uploadData.parts));
 
-		// 업로드가 올바르게 되었는지 확인
 		body.append(uploadData.body);
 		checkContentUsingRange(bucketName, targetKey2, body.toString(), MainData.MB);
 	}
 
 	@Test
 	@Tag("Retroactive")
-	// sse-s3설정은 소급적용 되지 않음을 확인
 	public void testSseS3NotRetroactive() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -622,18 +582,14 @@ public class SSE_S3 extends TestBase {
 		var copyKey = "copy";
 		var multiKey = "multi";
 
-		// 일반 파일 업로드
 		client.putObject(bucketName, putKey, data);
 
-		// 일반 파일 복사
 		client.copyObject(bucketName, putKey, bucketName, copyKey);
 
-		// 멀티파트 업로드
 		var uploadData = setupMultipartUpload(client, bucketName, multiKey, 5 * MainData.MB, null);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, multiKey, uploadData.uploadId, uploadData.parts));
 
-		// SSE-S3 설정
 		var sseS3Config = new ServerSideEncryptionConfiguration()
 				.withRules(new ServerSideEncryptionRule()
 						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
@@ -643,11 +599,9 @@ public class SSE_S3 extends TestBase {
 		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName)
 				.withServerSideEncryptionConfiguration(sseS3Config));
 
-		// SSE-S3 설정이 올바르게 되었는지 확인
 		var response = client.getBucketEncryption(bucketName);
 		assertEquals(sseS3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
 
-		// SSE-S3 설정이 적용되지 않은 파일들이 올바르게 복사되었는지 확인
 		var getResponse = client.getObject(bucketName, putKey);
 		var body = getBody(getResponse.getObjectContent());
 		assertTrue(data.equals(body), MainData.NOT_MATCHED);
@@ -664,10 +618,8 @@ public class SSE_S3 extends TestBase {
 		var data2 = Utils.randomTextToLong(1000);
 		client.putObject(bucketName, putKey2, data2);
 
-		// 일반 파일 복사
 		client.copyObject(bucketName, putKey, bucketName, copyKey2);
 
-		// 멀티파트 업로드
 		var uploadData2 = setupMultipartUpload(client, bucketName, multiKey2, 5 * MainData.MB);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, multiKey2, uploadData2.uploadId, uploadData2.parts));

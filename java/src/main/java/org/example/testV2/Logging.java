@@ -36,7 +36,6 @@ public class Logging extends TestBase {
 
 	@Test
 	@Tag("Put/Get")
-	// 버킷에 로깅 설정 조회 가능한지 확인
 	public void testLoggingGet() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -47,7 +46,6 @@ public class Logging extends TestBase {
 
 	@Test
 	@Tag("Put/Get")
-	// 버킷에 로깅 설정 가능한지 확인
 	public void testLoggingSet() {
 		var client = getClient();
 		var sourceBucketName = createBucket(client);
@@ -59,7 +57,6 @@ public class Logging extends TestBase {
 
 	@Test
 	@Tag("Put/Get")
-	// 버킷에 설정한 로깅 정보 조회가 가능한지 확인
 	public void testLoggingSetGet() {
 		var client = getClient();
 		var sourceBucketName = createBucket(client);
@@ -75,7 +72,6 @@ public class Logging extends TestBase {
 
 	@Test
 	@Tag("Put/Get")
-	// 버킷의 로깅에 Prefix가 설정되는지 확인
 	public void testLoggingPrefix() {
 		var prefix = "logs/";
 		var client = getClient();
@@ -92,7 +88,6 @@ public class Logging extends TestBase {
 
 	@Test
 	@Tag("Versioning")
-	// 버저닝 설정된 버킷의 로깅이 설정되는지 확인
 	public void testLoggingVersioning() {
 		var prefix = "logs/";
 		var client = getClient();
@@ -111,7 +106,6 @@ public class Logging extends TestBase {
 
 	@Test
 	@Tag("Encryption")
-	// SSE-s3설정된 버킷의 로깅이 설정되는지 확인
 	public void testLoggingEncryption() {
 		var prefix = "logs/";
 		var client = getClient();
@@ -133,7 +127,6 @@ public class Logging extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 존재하지 않는 버킷에 로깅 설정 실패 확인
 	public void testLoggingBucketNotFound() {
 		var sourceBucketName = getNewBucketNameOnly();
 		var targetBucketName = getNewBucketNameOnly();
@@ -149,7 +142,6 @@ public class Logging extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 타깃 버킷이 존재하지 않을때 로깅 설정 실패 확인
 	public void testLoggingTargetBucketNotFound() {
 		var prefix = "logs/";
 		var client = getClient();

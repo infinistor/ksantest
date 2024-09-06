@@ -34,7 +34,6 @@ public class Notification extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷에 알람 설정이 없는지 확인
 	public void testNotificationGetEmpty() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -49,7 +48,6 @@ public class Notification extends TestBase {
 
 	@Test
 	@Tag("Put")
-	// 버킷에 알람 설정이 가능한지 확인
 	public void testNotificationPut() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -58,7 +56,6 @@ public class Notification extends TestBase {
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
 		var s3Events = List.of(Event.S3_OBJECT_CREATED, Event.S3_OBJECT_REMOVED);
 
-		// 알람 설정
 		var notification = NotificationConfiguration.builder();
 		notification.lambdaFunctionConfigurations(
 				LambdaFunctionConfiguration.builder().id(roleId).lambdaFunctionArn(functionARN).events(s3Events)
@@ -70,7 +67,6 @@ public class Notification extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷에 알람 설정이 되어있는지 확인
 	public void testNotificationGet() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -79,7 +75,6 @@ public class Notification extends TestBase {
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
 		var s3Events = List.of(Event.S3_OBJECT_CREATED, Event.S3_OBJECT_REMOVED);
 
-		// 알람 설정
 		var notification = NotificationConfiguration.builder();
 		notification.lambdaFunctionConfigurations(
 				LambdaFunctionConfiguration.builder().id(roleId).lambdaFunctionArn(functionARN).events(s3Events)
@@ -96,7 +91,6 @@ public class Notification extends TestBase {
 
 	@Test
 	@Tag("Delete")
-	// 버킷에 알람 설정이 삭제되는지 확인
 	public void testNotificationDelete() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -105,7 +99,6 @@ public class Notification extends TestBase {
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
 		var s3Events = List.of(Event.S3_OBJECT_CREATED, Event.S3_OBJECT_REMOVED);
 
-		// 알람 설정
 		var notification = NotificationConfiguration.builder();
 		notification.lambdaFunctionConfigurations(
 				LambdaFunctionConfiguration.builder().id(roleId).lambdaFunctionArn(functionARN).events(s3Events)
@@ -118,7 +111,6 @@ public class Notification extends TestBase {
 		var resultLambda = result.lambdaFunctionConfigurations().get(0);
 		s3eventCompare(s3Events, resultLambda.events());
 
-		// 알람 삭제
 		client.putBucketNotificationConfiguration(
 				p -> p.bucket(bucketName).notificationConfiguration(NotificationConfiguration.builder().build()));
 

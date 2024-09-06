@@ -47,7 +47,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("PUT")
-	// 오브젝트가 올바르게 생성되는지 확인
 	public void testBucketListDistinct() {
 		var client = getClient();
 		var bucketName1 = createBucket(client);
@@ -61,7 +60,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 존재하지 않는 버킷에 오브젝트 업로드할 경우 실패 확인
 	public void testObjectWriteToNonExistBucket() {
 		var key = "foo";
 		var client = getClient();
@@ -78,7 +76,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("metadata")
-	// 0바이트로 업로드한 오브젝트가 실제로 0바이트인지 확인
 	public void testObjectHeadZeroBytes() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -92,7 +89,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("metadata")
-	// 업로드한 오브젝트의 ETag가 올바른지 확인
 	public void testObjectWriteCheckEtag() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -103,7 +99,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("cacheControl")
-	// 캐시(시간)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
 	public void testObjectWriteCacheControl() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -128,7 +123,6 @@ public class PutObject extends TestBase {
 	@Test
 	@Disabled("JAVA에서는 헤더만료일시 설정이 내부전용으로 되어있어 설정되지 않음")
 	@Tag("Expires")
-	// 캐시(날짜)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
 	public void testObjectWriteExpires() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -149,7 +143,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Update")
-	// 오브젝트의 기본 작업을 모드 올바르게 할 수 있는지 확인(read, write, update, delete)
 	public void testObjectWriteReadUpdateReadDelete() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -157,30 +150,24 @@ public class PutObject extends TestBase {
 		var key = "foo";
 		var body = "bar";
 
-		// Write
 		client.putObject(bucketName, key, body);
 
-		// Read
 		var getResponse = client.getObject(bucketName, key);
 		var responseBody = getBody(getResponse.getObjectContent());
 		assertEquals(body, responseBody);
 
-		// Update
 		var body2 = "soup";
 		client.putObject(bucketName, key, body2);
 
-		// Read
 		getResponse = client.getObject(bucketName, key);
 		responseBody = getBody(getResponse.getObjectContent());
 		assertEquals(body2, responseBody);
 
-		// Delete
 		client.deleteObject(bucketName, key);
 	}
 
 	@Test
 	@Tag("metadata")
-	// 오브젝트에 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
 	public void testObjectSetGetMetadataNoneToGood() {
 		var value = "my";
 		var got = setGetMetadata(value, null);
@@ -189,7 +176,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("metadata")
-	// 오브젝트에 빈 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
 	public void testObjectSetGetMetadataNoneToEmpty() {
 		var got = setGetMetadata("", null);
 		assertEquals("", got);
@@ -197,7 +183,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("metadata")
-	// 메타 데이터 업데이트가 올바르게 적용되었는지 확인
 	public void testObjectSetGetMetadataOverwriteToEmpty() {
 		var bucketName = createBucket();
 
@@ -212,7 +197,6 @@ public class PutObject extends TestBase {
 	@Test
 	@Disabled("JAVA에서는 메타데이터에 특수문자 사용시 예외처리되어 에러가 발생하지 않음")
 	@Tag("metadata")
-	// 메타데이터에 올바르지 않는 문자열[EOF(\x04)를 사용할 경우 실패 확인
 	public void testObjectSetGetNonUtf8Metadata() {
 		var metadata = "\nmy_meta";
 		var e = setGetMetadataUnreadable(metadata, null);
@@ -222,7 +206,6 @@ public class PutObject extends TestBase {
 	@Test
 	@Disabled("JAVA에서는 메타데이터에 특수문자 사용시 예외처리되어 에러가 발생하지 않음")
 	@Tag("metadata")
-	// 메타데이터에 올바르지 않는 문자[EOF(\x04)를 문자열 맨앞에 사용할 경우 실패 확인
 	public void testObjectSetGetMetadataEmptyToUnreadablePrefix() {
 		var metadata = "\nw";
 		var e = setGetMetadataUnreadable(metadata, null);
@@ -232,7 +215,6 @@ public class PutObject extends TestBase {
 	@Test
 	@Disabled("JAVA에서는 메타데이터에 특수문자 사용시 예외처리되어 에러가 발생하지 않음")
 	@Tag("metadata")
-	// 메타데이터에 올바르지 않는 문자[EOF(\x04)를 문자열 맨뒤에 사용할 경우 실패 확인
 	public void testObjectSetGetMetadataEmptyToUnreadableSuffix() {
 		var metadata = "h\n";
 		var e = setGetMetadataUnreadable(metadata, null);
@@ -241,7 +223,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("metadata")
-	// 오브젝트를 메타데이타 없이 덮어쓰기 했을 때, 메타데이타 값이 비어있는지 확인
 	public void testObjectMetadataReplacedOnPut() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -263,7 +244,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Encoding")
-	// body의 내용을utf-8로 인코딩한 오브젝트를 업로드 했을때 올바르게 업로드 되었는지 확인
 	public void testObjectWriteFile() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -280,7 +260,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("SpecialKeyName")
-	// 오브젝트 이름과 내용이 모두 특수문자인 오브젝트 여러개를 업로드 할 경우 모두 재대로 업로드 되는지 확인
 	public void testBucketCreateSpecialKeyNames() {
 		var keys = List.of("!", "-", "_", ".", "'", "(" + ")", "&", "$", "@", "=", ";", "/", ":", "+", "  ", ",", "?",
 				"{" + "}", "^", "%", "`", "[" + "]", "<" + ">", "~", "#", "|");
@@ -301,7 +280,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("SpecialKeyName")
-	// [_], [/]가 포함된 이름을 가진 오브젝트를 업로드 한뒤 prefix정보를 설정한 GetObjectList가 가능한지 확인
 	public void testBucketListSpecialPrefix() {
 		var keys = List.of("Bla/1", "Bla/2", "Bla/3", "Bla/4", "abcd");
 
@@ -316,8 +294,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Lock")
-	// [버킷의 Lock옵션을 활성화] LegalHold와 Lock유지기한을 설정하여 오브젝트 업로드할 경우 설정이 적용되는지 메타데이터를 통해
-	// 확인
 	public void testObjectLockUploadingObj() {
 		var bucketName = getNewBucketName();
 		var client = getClient();
@@ -351,7 +327,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Space")
-	// 오브젝트의 중간에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
 	public void testObjectInfixSpace() {
 		var client = getClient();
 		var keys = List.of("a a/", "b b/f1", "c/f 2", "d d/f 3");
@@ -365,7 +340,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Space")
-	// 오브젝트의 마지막에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
 	public void testObjectSuffixSpace() {
 		var client = getClient();
 		var keys = List.of("a /", "b /f1", "c/f2 ", "d /f3 ");
@@ -379,7 +353,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("SpecialCharacters")
-	// [SignatureVersion2] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인
 	public void testPutEmptyObjectSignatureV2() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)",
 				"*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
@@ -394,7 +367,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("SpecialCharacters")
-	// [SignatureVersion4] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인
 	public void testPutEmptyObjectSignatureV4() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
@@ -409,7 +381,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("SpecialCharacters")
-	// [SignatureVersion2] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void testPutObjectSignatureV2() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
@@ -424,7 +395,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("SpecialCharacters")
-	// [SignatureVersion4] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void testPutObjectSignatureV4() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
@@ -439,7 +409,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Encoding")
-	// [SignatureVersion4, UseChunkEncoding = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void testPutObjectUseChunkEncoding() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
@@ -454,8 +423,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Encoding")
-	// [SignatureVersion4, UseChunkEncoding = true, DisablePayloadSigning = true]
-	// 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void testPutObjectUseChunkEncodingAndDisablePayloadSigning() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
@@ -470,7 +437,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Encoding")
-	// [SignatureVersion4, UseChunkEncoding = false] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void testPutObjectNotChunkEncoding() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
@@ -485,8 +451,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Encoding")
-	// [SignatureVersion4, UseChunkEncoding = false, DisablePayloadSigning = true]
-	// 특수문자를 포함한 오브젝트 업로드 성공 확인
 	public void testPutObjectNotChunkEncodingAndDisablePayloadSigning() {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
@@ -501,9 +465,7 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Directory")
-	// 폴더의 이름과 동일한 오브젝트 업로드가 가능한지 확인
 	public void testPutObjectDirAndFile() {
-		// file first
 		var key = "aaa";
 		var directoryName = "aaa/";
 		var client = getClient();
@@ -516,7 +478,6 @@ public class PutObject extends TestBase {
 		var keys = getKeys(response.getObjectSummaries());
 		assertEquals(2, keys.size());
 
-		// dir first
 		var bucketName2 = createBucket(client);
 
 		client.putObject(bucketName2, directoryName, "");
@@ -526,7 +487,6 @@ public class PutObject extends TestBase {
 		keys = getKeys(response.getObjectSummaries());
 		assertEquals(2, keys.size());
 
-		// etc
 		var bucketName3 = createBucket(client);
 		var newKey = "aaa/bbb/ccc";
 
@@ -540,7 +500,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// 오브젝트를 덮어쓰기 했을때 올바르게 반영되는지 확인
 	public void testObjectOverwrite() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -560,7 +519,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("PUT")
-	// 오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인
 	public void testObjectEmoji() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -574,7 +532,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("metadata")
-	// 메타데이터에 utf-8이 포함될 경우 올바르게 업로드 되는지 확인
 	public void testObjectSetGetMetadataUtf8() {
 		var client = getClient();
 		var bucketName = createBucket(client);

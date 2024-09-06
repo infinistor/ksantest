@@ -33,7 +33,6 @@ public class DeleteObjects extends TestBase {
 
 	@Test
 	@Tag("ListObject")
-	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 	public void testMultiObjectDelete() {
 		var client = getClient();
 		var keyNames = List.of("key0", "key1", "key2");
@@ -59,7 +58,6 @@ public class DeleteObjects extends TestBase {
 
 	@Test
 	@Tag("ListObjectsV2")
-	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
 	public void testMultiObjectV2Delete() {
 		var client = getClient();
 		var keyNames = List.of("key0", "key1", "key2");
@@ -85,7 +83,6 @@ public class DeleteObjects extends TestBase {
 
 	@Test
 	@Tag("Versioning")
-	// 버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제
 	public void testMultiObjectDeleteVersions() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -115,7 +112,6 @@ public class DeleteObjects extends TestBase {
 
 	@Test
 	@Tag("quiet")
-	// quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 	public void testMultiObjectDeleteQuiet() {
 		var client = getClient();
 		var keyNames = List.of("key0", "key1", "key2");
@@ -136,7 +132,6 @@ public class DeleteObjects extends TestBase {
 
 	@Test
 	@Tag("Directory")
-	// 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 	public void testDirectoryDelete() {
 		var client = getClient();
 		var keyNames = List.of("a/b/", "a/b/c/d/obj1", "a/b/c/d/obj2", "1/2/", "1/2/3/4/obj1", "q/w/e/r/obj");
@@ -162,7 +157,6 @@ public class DeleteObjects extends TestBase {
 
 	@Test
 	@Tag("versioning")
-	// 버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 	public void testDirectoryDeleteVersions() {
 		var keyNames = List.of("a/", "a/obj1", "a/obj2", "b/", "b/obj1");
 		var client = getClient();

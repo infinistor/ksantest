@@ -49,7 +49,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 버킷의 버저닝 옵션 변경 가능 확인
 	public void testVersioningBucketCreateSuspend() {
 		var bucketName = createBucket();
 		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
@@ -62,7 +61,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// 버저닝 오브젝트의 생성/읽기/삭제 확인
 	public void testVersioningObjCreateReadRemove() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -78,7 +76,6 @@ public class Versioning extends TestBase {
 	@Test
 	@Disabled("JAVA에서는 DeleteObject API를 이용하여 오브젝트를 삭제할 경우 반환값이 없어 삭제된 오브젝트의 버전 정보를 받을 수 없음으로 테스트 불가")
 	@Tag("Object")
-	// 버저닝 오브젝트의 해더 정보를 사용하여 읽기/쓰기/삭제확인
 	public void testVersioningObjCreateReadRemoveHead() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -117,7 +114,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// 버킷에 버저닝 설정을 할 경우 소급적용되지 않음을 확인
 	public void testVersioningObjPlainNullVersionRemoval() {
 		var key = "foo";
 		var content = "foo data";
@@ -143,7 +139,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [버킷에 버저닝 설정이 되어있는 상태] null 버전 오브젝트를 덮어쓰기 할경우 버전 정보가 추가됨을 확인
 	public void testVersioningObjPlainNullVersionOverwrite() {
 		var key = "foo";
 		var content = "foo zzz";
@@ -180,7 +175,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [버킷에 버저닝 설정이 되어있지만 중단된 상태일때] null 버전 오브젝트를 덮어쓰기 할경우 버전정보가 추가되지 않음을 확인
 	public void testVersioningObjPlainNullVersionOverwriteSuspended() {
 		var key = "foo";
 		var content = "foo zzz";
@@ -212,7 +206,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// 버전관리를 일시중단했을때 올바르게 동작하는지 확인
 	public void testVersioningObjSuspendVersions() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -250,7 +243,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// 오브젝트하나의 여러버전을 모두 삭제 가능한지 확인
 	public void testVersioningObjCreateVersionsRemoveAll() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -273,7 +265,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// 이름에 특수문자가 들어간 오브젝트에 대해 버전관리가 올바르게 동작하는지 확인
 	public void testVersioningObjCreateVersionsRemoveSpecialNames() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -298,7 +289,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// 오브젝트를 멀티파트 업로드하였을 경우 버전관리가 올바르게 동작하는지 확인
 	public void testVersioningObjCreateOverwriteMultipart() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -329,7 +319,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 오브젝트의 해당 버전 정보가 올바른지 확인
 	public void testVersioningObjListMarker() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -385,7 +374,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Copy")
-	// 오브젝트의 버전별 복사가 가능한지 화인
 	public void testVersioningCopyObjVersion() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -429,7 +417,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Delete")
-	// 버전이 여러개인 오브젝트에 대한 삭제가 올바르게 동작하는지 확인
 	public void testVersioningMultiObjectDelete() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -462,7 +449,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("DeleteMarker")
-	// 버전이 여러개인 오브젝트에 대한 삭제마커가 올바르게 동작하는지 확인
 	public void testVersioningMultiObjectDeleteWithMarker() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -508,7 +494,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("DeleteMarker")
-	// 존재하지않는 오브젝트를 삭제할경우 삭제마커가 생성되는지 확인
 	public void testVersioningMultiObjectDeleteWithMarkerCreate() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -528,7 +513,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("ACL")
-	// 오브젝트 버전의 acl이 올바르게 관리되고 있는지 확인
 	public void testVersionedObjectAcl() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -559,7 +543,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("ACL")
-	// 버전정보를 입력하지 않고 오브젝트의 acl정보를 수정할 경우 가장 최신 버전에 반영되는지 확인
 	public void testVersionedObjectAclNoVersionSpecified() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -588,7 +571,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 오브젝트 버전을 추가/삭제를 여러번 했을 경우 올바르게 동작하는지 확인
 	public void testVersionedConcurrentObjectCreateAndRemove() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -633,7 +615,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 버킷의 버저닝 설정이 업로드시 올바르게 동작하는지 확인
 	public void testVersioningBucketAtomicUploadReturnVersionId() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -662,7 +643,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("MultiPart")
-	// 버킷의 버저닝 설정이 멀티파트 업로드시 올바르게 동작하는지 확인
 	public void testVersioningBucketMultipartUploadReturnVersionId() {
 		var contentType = "text/bla";
 		var size = 50 * MainData.MB;
@@ -707,7 +687,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("metadata")
-	// 업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인
 	public void testVersioningGetObjectHead() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -730,7 +709,6 @@ public class Versioning extends TestBase {
 
 	@Test
 	@Tag("Delete")
-	// 버전이 여러개인 오브젝트의 최신 버전을 삭제 했을때 이전버전이 최신버전으로 변경되는지 확인
 	public void testVersioningLatest() {
 		var client = getClient();
 		var bucketName = createBucket(client);

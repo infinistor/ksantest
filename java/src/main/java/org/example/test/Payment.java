@@ -32,7 +32,6 @@ public class Payment extends TestBase {
 
 	@Test
 	@Tag("Put")
-	// 버킷 과금 설정이 가능한지 확인
 	public void testPutBucketRequestPayment() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -43,7 +42,6 @@ public class Payment extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷 과금 설정 조회 확인
 	public void testGetBucketRequestPayment() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -54,7 +52,6 @@ public class Payment extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷 과금 설정이 올바르게 적용되는지 확인
 	public void testSetGetBucketRequestPayment() {
 		var client = getClient();
 		var bucketName = createBucket(client);

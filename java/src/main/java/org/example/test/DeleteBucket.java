@@ -34,7 +34,6 @@ public class DeleteBucket extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인
 	public void testBucketDeleteNotExist() {
 		var client = getClient();
 		var bucketName = getNewBucketNameOnly();
@@ -51,7 +50,6 @@ public class DeleteBucket extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인
 	public void testBucketDeleteNonempty() {
 		var client = getClient();
 		var bucketName = createObjects(client, List.of("foo"));
@@ -67,7 +65,6 @@ public class DeleteBucket extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인
 	public void testBucketCreateDelete() {
 		var client = getClient();
 		var bucketName = createBucket(client);

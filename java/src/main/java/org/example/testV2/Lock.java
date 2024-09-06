@@ -46,7 +46,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 잠금 설정이 가능한지 확인
 	public void testObjectLockPutObjLock() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
@@ -63,7 +62,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정이 실패
 	public void testObjectLockPutObjLockInvalidBucket() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -80,7 +78,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// [버킷의 Lock옵션을 활성화] Days, Years값 모두 입력하여 Lock 설정할경우 실패
 	public void testObjectLockPutObjLockWithDaysAndYears() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
@@ -97,7 +94,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// [버킷의 Lock옵션을 활성화] Days값을 0이하로 입력하여 Lock 설정할경우 실패
 	public void testObjectLockPutObjLockInvalidDays() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
@@ -115,7 +111,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// [버킷의 Lock옵션을 활성화] Years값을 0이하로 입력하여 Lock 설정할경우 실패
 	public void testObjectLockPutObjLockInvalidYears() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
@@ -133,7 +128,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// [버킷의 Lock옵션을 활성화] mode값이 올바르지 않은상태에서 Lock 설정할 경우 실패
 	public void testObjectLockPutObjLockInvalidMode() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
@@ -150,7 +144,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// [버킷의 Lock옵션을 활성화] status값이 올바르지 않은상태에서 Lock 설정할 경우 실패
 	public void testObjectLockPutObjLockInvalidStatus() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
@@ -168,7 +161,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("Version")
-	// [버킷의 Lock옵션을 활성화] 버킷의 버저닝을 일시중단하려고 할경우 실패
 	public void testObjectLockSuspendVersioning() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
@@ -182,7 +174,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 올바르게 되었는지 확인
 	public void testObjectLockGetObjLock() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
@@ -200,7 +191,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정 조회 실패
 	public void testObjectLockGetObjLockInvalidBucket() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
@@ -214,7 +204,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("retention")
-	// [버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정이 가능한지 확인
 	public void testObjectLockPutObjRetention() {
 		var key = "testObjectLockPutObjRetention";
 		var client = getClient();
@@ -233,7 +222,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("retention")
-	// 버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 설정 실패
 	public void testObjectLockPutObjRetentionInvalidBucket() {
 		var key = "testObjectLockPutObjRetentionInvalidBucket";
 		var client = getClient();
@@ -254,7 +242,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("retention")
-	// [버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정할때 Mode값이 올바르지 않을 경우 설정 실패
 	public void testObjectLockPutObjRetentionInvalidMode() {
 		var key = "testObjectLockPutObjRetentionInvalidMode";
 		var client = getClient();
@@ -275,7 +262,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("retention")
-	// [버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정이 올바른지 확인
 	public void testObjectLockGetObjRetention() {
 		var key = "testObjectLockGetObjRetention";
 		var client = getClient();
@@ -303,7 +289,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("retention")
-	// 버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 조회 실패
 	public void testObjectLockGetObjRetentionInvalidBucket() {
 		var key = "testObjectLockGetObjRetentionInvalidBucket";
 		var client = getClient();
@@ -319,7 +304,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("retention")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 특정 버전에 Lock 유지기한을 설정할 경우 올바르게 적용되었는지 확인
 	public void testObjectLockPutObjRetentionVersionid() {
 		var key = "testObjectLockPutObjRetentionVersionid";
 		var client = getClient();
@@ -348,7 +332,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("Priority")
-	// [버킷의 Lock옵션을 활성화] 버킷에 설정한 Lock설정보다 오브젝트에 Lock설정한 값이 우선 적용됨을 확인
 	public void testObjectLockPutObjRetentionOverrideDefaultRetention() {
 		var key = "testObjectLockPutObjRetentionOverrideDefaultRetention";
 		var client = getClient();
@@ -384,7 +367,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한을 늘렸을때 적용되는지 확인
 	public void testObjectLockPutObjRetentionIncreasePeriod() {
 		var key = "testObjectLockPutObjRetentionIncreasePeriod";
 		var client = getClient();
@@ -419,7 +401,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한을 줄였을때 실패 확인
 	public void testObjectLockPutObjRetentionShortenPeriod() {
 		var key = "testObjectLockPutObjRetentionShortenPeriod";
 		var client = getClient();
@@ -455,7 +436,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// [버킷의 Lock옵션을 활성화] 바이패스를 True로 설정하고 오브젝트의 lock 유지기한을 줄였을때 적용되는지 확인
 	public void testObjectLockPutObjRetentionShortenPeriodBypass() {
 		var key = "testObjectLockPutObjRetentionShortenPeriodBypass";
 		var client = getClient();
@@ -492,7 +472,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한내에 삭제를 시도할 경우 실패 확인
 	public void testObjectLockDeleteObjectWithRetention() {
 		var key = "testObjectLockDeleteObjectWithRetention";
 		var client = getClient();
@@ -522,7 +501,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("LegalHold")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold를 활성화 가능한지 확인
 	public void testObjectLockPutLegalHold() {
 		var key = "testObjectLockPutLegalHold";
 		var client = getClient();
@@ -540,7 +518,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("LegalHold")
-	// [버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold를 활성화 실패 확인
 	public void testObjectLockPutLegalHoldInvalidBucket() {
 		var key = "testObjectLockPutLegalHoldInvalidBucket";
 		var client = getClient();
@@ -557,7 +534,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("LegalHold")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold에 잘못된 값을 넣을 경우 실패 확인
 	public void testObjectLockPutLegalHoldInvalidStatus() {
 		var key = "testObjectLockPutLegalHoldInvalidStatus";
 		var client = getClient();
@@ -575,7 +551,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("LegalHold")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 올바르게 적용되었는지 확인
 	public void testObjectLockGetLegalHold() {
 		var key = "testObjectLockGetLegalHold";
 		var client = getClient();
@@ -597,7 +572,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("LegalHold")
-	// [버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold설정 조회 실패 확인
 	public void testObjectLockGetLegalHoldInvalidBucket() {
 		var key = "testObjectLockGetLegalHoldInvalidBucket";
 		var client = getClient();
@@ -613,7 +587,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("LegalHold")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 활성화되어 있을 경우 오브젝트 삭제 실패 확인
 	public void testObjectLockDeleteObjectWithLegalHoldOn() {
 		var key = "testObjectLockDeleteObjectWithLegalHoldOn";
 		var client = getClient();
@@ -636,7 +609,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("LegalHold")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 비활성화되어 있을 경우 오브젝트 삭제 확인
 	public void testObjectLockDeleteObjectWithLegalHoldOff() {
 		var key = "testObjectLockDeleteObjectWithLegalHoldOff";
 		var client = getClient();
@@ -653,7 +625,6 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("LegalHold")
-	// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold와 Lock유지기한 설정이 모두 적용되는지 메타데이터를 통해 확인
 	public void testObjectLockGetObjMetadata() {
 		var key = "testObjectLockGetObjMetadata";
 		var client = getClient();

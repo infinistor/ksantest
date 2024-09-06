@@ -45,7 +45,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 오브젝트의 크기가 0일때 복사가 가능한지 확인
 	public void testObjectCopyZeroSize() {
 		var key = "foo123bar";
 		var newKey = "bar321foo";
@@ -64,7 +63,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 동일한 버킷에서 오브젝트 복사가 가능한지 확인
 	public void testObjectCopySameBucket() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -83,7 +81,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("ContentType")
-	// ContentType을 설정한 오브젝트를 복사할 경우 복사된 오브젝트도 ContentType값이 일치하는지 확인
 	public void testObjectCopyVerifyContentType() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -104,7 +101,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러 확인
 	public void testObjectCopyToItself() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -123,7 +119,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
 	public void testObjectCopyToItselfWithMetadata() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -146,7 +141,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 다른 버킷으로 오브젝트 복사가 가능한지 확인
 	public void testObjectCopyDiffBucket() {
 		var client = getClient();
 		var bucketName1 = createBucket(client);
@@ -168,8 +162,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// [bucket1:created main user, object:created main user / bucket2:created sub
-	// user] 메인유저가 만든 버킷, 오브젝트를 서브유저가 만든 버킷으로 오브젝트 복사가 불가능한지 확인
 	public void testObjectCopyNotOwnedBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
@@ -195,8 +187,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// [bucketAcl = main:full control,sub : full control | objectAcl = default]
-	// 서브유저가 접근권한이 있는 버킷에 들어있는 접근권한이 있는 오브젝트를 복사가 가능한지 확인
 	public void testObjectCopyNotOwnedObjectBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
@@ -225,7 +215,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// 권한정보를 포함하여 복사할때 올바르게 적용되는지 확인 메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인
 	public void testObjectCopyCannedAcl() {
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
@@ -259,7 +248,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 크고 작은 용량의 오브젝트가 복사되는지 확인
 	public void testObjectCopyRetainingMetadata() {
 		for (var size : new int[] { 3, 1024 * 1024 }) {
 			var client = getClient();
@@ -288,7 +276,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 크고 작은 용량의 오브젝트및 메타데이터가 복사되는지 확인
 	public void testObjectCopyReplacingMetadata() {
 		for (var size : new int[] { 3, 1024 * 1024 }) {
 			var client = getClient();
@@ -328,7 +315,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 존재하지 않는 버킷에서 존재하지 않는 오브젝트 복사 실패 확인
 	public void testObjectCopyBucketNotFound() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -342,7 +328,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 존재하지않는 오브젝트 복사 실패 확인
 	public void testObjectCopyKeyNotFound() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -357,7 +342,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Version")
-	// 버저닝된 오브젝트 복사 확인
 	public void testObjectCopyVersionedBucket() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -422,7 +406,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Version")
-	// [버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공 확인
 	public void testObjectCopyVersionedUrlEncoding() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -443,7 +426,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// [버킷에 버저닝 설정] 멀티파트로 업로드된 오브젝트 복사 확인
 	public void testObjectCopyVersioningMultipartUpload() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -520,7 +502,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("If Match")
-	// if match 값을 추가하여 오브젝트를 복사할 경우 성공확인
 	public void testCopyObjectIfMatchGood() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -539,7 +520,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("If Match")
-	// if match에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패 확인
 	public void testCopyObjectIfMatchFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -559,7 +539,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인
 	public void testCopyNorSrcToNorBucketAndObj() {
 		testObjectCopy(false, false, false, false, 1024);
 		testObjectCopy(false, false, false, false, 256 * 1024);
@@ -568,8 +547,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공
-	// 확인
 	public void testCopyNorSrcToNorBucketEncryptionObj() {
 		testObjectCopy(false, false, false, true, 1024);
 		testObjectCopy(false, false, false, true, 256 * 1024);
@@ -578,8 +555,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공
-	// 확인
 	public void testCopyNorSrcToEncryptionBucketNorObj() {
 		testObjectCopy(false, false, true, false, 1024);
 		testObjectCopy(false, false, true, false, 256 * 1024);
@@ -588,8 +563,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
-	// 복사 성공 확인
 	public void testCopyNorSrcToEncryptionBucketAndObj() {
 		testObjectCopy(false, false, true, true, 1024);
 		testObjectCopy(false, false, true, true, 256 * 1024);
@@ -598,8 +571,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공
-	// 확인
 	public void testCopyEncryptionSrcToNorBucketAndObj() {
 		testObjectCopy(true, false, false, false, 1024);
 		testObjectCopy(true, false, false, false, 256 * 1024);
@@ -608,8 +579,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
-	// 복사 성공 확인
 	public void testCopyEncryptionSrcToNorBucketEncryptionObj() {
 		testObjectCopy(true, false, false, true, 1024);
 		testObjectCopy(true, false, false, true, 256 * 1024);
@@ -618,8 +587,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
-	// 복사 성공 확인
 	public void testCopyEncryptionSrcToEncryptionBucketNorObj() {
 		testObjectCopy(true, false, true, false, 1024);
 		testObjectCopy(true, false, true, false, 256 * 1024);
@@ -628,8 +595,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : encryption, dest obj : encryption]
-	// 오브젝트 복사 성공 확인
 	public void testCopyEncryptionSrcToEncryptionBucketAndObj() {
 		testObjectCopy(true, false, true, true, 1024);
 		testObjectCopy(true, false, true, true, 256 * 1024);
@@ -638,8 +603,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source bucket : encryption, source obj : normal, dest bucket : normal, dest
-	// obj : normal] 오브젝트 복사 성공 확인
 	public void testCopyEncryptionBucketNorObjToNorBucketAndObj() {
 		testObjectCopy(false, true, false, false, 1024);
 		testObjectCopy(false, true, false, false, 256 * 1024);
@@ -648,8 +611,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공
-	// 확인
 	public void testCopyEncryptionBucketNorObjToNorBucketEncryptionObj() {
 		testObjectCopy(false, true, false, true, 1024);
 		testObjectCopy(false, true, false, true, 256 * 1024);
@@ -658,8 +619,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공
-	// 확인
 	public void testCopyEncryptionBucketNorObjToEncryptionBucketNorObj() {
 		testObjectCopy(false, true, true, false, 1024);
 		testObjectCopy(false, true, true, false, 256 * 1024);
@@ -668,8 +627,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
-	// 복사 성공 확인
 	public void testCopyEncryptionBucketNorObjToEncryptionBucketAndObj() {
 		testObjectCopy(false, true, true, true, 1024);
 		testObjectCopy(false, true, true, true, 256 * 1024);
@@ -678,8 +635,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공
-	// 확인
 	public void testCopyEncryptionBucketAndObjToNorBucketAndObj() {
 		testObjectCopy(true, true, false, false, 1024);
 		testObjectCopy(true, true, false, false, 256 * 1024);
@@ -688,8 +643,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
-	// 복사 성공 확인
 	public void testCopyEncryptionBucketAndObjToNorBucketEncryptionObj() {
 		testObjectCopy(true, true, false, true, 1024);
 		testObjectCopy(true, true, false, true, 256 * 1024);
@@ -698,8 +651,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
-	// 복사 성공 확인
 	public void testCopyEncryptionBucketAndObjToEncryptionBucketNorObj() {
 		testObjectCopy(true, true, true, false, 1024);
 		testObjectCopy(true, true, true, false, 256 * 1024);
@@ -708,8 +659,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : encryption, dest obj : encryption]
-	// 오브젝트 복사 성공 확인
 	public void testCopyEncryptionBucketAndObjToEncryptionBucketAndObj() {
 		testObjectCopy(true, true, true, true, 1024);
 		testObjectCopy(true, true, true, true, 256 * 1024);
@@ -718,7 +667,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// 일반 오브젝트에서 다양한 방식으로 복사 성공 확인
 	public void testCopyToNormalSource() {
 		var size1 = 1024;
 		var size2 = 256 * 1024;
@@ -739,7 +687,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// SSE-S3암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
 	public void testCopyToSseS3Source() {
 		var size1 = 1024;
 		var size2 = 256 * 1024;
@@ -760,7 +707,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("encryption")
-	// SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
 	public void testCopyToSseCSource() {
 		var size1 = 1024;
 		var size2 = 256 * 1024;
@@ -781,7 +727,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 삭제된 오브젝트 복사 실패 확인
 	public void testCopyToDeletedObject() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -803,7 +748,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 버저닝된 버킷에서 삭제된 오브젝트 복사 실패 확인
 	public void testCopyToDeleteMarkerObject() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -827,8 +771,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지
-	// 확인(Versioning 설정)
 	public void testObjectVersioningCopyToItselfWithMetadata() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -853,7 +795,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
 	public void testObjectCopyToItselfWithMetadataOverwrite() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -878,8 +819,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지
-	// 확인(Versioning 설정)
 	public void testObjectVersioningCopyToItselfWithMetadataOverwrite() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -906,7 +845,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// sse-c로 암호화된 오브젝트를 복사할때 Algorithm을 누락하면 오류가 발생하는지 확인
 	public void testCopyRevokeSseAlgorithm() {
 		var client = getClientHttps(true);
 		var bucketName = createBucket(client);

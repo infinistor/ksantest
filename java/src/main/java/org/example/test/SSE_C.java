@@ -52,35 +52,30 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("PutGet")
-	// 1Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void testEncryptedTransfer1b() {
 		testEncryptionSSECustomerWrite(1);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// 1KB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void testEncryptedTransfer1kb() {
 		testEncryptionSSECustomerWrite(1024);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// 1MB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void testEncryptedTransfer1MB() {
 		testEncryptionSSECustomerWrite(1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
-	// 13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	public void testEncryptedTransfer13b() {
 		testEncryptionSSECustomerWrite(13);
 	}
 
 	@Test
 	@Tag("metadata")
-	// SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인
 	public void testEncryptionSseCMethodHead() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -107,7 +102,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인
 	public void testEncryptionSseCPresent() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -132,7 +126,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 	public void testEncryptionSseCOtherKey() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -162,7 +155,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// SSE-C 설정값중 key-md5값이 올바르지 않을 경우 업로드 실패 확인
 	public void testEncryptionSseCInvalidMd5() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -187,7 +179,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// SSE-C 설정값중 key-md5값을 누락했을 경우 업로드 성공 확인
 	public void testEncryptionSseCNoMd5() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -211,7 +202,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// SSE-C 설정값중 key값을 누락했을 경우 업로드 실패 확인
 	public void testEncryptionSseCNoKey() {
 		assertThrows(IllegalArgumentException.class,
 				() -> new SSECustomerKey("").withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION));
@@ -220,7 +210,6 @@ public class SSE_C extends TestBase {
 	@Test
 	@Disabled("JAVA 에서는 algorithm값을 누락해도 기본값이 지정되어 있어 에러가 발생하지 않음")
 	@Tag("ERROR")
-	// @Tag("SSE-C 설정값중 algorithm값을 누락했을 경우 업로드 실패 확인
 	public void testEncryptionKeyNoSseC() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -243,7 +232,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// 멀티파트업로드를 SSE-C 설정하여 업로드 가능 확인
 	public void testEncryptionSseCMultipartUpload() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -283,7 +271,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 	public void testEncryptionSseCMultipartBadDownload() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -327,7 +314,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("Post")
-	// Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인
 	public void testEncryptionSseCPostObjectAuthenticatedRequest() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var client = getClientHttps();
@@ -416,7 +402,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// SSE-C설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	public void testEncryptionSseCGetObjectMany() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -437,7 +422,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// SSE-C설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	public void testEncryptionSseCRangeObjectMany() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -464,7 +448,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 multipart Copy 로 복사 가능한지 확인
 	public void testSseCEncryptionMultipartCopyPartUpload() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -495,7 +478,6 @@ public class SSE_C extends TestBase {
 		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
 		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSECustomerAlgorithm());
 
-		// 멀티파트 복사
 		var targetKey = "multipartEncCopy";
 		uploadData = multipartCopySseC(client, bucketName, sourceKey, bucketName, targetKey, size, metadata, sse);
 		client.completeMultipartUpload(
@@ -505,7 +487,6 @@ public class SSE_C extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// SSE-C 설정하여 Multipart와 CopyPart를 모두 사용하여 오브젝트가 업로드 가능한지 확인
 	public void testSseCEncryptionMultipartCopyMany() {
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
@@ -517,36 +498,28 @@ public class SSE_C extends TestBase {
 		metadata.setContentType(contentType);
 		var body = new StringBuilder();
 
-		// 멀티파트 업로드
 		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size, metadata);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, sourceKey, uploadData.uploadId, uploadData.parts));
 
-		// 업로드가 올바르게 되었는지 확인
 		body.append(uploadData.body);
 		checkContentUsingRange(bucketName, sourceKey, body.toString(), MainData.MB);
 
-		// 멀티파트 카피
 		var targetKey1 = "my_multipart1";
 		uploadData = multipartCopy(client, bucketName, sourceKey, bucketName, targetKey1, size, metadata);
-		// 추가파츠 업로드
 		uploadData = multipartUpload(client, bucketName, targetKey1, size, uploadData);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, targetKey1, uploadData.uploadId, uploadData.parts));
 
-		// 업로드가 올바르게 되었는지 확인
 		body.append(uploadData.body);
 		checkContentUsingRange(bucketName, targetKey1, body.toString(), MainData.MB);
 
-		// 멀티파트 카피
 		var targetKey2 = "my_multipart2";
 		uploadData = multipartCopy(client, bucketName, targetKey1, bucketName, targetKey2, size * 2, metadata);
-		// 추가파츠 업로드
 		uploadData = multipartUpload(client, bucketName, targetKey2, size, uploadData);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, targetKey2, uploadData.uploadId, uploadData.parts));
 
-		// 업로드가 올바르게 되었는지 확인
 		body.append(uploadData.body);
 		checkContentUsingRange(bucketName, targetKey2, body.toString(), MainData.MB);
 	}

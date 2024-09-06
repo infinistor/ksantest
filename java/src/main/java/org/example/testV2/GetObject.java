@@ -39,7 +39,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 버킷에 존재하지 않는 오브젝트 다운로드를 할 경우 실패 확인
 	public void testObjectReadNotExist() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -55,7 +54,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("IfMatch")
-	// 존재하는 오브젝트 이름과 ETag 값으로 오브젝트를 가져오는지 확인
 	public void testGetObjectIfMatchGood() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -71,7 +69,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("IfMatch")
-	// 오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
 	public void testGetObjectIfMatchFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -87,7 +84,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("IfNoneMatch")
-	// 오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
 	public void testGetObjectIfNoneMatchGood() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -105,7 +101,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("IfNoneMatch")
-	// 오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
 	public void testGetObjectIfNoneMatchFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -121,7 +116,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("IfModifiedSince")
-	// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifModifiedSince)보다 이후에 수정된 오브젝트를 조회 성공
 	public void testGetObjectIfModifiedSinceGood() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -139,7 +133,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("IfModifiedSince")
-	// [지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 성공
 	public void testGetObjectIfModifiedSinceFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -162,7 +155,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("ifUnmodifiedSince")
-	// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 실패
 	public void testGetObjectIfUnmodifiedSinceGood() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -182,7 +174,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("ifUnmodifiedSince")
-	// [지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 성공
 	public void testGetObjectIfUnmodifiedSinceFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -200,7 +191,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("Range")
-	// 지정한 범위로 오브젝트 다운로드가 가능한지 확인
 	public void testRangedRequestResponseCode() {
 		var key = "obj";
 		var content = "contentData";
@@ -218,7 +208,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("Range")
-	// 지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
 	public void testRangedBigRequestResponseCode() {
 		var key = "obj";
 		var content = Utils.randomTextToLong(8 * MainData.MB);
@@ -237,7 +226,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("Range")
-	// 특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
 	public void testRangedRequestSkipLeadingBytesResponseCode() {
 		var key = "obj";
 		var content = "contentData";
@@ -255,7 +243,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("Range")
-	// 끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
 	public void testRangedRequestReturnTrailingBytesResponseCode() {
 		var key = "obj";
 		var content = "contentData";
@@ -273,7 +260,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("Range")
-	// 오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
 	public void testRangedRequestInvalidRange() {
 		var key = "obj";
 		var content = "contentData";
@@ -292,7 +278,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("Range")
-	// 비어있는 오브젝트를 범위를 지정하여 다운로드 실패 확인
 	public void testRangedRequestEmptyObject() {
 		var key = "obj";
 		var content = "";
@@ -311,7 +296,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	public void testGetObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -324,7 +308,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	public void testRangeObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client);

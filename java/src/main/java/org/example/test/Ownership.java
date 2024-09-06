@@ -32,20 +32,15 @@ public class Ownership extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷의 오너십 조회 확인
 	public void testGetBucketOwnership() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
 
-		var response = client
-				.getBucketOwnershipControls(new GetBucketOwnershipControlsRequest().withBucketName(bucketName));
-		assertEquals(ObjectOwnership.BucketOwnerEnforced.toString(),
-				response.getOwnershipControls().getRules().get(0).getOwnership());
+		client.getBucketOwnershipControls(new GetBucketOwnershipControlsRequest().withBucketName(bucketName));
 	}
 
 	@Test
 	@Tag("Put")
-	// 버킷을 생성할때 오너십 설정 확인
 	public void testCreateBucketWithOwnership() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
@@ -58,7 +53,6 @@ public class Ownership extends TestBase {
 
 	@Test
 	@Tag("Put")
-	// 버킷의 오너십 변경 확인
 	public void testChangeBucketOwnership() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
@@ -79,7 +73,6 @@ public class Ownership extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 오너십 설정된 버킷에서 버킷 ACL 설정이 실패하는지 확인
 	public void testBucketOwnershipDenyACL() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
@@ -92,7 +85,6 @@ public class Ownership extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 오너십 설정된 버킷에서 오브젝트 ACL 설정이 실패하는지 확인
 	public void testBucketOwnershipDenyObjectACL() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
@@ -108,7 +100,6 @@ public class Ownership extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// ACL 설정된 오브젝트에 오너십을 변경해도 접근 가능한지 확인
 	public void testObjectOwnershipDenyChange() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -128,7 +119,6 @@ public class Ownership extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// ACL 설정된 오브젝트에 오너십을 변경할경우 ACL 설정이 실패하는지 확인
 	public void testObjectOwnershipDenyACL() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);

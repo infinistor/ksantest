@@ -46,7 +46,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 버킷에 정책 설정이 올바르게 적용되는지 확인
 	public void testBucketPolicy() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -87,7 +86,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)
 	public void testBucketV2Policy() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -127,7 +125,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Priority")
-	// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인
 	public void testBucketPolicyAcl() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -175,7 +172,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Priority")
-	// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인(ListObjectsV2)
 	public void testBucketV2PolicyAcl() {
 
 		var client = getClient();
@@ -224,7 +220,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Tagging")
-	// 정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void testGetTagsAclPublic() {
 		var key = "acl";
 		var client = getClient();
@@ -247,7 +242,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Tagging")
-	// 정책설정으로 오브젝트의 태그 입력을 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void testPutTagsAclPublic() {
 		var key = "acl";
 		var client = getClient();
@@ -269,7 +263,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Tagging")
-	// 정책설정으로 오브젝트의 태그 삭제를 public-read로 설정했을때 올바르게 동작하는지 확인
 	public void testDeleteTagsObjPublic() {
 		var key = "acl";
 		var client = getClient();
@@ -293,8 +286,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("TagOptions")
-	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용] 조건부 정책설정시
-	// 올바르게 동작하는지 확인
 	public void testBucketPolicyGetObjExistingTag() {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
@@ -340,8 +331,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("TagOptions")
-	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectTagging허용] 조건부
-	// 정책설정시 올바르게 동작하는지 확인
 	public void testBucketPolicyGetObjTaggingExistingTag() {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
@@ -391,8 +380,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("TagOptions")
-	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 PutObjectTagging허용] 조건부
-	// 정책설정시 올바르게 동작하는지 확인
 	public void testBucketPolicyPutObjTaggingExistingTag() {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
@@ -442,8 +429,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("PathOptions")
-	// [복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시
-	// 올바르게 동작하는지 확인
 	public void testBucketPolicyPutObjCopySource() {
 		var publicFoo = "public/foo";
 		var publicBar = "public/bar";
@@ -491,8 +476,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("MetadataOptions")
-	// [오브젝트의 메타데이터값이 'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게 PutObject허용] 조건부
-	// 정책설정시 올바르게 동작하는지 확인
 	public void testBucketPolicyPutObjCopySourceMeta() {
 		var publicFoo = "public/foo";
 		var publicBar = "public/bar";
@@ -538,8 +521,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("ACLOptions")
-	// [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시 올바르게
-	// 동작하는지 확
 	public void testBucketPolicyPutObjAcl() {
 		var client = getClient();
 		var altClient = getAltClient();
@@ -569,8 +550,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("GrantOptions")
-	// [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게
-	// 동작하는지 확인
 	public void testBucketPolicyPutObjGrant() {
 		var client = getClient();
 		var bucketName1 = createBucketCannedACL(client);
@@ -615,8 +594,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("TagOptions")
-	// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용] 조건부
-	// 정책설정시 올바르게 동작하는지 확인
 	public void testBucketPolicyGetObjAclExistingTag() {
 		var publicTag = "publicTag";
 		var privateTag = "privateTag";
@@ -667,7 +644,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Status")
-	// [모든 사용자가 버킷에 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
 	public void testGetPublicPolicyAclBucketPolicyStatus() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -707,7 +683,6 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Status")
-	// [특정 ip로 접근했을때만 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
 	public void testGetNonpublicPolicyAclBucketPolicyStatus() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);

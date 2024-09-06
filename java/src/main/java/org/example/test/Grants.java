@@ -44,7 +44,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Bucket")
-	// 권한을 설정하지 않고 생성한 버킷의 default acl정보가 올바른지 확인
 	public void testBucketAclDefault() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -55,7 +54,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Bucket")
-	// [bucket:public-read => private] 권한을 변경할경우 올바르게 적용되는지 확인
 	public void testBucketAclChanged() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicRead);
@@ -71,7 +69,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Bucket")
-	// [bucket:public-read] 생성한 버킷의 acl정보가 올바른지 확인
 	public void testBucketAclPublicRead() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicRead);
@@ -82,7 +79,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Bucket")
-	// [bucket:public-read-write] 생성한 버킷의 acl정보가 올바른지 확인
 	public void testBucketAclPublicRW() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicReadWrite);
@@ -93,7 +89,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Bucket")
-	// [bucket:authenticated-read] 생성한 버킷의 acl정보가 올바른지 확인
 	public void testBucketAclAuthenticatedRead() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client, CannedAccessControlList.AuthenticatedRead);
@@ -104,7 +99,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// 권한을 설정하지 않고 생성한 오브젝트의 acl정보가 올바른지 확인
 	public void testObjectAclDefault() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -118,7 +112,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [object:public-read => private] 오브젝트의 권한을 변경할경우 올바르게 적용되는지 확인
 	public void testObjectAclChange() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -138,7 +131,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [object:public-read] 생성한 오브젝트의 acl정보가 올바른지 확인
 	public void testObjectAclPublicRead() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -153,7 +145,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [object:public-read-write] 생성한 오브젝트의 acl정보가 올바른지 확인
 	public void testObjectAclPublicRW() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -168,7 +159,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [object:authenticated-read] 생성한 오브젝트의 acl정보가 올바른지 확인
 	public void testObjectAclAuthenticatedRead() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -183,7 +173,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [object:bucket-owner-read] 생성한 오브젝트의 acl정보가 올바른지 확인
 	public void testObjectAclBucketOwnerRead() {
 		var mainClient = getClient();
 		var altClient = getAltClient();
@@ -202,8 +191,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [ObjectWriter][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가 올바른지
-	// 확인
 	public void testBucketObjectWriterBucketOwnerFullControl() {
 		var mainClient = getClient();
 		var altClient = getAltClient();
@@ -220,8 +207,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [BucketOwnerEnforced][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가
-	// 올바른지 확인
 	public void testBucketOwnerEnforcedBucketOwnerFullControl() {
 		var mainClient = getClient();
 		var altClient = getAltClient();
@@ -238,8 +223,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	// [object: public-read-write => alt-user-full-control => alt-user-read-acl]
-	// 권한을 변경해도 소유주가 변경되지 않는지 확인
 	public void testObjectAclOwnerNotChange() {
 		var mainClient = getClient();
 		var altClient = getAltClient();
@@ -260,7 +243,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Effect")
-	// 권한을 변경해도 오브젝트에 영향을 주지 않는지 확인
 	public void testBucketAclChangeNotEffect() {
 		var key = "foo";
 		var client = getClient();
@@ -283,7 +265,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Permission")
-	// [bucket:private] 기본생성한 버킷에 private 설정이 가능한지 확인
 	public void testBucketAclDuplicated() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client, CannedAccessControlList.Private);
@@ -292,42 +273,36 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
 	public void testObjectPermissionFullControl() {
 		checkObjectACL(Permission.FullControl);
 	}
 
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
 	public void testObjectPermissionWrite() {
 		checkObjectACL(Permission.Write);
 	}
 
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
 	public void testObjectPermissionWriteAcp() {
 		checkObjectACL(Permission.WriteAcp);
 	}
 
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
 	public void testObjectPermissionRead() {
 		checkObjectACL(Permission.Read);
 	}
 
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
 	public void testObjectPermissionReadAcp() {
 		checkObjectACL(Permission.ReadAcp);
 	}
 
 	@Test
 	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : FULL_CONTROL
 	public void testBucketPermissionAltUserFullControl() {
 		var bucketName = bucketACLGrantUserId(Permission.FullControl);
 		var altClient = getAltClient();
@@ -347,7 +322,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ
 	public void testBucketPermissionAltUserRead() {
 		var bucketName = bucketACLGrantUserId(Permission.Read);
 		var altClient = getAltClient();
@@ -360,7 +334,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ_ACP
 	public void testBucketPermissionAltUserReadAcp() {
 		var bucketName = bucketACLGrantUserId(Permission.ReadAcp);
 		var altClient = getAltClient();
@@ -373,7 +346,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE
 	public void testBucketPermissionAltUserWrite() {
 		var bucketName = bucketACLGrantUserId(Permission.Write);
 		var altClient = getAltClient();
@@ -386,7 +358,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE_ACP
 	public void testBucketPermissionAltUserWriteAcp() {
 		var bucketName = bucketACLGrantUserId(Permission.WriteAcp);
 		var altClient = getAltClient();
@@ -399,7 +370,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 버킷에 존재하지 않는 유저를 추가하려고 하면 에러 발생 확인
 	public void testBucketAclGrantNonExistUser() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -416,7 +386,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 버킷에 권한정보를 모두 제거했을때 오브젝트를 업데이트 하면 실패 확인
 	public void testBucketAclNoGrants() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -445,7 +414,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Grant")
-	// 버킷 생성하면서 권한정보를 여러개 보낼때 모두 올바르게 적용되었는지 확인
 	public void testBucketAclMultiGrants() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -459,7 +427,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Grant")
-	// 오브젝트를 생성하면서 권한정보를 여러개보낼때 모두 올바르게 적용되었는지 확인
 	public void testObjectAclMultiGrants() {
 		var key = "fooKey";
 		var client = getClient();
@@ -476,7 +443,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Delete")
-	// 버킷의 acl 설정이 누락될 경우 실패함을 확인
 	public void testBucketAclRevokeAll() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -505,7 +471,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Delete")
-	// 오브젝트의 acl 설정이 누락될 경우 실패함을 확인
 	public void testObjectAclRevokeAll() {
 		var key = "foo";
 		var client = getClient();
@@ -515,7 +480,6 @@ public class Grants extends TestBase {
 
 		var response = client.getObjectAcl(bucketName, key);
 
-		// 소유주가 존재하지 않을 경우 실패
 		var acl1 = new AccessControlList();
 		acl1.setOwner(new Owner());
 		for (var Item : response.getGrantsAsList())
@@ -523,13 +487,11 @@ public class Grants extends TestBase {
 
 		assertThrows(AmazonServiceException.class, () -> client.setObjectAcl(bucketName, key, acl1));
 
-		// 소유주만 존재할 경우 성공
 		var acl2 = new AccessControlList();
 		acl2.setOwner(response.getOwner());
 
 		client.setObjectAcl(bucketName, key, acl2);
 
-		// 아무것도 없을 경우 실패
 		var acl3 = new AccessControlList();
 		acl3.setOwner(new Owner());
 
@@ -538,7 +500,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Access")
-	// [bucket:private, object:private] Acl 설정이 올바르게 동작하는지 확인
 	public void testAccessBucketPrivateObjectPrivate() {
 		var key1 = "testAccessBucketPrivateObjectPrivate";
 		var key2 = "testAccessBucketPrivateObjectPrivate2";
@@ -560,7 +521,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Access")
-	// [bucket:private, object:public-read] Acl 설정이 올바르게 동작하는지 확인
 	public void testAccessBucketPrivateObjectPublicRead() {
 		var key1 = "testAccessBucketPrivateObjectPublicRead";
 		var key2 = "testAccessBucketPrivateObjectPublicRead2";
@@ -587,7 +547,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Access")
-	// [bucket:private, object:public-read-write] Acl 설정이 올바르게 동작하는지 확인
 	public void testAccessBucketPrivateObjectPublicRW() {
 		var key1 = "testAccessBucketPrivateObjectPublicRW";
 		var key2 = "testAccessBucketPrivateObjectPublicRW2";
@@ -614,7 +573,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Access")
-	// [bucket:public-read, object:private] Acl 설정이 올바르게 동작하는지 확인
 	public void testAccessBucketPublicReadObjectPrivate() {
 		var key1 = "testAccessBucketPublicReadObjectPrivate";
 		var key2 = "testAccessBucketPublicReadObjectPrivate2";
@@ -639,7 +597,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Access")
-	// [bucket:public-read, object:public-read] Acl 설정이 올바르게 동작하는지 확인
 	public void testAccessBucketPublicReadObjectPublicRead() {
 		var key1 = "testAccessBucketPublicReadObjectPublicRead";
 		var key2 = "testAccessBucketPublicReadObjectPublicRead2";
@@ -668,7 +625,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Access")
-	// [bucket:public-read, object:public-read-write] Acl 설정이 올바르게 동작하는지 확인
 	public void testAccessBucketPublicReadObjectPublicRW() {
 		var key1 = "testAccessBucketPublicReadObjectPublicRW";
 		var key2 = "testAccessBucketPublicReadObjectPublicRW2";
@@ -697,7 +653,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Access")
-	// [bucket:public-read-write, object:private] Acl 설정이 올바르게 동작하는지 확인
 	public void testAccessBucketPublicRWObjectPrivate() {
 		var key1 = "testAccessBucketPublicRWObjectPrivate";
 		var key2 = "testAccessBucketPublicRWObjectPrivate2";
@@ -721,7 +676,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Access")
-	// [bucket:public-read-write, object:public-read] Acl 설정이 올바르게 동작하는지 확인
 	public void testAccessBucketPublicRWObjectPublicRead() {
 		var key1 = "testAccessBucketPublicRWObjectPublicRead";
 		var key2 = "testAccessBucketPublicRWObjectPublicRead2";
@@ -748,7 +702,6 @@ public class Grants extends TestBase {
 	@Test
 	@Disabled("S3에서는 버킷의 권한이 public-read-write이더라도 오브젝트의 권한이 public-read로 설정되어있으면 업로드 불가능")
 	@Tag("Access")
-	// [bucket:public-read-write, object:public-read-write] Acl 설정이 올바르게 동작하는지 확인
 	public void testAccessBucketPublicRWObjectPublicRW() {
 		var key1 = "testAccessBucketPublicRWObjectPublicRW";
 		var key2 = "testAccessBucketPublicRWObjectPublicRW2";

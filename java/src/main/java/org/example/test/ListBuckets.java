@@ -40,7 +40,6 @@ public class ListBuckets extends TestBase
 
 	@Test
 	@Tag("Get")
-	//여러개의 버킷 생성해서 목록 조회 확인
 	public void testBucketsCreateThenList()
 	{
 		var client = getClient();
@@ -64,7 +63,6 @@ public class ListBuckets extends TestBase
 
 	@Test
 	@Tag("ERROR")
-	//존재하지 않는 사용자가 버킷목록 조회시 에러 확인
 	public void testListBucketsInvalidAuth()
 	{
 		var badAuthClient = getBadAuthClient(null, null);
@@ -79,7 +77,6 @@ public class ListBuckets extends TestBase
 
 	@Test
 	@Tag("ERROR")
-	//로그인정보를 잘못입력한 사용자가 버킷목록 조회시 에러 확인
 	public void testListBucketsBadAuth()
 	{
 		var mainAccessKey = config.mainUser.accessKey;
@@ -94,7 +91,6 @@ public class ListBuckets extends TestBase
 	
 	@Test
 	@Tag("Metadata")
-	//Tag("버킷의 메타데이터를 가져올 수 있는지 확인
 	public void testHeadBucket()
 	{
 		var client = getClient();

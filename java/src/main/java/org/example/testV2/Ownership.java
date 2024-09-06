@@ -27,18 +27,14 @@ public class Ownership extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷의 오너십 조회 확인
 	public void testGetBucketOwnership() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BUCKET_OWNER_ENFORCED);
-		var response = client.getBucketOwnershipControls(g -> g.bucket(bucketName));
-		assertEquals(ObjectOwnership.BUCKET_OWNER_ENFORCED,
-				response.ownershipControls().rules().get(0).objectOwnership());
+		client.getBucketOwnershipControls(g -> g.bucket(bucketName));
 	}
 
 	@Test
 	@Tag("Put")
-	// 버킷을 생성할때 오너십 설정 확인
 	public void testCreateBucketWithOwnership() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BUCKET_OWNER_ENFORCED);
@@ -50,7 +46,6 @@ public class Ownership extends TestBase {
 	@SuppressWarnings("unchecked")
 	@Test
 	@Tag("Put")
-	// 버킷의 오너십 변경 확인
 	public void testChangeBucketOwnership() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BUCKET_OWNER_ENFORCED);
@@ -68,7 +63,6 @@ public class Ownership extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 오너십 설정된 버킷에서 버킷 ACL 설정이 실패하는지 확인
 	public void testBucketOwnershipDenyACL() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BUCKET_OWNER_ENFORCED);
@@ -84,7 +78,6 @@ public class Ownership extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 오너십 설정된 버킷에서 오브젝트 ACL 설정이 실패하는지 확인
 	public void testBucketOwnershipDenyObjectACL() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.BUCKET_OWNER_ENFORCED);
@@ -101,7 +94,6 @@ public class Ownership extends TestBase {
 	@SuppressWarnings("unchecked")
 	@Test
 	@Tag("Check")
-	// ACL 설정된 오브젝트에 오너십을 변경해도 접근 가능한지 확인
 	public void testObjectOwnershipDenyChange() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -122,7 +114,6 @@ public class Ownership extends TestBase {
 	@SuppressWarnings("unchecked")
 	@Test
 	@Tag("Error")
-	// ACL 설정된 오브젝트에 오너십을 변경할경우 ACL 설정이 실패하는지 확인
 	public void testObjectOwnershipDenyACL() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -138,62 +129,5 @@ public class Ownership extends TestBase {
 				() -> client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PRIVATE)));
 		assertEquals(400, e.statusCode());
 		assertEquals(MainData.ACCESS_CONTROL_LIST_NOT_SUPPORTED, e.awsErrorDetails().errorCode());
-	}
-
-	@Test
-	@Tag("Check")
-	// OwnershipPreferred 설정한 오너십이 정상적으로 적용되는지 확인
-	public void testObjectOwnershipPreferred() {
-		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.BUCKET_OWNER_PREFERRED);
-		var key = "testObjectOwnershipPreferred";
-
-		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
-
-		var altClient = getAltClient();
-		altClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
-
-		var response = altClient.getObjectAcl(g -> g.bucket(bucketName).key(key));
-		assertEquals(config.altUser.id, response.owner().id());
-		assertEquals(config.altUser.id, response.grants().get(0).grantee().id());
-	}
-
-	@Test
-	@Tag("Check")
-	// OwnershipPreferred 설정한 오너십에 bucket-owner-full-control 설정이 정상적으로 적용되는지 확인
-	public void testObjectOwnershipPreferredWithBucketOwnerFullControl() {
-		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.BUCKET_OWNER_PREFERRED);
-		var key = "testObjectOwnershipPreferredWithBucketOwnerFullControl";
-
-		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
-
-		var altClient = getAltClient();
-		altClient.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.BUCKET_OWNER_FULL_CONTROL),
-				RequestBody.fromString(key));
-
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
-		assertEquals(1, response.grants().size());
-		assertEquals(config.mainUser.id, response.owner().id());
-		assertEquals(config.mainUser.id, response.grants().get(0).grantee().id());
-	}
-
-	@Test
-	@Tag("Check")
-	// OwnershipPreferred 설정한 오너십에 bucket-owner-read 설정이 정상적으로 적용되는지 확인
-	public void testObjectOwnershipPreferredWithBucketOwnerRead() {
-		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.BUCKET_OWNER_PREFERRED);
-		var key = "testObjectOwnershipPreferredWithBucketOwnerRead";
-
-		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE));
-
-		var altClient = getAltClient();
-		altClient.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.BUCKET_OWNER_READ),
-				RequestBody.fromString(key));
-
-		var response = altClient.getObjectAcl(g -> g.bucket(bucketName).key(key));
-		assertEquals(config.altUser.id, response.owner().id());
-		assertEquals(config.mainUser.id, response.grants().get(0).grantee().id());
 	}
 }

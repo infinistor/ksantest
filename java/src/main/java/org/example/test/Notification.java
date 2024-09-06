@@ -33,7 +33,6 @@ public class Notification extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷에 알람 설정이 없는지 확인
 	public void testNotificationGetEmpty() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -45,7 +44,6 @@ public class Notification extends TestBase {
 
 	@Test
 	@Tag("Put")
-	// 버킷에 알람 설정이 가능한지 확인
 	public void testNotificationPut() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -55,7 +53,6 @@ public class Notification extends TestBase {
 		var s3Events = EnumSet.noneOf(S3Event.class);
 		s3Events.add(S3Event.ObjectCreated);
 		s3Events.add(S3Event.ObjectRemoved);
-		// 알람 설정
 		var notification = new BucketNotificationConfiguration();
 		var lambdaFunction = new LambdaConfiguration(functionARN, s3Events);
 		notification.addConfiguration("my-lambda", lambdaFunction);
@@ -67,7 +64,6 @@ public class Notification extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷에 알람 설정이 되어있는지 확인
 	public void testNotificationGet() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -77,7 +73,6 @@ public class Notification extends TestBase {
 		var s3Events = EnumSet.noneOf(S3Event.class);
 		s3Events.add(S3Event.ObjectCreated);
 		s3Events.add(S3Event.ObjectRemoved);
-		// 알람 설정
 		var notification = new BucketNotificationConfiguration();
 		var lambdaFunction = new LambdaConfiguration(functionARN, s3Events);
 		notification.addConfiguration("my-lambda", lambdaFunction);
@@ -94,7 +89,6 @@ public class Notification extends TestBase {
 
 	@Test
 	@Tag("Delete")
-	// 버킷에 알람 설정이 삭제되는지 확인
 	public void testNotificationDelete() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -104,7 +98,6 @@ public class Notification extends TestBase {
 		var s3Events = EnumSet.noneOf(S3Event.class);
 		s3Events.add(S3Event.ObjectCreated);
 		s3Events.add(S3Event.ObjectRemoved);
-		// 알람 설정
 		var notification = new BucketNotificationConfiguration();
 		var lambdaFunction = new LambdaConfiguration(functionARN, s3Events);
 		notification.addConfiguration("my-lambda", lambdaFunction);
@@ -117,7 +110,6 @@ public class Notification extends TestBase {
 		var resultLambda = result.getConfigurationByName("my-lambda");
 		s3eventCompare(s3Events.toArray(), resultLambda.getEvents().toArray());
 
-		// 알람 삭제
 		var deleteNotification = new BucketNotificationConfiguration();
 
 		var deleteRequest = new SetBucketNotificationConfigurationRequest(bucketName, deleteNotification);

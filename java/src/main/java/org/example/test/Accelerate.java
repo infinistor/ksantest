@@ -37,7 +37,6 @@ public class Accelerate extends TestBase {
 
 	@Test
 	@Tag("Put")
-	// 버킷 가속 설정이 가능한지 확인
 	public void testPutBucketAccelerate() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -49,7 +48,6 @@ public class Accelerate extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷 가속 설정이 올바르게 적용되는지 확인
 	public void testGetBucketAccelerate() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -64,7 +62,6 @@ public class Accelerate extends TestBase {
 
 	@Test
 	@Tag("Change")
-	// 버킷 가속 설정이 변경되는지 확인
 	public void testChangeBucketAccelerate() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -86,7 +83,6 @@ public class Accelerate extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 버킷 가속 설정을 잘못 입력했을 때 에러가 발생하는지 확인
 	public void testPutBucketAccelerateInvalid() {
 		var client = getClient();
 		var bucketName = createBucket(client);

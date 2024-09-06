@@ -40,7 +40,6 @@ public class Cors extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 버킷의 cors정보 세팅 성공 확인
 	public void testSetCors() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -76,7 +75,6 @@ public class Cors extends TestBase {
 	@Test
 	@Disabled
 	@Tag("Post")
-	// 버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인
 	public void testCorsOriginResponse() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -232,7 +230,6 @@ public class Cors extends TestBase {
 	@Test
 	@Disabled
 	@Tag("Post")
-	// 와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인
 	public void testCorsOriginWildcard() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);
@@ -260,7 +257,6 @@ public class Cors extends TestBase {
 	@Test
 	@Disabled
 	@Tag("Post")
-	// @Tag("cors옵션에서 사용자 추가 헤더를 설정하고 존재하지 않는 헤더를 request 설정한 채로 cors호출하면 실패하는지 확인
 	public void testCorsHeaderOption() {
 		var client = getClient();
 		var bucketName = createBucketCannedACL(client);

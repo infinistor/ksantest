@@ -34,7 +34,6 @@ public class Website extends TestBase
 
 	@Test
 	@Tag("Check")
-	//버킷의 Website 설정 조회 확인
 	public void testWebsiteGetBuckets()
 	{
 		var client = getClient();
@@ -46,7 +45,6 @@ public class Website extends TestBase
 
 	@Test
 	@Tag("Check")
-	//버킷의 Website 설정이 가능한지 확인
 	public void testWebsitePutBuckets()
 	{
 		var client = getClient();
@@ -64,7 +62,6 @@ public class Website extends TestBase
 
 	@Test
 	@Tag("Delete")
-	//버킷의 Website 설정이 삭제가능한지 확인
 	public void testWebsiteDeleteBuckets()
 	{
 		var client = getClient();

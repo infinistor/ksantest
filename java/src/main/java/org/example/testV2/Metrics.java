@@ -1,3 +1,13 @@
+/*
+* Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
+* KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
+* the GNU General Public License as published by the Free Software Foundation, either version
+* 3 of the License. See LICENSE for details
+*
+* 본 프로그램 및 관련 소스코드, 문서 등 모든 자료는 있는 그대로 제공이 됩니다.
+* KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
+* KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
+*/
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,7 +32,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("List")
-	// 버킷에 Metrics를 설정하지 않은 상태에서 조회가 가능한지 확인
 	public void testMetrics() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -33,7 +42,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Put")
-	// 버킷에 Metrics를 설정할 수 있는지 확인
 	public void testPutMetrics() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -44,7 +52,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 버킷에 Metrics 설정이 되었는지 확인
 	public void testCheckMetrics() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -57,7 +64,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷에 설정된 Metrics를 조회할 수 있는지 확인
 	public void testGetMetrics() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -71,7 +77,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Delete")
-	// 버킷에 설정된 Metrics를 삭제할 수 있는지 확인
 	public void testDeleteMetrics() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -84,7 +89,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 존재하지 않은 Metrics를 가져오려고 할 경우 실패하는지 확인
 	public void testGetMetricsNotExist() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -97,7 +101,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 존재하지 않은 Metrics를 삭제하려고 할 경우 실패하는지 확인
 	public void testDeleteMetricsNotExist() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -110,7 +113,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// 존재하지 않은 버킷에 Metrics를 설정하려고 할 경우 실패하는지 확인
 	public void testPutMetricsNotExist() {
 		var client = getClient();
 		var bucketName = getNewBucketNameOnly();
@@ -124,7 +126,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// Metrics 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
 	public void testPutMetricsEmptyId() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -138,7 +139,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Error")
-	// Metrics 아이디를 설정하지 않고 설정하려고 할 경우 실패하는지 확인
 	public void testPutMetricsNoId() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -149,7 +149,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Overwrite")
-	// Metrics 아이디를 중복으로 설정하려고 할 경우 덮어쓰기 확인
 	public void testPutMetricsDuplicateId() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -168,7 +167,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Filtering")
-	// 접두어를 포함한 Metrics 설정이 올바르게 적용되는지 확인
 	public void testMetricsPrefix() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -183,7 +181,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Filtering")
-	// Metrics 설정에 태그를 적용할 수 있는지 확인
 	public void testMetricsTag() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -199,7 +196,6 @@ public class Metrics extends TestBase {
 
 	@Test
 	@Tag("Filtering")
-	// Metrics 설정에 필터를 적용할 수 있는지 확인
 	public void testMetricsFilter() {
 		var client = getClient();
 		var bucketName = createBucket(client);

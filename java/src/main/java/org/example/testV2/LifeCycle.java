@@ -44,7 +44,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 버킷의 Lifecycle 규칙을 추가 가능한지 확인
 	public void testLifecycleSet() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -62,7 +61,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Get")
-	// 버킷에 설정한 Lifecycle 규칙을 가져올 수 있는지 확인
 	public void testLifecycleGet() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -81,7 +79,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// ID 없이 버킷에 Lifecycle 규칙을 설정 할 수 있는지 확인
 	public void testLifecycleGetNoId() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -109,7 +106,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Version")
-	// 버킷에 버저닝 설정이 되어있는 상태에서 Lifecycle 규칙을 추가 가능한지 확인
 	public void testLifecycleExpirationVersioningEnabled() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -134,7 +130,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Check")
-	// 버킷에 Lifecycle 규칙을 설정할때 ID의 길이가 너무 길면 실패하는지 확인
 	public void testLifecycleIdTooLong() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -154,7 +149,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Duplicate")
-	// 버킷에 Lifecycle 규칙을 설정할때 같은 ID로 규칙을 여러개 설정할경우 실패하는지 확인
 	public void testLifecycleSameId() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -176,7 +170,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 버킷에 Lifecycle 규칙중 status를 잘못 설정할때 실패하는지 확인
 	public void testLifecycleInvalidStatus() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -195,7 +188,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Date")
-	// 버킷의 Lifecycle규칙에 날짜를 입력가능한지 확인
 	public void testLifecycleSetDate() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -217,7 +209,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// 버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식으로 입력했을때 실패 확인
 	public void testLifecycleSetInvalidDate() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -242,7 +233,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Version")
-	// 버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인
 	public void testLifecycleSetNoncurrent() {
 		var client = getClient();
 		var bucketName = createObjects(client, List.of("past/foo", "future/bar"));
@@ -262,7 +252,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Version")
-	// 버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
 	public void testLifecycleNoncurrentExpiration() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -287,7 +276,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("DeleteMarker")
-	// DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
 	public void testLifecycleSetDeleteMarker() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -303,7 +291,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Filter")
-	// Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인
 	public void testLifecycleSetFilter() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -320,7 +307,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Filter")
-	// Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인
 	public void testLifecycleSetEmptyFilter() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -336,7 +322,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("DeleteMarker")
-	// DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
 	public void testLifecycleDeleteMarkerExpiration() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -363,7 +348,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
 	public void testLifecycleSetMultipart() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -385,7 +369,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Multipart")
-	// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
 	public void testLifecycleMultipartExpiration() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -413,7 +396,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Delete")
-	// 버킷의 Lifecycle 규칙을 삭제 가능한지 확인
 	public void testLifecycleDelete() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -432,7 +414,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("ERROR")
-	// Lifecycle 규칙에 0일을 설정할때 실패하는지 확인
 	public void testLifecycleSetExpirationZero() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -452,7 +433,6 @@ public class LifeCycle extends TestBase {
 	@Disabled("Java SDK V2에서는 expires값을 재대로 가져오지 못함")
 	@Test
 	@Tag("metadata")
-	// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
 	public void testLifecycleSetExpiration() {
 		var client = getClient();
 		var bucketName = createBucket(client);
