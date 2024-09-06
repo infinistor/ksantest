@@ -9,6 +9,7 @@
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
 package org.example.Data;
+
 public class UserData {
 	public String displayName;
 	public String id;
@@ -35,23 +36,37 @@ public class UserData {
 		this.kms = kms;
 	}
 
-
 	public com.amazonaws.services.s3.model.Grantee toGrantee() {
 		return new com.amazonaws.services.s3.model.CanonicalGrantee(id);
 	}
+
 	public software.amazon.awssdk.services.s3.model.Grantee toGranteeV2() {
 		return software.amazon.awssdk.services.s3.model.Grantee.builder()
-			.id(id)
-			.type(software.amazon.awssdk.services.s3.model.Type.CANONICAL_USER)
-			.build();
+				.id(id)
+				.type(software.amazon.awssdk.services.s3.model.Type.CANONICAL_USER)
+				.build();
+	}
+
+	public com.amazonaws.services.s3.model.Grant toGrant(com.amazonaws.services.s3.model.Permission permission) {
+		return new com.amazonaws.services.s3.model.Grant(toGrantee(), permission);
+	}
+
+	public software.amazon.awssdk.services.s3.model.Grant toGrantV2(
+			software.amazon.awssdk.services.s3.model.Permission permission) {
+		return software.amazon.awssdk.services.s3.model.Grant.builder()
+				.grantee(toGranteeV2())
+				.permission(permission)
+				.build();
 	}
 
 	public com.amazonaws.services.s3.model.Owner toOwner() {
 		return new com.amazonaws.services.s3.model.Owner(id, displayName);
 	}
+
 	public software.amazon.awssdk.services.s3.model.Owner toOwnerV2() {
 		return software.amazon.awssdk.services.s3.model.Owner.builder()
-			.id(id)
-			.build();
+				.id(id)
+				.displayName(displayName)
+				.build();
 	}
 }

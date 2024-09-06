@@ -147,6 +147,7 @@
 						<include>Multipart.java</include>
 						<include>Metrics.java</include>
 						<include>Notification.java</include>
+						<include>Ownership.java</include>
 						<include>Payment.java</include>
 						<include>Policy.java</include>
 						<include>Post.java</include>
