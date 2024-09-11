@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.apache.hc.core5.http.HttpStatus;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -94,6 +95,6 @@ public class Accelerate extends TestBase {
 								.withBucketName(bucketName)
 								.withAccelerateConfiguration(new BucketAccelerateConfiguration("Invalid"))));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
-		assertEquals("MalformedXML", e.getErrorCode());
+		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 	}
 }
