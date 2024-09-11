@@ -748,7 +748,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("ACL")
 	public void testBucketListVersionsObjectsAnonymous() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, BucketCannedACL.PUBLIC_READ);
+		var bucketName = createBucketCannedAcl(client, BucketCannedACL.PUBLIC_READ);
 
 		var unauthenticatedClient = getPublicClient();
 		unauthenticatedClient.listObjectVersions(l -> l.bucket(bucketName));

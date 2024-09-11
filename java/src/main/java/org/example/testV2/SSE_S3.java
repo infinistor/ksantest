@@ -309,12 +309,12 @@ public class SSE_S3 extends TestBase {
 		var putURL = signer.presignPutObject(
 				s -> s.signatureDuration(Duration.ofMinutes(10)).putObjectRequest(p -> p.bucket(bucketName).key(key)));
 		var putResponse = putObject(putURL.url(), key);
-		assertEquals(200, putResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, putResponse.getStatusLine().getStatusCode());
 
 		var getURL = signer.presignGetObject(s -> s.signatureDuration(Duration.ofMinutes(10)).getObjectRequest(g -> g
 				.bucket(bucketName).key(key)));
 		var getResponse = getObject(getURL.url());
-		assertEquals(200, getResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
 
 	}
 
@@ -338,12 +338,12 @@ public class SSE_S3 extends TestBase {
 		var putURL = signer.presignPutObject(s -> s.signatureDuration(Duration.ofMinutes(10)).putObjectRequest(p -> p
 				.bucket(bucketName).key(key)));
 		var putResponse = putObject(putURL.url(), key);
-		assertEquals(200, putResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, putResponse.getStatusLine().getStatusCode());
 
 		var getURL = signer.presignGetObject(s -> s.signatureDuration(Duration.ofMinutes(10)).getObjectRequest(g -> g
 				.bucket(bucketName).key(key)));
 		var getResponse = getObject(getURL.url());
-		assertEquals(200, getResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
 	}
 
 	@Test

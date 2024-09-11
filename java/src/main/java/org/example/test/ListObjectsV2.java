@@ -713,7 +713,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("ACL")
 	public void testBucketListV2ObjectsAnonymous() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 
 		var unauthenticatedClient = getPublicClient();
@@ -727,12 +727,8 @@ public class ListObjectsV2 extends TestBase {
 		var unauthenticatedClient = getPublicClient();
 
 		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.listObjectsV2(bucketName));
-
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
-		assertEquals(MainData.ACCESS_DENIED, errorCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 
 	@Test
@@ -742,12 +738,9 @@ public class ListObjectsV2 extends TestBase {
 		var client = getClient();
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.listObjectsV2(bucketName));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
 		deleteBucketList(bucketName);
 	}
 

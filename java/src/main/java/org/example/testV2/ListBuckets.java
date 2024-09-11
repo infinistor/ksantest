@@ -67,11 +67,8 @@ public class ListBuckets extends TestBase
 		var badAuthClient = getBadAuthClient(null, null);
 
 		var e = assertThrows(AwsServiceException.class, badAuthClient::listBuckets);
-		
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
-		assertEquals(MainData.INVALID_ACCESS_KEY_ID, errorCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.INVALID_ACCESS_KEY_ID, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -82,10 +79,8 @@ public class ListBuckets extends TestBase
 		var badAuthClient = getBadAuthClient(mainAccessKey, null);
 
 		var e = assertThrows(AwsServiceException.class, badAuthClient::listBuckets);
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
-		assertEquals(MainData.SIGNATURE_DOES_NOT_MATCH, errorCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.SIGNATURE_DOES_NOT_MATCH, e.awsErrorDetails().errorCode());
 	}
 	
 	@Test

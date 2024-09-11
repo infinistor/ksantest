@@ -136,10 +136,8 @@ public class Taggings extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.BAD_REQUEST, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.BAD_REQUEST, e.getErrorCode());
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
 		assertEquals(0, response.getTagSet().size());
@@ -170,10 +168,8 @@ public class Taggings extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.INVALID_TAG, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_TAG, e.getErrorCode());
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
 		assertEquals(0, response.getTagSet().size());
@@ -190,10 +186,8 @@ public class Taggings extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, inputTagSet)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.INVALID_TAG, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_TAG, e.getErrorCode());
 
 		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
 		assertEquals(0, response.getTagSet().size());
@@ -333,7 +327,7 @@ public class Taggings extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());

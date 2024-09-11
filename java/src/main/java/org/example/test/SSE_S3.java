@@ -421,11 +421,11 @@ public class SSE_S3 extends TestBase {
 
 		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
 		var putResponse = putObject(putURL, key);
-		assertEquals(200, putResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, putResponse.getStatusLine().getStatusCode());
 
 		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
 		var getResponse = getObject(getURL);
-		assertEquals(200, getResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
 
 	}
 
@@ -450,11 +450,11 @@ public class SSE_S3 extends TestBase {
 
 		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
 		var putResponse = putObject(putURL, key);
-		assertEquals(200, putResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, putResponse.getStatusLine().getStatusCode());
 
 		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
 		var getResponse = getObject(getURL);
-		assertEquals(200, getResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
 	}
 
 	@Test

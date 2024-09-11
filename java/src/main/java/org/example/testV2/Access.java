@@ -22,6 +22,7 @@ import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
+import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 import software.amazon.awssdk.services.s3.model.PublicAccessBlockConfiguration;
 
 public class Access extends TestBase {
@@ -39,11 +40,10 @@ public class Access extends TestBase {
 	@Tag("Denied")
 	public void testBlockPublicAclAndPolicy() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucket(client, ObjectOwnership.OBJECT_WRITER);
 
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(false)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
-
 		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf));
 
 		var response = client.getPublicAccessBlock(g -> g.bucket(bucketName));
@@ -52,25 +52,26 @@ public class Access extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ)));
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE)));
-		statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.AUTHENTICATED_READ)));
-		statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("Denied")
 	public void testBlockPublicAcls() {
+		var key = "testBlockPublicAcls";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucket(client, ObjectOwnership.OBJECT_WRITER);
 
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(false)
 				.blockPublicPolicy(false).restrictPublicBuckets(false).build();
@@ -81,50 +82,52 @@ public class Access extends TestBase {
 		assertEquals(accessConf.blockPublicAcls(), response.publicAccessBlockConfiguration().blockPublicAcls());
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putObject(
-				p -> p.bucket(bucketName).key("foo1").acl(ObjectCannedACL.PUBLIC_READ),
-				RequestBody.fromString("foo1")));
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+				p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString(key)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		e = assertThrows(AwsServiceException.class,
 				() -> client.putObject(
-						p -> p.bucket(bucketName).key("foo2").acl(ObjectCannedACL.PUBLIC_READ_WRITE),
-						RequestBody.fromString("foo2")));
-		statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+						p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ_WRITE),
+						RequestBody.fromString(key)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+
 		e = assertThrows(AwsServiceException.class,
 				() -> client.putObject(
-						p -> p.bucket(bucketName).key("foo3").acl(ObjectCannedACL.AUTHENTICATED_READ),
-						RequestBody.fromString("foo3")));
-		statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+						p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.AUTHENTICATED_READ),
+						RequestBody.fromString(key)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("Denied")
 	public void testBlockPublicPolicy() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucket(client, ObjectOwnership.OBJECT_WRITER);
+
 		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(false).ignorePublicAcls(false)
 				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
-
 		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf));
 
 		var resource = makeArnResource(String.format("%s/*", bucketName));
 		var policyDocument = makeJsonPolicy("s3:GetObject", resource, null, null);
-		assertThrows(AwsServiceException.class,
+		var e = assertThrows(AwsServiceException.class,
 				() -> client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString())));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("Check")
 	public void testDeletePublicBlock() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucket(client, ObjectOwnership.OBJECT_WRITER);
 
-		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(true)
-				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
-
+		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true)
+				.ignorePublicAcls(true).blockPublicPolicy(true).restrictPublicBuckets(false).build();
 		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf));
 
 		var response = client.getPublicAccessBlock(g -> g.bucket(bucketName));
@@ -137,7 +140,6 @@ public class Access extends TestBase {
 		client.deletePublicAccessBlock(d -> d.bucket(bucketName));
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getPublicAccessBlock(g -> g.bucket(bucketName)));
-
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_PUBLIC_ACCESS_BLOCK_CONFIGURATION, e.awsErrorDetails().errorCode());
 	}
@@ -145,16 +147,15 @@ public class Access extends TestBase {
 	@Test
 	@Tag("Denied")
 	public void testIgnorePublicAcls() {
+		var key = "testIgnorePublicAcls";
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedACL(client, BucketCannedACL.PUBLIC_READ);
+		var bucketName = createBucket(client, ObjectOwnership.OBJECT_WRITER, null);
 
-		altClient.listObjects(l -> l.bucket(bucketName));
-
-		client.putObject(p -> p.bucket(bucketName).key("key1").acl(ObjectCannedACL.PUBLIC_READ),
-				RequestBody.fromString("abcde"));
-		var response = altClient.getObject(g -> g.bucket(bucketName).key("key1"));
-		assertEquals("abcde", getBody(response));
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString(key));
+		var response = altClient.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(key, getBody(response));
 
 		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(a -> a
 				.blockPublicAcls(false).ignorePublicAcls(true).blockPublicPolicy(false).restrictPublicBuckets(false)));
@@ -162,19 +163,23 @@ public class Access extends TestBase {
 		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
 
 		var publicClient = getPublicClient();
-		assertThrows(AwsServiceException.class, () -> publicClient.listObjects(l -> l.bucket(bucketName)));
-		assertThrows(AwsServiceException.class, () -> publicClient.getObject(g -> g.bucket(bucketName).key("key1")));
+		var e = assertThrows(AwsServiceException.class, () -> publicClient.listObjects(l -> l.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+		e = assertThrows(AwsServiceException.class,
+				() -> publicClient.getObject(g -> g.bucket(bucketName).key(key)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
 	@Tag("Check")
 	public void testPutPublicBlock() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucket(client, ObjectOwnership.OBJECT_WRITER);
 
-		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true).ignorePublicAcls(true)
-				.blockPublicPolicy(true).restrictPublicBuckets(false).build();
-
+		var accessConf = PublicAccessBlockConfiguration.builder().blockPublicAcls(true)
+				.ignorePublicAcls(true).blockPublicPolicy(true).restrictPublicBuckets(false).build();
 		client.putPublicAccessBlock(p -> p.bucket(bucketName).publicAccessBlockConfiguration(accessConf));
 
 		var response = client.getPublicAccessBlock(g -> g.bucket(bucketName));

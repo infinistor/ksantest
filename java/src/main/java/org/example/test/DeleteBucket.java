@@ -41,11 +41,8 @@ public class DeleteBucket extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 		deleteBucketList(bucketName);
 	}
 
@@ -57,11 +54,8 @@ public class DeleteBucket extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-
-		assertEquals(HttpStatus.SC_CONFLICT, statusCode);
-		assertEquals(MainData.BUCKET_NOT_EMPTY, errorCode);
+		assertEquals(HttpStatus.SC_CONFLICT, e.getStatusCode());
+		assertEquals(MainData.BUCKET_NOT_EMPTY, e.getErrorCode());
 	}
 
 	@Test
@@ -74,11 +68,8 @@ public class DeleteBucket extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 		deleteBucketList(bucketName);
 	}
 }

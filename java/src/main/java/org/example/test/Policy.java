@@ -53,7 +53,7 @@ public class Policy extends TestBase {
 	@Tag("Check")
 	public void testBucketPolicy() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		var key = "asdf";
 		client.putObject(bucketName, key, key);
 
@@ -93,7 +93,7 @@ public class Policy extends TestBase {
 	@Tag("Check")
 	public void testBucketV2Policy() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		var key = "asdf";
 		client.putObject(bucketName, key, key);
 
@@ -132,7 +132,7 @@ public class Policy extends TestBase {
 	@Tag("Priority")
 	public void testBucketPolicyAcl() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		var key = "asdf";
 		client.putObject(bucketName, key, key);
 
@@ -166,10 +166,8 @@ public class Policy extends TestBase {
 
 		var altClient = getAltClient();
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
-		assertEquals(MainData.ACCESS_DENIED, errorCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 
 		client.deleteBucketPolicy(bucketName);
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
@@ -180,7 +178,7 @@ public class Policy extends TestBase {
 	public void testBucketV2PolicyAcl() {
 
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		var key = "asdf";
 		client.putObject(bucketName, key, key);
 
@@ -214,10 +212,8 @@ public class Policy extends TestBase {
 
 		var altClient = getAltClient();
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.listObjectsV2(bucketName));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
-		assertEquals(MainData.ACCESS_DENIED, errorCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 
 		client.deleteBucketPolicy(bucketName);
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
@@ -228,7 +224,7 @@ public class Policy extends TestBase {
 	public void testGetTagsAclPublic() {
 		var key = "acl";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
@@ -250,7 +246,7 @@ public class Policy extends TestBase {
 	public void testPutTagsAclPublic() {
 		var key = "acl";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
@@ -271,7 +267,7 @@ public class Policy extends TestBase {
 	public void testDeleteTagsObjPublic() {
 		var key = "acl";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
@@ -296,7 +292,7 @@ public class Policy extends TestBase {
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
@@ -331,12 +327,9 @@ public class Policy extends TestBase {
 		assertNotNull(getResponse);
 
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, privateTag));
-		var statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 
 		e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, invalidTag));
-		statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 	}
 
 	@Test
@@ -346,7 +339,7 @@ public class Policy extends TestBase {
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
@@ -381,18 +374,14 @@ public class Policy extends TestBase {
 		assertNotNull(getResponse);
 
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, publicTag));
-		var statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 
 		e = assertThrows(AmazonServiceException.class,
 				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privateTag)));
-		statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 
 		e = assertThrows(AmazonServiceException.class,
 				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, invalidTag)));
-		statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 	}
 
 	@Test
@@ -402,7 +391,7 @@ public class Policy extends TestBase {
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
@@ -433,8 +422,6 @@ public class Policy extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, privateTag, testTagSet)));
-		var statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 
 		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag,
 				new ObjectTagging(List.of(new com.amazonaws.services.s3.model.Tag("security", "private")))));
@@ -443,8 +430,7 @@ public class Policy extends TestBase {
 				() -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag,
 						new ObjectTagging(List.of(new com.amazonaws.services.s3.model.Tag("security", "public"),
 								new com.amazonaws.services.s3.model.Tag("foo", "bar"))))));
-		statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 	}
 
 	@Test
@@ -455,8 +441,8 @@ public class Policy extends TestBase {
 		var privateFoo = "private/foo";
 		var client = getClient();
 		var altClient = getAltClient();
-		var sourceBucketName = createBucketCannedACL(client);
-		var targetBucketName = createBucketCannedACL(client);
+		var sourceBucketName = createBucketCannedAcl(client);
+		var targetBucketName = createBucketCannedAcl(client);
 
 		createObjects(client, sourceBucketName, List.of(publicFoo, publicBar, privateFoo));
 
@@ -497,14 +483,14 @@ public class Policy extends TestBase {
 		var publicFoo = "public/foo";
 		var publicBar = "public/bar";
 		var client = getClient();
-		var sourceBucketName = createBucketCannedACL(client);
+		var sourceBucketName = createBucketCannedAcl(client);
 		createObjects(client, sourceBucketName, List.of(publicFoo, publicBar));
 
 		var sourceResource = makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObject", sourceResource, null, null);
 		client.setBucketPolicy(sourceBucketName, policyDocument.toString());
 
-		var targetBucketName = createBucketCannedACL(client);
+		var targetBucketName = createBucketCannedAcl(client);
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:x-amz-metadata-directive", "COPY");
@@ -537,7 +523,7 @@ public class Policy extends TestBase {
 	@Tag("ACLOptions")
 	public void testBucketPolicyPutObjAcl() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:x-amz-acl", "public*");
@@ -571,8 +557,8 @@ public class Policy extends TestBase {
 	@Tag("GrantOptions")
 	public void testBucketPolicyPutObjGrant() {
 		var client = getClient();
-		var bucketName1 = createBucketCannedACL(client);
-		var bucketName2 = createBucketCannedACL(client);
+		var bucketName1 = createBucketCannedAcl(client);
+		var bucketName2 = createBucketCannedAcl(client);
 
 		var mainUserId = config.mainUser.id;
 		var altUserId = config.altUser.id;
@@ -623,7 +609,7 @@ public class Policy extends TestBase {
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
@@ -658,25 +644,21 @@ public class Policy extends TestBase {
 		assertNotNull(aclResponse);
 
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, publicTag));
-		var statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
 
 		e = assertThrows(AmazonServiceException.class,
 				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privateTag)));
-		statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 
 		e = assertThrows(AmazonServiceException.class,
 				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, invalidTag)));
-		statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 	}
 
 	@Test
 	@Tag("Status")
 	public void testGetPublicPolicyAclBucketPolicyStatus() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		assertThrows(AmazonServiceException.class,
 				() -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
@@ -715,7 +697,7 @@ public class Policy extends TestBase {
 	@Tag("Status")
 	public void testGetNonpublicPolicyAclBucketPolicyStatus() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		assertThrows(AmazonServiceException.class,
 				() -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));

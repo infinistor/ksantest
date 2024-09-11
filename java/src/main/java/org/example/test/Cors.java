@@ -66,7 +66,7 @@ public class Cors extends TestBase {
 	@Tag("Post")
 	public void testCorsOriginResponse() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 
 		var corsConfig = new BucketCrossOriginConfiguration();
@@ -219,7 +219,7 @@ public class Cors extends TestBase {
 	@Tag("Post")
 	public void testCorsOriginWildcard() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 
 		var corsConfig = new BucketCrossOriginConfiguration();
@@ -244,7 +244,7 @@ public class Cors extends TestBase {
 	@Tag("Post")
 	public void testCorsHeaderOption() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 
 		var corsConfig = new BucketCrossOriginConfiguration();

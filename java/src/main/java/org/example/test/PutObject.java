@@ -67,12 +67,8 @@ public class PutObject extends TestBase {
 		var bucketName = getNewBucketName();
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
-
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 	}
 
 	@Test

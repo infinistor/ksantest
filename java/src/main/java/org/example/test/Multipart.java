@@ -57,10 +57,8 @@ public class Multipart extends TestBase {
 		var uploadData = setupMultipartUpload(client, bucketName, key, size);
 		var e = assertThrows(AmazonServiceException.class, () -> client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.MALFORMED_XML, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 
 	}
 
@@ -116,11 +114,9 @@ public class Multipart extends TestBase {
 				.withSourceBucketName(sourceBucketName).withSourceKey(sourceKey)
 				.withDestinationBucketName(sourceBucketName).withDestinationKey(targetKey).withUploadId(uploadId)
 				.withPartNumber(1).withFirstByte((long) 0).withLastByte((long) 21)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
 
-		assertTrue(statusCode == HttpStatus.SC_BAD_REQUEST || statusCode == 416);
-		assertEquals(MainData.INVALID_ARGUMENT, errorCode);
+		assertTrue(e.getStatusCode() == HttpStatus.SC_BAD_REQUEST || e.getStatusCode() == 416);
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 
 	}
 
@@ -362,10 +358,8 @@ public class Multipart extends TestBase {
 		var uploadData = setupMultipartUpload(client, bucketName, key, size, 10 * MainData.KB);
 		var e = assertThrows(AmazonServiceException.class, () -> client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.ENTITY_TOO_SMALL, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.ENTITY_TOO_SMALL, e.getErrorCode());
 
 	}
 
@@ -439,10 +433,8 @@ public class Multipart extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, "56788")));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_UPLOAD, errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_UPLOAD, e.getErrorCode());
 
 	}
 
@@ -496,11 +488,9 @@ public class Multipart extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
 				.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId, parts)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
 
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.INVALID_PART, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_PART, e.getErrorCode());
 
 	}
 
@@ -521,11 +511,9 @@ public class Multipart extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
 				.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId, parts)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
 
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.INVALID_PART, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_PART, e.getErrorCode());
 
 	}
 

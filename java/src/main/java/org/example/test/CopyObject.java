@@ -114,11 +114,8 @@ public class CopyObject extends TestBase {
 		client.putObject(bucketName, key, "");
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key, bucketName, key));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.INVALID_REQUEST, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.getErrorCode());
 	}
 
 	@Test
@@ -176,9 +173,8 @@ public class CopyObject extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> altClient.copyObject(bucketName1, key1, bucketName2, key2));
-		var statusCode = e.getStatusCode();
 
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 		altClient.deleteBucket(bucketName2);
 		deleteBucketList(bucketName2);
 	}
@@ -188,7 +184,7 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyNotOwnedObjectBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
@@ -213,7 +209,7 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyCannedAcl() {
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
 
@@ -303,8 +299,7 @@ public class CopyObject extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.copyObject(bucketName + "-fake", "foo123bar", bucketName, "bar321foo"));
-		var statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 	}
 
 	@Test
@@ -315,8 +310,7 @@ public class CopyObject extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.copyObject(bucketName, "foo123bar", bucketName, "bar321foo"));
-		var statusCode = e.getStatusCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 	}
 
 	@Test
@@ -689,10 +683,8 @@ public class CopyObject extends TestBase {
 		client.deleteObject(bucketName, key1);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key1, bucketName, ker2));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals("NoSuchKey", errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 	}
 
 	@Test
@@ -709,10 +701,8 @@ public class CopyObject extends TestBase {
 		client.deleteObject(bucketName, key1);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.copyObject(bucketName, key1, bucketName, ker2));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals("NoSuchKey", errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 	}
 
 	@Test

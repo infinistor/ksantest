@@ -89,8 +89,7 @@ public class SSE_C extends TestBase {
 				RequestBody.fromString(data));
 
 		var e = assertThrows(AwsServiceException.class, () -> client.headObject(h -> h.bucket(bucketName).key(key)));
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 
 		client.headObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
 				.sseCustomerKey(SSE_KEY).sseCustomerKeyMD5(SSE_KEY_MD5));
@@ -112,8 +111,7 @@ public class SSE_C extends TestBase {
 				RequestBody.fromString(data));
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 	}
 
 	@Test
@@ -138,8 +136,7 @@ public class SSE_C extends TestBase {
 				() -> client
 						.getObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
 								.sseCustomerKey(sseB).sseCustomerKeyMD5(sseBMd5)));
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 	}
 
 	@Test
@@ -158,8 +155,7 @@ public class SSE_C extends TestBase {
 						.sseCustomerKeyMD5("AAAAAAAAAAAAAAAAAAAAAA=="),
 						RequestBody.fromString(data)));
 
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 	}
 
 	@Test
@@ -275,8 +271,7 @@ public class SSE_C extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(
 						g -> g.bucket(bucketName).key(key).sseCustomerKey(sseGetKey).sseCustomerKeyMD5(sseGetMd5)));
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("InvalidArgument", e.awsErrorDetails().errorCode());
 	}
 
@@ -359,7 +354,7 @@ public class SSE_C extends TestBase {
 
 		var sendURL = createURL(bucketName);
 		var result = NetUtils.postUpload(sendURL, payload, fileData);
-		assertEquals(204, result.statusCode);
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode);
 
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
 				.sseCustomerKey(SSE_KEY));

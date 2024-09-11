@@ -131,10 +131,8 @@ public class Taggings extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectTagging(p -> p.bucket(bucketName).key(key).tagging(inputTagSet)));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.BAD_REQUEST, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.BAD_REQUEST, e.awsErrorDetails().errorCode());
 
 		var response = client.getObjectTagging(g -> g.bucket(bucketName).key(key));
 		assertEquals(0, response.tagSet().size());
@@ -165,10 +163,8 @@ public class Taggings extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectTagging(p -> p.bucket(bucketName).key(key).tagging(inputTagSet)));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.INVALID_TAG, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_TAG, e.awsErrorDetails().errorCode());
 
 		var response = client.getObjectTagging(g -> g.bucket(bucketName).key(key));
 		assertEquals(0, response.tagSet().size());
@@ -185,10 +181,8 @@ public class Taggings extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.putObjectTagging(p -> p.bucket(bucketName).key(key).tagging(inputTagSet)));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.INVALID_TAG, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_TAG, e.awsErrorDetails().errorCode());
 
 		var response = client.getObjectTagging(g -> g.bucket(bucketName).key(key));
 		assertEquals(0, response.tagSet().size());
@@ -329,7 +323,7 @@ public class Taggings extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(g -> g.bucket(bucketName).key(key));
 		var body = getBody(response);

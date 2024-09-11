@@ -129,10 +129,8 @@ public class Versioning extends TestBase {
 		client.deleteVersion(bucketName, key, "null");
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_KEY, errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 
 		var listResponse = client.listVersions(bucketName, "");
 		assertEquals(0, listResponse.getVersionSummaries().size());
@@ -546,7 +544,7 @@ public class Versioning extends TestBase {
 	@Tag("ACL")
 	public void testVersionedObjectAclNoVersionSpecified() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 

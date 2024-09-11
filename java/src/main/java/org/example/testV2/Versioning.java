@@ -121,10 +121,8 @@ public class Versioning extends TestBase {
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId("null"));
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_KEY, errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
 
 		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(0, listResponse.versions().size());
@@ -536,7 +534,7 @@ public class Versioning extends TestBase {
 	@Tag("ACL")
 	public void testVersionedObjectAclNoVersionSpecified() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
@@ -634,7 +632,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, 0, metadata);
 
 		var compResponse = client.completeMultipartUpload(compRequest -> compRequest.bucket(bucketName).key(key)
 				.uploadId(uploadData.uploadId).multipartUpload(p -> p.parts(uploadData.parts)));

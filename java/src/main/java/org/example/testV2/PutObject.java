@@ -65,12 +65,8 @@ public class PutObject extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putObject(p -> p.bucket(bucketName).key(key),
 				RequestBody.fromString("bar")));
-
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_BUCKET, errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 	}
 
 	@Test

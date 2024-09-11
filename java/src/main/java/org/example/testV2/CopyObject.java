@@ -111,11 +111,8 @@ public class CopyObject extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key).destinationBucket(bucketName).destinationKey(key)));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.INVALID_REQUEST, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -179,9 +176,7 @@ public class CopyObject extends TestBase {
 				() -> altClient.copyObject(c -> c
 						.sourceBucket(bucketName1).sourceKey(key1)
 						.destinationBucket(bucketName2).destinationKey(key2)));
-		var statusCode = e.statusCode();
-
-		assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 		altClient.deleteBucket(d -> d.bucket(bucketName2));
 		deleteBucketList(bucketName2);
 	}
@@ -191,7 +186,7 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyNotOwnedObjectBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		var key1 = "foo123bar";
 		var key2 = "bar321foo";
@@ -221,7 +216,7 @@ public class CopyObject extends TestBase {
 		var key2 = "bar321foo";
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(p -> p.bucket(bucketName).key(key1),
 				RequestBody.fromString("foo"));
@@ -323,8 +318,7 @@ public class CopyObject extends TestBase {
 				() -> client.copyObject(c -> c
 						.sourceBucket(bucketName).sourceKey("foo123bar")
 						.destinationBucket(bucketName + "-fake").destinationKey("bar321foo")));
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 	}
 
 	@Test
@@ -337,8 +331,7 @@ public class CopyObject extends TestBase {
 				() -> client.copyObject(c -> c
 						.sourceBucket(bucketName).sourceKey("foo123bar")
 						.destinationBucket(bucketName).destinationKey("bar321foo")));
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 	}
 
 	@Test
@@ -437,7 +430,7 @@ public class CopyObject extends TestBase {
 		var key1Metadata = new HashMap<String, String>();
 		key1Metadata.put("foo", "bar");
 
-		var uploads = setupMultipartUpload(client, bucketName, key1, size, key1Metadata);
+		var uploads = setupMultipartUpload(client, bucketName, key1, size, 0, key1Metadata);
 		client.completeMultipartUpload(c -> c
 				.bucket(bucketName).key(key1).uploadId(uploads.uploadId)
 				.multipartUpload(p -> p.parts(uploads.parts)));
@@ -533,9 +526,8 @@ public class CopyObject extends TestBase {
 				.destinationBucket(bucketName).destinationKey("bar")
 				.sourceVersionId(putResponse.versionId())
 				.copySourceIfMatch("ABC")));
-		var statusCode = e.statusCode();
-		assertEquals(412, statusCode);
 
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
 	}
 
 	@Test
@@ -741,10 +733,8 @@ public class CopyObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(ker2)));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals("NoSuchKey", errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals("NoSuchKey", e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -764,10 +754,8 @@ public class CopyObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
 				.sourceBucket(bucketName).sourceKey(key1)
 				.destinationBucket(bucketName).destinationKey(ker2)));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals("NoSuchKey", errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals("NoSuchKey", e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -855,13 +843,14 @@ public class CopyObject extends TestBase {
 
 		client.putObject(
 				p -> p.bucket(bucketName).key(sourceKey)
-						.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM).sseCustomerKey(SSE_KEY).sseCustomerKeyMD5(SSE_KEY_MD5),
+						.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM).sseCustomerKey(SSE_KEY)
+						.sseCustomerKeyMD5(SSE_KEY_MD5),
 				RequestBody.fromString(data));
 
 		var e = assertThrows(AwsServiceException.class, () -> client.copyObject(c -> c
-				.sourceBucket(bucketName).sourceKey(sourceKey).copySourceSSECustomerKey(SSE_KEY).copySourceSSECustomerKeyMD5(SSE_KEY_MD5)
+				.sourceBucket(bucketName).sourceKey(sourceKey).copySourceSSECustomerKey(SSE_KEY)
+				.copySourceSSECustomerKeyMD5(SSE_KEY_MD5)
 				.destinationBucket(bucketName).destinationKey(targetKey)));
-		var statusCode = e.statusCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 	}
 }
