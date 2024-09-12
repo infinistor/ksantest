@@ -36,7 +36,7 @@ class Grants {
 
 	@Test
 	@Tag("Bucket")
-	// [bucketAcl : public-read => private] 권한을 변경할경우 올바르게 적용되는지 확인
+	// [bucket : public-read => private] 권한을 변경할경우 올바르게 적용되는지 확인
 	void testBucketAclChanged() {
 		test.testBucketAclChanged();
 		testV2.testBucketAclChanged();
@@ -44,7 +44,15 @@ class Grants {
 
 	@Test
 	@Tag("Bucket")
-	// [bucketAcl : public-read] 생성한 버킷의 acl정보가 올바른지 확인
+	// [bucket : private] 생성한 버킷의 acl정보가 올바른지 확인
+	void testBucketAclPrivate() {
+		test.testBucketAclPrivate();
+		testV2.testBucketAclPrivate();
+	}
+
+	@Test
+	@Tag("Bucket")
+	// [bucket : public-read] 생성한 버킷의 acl정보가 올바른지 확인
 	void testBucketAclPublicRead() {
 		test.testBucketAclPublicRead();
 		testV2.testBucketAclPublicRead();
@@ -52,7 +60,7 @@ class Grants {
 
 	@Test
 	@Tag("Bucket")
-	// [bucketAcl : public-read-write] 생성한 버킷의 acl정보가 올바른지 확인
+	// [bucket : public-read-write] 생성한 버킷의 acl정보가 올바른지 확인
 	void testBucketAclPublicRW() {
 		test.testBucketAclPublicRW();
 		testV2.testBucketAclPublicRW();
@@ -60,7 +68,7 @@ class Grants {
 
 	@Test
 	@Tag("Bucket")
-	// [bucketAcl : authenticated-read] 생성한 버킷의 acl정보가 올바른지 확인
+	// [bucket : authenticated-read] 생성한 버킷의 acl정보가 올바른지 확인
 	void testBucketAclAuthenticatedRead() {
 		test.testBucketAclAuthenticatedRead();
 		testV2.testBucketAclAuthenticatedRead();
@@ -80,6 +88,14 @@ class Grants {
 	void testObjectAclChange() {
 		test.testObjectAclChange();
 		testV2.testObjectAclChange();
+	}
+
+	@Test
+	@Tag("Object")
+	// [object:private] 생성한 오브젝트의 acl정보가 올바른지 확인
+	void testObjectAclPrivate() {
+		test.testObjectAclPrivate();
+		testV2.testObjectAclPrivate();
 	}
 
 	@Test
@@ -116,20 +132,20 @@ class Grants {
 
 	@Test
 	@Tag("Object")
-	// [ObjectWriter][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가 올바른지
-	// 확인
-	void testBucketObjectWriterBucketOwnerFullControl() {
-		test.testBucketObjectWriterBucketOwnerFullControl();
-		testV2.testBucketObjectWriterBucketOwnerFullControl();
+	// [ObjectWriter][object:bucket-owner-full-control]
+	// 생성한 오브젝트의 acl정보가 올바른지 확인
+	void testBucketObjectWriterObjectOwnerFullControl() {
+		test.testBucketObjectWriterObjectOwnerFullControl();
+		testV2.testBucketObjectWriterObjectOwnerFullControl();
 	}
 
 	@Test
 	@Tag("Object")
-	// [BucketOwnerEnforced][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가
-	// 올바른지 확인
-	void testBucketOwnerEnforcedBucketOwnerFullControl() {
-		test.testBucketOwnerEnforcedBucketOwnerFullControl();
-		testV2.testBucketOwnerEnforcedBucketOwnerFullControl();
+	// [BucketOwnerEnforced][object:bucket-owner-full-control]
+	// 생성한 오브젝트의 acl정보가 올바른지 확인
+	void testBucketOwnerEnforcedObjectOwnerFullControl() {
+		test.testBucketOwnerEnforcedObjectOwnerFullControl();
+		testV2.testBucketOwnerEnforcedObjectOwnerFullControl();
 	}
 
 	@Test
@@ -150,11 +166,51 @@ class Grants {
 	}
 
 	@Test
-	@Tag("Permission")
+	@Tag("Overwrite")
 	// [bucket:private] 버킷에 ACL 중복 설정이 가능한지 확인
 	void testBucketAclDuplicated() {
 		test.testBucketAclDuplicated();
 		testV2.testBucketAclDuplicated();
+	}
+
+	@Test
+	@Tag("Permission")
+	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
+	void testBucketPermissionFullControl() {
+		test.testBucketPermissionFullControl();
+		testV2.testBucketPermissionFullControl();
+	}
+
+	@Test
+	@Tag("Permission")
+	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
+	void testBucketPermissionWrite() {
+		test.testBucketPermissionWrite();
+		testV2.testBucketPermissionWrite();
+	}
+
+	@Test
+	@Tag("Permission")
+	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
+	void testBucketPermissionWriteAcp() {
+		test.testBucketPermissionWriteAcp();
+		testV2.testBucketPermissionWriteAcp();
+	}
+	
+	@Test
+	@Tag("Permission")
+	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
+	void testBucketPermissionRead() {
+		test.testBucketPermissionRead();
+		testV2.testBucketPermissionRead();
+	}
+	
+	@Test
+	@Tag("Permission")
+	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
+	void testBucketPermissionReadAcp() {
+		test.testBucketPermissionReadAcp();
+		testV2.testBucketPermissionReadAcp();
 	}
 
 	@Test
@@ -195,46 +251,6 @@ class Grants {
 	void testObjectAclPermissionReadAcp() {
 		test.testObjectPermissionReadAcp();
 		testV2.testObjectPermissionReadAcp();
-	}
-
-	@Test
-	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : FULL_CONTROL
-	void testBucketPermissionAltUserFullControl() {
-		test.testBucketPermissionAltUserFullControl();
-		testV2.testBucketPermissionAltUserFullControl();
-	}
-
-	@Test
-	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ
-	void testBucketPermissionAltUserRead() {
-		test.testBucketPermissionAltUserRead();
-		testV2.testBucketPermissionAltUserRead();
-	}
-
-	@Test
-	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ_ACP
-	void testBucketPermissionAltUserReadAcp() {
-		test.testBucketPermissionAltUserReadAcp();
-		testV2.testBucketPermissionAltUserReadAcp();
-	}
-
-	@Test
-	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE
-	void testBucketPermissionAltUserWrite() {
-		test.testBucketPermissionAltUserWrite();
-		testV2.testBucketPermissionAltUserWrite();
-	}
-
-	@Test
-	@Tag("Permission")
-	// 메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE_ACP
-	void testBucketPermissionAltUserWriteAcp() {
-		test.testBucketPermissionAltUserWriteAcp();
-		testV2.testBucketPermissionAltUserWriteAcp();
 	}
 
 	@Test
@@ -283,78 +299,5 @@ class Grants {
 	void testObjectAclRevokeAll() {
 		test.testObjectAclRevokeAll();
 		testV2.testObjectAclRevokeAll();
-	}
-
-	@Test
-	@Tag("Access")
-	// [bucket:private, object:private] Acl 설정이 올바르게 동작하는지 확인
-	void testAccessBucketPrivateObjectPrivate() {
-		test.testAccessBucketPrivateObjectPrivate();
-		testV2.testAccessBucketPrivateObjectPrivate();
-	}
-
-	@Test
-	@Tag("Access")
-	// [bucket:private, object:private, public-read] Acl 설정이 올바르게 동작하는지 확인
-	void testAccessBucketPrivateObjectPublicRead() {
-		test.testAccessBucketPrivateObjectPublicRead();
-		testV2.testAccessBucketPrivateObjectPublicRead();
-	}
-
-	@Test
-	@Tag("Access")
-	// [bucket:private, object:private, public-read-write] Acl 설정이 올바르게 동작하는지
-	// 확인
-	void testAccessBucketPrivateObjectPublicRW() {
-		test.testAccessBucketPrivateObjectPublicRW();
-		testV2.testAccessBucketPrivateObjectPublicRW();
-	}
-
-	@Test
-	@Tag("Access")
-	// [bucket:public-read, object:private] Acl 설정이 올바르게 동작하는지 확인
-	void testAccessBucketPublicReadObjectPrivate() {
-		test.testAccessBucketPublicReadObjectPrivate();
-		testV2.testAccessBucketPublicReadObjectPrivate();
-	}
-
-	@Test
-	@Tag("Access")
-	// [bucket:public-read, object:public-read] Acl 설정이 올바르게 동작하는지 확인
-	void testAccessBucketPublicReadObjectPublicRead() {
-		test.testAccessBucketPublicReadObjectPublicRead();
-		testV2.testAccessBucketPublicReadObjectPublicRead();
-	}
-
-	@Test
-	@Tag("Access")
-	// [bucket:public-read, object:public-read-write] Acl 설정이 올바르게 동작하는지 확인
-	void testAccessBucketPublicReadObjectPublicRW() {
-		test.testAccessBucketPublicReadObjectPublicRW();
-		testV2.testAccessBucketPublicReadObjectPublicRW();
-	}
-
-	@Test
-	@Tag("Access")
-	// [bucket:public-read-write, object:private] Acl 설정이 올바르게 동작하는지 확인
-	void testAccessBucketPublicRWObjectPrivate() {
-		test.testAccessBucketPublicRWObjectPrivate();
-		testV2.testAccessBucketPublicRWObjectPrivate();
-	}
-
-	@Test
-	@Tag("Access")
-	// [bucket:public-read-write, object:public-read] Acl 설정이 올바르게 동작하는지 확인
-	void testAccessBucketPublicRWObjectPublicRead() {
-		test.testAccessBucketPublicRWObjectPublicRead();
-		testV2.testAccessBucketPublicRWObjectPublicRead();
-	}
-
-	@Test
-	@Tag("Access")
-	// [bucket:public-read-write, object:public-read-write] Acl 설정이 올바르게 동작하는지 확인
-	void testAccessBucketPublicRWObjectPublicRW() {
-		test.testAccessBucketPublicRWObjectPublicRW();
-		testV2.testAccessBucketPublicRWObjectPublicRW();
 	}
 }

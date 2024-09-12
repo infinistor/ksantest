@@ -13,9 +13,6 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.List;
-
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.Test;
 
@@ -58,7 +55,7 @@ public class Grants extends TestBase {
 	@Tag("Bucket")
 	public void testBucketAclChanged() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicRead);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicRead);
 
 		var response = client.getBucketAcl(bucketName);
 		checkAcl(createPublicAcl(Permission.Read), response);
@@ -71,9 +68,19 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Bucket")
+	public void testBucketAclPrivate() {
+		var client = getClient();
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.Private);
+
+		var response = client.getBucketAcl(bucketName);
+		checkAcl(createPublicAcl(), response);
+	}
+
+	@Test
+	@Tag("Bucket")
 	public void testBucketAclPublicRead() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicRead);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicRead);
 
 		var response = client.getBucketAcl(bucketName);
 		checkAcl(createPublicAcl(Permission.Read), response);
@@ -83,7 +90,7 @@ public class Grants extends TestBase {
 	@Tag("Bucket")
 	public void testBucketAclPublicRW() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicReadWrite);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
 
 		var response = client.getBucketAcl(bucketName);
 		checkAcl(createPublicAcl(Permission.Read, Permission.Write), response);
@@ -93,7 +100,7 @@ public class Grants extends TestBase {
 	@Tag("Bucket")
 	public void testBucketAclAuthenticatedRead() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.AuthenticatedRead);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.AuthenticatedRead);
 
 		var response = client.getBucketAcl(bucketName);
 		checkAcl(createAuthenticatedAcl(Permission.Read), response);
@@ -102,9 +109,9 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclDefault() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
 		var key = "testObjectAclDefault";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(bucketName, key, key);
 
@@ -115,9 +122,9 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclChange() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
 		var key = "testObjectAclCanned";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
 				.withCannedAcl(CannedAccessControlList.PublicRead));
@@ -133,10 +140,24 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	public void testObjectAclPublicRead() {
+	public void testObjectAclPrivate() {
+		var key = "testObjectAclCannedPrivate";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
+
+		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
+				.withCannedAcl(CannedAccessControlList.Private));
+
+		var response = client.getObjectAcl(bucketName, key);
+		checkAcl(createPublicAcl(), response);
+	}
+
+	@Test
+	@Tag("Object")
+	public void testObjectAclPublicRead() {
 		var key = "testObjectAclCannedDuringCreate";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
 				.withCannedAcl(CannedAccessControlList.PublicRead));
@@ -148,9 +169,9 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclPublicRW() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
 		var key = "testObjectAclCannedPublicRW";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
 				.withCannedAcl(CannedAccessControlList.PublicReadWrite));
@@ -162,9 +183,9 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclAuthenticatedRead() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
 		var key = "testObjectAclCannedAuthenticatedRead";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
 				.withCannedAcl(CannedAccessControlList.AuthenticatedRead));
@@ -176,10 +197,11 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclBucketOwnerRead() {
+		var key = "testObjectAclBucketOwnerRead";
 		var mainClient = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedACL(mainClient, CannedAccessControlList.PublicReadWrite);
-		var key = "testObjectAclCannedBucketOwnerRead";
+		var bucketName = createBucket(mainClient, ObjectOwnership.ObjectWriter,
+				CannedAccessControlList.PublicReadWrite);
 
 		altClient.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
 				.withCannedAcl(CannedAccessControlList.BucketOwnerRead));
@@ -193,12 +215,12 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	public void testBucketObjectWriterBucketOwnerFullControl() {
+	public void testBucketObjectWriterObjectOwnerFullControl() {
+		var key = "testBucketObjectWriterBucketOwnerFullControl";
 		var mainClient = getClient();
 		var altClient = getAltClient();
 		var bucketName = createBucket(mainClient, ObjectOwnership.ObjectWriter,
 				CannedAccessControlList.PublicReadWrite);
-		var key = "testBucketObjectWriterBucketOwnerFullControl";
 
 		altClient.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
 				.withCannedAcl(CannedAccessControlList.BucketOwnerFullControl));
@@ -209,12 +231,12 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Object")
-	public void testBucketOwnerEnforcedBucketOwnerFullControl() {
+	public void testBucketOwnerEnforcedObjectOwnerFullControl() {
+		var key = "testBucketOwnerEnforcedBucketOwnerFullControl";
 		var mainClient = getClient();
 		var altClient = getAltClient();
 		var bucketName = createBucket(mainClient, ObjectOwnership.BucketOwnerPreferred,
 				CannedAccessControlList.PublicReadWrite);
-		var key = "testBucketOwnerEnforcedBucketOwnerFullControl";
 
 		altClient.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
 				.withCannedAcl(CannedAccessControlList.BucketOwnerFullControl));
@@ -226,17 +248,18 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclOwnerNotChange() {
+		var key = "testObjectAclOwnerNotChange";
 		var mainClient = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedACL(mainClient, CannedAccessControlList.PublicReadWrite);
-		var key = "testObjectAclOwnerNotChange";
+		var bucketName = createBucket(mainClient, ObjectOwnership.ObjectWriter,
+				CannedAccessControlList.PublicReadWrite);
 
 		mainClient.putObject(bucketName, key, key);
 
-		var acl = createAltACL(Permission.FullControl);
+		var acl = createAltAcl(Permission.FullControl);
 		mainClient.setObjectAcl(bucketName, key, acl);
 
-		acl = createAltACL(Permission.ReadAcp);
+		acl = createAltAcl(Permission.ReadAcp);
 		altClient.setObjectAcl(bucketName, key, acl);
 
 		var response = altClient.getObjectAcl(bucketName, key);
@@ -246,9 +269,9 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Effect")
 	public void testBucketAclChangeNotEffect() {
-		var key = "foo";
+		var key = "testBucketAclChangeNotEffect";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicReadWrite);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata()));
 
@@ -256,7 +279,7 @@ public class Grants extends TestBase {
 		var contentType = response.getContentType();
 		var eTag = response.getETag();
 
-		var acl = createAltACL(Permission.FullControl);
+		var acl = createAltAcl(Permission.FullControl);
 
 		client.setObjectAcl(bucketName, key, acl);
 
@@ -269,129 +292,90 @@ public class Grants extends TestBase {
 	@Tag("Permission")
 	public void testBucketAclDuplicated() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.Private);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.Private);
 		client.setBucketAcl(bucketName, CannedAccessControlList.Private);
 	}
 
 	@Test
 	@Tag("Permission")
+	public void testBucketPermissionFullControl() {
+		checkBucketAcl(Permission.FullControl);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketPermissionWrite() {
+		checkBucketAcl(Permission.Write);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketPermissionWriteAcp() {
+		checkBucketAcl(Permission.WriteAcp);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketPermissionRead() {
+		checkBucketAcl(Permission.Read);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketPermissionReadAcp() {
+		checkBucketAcl(Permission.ReadAcp);
+	}
+
+	@Test
+	@Tag("Permission")
 	public void testObjectPermissionFullControl() {
-		checkObjectACL(Permission.FullControl);
+		checkObjectAcl(Permission.FullControl);
 	}
 
 	@Test
 	@Tag("Permission")
 	public void testObjectPermissionWrite() {
-		checkObjectACL(Permission.Write);
+		checkObjectAcl(Permission.Write);
 	}
 
 	@Test
 	@Tag("Permission")
 	public void testObjectPermissionWriteAcp() {
-		checkObjectACL(Permission.WriteAcp);
+		checkObjectAcl(Permission.WriteAcp);
 	}
 
 	@Test
 	@Tag("Permission")
 	public void testObjectPermissionRead() {
-		checkObjectACL(Permission.Read);
+		checkObjectAcl(Permission.Read);
 	}
 
 	@Test
 	@Tag("Permission")
 	public void testObjectPermissionReadAcp() {
-		checkObjectACL(Permission.ReadAcp);
-	}
-
-	@Test
-	@Tag("Permission")
-	public void testBucketPermissionAltUserFullControl() {
-		var bucketName = setupBucketPermission(Permission.FullControl);
-		var altClient = getAltClient();
-
-		checkBucketAclAllowRead(altClient, bucketName);
-		checkBucketAclAllowReadACP(altClient, bucketName);
-		checkBucketAclAllowWrite(altClient, bucketName);
-		checkBucketAclAllowWriteACP(altClient, bucketName);
-
-		var client = getClient();
-
-		var bucketACLResponse = client.getBucketAcl(bucketName);
-		var ownerId = bucketACLResponse.getOwner().getId();
-
-		assertEquals(config.mainUser.id, ownerId);
-	}
-
-	@Test
-	@Tag("Permission")
-	public void testBucketPermissionAltUserRead() {
-		var bucketName = setupBucketPermission(Permission.Read);
-		var altClient = getAltClient();
-
-		checkBucketAclAllowRead(altClient, bucketName);
-		checkBucketAclDenyReadACP(altClient, bucketName);
-		checkBucketAclDenyWrite(altClient, bucketName);
-		checkBucketAclDenyWriteACP(altClient, bucketName);
-	}
-
-	@Test
-	@Tag("Permission")
-	public void testBucketPermissionAltUserReadAcp() {
-		var bucketName = setupBucketPermission(Permission.ReadAcp);
-		var altClient = getAltClient();
-
-		checkBucketAclDenyRead(altClient, bucketName);
-		checkBucketAclAllowReadACP(altClient, bucketName);
-		checkBucketAclDenyWrite(altClient, bucketName);
-		checkBucketAclDenyWriteACP(altClient, bucketName);
-	}
-
-	@Test
-	@Tag("Permission")
-	public void testBucketPermissionAltUserWrite() {
-		var bucketName = setupBucketPermission(Permission.Write);
-		var altClient = getAltClient();
-
-		checkBucketAclDenyRead(altClient, bucketName);
-		checkBucketAclDenyReadACP(altClient, bucketName);
-		checkBucketAclAllowWrite(altClient, bucketName);
-		checkBucketAclDenyWriteACP(altClient, bucketName);
-	}
-
-	@Test
-	@Tag("Permission")
-	public void testBucketPermissionAltUserWriteAcp() {
-		var bucketName = setupBucketPermission(Permission.WriteAcp);
-		var altClient = getAltClient();
-
-		checkBucketAclDenyRead(altClient, bucketName);
-		checkBucketAclDenyReadACP(altClient, bucketName);
-		checkBucketAclDenyWrite(altClient, bucketName);
-		checkBucketAclAllowWriteACP(altClient, bucketName);
+		checkObjectAcl(Permission.ReadAcp);
 	}
 
 	@Test
 	@Tag("ERROR")
 	public void testBucketAclGrantNonExistUser() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		var badUser = new CanonicalGrantee("Foo");
 		var acl = addBucketUserGrant(bucketName, new Grant(badUser, Permission.FullControl));
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, acl));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(HttpStatus.SC_BAD_REQUEST, statusCode);
-		assertEquals(MainData.INVALID_ARGUMENT, errorCode);
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 	}
 
 	@Test
 	@Tag("ERROR")
 	public void testBucketAclNoGrants() {
+		var key = "testBucketAclNoGrants";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
-		var key = "foo";
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(bucketName, key, key);
 		var response = client.getBucketAcl(bucketName);
@@ -418,8 +402,8 @@ public class Grants extends TestBase {
 	@Tag("Grant")
 	public void testBucketAclMultiGrants() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
-		var acl = createAllAcl();
+		var bucketName = createBucketCannedAcl(client);
+		var acl = createAcl(config.mainUser.toOwner(), config.altUser.toGrantee(), Permission.values());
 
 		client.setBucketAcl(bucketName, acl);
 
@@ -430,14 +414,13 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Grant")
 	public void testObjectAclMultiGrants() {
-		var key = "fooKey";
+		var key = "testObjectAclMultiGrants";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
-		var acl = createAllAcl();
+		var bucketName = createBucketCannedAcl(client);
+		var acl = createAcl(config.mainUser.toOwner(), config.altUser.toGrantee(), Permission.values());
 
-		client.putObject(
-				new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
-						.withAccessControlList(acl));
+		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata()));
+		client.setObjectAcl(bucketName, key, acl);
 
 		var response = client.getObjectAcl(bucketName, key);
 		checkAcl(acl, response);
@@ -446,15 +429,14 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Delete")
 	public void testBucketAclRevokeAll() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
 		var key = "testBucketAclRevokeAll";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(bucketName, key, key);
 		var response = client.getBucketAcl(bucketName);
 
-		var acl1 = new AccessControlList();
-		acl1.setOwner(new Owner());
+		var acl1 = new AccessControlList().withOwner(new Owner());
 		for (var Item : response.getGrantsAsList())
 			acl1.grantAllPermissions(Item);
 
@@ -474,9 +456,9 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Delete")
 	public void testObjectAclRevokeAll() {
-		var key = "foo";
+		var key = "testObjectAclRevokeAll";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(bucketName, key, key);
 
@@ -498,233 +480,5 @@ public class Grants extends TestBase {
 		acl3.setOwner(new Owner());
 
 		assertThrows(AmazonServiceException.class, () -> client.setObjectAcl(bucketName, key, acl3));
-	}
-
-	@Test
-	@Tag("Access")
-	public void testAccessBucketPrivateObjectPrivate() {
-		var key1 = "testAccessBucketPrivateObjectPrivate";
-		var key2 = "testAccessBucketPrivateObjectPrivate2";
-		var newKey = "testAccessBucketPrivateObjectPrivateNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.Private, CannedAccessControlList.Private);
-
-		var altClient = getAltClient();
-
-		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key1));
-		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient.listObjects(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient.listObjectsV2(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, key2));
-
-		var altClient2 = getAltClient();
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, newKey, "new-content"));
-	}
-
-	@Test
-	@Tag("Access")
-	public void testAccessBucketPrivateObjectPublicRead() {
-		var key1 = "testAccessBucketPrivateObjectPublicRead";
-		var key2 = "testAccessBucketPrivateObjectPublicRead2";
-		var newKey = "testAccessBucketPrivateObjectPublicReadNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.Private,
-				CannedAccessControlList.PublicRead);
-		var altClient = getAltClient();
-		var response = altClient.getObject(bucketName, key1);
-
-		var body = getBody(response.getObjectContent());
-		assertEquals(key1, body);
-
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
-
-		var altClient2 = getAltClient();
-		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
-
-		var altClient3 = getAltClient();
-		assertThrows(AmazonServiceException.class, () -> altClient3.listObjects(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient3.listObjectsV2(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
-	}
-
-	@Test
-	@Tag("Access")
-	public void testAccessBucketPrivateObjectPublicRW() {
-		var key1 = "testAccessBucketPrivateObjectPublicRW";
-		var key2 = "testAccessBucketPrivateObjectPublicRW2";
-		var newKey = "testAccessBucketPrivateObjectPublicRWNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.Private,
-				CannedAccessControlList.PublicReadWrite);
-		var altClient = getAltClient();
-		var response = altClient.getObject(bucketName, key1);
-
-		var body = getBody(response.getObjectContent());
-		assertEquals(key1, body);
-
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
-
-		var altClient2 = getAltClient();
-		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
-
-		var altClient3 = getAltClient();
-		assertThrows(AmazonServiceException.class, () -> altClient3.listObjects(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient3.listObjectsV2(bucketName));
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
-	}
-
-	@Test
-	@Tag("Access")
-	public void testAccessBucketPublicReadObjectPrivate() {
-		var key1 = "testAccessBucketPublicReadObjectPrivate";
-		var key2 = "testAccessBucketPublicReadObjectPrivate2";
-		var newKey = "testAccessBucketPublicReadObjectPrivateNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.PublicRead,
-				CannedAccessControlList.Private);
-		var altClient = getAltClient();
-
-		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key1));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
-
-		var altClient2 = getAltClient();
-		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
-
-		var altClient3 = getAltClient();
-		var objList = getKeys(altClient3.listObjects(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objList);
-		objList = getKeys(altClient3.listObjectsV2(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objList);
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
-	}
-
-	@Test
-	@Tag("Access")
-	public void testAccessBucketPublicReadObjectPublicRead() {
-		var key1 = "testAccessBucketPublicReadObjectPublicRead";
-		var key2 = "testAccessBucketPublicReadObjectPublicRead2";
-		var newKey = "testAccessBucketPublicReadObjectPublicReadNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.PublicRead,
-				CannedAccessControlList.PublicRead);
-		var altClient = getAltClient();
-
-		var response = altClient.getObject(bucketName, key1);
-		var body = getBody(response.getObjectContent());
-		assertEquals(key1, body);
-
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
-
-		var altClient2 = getAltClient();
-		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
-
-		var altClient3 = getAltClient();
-		var objList = getKeys(altClient3.listObjects(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objList);
-		objList = getKeys(altClient3.listObjectsV2(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objList);
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
-	}
-
-	@Test
-	@Tag("Access")
-	public void testAccessBucketPublicReadObjectPublicRW() {
-		var key1 = "testAccessBucketPublicReadObjectPublicRW";
-		var key2 = "testAccessBucketPublicReadObjectPublicRW2";
-		var newKey = "testAccessBucketPublicReadObjectPublicRWNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.PublicRead,
-				CannedAccessControlList.PublicReadWrite);
-		var altClient = getAltClient();
-
-		var response = altClient.getObject(bucketName, key1);
-		var body = getBody(response.getObjectContent());
-		assertEquals(key1, body);
-
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
-
-		var altClient2 = getAltClient();
-		assertThrows(AmazonServiceException.class, () -> altClient2.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient2.putObject(bucketName, key2, "overwrite2"));
-
-		var altClient3 = getAltClient();
-		var objList = getKeys(altClient3.listObjects(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objList);
-		objList = getKeys(altClient3.listObjectsV2(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objList);
-		assertThrows(AmazonServiceException.class, () -> altClient3.putObject(bucketName, newKey, "new-content"));
-	}
-
-	@Test
-	@Tag("Access")
-	public void testAccessBucketPublicRWObjectPrivate() {
-		var key1 = "testAccessBucketPublicRWObjectPrivate";
-		var key2 = "testAccessBucketPublicRWObjectPrivate2";
-		var newKey = "testAccessBucketPublicRWObjectPrivateNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.PublicReadWrite,
-				CannedAccessControlList.Private);
-		var altClient = getAltClient();
-
-		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key1));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
-
-		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "overwrite2"));
-
-		var objList = getKeys(altClient.listObjects(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objList);
-		objList = getKeys(altClient.listObjectsV2(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objList);
-		altClient.putObject(bucketName, newKey, "new-content");
-	}
-
-	@Test
-	@Tag("Access")
-	public void testAccessBucketPublicRWObjectPublicRead() {
-		var key1 = "testAccessBucketPublicRWObjectPublicRead";
-		var key2 = "testAccessBucketPublicRWObjectPublicRead2";
-		var newKey = "testAccessBucketPublicRWObjectPublicReadNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.PublicReadWrite,
-				CannedAccessControlList.PublicRead);
-		var altClient = getAltClient();
-
-		var response = altClient.getObject(bucketName, key1);
-		var body = getBody(response.getObjectContent());
-		assertEquals(key1, body);
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
-
-		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "overwrite2"));
-
-		var objects = getKeys(altClient.listObjects(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objects);
-		objects = getKeys(altClient.listObjectsV2(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objects);
-		altClient.putObject(bucketName, newKey, "new-content");
-	}
-
-	@Test
-	@Disabled("S3에서는 버킷의 권한이 public-read-write이더라도 오브젝트의 권한이 public-read로 설정되어있으면 업로드 불가능")
-	@Tag("Access")
-	public void testAccessBucketPublicRWObjectPublicRW() {
-		var key1 = "testAccessBucketPublicRWObjectPublicRW";
-		var key2 = "testAccessBucketPublicRWObjectPublicRW2";
-		var newKey = "testAccessBucketPublicRWObjectPublicRWNew";
-		var bucketName = setupAccessTest(key1, key2, CannedAccessControlList.PublicReadWrite,
-				CannedAccessControlList.PublicReadWrite);
-		var altClient = getAltClient();
-
-		var response = altClient.getObject(bucketName, key1);
-		var body = getBody(response.getObjectContent());
-		assertEquals(key1, body);
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key1, "overwrite1"));
-
-		assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, key2));
-		assertThrows(AmazonServiceException.class, () -> altClient.putObject(bucketName, key2, "overwrite2"));
-
-		var objects = getKeys(altClient.listObjects(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objects);
-		objects = getKeys(altClient.listObjectsV2(bucketName).getObjectSummaries());
-		assertEquals(List.of(key1, key2), objects);
-		altClient.putObject(bucketName, newKey, "new-content");
 	}
 }

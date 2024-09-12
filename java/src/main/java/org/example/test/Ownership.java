@@ -104,7 +104,7 @@ public class Ownership extends TestBase {
 	@Tag("Check")
 	public void testObjectOwnershipDenyChange() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		var key = "testObjectOwnershipDenyChange";
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
@@ -123,7 +123,7 @@ public class Ownership extends TestBase {
 	@Tag("Error")
 	public void testObjectOwnershipDenyACL() {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 		var key = "testObjectOwnershipDenyACL";
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())

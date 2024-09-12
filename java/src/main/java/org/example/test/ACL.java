@@ -10,22 +10,15 @@
 */
 package org.example.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-
+import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import java.util.List;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
+import com.amazonaws.services.s3.model.Permission;
+import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
 
 public class ACL extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -39,296 +32,997 @@ public class ACL extends TestBase {
 	}
 
 	@Test
-	@Tag("Get")
-	public void testObjectRawGet() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				key);
-
-		var unauthenticatedClient = getPublicClient();
-		unauthenticatedClient.getObject(bucketName, key);
-	}
-
-	@Test
-	@Tag("Get")
-	public void testObjectRawGetBucketGone() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				key);
-		var client = getClient();
-
-		client.deleteObject(bucketName, key);
-		client.deleteBucket(bucketName);
-
-		var unauthenticatedClient = getPublicClient();
-		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.getObject(bucketName, key));
-
-		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
-		deleteBucketList(bucketName);
-	}
-
-	@Test
-	@Tag("Delete")
-	public void testObjectDeleteKeyBucketGone() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				key);
-		var client = getClient();
-
-		client.deleteObject(bucketName, key);
-		client.deleteBucket(bucketName);
-
-		var unauthenticatedClient = getPublicClient();
-		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.deleteObject(bucketName, key));
-
-		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
-		deleteBucketList(bucketName);
-	}
-
-	@Test
-	@Tag("Get")
-	public void testObjectRawGetObjectGone() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				key);
-		var client = getClient();
-
-		client.deleteObject(bucketName, key);
-
-		var unauthenticatedClient = getPublicClient();
-		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.getObject(bucketName, key));
-
-		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
-	}
-
-	@Test
-	@Tag("Get")
-	public void testObjectRawGetBucketAcl() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, key);
-
-		var unauthenticatedClient = getPublicClient();
-		unauthenticatedClient.getObject(bucketName, key);
-	}
-
-	@Test
-	@Tag("Get")
-	public void testObjectRawGetObjectAcl() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.Private, key);
-
-		var unauthenticatedClient = getPublicClient();
-		var e = assertThrows(AmazonServiceException.class, () -> unauthenticatedClient.getObject(bucketName, key));
-
-		assertEquals(403, e.getStatusCode());
-		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
-	}
-
-	@Test
-	@Tag("Get")
-	public void testObjectRawAuthenticated() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				key);
+	@Tag("Access")
+	public void testPrivateBucketAndObject() {
+		var mainKey = "testDefaultObjectPutGetMain";
+		var altKey = "testDefaultObjectPutGetAlt";
+		var publicKey = "testDefaultObjectPutGetPublic";
+		var bucketName = setupAclObjects(CannedAccessControlList.Private, CannedAccessControlList.Private,
+				mainKey, altKey, publicKey);
 
 		var client = getClient();
-		client.getObject(bucketName, key);
-	}
-
-	@Test
-	@Tag("Header")
-	public void testObjectRawResponseHeaders() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.Private, key);
-		var client = getClient();
-
-		var date = new Date();
-		SimpleDateFormat rfc822format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss 'GMT'", Locale.ENGLISH);
-		String strDate = rfc822format.format(date);
-
-		var response = client.getObject(new GetObjectRequest(bucketName, key).withResponseHeaders(
-				new ResponseHeaderOverrides()
-						.withCacheControl("no-cache")
-						.withContentDisposition("bla")
-						.withContentEncoding("aaa")
-						.withContentLanguage("esperanto")
-						.withContentType("foo/bar")
-						.withExpires(strDate)));
-
-		assertEquals("no-cache", response.getObjectMetadata().getCacheControl());
-		assertEquals("bla", response.getObjectMetadata().getContentDisposition());
-		assertEquals("aaa", response.getObjectMetadata().getContentEncoding());
-		assertEquals("esperanto", response.getObjectMetadata().getContentLanguage());
-		assertEquals("foo/bar", response.getObjectMetadata().getContentType());
-	}
-
-	@Test
-	@Tag("Get")
-	public void testObjectRawAuthenticatedBucketAcl() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, key);
-
-		var client = getAltClient();
-		client.getObject(bucketName, key);
-	}
-
-	@Test
-	@Tag("Get")
-	public void testObjectRawAuthenticatedObjectAcl() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.AuthenticatedRead, key);
-
-		var client = getAltClient();
-		client.getObject(bucketName, key);
-	}
-
-	@Test
-	@Tag("Get")
-	public void testObjectRawAuthenticatedBucketGone() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				key);
-		var client = getClient();
-
-		client.deleteObject(bucketName, key);
-		client.deleteBucket(bucketName);
-
-		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
-
-		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
-		deleteBucketList(bucketName);
-	}
-
-	@Test
-	@Tag("Get")
-	public void testObjectRawAuthenticatedObjectGone() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				key);
-		var client = getClient();
-
-		client.deleteObject(bucketName, key);
-
-		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
-
-		assertEquals(404, e.getStatusCode());
-		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
-	}
-
-	@Test
-	@Tag("Post")
-	public void testObjectRawGetXAmzExpiresNotExpired() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				key);
-		var client = getClient();
-
-		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
-		var response = getObject(address);
-
-		assertEquals(200, response.getStatusLine().getStatusCode());
-	}
-
-	@Test
-	@Tag("Post")
-	public void testObjectRawGetXAmzExpiresOutRangeZero() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
-				key);
-		var client = getClient();
-
-		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-100), HttpMethod.GET);
-		var response = getObject(address);
-		assertEquals(403, response.getStatusLine().getStatusCode());
-	}
-
-	@Test
-	@Tag("Post")
-	public void testObjectRawGetXAmzExpiresOutPositiveRange() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead, key);
-		var client = getClient();
-
-		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-100), HttpMethod.GET);
-
-		var response = getObject(address);
-		assertEquals(403, response.getStatusLine().getStatusCode());
-	}
-
-	@Test
-	@Tag("Update")
-	public void testObjectAnonPut() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
-		var key = "foo";
-
-		client.putObject(bucketName, key, "");
-
-		var unauthenticatedClient = getPublicClient();
-
-		var e = assertThrows(AmazonServiceException.class,
-				() -> unauthenticatedClient.putObject(bucketName, key, "bar"));
-		assertEquals(403, e.getStatusCode());
-		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
-	}
-
-	@Test
-	@Tag("Update")
-	public void testObjectAnonPutWriteAccess() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
-		var key = "foo";
-
-		client.putObject(bucketName, key, "");
-
-		var unauthenticatedClient = getPublicClient();
-
-		var e = assertThrows(AmazonServiceException.class,
-				() -> unauthenticatedClient.putObject(bucketName, key, "bar"));
-		assertEquals(403, e.getStatusCode());
-		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
-	}
-
-	@Test
-	@Tag("Default")
-	public void testObjectPutAuthenticated() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
-
-		client.putObject(bucketName, "foo", "foo");
-	}
-
-	@Test
-	@Tag("Default")
-	public void testObjectRawPutAuthenticatedExpired() {
-		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
-		var key = "foo";
-		client.putObject(bucketName, key, "");
-
-		var address = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(-100), HttpMethod.PUT);
-
-		var response = putObject(address, null);
-		assertEquals(403, response.getStatusLine().getStatusCode());
-	}
-
-	@Test
-	@Tag("Get")
-	public void testAclPrivateBucketPublicReadObject() {
-		var key = "foo";
-		var bucketName = setupBucketObjectACL(CannedAccessControlList.Private, CannedAccessControlList.PublicRead, key);
-
-		var client = getClient();
-		aclTest(bucketName, key, client, true);
-
 		var altClient = getAltClient();
-		aclTest(bucketName, key, altClient, true);
+		var publicClient = getPublicClient();
 
-		var unauthenticatedClient = getPublicClient();
-		aclTest(bucketName, key, unauthenticatedClient, true);
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPrivateBucketPublicReadObject() {
+		var mainKey = "testPrivateBucketPublicObjectMain";
+		var altKey = "testPrivateBucketPublicObjectAlt";
+		var publicKey = "testPrivateBucketPublicObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.Private, CannedAccessControlList.PublicRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPrivateBucketPublicRWObject() {
+		var mainKey = "testPrivateBucketPublicRWObjectMain";
+		var altKey = "testPrivateBucketPublicRWObjectAlt";
+		var publicKey = "testPrivateBucketPublicRWObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.Private, CannedAccessControlList.PublicReadWrite,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPrivateBucketAuthenticatedReadObject() {
+		var mainKey = "testPrivateBucketAuthenticatedObjectMain";
+		var altKey = "testPrivateBucketAuthenticatedObjectAlt";
+		var publicKey = "testPrivateBucketAuthenticatedObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.Private, CannedAccessControlList.AuthenticatedRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPrivateBucketBucketOwnerReadObject() {
+		var mainKey = "testPrivateBucketBucketOwnerReadObjectMain";
+		var altKey = "testPrivateBucketBucketOwnerReadObjectAlt";
+		var publicKey = "testPrivateBucketBucketOwnerReadObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.Private, CannedAccessControlList.BucketOwnerRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPrivateBucketBucketOwnerReadObjectUploadAltUser() {
+		var mainKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserMain";
+		var altKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserAlt";
+		var publicKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.Private, CannedAccessControlList.BucketOwnerRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(altClient, bucketName, mainKey, mainKey);
+		failedGetObject(client, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(altClient, bucketName, mainKey, mainKey);
+		failedPutObject(client, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPrivateBucketBucketOwnerFullControlObject() {
+		var mainKey = "testPrivateBucketBucketOwnerFullControlObjectMain";
+		var altKey = "testPrivateBucketBucketOwnerFullControlObjectAlt";
+		var publicKey = "testPrivateBucketBucketOwnerFullControlObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.Private,
+				CannedAccessControlList.BucketOwnerFullControl,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicReadBucketPrivateObject() {
+		var mainKey = "testPublicReadBucketPrivateObjectMain";
+		var altKey = "testPublicReadBucketPrivateObjectAlt";
+		var publicKey = "testPublicReadBucketPrivateObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicRead, CannedAccessControlList.Private,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicReadBucketAndObject() {
+		var mainKey = "testPublicReadBucketAndObjectMain";
+		var altKey = "testPublicReadBucketAndObjectAlt";
+		var publicKey = "testPublicReadBucketAndObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicReadBucketPublicRWObject() {
+		var mainKey = "testPublicReadBucketPublicRWObjectMain";
+		var altKey = "testPublicReadBucketPublicRWObjectAlt";
+		var publicKey = "testPublicReadBucketPublicRWObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicRead, CannedAccessControlList.PublicReadWrite,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicReadBucketAuthenticatedReadObject() {
+		var mainKey = "testPublicReadBucketAuthenticatedReadObjectMain";
+		var altKey = "testPublicReadBucketAuthenticatedReadObjectAlt";
+		var publicKey = "testPublicReadBucketAuthenticatedReadObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicRead, CannedAccessControlList.AuthenticatedRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicReadBucketBucketOwnerReadObject() {
+		var mainKey = "testPublicReadBucketBucketOwnerReadObjectMain";
+		var altKey = "testPublicReadBucketBucketOwnerReadObjectAlt";
+		var publicKey = "testPublicReadBucketBucketOwnerReadObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicRead, CannedAccessControlList.BucketOwnerRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicReadBucketBucketOwnerFullControlObject() {
+		var mainKey = "testPublicReadBucketBucketOwnerFullControlObjectMain";
+		var altKey = "testPublicReadBucketBucketOwnerFullControlObjectAlt";
+		var publicKey = "testPublicReadBucketBucketOwnerFullControlObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicRead,
+				CannedAccessControlList.BucketOwnerFullControl,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketPrivateObject() {
+		var mainKey = "testPublicRWBucketPrivateObjectMain";
+		var altKey = "testPublicRWBucketPrivateObjectAlt";
+		var altNewKey = "testPublicRWBucketPrivateObjectAltNew";
+		var publicKey = "testPublicRWBucketPrivateObjectPublic";
+		var publicNewKey = "testPublicRWBucketPrivateObjectPublicNew";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicReadWrite, CannedAccessControlList.Private,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(altClient, bucketName, altNewKey, altNewKey);
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketPrivateObjectByAltUser() {
+		var mainKey = "testPublicRWBucketPrivateObjectByAltUserMain";
+		var altKey = "testPublicRWBucketPrivateObjectByAltUserAlt";
+		var publicKey = "testPublicRWBucketPrivateObjectByAltUserPublic";
+		var publicNewKey = "testPublicRWBucketPrivateObjectByAltUserPublicNew";
+
+		var bucketName = setupAclObjectsByAlt(CannedAccessControlList.PublicReadWrite, CannedAccessControlList.Private,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		failedGetObject(client, bucketName, mainKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		succeedPutObject(altClient, bucketName, altKey, altKey);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+
+		altClient.deleteObject(bucketName, altKey);
+		altClient.deleteObject(bucketName, publicKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketPublicReadObject() {
+		var mainKey = "testPublicRWBucketPublicReadObjectMain";
+		var altKey = "testPublicRWBucketPublicReadObjectAlt";
+		var altNewKey = "testPublicRWBucketPublicReadObjectAltNew";
+		var publicKey = "testPublicRWBucketPublicReadObjectPublic";
+		var publicNewKey = "testPublicRWBucketPublicReadObjectPublicNew";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicReadWrite, CannedAccessControlList.PublicRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(altClient, bucketName, altNewKey, altNewKey);
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketPublicReadObjectByAltUser() {
+		var mainKey = "testPublicRWBucketPublicReadObjectByAltUserMain";
+		var altKey = "testPublicRWBucketPublicReadObjectByAltUserAlt";
+		var altNewKey = "testPublicRWBucketPublicReadObjectByAltUserAltNew";
+		var publicKey = "testPublicRWBucketPublicReadObjectByAltUserPublic";
+		var publicNewKey = "testPublicRWBucketPublicReadObjectByAltUserPublicNew";
+
+		var bucketName = setupAclObjectsByAlt(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.PublicRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(altClient, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		succeedPutObject(altClient, bucketName, altKey, altKey);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(altClient, bucketName, altNewKey, altNewKey);
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+
+		altClient.deleteObject(bucketName, altKey);
+		altClient.deleteObject(bucketName, publicKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketPublicRWObject() {
+		var mainKey = "testPublicRWBucketPublicRWObjectMain";
+		var altKey = "testPublicRWBucketPublicRWObjectAlt";
+		var altNewKey = "testPublicRWBucketPublicRWObjectAltNew";
+		var publicKey = "testPublicRWBucketPublicRWObjectPublic";
+		var publicNewKey = "testPublicRWBucketPublicRWObjectPublicNew";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.PublicReadWrite,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(altClient, bucketName, altNewKey, altNewKey);
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketPublicRWObjectByAltUser() {
+		var mainKey = "testPublicRWBucketPublicRWObjectByAltUserMain";
+		var altKey = "testPublicRWBucketPublicRWObjectByAltUserAlt";
+		var publicKey = "testPublicRWBucketPublicRWObjectByAltUserPublic";
+		var publicNewKey = "testPublicRWBucketPublicRWObjectByAltUserPublicNew";
+
+		var bucketName = setupAclObjectsByAlt(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.PublicReadWrite,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(altClient, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		succeedPutObject(altClient, bucketName, altKey, altKey);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketAuthenticatedReadObject() {
+		var mainKey = "testPublicRWBucketAuthenticatedReadObjectMain";
+		var altKey = "testPublicRWBucketAuthenticatedReadObjectAlt";
+		var altNewKey = "testPublicRWBucketAuthenticatedReadObjectAltNew";
+		var publicKey = "testPublicRWBucketAuthenticatedReadObjectPublic";
+		var publicNewKey = "testPublicRWBucketAuthenticatedReadObjectPublicNew";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.AuthenticatedRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(altClient, bucketName, altNewKey, altNewKey);
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketAuthenticatedReadObjectByAltUser() {
+		var mainKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserMain";
+		var altKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserAlt";
+		var publicKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserPublic";
+		var publicNewKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserPublicNew";
+
+		var bucketName = setupAclObjectsByAlt(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.AuthenticatedRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(altClient, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		succeedPutObject(altClient, bucketName, altKey, altKey);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketBucketOwnerReadObject() {
+		var mainKey = "testPublicRWBucketBucketOwnerReadObjectMain";
+		var altKey = "testPublicRWBucketBucketOwnerReadObjectAlt";
+		var altNewKey = "testPublicRWBucketBucketOwnerReadObjectAltNew";
+		var publicKey = "testPublicRWBucketBucketOwnerReadObjectPublic";
+		var publicNewKey = "testPublicRWBucketBucketOwnerReadObjectPublicNew";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.BucketOwnerRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(altClient, bucketName, altNewKey, altNewKey);
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketBucketOwnerReadObjectByAltUser() {
+		var mainKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserMain";
+		var altKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserAlt";
+		var publicKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserPublic";
+		var publicNewKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserPublicNew";
+
+		var bucketName = setupAclObjectsByAlt(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.BucketOwnerRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(altClient, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		succeedPutObject(altClient, bucketName, altKey, altKey);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketBucketOwnerFullControlObject() {
+		var mainKey = "testPublicRWBucketBucketOwnerFullControlObjectMain";
+		var altKey = "testPublicRWBucketBucketOwnerFullControlObjectAlt";
+		var altNewKey = "testPublicRWBucketBucketOwnerFullControlObjectAltNew";
+		var publicKey = "testPublicRWBucketBucketOwnerFullControlObjectPublic";
+		var publicNewKey = "testPublicRWBucketBucketOwnerFullControlObjectPublicNew";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.BucketOwnerFullControl,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(altClient, bucketName, altNewKey, altNewKey);
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketBucketOwnerFullControlObjectByAltUser() {
+		var mainKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserMain";
+		var altKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserAlt";
+		var publicKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserPublic";
+		var publicNewKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserPublicNew";
+
+		var bucketName = setupAclObjectsByAlt(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.BucketOwnerFullControl,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(altClient, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		succeedPutObject(altClient, bucketName, altKey, altKey);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferred() {
+		var mainKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredMain";
+		var altKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredAlt";
+		var altNewKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredAltNew";
+		var publicKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredPublic";
+		var publicNewKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredPublicNew";
+
+		var bucketName = setupAclObjectsByAlt(ObjectOwnership.BucketOwnerPreferred,
+				CannedAccessControlList.PublicReadWrite, CannedAccessControlList.BucketOwnerFullControl,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(altClient, bucketName, altNewKey, altNewKey);
+		succeedPutObject(publicClient, bucketName, publicNewKey, publicNewKey);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testAuthenticatedReadBucketPrivateObject() {
+		var mainKey = "testAuthenticatedReadBucketPrivateObjectMain";
+		var altKey = "testAuthenticatedReadBucketPrivateObjectAlt";
+		var publicKey = "testAuthenticatedReadBucketPrivateObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.AuthenticatedRead, CannedAccessControlList.Private,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testAuthenticatedReadBucketPublicReadObject() {
+		var mainKey = "testAuthenticatedReadBucketPublicReadObjectMain";
+		var altKey = "testAuthenticatedReadBucketPublicReadObjectAlt";
+		var publicKey = "testAuthenticatedReadBucketPublicReadObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.AuthenticatedRead, CannedAccessControlList.PublicRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testAuthenticatedReadBucketPublicRWObject() {
+		var mainKey = "testAuthenticatedReadBucketPublicRWObjectMain";
+		var altKey = "testAuthenticatedReadBucketPublicRWObjectAlt";
+		var publicKey = "testAuthenticatedReadBucketPublicRWObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.AuthenticatedRead,
+				CannedAccessControlList.PublicReadWrite,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		succeedGetObject(publicClient, bucketName, publicKey, publicKey);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testAuthenticatedReadBucketAndObject() {
+		var mainKey = "testAuthenticatedReadBucketAndObjectMain";
+		var altKey = "testAuthenticatedReadBucketAndObjectAlt";
+		var publicKey = "testAuthenticatedReadBucketAndObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.AuthenticatedRead,
+				CannedAccessControlList.AuthenticatedRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		succeedGetObject(altClient, bucketName, altKey, altKey);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testAuthenticatedReadBucketBucketOwnerReadObject() {
+		var mainKey = "testAuthenticatedReadBucketBucketOwnerReadObjectMain";
+		var altKey = "testAuthenticatedReadBucketBucketOwnerReadObjectAlt";
+		var publicKey = "testAuthenticatedReadBucketBucketOwnerReadObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.AuthenticatedRead,
+				CannedAccessControlList.BucketOwnerRead,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testAuthenticatedReadBucketBucketOwnerFullControlObject() {
+		var mainKey = "testAuthenticatedReadBucketBucketOwnerFullControlObjectMain";
+		var altKey = "testAuthenticatedReadBucketBucketOwnerFullControlObjectAlt";
+		var publicKey = "testAuthenticatedReadBucketBucketOwnerFullControlObjectPublic";
+
+		var bucketName = setupAclObjects(CannedAccessControlList.AuthenticatedRead,
+				CannedAccessControlList.BucketOwnerFullControl,
+				mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+
+		succeedGetObject(client, bucketName, mainKey, mainKey);
+		failedGetObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		succeedPutObject(client, bucketName, mainKey, mainKey);
+		failedPutObject(altClient, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("List")
+	public void testPrivateBucketList() {
+		var keys = List.of("testPrivateBucketList1", "testPrivateBucketList2", "testPrivateBucketList3");
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+		var bucketName = setupAclBucket(CannedAccessControlList.Private, keys);
+
+		succeedListObjects(client, bucketName, keys);
+		failedListObjects(altClient, bucketName, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedListObjects(publicClient, bucketName, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("List")
+	public void testPublicReadBucketList() {
+		var keys = List.of("testPublicReadBucketList1", "testPublicReadBucketList2", "testPublicReadBucketList3");
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+		var bucketName = setupAclBucket(CannedAccessControlList.PublicRead, keys);
+
+		succeedListObjects(client, bucketName, keys);
+		succeedListObjects(altClient, bucketName, keys);
+		succeedListObjects(publicClient, bucketName, keys);
+	}
+
+	@Test
+	@Tag("List")
+	public void testPublicRWBucketList() {
+		var keys = List.of("testPublicRWBucketList1", "testPublicRWBucketList2", "testPublicRWBucketList3");
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+		var bucketName = setupAclBucket(CannedAccessControlList.PublicReadWrite, keys);
+
+		succeedListObjects(client, bucketName, keys);
+		succeedListObjects(altClient, bucketName, keys);
+		succeedListObjects(publicClient, bucketName, keys);
+	}
+
+	@Test
+	@Tag("List")
+	public void testAuthenticatedReadBucketList() {
+		var keys = List.of("testAuthenticatedReadBucketList1",
+				"testAuthenticatedReadBucketList2",
+				"testAuthenticatedReadBucketList3");
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+		var bucketName = setupAclBucket(CannedAccessControlList.AuthenticatedRead, keys);
+
+		succeedListObjects(client, bucketName, keys);
+		succeedListObjects(altClient, bucketName, keys);
+		failedListObjects(publicClient, bucketName, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketPermissionAltUserFullControl() {
+		var bucketName = setupBucketPermission(Permission.FullControl);
+		var altClient = getAltClient();
+
+		checkBucketAclAllowRead(altClient, bucketName);
+		checkBucketAclAllowReadACP(altClient, bucketName);
+		checkBucketAclAllowWrite(altClient, bucketName);
+		checkBucketAclAllowWriteACP(altClient, bucketName);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketPermissionAltUserRead() {
+		var bucketName = setupBucketPermission(Permission.Read);
+		var altClient = getAltClient();
+
+		checkBucketAclAllowRead(altClient, bucketName);
+		checkBucketAclDenyReadACP(altClient, bucketName);
+		checkBucketAclDenyWrite(altClient, bucketName);
+		checkBucketAclDenyWriteACP(altClient, bucketName);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketPermissionAltUserReadAcp() {
+		var bucketName = setupBucketPermission(Permission.ReadAcp);
+		var altClient = getAltClient();
+
+		checkBucketAclDenyRead(altClient, bucketName);
+		checkBucketAclAllowReadACP(altClient, bucketName);
+		checkBucketAclDenyWrite(altClient, bucketName);
+		checkBucketAclDenyWriteACP(altClient, bucketName);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketPermissionAltUserWrite() {
+		var bucketName = setupBucketPermission(Permission.Write);
+		var altClient = getAltClient();
+
+		checkBucketAclDenyRead(altClient, bucketName);
+		checkBucketAclDenyReadACP(altClient, bucketName);
+		checkBucketAclAllowWrite(altClient, bucketName);
+		checkBucketAclDenyWriteACP(altClient, bucketName);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketPermissionAltUserWriteAcp() {
+		var bucketName = setupBucketPermission(Permission.WriteAcp);
+		var altClient = getAltClient();
+
+		checkBucketAclDenyRead(altClient, bucketName);
+		checkBucketAclDenyReadACP(altClient, bucketName);
+		checkBucketAclDenyWrite(altClient, bucketName);
+		checkBucketAclAllowWriteACP(altClient, bucketName);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testObjectPermissionAltUserFullControl() {
+		var key = "testObjectPermissionAltUserFullControl";
+		var bucketName = setupObjectPermission(key, Permission.FullControl);
+		var altClient = getAltClient();
+
+		checkObjectAclAllowRead(altClient, bucketName, key);
+		checkObjectAclAllowReadACP(altClient, bucketName, key);
+		checkObjectAclDenyWrite(altClient, bucketName, key);
+		checkObjectAclAllowWriteACP(altClient, bucketName, key);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testObjectPermissionAltUserRead() {
+		var key = "testObjectPermissionAltUserRead";
+		var bucketName = setupObjectPermission(key, Permission.Read);
+		var altClient = getAltClient();
+
+		checkObjectAclAllowRead(altClient, bucketName, key);
+		checkObjectAclDenyReadACP(altClient, bucketName, key);
+		checkObjectAclDenyWrite(altClient, bucketName, key);
+		checkObjectAclDenyWriteACP(altClient, bucketName, key);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testObjectPermissionAltUserReadAcp() {
+		var key = "testObjectPermissionAltUserReadAcp";
+		var bucketName = setupObjectPermission(key, Permission.ReadAcp);
+		var altClient = getAltClient();
+
+		checkObjectAclDenyRead(altClient, bucketName, key);
+		checkObjectAclAllowReadACP(altClient, bucketName, key);
+		checkObjectAclDenyWrite(altClient, bucketName, key);
+		checkObjectAclDenyWriteACP(altClient, bucketName, key);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testObjectPermissionAltUserWrite() {
+		var key = "testObjectPermissionAltUserWrite";
+		var bucketName = setupObjectPermission(key, Permission.Write);
+		var altClient = getAltClient();
+
+		checkObjectAclDenyRead(altClient, bucketName, key);
+		checkObjectAclDenyReadACP(altClient, bucketName, key);
+		checkObjectAclDenyWrite(altClient, bucketName, key);
+		checkObjectAclDenyWriteACP(altClient, bucketName, key);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testObjectPermissionAltUserWriteAcp() {
+		var key = "testObjectPermissionAltUserWriteAcp";
+		var bucketName = setupObjectPermission(key, Permission.WriteAcp);
+		var altClient = getAltClient();
+
+		checkObjectAclDenyRead(altClient, bucketName, key);
+		checkObjectAclDenyReadACP(altClient, bucketName, key);
+		checkObjectAclDenyWrite(altClient, bucketName, key);
+		checkObjectAclAllowWriteACP(altClient, bucketName, key);
 	}
 }

@@ -11,7 +11,6 @@
 package org.example.s3tests;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,182 +26,370 @@ class ACL {
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = public-read, Object = public-read] 권한없는 사용자가 오브젝트에 접근 가능한지 확인
-	void testObjectRawGet() {
-		test.testObjectRawGet();
-		testV2.testObjectRawGet();
+	@Tag("Access")
+	// [Bucket = private, Object = private] 오브젝트에 접근 가능한지 확인
+	void testPrivateBucketAndObject() {
+		test.testPrivateBucketAndObject();
+		testV2.testPrivateBucketAndObject();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = public-read, Object = public-read] 권한없는 사용자가 삭제된 버킷의 삭제된
-	// 오브젝트에 접근할때 에러 확인
-	void testObjectRawGetBucketGone() {
-		test.testObjectRawGetBucketGone();
-		testV2.testObjectRawGetBucketGone();
+	@Tag("Access")
+	// [Bucket = private, Object = public-read] 오브젝트에 접근 가능한지 확인
+	void testPrivateBucketPublicReadObject() {
+		test.testPrivateBucketPublicReadObject();
+		testV2.testPrivateBucketPublicReadObject();
 	}
 
 	@Test
-	@Tag("Delete")
-	// [Bucket = public-read, Object = public-read] 권한없는 사용자가 삭제된 버킷의 삭제된
-	// 오브젝트를 삭제할때 에러 확인
-	void testObjectDeleteKeyBucketGone() {
-		test.testObjectDeleteKeyBucketGone();
-		testV2.testObjectDeleteKeyBucketGone();
+	@Tag("Access")
+	// [Bucket = private, Object = public-read-write] 오브젝트에 접근 가능한지 확인
+	void testPrivateBucketPublicRWObject() {
+		test.testPrivateBucketPublicRWObject();
+		testV2.testPrivateBucketPublicRWObject();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = public-read, Object = public-read] 권한없는 사용자가 삭제된 오브젝트에 접근할때
-	// 에러 확인
-	void testObjectRawGetObjectGone() {
-		test.testObjectRawGetObjectGone();
-		testV2.testObjectRawGetObjectGone();
+	@Tag("Access")
+	// [Bucket = private, Object = authenticated-read] 오브젝트에 접근 가능한지 확인
+	void testPrivateBucketAuthenticatedReadObject() {
+		test.testPrivateBucketAuthenticatedReadObject();
+		testV2.testPrivateBucketAuthenticatedReadObject();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = private, Object = public-read] 권한없는 사용자가 개인버킷의 공용 오브젝트에 접근
-	// 가능한지 확인
-	void testObjectRawGetBucketAcl() {
-		test.testObjectRawGetBucketAcl();
-		testV2.testObjectRawGetBucketAcl();
+	@Tag("Access")
+	// [Bucket = private, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인
+	void testPrivateBucketBucketOwnerReadObject() {
+		test.testPrivateBucketBucketOwnerReadObject();
+		testV2.testPrivateBucketBucketOwnerReadObject();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = public-read, Object = private] 권한없는 사용자가 공용버킷의 개인 오브젝트에
-	// 접근할때 에러확인
-	void testObjectRawGetObjectAcl() {
-		test.testObjectRawGetObjectAcl();
-		testV2.testObjectRawGetObjectAcl();
+	@Tag("Access")
+	// [Bucket = private, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인
+	void testPrivateBucketBucketOwnerFullControlObject() {
+		test.testPrivateBucketBucketOwnerFullControlObject();
+		testV2.testPrivateBucketBucketOwnerFullControlObject();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = public-read, Object = public-read] 로그인한 사용자가 공용 버킷의 공용
+	@Tag("Access")
+	// [Bucket = public-read, Object = private] 오브젝트에 접근 가능한지 확인
+	void testPublicReadBucketPrivateObject() {
+		test.testPublicReadBucketPrivateObject();
+		testV2.testPublicReadBucketPrivateObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read, Object = public-read] 오브젝트에 접근 가능한지 확인
+	void testPublicReadBucketAndObject() {
+		test.testPublicReadBucketAndObject();
+		testV2.testPublicReadBucketAndObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read, Object = public-read-write] 오브젝트에 접근 가능한지 확인
+	void testPublicReadBucketPublicRWObject() {
+		test.testPublicReadBucketPublicRWObject();
+		testV2.testPublicReadBucketPublicRWObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read, Object = authenticated-read] 오브젝트에 접근 가능한지 확인
+	void testPublicReadBucketAuthenticatedReadObject() {
+		test.testPublicReadBucketAuthenticatedReadObject();
+		testV2.testPublicReadBucketAuthenticatedReadObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인
+	void testPublicReadBucketBucketOwnerReadObject() {
+		test.testPublicReadBucketBucketOwnerReadObject();
+		testV2.testPublicReadBucketBucketOwnerReadObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인
+	void testPublicReadBucketBucketOwnerFullControlObject() {
+		test.testPublicReadBucketBucketOwnerFullControlObject();
+		testV2.testPublicReadBucketBucketOwnerFullControlObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = private] 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketPrivateObject() {
+		test.testPublicRWBucketPrivateObject();
+		testV2.testPublicRWBucketPrivateObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = private, AltUser] 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketPrivateObjectByAltUser() {
+		test.testPublicRWBucketPrivateObjectByAltUser();
+		testV2.testPublicRWBucketPrivateObjectByAltUser();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = public-read] 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketPublicReadObject() {
+		test.testPublicRWBucketPublicReadObject();
+		testV2.testPublicRWBucketPublicReadObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = public-read, AltUser] 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketPublicReadObjectByAltUser() {
+		test.testPublicRWBucketPublicReadObjectByAltUser();
+		testV2.testPublicRWBucketPublicReadObjectByAltUser();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = public-read-write] 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketPublicRWObject() {
+		test.testPublicRWBucketPublicRWObject();
+		testV2.testPublicRWBucketPublicRWObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = public-read-write, AltUser]
 	// 오브젝트에 접근 가능한지 확인
-	void testObjectRawAuthenticated() {
-		test.testObjectRawAuthenticated();
-		testV2.testObjectRawAuthenticated();
+	void testPublicRWBucketPublicRWObjectByAltUser() {
+		test.testPublicRWBucketPublicRWObjectByAltUser();
+		testV2.testPublicRWBucketPublicRWObjectByAltUser();
 	}
 
 	@Test
-	@Tag("Header")
-	// [Bucket = private, Object = private] 로그인한 사용자가 GetObject의 반환헤더값을 설정하고
-	// 개인 오브젝트를 가져올때 반환헤더값이 적용되었는지 확인
-	void testObjectRawResponseHeaders() {
-		test.testObjectRawResponseHeaders();
-		testV2.testObjectRawResponseHeaders();
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = authenticated-read] 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketAuthenticatedReadObject() {
+		test.testPublicRWBucketAuthenticatedReadObject();
+		testV2.testPublicRWBucketAuthenticatedReadObject();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = private, Object = public-read] 로그인한 사용자가 개인버킷의 공용 오브젝트에 접근
-	// 가능한지 확인
-	void testObjectRawAuthenticatedBucketAcl() {
-		test.testObjectRawAuthenticatedBucketAcl();
-		testV2.testObjectRawAuthenticatedBucketAcl();
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = authenticated-read, AltUser]
+	// 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketAuthenticatedReadObjectByAltUser() {
+		test.testPublicRWBucketAuthenticatedReadObjectByAltUser();
+		testV2.testPublicRWBucketAuthenticatedReadObjectByAltUser();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = public-read, Object = private] 로그인한 사용자가 공용버킷의 개인 오브젝트에 접근
-	// 가능한지 확인
-	void testObjectRawAuthenticatedObjectAcl() {
-		test.testObjectRawAuthenticatedObjectAcl();
-		testV2.testObjectRawAuthenticatedObjectAcl();
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketBucketOwnerReadObject() {
+		test.testPublicRWBucketBucketOwnerReadObject();
+		testV2.testPublicRWBucketBucketOwnerReadObject();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = public-read, Object = public-read] 로그인한 사용자가 삭제된 버킷의 삭제된
-	// 오브젝트에 접근할때 에러 확인
-	void testObjectRawAuthenticatedBucketGone() {
-		test.testObjectRawAuthenticatedBucketGone();
-		testV2.testObjectRawAuthenticatedBucketGone();
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = bucket-owner-read, AltUser]
+	// 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketBucketOwnerReadObjectByAltUser() {
+		test.testPublicRWBucketBucketOwnerReadObjectByAltUser();
+		testV2.testPublicRWBucketBucketOwnerReadObjectByAltUser();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = public-read, Object = public-read] 로그인한 사용자가 삭제된 오브젝트에 접근할때
-	// 에러 확인
-	void testObjectRawAuthenticatedObjectGone() {
-		test.testObjectRawAuthenticatedObjectGone();
-		testV2.testObjectRawAuthenticatedObjectGone();
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = bucket-owner-full-control]
+	// 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketBucketOwnerFullControlObject() {
+		test.testPublicRWBucketBucketOwnerFullControlObject();
+		testV2.testPublicRWBucketBucketOwnerFullControlObject();
 	}
 
 	@Test
-	@Tag("Post")
-	// [Bucket = public-read, Object = public-read] 로그인이 만료되지 않은 사용자가 공용 버킷의
-	// 공용 오브젝트에 URL 형식으로 접근 가능한지 확인
-	void testObjectRawGetXAmzExpiresNotExpired() {
-		test.testObjectRawGetXAmzExpiresNotExpired();
-		testV2.testObjectRawGetXAmzExpiresNotExpired();
-	}
-
-	@Disabled("Expires가 60초 미만일경우 서버에서 60초로 강제로 고정하므로 테스트에 시간 소요가 길어 테스트에서 제외합니다.")
-	@Test
-	@Tag("Post")
-	// [Bucket = public-read, Object = public-read] 로그인이 만료된 사용자가 공용 버킷의 공용
-	// 오브젝트에 URL 형식으로 접근 실패 확인
-	void testObjectRawGetXAmzExpiresOutRangeZero() {
-		test.testObjectRawGetXAmzExpiresOutRangeZero();
-		testV2.testObjectRawGetXAmzExpiresOutRangeZero();
-	}
-
-	@Disabled("Expires가 60초 미만일경우 서버에서 60초로 강제로 고정하므로 테스트에 시간 소요가 길어 테스트에서 제외합니다.")
-	@Test
-	@Tag("Post")
-	// [Bucket = public-read, Object = public-read] 로그인 유효주기가 만료된 사용자가 공용
-	// 버킷의 공용 오브젝트에 URL 형식으로 접근 실패 확인
-	void testObjectRawGetXAmzExpiresOutPositiveRange() {
-		test.testObjectRawGetXAmzExpiresOutPositiveRange();
-		testV2.testObjectRawGetXAmzExpiresOutPositiveRange();
+	@Tag("Access")
+	// [Bucket = public-read-write, Object = bucket-owner-full-control, AltUser]
+	// 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketBucketOwnerFullControlObjectByAltUser() {
+		test.testPublicRWBucketBucketOwnerFullControlObjectByAltUser();
+		testV2.testPublicRWBucketBucketOwnerFullControlObjectByAltUser();
 	}
 
 	@Test
-	@Tag("Update")
-	// [Bucket = Default, Object = Default] 로그인한 사용자가 버켓을 만들고 업로드한 오브젝트를
-	// 권한없는 사용자가 업데이트하려고 할때 실패 확인
-	void testObjectAnonPut() {
-		test.testObjectAnonPut();
-		testV2.testObjectAnonPut();
+	@Tag("Access")
+	// [Bucket = public-read-write, BucketOwnerPreferred,
+	// Object = bucket-owner-full-control, AltUser]
+	// 오브젝트에 접근 가능한지 확인
+	void testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferred() {
+		test.testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferred();
+		testV2.testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferred();
 	}
 
 	@Test
-	@Tag("Update")
-	// [Bucket = public-read-write] 로그인한 사용자가 공용버켓(w/r)을 만들고 업로드한 오브젝트를 권한없는
-	// 사용자가 업데이트했을때 올바르게 적용 되는지 확인
-	void testObjectAnonPutWriteAccess() {
-		test.testObjectAnonPutWriteAccess();
-		testV2.testObjectAnonPutWriteAccess();
+	@Tag("Access")
+	// [Bucket = authenticated-read, Object = private] 오브젝트에 접근 가능한지 확인
+	void testAuthenticatedReadBucketPrivateObject() {
+		test.testAuthenticatedReadBucketPrivateObject();
+		testV2.testAuthenticatedReadBucketPrivateObject();
 	}
 
 	@Test
-	@Tag("Default")
-	// [Bucket = Default, Object = Default] 로그인한 사용자가 버켓을 만들고 업로드
-	void testObjectPutAuthenticated() {
-		test.testObjectPutAuthenticated();
-		testV2.testObjectPutAuthenticated();
-	}
-
-	@Disabled("Expires가 60초 미만일경우 서버에서 60초로 강제로 고정하므로 테스트에 시간 소요가 길어 테스트에서 제외합니다.")
-	@Test
-	@Tag("Default")
-	// [Bucket = Default, Object = Default] Post방식으로 만료된 로그인 정보를 설정하여 오브젝트 업데이트 실패 확인
-	void testObjectRawPutAuthenticatedExpired() {
-		test.testObjectRawPutAuthenticatedExpired();
-		testV2.testObjectRawPutAuthenticatedExpired();
+	@Tag("Access")
+	// [Bucket = authenticated-read, Object = public-read] 오브젝트에 접근 가능한지 확인
+	void testAuthenticatedReadBucketPublicReadObject() {
+		test.testAuthenticatedReadBucketPublicReadObject();
+		testV2.testAuthenticatedReadBucketPublicReadObject();
 	}
 
 	@Test
-	@Tag("Get")
-	// [Bucket = private, Object = public-read] 모든 사용자가 개인버킷의 공용 오브젝트에 접근
-	// 가능한지 확인
-	void testAclPrivateBucketPublicReadObject() {
-		test.testAclPrivateBucketPublicReadObject();
-		testV2.testAclPrivateBucketPublicReadObject();
+	@Tag("Access")
+	// [Bucket = authenticated-read, Object = public-read-write] 오브젝트에 접근 가능한지 확인
+	void testAuthenticatedReadBucketPublicRWObject() {
+		test.testAuthenticatedReadBucketPublicRWObject();
+		testV2.testAuthenticatedReadBucketPublicRWObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = authenticated-read, Object = authenticated-read] 오브젝트에 접근 가능한지 확인
+	void testAuthenticatedReadBucketAndObject() {
+		test.testAuthenticatedReadBucketAndObject();
+		testV2.testAuthenticatedReadBucketAndObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = authenticated-read, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인
+	void testAuthenticatedReadBucketBucketOwnerReadObject() {
+		test.testAuthenticatedReadBucketBucketOwnerReadObject();
+		testV2.testAuthenticatedReadBucketBucketOwnerReadObject();
+	}
+
+	@Test
+	@Tag("Access")
+	// [Bucket = authenticated-read, Object = bucket-owner-full-control]
+	// 오브젝트에 접근 가능한지 확인
+	void testAuthenticatedReadBucketBucketOwnerFullControlObject() {
+		test.testAuthenticatedReadBucketBucketOwnerFullControlObject();
+		testV2.testAuthenticatedReadBucketBucketOwnerFullControlObject();
+	}
+
+	@Test
+	@Tag("List")
+	// [Bucket = private] 오브젝트 목록 조회가 가능한지 확인
+	void testPrivateBucketList() {
+		test.testPrivateBucketList();
+		testV2.testPrivateBucketList();
+	}
+
+	@Test
+	@Tag("List")
+	// [Bucket = public-read] 오브젝트 목록 조회가 가능한지 확인
+	void testPublicReadBucketList() {
+		test.testPublicReadBucketList();
+		testV2.testPublicReadBucketList();
+	}
+
+	@Test
+	@Tag("List")
+	// [Bucket = public-read-write] 오브젝트 목록 조회가 가능한지 확인
+	void testPublicRWBucketList() {
+		test.testPublicRWBucketList();
+		testV2.testPublicRWBucketList();
+	}
+
+	@Test
+	@Tag("List")
+	// [Bucket = authenticated-read] 오브젝트 목록 조회가 가능한지 확인
+	void testAuthenticatedReadBucketList() {
+		test.testAuthenticatedReadBucketList();
+		testV2.testAuthenticatedReadBucketList();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Bucket = FullControl] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인
+	void testBucketPermissionAltUserFullControl() {
+		test.testBucketPermissionAltUserFullControl();
+		testV2.testBucketPermissionAltUserFullControl();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Bucket = Read] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인
+	void testBucketPermissionAltUserRead() {
+		test.testBucketPermissionAltUserRead();
+		testV2.testBucketPermissionAltUserRead();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Bucket = ReadAcp] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인
+	void testBucketPermissionAltUserReadAcp() {
+		test.testBucketPermissionAltUserReadAcp();
+		testV2.testBucketPermissionAltUserReadAcp();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Bucket = Write] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인
+	void testBucketPermissionAltUserWrite() {
+		test.testBucketPermissionAltUserWrite();
+		testV2.testBucketPermissionAltUserWrite();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Bucket = WriteAcp] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인
+	void testBucketPermissionAltUserWriteAcp() {
+		test.testBucketPermissionAltUserWriteAcp();
+		testV2.testBucketPermissionAltUserWriteAcp();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Object = FullControl] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인
+	void testObjectPermissionAltUserFullControl() {
+		test.testObjectPermissionAltUserFullControl();
+		testV2.testObjectPermissionAltUserFullControl();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Object = Read] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인
+	void testObjectPermissionAltUserRead() {
+		test.testObjectPermissionAltUserRead();
+		testV2.testObjectPermissionAltUserRead();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Object = ReadAcp] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인
+	void testObjectPermissionAltUserReadAcp() {
+		test.testObjectPermissionAltUserReadAcp();
+		testV2.testObjectPermissionAltUserReadAcp();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Object = Write] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인
+	void testObjectPermissionAltUserWrite() {
+		test.testObjectPermissionAltUserWrite();
+		testV2.testObjectPermissionAltUserWrite();
+	}
+
+	@Test
+	@Tag("Permission")
+	// [Object = WriteAcp] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인
+	void testObjectPermissionAltUserWriteAcp() {
+		test.testObjectPermissionAltUserWriteAcp();
+		testV2.testObjectPermissionAltUserWriteAcp();
 	}
 }

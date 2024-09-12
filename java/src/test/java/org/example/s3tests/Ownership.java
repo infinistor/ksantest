@@ -42,7 +42,7 @@ class Ownership {
 
 	@Test
 	@Tag("Error")
-	// BucketOwnerEnforced 설정된 버킷에서 버킷 ACL 설정이 실패하는지 확인
+	// [BucketOwnerEnforced] 버킷 ACL 설정이 실패하는지 확인
 	void testBucketOwnershipDenyACL() {
 		test.testBucketOwnershipDenyACL();
 		testV2.testBucketOwnershipDenyACL();
@@ -50,7 +50,7 @@ class Ownership {
 
 	@Test
 	@Tag("Error")
-	// BucketOwnerEnforced 설정된 버킷에서 오브젝트 ACL 설정이 실패하는지 확인
+	// [BucketOwnerEnforced] 오브젝트 ACL 설정이 실패하는지 확인
 	void testBucketOwnershipDenyObjectACL() {
 		test.testBucketOwnershipDenyObjectACL();
 		testV2.testBucketOwnershipDenyObjectACL();
@@ -58,7 +58,7 @@ class Ownership {
 
 	@Test
 	@Tag("Check")
-	// ACL 설정된 오브젝트에 소유권을 변경해도 접근 가능한지 확인
+	// ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경해도 접근 가능한지 확인
 	void testObjectOwnershipDenyChange() {
 		test.testObjectOwnershipDenyChange();
 		testV2.testObjectOwnershipDenyChange();
@@ -66,7 +66,7 @@ class Ownership {
 
 	@Test
 	@Tag("Error")
-	// ACL 설정된 오브젝트에 소유권을 변경할경우 ACL 설정이 실패하는지 확인
+	// ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경할경우 ACL 설정이 실패하는지 확인
 	void testObjectOwnershipDenyACL() {
 		test.testObjectOwnershipDenyACL();
 		testV2.testObjectOwnershipDenyACL();
