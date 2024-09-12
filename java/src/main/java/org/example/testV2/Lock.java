@@ -13,8 +13,6 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.TimeZone;
 
@@ -213,10 +211,10 @@ public class Lock extends TestBase {
 
 		var response = client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(key));
 		var versionId = response.versionId();
-
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
 				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(Instant.now().minus(1, ChronoUnit.DAYS))));
+						.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
+								.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())));
 
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
@@ -282,9 +280,6 @@ public class Lock extends TestBase {
 		var response = client.getObjectRetention(g -> g.bucket(bucketName).key(key));
 		retentionCompare(retention, response.retention());
 
-		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(Instant.now().minus(1, ChronoUnit.DAYS))));
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
 
@@ -325,9 +320,6 @@ public class Lock extends TestBase {
 		var response = client.getObjectRetention(g -> g.bucket(bucketName).key(key));
 		retentionCompare(retention, response.retention());
 
-		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(Instant.now().minus(1, ChronoUnit.DAYS))));
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
 
@@ -360,9 +352,6 @@ public class Lock extends TestBase {
 		var response = client.getObjectRetention(g -> g.bucket(bucketName).key(key));
 		retentionCompare(retention, response.retention());
 
-		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(Instant.now().minus(1, ChronoUnit.DAYS))));
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
 
@@ -394,9 +383,6 @@ public class Lock extends TestBase {
 		var response = client.getObjectRetention(g -> g.bucket(bucketName).key(key));
 		retentionCompare(retention2, response.retention());
 
-		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(Instant.now().minus(1, ChronoUnit.DAYS))));
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
 
@@ -429,9 +415,6 @@ public class Lock extends TestBase {
 		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
-		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(Instant.now().minus(1, ChronoUnit.DAYS))));
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
 
@@ -465,9 +448,6 @@ public class Lock extends TestBase {
 				.getObjectRetention(g -> g.bucket(bucketName).key(key));
 		retentionCompare(retention2, response.retention());
 
-		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(Instant.now().minus(1, ChronoUnit.DAYS))));
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
 
@@ -494,9 +474,6 @@ public class Lock extends TestBase {
 		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
-		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(Instant.now().minus(1, ChronoUnit.DAYS))));
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
 
@@ -511,9 +488,11 @@ public class Lock extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(key));
 
-		client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).legalHold(l -> l.status(ObjectLockLegalHoldStatus.ON)));
+		client.putObjectLegalHold(
+				p -> p.bucket(bucketName).key(key).legalHold(l -> l.status(ObjectLockLegalHoldStatus.ON)));
 
-		client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).legalHold(l -> l.status(ObjectLockLegalHoldStatus.OFF)));
+		client.putObjectLegalHold(
+				p -> p.bucket(bucketName).key(key).legalHold(l -> l.status(ObjectLockLegalHoldStatus.OFF)));
 
 	}
 
@@ -652,9 +631,6 @@ public class Lock extends TestBase {
 		client.putObjectLegalHold(
 				p -> p.bucket(bucketName).key(key).legalHold(l -> l.status(ObjectLockLegalHoldStatus.OFF)));
 
-		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(Instant.now().minus(1, ChronoUnit.DAYS))));
 		client.deleteObject(
 				d -> d.bucket(bucketName).key(key).versionId(putResponse.versionId()).bypassGovernanceRetention(true));
 	}

@@ -568,13 +568,13 @@ public class Lock extends TestBase {
 						.withLegalHold(new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.ON)));
 		var response = client
 				.getObjectLegalHold(new GetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key));
-		assertEquals(ObjectLockLegalHoldStatus.ON, response.getLegalHold().getStatus());
+		assertEquals(ObjectLockLegalHoldStatus.ON.toString(), response.getLegalHold().getStatus());
 
 		client.setObjectLegalHold(
 				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key)
 						.withLegalHold(new ObjectLockLegalHold().withStatus(ObjectLockLegalHoldStatus.OFF)));
 		response = client.getObjectLegalHold(new GetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key));
-		assertEquals(ObjectLockLegalHoldStatus.OFF, response.getLegalHold().getStatus());
+		assertEquals(ObjectLockLegalHoldStatus.OFF.toString(), response.getLegalHold().getStatus());
 
 		client.deleteVersion(new DeleteVersionRequest(bucketName, key, putResponse.getVersionId()));
 	}
@@ -661,7 +661,7 @@ public class Lock extends TestBase {
 		var response = client.getObjectMetadata(bucketName, key);
 		assertEquals(retention.getMode(), response.getObjectLockMode());
 		assertEquals(retention.getRetainUntilDate(), response.getObjectLockRetainUntilDate());
-		assertEquals(ObjectLockLegalHoldStatus.ON, response.getObjectLockLegalHoldStatus());
+		assertEquals(ObjectLockLegalHoldStatus.ON.toString(), response.getObjectLockLegalHoldStatus());
 
 		client.setObjectLegalHold(
 				new SetObjectLegalHoldRequest().withBucketName(bucketName).withKey(key)
