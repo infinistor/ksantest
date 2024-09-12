@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
-import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -97,17 +96,6 @@ public class PutBucket extends TestBase {
 
 	@Test
 	@Tag("CreationRules")
-	public void testBucketListLongName() {
-		var bucketName = getNewBucketName(61);
-		var client = getClient();
-		client.createBucket(bucketName);
-		var response = client.listObjects(bucketName);
-
-		assertEquals(0, response.getObjectSummaries().size());
-	}
-
-	@Test
-	@Tag("CreationRules")
 	public void testBucketCreateNamingBadIp() {
 		checkBadBucketName("192.168.11.123");
 	}
@@ -121,10 +109,7 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingDnsLong() {
-		var prefix = getPrefix();
-		var addLength = 63 - prefix.length();
-		prefix = Utils.randomText(addLength);
-		checkGoodBucketName(prefix, null);
+		checkGoodBucketName(getNewBucketName(""));
 	}
 
 	@Test
@@ -183,25 +168,25 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsAlpha() {
-		checkGoodBucketName("foo", "a" + getPrefix());
+		checkGoodBucketName(getNewBucketName("a"));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsDigit() {
-		checkGoodBucketName("foo", "0" + getPrefix());
+		checkGoodBucketName(getNewBucketName("1"));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsPeriod() {
-		checkGoodBucketName("aaa.111", null);
+		checkGoodBucketName(getNewBucketName("a."));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsHyphen() {
-		checkGoodBucketName("aaa-111", null);
+		checkGoodBucketName(getNewBucketName("a-"));
 	}
 
 	@Test

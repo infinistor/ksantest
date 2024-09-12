@@ -62,7 +62,8 @@ public class Replication extends TestBase {
 
 		client.deleteBucketReplicationConfiguration(sourceBucketName);
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.getBucketReplicationConfiguration(sourceBucketName));
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.getBucketReplicationConfiguration(sourceBucketName));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 	}
 

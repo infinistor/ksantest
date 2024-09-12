@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
 import com.amazonaws.util.BinaryUtils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -52,7 +53,7 @@ public class Post extends TestBase {
 	public void testPostObjectAnonymousRequest() throws MalformedURLException {
 		var key = "foo.txt";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicReadWrite);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
 
 		var contentType = "text/plain";
 		var fileData = new FormFile(key, contentType, "bar");
@@ -62,7 +63,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
@@ -127,7 +128,7 @@ public class Post extends TestBase {
 		payload.put("x-amz-content-sha256", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD");
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
@@ -141,7 +142,7 @@ public class Post extends TestBase {
 		var key = "foo.txt";
 		var contentType = "text/plain";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicReadWrite);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -184,7 +185,7 @@ public class Post extends TestBase {
 		payload.put("policy", policy);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
 		assertEquals("bar", body);
@@ -195,7 +196,7 @@ public class Post extends TestBase {
 	public void testPostObjectAuthenticatedRequestBadAccessKey() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicReadWrite);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -256,7 +257,7 @@ public class Post extends TestBase {
 	public void testPostObjectSetSuccessCode() throws MalformedURLException {
 		var key = "foo.txt";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicReadWrite);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
 
 		var contentType = "text/plain";
 		var fileData = new FormFile(key, contentType, "bar");
@@ -267,7 +268,7 @@ public class Post extends TestBase {
 		payload.put("successActionStatus", "201");
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(201, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_CREATED, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
@@ -280,7 +281,7 @@ public class Post extends TestBase {
 		var key = "foo.txt";
 		var contentType = "text/plain";
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicReadWrite);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
 
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
@@ -290,7 +291,7 @@ public class Post extends TestBase {
 		payload.put("successActionStatus", "HttpStatus.SC_NOT_FOUND");
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
@@ -357,7 +358,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
@@ -421,7 +422,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
@@ -485,7 +486,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -544,7 +545,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -605,7 +606,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		var body = getBody(response.getObjectContent());
@@ -617,7 +618,7 @@ public class Post extends TestBase {
 	public void testPostObjectSuccessRedirectAction() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, CannedAccessControlList.PublicReadWrite);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -678,7 +679,7 @@ public class Post extends TestBase {
 		payload.put("successActionRedirect", redirectURL.toString());
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(200, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_OK, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		assertEquals(String.format("%s?bucket=%s&key=%s&etag=%s%s%s", redirectURL, bucketName, key, "%22",
@@ -1094,7 +1095,7 @@ public class Post extends TestBase {
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
-		assertEquals(204, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(bucketName, key);
 		assertEquals("bar-clamp", response.getObjectMetadata().getUserMetadata().get(("foo")));
@@ -1776,11 +1777,11 @@ public class Post extends TestBase {
 
 		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
 		var putResponse = putObject(putURL, key);
-		assertEquals(200, putResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, putResponse.getStatusLine().getStatusCode());
 
 		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
 		var getResponse = getObject(getURL);
-		assertEquals(200, getResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
 
 	}
 
@@ -1795,11 +1796,11 @@ public class Post extends TestBase {
 
 		var putURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.PUT);
 		var putResponse = putObject(putURL, key);
-		assertEquals(200, putResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, putResponse.getStatusLine().getStatusCode());
 
 		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
 		var getResponse = getObject(getURL);
-		assertEquals(200, getResponse.getStatusLine().getStatusCode());
+		assertEquals(HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
 	}
 
 	@Test
@@ -1820,12 +1821,13 @@ public class Post extends TestBase {
 
 		var signer = new AWS4SignerForAuthorizationHeader(endPoint, "PUT", "s3", config.regionName);
 
-		var authorization = signer.computeSignature(headers, null, contentHashString, config.mainUser.accessKey, config.mainUser.secretKey);
+		var authorization = signer.computeSignature(headers, null, contentHashString, config.mainUser.accessKey,
+				config.mainUser.secretKey);
 		headers.put("Authorization", authorization);
-		
+
 		var result = NetUtils.putUpload(endPoint, "PUT", headers, content);
 
-		assertEquals(200, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_OK, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1853,7 +1855,7 @@ public class Post extends TestBase {
 		headers.put("Authorization", authorization);
 
 		var result = NetUtils.putUploadChunked(endPoint, "PUT", headers, signer, content);
-		assertEquals(200, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_OK, result.statusCode, result.getErrorCode());
 	}
 
 	@Test
@@ -1879,7 +1881,7 @@ public class Post extends TestBase {
 		headers.put("Authorization", authorization);
 
 		var result = NetUtils.putUpload(endPoint, httpMethod, headers, null);
-		assertEquals(200, result.statusCode, result.getErrorCode());
+		assertEquals(HttpStatus.SC_OK, result.statusCode, result.getErrorCode());
 		assertEquals(size, result.GetContent().length());
 		assertEquals(content, result.GetContent());
 		assertTrue(content.equals(result.GetContent()), MainData.NOT_MATCHED);
