@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 
@@ -46,11 +47,8 @@ public class GetObject extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key("foo")));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_KEY, errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -79,7 +77,7 @@ public class GetObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.getObject(g -> g.bucket(bucketName).key(key).ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ")));
 
-		assertEquals(412, e.statusCode());
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
 		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
 	}
 
@@ -96,7 +94,7 @@ public class GetObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key(key).ifNoneMatch(eTag)));
 
-		assertEquals(304, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_MODIFIED, e.statusCode());
 		assertNull(e.awsErrorDetails().errorCode());
 	}
 
@@ -150,7 +148,7 @@ public class GetObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.getObject(g -> g.bucket(bucketName).key(key).ifModifiedSince(after)));
 
-		assertEquals(304, e.statusCode());
+		assertEquals(HttpStatus.SC_NOT_MODIFIED, e.statusCode());
 		assertNull(e.awsErrorDetails().errorCode());
 	}
 
@@ -169,7 +167,7 @@ public class GetObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant())));
 
-		assertEquals(412, e.statusCode());
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
 		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
 	}
 
@@ -271,10 +269,8 @@ public class GetObject extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=40-50")));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(416, statusCode);
-		assertEquals(MainData.INVALID_RANGE, errorCode);
+		assertEquals(HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE, e.statusCode());
+		assertEquals(MainData.INVALID_RANGE, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -289,10 +285,8 @@ public class GetObject extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=40-50")));
-		var statusCode = e.statusCode();
-		var errorCode = e.awsErrorDetails().errorCode();
-		assertEquals(416, statusCode);
-		assertEquals(MainData.INVALID_RANGE, errorCode);
+		assertEquals(HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE, e.statusCode());
+		assertEquals(MainData.INVALID_RANGE, e.awsErrorDetails().errorCode());
 	}
 
 	@Test
@@ -318,5 +312,30 @@ public class GetObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(data));
 		checkContentUsingRandomRange(bucketName, key, data, 50);
+	}
+
+	@Test
+	@Tag("Header")
+	public void testObjectResponseHeaders() {
+		var key = "testObjectResponseHeaders";
+		var client = getClient();
+		var bucketName = createObjects(client, key);
+
+		var response = client.getObject(
+				g -> g
+						.bucket(bucketName)
+						.key(key)
+						.responseCacheControl("no-cache")
+						.responseContentDisposition("bla")
+						.responseContentEncoding("aaa")
+						.responseContentLanguage("esperanto")
+						.responseContentType("foo/bar")
+						.responseExpires(Instant.now()));
+
+		assertEquals("no-cache", response.response().cacheControl());
+		assertEquals("bla", response.response().contentDisposition());
+		assertEquals("aaa", response.response().contentEncoding());
+		assertEquals("esperanto", response.response().contentLanguage());
+		assertEquals("foo/bar", response.response().contentType());
 	}
 }

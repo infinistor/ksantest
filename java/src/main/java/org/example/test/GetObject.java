@@ -15,7 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
 
 public class GetObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -45,11 +49,8 @@ public class GetObject extends TestBase {
 		var bucketName = createBucket(client);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, "bar"));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-
-		assertEquals(HttpStatus.SC_NOT_FOUND, statusCode);
-		assertEquals(MainData.NO_SUCH_KEY, errorCode);
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 	}
 
 	@Test
@@ -264,10 +265,8 @@ public class GetObject extends TestBase {
 		client.putObject(bucketName, key, content);
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.getObject(new GetObjectRequest(bucketName, key).withRange(40, 50)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(416, statusCode);
-		assertEquals(MainData.INVALID_RANGE, errorCode);
+		assertEquals(HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE, e.getStatusCode());
+		assertEquals(MainData.INVALID_RANGE, e.getErrorCode());
 	}
 
 	@Test
@@ -282,10 +281,8 @@ public class GetObject extends TestBase {
 		client.putObject(bucketName, key, content);
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.getObject(new GetObjectRequest(bucketName, key).withRange(40, 50)));
-		var statusCode = e.getStatusCode();
-		var errorCode = e.getErrorCode();
-		assertEquals(416, statusCode);
-		assertEquals(MainData.INVALID_RANGE, errorCode);
+		assertEquals(HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE, e.getStatusCode());
+		assertEquals(MainData.INVALID_RANGE, e.getErrorCode());
 	}
 
 	@Test
@@ -311,5 +308,32 @@ public class GetObject extends TestBase {
 
 		client.putObject(bucketName, key, data);
 		checkContentUsingRandomRange(bucketName, key, data, 50);
+	}
+
+	@Test
+	@Tag("Header")
+	public void testObjectResponseHeaders() {
+		var key = "testObjectResponseHeaders";
+		var client = getClient();
+		var bucketName = createObjects(client, key);
+
+		var date = new Date();
+		SimpleDateFormat rfc822format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss 'GMT'", Locale.ENGLISH);
+		String strDate = rfc822format.format(date);
+
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withResponseHeaders(
+				new ResponseHeaderOverrides()
+						.withCacheControl("no-cache")
+						.withContentDisposition("bla")
+						.withContentEncoding("aaa")
+						.withContentLanguage("esperanto")
+						.withContentType("foo/bar")
+						.withExpires(strDate)));
+
+		assertEquals("no-cache", response.getObjectMetadata().getCacheControl());
+		assertEquals("bla", response.getObjectMetadata().getContentDisposition());
+		assertEquals("aaa", response.getObjectMetadata().getContentEncoding());
+		assertEquals("esperanto", response.getObjectMetadata().getContentLanguage());
+		assertEquals("foo/bar", response.getObjectMetadata().getContentType());
 	}
 }

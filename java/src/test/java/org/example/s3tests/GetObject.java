@@ -163,4 +163,12 @@ class GetObject {
 		test.testRangeObjectMany();
 		testV2.testRangeObjectMany();
 	}
+
+	@Test
+	@Tag("Header")
+	// GetObject의 반환헤더값을 설정하여 업로드 할 경우 적용되었는지 확인
+	void testObjectResponseHeaders() {
+		test.testObjectResponseHeaders();
+		testV2.testObjectResponseHeaders();
+	}
 }
