@@ -87,8 +87,7 @@ class CopyObject {
 
 	@Test
 	@Tag("Check")
-	// [bucketAcl = main:full control,sub : full control | objectAcl = default]
-	// 서브유저가 접근권한이 있는 버킷에 들어있는 접근권한이 있는 오브젝트를 복사가 가능한지 확인
+	// 다른유저의 버킷의 오브젝트를 권한이 충분할 경우 복사 가능한지 확인
 	void testObjectCopyNotOwnedObjectBucket() {
 		test.testObjectCopyNotOwnedObjectBucket();
 		testV2.testObjectCopyNotOwnedObjectBucket();
@@ -96,7 +95,8 @@ class CopyObject {
 
 	@Test
 	@Tag("OverWrite")
-	// 권한정보를 포함하여 복사할때 올바르게 적용되는지 확인 메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인
+	// 권한정보를 포함하여 복사할때 올바르게 적용되는지 확인
+	// 메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인
 	void testObjectCopyCannedAcl() {
 		test.testObjectCopyCannedAcl();
 		testV2.testObjectCopyCannedAcl();
