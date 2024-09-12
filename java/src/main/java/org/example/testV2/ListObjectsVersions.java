@@ -775,10 +775,8 @@ public class ListObjectsVersions extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.listObjectVersions(l -> l.bucket(bucketName)));
-
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
-		deleteBucketList(bucketName);
 	}
 
 	@Test

@@ -24,28 +24,23 @@ import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
-public class ListBuckets extends TestBase
-{
+public class ListBuckets extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll()
-	{
+	public static void beforeAll() {
 		System.out.println("ListBuckets V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	public static void afterAll()
-	{
+	public static void afterAll() {
 		System.out.println("ListBuckets V2 End");
 	}
 
 	@Test
 	@Tag("Get")
-	public void testBucketsCreateThenList()
-	{
+	public void testBucketsCreateThenList() {
 		var client = getClient();
 		var bucketNames = new ArrayList<String>();
-		for (int i = 0; i < 5; i++)
-		{
+		for (int i = 0; i < 5; i++) {
 			var bucketName = createBucket(client);
 			bucketNames.add(bucketName);
 		}
@@ -53,17 +48,16 @@ public class ListBuckets extends TestBase
 		var response = client.listBuckets();
 		var bucketList = getBucketList(response);
 
-		for (var bucketName : bucketNames)
-		{
-			if(!bucketList.contains(bucketName))
-				fail(String.format("S3 implementation's GET on Service did not return bucket we created: %s", bucketName));
+		for (var bucketName : bucketNames) {
+			if (!bucketList.contains(bucketName))
+				fail(String.format("S3 implementation's GET on Service did not return bucket we created: %s",
+						bucketName));
 		}
 	}
 
 	@Test
 	@Tag("ERROR")
-	public void testListBucketsInvalidAuth()
-	{
+	public void testListBucketsInvalidAuth() {
 		var badAuthClient = getBadAuthClient(null, null);
 
 		var e = assertThrows(AwsServiceException.class, badAuthClient::listBuckets);
@@ -73,8 +67,7 @@ public class ListBuckets extends TestBase
 
 	@Test
 	@Tag("ERROR")
-	public void testListBucketsBadAuth()
-	{
+	public void testListBucketsBadAuth() {
 		var mainAccessKey = config.mainUser.accessKey;
 		var badAuthClient = getBadAuthClient(mainAccessKey, null);
 
@@ -82,14 +75,13 @@ public class ListBuckets extends TestBase
 		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 		assertEquals(MainData.SIGNATURE_DOES_NOT_MATCH, e.awsErrorDetails().errorCode());
 	}
-	
+
 	@Test
 	@Tag("Metadata")
-	public void testHeadBucket()
-	{
+	public void testHeadBucket() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		
+
 		var response = client.headBucket(h -> h.bucket(bucketName));
 		assertNotNull(response);
 	}

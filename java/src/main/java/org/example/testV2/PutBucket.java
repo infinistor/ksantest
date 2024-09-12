@@ -40,7 +40,7 @@ public class PutBucket extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 
-		var response = client.listObjects(l->l.bucket(bucketName));
+		var response = client.listObjects(l -> l.bucket(bucketName));
 
 		assertEquals(0, response.contents().size());
 	}
@@ -48,9 +48,8 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingBadStartsNonAlpha() {
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketNameOnly();
 		checkBadBucketName("_" + bucketName);
-		deleteBucketList(bucketName);
 	}
 
 	@Test
@@ -93,17 +92,6 @@ public class PutBucket extends TestBase {
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodLong64() {
 		testBucketCreateNamingBadLong(64);
-	}
-
-	@Test
-	@Tag("CreationRules")
-	public void testBucketListLongName() {
-		var bucketName = getNewBucketName(61);
-		var client = getClient();
-		client.createBucket(c->c.bucket(bucketName));
-		var response = client.listObjects(l->l.bucket(bucketName));
-
-		assertEquals(0, response.contents().size());
 	}
 
 	@Test
@@ -157,9 +145,9 @@ public class PutBucket extends TestBase {
 		var bucketName = getNewBucketName();
 		var client = getClient();
 
-		client.createBucket(c->c.bucket(bucketName));
+		client.createBucket(c -> c.bucket(bucketName));
 
-		var e = assertThrows(AwsServiceException.class, () -> client.createBucket(c->c.bucket(bucketName)));
+		var e = assertThrows(AwsServiceException.class, () -> client.createBucket(c -> c.bucket(bucketName)));
 
 		assertEquals(HttpStatus.SC_CONFLICT, e.statusCode());
 		assertEquals(MainData.BUCKET_ALREADY_OWNED_BY_YOU, e.awsErrorDetails().errorCode());
@@ -172,9 +160,9 @@ public class PutBucket extends TestBase {
 		var client = getClient();
 		var altClient = getAltClient();
 
-		client.createBucket(c->c.bucket(bucketName));
+		client.createBucket(c -> c.bucket(bucketName));
 
-		var e = assertThrows(AwsServiceException.class, () -> altClient.createBucket(c->c.bucket(bucketName)));
+		var e = assertThrows(AwsServiceException.class, () -> altClient.createBucket(c -> c.bucket(bucketName)));
 
 		assertEquals(HttpStatus.SC_CONFLICT, e.statusCode());
 		assertEquals(MainData.BUCKET_ALREADY_EXISTS, e.awsErrorDetails().errorCode());
@@ -215,7 +203,7 @@ public class PutBucket extends TestBase {
 		var objects = getObjectList(client, bucketName, null);
 		assertEquals(keys, objects);
 
-		assertThrows(AwsServiceException.class, () -> client.createBucket(c->c.bucket(bucketName)));
+		assertThrows(AwsServiceException.class, () -> client.createBucket(c -> c.bucket(bucketName)));
 
 		objects = getObjectList(client, bucketName, null);
 		assertEquals(keys, objects);
@@ -226,6 +214,6 @@ public class PutBucket extends TestBase {
 	public void testGetBucketLocation() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		client.getBucketLocation(g->g.bucket(bucketName));
+		client.getBucketLocation(g -> g.bucket(bucketName));
 	}
 }

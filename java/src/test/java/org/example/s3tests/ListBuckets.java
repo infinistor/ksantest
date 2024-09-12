@@ -52,7 +52,7 @@ class ListBuckets {
 
 	@Test
 	@Tag("Metadata")
-	// Tag("버킷의 메타데이터를 가져올 수 있는지 확인
+	//버킷의 메타데이터를 가져올 수 있는지 확인
 	void testHeadBucket() {
 		test.testHeadBucket();
 		testV2.testHeadBucket();

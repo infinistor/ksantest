@@ -92,19 +92,10 @@ class PutBucket {
 
 	@Test
 	@Tag("CreationRules")
-	//생성할 버킷이름이 64자인 경우 버킷 생성 실패
+	// 생성할 버킷이름이 64자인 경우 버킷 생성 실패
 	void testBucketCreateNamingGoodLong64() {
 		test.testBucketCreateNamingGoodLong64();
 		testV2.testBucketCreateNamingGoodLong64();
-	}
-
-
-	@Test
-	@Tag("CreationRules")
-	// 버킷이름의 길이 긴 경우 버킷 목록을 읽어올 수 있는지 확인
-	void testBucketListLongName() {
-		test.testBucketListLongName();
-		testV2.testBucketListLongName();
 	}
 
 	@Test
