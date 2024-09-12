@@ -95,6 +95,7 @@ import com.amazonaws.services.s3.model.MetadataDirective;
 import com.amazonaws.services.s3.model.ObjectLockConfiguration;
 import com.amazonaws.services.s3.model.ObjectLockRetention;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.ObjectTagging;
 import com.amazonaws.services.s3.model.Owner;
 import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.PartSummary;
@@ -111,6 +112,7 @@ import com.amazonaws.services.s3.model.ServerSideEncryptionConfiguration;
 import com.amazonaws.services.s3.model.ServerSideEncryptionRule;
 import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
+import com.amazonaws.services.s3.model.SetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.SetPublicAccessBlockRequest;
 import com.amazonaws.services.s3.model.Tag;
 import com.amazonaws.services.s3.model.TagSet;
@@ -134,7 +136,6 @@ public class TestBase {
 	static final int RANDOM_PREFIX_TEXT_LENGTH = 15;
 	static final int RANDOM_SUFFIX_TEXT_LENGTH = 5;
 	static final int BUCKET_MAX_LENGTH = 63;
-	static final String STR_RANDOM = "{random}";
 	static final int MAX_LENGTH = 500;
 	static final Random rand = new Random();
 	// cSpell:disable
@@ -235,29 +236,35 @@ public class TestBase {
 
 	// region Create Data
 
-	public String getPrefix() {
-		return config.bucketPrefix.replace(STR_RANDOM, Utils.randomText(RANDOM_PREFIX_TEXT_LENGTH));
+	public static InputStream createBody(String body) {
+		return new ByteArrayInputStream(body.getBytes());
 	}
 
-	public String getNewBucketNameOnly() {
-		String bucketName = getPrefix() + Utils.randomText(RANDOM_SUFFIX_TEXT_LENGTH);
-		if (bucketName.length() > BUCKET_MAX_LENGTH)
-			bucketName = bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
-		return bucketName;
+	public static String getNewBucketName(String prefix) {
+		String bucketName = prefix + Utils.randomText(BUCKET_MAX_LENGTH);
+		return bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
 	}
 
 	public String getNewBucketName() {
-		String bucketName = getPrefix() + Utils.randomText(RANDOM_SUFFIX_TEXT_LENGTH);
-		if (bucketName.length() > BUCKET_MAX_LENGTH)
-			bucketName = bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
+		var bucketName = getNewBucketName(getPrefix());
 		buckets.add(bucketName);
 		return bucketName;
 	}
 
-	public String getNewBucketName(int length) {
-		String bucketName = getPrefix() + Utils.randomText(63);
-		bucketName = bucketName.substring(0, length);
-		buckets.add(bucketName);
+	public String getPrefix() {
+		return "v1-" + config.bucketPrefix;
+	}
+
+	public String getNewBucketNameOnly() {
+		return getNewBucketName(getPrefix());
+	}
+
+	public String getNewBucketNameOnly(int length) {
+		var bucketName = getNewBucketName(getPrefix());
+		if (bucketName.length() > length)
+			bucketName = bucketName.substring(0, length);
+		else if (bucketName.length() < length)
+			bucketName = bucketName + Utils.randomText(length - bucketName.length());
 		return bucketName;
 	}
 
@@ -268,8 +275,7 @@ public class TestBase {
 
 	public String createBucket(AmazonS3 client) {
 		var bucketName = getNewBucketName();
-		var request = new CreateBucketRequest(bucketName);
-		client.createBucket(request);
+		client.createBucket(bucketName);
 		return bucketName;
 	}
 
@@ -289,12 +295,21 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createBucketCannedACL(AmazonS3 client) {
+	public String createBucketCannedAcl(AmazonS3 client) {
 		return createBucket(client, ObjectOwnership.ObjectWriter, null);
 	}
 
-	public String createBucketCannedACL(AmazonS3 client, CannedAccessControlList acl) {
-		return createBucket(client, ObjectOwnership.ObjectWriter, acl);
+	public String createObjects(AmazonS3 client, String... keys) {
+		var bucketName = getNewBucketName();
+		client.createBucket(bucketName);
+
+		if (keys != null) {
+			for (var key : keys) {
+				var body = key;
+				client.putObject(bucketName, key, body);
+			}
+		}
+		return bucketName;
 	}
 
 	public String createObjects(AmazonS3 client, List<String> keys) {
@@ -311,8 +326,7 @@ public class TestBase {
 	}
 
 	public String createObjects(List<String> keys) {
-		var client = getClient();
-		return createObjects(client, keys);
+		return createObjects(getClient(), keys);
 	}
 
 	public void createObjects(AmazonS3 client, String bucketName, List<String> keys) {
@@ -336,10 +350,6 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public static Grant createPublicGrant(Permission permission) {
-		return new Grant(GroupGrantee.AllUsers, permission);
-	}
-
 	public static AccessControlList createAcl(Owner owner, Grantee grantee, Permission... permissions) {
 		var acl = new AccessControlList().withOwner(owner);
 		acl.grantPermission(new CanonicalGrantee(owner.getId()), Permission.FullControl);
@@ -347,10 +357,6 @@ public class TestBase {
 			for (var permission : permissions)
 				acl.grantPermission(grantee, permission);
 		return acl;
-	}
-
-	public AccessControlList createAllAcl() {
-		return createAcl(config.mainUser.toOwner(), config.altUser.toGrantee(), Permission.values());
 	}
 
 	public AccessControlList createPublicAcl(Permission... permissions) {
@@ -361,12 +367,8 @@ public class TestBase {
 		return createAcl(config.mainUser.toOwner(), GroupGrantee.AuthenticatedUsers, permissions);
 	}
 
-	public AccessControlList createAltACL(Permission... permissions) {
+	public AccessControlList createAltAcl(Permission... permissions) {
 		return createAcl(config.mainUser.toOwner(), config.altUser.toGrantee(), permissions);
-	}
-
-	public InputStream createBody(String body) {
-		return new ByteArrayInputStream(body.getBytes());
 	}
 
 	public String createKeyWithRandomContent(AmazonS3 client, String key, int size) {
@@ -473,13 +475,49 @@ public class TestBase {
 		return tagSets;
 	}
 
-	public String setupAclTest(CannedAccessControlList bucketACL, CannedAccessControlList objectACL,
-			String key) {
+	public String setupAclBucket(ObjectOwnership ownership, CannedAccessControlList acl, List<String> keys) {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, bucketACL);
-		client.putObject(new PutObjectRequest(bucketName, key, key).withCannedAcl(objectACL));
+		var bucketName = createBucket(client, ownership, acl);
+		createObjects(client, bucketName, keys);
+		return bucketName;
+	}
+
+	public String setupAclBucket(CannedAccessControlList acl, List<String> keys) {
+		return setupAclBucket(ObjectOwnership.ObjectWriter, acl, keys);
+	}
+
+	public String setupAclObjects(ObjectOwnership ownership, CannedAccessControlList bucketAcl,
+			CannedAccessControlList objectAcl, String... keys) {
+		var client = getClient();
+		var bucketName = createBucket(client, ownership, bucketAcl);
+		for (var key : keys)
+			client.putObject(
+					new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
+							.withCannedAcl(objectAcl));
 
 		return bucketName;
+	}
+
+	public String setupAclObjects(CannedAccessControlList bucketAcl, CannedAccessControlList objectAcl,
+			String... keys) {
+		return setupAclObjects(ObjectOwnership.ObjectWriter, bucketAcl, objectAcl, keys);
+	}
+
+	public String setupAclObjectsByAlt(ObjectOwnership ownership, CannedAccessControlList bucketAcl,
+			CannedAccessControlList objectAcl, String... keys) {
+		var altClient = getAltClient();
+		var bucketName = createBucket(getClient(), ownership, bucketAcl);
+		for (var key : keys)
+			altClient.putObject(
+					new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
+							.withCannedAcl(objectAcl));
+
+		return bucketName;
+	}
+
+	public String setupAclObjectsByAlt(CannedAccessControlList bucketAcl, CannedAccessControlList objectAcl,
+			String... keys) {
+		return setupAclObjectsByAlt(ObjectOwnership.ObjectWriter, bucketAcl, objectAcl, keys);
 	}
 
 	public BucketLifecycleConfiguration setupLifecycleExpiration(AmazonS3 client, String bucketName, String ruleId,
@@ -519,25 +557,22 @@ public class TestBase {
 
 	public String setupBucketPermission(Permission permission) {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
 
-		var acl = createAltACL(permission);
+		var acl = createAltAcl(permission);
 		client.setBucketAcl(bucketName, acl);
-
-		var response = client.getBucketAcl(bucketName);
-		checkAcl(acl, response);
 
 		return bucketName;
 	}
 
-	public String setupAccessTest(String key1, String key2, CannedAccessControlList bucketACL,
-			CannedAccessControlList objectACL) {
+	public String setupObjectPermission(String key, Permission permission) {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client, bucketACL);
+		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
 
-		client.putObject(bucketName, key1, key1);
-		client.setObjectAcl(bucketName, key1, objectACL);
-		client.putObject(bucketName, key2, key2);
+		client.putObject(bucketName, key, key);
+
+		var acl = createAltAcl(permission);
+		client.setObjectAcl(bucketName, key, acl);
 
 		return bucketName;
 	}
@@ -730,11 +765,8 @@ public class TestBase {
 			assertEquals(key, response.getKey());
 		} else {
 			var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
-			var statusCode = e.getStatusCode();
-			var errorCode = e.getErrorCode();
-
-			assertEquals(HttpStatus.SC_FORBIDDEN, statusCode);
-			assertEquals(MainData.ACCESS_DENIED, errorCode);
+			assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+			assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 		}
 	}
 
@@ -747,6 +779,31 @@ public class TestBase {
 	public static void failedGetObject(AmazonS3 client, String bucketName, String key, int statusCode,
 			String errorCode) {
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
+		assertEquals(statusCode, e.getStatusCode());
+		assertEquals(errorCode, e.getErrorCode());
+	}
+
+	public static void succeedPutObject(AmazonS3 client, String bucketName, String key, String content) {
+		client.putObject(bucketName, key, content);
+	}
+
+	public static void failedPutObject(AmazonS3 client, String bucketName, String key, int statusCode,
+			String errorCode) {
+		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
+
+		assertEquals(statusCode, e.getStatusCode());
+		assertEquals(errorCode, e.getErrorCode());
+	}
+
+	public static void succeedListObjects(AmazonS3 client, String bucketName, List<String> keys) {
+		var response = client.listObjects(bucketName);
+		var keyList = getKeys(response.getObjectSummaries());
+
+		assertEquals(keys, keyList);
+	}
+
+	public static void failedListObjects(AmazonS3 client, String bucketName, int statusCode, String errorCode) {
+		var e = assertThrows(AmazonServiceException.class, () -> client.listObjects(bucketName));
 
 		assertEquals(statusCode, e.getStatusCode());
 		assertEquals(errorCode, e.getErrorCode());
@@ -795,21 +852,13 @@ public class TestBase {
 	}
 
 	public void checkBadBucketName(String bucketName) {
-		var client = getClient();
-
-		assertThrows(IllegalBucketNameException.class, () -> client.createBucket(bucketName));
+		assertThrows(IllegalBucketNameException.class, () -> getClient().createBucket(bucketName));
 	}
 
-	public void checkGoodBucketName(String name, String prefix) {
-		if (StringUtils.isBlank(prefix))
-			prefix = getPrefix();
-
-		var bucketName = String.format("%s%s", prefix, name);
-		buckets.add(bucketName);
-
+	public void checkGoodBucketName(String bucketName) {
 		var client = getClient();
-		var response = client.createBucket(bucketName);
-		assertTrue(StringUtils.isNotBlank(response.getName()));
+		buckets.add(bucketName);
+		client.createBucket(bucketName);
 	}
 
 	public void checkConfigureVersioningRetry(String bucketName, String status) {
@@ -862,24 +911,13 @@ public class TestBase {
 	}
 
 	public void testBucketCreateNamingGoodLong(int length) {
-		var bucketName = getPrefix();
-		if (bucketName.length() < length)
-			bucketName += Utils.randomText(length - bucketName.length());
-		else
-			bucketName = bucketName.substring(0, length - 1);
+		var bucketName = getNewBucketNameOnly(length);
 		buckets.add(bucketName);
-
-		var client = getClient();
-		var response = client.createBucket(bucketName);
-		assertTrue(StringUtils.isNotBlank(response.getName()));
+		getClient().createBucket(bucketName);
 	}
 
 	public void testBucketCreateNamingBadLong(int length) {
-		var bucketName = getPrefix();
-		if (bucketName.length() < length)
-			bucketName += Utils.randomText(length - bucketName.length());
-		else
-			bucketName = bucketName.substring(0, length - 1);
+		var bucketName = getNewBucketNameOnly(length);
 		checkBadBucketName(bucketName);
 	}
 
@@ -1781,53 +1819,108 @@ public class TestBase {
 		}
 	}
 
-	public void checkObjectACL(Permission permission) {
+	public void checkBucketAcl(Permission permission) {
 		var client = getClient();
-		var bucketName = createBucketCannedACL(client);
+		var bucketName = createBucketCannedAcl(client);
+
+		var acl = createAltAcl(permission);
+		client.setBucketAcl(bucketName, acl);
+
+		var response = client.getBucketAcl(bucketName);
+		checkAcl(acl, response);
+	}
+
+	public void checkObjectAcl(Permission permission) {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
 		var key = "testObjectPermission" + permission;
 
 		client.putObject(bucketName, key, key);
-		var acl = createAcl(config.mainUser.toOwner(), config.mainUser.toGrantee(), permission);
+
+		var acl = createAltAcl(permission);
 		client.setObjectAcl(bucketName, key, acl);
 
 		var response = client.getObjectAcl(bucketName, key);
 		checkAcl(acl, response);
 	}
 
-	public void checkBucketAclAllowRead(AmazonS3 client, String bucketName) {
+	public static void checkBucketAclAllowRead(AmazonS3 client, String bucketName) {
 		client.headBucket(new HeadBucketRequest(bucketName));
 	}
 
-	public void checkBucketAclDenyRead(AmazonS3 client, String bucketName) {
-		assertThrows(AmazonServiceException.class, () -> client.headBucket(new HeadBucketRequest(bucketName)));
+	public static void checkBucketAclDenyRead(AmazonS3 client, String bucketName) {
+		var e = assertThrows(AmazonServiceException.class, () -> client.headBucket(new HeadBucketRequest(bucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 	}
 
-	public void checkBucketAclAllowReadACP(AmazonS3 client, String bucketName) {
+	public static void checkBucketAclAllowReadACP(AmazonS3 client, String bucketName) {
 		client.getBucketAcl(bucketName);
 	}
 
-	public void checkBucketAclDenyReadACP(AmazonS3 client, String bucketName) {
-		assertThrows(AmazonServiceException.class, () -> client.getBucketAcl(bucketName));
+	public static void checkBucketAclDenyReadACP(AmazonS3 client, String bucketName) {
+		var e = assertThrows(AmazonServiceException.class, () -> client.getBucketAcl(bucketName));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 	}
 
-	public void checkBucketAclAllowWrite(AmazonS3 client, String bucketName) {
+	public static void checkBucketAclAllowWrite(AmazonS3 client, String bucketName) {
 		var key = "checkBucketAclAllowWrite";
 		client.putObject(bucketName, key, key);
 		client.deleteObject(bucketName, key);
 	}
 
-	public void checkBucketAclDenyWrite(AmazonS3 client, String bucketName) {
+	public static void checkBucketAclDenyWrite(AmazonS3 client, String bucketName) {
 		var key = "checkBucketAclDenyWrite";
-		assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
+		failedPutObject(client, bucketName, key, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
 	}
 
-	public void checkBucketAclAllowWriteACP(AmazonS3 client, String bucketName) {
+	public static void checkBucketAclAllowWriteACP(AmazonS3 client, String bucketName) {
 		client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 	}
 
-	public void checkBucketAclDenyWriteACP(AmazonS3 client, String bucketName) {
-		assertThrows(AmazonServiceException.class,
+	public static void checkBucketAclDenyWriteACP(AmazonS3 client, String bucketName) {
+		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketAcl(bucketName, CannedAccessControlList.PublicRead));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+	}
+
+	public static void checkObjectAclAllowRead(AmazonS3 client, String bucketName, String key) {
+		succeedGetObject(client, bucketName, key, key);
+	}
+
+	public static void checkObjectAclDenyRead(AmazonS3 client, String bucketName, String key) {
+		failedGetObject(client, bucketName, key, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	public static void checkObjectAclAllowReadACP(AmazonS3 client, String bucketName, String key) {
+		client.getObjectAcl(bucketName, key);
+	}
+
+	public static void checkObjectAclDenyReadACP(AmazonS3 client, String bucketName, String key) {
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObjectAcl(bucketName, key));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+	}
+
+	public static void checkObjectAclAllowWrite(AmazonS3 client, String bucketName, String key) {
+		var tagging = new ObjectTagging(List.of(new Tag("key", "value")));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, tagging));
+	}
+
+	public static void checkObjectAclDenyWrite(AmazonS3 client, String bucketName, String key) {
+		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+	}
+
+	public static void checkObjectAclAllowWriteACP(AmazonS3 client, String bucketName, String key) {
+		client.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead);
+	}
+
+	public static void checkObjectAclDenyWriteACP(AmazonS3 client, String bucketName, String key) {
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 
 	public void checkPrefixLifecycleConfiguration(List<Rule> expected, List<Rule> actual) {
