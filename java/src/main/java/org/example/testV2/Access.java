@@ -150,7 +150,7 @@ public class Access extends TestBase {
 		var key = "testIgnorePublicAcls";
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucket(client, ObjectOwnership.OBJECT_WRITER, null);
+		var bucketName = createBucketCannedAcl(client);
 
 		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
 				RequestBody.fromString(key));

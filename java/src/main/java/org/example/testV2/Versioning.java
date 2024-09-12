@@ -632,7 +632,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var uploadData = setupMultipartUpload(client, bucketName, key, size, 0, metadata);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 
 		var compResponse = client.completeMultipartUpload(compRequest -> compRequest.bucket(bucketName).key(key)
 				.uploadId(uploadData.uploadId).multipartUpload(p -> p.parts(uploadData.parts)));

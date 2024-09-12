@@ -591,22 +591,6 @@ public class TestBase {
 		return myFormat.format(time.getTime());
 	}
 
-	public AccessControlList addObjectUserGrant(String bucketName, String key, Grant myGrant) {
-		var client = getClient();
-
-		var response = client.getObjectAcl(bucketName, key);
-		var grants = response.getGrantsAsList();
-		grants.add(myGrant);
-
-		var myGrants = new AccessControlList();
-		for (var grant : grants)
-			myGrants.grantAllPermissions(grant);
-
-		myGrants.setOwner(response.getOwner());
-
-		return myGrants;
-	}
-
 	public AccessControlList addBucketUserGrant(String bucketName, Grant grant) {
 		var client = getClient();
 
@@ -978,7 +962,7 @@ public class TestBase {
 				.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
 		uploadData.uploadId = initMultiPartResponse.getUploadId();
 
-		var parts = Utils.generateRandomString(size, uploadData.partSize);
+		var parts = Utils.generateRandomString(size, DEFAULT_PART_SIZE);
 
 		for (var Part : parts) {
 			uploadData.appendBody(Part);
@@ -997,8 +981,7 @@ public class TestBase {
 		return uploadData;
 	}
 
-	public MultipartUploadData setupMultipartUpload(AmazonS3 client, String bucketName, String key, int size,
-			int partSize) {
+	public MultipartUploadData setupMultipartUpload(AmazonS3 client, String bucketName, String key, int size, int partSize) {
 		var uploadData = new MultipartUploadData();
 
 		var initMultiPartResponse = client
@@ -1037,7 +1020,7 @@ public class TestBase {
 				.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, metadataList));
 		uploadData.uploadId = initMultiPartResponse.getUploadId();
 
-		var parts = Utils.generateRandomString(size, uploadData.partSize);
+		var parts = Utils.generateRandomString(size, DEFAULT_PART_SIZE);
 
 		for (var Part : parts) {
 			uploadData.appendBody(Part);
@@ -1069,7 +1052,7 @@ public class TestBase {
 				.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, metadataList));
 		uploadData.uploadId = initMultiPartResponse.getUploadId();
 
-		var parts = Utils.generateRandomString(size, uploadData.partSize);
+		var parts = Utils.generateRandomString(size, DEFAULT_PART_SIZE);
 
 		for (var Part : parts) {
 			uploadData.appendBody(Part);

@@ -20,15 +20,13 @@ public class MultipartUploadV2Data {
 	public String uploadId;
 	public List<CompletedPart> parts;
 	public StringBuilder body;
+	public int partSize;
 
 	public MultipartUploadV2Data() {
-		init();
-	}
-
-	public void init() {
 		uploadId = "";
 		body = new StringBuilder();
 		parts = new ArrayList<>();
+		partSize = 5 * MainData.MB;
 	}
 
 	public int nextPartNumber() {

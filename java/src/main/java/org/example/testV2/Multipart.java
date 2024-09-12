@@ -176,7 +176,7 @@ public class Multipart extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 
-		var uploadData = setupMultipartUpload(client, bucketName, key, size, 0, metadata);
+		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
 				.multipartUpload(p -> p.parts(uploadData.parts)));
 

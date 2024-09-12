@@ -19,25 +19,30 @@ public class MultipartUploadData {
 	public String uploadId;
 	public List<PartETag> parts;
 	public StringBuilder body;
-	public int partSize;
 
-	public MultipartUploadData()
-	{
-		init();
-	}
-
-	public void init()
-	{
+	public MultipartUploadData() {
 		uploadId = "";
 		body = new StringBuilder();
 		parts = new ArrayList<>();
-		partSize = 5 * MainData.MB;
 	}
 
-	public int nextPartNumber() { return parts.size() + 1; }
-	public String getBody() { return body.toString(); }
+	public int nextPartNumber() {
+		return parts.size() + 1;
+	}
 
-	public void addPart(int partNumber, String eTag) { parts.add(new PartETag(partNumber, eTag)); }
-	public void addPart(PartETag part) { parts.add(part); }
-	public void appendBody(String data) { body.append(data); }
+	public String getBody() {
+		return body.toString();
+	}
+
+	public void addPart(int partNumber, String eTag) {
+		parts.add(new PartETag(partNumber, eTag));
+	}
+
+	public void addPart(PartETag part) {
+		parts.add(part);
+	}
+
+	public void appendBody(String data) {
+		body.append(data);
+	}
 }
