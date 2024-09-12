@@ -43,7 +43,6 @@ public class DeleteBucket extends TestBase {
 
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
-		deleteBucketList(bucketName);
 	}
 
 	@Test

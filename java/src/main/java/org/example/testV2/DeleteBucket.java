@@ -46,7 +46,6 @@ public class DeleteBucket extends TestBase
 
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
-		deleteBucketList(bucketName);
 	}
 
 	@Test
