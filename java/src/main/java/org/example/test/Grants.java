@@ -440,7 +440,9 @@ public class Grants extends TestBase {
 		for (var Item : response.getGrantsAsList())
 			acl1.grantAllPermissions(Item);
 
-		assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, acl1));
+		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, acl1));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.MALFORMED_ACL_ERROR, e.getErrorCode());
 
 		var acl2 = new AccessControlList();
 		acl2.setOwner(response.getOwner());
@@ -450,7 +452,9 @@ public class Grants extends TestBase {
 		var acl3 = new AccessControlList();
 		acl3.setOwner(new Owner());
 
-		assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, acl3));
+		e = assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, acl3));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.MALFORMED_ACL_ERROR, e.getErrorCode());
 	}
 
 	@Test
