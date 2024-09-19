@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
-import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -49,7 +48,7 @@ public class CopyObject extends TestBase {
 		var source = "testObjectCopyZeroSizeSource";
 		var target = "testObjectCopyZeroSizeTarget";
 		var client = getClient();
-		var bucketName = createObjects(client, List.of(source));
+		var bucketName = createObjects(client, source);
 
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.empty());
 

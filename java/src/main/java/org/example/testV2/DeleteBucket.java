@@ -13,8 +13,6 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.List;
-
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
@@ -22,17 +20,14 @@ import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
-public class DeleteBucket extends TestBase
-{
+public class DeleteBucket extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll()
-	{
+	public static void beforeAll() {
 		System.out.println("DeleteBucket V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
-	public static void afterAll()
-	{
+	public static void afterAll() {
 		System.out.println("DeleteBucket V2 End");
 	}
 
@@ -42,7 +37,7 @@ public class DeleteBucket extends TestBase
 		var bucketName = getNewBucketNameOnly();
 		var client = getClient();
 
-		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d -> d.bucket(bucketName)));
 
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
@@ -52,9 +47,9 @@ public class DeleteBucket extends TestBase
 	@Tag("ERROR")
 	public void testBucketDeleteNonempty() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("foo"));
+		var bucketName = createObjects(client, "foo");
 
-		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d -> d.bucket(bucketName)));
 
 		assertEquals(HttpStatus.SC_CONFLICT, e.statusCode());
 		assertEquals(MainData.BUCKET_NOT_EMPTY, e.awsErrorDetails().errorCode());
@@ -66,9 +61,9 @@ public class DeleteBucket extends TestBase
 		var client = getClient();
 		var bucketName = createBucket(client);
 
-		client.deleteBucket(d->d.bucket(bucketName));
+		client.deleteBucket(d -> d.bucket(bucketName));
 
-		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d->d.bucket(bucketName)));
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteBucket(d -> d.bucket(bucketName)));
 
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());

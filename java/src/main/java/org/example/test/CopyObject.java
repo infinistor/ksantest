@@ -13,8 +13,6 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.List;
-
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
@@ -53,7 +51,7 @@ public class CopyObject extends TestBase {
 		var source = "testObjectCopyZeroSizeSource";
 		var target = "testObjectCopyZeroSizeTarget";
 		var client = getClient();
-		var bucketName = createObjects(client, List.of(source));
+		var bucketName = createObjects(client, source);
 
 		client.putObject(bucketName, source, "");
 
@@ -87,9 +85,11 @@ public class CopyObject extends TestBase {
 		var bucketName = createBucket(client);
 		var source = "testObjectCopyVerifyContentTypeSource";
 		var target = "testObjectCopyVerifyContentTypeTarget";
+		var metadata = new ObjectMetadata();
 		var contentType = "text/bla";
+		metadata.setContentType(contentType);
 
-		client.putObject(new PutObjectRequest(bucketName, source, createBody(source), new ObjectMetadata()));
+		client.putObject(new PutObjectRequest(bucketName, source, createBody(source), metadata));
 		client.copyObject(bucketName, source, bucketName, target);
 
 		var response = client.getObject(bucketName, target);

@@ -238,7 +238,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Version")
 	public void testLifecycleSetNoncurrent() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("past/foo", "future/bar"));
+		var bucketName = createObjects(client, "past/foo", "future/bar");
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1")

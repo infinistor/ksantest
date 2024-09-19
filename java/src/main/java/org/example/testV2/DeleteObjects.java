@@ -134,7 +134,7 @@ public class DeleteObjects extends TestBase {
 	public void testDirectoryDelete() {
 		var keyNames = List.of("a/b/", "a/b/c/d/obj1", "a/b/c/d/obj2", "1/2/", "1/2/3/4/obj1", "q/w/e/r/obj");
 		var client = getClient();
-		var bucketName = createEmptyObjects(client, keyNames);
+		var bucketName = createObjects(client, keyNames);
 
 		var listResponse = client.listObjects(l -> l.bucket(bucketName));
 		assertEquals(keyNames.size(), listResponse.contents().size());

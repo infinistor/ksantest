@@ -13,8 +13,6 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.List;
-
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
@@ -49,7 +47,7 @@ public class DeleteBucket extends TestBase {
 	@Tag("ERROR")
 	public void testBucketDeleteNonempty() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("foo"));
+		var bucketName = createObjects(client, "foo");
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 

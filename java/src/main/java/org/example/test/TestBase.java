@@ -299,55 +299,29 @@ public class TestBase {
 		return createBucket(client, ObjectOwnership.ObjectWriter, null);
 	}
 
-	public String createObjects(AmazonS3 client, String... keys) {
-		var bucketName = getNewBucketName();
-		client.createBucket(bucketName);
-
+	public static void createObjects(AmazonS3 client, String bucketName, List<String> keys) {
 		if (keys != null) {
 			for (var key : keys) {
-				var body = key;
+				var body = key.endsWith("/") ? "" : key;
 				client.putObject(bucketName, key, body);
 			}
 		}
+	}
+
+	public String createObjects(AmazonS3 client, String... keys) {
+		var bucketName = createBucket(client);
+		createObjects(client, bucketName, List.of(keys));
 		return bucketName;
 	}
 
 	public String createObjects(AmazonS3 client, List<String> keys) {
-		var bucketName = getNewBucketName();
-		client.createBucket(bucketName);
-
-		if (keys != null) {
-			for (var key : keys) {
-				var body = key;
-				client.putObject(bucketName, key, body);
-			}
-		}
+		var bucketName = createBucket(client);
+		createObjects(client, bucketName, keys);
 		return bucketName;
 	}
 
 	public String createObjects(List<String> keys) {
 		return createObjects(getClient(), keys);
-	}
-
-	public void createObjects(AmazonS3 client, String bucketName, List<String> keys) {
-		if (keys != null) {
-			for (var key : keys) {
-				var body = key;
-				client.putObject(bucketName, key, body);
-			}
-		}
-	}
-
-	public String createEmptyObjects(AmazonS3 client, List<String> keys) {
-		var bucketName = getNewBucketName();
-		client.createBucket(bucketName);
-
-		if (keys != null) {
-			for (var key : keys)
-				client.putObject(bucketName, key, "");
-		}
-
-		return bucketName;
 	}
 
 	public static AccessControlList createAcl(Owner owner, Grantee grantee, Permission... permissions) {
@@ -981,7 +955,8 @@ public class TestBase {
 		return uploadData;
 	}
 
-	public MultipartUploadData setupMultipartUpload(AmazonS3 client, String bucketName, String key, int size, int partSize) {
+	public MultipartUploadData setupMultipartUpload(AmazonS3 client, String bucketName, String key, int size,
+			int partSize) {
 		var uploadData = new MultipartUploadData();
 
 		var initMultiPartResponse = client

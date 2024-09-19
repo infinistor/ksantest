@@ -261,7 +261,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "-", "_", ".", "'", "(" + ")", "&", "$", "@", "=", ";", "/", ":", "+", "  ", ",", "?",
 				"{" + "}", "^", "%", "`", "[" + "]", "<" + ">", "~", "#", "|");
 		var client = getClient();
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 		var objects = getObjectList(bucketName, null);
 
 		for (var key : keys) {
@@ -322,9 +322,9 @@ public class PutObject extends TestBase {
 	@Test
 	@Tag("Space")
 	public void testObjectInfixSpace() {
-		var client = getClient();
 		var keys = List.of("a a/", "b b/f1", "c/f 2", "d d/f 3");
-		var bucketName = createEmptyObjects(client, keys);
+		var client = getClient();
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -335,9 +335,9 @@ public class PutObject extends TestBase {
 	@Test
 	@Tag("Space")
 	public void testObjectSuffixSpace() {
-		var client = getClient();
 		var keys = List.of("a /", "b /f1", "c/f2 ", "d /f3 ");
-		var bucketName = createEmptyObjects(client, keys);
+		var client = getClient();
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -351,7 +351,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)",
 				"*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV2();
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -365,7 +365,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(true, true);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -379,7 +379,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV2();
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -393,7 +393,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(true, true);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -407,7 +407,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(true, true);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -421,7 +421,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientHttpsV4(true, true);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -435,7 +435,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(false, true);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -449,7 +449,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(false, true);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());

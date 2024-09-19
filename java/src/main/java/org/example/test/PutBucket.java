@@ -193,13 +193,12 @@ public class PutBucket extends TestBase {
 	@Tag("Duplicate")
 	public void testBucketRecreateNotOverriding() {
 		var keys = List.of("my_key1", "my_key2");
-
-		var bucketName = createObjects(keys);
+		var client = getClient();
+		var bucketName = createObjects(client, keys);
 
 		var objects = getObjectList(bucketName, null);
 		assertEquals(keys, objects);
 
-		var client = getClient();
 		assertThrows(AmazonServiceException.class, () -> client.createBucket(bucketName));
 
 		objects = getObjectList(bucketName, null);

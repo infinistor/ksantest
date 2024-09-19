@@ -318,9 +318,7 @@ public class TestBase {
 	public void createObjects(S3Client client, String bucketName, List<String> keys) {
 		if (keys != null) {
 			for (var key : keys) {
-				var body = RequestBody.fromString(key);
-				if (key.endsWith("/"))
-					body = RequestBody.empty();
+				var body = key.endsWith("/") ? RequestBody.empty() : RequestBody.fromString(key);
 				client.putObject(p -> p.bucket(bucketName).key(key), body);
 			}
 		}
@@ -328,44 +326,19 @@ public class TestBase {
 
 	public String createObjects(S3Client client, String... keys) {
 		var bucketName = createBucket(client);
-
-		if (keys != null) {
-			for (var key : keys) {
-				var body = RequestBody.fromString(key);
-				client.putObject(p -> p.bucket(bucketName).key(key), body);
-			}
-		}
-
+		createObjects(client, bucketName, List.of(keys));
 		return bucketName;
 	}
 
 	public String createObjects(S3Client client, List<String> keys) {
 		var bucketName = createBucket(client);
-
-		if (keys != null) {
-			for (var key : keys) {
-				var body = RequestBody.fromString(key);
-				client.putObject(p -> p.bucket(bucketName).key(key), body);
-			}
-		}
-
+		createObjects(client, bucketName, keys);
 		return bucketName;
 	}
 
 	public String createObjects(List<String> keys) {
 		var client = getClient();
 		return createObjects(client, keys);
-	}
-
-	public String createEmptyObjects(S3Client client, List<String> keys) {
-		var bucketName = createBucket(client);
-
-		if (keys != null) {
-			for (var key : keys)
-				client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(""));
-		}
-
-		return bucketName;
 	}
 
 	public static Grantee createPublicGrantee() {

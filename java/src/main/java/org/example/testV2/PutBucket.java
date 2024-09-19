@@ -196,7 +196,6 @@ public class PutBucket extends TestBase {
 	@Tag("Duplicate")
 	public void testBucketRecreateNotOverriding() {
 		var keys = List.of("my_key1", "my_key2");
-
 		var client = getClient();
 		var bucketName = createObjects(client, keys);
 

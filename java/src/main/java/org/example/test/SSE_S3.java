@@ -194,7 +194,7 @@ public class SSE_S3 extends TestBase {
 	public void testPutBucketEncryptionAndObjectSetCheck() {
 		var keys = List.of("for/bar", "test/");
 		var client = getClient();
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createBucket(client);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
 				.withRules(new ServerSideEncryptionRule()
@@ -207,6 +207,8 @@ public class SSE_S3 extends TestBase {
 
 		var response = client.getBucketEncryption(bucketName);
 		assertEquals(sseS3Config.getRules(), response.getServerSideEncryptionConfiguration().getRules());
+
+		createObjects(client, bucketName, keys);
 
 		for (var key : keys) {
 			var getResponse = client.getObjectMetadata(bucketName, key);

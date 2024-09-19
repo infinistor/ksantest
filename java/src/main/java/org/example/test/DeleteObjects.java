@@ -34,8 +34,8 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("ListObject")
 	public void testMultiObjectDelete() {
-		var client = getClient();
 		var keyNames = List.of("key0", "key1", "key2");
+		var client = getClient();
 		var bucketName = createObjects(client, keyNames);
 
 		var listResponse = client.listObjects(bucketName);
@@ -59,8 +59,8 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("ListObjectsV2")
 	public void testMultiObjectV2Delete() {
-		var client = getClient();
 		var keyNames = List.of("key0", "key1", "key2");
+		var client = getClient();
 		var bucketName = createObjects(client, keyNames);
 
 		var listResponse = client.listObjectsV2(bucketName);
@@ -113,8 +113,8 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("quiet")
 	public void testMultiObjectDeleteQuiet() {
-		var client = getClient();
 		var keyNames = List.of("key0", "key1", "key2");
+		var client = getClient();
 		var bucketName = createObjects(client, keyNames);
 
 		var listResponse = client.listObjects(bucketName);
@@ -133,9 +133,9 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("Directory")
 	public void testDirectoryDelete() {
-		var client = getClient();
 		var keyNames = List.of("a/b/", "a/b/c/d/obj1", "a/b/c/d/obj2", "1/2/", "1/2/3/4/obj1", "q/w/e/r/obj");
-		var bucketName = createEmptyObjects(client, keyNames);
+		var client = getClient();
+		var bucketName = createObjects(client, keyNames);
 
 		var listResponse = client.listObjects(bucketName);
 		assertEquals(keyNames.size(), listResponse.getObjectSummaries().size());

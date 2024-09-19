@@ -45,7 +45,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Check")
 	public void testBucketListV2Many() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("foo", "bar", "baz"));
+		var bucketName = createObjects(client, "foo", "bar", "baz");
 
 		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(2));
 		assertEquals(List.of("bar", "baz"),
@@ -78,8 +78,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("delimiter")
 	public void testBucketListV2DelimiterBasic() {
 		var client = getClient();
-		var bucketName = createObjects(client,
-				List.of("foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf"));
+		var bucketName = createObjects(client, "foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf");
 
 		String delimiter = "/";
 
@@ -97,7 +96,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Encoding")
 	public void testBucketListV2EncodingBasic() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"));
+		var bucketName = createObjects(client, "foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b");
 
 		String delimiter = "/";
 
@@ -148,7 +147,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Filtering")
 	public void testBucketListV2DelimiterPrefixEndsWithDelimiter() {
 		var client = getClient();
-		var bucketName = createEmptyObjects(client, List.of("asdf/"));
+		var bucketName = createObjects(client, "asdf/");
 		validateListObjectV2(bucketName, "asdf/", "/", null, 1000, false,
 				List.of("asdf/"), new ArrayList<>(), true);
 	}
@@ -157,7 +156,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("delimiter")
 	public void testBucketListV2DelimiterAlt() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("bar", "baz", "cab", "foo"));
+		var bucketName = createObjects(client, "bar", "baz", "cab", "foo");
 
 		String delimiter = "a";
 
@@ -211,7 +210,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("delimiter")
 	public void testBucketListV2DelimiterPercentage() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("b%ar", "b%az", "c%ab", "foo"));
+		var bucketName = createObjects(client, "b%ar", "b%az", "c%ab", "foo");
 
 		String delimiter = "%";
 
@@ -231,7 +230,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("delimiter")
 	public void testBucketListV2DelimiterWhitespace() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("b ar", "b az", "c ab", "foo"));
+		var bucketName = createObjects(client, "b ar", "b az", "c ab", "foo");
 
 		String delimiter = " ";
 
@@ -251,7 +250,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("delimiter")
 	public void testBucketListV2DelimiterDot() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("b.ar", "b.az", "c.ab", "foo"));
+		var bucketName = createObjects(client, "b.ar", "b.az", "c.ab", "foo");
 
 		String delimiter = ".";
 
@@ -388,7 +387,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Prefix")
 	public void testBucketListV2PrefixBasic() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("foo/bar", "foo/baz", "quux"));
+		var bucketName = createObjects(client, "foo/bar", "foo/baz", "quux");
 
 		String prefix = "foo/";
 		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(prefix));
@@ -404,7 +403,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("Prefix")
 	public void testBucketListV2PrefixAlt() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("bar", "baz", "foo"));
+		var bucketName = createObjects(client, "bar", "baz", "foo");
 
 		String prefix = "ba";
 		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix(prefix));
@@ -528,7 +527,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	public void testBucketListV2PrefixDelimiterPrefixNotExist() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("b/a/r", "b/a/c", "b/a/g", "g"));
+		var bucketName = createObjects(client, "b/a/r", "b/a/c", "b/a/g", "g");
 
 		var response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("d").withPrefix("/"));
@@ -543,7 +542,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	public void testBucketListV2PrefixDelimiterDelimiterNotExist() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("b/a/c", "b/a/g", "b/a/r", "g"));
+		var bucketName = createObjects(client, "b/a/c", "b/a/g", "b/a/r", "g");
 
 		var response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("z").withPrefix("b"));
@@ -558,7 +557,7 @@ public class ListObjectsV2 extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	public void testBucketListV2PrefixDelimiterPrefixDelimiterNotExist() {
 		var client = getClient();
-		var bucketName = createObjects(client, List.of("b/a/r", "b/a/c", "b/a/g", "g"));
+		var bucketName = createObjects(client, "b/a/r", "b/a/c", "b/a/g", "g");
 
 		var response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("z").withPrefix("y"));

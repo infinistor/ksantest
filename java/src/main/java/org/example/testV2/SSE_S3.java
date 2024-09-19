@@ -176,7 +176,7 @@ public class SSE_S3 extends TestBase {
 	public void testPutBucketEncryptionAndObjectSetCheck() {
 		var keys = List.of("for/bar", "test/");
 		var client = getClient();
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createBucket(client);
 
 		client.putBucketEncryption(p -> p.bucket(bucketName).serverSideEncryptionConfiguration(
 				s -> s.rules(r -> r
@@ -186,6 +186,8 @@ public class SSE_S3 extends TestBase {
 		var response = client.getBucketEncryption(g -> g.bucket(bucketName));
 		assertEquals(ServerSideEncryption.AES256, response.serverSideEncryptionConfiguration().rules().get(0)
 				.applyServerSideEncryptionByDefault().sseAlgorithm());
+
+		createObjects(client, bucketName, keys);
 
 		for (var key : keys) {
 			var getResponse = client.headObject(g -> g.bucket(bucketName).key(key));

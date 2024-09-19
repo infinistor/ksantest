@@ -301,9 +301,8 @@ public class PutObject extends TestBase {
 	public void testBucketCreateSpecialKeyNames() {
 		var keys = List.of("!", "-", "_", ".", "'", "(" + ")", "&", "$", "@", "=", ";", "/", ":", "+", "  ", ",", "?",
 				"{" + "}", "^", "%", "`", "[" + "]", "<" + ">", "~", "#", "|");
-
 		var client = getClient();
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var objects = getObjectList(client, bucketName, null);
 
@@ -319,7 +318,6 @@ public class PutObject extends TestBase {
 	@Tag("SpecialKeyName")
 	public void testBucketListSpecialPrefix() {
 		var keys = List.of("Bla/1", "Bla/2", "Bla/3", "Bla/4", "abcd");
-
 		var client = getClient();
 		var bucketName = createObjects(client, keys);
 
@@ -369,7 +367,7 @@ public class PutObject extends TestBase {
 	public void testObjectInfixSpace() {
 		var keys = List.of("a a/", "b b/f1", "c/f 2", "d d/f 3");
 		var client = getClient();
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(l -> l.bucket(bucketName));
 		var getKeys = getKeys(response.contents());
@@ -382,7 +380,7 @@ public class PutObject extends TestBase {
 	public void testObjectSuffixSpace() {
 		var keys = List.of("a /", "b /f1", "c/f2 ", "d /f3 ");
 		var client = getClient();
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(l -> l.bucket(bucketName));
 		var getKeys = getKeys(response.contents());
@@ -396,7 +394,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClient(true);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(l -> l.bucket(bucketName));
 		var getKeys = getKeys(response.contents());
@@ -410,7 +408,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClient(true);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(l -> l.bucket(bucketName));
 		var getKeys = getKeys(response.contents());
@@ -424,7 +422,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClient(true);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(l -> l.bucket(bucketName));
 		var getKeys = getKeys(response.contents());
@@ -438,7 +436,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClient(false);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(l -> l.bucket(bucketName));
 		var getKeys = getKeys(response.contents());
@@ -452,7 +450,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClient(false);
-		var bucketName = createEmptyObjects(client, keys);
+		var bucketName = createObjects(client, keys);
 
 		var response = client.listObjects(l -> l.bucket(bucketName));
 		var getKeys = getKeys(response.contents());
