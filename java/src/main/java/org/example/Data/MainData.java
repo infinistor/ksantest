@@ -64,6 +64,7 @@ public class MainData {
 	public static final String UNRESOLVABLE_GRANT_BY_EMAIL_ADDRESS = "UnresolvableGrantByEmailAddress";
 	public static final String INVALID_REQUEST = "InvalidRequest";
 	public static final String MALFORMED_XML = "MalformedXML";
+	public static final String MALFORMED_ACL_ERROR = "MalformedACLError";
 	public static final String INVALID_RANGE = "InvalidRange";
 	public static final String ENTITY_TOO_SMALL = "EntityTooSmall";
 	public static final String NO_SUCH_UPLOAD = "NoSuchUpload";
