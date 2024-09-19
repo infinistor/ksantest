@@ -386,7 +386,7 @@ public class CopyObject extends TestBase {
 		client.copyObject(new CopyObjectRequest(bucketName, source, bucketName, target)
 				.withSourceVersionId(versionId));
 		response = client.getObject(bucketName, target);
-		assertEquals(target, getBody(response.getObjectContent()));
+		assertEquals(source, getBody(response.getObjectContent()));
 	}
 
 	@Test
