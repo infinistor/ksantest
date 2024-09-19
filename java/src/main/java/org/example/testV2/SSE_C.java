@@ -270,9 +270,9 @@ public class SSE_C extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(
-						g -> g.bucket(bucketName).key(key).sseCustomerKey(sseGetKey).sseCustomerKeyMD5(sseGetMd5)));
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
-		assertEquals("InvalidArgument", e.awsErrorDetails().errorCode());
+						g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+								.sseCustomerKey(sseGetKey).sseCustomerKeyMD5(sseGetMd5)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 	}
 
 	@Test
