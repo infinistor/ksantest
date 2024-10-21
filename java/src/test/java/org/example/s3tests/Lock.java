@@ -27,6 +27,14 @@ class Lock {
 	}
 
 	@Test
+	@Tag("Put")
+	// 버킷을 생성한 후 오브젝트의 잠금 설정을 활성화 할 수 있는지 확인
+	void testCreatedBucketEnableObjectLock() {
+		test.testCreatedBucketEnableObjectLock();
+		testV2.testCreatedBucketEnableObjectLock();
+	}
+
+	@Test
 	@Tag("Check")
 	// [버킷의 Lock옵션을 활성화] 오브젝트의 잠금 설정이 가능한지 확인
 	void testObjectLockPutObjLock() {

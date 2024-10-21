@@ -55,6 +55,20 @@ public class Lock extends TestBase {
 	}
 
 	@Test
+	@Tag("Put")
+	public void testCreatedBucketEnableObjectLock() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+
+		client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
+				new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED)));
+
+		client.setObjectLockConfiguration(new SetObjectLockConfigurationRequest().withBucketName(bucketName)
+				.withObjectLockConfiguration(
+						new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)));
+	}
+
+	@Test
 	@Tag("Check")
 	public void testObjectLockPutObjLock() {
 		var client = getClient();
