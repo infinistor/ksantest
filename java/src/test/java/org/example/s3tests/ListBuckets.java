@@ -57,4 +57,20 @@ class ListBuckets {
 		test.testHeadBucket();
 		testV2.testHeadBucket();
 	}
+
+	@Test
+	@Tag("Prefix")
+	// 버킷 목록 조회시 Prefix를 이용한 필터링 확인
+	void testListBucketsPrefix() {
+		test.testListBucketsPrefix();
+		testV2.testListBucketsPrefix();
+	}
+
+	@Test
+	@Tag("MaxBuckets")
+	// 버킷 목록 조회시 MaxBuckets를 이용한 필터링 확인
+	void testListBucketsMaxBuckets() {
+		test.testListBucketsMaxBuckets();
+		testV2.testListBucketsMaxBuckets();
+	}
 }

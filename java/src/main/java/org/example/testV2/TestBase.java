@@ -75,8 +75,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
-import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -195,8 +193,6 @@ public class TestBase {
 				.region(config.regionName != null ? Region.of(config.regionName) : Region.AP_NORTHEAST_2)
 				.credentialsProvider(awsCred)
 				.httpClientBuilder(httpClient)
-				.overrideConfiguration(ClientOverrideConfiguration.builder()
-						.retryPolicy(RetryPolicy.builder().numRetries(1).build()).build())
 				.serviceConfiguration(s3Config)
 				.endpointOverride(URI.create(address)).build();
 	}

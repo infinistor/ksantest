@@ -454,9 +454,9 @@ public class LifeCycle extends TestBase {
 
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
 		var expiredTime = getExpiredDate(response.lastModified(), 1);
-		assertEquals(expiredTime, response.expires());
+		assertEquals(expiredTime, response.expiresString());
 
 		var response2 = client.getObject(g -> g.bucket(bucketName).key(key));
-		assertEquals(expiredTime, response2.response().expires());
+		assertEquals(expiredTime, response2.response().expiresString());
 	}
 }

@@ -128,7 +128,7 @@ public class PutObject extends TestBase {
 				.contentLength((long) body.length()), RequestBody.fromString(body));
 
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
-		assertEquals(expires, response.expires());
+		assertEquals(expires, response.expiresString());
 	}
 
 	@Test

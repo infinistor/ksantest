@@ -85,4 +85,40 @@ public class ListBuckets extends TestBase {
 		var response = client.headBucket(h -> h.bucket(bucketName));
 		assertNotNull(response);
 	}
+
+	@Test
+	@Tag("Prefix")
+	public void testListBucketsPrefix() {
+		var client = getClient();
+		var prefix = "1111-my-test";
+		var bucketName = getNewBucketName(prefix);
+		client.createBucket(b -> b.bucket(bucketName));
+
+		for (int i = 0; i < 5; i++) {
+			createBucket(client);
+		}
+
+		var response = client.listBuckets(l -> l.prefix(prefix));
+		var bucketList = getBucketList(response);
+		assertEquals(1, bucketList.size());
+		assertEquals(bucketName, bucketList.get(0));
+		client.deleteBucket(b -> b.bucket(bucketName));
+	}
+
+	@Test
+	@Tag("MaxBuckets")
+	public void testListBucketsMaxBuckets() {
+		var client = getClient();
+		var bucketNames = new ArrayList<String>();
+		for (int i = 0; i < 5; i++) {
+			bucketNames.add(createBucket(client));
+		}
+
+		bucketNames.sort(String::compareTo);
+
+		var response = client.listBuckets(l -> l.prefix(getPrefix()).maxBuckets(2));
+		var bucketList = getBucketList(response);
+		assertEquals(2, bucketList.size());
+		assertEquals(bucketNames.subList(0, 2), bucketList);
+	}
 }
