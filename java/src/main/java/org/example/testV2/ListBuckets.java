@@ -121,4 +121,31 @@ public class ListBuckets extends TestBase {
 		assertEquals(2, bucketList.size());
 		assertEquals(bucketNames.subList(0, 2), bucketList);
 	}
+
+	@Test
+	@Tag("ContinuationToken")
+	public void testListBucketsContinuationToken() {
+		var client = getClient();
+		var bucketNames = new ArrayList<String>();
+		for (int i = 0; i < 5; i++) {
+			bucketNames.add(createBucket(client));
+		}
+
+		bucketNames.sort(String::compareTo);
+
+		var response = client.listBuckets(l -> l.prefix(getPrefix()).maxBuckets(2));
+		var bucketList = getBucketList(response);
+		assertEquals(2, bucketList.size());
+		assertEquals(bucketNames.subList(0, 2), bucketList);
+
+		var response2 = client.listBuckets(l -> l.prefix(getPrefix()).maxBuckets(2).continuationToken(response.continuationToken()));
+		var bucketList2 = getBucketList(response2);
+		assertEquals(2, bucketList2.size());
+		assertEquals(bucketNames.subList(2, 4), bucketList2);
+
+		var response3 = client.listBuckets(l -> l.prefix(getPrefix()).maxBuckets(2).continuationToken(response2.continuationToken()));
+		var bucketList3 = getBucketList(response3);
+		assertEquals(1, bucketList3.size());
+		assertEquals(bucketNames.subList(4, 5), bucketList3);
+	}
 }

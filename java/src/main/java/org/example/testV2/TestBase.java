@@ -1698,9 +1698,6 @@ public class TestBase {
 		var expectedGrants = expected.grants();
 		var actualGrants = actual.grants();
 
-		System.out.println(expectedGrants);
-		System.out.println(actualGrants);
-
 		assertEquals(expectedGrants.size(), actualGrants.size());
 
 		expectedGrants = grantsSort(expectedGrants);
@@ -2153,7 +2150,6 @@ public class TestBase {
 
 	public HttpResponse getObject(URL address) {
 		var client = HttpClientBuilder.create().build();
-		System.out.println(address.toString());
 		var getRequest = new HttpGet(address.toString());
 		try {
 			return client.execute(getRequest);

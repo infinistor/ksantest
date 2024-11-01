@@ -73,4 +73,12 @@ class ListBuckets {
 		test.testListBucketsMaxBuckets();
 		testV2.testListBucketsMaxBuckets();
 	}
+
+	@Test
+	@Tag("ContinuationToken")
+	// 버킷 목록 조회시 ContinuationToken를 이용한 필터링 확인
+	void testListBucketsContinuationToken() {
+		test.testListBucketsContinuationToken();
+		testV2.testListBucketsContinuationToken();
+	}
 }

@@ -29,12 +29,12 @@ import com.amazonaws.services.s3.model.ListBucketsPaginatedRequest;
 public class ListBuckets extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
-		System.out.println("ListBuckets Start");
+		System.out.println("ListBuckets V2 Start");
 	}
 
 	@org.junit.jupiter.api.AfterAll
 	public static void afterAll() {
-		System.out.println("ListBuckets End");
+		System.out.println("ListBuckets V2 End");
 	}
 
 	@Test
@@ -125,5 +125,34 @@ public class ListBuckets extends TestBase {
 		var bucketList = getBucketList(response.getBuckets());
 		assertEquals(2, bucketList.size());
 		assertEquals(bucketNames.subList(0, 2), bucketList);
+	}
+
+	@Test
+	@Tag("ContinuationToken")
+	public void testListBucketsContinuationToken() {
+		var client = getClient();
+		var bucketNames = new ArrayList<String>();
+		for (int i = 0; i < 5; i++) {
+			bucketNames.add(createBucket(client));
+		}
+
+		bucketNames.sort(String::compareTo);
+
+		var response = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(getPrefix()).withMaxBuckets(2));
+		var bucketList = getBucketList(response.getBuckets());
+		assertEquals(2, bucketList.size());
+		assertEquals(bucketNames.subList(0, 2), bucketList);
+
+		var response2 = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(getPrefix()).withMaxBuckets(2)
+				.withContinuationToken(response.getContinuationToken()));
+		var bucketList2 = getBucketList(response2.getBuckets());
+		assertEquals(2, bucketList2.size());
+		assertEquals(bucketNames.subList(2, 4), bucketList2);
+
+		var response3 = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(getPrefix()).withMaxBuckets(2)
+				.withContinuationToken(response2.getContinuationToken()));
+		var bucketList3 = getBucketList(response3.getBuckets());
+		assertEquals(1, bucketList3.size());
+		assertEquals(bucketNames.subList(4, 5), bucketList3);
 	}
 }
