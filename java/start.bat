@@ -1,5 +1,11 @@
+@REM If the user specifies a different ini file, use that instead
+if "%1" != "" (
+	SET S3TESTS_INI=%1.ini
+) else (
+	SET S3TESTS_INI=config.ini
+)
+
 cls
-SET S3TESTS_INI=config.ini
 del xunit-to-html-master\Result_java.html
 del xunit-to-html-master\Result_java.xml
 call mvn clean
