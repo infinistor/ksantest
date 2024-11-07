@@ -11,8 +11,7 @@ logs/
 awstests.ini
 s3tests-*
 s3tests.ini
-*.sh
-*.bat
+run_jenkins*
 .classpath
 junit-merger.exe
 xunit-to-html-master/
