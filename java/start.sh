@@ -1,6 +1,5 @@
 clear
-svn up
-export S3TESTS_INI=s3tests-ksan.ini
+export S3TESTS_INI=config.ini
 mvn clean
 mvn test surefire-report:report
 python ./merge_junit_results.py ./target/results/*.xml > xunit-to-html-master/Result_java.xml

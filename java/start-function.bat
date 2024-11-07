@@ -1,3 +1,8 @@
+if "%3"=="" (
+	echo "Usage: start-function.bat <test-suite> <test-class> <test-method>"
+	exit /b
+)
+
 cls
 SET S3TESTS_INI=%1.ini
 del xunit-to-html-master\Result_java.html
