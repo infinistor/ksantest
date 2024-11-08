@@ -268,7 +268,10 @@ public class PutObject extends TestBase {
 			assertTrue(objects.contains(key));
 			var response = client.getObject(bucketName, key);
 			var body = getBody(response.getObjectContent());
-			assertEquals(key, body);
+			if (key.endsWith("/"))
+				assertEquals("", body);
+			else
+				assertEquals(key, body);
 		}
 	}
 
