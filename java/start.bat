@@ -1,5 +1,5 @@
 @REM If the user specifies a different ini file, use that instead
-if "%1" != "" (
+if "%1" NEQ "" (
 	SET S3TESTS_INI=%1.ini
 ) else (
 	SET S3TESTS_INI=config.ini

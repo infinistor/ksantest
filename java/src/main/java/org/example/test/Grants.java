@@ -485,4 +485,27 @@ public class Grants extends TestBase {
 
 		assertThrows(AmazonServiceException.class, () -> client.setObjectAcl(bucketName, key, acl3));
 	}
+
+	@Test
+	@Tag("Error")
+	public void testBucketAclRevokeAllId() {
+		var key = "testBucketAclRevokeAllId";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
+
+		client.putObject(bucketName, key, key);
+
+		var response = client.getBucketAcl(bucketName);
+
+		var acl1 = new AccessControlList();
+		acl1.setOwner(response.getOwner());
+
+		var mainUser = config.mainUser;
+		mainUser.id = null;
+		acl1.grantAllPermissions(mainUser.toGrant(Permission.FullControl));
+
+		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, acl1));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
+	}
 }

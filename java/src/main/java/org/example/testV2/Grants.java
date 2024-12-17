@@ -456,4 +456,26 @@ public class Grants extends TestBase {
 				p -> p.bucket(bucketName).key(key)
 						.accessControlPolicy(a -> a.owner(o -> o.build()).grants(response.grants()))));
 	}
+
+	@Test
+	@Tag("Error")
+	public void testBucketAclRevokeAllId() {
+		var key = "testBucketAclRevokeAllId";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
+
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
+
+		var mainUser = config.mainUser;
+		mainUser.id = null;
+		var acl = AccessControlPolicy.builder().owner(response.owner())
+				.grants(mainUser.toGrantV2(Permission.FULL_CONTROL));
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(acl.build())));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.MALFORMED_ACL_ERROR, e.awsErrorDetails().errorCode());
+	}
 }
