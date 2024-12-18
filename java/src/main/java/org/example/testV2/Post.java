@@ -294,7 +294,7 @@ public class Post extends TestBase {
 		payload.put("key", key);
 		payload.put("acl", "public-read");
 		payload.put("Content-Type", contentType);
-		payload.put("successActionStatus", "HttpStatus.SC_NOT_FOUND");
+		payload.put("successActionStatus", HttpStatus.SC_NOT_FOUND + "");
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());

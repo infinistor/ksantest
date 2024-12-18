@@ -10,14 +10,12 @@
 */
 package org.example.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import org.junit.jupiter.api.Tag;
-import org.junit.Test;
-
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
+import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Tag;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.AccessControlList;
@@ -387,7 +385,8 @@ public class Grants extends TestBase {
 
 		client.getObject(bucketName, key);
 
-		assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, "A"));
+		var exception = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, "A"));
+		assertEquals(HttpStatus.SC_FORBIDDEN, exception.getStatusCode());
 
 		var client2 = getClient();
 		client2.getBucketAcl(bucketName);
@@ -473,7 +472,8 @@ public class Grants extends TestBase {
 		for (var Item : response.getGrantsAsList())
 			acl1.grantAllPermissions(Item);
 
-		assertThrows(AmazonServiceException.class, () -> client.setObjectAcl(bucketName, key, acl1));
+		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectAcl(bucketName, key, acl1));
+		assertEquals(MainData.MALFORMED_ACL_ERROR, e.getErrorCode());
 
 		var acl2 = new AccessControlList();
 		acl2.setOwner(response.getOwner());
@@ -483,7 +483,8 @@ public class Grants extends TestBase {
 		var acl3 = new AccessControlList();
 		acl3.setOwner(new Owner());
 
-		assertThrows(AmazonServiceException.class, () -> client.setObjectAcl(bucketName, key, acl3));
+		e = assertThrows(AmazonServiceException.class, () -> client.setObjectAcl(bucketName, key, acl3));
+		assertEquals(MainData.MALFORMED_ACL_ERROR, e.getErrorCode());
 	}
 
 	@Test

@@ -308,4 +308,11 @@ class Grants {
 		test.testBucketAclRevokeAllId();
 		testV2.testBucketAclRevokeAllId();
 	}
+	
+	@Test
+	@Tag("Error")
+	// 버킷의 acl 설정에 Type이 누락될 경우 실패함을 확인
+	void testBucketAclRevokeAllType() {
+		testV2.testBucketAclRevokeAllType();
+	}
 }

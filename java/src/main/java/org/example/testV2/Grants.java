@@ -478,4 +478,30 @@ public class Grants extends TestBase {
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_ACL_ERROR, e.awsErrorDetails().errorCode());
 	}
+
+	@Test
+	@Tag("Error")
+	public void testBucketAclRevokeAllType() {
+		var key = "testBucketAclRevokeAllType";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
+
+		var response = client.getBucketAcl(g -> g.bucket(bucketName));
+
+		var grant = Grant.builder()
+				.grantee(g -> g.id(config.mainUser.id).displayName(config.mainUser.displayName).build())
+				.permission(Permission.FULL_CONTROL).build();
+
+		var acl = AccessControlPolicy.builder().owner(response.owner())
+				.grants(grant);
+
+		client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(acl.build()));
+		// var e = assertThrows(AwsServiceException.class,
+		// () -> client.putBucketAcl(p ->
+		// p.bucket(bucketName).accessControlPolicy(acl.build())));
+		// assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		// assertEquals(MainData.MALFORMED_ACL_ERROR, e.awsErrorDetails().errorCode());
+	}
 }
