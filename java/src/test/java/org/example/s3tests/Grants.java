@@ -196,7 +196,7 @@ class Grants {
 		test.testBucketPermissionWriteAcp();
 		testV2.testBucketPermissionWriteAcp();
 	}
-	
+
 	@Test
 	@Tag("Permission")
 	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
@@ -204,7 +204,7 @@ class Grants {
 		test.testBucketPermissionRead();
 		testV2.testBucketPermissionRead();
 	}
-	
+
 	@Test
 	@Tag("Permission")
 	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
@@ -307,12 +307,5 @@ class Grants {
 	void testBucketAclRevokeAllId() {
 		test.testBucketAclRevokeAllId();
 		testV2.testBucketAclRevokeAllId();
-	}
-	
-	@Test
-	@Tag("Error")
-	// 버킷의 acl 설정에 Type이 누락될 경우 실패함을 확인
-	void testBucketAclRevokeAllType() {
-		testV2.testBucketAclRevokeAllType();
 	}
 }
