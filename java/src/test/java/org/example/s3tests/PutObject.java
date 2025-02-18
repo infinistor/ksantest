@@ -280,4 +280,11 @@ class PutObject {
 		test.testObjectSetGetMetadataUtf8();
 		testV2.testObjectSetGetMetadataUtf8();
 	}
+
+	@Test
+	@Tag("checksum")
+	// 오브젝트 업로드 시 체크섬 계산 및 검증 확인
+	void testPutObjectChecksum() {
+		testV2.testPutObjectChecksum();
+	}
 }

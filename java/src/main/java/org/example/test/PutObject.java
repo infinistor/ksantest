@@ -548,6 +548,5 @@ public class PutObject extends TestBase {
 		var response = client.getObjectMetadata(bucketName, key);
 		assertEquals(metadata1, response.getUserMetaDataOf(metadataKey1));
 		assertEquals(metadata2, response.getUserMetaDataOf(metadataKey2));
-
 	}
 }
