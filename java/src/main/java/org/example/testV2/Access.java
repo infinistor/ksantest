@@ -50,20 +50,18 @@ public class Access extends TestBase {
 		assertEquals(accessConf.blockPublicAcls(), response.publicAccessBlockConfiguration().blockPublicAcls());
 		assertEquals(accessConf.blockPublicPolicy(), response.publicAccessBlockConfiguration().blockPublicPolicy());
 
-		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ)));
-		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
-		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+		BucketCannedACL[] publicAcls = {
+			BucketCannedACL.PUBLIC_READ,
+			BucketCannedACL.PUBLIC_READ_WRITE,
+			BucketCannedACL.AUTHENTICATED_READ
+		};
 
-		e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ_WRITE)));
-		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
-		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
-
-		e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.AUTHENTICATED_READ)));
-		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
-		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+		for (var acl : publicAcls) {
+			var e = assertThrows(AwsServiceException.class,
+					() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(acl)));
+			assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+			assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+		}
 	}
 
 	@Test
@@ -81,25 +79,19 @@ public class Access extends TestBase {
 		var response = client.getPublicAccessBlock(g -> g.bucket(bucketName));
 		assertEquals(accessConf.blockPublicAcls(), response.publicAccessBlockConfiguration().blockPublicAcls());
 
-		var e = assertThrows(AwsServiceException.class, () -> client.putObject(
-				p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
-				RequestBody.fromString(key)));
-		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
-		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+		ObjectCannedACL[] publicAcls = {
+			ObjectCannedACL.PUBLIC_READ,
+			ObjectCannedACL.PUBLIC_READ_WRITE,
+			ObjectCannedACL.AUTHENTICATED_READ
+		};
 
-		e = assertThrows(AwsServiceException.class,
-				() -> client.putObject(
-						p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ_WRITE),
-						RequestBody.fromString(key)));
-		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
-		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
-
-		e = assertThrows(AwsServiceException.class,
-				() -> client.putObject(
-						p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.AUTHENTICATED_READ),
-						RequestBody.fromString(key)));
-		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
-		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+		for (ObjectCannedACL acl : publicAcls) {
+			var e = assertThrows(AwsServiceException.class,
+					() -> client.putObject(p -> p.bucket(bucketName).key(key).acl(acl),
+							RequestBody.fromString(key)));
+			assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+			assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+		}
 	}
 
 	@Test

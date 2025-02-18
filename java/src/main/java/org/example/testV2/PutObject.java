@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
 import software.amazon.awssdk.services.s3.model.ObjectLockMode;
@@ -310,7 +311,7 @@ public class PutObject extends TestBase {
 			assertTrue(objects.contains(key));
 			var response = client.getObject(g -> g.bucket(bucketName).key(key));
 			var body = getBody(response);
-			
+
 			if (key.endsWith("/"))
 				assertEquals("", body);
 			else
@@ -550,6 +551,24 @@ public class PutObject extends TestBase {
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
 		assertEquals(metadata1, response.metadata().get(metadataKey1));
 		assertEquals(metadata2, response.metadata().get(metadataKey2));
+	}
 
+	@Test
+	@Tag("checksum")
+	public void testPutObjectChecksum() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testPutObjectChecksum";
+
+		var checksums = List.of(ChecksumAlgorithm.CRC32, ChecksumAlgorithm.CRC32_C, ChecksumAlgorithm.CRC64_NVME,
+				ChecksumAlgorithm.SHA1, ChecksumAlgorithm.SHA256);
+
+		for (var checksum : checksums) {
+			client.putObject(p -> p.bucket(bucketName).key(key).checksumAlgorithm(checksum),
+					RequestBody.fromString(key));
+			var response = client.getObject(g -> g.bucket(bucketName).key(key));
+			var body = getBody(response);
+			assertEquals("bar", body);
+		}
 	}
 }

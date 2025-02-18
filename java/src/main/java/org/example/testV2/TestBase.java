@@ -184,7 +184,6 @@ public class TestBase {
 			awsCred = StaticCredentialsProvider.create(AwsBasicCredentials.create(user.accessKey, user.secretKey));
 
 		var s3Config = S3Configuration.builder()
-				.checksumValidationEnabled(false)
 				.chunkedEncodingEnabled(!useChunkEncoding)
 				.pathStyleAccessEnabled(true)
 				.build();

@@ -11,9 +11,9 @@
 package org.example.s3tests;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 class Logging {
 	org.example.test.Logging test = new org.example.test.Logging();
@@ -56,19 +56,19 @@ class Logging {
 		test.testLoggingPrefix();
 		testV2.testLoggingPrefix();
 	}
-	
+
 	@Test
 	@Tag("Versioning")
 	// 버저닝 설정된 버킷의 로깅이 설정되는지 확인
-	void testLoggingVersioning(){
+	void testLoggingVersioning() {
 		test.testLoggingVersioning();
 		testV2.testLoggingVersioning();
 	}
-	
+
 	@Test
 	@Tag("Encryption")
 	// SSE-s3설정된 버킷의 로깅이 설정되는지 확인
-	void testLoggingEncryption(){
+	void testLoggingEncryption() {
 		test.testLoggingEncryption();
 		testV2.testLoggingEncryption();
 	}
