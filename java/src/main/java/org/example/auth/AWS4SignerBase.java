@@ -26,6 +26,7 @@ public abstract class AWS4SignerBase {
 	public static final String SCHEME = "AWS4";
 	public static final String ALGORITHM = "HMAC-SHA256";
 	public static final String TERMINATOR = "aws4Request";
+	public static final String X_AMZ_CONTENT_SHA256 = "X-Amz-Content-SHA256";
 
 	public static final String ISO8601_BASIC_FORMAT = "yyyyMMdd'T'HHmmss'Z'";
 	public static final String DATE_STRING_FORMAT = "yyyyMMdd";
@@ -38,8 +39,7 @@ public abstract class AWS4SignerBase {
 	protected final SimpleDateFormat dateTimeFormat;
 	protected final SimpleDateFormat dateStampFormat;
 
-	public AWS4SignerBase(URL endpointUrl, String httpMethod,
-			String serviceName, String regionName) {
+	public AWS4SignerBase(URL endpointUrl, String httpMethod, String serviceName, String regionName) {
 		this.endpointUrl = endpointUrl;
 		this.httpMethod = httpMethod;
 		this.serviceName = serviceName;
@@ -98,7 +98,8 @@ public abstract class AWS4SignerBase {
 	 * 
 	 * @return
 	 */
-	protected static String getCanonicalRequest(URL endpoint, String httpMethod, String queryParameters, String canonicalizedHeaderNames, String canonicalizedHeaders, String bodyHash) {
+	protected static String getCanonicalRequest(URL endpoint, String httpMethod, String queryParameters,
+			String canonicalizedHeaderNames, String canonicalizedHeaders, String bodyHash) {
 		return httpMethod + "\n" +
 				getCanonicalizedResourcePath(endpoint) + "\n" +
 				queryParameters + "\n" +
@@ -172,7 +173,7 @@ public abstract class AWS4SignerBase {
 
 	protected static String getStringToSign(String scheme, String algorithm, String dateTime, String scope,
 			String canonicalRequest) {
-				return scheme + "-" + algorithm + "\n" +
+		return scheme + "-" + algorithm + "\n" +
 				dateTime + "\n" +
 				scope + "\n" +
 				BinaryUtils.toHex(hash(canonicalRequest));
