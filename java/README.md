@@ -7,8 +7,7 @@
 ## 구동환경
 
 *  Java : 17 이상
-*  maven : 3.6.3 이상
-*  OS : Window 10, Centos 7.5 이상
+*  maven : 3.9.5 이상
 
 ## How to Build
 

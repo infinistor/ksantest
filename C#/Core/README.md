@@ -6,8 +6,7 @@
 
 ## 구동환경
 
-*  .Net Core : 3.1 이상
-*  OS : Window 10 이상
+*  .Net Core : 7 이상
 
 ## How to Build
 
