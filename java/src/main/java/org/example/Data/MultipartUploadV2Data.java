@@ -13,8 +13,11 @@ package org.example.Data;
 import java.util.List;
 import java.util.ArrayList;
 
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.UploadPartCopyResponse;
+import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 
 public class MultipartUploadV2Data {
 	public String uploadId;
@@ -41,8 +44,67 @@ public class MultipartUploadV2Data {
 		parts.add(CompletedPart.builder().partNumber(partNumber).eTag(eTag).build());
 	}
 
+	public void addPart(ChecksumAlgorithm algorithm, UploadPartResponse response) {
+		switch (algorithm) {
+			case CRC32:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.eTag()).checksumCRC32(response.checksumCRC32()).build());
+				break;
+			case CRC32_C:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.eTag()).checksumCRC32C(response.checksumCRC32C()).build());
+				break;
+			case CRC64_NVME:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.eTag()).checksumCRC64NVME(response.checksumCRC64NVME()).build());
+				break;
+			case SHA1:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.eTag()).checksumSHA1(response.checksumSHA1()).build());
+				break;
+			case SHA256:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.eTag()).checksumSHA256(response.checksumSHA256()).build());
+				break;
+			default:
+				throw new IllegalArgumentException("Invalid checksum algorithm: " + algorithm);
+		}
+	}
+
+	public void addPart(ChecksumAlgorithm algorithm, UploadPartCopyResponse response) {
+		switch (algorithm) {
+			case CRC32:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.copyPartResult().eTag()).checksumCRC32(response.copyPartResult().checksumCRC32())
+						.build());
+				break;
+			case CRC32_C:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.copyPartResult().eTag())
+						.checksumCRC32C(response.copyPartResult().checksumCRC32C()).build());
+				break;
+			case CRC64_NVME:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.copyPartResult().eTag())
+						.checksumCRC64NVME(response.copyPartResult().checksumCRC64NVME()).build());
+				break;
+			case SHA1:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.copyPartResult().eTag()).checksumSHA1(response.copyPartResult().checksumSHA1())
+						.build());
+				break;
+			case SHA256:
+				parts.add(CompletedPart.builder().partNumber(nextPartNumber())
+						.eTag(response.copyPartResult().eTag())
+						.checksumSHA256(response.copyPartResult().checksumSHA256()).build());
+				break;
+			default:
+				throw new IllegalArgumentException("Invalid checksum algorithm: " + algorithm);
+		}
+	}
+
 	public void addPart(String eTag) {
-		parts.add(CompletedPart.builder().partNumber(parts.size() + 1).eTag(eTag).build());
+		parts.add(CompletedPart.builder().partNumber(nextPartNumber()).eTag(eTag).build());
 	}
 
 	public void appendBody(String data) {

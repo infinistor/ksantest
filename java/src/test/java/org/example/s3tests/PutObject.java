@@ -22,7 +22,7 @@ class PutObject {
 	org.example.testV2.PutObject testV2 = new org.example.testV2.PutObject();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
@@ -283,7 +283,14 @@ class PutObject {
 
 	@Test
 	@Tag("checksum")
-	// 오브젝트 업로드 시 체크섬 계산 및 검증 확인
+	// useChunkEncoding을 사용하는 오브젝트 업로드 시 체크섬 계산 및 검증 확인
+	void testPutObjectChecksumUseChunkEncoding() {
+		testV2.testPutObjectChecksumUseChunkEncoding();
+	}
+
+	@Test
+	@Tag("checksum")
+	// useChunkEncoding을 사용하지 않는 오브젝트 업로드 시 체크섬 계산 및 검증 실패 확인
 	void testPutObjectChecksum() {
 		testV2.testPutObjectChecksum();
 	}

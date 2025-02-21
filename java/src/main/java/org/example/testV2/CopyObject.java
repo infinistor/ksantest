@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -24,8 +25,12 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
+import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.Permission;
@@ -816,5 +821,69 @@ public class CopyObject extends TestBase {
 				.copySourceSSECustomerKeyMD5(SSE_KEY_MD5)
 				.destinationBucket(bucketName).destinationKey(targetKey)));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+	}
+
+	@Test
+	@Tag("checksum")
+	public void testCopyObjectChecksumUseChunkEncoding() {
+		record TestConfig(
+				RequestChecksumCalculation requestOption,
+				ResponseChecksumValidation responseOption) {
+		}
+
+		var bucketName = createBucket();
+
+		var configs = List.of(
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED));
+
+		var checksums = List.of(
+				ChecksumAlgorithm.CRC32,
+				ChecksumAlgorithm.CRC32_C,
+				ChecksumAlgorithm.CRC64_NVME,
+				ChecksumAlgorithm.SHA1,
+				ChecksumAlgorithm.SHA256);
+
+		for (var config : configs) {
+			var client = getClient(true, config.requestOption, config.responseOption);
+			var asyncClient = getAsyncClient(true, config.requestOption, config.responseOption);
+
+			for (var checksum : checksums) {
+				var prefix = String.format("req_%s/resp_%s",
+						config.requestOption().name(),
+						config.responseOption().name());
+
+				// Sync
+				var sourceKey = prefix + "/source/sync/" + checksum.name();
+				var targetKey = prefix + "/target/sync/" + checksum.name();
+
+				var response = client.putObject(p -> p.bucket(bucketName).key(sourceKey).checksumAlgorithm(checksum),
+						RequestBody.fromString(sourceKey));
+				checksumCompare(checksum, sourceKey, response);
+
+				var copyResponse = client
+						.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey).destinationBucket(bucketName)
+								.destinationKey(targetKey));
+				checksumCompare(checksum, sourceKey, copyResponse);
+
+				// Async
+				var asyncSourceKey = prefix + "/source/async/" + checksum.name();
+				var asyncTargetKey = prefix + "/target/async/" + checksum.name();
+				var asyncResponse = asyncClient.putObject(
+						p -> p.bucket(bucketName).key(asyncSourceKey).checksumAlgorithm(checksum),
+						AsyncRequestBody.fromString(asyncSourceKey));
+				checksumCompare(checksum, asyncSourceKey, asyncResponse.join());
+				var asyncCopyResponse = asyncClient
+						.copyObject(c -> c.sourceBucket(bucketName).sourceKey(asyncSourceKey)
+								.destinationBucket(bucketName).destinationKey(asyncTargetKey));
+				checksumCompare(checksum, asyncSourceKey, asyncCopyResponse.join());
+			}
+		}
 	}
 }

@@ -23,7 +23,7 @@ class CopyObject {
 	org.example.testV2.CopyObject testV2 = new org.example.testV2.CopyObject();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
@@ -389,4 +389,10 @@ class CopyObject {
 		testV2.testCopyRevokeSseAlgorithm();
 	}
 
+	@Test
+	@Tag("checksum")
+	// UseChunkEncoding을 사용하는 오브젝트 복사 시 체크섬 계산 및 검증 확인
+	void testCopyObjectChecksumUseChunkEncoding() {
+		testV2.testCopyObjectChecksumUseChunkEncoding();
+	}
 }

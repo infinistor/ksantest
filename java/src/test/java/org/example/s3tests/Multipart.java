@@ -21,7 +21,7 @@ class Multipart {
 	org.example.testV2.Multipart testV2 = new org.example.testV2.Multipart();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
@@ -217,4 +217,33 @@ class Multipart {
 		test.testMultipartListParts();
 		testV2.testMultipartListParts();
 	}
+
+	@Test
+	@Tag("checksum")
+	// UseChunkEncoding을 사용하는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
+	void testMultipartUploadChecksumUseChunkEncoding() {
+		testV2.testMultipartUploadChecksumUseChunkEncoding();
+	}
+
+	@Test
+	@Tag("checksum")
+	// UseChunkEncoding을 사용하지 않는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
+	void testMultipartUploadChecksum() {
+		testV2.testMultipartUploadChecksum();
+	}
+
+	@Test
+	@Tag("checksum-failure")
+	// 멀티파트 업로드 시 체크섬 계산 및 검증 실패 확인
+	void testMultipartUploadChecksumFailure() {
+		testV2.testMultipartUploadChecksumFailure();
+	}
+
+	@Test
+	@Tag("checksum")
+	// 멀티파트 업로드 시 체크섬 계산 및 검증 확인
+	void testMultipartCopyChecksum() {
+		testV2.testMultipartCopyChecksum();
+	}
+
 }

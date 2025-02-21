@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -25,9 +26,14 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
+import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
+import software.amazon.awssdk.services.s3.model.ChecksumType;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.InvalidRequestException;
 
 public class Multipart extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -583,6 +589,289 @@ public class Multipart extends TestBase {
 			partsETagCompare(uploadData.parts.subList(partNumber, partNumber + 10), response.parts());
 		}
 		client.abortMultipartUpload(a -> a.bucket(bucketName).key(key).uploadId(uploadData.uploadId));
+	}
 
+	@Test
+	@Tag("checksum")
+	public void testMultipartUploadChecksumUseChunkEncoding() {
+		record TestConfig(
+				RequestChecksumCalculation requestOption,
+				ResponseChecksumValidation responseOption,
+				ChecksumType checksumType,
+				List<ChecksumAlgorithm> checksums) {
+		}
+
+		var bucketName = createBucket();
+
+		// FULL_OBJECT와 COMPOSITE 타입의 체크섬 알고리즘 정의
+		var fullObjectChecksums = List.of(
+				ChecksumAlgorithm.CRC32,
+				ChecksumAlgorithm.CRC32_C,
+				ChecksumAlgorithm.CRC64_NVME);
+
+		var compositeChecksums = List.of(
+				ChecksumAlgorithm.CRC32,
+				ChecksumAlgorithm.CRC32_C,
+				ChecksumAlgorithm.SHA1,
+				ChecksumAlgorithm.SHA256);
+
+		var configs = List.of(
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.COMPOSITE, compositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.COMPOSITE, compositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.COMPOSITE, compositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.COMPOSITE, compositeChecksums));
+
+		for (var config : configs) {
+			var client = getClient(true, config.requestOption, config.responseOption);
+			var asyncClient = getAsyncClient(true, config.requestOption, config.responseOption);
+
+			for (var checksum : config.checksums) {
+				var prefix = String.format("req_%s/resp_%s",
+						config.requestOption().name(),
+						config.responseOption().name());
+
+				var key = prefix + "/sync/" + config.checksumType().name().toLowerCase() + "/" + checksum.name();
+				var asyncKey = prefix + "/async/" + config.checksumType().name().toLowerCase() + "/" + checksum.name();
+
+				multipartUpload(client, bucketName, key, config.checksumType, checksum);
+				multipartUpload(asyncClient, bucketName, asyncKey, config.checksumType, checksum);
+			}
+		}
+	}
+
+	@Test
+	@Tag("checksum")
+	public void testMultipartUploadChecksum() {
+		record TestConfig(
+				RequestChecksumCalculation requestOption,
+				ResponseChecksumValidation responseOption,
+				ChecksumType checksumType,
+				List<ChecksumAlgorithm> checksums) {
+		}
+
+		var bucketName = createBucket();
+
+		// FULL_OBJECT와 COMPOSITE 타입의 체크섬 알고리즘 정의
+		var fullObjectChecksums = List.of(
+				ChecksumAlgorithm.CRC32,
+				ChecksumAlgorithm.CRC32_C,
+				ChecksumAlgorithm.CRC64_NVME);
+
+		var compositeChecksums = List.of(
+				ChecksumAlgorithm.CRC32,
+				ChecksumAlgorithm.CRC32_C,
+				ChecksumAlgorithm.SHA1,
+				ChecksumAlgorithm.SHA256);
+
+		var configs = List.of(
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.COMPOSITE, compositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.COMPOSITE, compositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.COMPOSITE, compositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.COMPOSITE, compositeChecksums));
+
+		for (var config : configs) {
+			var client = getClient(false, config.requestOption, config.responseOption);
+			var asyncClient = getAsyncClient(false, config.requestOption, config.responseOption);
+
+			for (var checksum : config.checksums) {
+				var prefix = String.format("req_%s/resp_%s",
+						config.requestOption().name(),
+						config.responseOption().name());
+
+				var key = prefix + "/sync/" + config.checksumType().name().toLowerCase() + "/" + checksum.name();
+				var asyncKey = prefix + "/async/" + config.checksumType().name().toLowerCase() + "/" + checksum.name();
+
+				multipartUpload(client, bucketName, key, config.checksumType, checksum);
+
+				var e = assertThrows(CompletionException.class,
+						() -> multipartUpload(asyncClient, bucketName, asyncKey, config.checksumType, checksum));
+				var e2 = (AwsServiceException) e.getCause();
+				assertEquals(HttpStatus.SC_BAD_REQUEST, e2.statusCode());
+				assertEquals(MainData.INVALID_REQUEST, e2.awsErrorDetails().errorCode());
+			}
+		}
+	}
+
+	@Test
+	@Tag("checksum-failure")
+	public void testMultipartUploadChecksumFailure() {
+		record TestConfig(
+				RequestChecksumCalculation requestOption,
+				ResponseChecksumValidation responseOption,
+				ChecksumType checksumType,
+				List<ChecksumAlgorithm> checksums) {
+		}
+
+		var bucketName = createBucket();
+
+		// FULL_OBJECT 타입에서 지원되지 않는 체크섬 알고리즘
+		var unsupportedFullObjectChecksums = List.of(
+				ChecksumAlgorithm.SHA1,
+				ChecksumAlgorithm.SHA256);
+
+		// COMPOSITE 타입에서 지원되지 않는 체크섬 알고리즘
+		var unsupportedCompositeChecksums = List.of(
+				ChecksumAlgorithm.CRC64_NVME);
+
+		var configs = List.of(
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.FULL_OBJECT, unsupportedFullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.FULL_OBJECT, unsupportedFullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.FULL_OBJECT, unsupportedFullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.FULL_OBJECT, unsupportedFullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.COMPOSITE, unsupportedCompositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.COMPOSITE, unsupportedCompositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.COMPOSITE, unsupportedCompositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.COMPOSITE, unsupportedCompositeChecksums));
+
+		for (var config : configs) {
+			var client = getClient(true, config.requestOption, config.responseOption);
+			var asyncClient = getAsyncClient(true, config.requestOption, config.responseOption);
+
+			for (var checksum : config.checksums) {
+				var prefix = String.format("req_%s/resp_%s",
+						config.requestOption().name(),
+						config.responseOption().name());
+
+				var key = prefix + "/sync/" + config.checksumType().name().toLowerCase() + "/" + checksum.name();
+				var asyncKey = prefix + "/async/" + config.checksumType().name().toLowerCase() + "/" + checksum.name();
+
+				var e = assertThrows(InvalidRequestException.class,
+						() -> multipartUpload(client, bucketName, key, config.checksumType, checksum));
+				assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+				assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
+
+				var e2 = assertThrows(CompletionException.class,
+						() -> multipartUpload(asyncClient, bucketName, asyncKey, config.checksumType, checksum));
+				var e3 = (AwsServiceException) e2.getCause();
+				assertEquals(HttpStatus.SC_BAD_REQUEST, e3.statusCode());
+				assertEquals(MainData.INVALID_REQUEST, e3.awsErrorDetails().errorCode());
+			}
+		}
+	}
+
+	@Test
+	@Tag("checksum")
+	public void testMultipartCopyChecksum() {
+		record TestConfig(
+				RequestChecksumCalculation requestOption,
+				ResponseChecksumValidation responseOption,
+				ChecksumType checksumType,
+				List<ChecksumAlgorithm> checksums) {
+		}
+
+		var bucketName = createBucket();
+
+		// FULL_OBJECT와 COMPOSITE 타입의 체크섬 알고리즘 정의
+		var fullObjectChecksums = List.of(
+				ChecksumAlgorithm.CRC32,
+				ChecksumAlgorithm.CRC32_C,
+				ChecksumAlgorithm.CRC64_NVME);
+
+		var compositeChecksums = List.of(
+				ChecksumAlgorithm.CRC32,
+				ChecksumAlgorithm.CRC32_C,
+				ChecksumAlgorithm.SHA1,
+				ChecksumAlgorithm.SHA256);
+
+		var configs = List.of(
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.FULL_OBJECT, fullObjectChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.COMPOSITE, compositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.COMPOSITE, compositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED,
+						ChecksumType.COMPOSITE, compositeChecksums),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED,
+						ChecksumType.COMPOSITE, compositeChecksums));
+
+		for (var config : configs) {
+			var client = getClient(true, config.requestOption, config.responseOption);
+			var asyncClient = getAsyncClient(true, config.requestOption, config.responseOption);
+
+			for (var checksum : config.checksums) {
+				var prefix = String.format("req_%s/resp_%s",
+						config.requestOption().name(),
+						config.responseOption().name());
+
+				var key = prefix + "/sync/" + config.checksumType().name().toLowerCase() + "/" + checksum.name();
+				var asyncKey = prefix + "/async/" + config.checksumType().name().toLowerCase() + "/" + checksum.name();
+
+				multipartUpload(client, bucketName, key, config.checksumType, checksum);
+				multipartCopy(client, bucketName, key, bucketName, key, checksum);
+				multipartUpload(asyncClient, bucketName, asyncKey, config.checksumType, checksum);
+				multipartCopy(asyncClient, bucketName, asyncKey, bucketName, asyncKey, checksum);
+			}
+		}
 	}
 }

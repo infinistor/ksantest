@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -27,6 +28,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
+import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
@@ -555,20 +559,107 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("checksum")
+	public void testPutObjectChecksumUseChunkEncoding() {
+		record TestConfig(
+				RequestChecksumCalculation requestOption,
+				ResponseChecksumValidation responseOption) {
+		}
+
+		var bucketName = createBucket();
+		var configs = List.of(
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED));
+
+		var checksums = List.of(
+				ChecksumAlgorithm.CRC32,
+				ChecksumAlgorithm.CRC32_C,
+				ChecksumAlgorithm.CRC64_NVME,
+				ChecksumAlgorithm.SHA1,
+				ChecksumAlgorithm.SHA256);
+
+		for (var config : configs) {
+			var client = getClient(true, config.requestOption, config.responseOption);
+			var asyncClient = getAsyncClient(true, config.requestOption, config.responseOption);
+
+			for (var checksum : checksums) {
+				var prefix = String.format("req_%s/resp_%s",
+						config.requestOption().name(),
+						config.responseOption().name());
+
+				var key = prefix + "/sync/" + checksum.name();
+				var asyncKey = prefix + "/async/" + checksum.name();
+
+				var response = client.putObject(p -> p.bucket(bucketName).key(key).checksumAlgorithm(checksum),
+						RequestBody.fromString(key));
+				checksumCompare(checksum, key, response);
+
+				var asyncResponse = asyncClient.putObject(
+						p -> p.bucket(bucketName).key(asyncKey).checksumAlgorithm(checksum),
+						AsyncRequestBody.fromString(asyncKey));
+				checksumCompare(checksum, asyncKey, asyncResponse.join());
+
+			}
+		}
+	}
+
+	@Test
+	@Tag("checksum")
 	public void testPutObjectChecksum() {
-		var client = getClient();
-		var bucketName = createBucket(client);
-		var key = "testPutObjectChecksum";
+		record TestConfig(
+				RequestChecksumCalculation requestOption,
+				ResponseChecksumValidation responseOption) {
+		}
 
-		var checksums = List.of(ChecksumAlgorithm.CRC32, ChecksumAlgorithm.CRC32_C, ChecksumAlgorithm.CRC64_NVME,
-				ChecksumAlgorithm.SHA1, ChecksumAlgorithm.SHA256);
+		var bucketName = createBucket();
+		var configs = List.of(
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_REQUIRED),
+				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
+						ResponseChecksumValidation.WHEN_SUPPORTED),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_REQUIRED),
+				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
+						ResponseChecksumValidation.WHEN_SUPPORTED));
 
-		for (var checksum : checksums) {
-			client.putObject(p -> p.bucket(bucketName).key(key).checksumAlgorithm(checksum),
-					RequestBody.fromString(key));
-			var response = client.getObject(g -> g.bucket(bucketName).key(key));
-			var body = getBody(response);
-			assertEquals("bar", body);
+		var checksums = List.of(
+				ChecksumAlgorithm.CRC32,
+				ChecksumAlgorithm.CRC32_C,
+				ChecksumAlgorithm.CRC64_NVME,
+				ChecksumAlgorithm.SHA1,
+				ChecksumAlgorithm.SHA256);
+
+		for (var config : configs) {
+			var client = getClient(false, config.requestOption, config.responseOption);
+			var asyncClient = getAsyncClient(false, config.requestOption, config.responseOption);
+
+			for (var checksum : checksums) {
+				var prefix = String.format("req_%s/resp_%s",
+						config.requestOption().name(),
+						config.responseOption().name());
+
+				var key = prefix + "/sync/" + checksum.name();
+				var asyncKey = prefix + "/async/" + checksum.name();
+
+				// 체크섬 계산 성공 확인
+				var response = client.putObject(p -> p.bucket(bucketName).key(key).checksumAlgorithm(checksum),
+						RequestBody.fromString(key));
+				checksumCompare(checksum, key, response);
+
+				// 체크섬 계산 실패 확인
+				var asyncResponse = asyncClient.putObject(
+						p -> p.bucket(bucketName).key(asyncKey).checksumAlgorithm(checksum),
+						AsyncRequestBody.fromString(asyncKey));
+				var e = assertThrows(CompletionException.class, asyncResponse::join);
+				var e2 = (AwsServiceException) e.getCause();
+				assertEquals(400, e2.statusCode());
+				assertEquals(MainData.INVALID_REQUEST, e2.awsErrorDetails().errorCode());
+			}
 		}
 	}
 }
