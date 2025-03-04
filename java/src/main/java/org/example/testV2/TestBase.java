@@ -81,7 +81,9 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
 import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.http.SdkHttpConfigurationOption;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -130,6 +132,7 @@ import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.model.Type;
 import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.utils.AttributeMap;
 
 @SuppressWarnings("unchecked")
 public class TestBase {
@@ -244,28 +247,21 @@ public class TestBase {
 	private S3AsyncClient createAsyncClient(boolean isSecure, UserData user, boolean useChunkEncoding,
 			RequestChecksumCalculation request, ResponseChecksumValidation response) {
 		String address = "";
-		var httpClient = ApacheHttpClient.builder()
-				.connectionTimeout(Duration.ofSeconds(10))
-				.socketTimeout(Duration.ofSeconds(10));
-		if (isSecure) {
-			try {
-				SSLContextBuilder sslContextBuilder = SSLContextBuilder.create();
-				sslContextBuilder.loadTrustMaterial(new TrustAllStrategy());
+		var httpClient = NettyNioAsyncHttpClient.builder().writeTimeout(Duration.ofSeconds(30))
+				.readTimeout(Duration.ofSeconds(30))
+				.connectionTimeout(Duration.ofSeconds(30));
 
-				var sslSocketFactory = new SSLConnectionSocketFactory(
-						sslContextBuilder.build(),
-						new String[] { "TLSv1.2", "TLSv1.1", "TLSv1" },
-						null,
-						NoopHostnameVerifier.INSTANCE);
-				httpClient.socketFactory(sslSocketFactory);
-			} catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-				e.printStackTrace();
-				return null;
-			}
+		if (isSecure) {
 			if (config.url.isEmpty())
 				address = NetUtils.createRegion2Https(config.regionName);
-			else
+			else {
 				address = NetUtils.createURLToHTTPS(config.url, config.sslPort);
+				// 인증서 회피
+				httpClient.buildWithDefaults(
+						AttributeMap.builder().put(
+								SdkHttpConfigurationOption.TRUST_ALL_CERTIFICATES, java.lang.Boolean.TRUE)
+								.build());
+			}
 		} else {
 			if (config.url.isEmpty())
 				address = NetUtils.createRegion2Http(config.regionName);
@@ -285,6 +281,7 @@ public class TestBase {
 
 		return S3AsyncClient.builder()
 				.region(config.regionName != null ? Region.of(config.regionName) : Region.AP_NORTHEAST_2)
+				.httpClient(httpClient.build())
 				.credentialsProvider(awsCred)
 				.serviceConfiguration(s3Config)
 				.requestChecksumCalculation(request)
@@ -1043,8 +1040,8 @@ public class TestBase {
 				.bucket(bucketName)
 				.key(key)
 				.checksumType(checksumType)
-				.checksumAlgorithm(checksum));
-		uploadData.uploadId = createResponse.join().uploadId();
+				.checksumAlgorithm(checksum)).join();
+		uploadData.uploadId = createResponse.uploadId();
 
 		var parts = Utils.generateRandomString(size, partSize);
 
@@ -1056,9 +1053,9 @@ public class TestBase {
 					.uploadId(uploadData.uploadId)
 					.checksumAlgorithm(checksum)
 					.partNumber(uploadData.nextPartNumber()),
-					AsyncRequestBody.fromString(Part));
-			checksumCompare(checksum, Part, partResponse.join());
-			uploadData.addPart(checksum, partResponse.join());
+					AsyncRequestBody.fromString(Part)).join();
+			checksumCompare(checksum, Part, partResponse);
+			uploadData.addPart(checksum, partResponse);
 		}
 
 		var completeResponse = client.completeMultipartUpload(c -> c
@@ -1066,9 +1063,9 @@ public class TestBase {
 				.key(key)
 				.uploadId(uploadData.uploadId)
 				.checksumType(checksumType)
-				.multipartUpload(p -> p.parts(uploadData.parts)));
+				.multipartUpload(p -> p.parts(uploadData.parts))).join();
 
-		checksumCompare(checksum, uploadData, completeResponse.join());
+		checksumCompare(checksum, uploadData, completeResponse);
 	}
 
 	public void multipartCopy(S3Client client, String sourceBucketName, String sourceKey, String targetBucketName,
@@ -1114,8 +1111,8 @@ public class TestBase {
 		var createResponse = client.createMultipartUpload(c -> c
 				.bucket(targetBucketName)
 				.key(targetKey)
-				.checksumAlgorithm(checksum));
-		uploadData.uploadId = createResponse.join().uploadId();
+				.checksumAlgorithm(checksum)).join();
+		uploadData.uploadId = createResponse.uploadId();
 
 		long index = 0;
 		while (index < size) {
@@ -1126,8 +1123,8 @@ public class TestBase {
 			var partResponse = client.uploadPartCopy(c -> c.sourceBucket(sourceBucketName)
 					.sourceKey(sourceKey).destinationBucket(targetBucketName).destinationKey(targetKey)
 					.uploadId(uploadData.uploadId).partNumber(partNumber)
-					.copySourceRange("bytes=" + start + "-" + end));
-			uploadData.addPart(checksum, partResponse.join());
+					.copySourceRange("bytes=" + start + "-" + end)).join();
+			uploadData.addPart(checksum, partResponse);
 			index = end + 1;
 		}
 
@@ -1135,8 +1132,8 @@ public class TestBase {
 				.bucket(targetBucketName)
 				.key(targetKey)
 				.uploadId(uploadData.uploadId)
-				.multipartUpload(p -> p.parts(uploadData.parts)));
-		checksumCompare(checksum, uploadData, completeResponse.join());
+				.multipartUpload(p -> p.parts(uploadData.parts))).join();
+		checksumCompare(checksum, uploadData, completeResponse);
 	}
 
 	static MultipartUploadV2Data multipartUpload(S3Client client, String bucketName, String key,
