@@ -21,6 +21,7 @@ import java.util.concurrent.CompletionException;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
+import org.example.Data.MultipartUploadV2Data;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -874,4 +875,65 @@ public class Multipart extends TestBase {
 			}
 		}
 	}
+
+	@Test
+	@Tag("checksum")
+	public void testcreateMultipartUploadEmptyChecksumAlgorithm() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testMultipartUploadChecksumType";
+		var checksumType = ChecksumType.FULL_OBJECT;
+
+		var e = assertThrows(InvalidRequestException.class,
+				() -> client.createMultipartUpload(c -> c
+						.bucket(bucketName)
+						.key(key)
+						.checksumType(checksumType)));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("checksum")
+	public void testcreateMultipartUploadEmptyChecksumType() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testMultipartUploadChecksumType";
+		var size = 10 * MainData.MB;
+		var partSize = 5 * MainData.MB;
+		var checksumType = ChecksumType.COMPOSITE;
+		var checksum = ChecksumAlgorithm.CRC32;
+		var uploadData = new MultipartUploadV2Data();
+
+		var createResponse = client.createMultipartUpload(c -> c
+				.bucket(bucketName)
+				.key(key)
+				.checksumAlgorithm(checksum));
+		uploadData.uploadId = createResponse.uploadId();
+
+		var parts = Utils.generateRandomString(size, partSize);
+
+		for (var Part : parts) {
+			uploadData.appendBody(Part);
+			var partResponse = client.uploadPart(u -> u
+					.bucket(bucketName)
+					.key(key)
+					.uploadId(uploadData.uploadId)
+					.checksumAlgorithm(checksum)
+					.partNumber(uploadData.nextPartNumber()),
+					RequestBody.fromString(Part));
+			checksumCompare(checksum, Part, partResponse);
+			uploadData.addPart(checksum, partResponse);
+		}
+
+		var completeResponse = client.completeMultipartUpload(c -> c
+				.bucket(bucketName)
+				.key(key)
+				.uploadId(uploadData.uploadId)
+				.checksumType(checksumType)
+				.multipartUpload(p -> p.parts(uploadData.parts)));
+
+		checksumCompare(checksum, uploadData, completeResponse);
+	}
+
 }

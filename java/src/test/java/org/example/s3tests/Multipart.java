@@ -246,4 +246,18 @@ class Multipart {
 		testV2.testMultipartCopyChecksum();
 	}
 
+	@Test
+	@Tag("error")
+	// 멀티파트 업로드 시 체크섬 알고리즘이 누락될 경우 에러 확인
+	void testcreateMultipartUploadEmptyChecksumAlgorithm() {
+		testV2.testcreateMultipartUploadEmptyChecksumAlgorithm();
+	}
+
+	@Test
+	@Tag("error")
+	// 멀티파트 업로드 시 체크섬 타입이 누락될 경우 에러 확인
+	void testcreateMultipartUploadEmptyChecksumType() {
+		testV2.testcreateMultipartUploadEmptyChecksumType();
+	}
+
 }
