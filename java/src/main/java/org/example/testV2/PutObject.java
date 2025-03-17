@@ -603,7 +603,6 @@ public class PutObject extends TestBase {
 						p -> p.bucket(bucketName).key(asyncKey).checksumAlgorithm(checksum),
 						AsyncRequestBody.fromString(asyncKey));
 				checksumCompare(checksum, asyncKey, asyncResponse.join());
-
 			}
 		}
 	}

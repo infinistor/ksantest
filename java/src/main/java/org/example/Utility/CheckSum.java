@@ -8,12 +8,6 @@ import software.amazon.awssdk.checksums.SdkChecksum;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 
 public class CheckSum {
-	public static final String STR_CRC32 = "CRC32";
-	public static final String STR_CRC32C = "CRC32C";
-	public static final String STR_SHA1 = "SHA1";
-	public static final String STR_SHA256 = "SHA256";
-	public static final String STR_MD5 = "MD5";
-	public static final String STR_CRC64NVME = "CRC64NVME";
 
 	private CheckSum() {
 	} // utility class이므로 인스턴스화 방지
