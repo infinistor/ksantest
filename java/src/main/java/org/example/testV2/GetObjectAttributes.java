@@ -311,12 +311,12 @@ public class GetObjectAttributes extends TestBase {
 		var e = assertThrows(AwsServiceException.class, () -> client.getObjectAttributes(g -> g
 				.bucket(bucketName)
 				.key(key)
-				.versionId("invalid-version-id")
+				.versionId("f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59")
 				.objectAttributes(ObjectAttributes.OBJECT_SIZE)));
 
 		// 에러 검증
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
-		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_VERSION, e.awsErrorDetails().errorCode());
 	}
 
 	/**

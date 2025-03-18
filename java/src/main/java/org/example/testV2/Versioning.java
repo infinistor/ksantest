@@ -693,4 +693,21 @@ public class Versioning extends TestBase {
 			assertEquals(listVersion, response.versionId());
 		}
 	}
+
+	// 잘못된 버전 정보를 사용하여 오브젝트 조회 실패 확인
+	@Test
+	@Tag("ERROR")
+	public void testVersioningInvalidVersionId() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningInvalidVersionId";
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(key));
+
+		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key).versionId("f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59")));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_VERSION, e.awsErrorDetails().errorCode());
+	}
 }

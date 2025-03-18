@@ -56,6 +56,7 @@ public class MainData {
 	public static final String NO_SUCH_BUCKET = "NoSuchBucket";
 	public static final String BUCKET_NOT_EMPTY = "BucketNotEmpty";
 	public static final String NO_SUCH_KEY = "NoSuchKey";
+	public static final String NO_SUCH_VERSION = "NoSuchVersion";
 	public static final String ACCESS_DENIED = "AccessDenied";
 	public static final String PRECONDITION_FAILED = "PreconditionFailed";
 	public static final String NOT_MODIFIED = "NotModified";

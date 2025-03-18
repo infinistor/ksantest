@@ -22,7 +22,7 @@ class Versioning {
 	org.example.testV2.Versioning testV2 = new org.example.testV2.Versioning();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
@@ -74,7 +74,6 @@ class Versioning {
 	void testVersioningObjSuspendVersions() {
 		test.testVersioningObjSuspendVersions();
 		testV2.testVersioningObjSuspendVersions();
-
 	}
 
 	@Test
@@ -195,5 +194,13 @@ class Versioning {
 	void testVersioningLatest() {
 		test.testVersioningLatest();
 		testV2.testVersioningLatest();
+	}
+
+	// 잘못된 버전 정보를 사용하여 오브젝트 조회 실패 확인
+	@Test
+	@Tag("ERROR")
+	void testVersioningInvalidVersionId() {
+		test.testVersioningInvalidVersionId();
+		testV2.testVersioningInvalidVersionId();
 	}
 }

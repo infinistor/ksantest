@@ -32,6 +32,7 @@ import com.amazonaws.services.s3.model.CanonicalGrantee;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.Grant;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Permission;
@@ -563,7 +564,7 @@ public class Versioning extends TestBase {
 		client.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead);
 
 		response = client.getObjectAcl(bucketName, key);
-		
+
 		acl = createPublicAcl(Permission.Read);
 		checkAcl(acl, response);
 	}
@@ -730,5 +731,22 @@ public class Versioning extends TestBase {
 			var response = client.getObjectMetadata(bucketName, key);
 			assertEquals(listVersion, response.getVersionId());
 		}
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testVersioningInvalidVersionId() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningInvalidVersionId";
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+
+		client.putObject(bucketName, key, key);
+
+		var e = assertThrows(AmazonServiceException.class, () -> client
+				.getObject(new GetObjectRequest(bucketName, key).withVersionId("f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59")));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_VERSION, e.getErrorCode());
 	}
 }
