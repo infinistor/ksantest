@@ -28,7 +28,7 @@ class GetObject {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("버킷에 존재하지 않는 오브젝트 다운로드를 할 경우 실패 확인
+	// 버킷에 존재하지 않는 오브젝트 다운로드를 할 경우 실패 확인
 	void testObjectReadNotExist() {
 		test.testObjectReadNotExist();
 		testV2.testObjectReadNotExist();
@@ -36,7 +36,7 @@ class GetObject {
 
 	@Test
 	@Tag("IfMatch")
-	// @Tag("존재하는 오브젝트 이름과 ETag 값으로 오브젝트를 가져오는지 확인
+	// 존재하는 오브젝트 이름과 ETag 값으로 오브젝트를 가져오는지 확인
 	void testGetObjectIfMatchGood() {
 		test.testGetObjectIfMatchGood();
 		testV2.testGetObjectIfMatchGood();
@@ -44,7 +44,7 @@ class GetObject {
 
 	@Test
 	@Tag("IfMatch")
-	// @Tag("오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
+	// 오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
 	void testGetObjectIfMatchFailed() {
 		test.testGetObjectIfMatchFailed();
 		testV2.testGetObjectIfMatchFailed();
@@ -52,7 +52,7 @@ class GetObject {
 
 	@Test
 	@Tag("IfNoneMatch")
-	// @Tag("오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
+	// 오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
 	void testGetObjectIfNoneMatchGood() {
 		test.testGetObjectIfNoneMatchGood();
 		testV2.testGetObjectIfNoneMatchGood();
@@ -60,7 +60,7 @@ class GetObject {
 
 	@Test
 	@Tag("IfNoneMatch")
-	// @Tag("오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
+	// 오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
 	void testGetObjectIfNoneMatchFailed() {
 		test.testGetObjectIfNoneMatchFailed();
 		testV2.testGetObjectIfNoneMatchFailed();
@@ -68,7 +68,7 @@ class GetObject {
 
 	@Test
 	@Tag("IfModifiedSince")
-	// @Tag("[지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifModifiedSince)보다 이후에 수정된 오브젝트를 조회 성공
+	// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifModifiedSince)보다 이후에 수정된 오브젝트를 조회 성공
 	void testGetObjectIfModifiedSinceGood() {
 		test.testGetObjectIfModifiedSinceGood();
 		testV2.testGetObjectIfModifiedSinceGood();
@@ -76,7 +76,7 @@ class GetObject {
 
 	@Test
 	@Tag("IfModifiedSince")
-	// @Tag("[지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 실패
+	// [지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 실패
 	void testGetObjectIfModifiedSinceFailed() {
 		test.testGetObjectIfModifiedSinceFailed();
 		testV2.testGetObjectIfModifiedSinceFailed();
@@ -84,7 +84,7 @@ class GetObject {
 
 	@Test
 	@Tag("IfUnmodifiedSince")
-	// @Tag("[지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회
+	// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회
 	// 실패
 	void testGetObjectIfUnmodifiedSinceGood() {
 		test.testGetObjectIfUnmodifiedSinceGood();
@@ -93,7 +93,7 @@ class GetObject {
 
 	@Test
 	@Tag("IfUnmodifiedSince")
-	// @Tag("[지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회
+	// [지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회
 	// 성공
 	void testGetObjectIfUnmodifiedSinceFailed() {
 		test.testGetObjectIfUnmodifiedSinceFailed();
@@ -102,7 +102,7 @@ class GetObject {
 
 	@Test
 	@Tag("Range")
-	// @Tag("지정한 범위로 오브젝트 다운로드가 가능한지 확인
+	// 지정한 범위로 오브젝트 다운로드가 가능한지 확인
 	void testRangedRequestResponseCode() {
 		test.testRangedRequestResponseCode();
 		testV2.testRangedRequestResponseCode();
@@ -110,7 +110,7 @@ class GetObject {
 
 	@Test
 	@Tag("Range")
-	// @Tag("지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
+	// 지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
 	void testRangedBigRequestResponseCode() {
 		test.testRangedBigRequestResponseCode();
 		testV2.testRangedBigRequestResponseCode();
@@ -118,7 +118,7 @@ class GetObject {
 
 	@Test
 	@Tag("Range")
-	// @Tag("특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
+	// 특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
 	void testRangedRequestSkipLeadingBytesResponseCode() {
 		test.testRangedRequestSkipLeadingBytesResponseCode();
 		testV2.testRangedRequestSkipLeadingBytesResponseCode();
@@ -126,7 +126,7 @@ class GetObject {
 
 	@Test
 	@Tag("Range")
-	// @Tag("끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
+	// 끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
 	void testRangedRequestReturnTrailingBytesResponseCode() {
 		test.testRangedRequestReturnTrailingBytesResponseCode();
 		testV2.testRangedRequestReturnTrailingBytesResponseCode();
@@ -134,7 +134,7 @@ class GetObject {
 
 	@Test
 	@Tag("Range")
-	// @Tag("오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
+	// 오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
 	void testRangedRequestInvalidRange() {
 		test.testRangedRequestInvalidRange();
 		testV2.testRangedRequestInvalidRange();
@@ -142,7 +142,7 @@ class GetObject {
 
 	@Test
 	@Tag("Range")
-	// @Tag("비어있는 오브젝트를 범위를 지정하여 다운로드 실패 확인
+	// 비어있는 오브젝트를 범위를 지정하여 다운로드 실패 확인
 	void testRangedRequestEmptyObject() {
 		test.testRangedRequestEmptyObject();
 		testV2.testRangedRequestEmptyObject();
@@ -150,7 +150,7 @@ class GetObject {
 
 	@Test
 	@Tag("Get")
-	// @Tag("같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
+	// 같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	void testGetObjectMany() {
 		test.testGetObjectMany();
 		testV2.testGetObjectMany();
@@ -158,7 +158,7 @@ class GetObject {
 
 	@Test
 	@Tag("Get")
-	// @Tag("같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+	// 같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	void testRangeObjectMany() {
 		test.testRangeObjectMany();
 		testV2.testRangeObjectMany();
@@ -171,4 +171,12 @@ class GetObject {
 		test.testObjectResponseHeaders();
 		testV2.testObjectResponseHeaders();
 	}
+
+	// 멀티파트로 업로드 된 오브젝트를 다운로드 할때 파트 번호를 지정하여 다운로드 가능한지 확인
+	@Test
+	@Tag("Range")
+	void testMultipartObjectRange() {
+		testV2.testMultipartObjectRange();
+	}
+
 }

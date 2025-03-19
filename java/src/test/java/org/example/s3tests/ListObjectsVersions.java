@@ -21,7 +21,7 @@ class ListObjectsVersions {
 	org.example.testV2.ListObjectsVersions testV2 = new org.example.testV2.ListObjectsVersions();
 
 	@AfterEach
-	public void Clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

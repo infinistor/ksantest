@@ -10,7 +10,7 @@ class Metrics {
 	org.example.testV2.Metrics testV2 = new org.example.testV2.Metrics();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

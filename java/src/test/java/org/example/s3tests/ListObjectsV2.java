@@ -21,7 +21,7 @@ class ListObjectsV2 {
 	org.example.testV2.ListObjectsV2 testV2 = new org.example.testV2.ListObjectsV2();
 
 	@AfterEach
-	public void Clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

@@ -20,7 +20,7 @@ class ACL {
 	org.example.testV2.ACL testV2 = new org.example.testV2.ACL();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

@@ -20,7 +20,7 @@ class Logging {
 	org.example.testV2.Logging testV2 = new org.example.testV2.Logging();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

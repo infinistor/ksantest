@@ -28,7 +28,7 @@ class Multipart {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("비어있는 오브젝트를 멀티파트로 업로드 실패 확인
+	// 비어있는 오브젝트를 멀티파트로 업로드 실패 확인
 	void testMultipartUploadEmpty() {
 		test.testMultipartUploadEmpty();
 		testV2.testMultipartUploadEmpty();
@@ -36,7 +36,7 @@ class Multipart {
 
 	@Test
 	@Tag("Check")
-	// @Tag("파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인
+	// 파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인
 	void testMultipartUploadSmall() {
 		test.testMultipartUploadSmall();
 		testV2.testMultipartUploadSmall();
@@ -44,7 +44,7 @@ class Multipart {
 
 	@Test
 	@Tag("Copy")
-	// @Tag("버킷a에서 버킷b로 멀티파트 복사 성공확인
+	// 버킷a에서 버킷b로 멀티파트 복사 성공확인
 	void testMultipartCopySmall() {
 		test.testMultipartCopySmall();
 		testV2.testMultipartCopySmall();
@@ -52,7 +52,7 @@ class Multipart {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("범위설정을 잘못한 멀티파트 복사 실패 확인
+	// 범위설정을 잘못한 멀티파트 복사 실패 확인
 	void testMultipartCopyInvalidRange() {
 		test.testMultipartCopyInvalidRange();
 		testV2.testMultipartCopyInvalidRange();
@@ -60,7 +60,7 @@ class Multipart {
 
 	@Test
 	@Tag("Range")
-	// @Tag("범위를 지정한 멀티파트 복사 성공확인
+	// 범위를 지정한 멀티파트 복사 성공확인
 	void testMultipartCopyWithoutRange() {
 		test.testMultipartCopyWithoutRange();
 		testV2.testMultipartCopyWithoutRange();
@@ -68,7 +68,7 @@ class Multipart {
 
 	@Test
 	@Tag("SpecialNames")
-	// @Tag("특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인
+	// 특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인
 	void testMultipartCopySpecialNames() {
 		test.testMultipartCopySpecialNames();
 		testV2.testMultipartCopySpecialNames();
@@ -76,7 +76,7 @@ class Multipart {
 
 	@Test
 	@Tag("Put")
-	// @Tag("멀티파트 업로드 확인
+	// 멀티파트 업로드 확인
 	void testMultipartUpload() {
 		test.testMultipartUpload();
 		testV2.testMultipartUpload();
@@ -84,7 +84,7 @@ class Multipart {
 
 	@Test
 	@Tag("Copy")
-	// @Tag("버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인
+	// 버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인
 	void testMultipartCopyVersioned() {
 		test.testMultipartCopyVersioned();
 		testV2.testMultipartCopyVersioned();
@@ -92,7 +92,7 @@ class Multipart {
 
 	@Test
 	@Tag("Duplicate")
-	// @Tag("멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
+	// 멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
 	void testMultipartUploadResendPart() {
 		test.testMultipartUploadResendPart();
 		testV2.testMultipartUploadResendPart();
@@ -100,7 +100,7 @@ class Multipart {
 
 	@Test
 	@Tag("Put")
-	// @Tag("한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
+	// 한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
 	void testMultipartUploadMultipleSizes() {
 		test.testMultipartUploadMultipleSizes();
 		testV2.testMultipartUploadMultipleSizes();
@@ -108,7 +108,7 @@ class Multipart {
 
 	@Test
 	@Tag("Copy")
-	// @Tag("한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인
+	// 한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인
 	void testMultipartCopyMultipleSizes() {
 		test.testMultipartCopyMultipleSizes();
 		testV2.testMultipartCopyMultipleSizes();
@@ -116,7 +116,7 @@ class Multipart {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
+	// 멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
 	void testMultipartUploadSizeTooSmall() {
 		test.testMultipartUploadSizeTooSmall();
 		testV2.testMultipartUploadSizeTooSmall();
@@ -124,7 +124,7 @@ class Multipart {
 
 	@Test
 	@Tag("Check")
-	// @Tag("내용물을 채운 멀티파트 업로드 성공 확인
+	// 내용물을 채운 멀티파트 업로드 성공 확인
 	void testMultipartUploadContents() {
 		test.testMultipartUploadContents();
 		testV2.testMultipartUploadContents();
@@ -132,7 +132,7 @@ class Multipart {
 
 	@Test
 	@Tag("OverWrite")
-	// @Tag("업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
+	// 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
 	void testMultipartUploadOverwriteExistingObject() {
 		test.testMultipartUploadOverwriteExistingObject();
 		testV2.testMultipartUploadOverwriteExistingObject();
@@ -140,7 +140,7 @@ class Multipart {
 
 	@Test
 	@Tag("Cancel")
-	// @Tag("멀티파트 업로드하는 도중 중단 성공 확인
+	// 멀티파트 업로드하는 도중 중단 성공 확인
 	void testAbortMultipartUpload() {
 		test.testAbortMultipartUpload();
 		testV2.testAbortMultipartUpload();
@@ -148,7 +148,7 @@ class Multipart {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("존재하지 않은 멀티파트 업로드 중단 실패 확인
+	// 존재하지 않은 멀티파트 업로드 중단 실패 확인
 	void testAbortMultipartUploadNotFound() {
 		test.testAbortMultipartUploadNotFound();
 		testV2.testAbortMultipartUploadNotFound();
@@ -156,7 +156,7 @@ class Multipart {
 
 	@Test
 	@Tag("List")
-	// @Tag("멀티파트 업로드 중인 목록 확인
+	// 멀티파트 업로드 중인 목록 확인
 	void testListMultipartUpload() {
 		test.testListMultipartUpload();
 		testV2.testListMultipartUpload();
@@ -164,7 +164,7 @@ class Multipart {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인
+	// 업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인
 	void testMultipartUploadMissingPart() {
 		test.testMultipartUploadMissingPart();
 		testV2.testMultipartUploadMissingPart();
@@ -172,7 +172,7 @@ class Multipart {
 
 	@Test
 	@Tag("ERROR")
-	// @Tag("잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인
+	// 잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인
 	void testMultipartUploadIncorrectEtag() {
 		test.testMultipartUploadIncorrectEtag();
 		testV2.testMultipartUploadIncorrectEtag();
@@ -180,7 +180,7 @@ class Multipart {
 
 	@Test
 	@Tag("Overwrite")
-	// @Tag("버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인
+	// 버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인
 	void testAtomicMultipartUploadWrite() {
 		test.testAtomicMultipartUploadWrite();
 		testV2.testAtomicMultipartUploadWrite();
@@ -188,7 +188,7 @@ class Multipart {
 
 	@Test
 	@Tag("List")
-	// @Tag("멀티파트 업로드 목록 확인
+	// 멀티파트 업로드 목록 확인
 	void testMultipartUploadList() {
 		test.testMultipartUploadList();
 		testV2.testMultipartUploadList();
@@ -196,7 +196,7 @@ class Multipart {
 
 	@Test
 	@Tag("Cancel")
-	// @Tag("멀티파트 업로드하는 도중 중단 성공 확인
+	// 멀티파트 업로드하는 도중 중단 성공 확인
 	void testAbortMultipartUploadList() {
 		test.testAbortMultipartUploadList();
 		testV2.testAbortMultipartUploadList();

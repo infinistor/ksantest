@@ -19,7 +19,7 @@ class KsanApiTest {
 	org.example.test.KsanApiTest test = new org.example.test.KsanApiTest();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 	}
 

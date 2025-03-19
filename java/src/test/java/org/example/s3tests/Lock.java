@@ -21,7 +21,7 @@ class Lock {
 	org.example.testV2.Lock testV2 = new org.example.testV2.Lock();
 
 	@AfterEach
-	public void Clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

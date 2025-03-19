@@ -21,7 +21,7 @@ class PutBucket {
 	org.example.testV2.PutBucket testV2 = new org.example.testV2.PutBucket();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

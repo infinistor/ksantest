@@ -21,7 +21,7 @@ class SSE_S3 {
 	org.example.testV2.SSE_S3 testV2 = new org.example.testV2.SSE_S3();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

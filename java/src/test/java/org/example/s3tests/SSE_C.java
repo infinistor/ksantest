@@ -23,7 +23,7 @@ class SSE_C {
 	org.example.testV2.SSE_C testV2 = new org.example.testV2.SSE_C();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

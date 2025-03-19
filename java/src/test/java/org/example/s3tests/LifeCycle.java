@@ -20,7 +20,7 @@ class LifeCycle {
 	org.example.testV2.LifeCycle testV2 = new org.example.testV2.LifeCycle();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
@@ -164,7 +164,7 @@ class LifeCycle {
 
 	@Test
 	@Tag("Delete")
-	// @Tag("버킷의 Lifecycle 규칙을 삭제 가능한지 확인
+	// 버킷의 Lifecycle 규칙을 삭제 가능한지 확인
 	void testLifecycleDelete() {
 		test.testLifecycleDelete();
 		testV2.testLifecycleDelete();

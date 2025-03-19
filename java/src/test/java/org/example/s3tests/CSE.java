@@ -21,7 +21,7 @@ class CSE {
 	org.example.testV2.CSE testV2 = new org.example.testV2.CSE();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}

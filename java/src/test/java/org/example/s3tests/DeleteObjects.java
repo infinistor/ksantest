@@ -21,14 +21,14 @@ class DeleteObjects {
 	org.example.testV2.DeleteObjects testV2 = new org.example.testV2.DeleteObjects();
 
 	@AfterEach
-	public void clear(TestInfo testInfo) {
+	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
 	@Test
 	@Tag("ListObject")
-	// @Tag("버킷에 존재하는 오브젝트 여러개를 한번에 삭제
+	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 	void testMultiObjectDelete() {
 		test.testMultiObjectDelete();
 		testV2.testMultiObjectDelete();
@@ -36,7 +36,7 @@ class DeleteObjects {
 
 	@Test
 	@Tag("ListObjectsV2")
-	// @Tag("버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
+	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
 	void testMultiObjectV2Delete() {
 		test.testMultiObjectV2Delete();
 		testV2.testMultiObjectV2Delete();
@@ -52,7 +52,7 @@ class DeleteObjects {
 
 	@Test
 	@Tag("quiet")
-	// @Tag("quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
+	// quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 	void testMultiObjectDeleteQuiet() {
 		test.testMultiObjectDeleteQuiet();
 		testV2.testMultiObjectDeleteQuiet();
@@ -60,7 +60,7 @@ class DeleteObjects {
 
 	@Test
 	@Tag("Directory")
-	// @Tag("업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
+	// 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 	void testDirectoryDelete() {
 		test.testDirectoryDelete();
 		testV2.testDirectoryDelete();
