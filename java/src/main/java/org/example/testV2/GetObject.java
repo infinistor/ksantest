@@ -338,4 +338,19 @@ public class GetObject extends TestBase {
 		assertEquals("esperanto", response.response().contentLanguage());
 		assertEquals("foo/bar", response.response().contentType());
 	}
+
+	// 멀티파트로 업로드 된 오브젝트를 다운로드 할때 파트 번호를 지정하여 다운로드 가능한지 확인
+	@Test
+	@Tag("Range")
+	public void testMultipartObjectRange() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testMultipartObjectRange";
+
+		var multipartUploadData = multipartUpload(client, bucketName, key, 5 * MainData.MB, 5 * MainData.MB);
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).partNumber(1));
+		var body = getBody(response);
+		assertEquals(multipartUploadData.getBody().substring(0, 5 * MainData.MB), body);
+	}
 }

@@ -992,6 +992,36 @@ public class TestBase {
 		checkBadBucketName(bucketName);
 	}
 
+	public static MultipartUploadV2Data multipartUpload(S3Client client, String bucketName, String key, int size,
+			int partSize) {
+		var uploadData = new MultipartUploadV2Data();
+
+		var createResponse = client.createMultipartUpload(c -> c
+				.bucket(bucketName)
+				.key(key));
+		uploadData.uploadId = createResponse.uploadId();
+
+		var parts = Utils.generateRandomString(size, partSize);
+
+		for (var Part : parts) {
+			uploadData.appendBody(Part);
+			var partResponse = client.uploadPart(u -> u
+					.bucket(bucketName)
+					.key(key)
+					.uploadId(uploadData.uploadId)
+					.partNumber(uploadData.nextPartNumber()),
+					RequestBody.fromString(Part));
+			uploadData.addPart(partResponse.eTag());
+		}
+
+		client.completeMultipartUpload(c -> c
+				.bucket(bucketName)
+				.key(key)
+				.uploadId(uploadData.uploadId)
+				.multipartUpload(p -> p.parts(uploadData.parts)));
+		return uploadData;
+	}
+
 	public void multipartUpload(S3Client client, String bucketName, String key, ChecksumType checksumType,
 			ChecksumAlgorithm checksum) {
 		var size = 10 * MainData.MB;
@@ -1154,8 +1184,8 @@ public class TestBase {
 		return uploadData;
 	}
 
-	public static MultipartUploadV2Data multipartUpload(S3Client client, String bucketName, String key,
-			int size, MultipartUploadV2Data uploadData) {
+	public static MultipartUploadV2Data multipartUpload(S3Client client, String bucketName, String key, int size,
+			MultipartUploadV2Data uploadData) {
 		return multipartUpload(client, bucketName, key, size, DEFAULT_PART_SIZE, uploadData);
 	}
 
