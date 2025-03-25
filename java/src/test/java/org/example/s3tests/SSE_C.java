@@ -17,147 +17,189 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+/**
+ * SSE-C 암호화 기능을 테스트하는 클래스
+ */
 class SSE_C {
 
 	org.example.test.SSE_C test = new org.example.test.SSE_C();
 	org.example.testV2.SSE_C testV2 = new org.example.testV2.SSE_C();
 
+	/**
+	 * 테스트 정리 작업 수행
+	 * @param testInfo 테스트 정보
+	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * 1Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	 */
 	@Test
 	@Tag("PutGet")
-	//1Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testEncryptedTransfer1b() {
 		test.testEncryptedTransfer1b();
 		testV2.testEncryptedTransfer1b();
 	}
 
+	/**
+	 * 1KB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	 */
 	@Test
 	@Tag("PutGet")
-	//1KB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testEncryptedTransfer1kb() {
 		test.testEncryptedTransfer1kb();
 		testV2.testEncryptedTransfer1kb();
 	}
 
+	/**
+	 * 1MB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	 */
 	@Test
 	@Tag("PutGet")
-	//1MB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testEncryptedTransfer1MB() {
 		test.testEncryptedTransfer1MB();
 		testV2.testEncryptedTransfer1MB();
 	}
 
+	/**
+	 * 13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
+	 */
 	@Test
 	@Tag("PutGet")
-	//13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 	void testEncryptedTransfer13b() {
 		test.testEncryptedTransfer13b();
 		testV2.testEncryptedTransfer13b();
 	}
 
+	/**
+	 * SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인
+	 */
 	@Test
 	@Tag("Metadata")
-	//SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인
 	void testEncryptionSseCMethodHead() {
 		test.testEncryptionSseCMethodHead();
 		testV2.testEncryptionSseCMethodHead();
 	}
 
+	/**
+	 * SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	//SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인
 	void testEncryptionSseCPresent() {
 		test.testEncryptionSseCPresent();
 		testV2.testEncryptionSseCPresent();
 	}
 
+	/**
+	 * SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	//SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 	void testEncryptionSseCOtherKey() {
 		test.testEncryptionSseCOtherKey();
 		testV2.testEncryptionSseCOtherKey();
 	}
 
+	/**
+	 * SSE-C 설정값중 key-md5값이 올바르지 않을 경우 업로드 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	//SSE-C 설정값중 key-md5값이 올바르지 않을 경우 업로드 실패 확인
 	void testEncryptionSseCInvalidMd5() {
 		test.testEncryptionSseCInvalidMd5();
 		testV2.testEncryptionSseCInvalidMd5();
 	}
 
+	/**
+	 * SSE-C 설정값중 key-md5값을 누락했을 경우 업로드 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	//SSE-C 설정값중 key-md5값을 누락했을 경우 업로드 확인
 	void testEncryptionSseCNoMd5() {
 		test.testEncryptionSseCNoMd5();
 		testV2.testEncryptionSseCNoMd5();
 	}
 
+	/**
+	 * SSE-C 설정값중 key값을 누락했을 경우 업로드 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	//SSE-C 설정값중 key값을 누락했을 경우 업로드 실패 확인
 	void testEncryptionSseCNoKey() {
 		test.testEncryptionSseCNoKey();
 		testV2.testEncryptionSseCNoKey();
 	}
 
+	/**
+	 * SSE-C 설정값중 algorithm값을 누락했을 경우 업로드 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	//SSE-C 설정값중 algorithm값을 누락했을 경우 업로드 실패 확인
 	void testEncryptionKeyNoSseC() {
 		testV2.testEncryptionKeyNoSseC();
 	}
 
+	/**
+	 * 멀티파트업로드를 SSE-C 설정하여 업로드 가능 확인
+	 */
 	@Test
 	@Tag("Multipart")
-	//멀티파트업로드를 SSE-C 설정하여 업로드 가능 확인
 	void testEncryptionSseCMultipartUpload() {
 		test.testEncryptionSseCMultipartUpload();
 		testV2.testEncryptionSseCMultipartUpload();
 	}
 
+	/**
+	 * SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
+	 */
 	@Test
 	@Tag("Multipart")
-	//SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 	void testEncryptionSseCMultipartBadDownload() {
 		test.testEncryptionSseCMultipartBadDownload();
 		testV2.testEncryptionSseCMultipartBadDownload();
 	}
 
+	/**
+	 * Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
 	@Test
 	@Tag("Post")
-	//Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인
 	void testEncryptionSseCPostObjectAuthenticatedRequest() throws MalformedURLException {
 		test.testEncryptionSseCPostObjectAuthenticatedRequest();
 		testV2.testEncryptionSseCPostObjectAuthenticatedRequest();
 	}
 
+	/**
+	 * SSE-C설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
+	 */
 	@Test
 	@Tag("Get")
-	//SSE-C설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	void testEncryptionSseCGetObjectMany() {
 		test.testEncryptionSseCGetObjectMany();
 		testV2.testEncryptionSseCGetObjectMany();
 	}
 
+	/**
+	 * SSE-C설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+	 */
 	@Test
 	@Tag("Get")
-	//SSE-C설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	void testEncryptionSseCRangeObjectMany() {
 		test.testEncryptionSseCRangeObjectMany();
 		testV2.testEncryptionSseCRangeObjectMany();
 	}
 
+	/**
+	 * SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 multi copy 로 복사 가능한지 확인
+	 */
 	@Test
 	@Tag("Multipart")
-	// SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 multi copy 로 복사 가능한지 확인
 	void testSseCEncryptionMultipartCopyPartUpload() {
 		test.testSseCEncryptionMultipartCopyPartUpload();
 		testV2.testSseCEncryptionMultipartCopyPartUpload();

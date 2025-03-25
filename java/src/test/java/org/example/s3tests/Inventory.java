@@ -16,148 +16,188 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 버킷 인벤토리 기능 테스트
+ */
 class Inventory {
 	org.example.test.Inventory test = new org.example.test.Inventory();
 	org.example.testV2.Inventory testV2 = new org.example.testV2.Inventory();
 
+	/**
+	 * 테스트 정리 작업 수행
+	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * 버킷에 인벤토리를 설정하지 않은 상태에서 조회가 가능한지 확인
+	 */
 	@Test
 	@Tag("List")
-	// 버킷에 인벤토리를 설정하지 않은 상태에서 조회가 가능한지 확인
 	void testListBucketInventory() {
 		test.testListBucketInventory();
 		testV2.testListBucketInventory();
 	}
 
+	/**
+	 * 버킷에 인벤토리를 설정할 수 있는지 확인
+	 */
 	@Test
 	@Tag("Put")
-	// 버킷에 인벤토리를 설정할 수 있는지 확인
 	void testPutBucketInventory() {
 		test.testPutBucketInventory();
 		testV2.testPutBucketInventory();
 	}
 
+	/**
+	 * 버킷에 인벤토리 설정이 되었는지 확인
+	 */
 	@Test
 	@Tag("Check")
-	// 버킷에 인벤토리 설정이 되었는지 확인
 	void testCheckBucketInventory() {
 		test.testCheckBucketInventory();
 		testV2.testCheckBucketInventory();
 	}
 
+	/**
+	 * 버킷에 설정된 인벤토리를 조회할 수 있는지 확인
+	 */
 	@Test
 	@Tag("Get")
-	// 버킷에 설정된 인벤토리를 조회할 수 있는지 확인
 	void testGetBucketInventory() {
 		test.testGetBucketInventory();
 		testV2.testGetBucketInventory();
 	}
 
+	/**
+	 * 버킷에 설정된 인벤토리를 삭제할 수 있는지 확인
+	 */
 	@Test
 	@Tag("Delete")
-	// 버킷에 설정된 인벤토리를 삭제할 수 있는지 확인
 	void testDeleteBucketInventory() {
 		test.testDeleteBucketInventory();
 		testV2.testDeleteBucketInventory();
 	}
 
+	/**
+	 * 존재하지 않은 인벤토리를 가져오려고 할 경우 실패하는지 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 존재하지 않은 인벤토리를 가져오려고 할 경우 실패하는지 확인
 	void testGetBucketInventoryNotExist() {
 		test.testGetBucketInventoryNotExist();
 		testV2.testGetBucketInventoryNotExist();
 	}
 
+	/**
+	 * 존재하지 않은 인벤토리를 삭제하려고 할 경우 실패하는지 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 존재하지 않은 인벤토리를 삭제하려고 할 경우 실패하는지 확인
 	void testDeleteBucketInventoryNotExist() {
 		test.testDeleteBucketInventoryNotExist();
 		testV2.testDeleteBucketInventoryNotExist();
 	}
 
+	/**
+	 * 존재하지 않은 버킷에 인벤토리를 설정하려고 할 경우 실패하는지 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 존재하지 않은 버킷에 인벤토리를 설정하려고 할 경우 실패하는지 확인
 	void testPutBucketInventoryNotExist() {
 		test.testPutBucketInventoryNotExist();
 		testV2.testPutBucketInventoryNotExist();
 	}
 
+	/**
+	 * 인벤토리 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 인벤토리 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
 	void testPutBucketInventoryIdNotExist() {
 		test.testPutBucketInventoryIdNotExist();
 		testV2.testPutBucketInventoryIdNotExist();
 	}
 
+	/**
+	 * 인벤토리 아이디가 중복되는 경우 덮어쓰기 되는지 확인
+	 */
 	@Test
 	@Tag("Overwrite")
-	// 인벤토리 아이디가 중복되는 경우 덮어쓰기 되는지 확인
 	void testPutBucketInventoryIdDuplicate(){
 		test.testPutBucketInventoryIdDuplicate();
 		testV2.testPutBucketInventoryIdDuplicate();
 	}
 
+	/**
+	 * 타깃 버킷이 존재하지 않을 경우 실패하는지 확인
+	 */
 	@Disabled("aws에서 타깃 버킷이 존재하는지 확인하지 않음")
 	@Test
 	@Tag("Error")
-	// 타깃 버킷이 존재하지 않을 경우 실패하는지 확인
 	void testPutBucketInventoryTargetNotExist() {
 		test.testPutBucketInventoryTargetNotExist();
 		testV2.testPutBucketInventoryTargetNotExist();
 	}
 
+	/**
+	 * 지원하지 않는 파일 형식의 인벤토리를 설정하려고 할 경우 실패하는지 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 지원하지 않는 파일 형식의 인벤토리를 설정하려고 할 경우 실패하는지 확인
 	void testPutBucketInventoryInvalidFormat() {
 		test.testPutBucketInventoryInvalidFormat();
 		testV2.testPutBucketInventoryInvalidFormat();
 	}
 
+	/**
+	 * 올바르지 않은 주기의 인벤토리를 설정하려고 할 경우 실패하는지 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 올바르지 않은 주기의 인벤토리를 설정하려고 할 경우 실패하는지 확인
 	void testPutBucketInventoryInvalidFrequency() {
 		test.testPutBucketInventoryInvalidFrequency();
 		testV2.testPutBucketInventoryInvalidFrequency();
 	}
 
+	/**
+	 * 대소문자를 잘못 입력하여 인벤토리를 설정하려고 할 경우 실패하는지 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 대소문자를 잘못 입력하여 인벤토리를 설정하려고 할 경우 실패하는지 확인
 	void testPutBucketInventoryInvalidCase() {
 		test.testPutBucketInventoryInvalidCase();
 		testV2.testPutBucketInventoryInvalidCase();
 	}
 
+	/**
+	 * 접두어를 포함한 인벤토리 설정이 올바르게 적용되는지 확인
+	 */
 	@Test
 	@Tag("Put")
-	// 접두어를 포함한 인벤토리 설정이 올바르게 적용되는지 확인
 	void testPutBucketInventoryPrefix() {
 		test.testPutBucketInventoryPrefix();
 		testV2.testPutBucketInventoryPrefix();
 	}
 
+	/**
+	 * 옵션을 포함한 인벤토리 설정이 올바르게 적용되는지 확인
+	 */
 	@Test
 	@Tag("Put")
-	// 옵션을 포함한 인벤토리 설정이 올바르게 적용되는지 확인
 	void testPutBucketInventoryOptional() {
 		test.testPutBucketInventoryOptional();
 		testV2.testPutBucketInventoryOptional();
 	}
 
+	/**
+	 * 올바르지 않은 옵션을 포함한 인벤토리를 설정하려고 할 경우 실패하는지 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 올바르지 않은 옵션을 포함한 인벤토리를 설정하려고 할 경우 실패하는지 확인
 	void testPutBucketInventoryInvalidOptional() {
 		test.testPutBucketInventoryInvalidOptional();
 		testV2.testPutBucketInventoryInvalidOptional();

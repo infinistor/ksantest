@@ -26,57 +26,71 @@ class ListBuckets {
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * 여러개의 버킷 생성해서 목록 조회 확인
+	 */
 	@Test
 	@Tag("Get")
-	//여러개의 버킷 생성해서 목록 조회 확인
 	void testBucketsCreateThenList() {
 		test.testBucketsCreateThenList();
 		testV2.testBucketsCreateThenList();
 	}
 
+	/**
+	 * 존재하지 않는 사용자가 버킷목록 조회시 에러 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	//존재하지 않는 사용자가 버킷목록 조회시 에러 확인
 	void testListBucketsInvalidAuth() {
 		test.testListBucketsInvalidAuth();
 		testV2.testListBucketsInvalidAuth();
 	}
 
+	/**
+	 * 로그인정보를 잘못입력한 사용자가 버킷목록 조회시 에러 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	//로그인정보를 잘못입력한 사용자가 버킷목록 조회시 에러 확인
 	void testListBucketsBadAuth() {
 		test.testListBucketsBadAuth();
 		testV2.testListBucketsBadAuth();
 	}
 
+	/**
+	 * 버킷의 메타데이터를 가져올 수 있는지 확인
+	 */
 	@Test
 	@Tag("Metadata")
-	//버킷의 메타데이터를 가져올 수 있는지 확인
 	void testHeadBucket() {
 		test.testHeadBucket();
 		testV2.testHeadBucket();
 	}
 
+	/**
+	 * 버킷 목록 조회시 Prefix를 이용한 필터링 확인
+	 */
 	@Test
 	@Tag("Prefix")
-	// 버킷 목록 조회시 Prefix를 이용한 필터링 확인
 	void testListBucketsPrefix() {
 		test.testListBucketsPrefix();
 		testV2.testListBucketsPrefix();
 	}
 
+	/**
+	 * 버킷 목록 조회시 MaxBuckets를 이용한 필터링 확인
+	 */
 	@Test
 	@Tag("MaxBuckets")
-	// 버킷 목록 조회시 MaxBuckets를 이용한 필터링 확인
 	void testListBucketsMaxBuckets() {
 		test.testListBucketsMaxBuckets();
 		testV2.testListBucketsMaxBuckets();
 	}
 
+	/**
+	 * 버킷 목록 조회시 ContinuationToken를 이용한 필터링 확인
+	 */
 	@Test
 	@Tag("ContinuationToken")
-	// 버킷 목록 조회시 ContinuationToken를 이용한 필터링 확인
 	void testListBucketsContinuationToken() {
 		test.testListBucketsContinuationToken();
 		testV2.testListBucketsContinuationToken();

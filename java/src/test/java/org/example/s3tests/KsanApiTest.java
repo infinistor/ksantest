@@ -23,16 +23,20 @@ class KsanApiTest {
 		test.clear(testInfo);
 	}
 
+	/**
+	 * 버킷에 태그 검색 설정 조회 가능한지 확인
+	 */
 	@Test
 	@Tag("Get")
-	// 버킷에 태그 검색 설정 조회 가능한지 확인
 	void testGetBucketEnabledTaggingIndex() {
 		test.testGetBucketEnabledTaggingIndex();
 	}
 
+	/**
+	 * 버킷에 tag 검색 기능 활성화 테스트
+	 */
 	@Test
 	@Tag("Put")
-	// 버킷에 tag 검색 기능 활성화 테스트
 	void testPutBucketEnabledTaggingIndex() {
 		test.testPutBucketEnabledTaggingIndex();
 	}

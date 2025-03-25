@@ -15,100 +15,128 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+/**
+ * CSE(Client-Side Encryption) 테스트
+ */
 class CSE {
 
 	org.example.test.CSE test = new org.example.test.CSE();
 	org.example.testV2.CSE testV2 = new org.example.testV2.CSE();
 
+	/**
+	 * 테스트 정리 작업 수행
+	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * [AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+	 */
 	@Test
 	@Tag("PutGet")
-	// [AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	void testCseEncryptedTransfer1b() {
 		test.testCseEncryptedTransfer1b();
 		testV2.testCseEncryptedTransfer1b();
 	}
 
+	/**
+	 * [AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+	 */
 	@Test
 	@Tag("PutGet")
-	// [AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	void testCseEncryptedTransfer1kb() {
 		test.testCseEncryptedTransfer1kb();
 		testV2.testCseEncryptedTransfer1kb();
 	}
 
+	/**
+	 * [AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+	 */
 	@Test
 	@Tag("PutGet")
-	// [AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	void testCseEncryptedTransfer1MB() {
 		test.testCseEncryptedTransfer1MB();
 		testV2.testCseEncryptedTransfer1MB();
 	}
 
+	/**
+	 * [AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+	 */
 	@Test
 	@Tag("PutGet")
-	// [AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 	void testCseEncryptedTransfer13b() {
 		test.testCseEncryptedTransfer13b();
 		testV2.testCseEncryptedTransfer13b();
 	}
 
+	/**
+	 * [AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인
+	 */
 	@Test
 	@Tag("Metadata")
-	// [AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인
 	void testCseEncryptionMethodHead() {
 		test.testCseEncryptionMethodHead();
 		testV2.testCseEncryptionMethodHead();
 	}
 
+	/**
+	 * [AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치
+	 */
 	@Test
 	@Tag("ERROR")
-	// [AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치
 	void testCseEncryptionNonDecryption() {
 		test.testCseEncryptionNonDecryption();
 		testV2.testCseEncryptionNonDecryption();
 	}
 
+	/**
+	 * [AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// [AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인
 	void testCseNonEncryptionDecryption() {
 		test.testCseNonEncryptionDecryption();
 		testV2.testCseNonEncryptionDecryption();
 	}
 
+	/**
+	 * [AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공
+	 */
 	@Test
 	@Tag("RangeRead")
-	// [AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공
 	void testCseEncryptionRangeRead() {
 		test.testCseEncryptionRangeRead();
 		testV2.testCseEncryptionRangeRead();
 	}
 
+	/**
+	 * [AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인
+	 */
 	@Test
 	@Tag("Multipart")
-	// [AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인
 	void testCseEncryptionMultipartUpload() {
 		test.testCseEncryptionMultipartUpload();
 		testV2.testCseEncryptionMultipartUpload();
 	}
 
+	/**
+	 * CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
+	 */
 	@Test
 	@Tag("Get")
-	// CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 	void testCseGetObjectMany() {
 		test.testCseGetObjectMany();
 		testV2.testCseGetObjectMany();
 	}
 
+	/**
+	 * CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+	 */
 	@Test
 	@Tag("Get")
-	// CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 	void testCseRangeObjectMany() {
 		test.testCseRangeObjectMany();
 		testV2.testCseRangeObjectMany();

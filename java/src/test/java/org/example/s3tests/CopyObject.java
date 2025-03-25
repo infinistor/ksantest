@@ -22,377 +22,463 @@ class CopyObject {
 	org.example.test.CopyObject test = new org.example.test.CopyObject();
 	org.example.testV2.CopyObject testV2 = new org.example.testV2.CopyObject();
 
+	/**
+	 * 테스트 완료 후 정리 작업을 수행합니다.
+	 * @param testInfo 테스트 정보
+	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * 오브젝트의 크기가 0일때 복사가 가능한지 확인하는 테스트
+	 */
 	@Test
 	@Tag("Check")
-	// 오브젝트의 크기가 0일때 복사가 가능한지 확인
 	void testObjectCopyZeroSize() {
 		test.testObjectCopyZeroSize();
 		testV2.testObjectCopyZeroSize();
 	}
 
+	/**
+	 * 동일한 버킷에서 오브젝트 복사가 가능한지 확인하는 테스트
+	 */
 	@Test
 	@Tag("Check")
-	// 동일한 버킷에서 오브젝트 복사가 가능한지 확인
 	void testObjectCopySameBucket() {
 		test.testObjectCopySameBucket();
 		testV2.testObjectCopySameBucket();
 	}
 
+	/**
+	 * ContentType을 설정한 오브젝트를 복사할 경우 복사된 오브젝트도 ContentType값이 일치하는지 확인하는 테스트
+	 */
 	@Test
 	@Tag("ContentType")
-	// ContentType을 설정한 오브젝트를 복사할 경우 복사된 오브젝트도 ContentType값이 일치하는지 확인
 	void testObjectCopyVerifyContentType() {
 		test.testObjectCopyVerifyContentType();
 		testV2.testObjectCopyVerifyContentType();
 	}
 
+	/**
+	 * 복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러를 확인하는 테스트
+	 */
 	@Test
 	@Tag("OverWrite")
-	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러 확인
 	void testObjectCopyToItself() {
 		test.testObjectCopyToItself();
 		testV2.testObjectCopyToItself();
 	}
 
+	/**
+	 * 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인하는 테스트
+	 */
 	@Test
 	@Tag("OverWrite")
-	// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인
 	void testObjectCopyToItselfWithMetadata() {
 		test.testObjectCopyToItselfWithMetadata();
 		testV2.testObjectCopyToItselfWithMetadata();
 	}
 
+	/**
+	 * 다른 버킷으로 오브젝트 복사가 가능한지 확인하는 테스트
+	 */
 	@Test
 	@Tag("Check")
-	// 다른 버킷으로 오브젝트 복사가 가능한지 확인
 	void testObjectCopyDiffBucket() {
 		test.testObjectCopyDiffBucket();
 		testV2.testObjectCopyDiffBucket();
 	}
 
+	/**
+	 * [bucket1:created main user, object:created main user / bucket2:created sub user] 
+	 * 메인유저가 만든 버킷, 오브젝트를 서브유저가 만든 버킷으로 오브젝트 복사가 불가능한지 확인하는 테스트
+	 */
 	@Test
 	@Tag("Check")
-	// [bucket1:created main user, object:created main user / bucket2:created sub
-	// user] 메인유저가 만든 버킷, 오브젝트를 서브유저가 만든 버킷으로 오브젝트 복사가 불가능한지 확인
 	void testObjectCopyNotOwnedBucket() {
 		test.testObjectCopyNotOwnedBucket();
 		testV2.testObjectCopyNotOwnedBucket();
 	}
 
+	/**
+	 * 다른유저의 버킷의 오브젝트를 권한이 충분할 경우 복사 가능한지 확인하는 테스트
+	 */
 	@Test
 	@Tag("Check")
-	// 다른유저의 버킷의 오브젝트를 권한이 충분할 경우 복사 가능한지 확인
 	void testObjectCopyNotOwnedObjectBucket() {
 		test.testObjectCopyNotOwnedObjectBucket();
 		testV2.testObjectCopyNotOwnedObjectBucket();
 	}
 
+	/**
+	 * 권한정보를 포함하여 복사할때 올바르게 적용되는지 확인하는 테스트
+	 */
 	@Test
 	@Tag("OverWrite")
-	// 권한정보를 포함하여 복사할때 올바르게 적용되는지 확인
-	// 메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인
 	void testObjectCopyCannedAcl() {
 		test.testObjectCopyCannedAcl();
 		testV2.testObjectCopyCannedAcl();
 	}
 
+	/**
+	 * 크고 작은 용량의 오브젝트가 복사되는지 확인하는 테스트
+	 */
 	@Test
 	@Tag("Check")
-	// 크고 작은 용량의 오브젝트가 복사되는지 확인
 	void testObjectCopyRetainingMetadata() {
 		test.testObjectCopyRetainingMetadata();
 		testV2.testObjectCopyRetainingMetadata();
 	}
 
+	/**
+	 * 크고 작은 용량의 오브젝트및 메타데이터가 복사되는지 확인하는 테스트
+	 */
 	@Test
 	@Tag("Check")
-	// 크고 작은 용량의 오브젝트및 메타데이터가 복사되는지 확인
 	void testObjectCopyReplacingMetadata() {
 		test.testObjectCopyReplacingMetadata();
 		testV2.testObjectCopyReplacingMetadata();
 	}
 
+	/**
+	 * 존재하지 않는 버킷에서 존재하지 않는 오브젝트 복사 실패를 확인하는 테스트
+	 */
 	@Test
 	@Tag("ERROR")
-	// 존재하지 않는 버킷에서 존재하지 않는 오브젝트 복사 실패 확인
 	void testObjectCopyBucketNotFound() {
 		test.testObjectCopyBucketNotFound();
 		testV2.testObjectCopyBucketNotFound();
 	}
 
+	/**
+	 * 존재하지않는 오브젝트 복사 실패를 확인하는 테스트
+	 */
 	@Test
 	@Tag("ERROR")
-	// 존재하지않는 오브젝트 복사 실패 확인
 	void testObjectCopyKeyNotFound() {
 		test.testObjectCopyKeyNotFound();
 		testV2.testObjectCopyKeyNotFound();
 	}
 
+	/**
+	 * 버저닝된 오브젝트 복사를 확인하는 테스트
+	 */
 	@Test
 	@Tag("Version")
-	// 버저닝된 오브젝트 복사 확인
 	void testObjectCopyVersionedBucket() {
 		test.testObjectCopyVersionedBucket();
 		testV2.testObjectCopyVersionedBucket();
 	}
 
+	/**
+	 * [버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("Version")
-	// [버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공 확인
 	void testObjectCopyVersionedUrlEncoding() {
 		test.testObjectCopyVersionedUrlEncoding();
 		testV2.testObjectCopyVersionedUrlEncoding();
 	}
 
+	/**
+	 * [버킷에 버저닝 설정] 멀티파트로 업로드된 오브젝트 복사를 확인하는 테스트
+	 */
 	@Test
 	@Tag("Multipart")
-	// [버킷에 버저닝 설정] 멀티파트로 업로드된 오브젝트 복사 확인
 	void testObjectCopyVersioningMultipartUpload() {
 		test.testObjectCopyVersioningMultipartUpload();
 		testV2.testObjectCopyVersioningMultipartUpload();
 	}
 
+	/**
+	 * ifMatch 값을 추가하여 오브젝트를 복사할 경우 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("IfMatch")
-	// ifMatch 값을 추가하여 오브젝트를 복사할 경우 성공확인
 	void testCopyObjectIfMatchGood() {
 		test.testCopyObjectIfMatchGood();
 		testV2.testCopyObjectIfMatchGood();
 	}
 
+	/**
+	 * ifMatch에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패를 확인하는 테스트
+	 */
 	@Test
 	@Tag("IfMatch")
-	// ifMatch에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패 확인
 	void testCopyObjectIfMatchFailed() {
 		test.testCopyObjectIfMatchFailed();
 		testV2.testCopyObjectIfMatchFailed();
 	}
 
+	/**
+	 * [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인
 	void testCopyNorSrcToNorBucketAndObj() {
 		test.testCopyNorSrcToNorBucketAndObj();
 		testV2.testCopyNorSrcToNorBucketAndObj();
 	}
 
+	/**
+	 * [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공
-	// 확인
 	void testCopyNorSrcToNorBucketEncryptionObj() {
 		test.testCopyNorSrcToNorBucketEncryptionObj();
 		testV2.testCopyNorSrcToNorBucketEncryptionObj();
 	}
 
+	/**
+	 * [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공
-	// 확인
 	void testCopyNorSrcToEncryptionBucketNorObj() {
 		test.testCopyNorSrcToEncryptionBucketNorObj();
 		testV2.testCopyNorSrcToEncryptionBucketNorObj();
 	}
 
+	/**
+	 * [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
-	// 복사 성공 확인
 	void testCopyNorSrcToEncryptionBucketAndObj() {
 		test.testCopyNorSrcToEncryptionBucketAndObj();
 		testV2.testCopyNorSrcToEncryptionBucketAndObj();
 	}
 
+	/**
+	 * [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공
-	// 확인
 	void testCopyEncryptionSrcToNorBucketAndObj() {
 		test.testCopyEncryptionSrcToNorBucketAndObj();
 		testV2.testCopyEncryptionSrcToNorBucketAndObj();
 	}
 
+	/**
+	 * [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
-	// 복사 성공 확인
 	void testCopyEncryptionSrcToNorBucketEncryptionObj() {
 		test.testCopyEncryptionSrcToNorBucketEncryptionObj();
 		testV2.testCopyEncryptionSrcToNorBucketEncryptionObj();
 	}
 
+	/**
+	 * [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
-	// 복사 성공 확인
 	void testCopyEncryptionSrcToEncryptionBucketNorObj() {
 		test.testCopyEncryptionSrcToEncryptionBucketNorObj();
 		testV2.testCopyEncryptionSrcToEncryptionBucketNorObj();
 	}
 
+	/**
+	 * [source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : encryption, dest obj : encryption]
-	// 오브젝트 복사 성공 확인
 	void testCopyEncryptionSrcToEncryptionBucketAndObj() {
 		test.testCopyEncryptionSrcToEncryptionBucketAndObj();
 		testV2.testCopyEncryptionSrcToEncryptionBucketAndObj();
 	}
 
+	/**
+	 * [source bucket : encryption, source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source bucket : encryption, source obj : normal, dest bucket : normal, dest
-	// obj : normal] 오브젝트 복사 성공 확인
 	void testCopyEncryptionBucketNorObjToNorBucketAndObj() {
 		test.testCopyEncryptionBucketNorObjToNorBucketAndObj();
 		testV2.testCopyEncryptionBucketNorObjToNorBucketAndObj();
 	}
 
+	/**
+	 * [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공
-	// 확인
 	void testCopyEncryptionBucketNorObjToNorBucketEncryptionObj() {
 		test.testCopyEncryptionBucketNorObjToNorBucketEncryptionObj();
 		testV2.testCopyEncryptionBucketNorObjToNorBucketEncryptionObj();
 	}
 
+	/**
+	 * [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공
-	// 확인
 	void testCopyEncryptionBucketNorObjToEncryptionBucketNorObj() {
 		test.testCopyEncryptionBucketNorObjToEncryptionBucketNorObj();
 		testV2.testCopyEncryptionBucketNorObjToEncryptionBucketNorObj();
 	}
 
+	/**
+	 * [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
-	// 복사 성공 확인
 	void testCopyEncryptionBucketNorObjToEncryptionBucketAndObj() {
 		test.testCopyEncryptionBucketNorObjToEncryptionBucketAndObj();
 		testV2.testCopyEncryptionBucketNorObjToEncryptionBucketAndObj();
 	}
 
+	/**
+	 * [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공
-	// 확인
 	void testCopyEncryptionBucketAndObjToNorBucketAndObj() {
 		test.testCopyEncryptionBucketAndObjToNorBucketAndObj();
 		testV2.testCopyEncryptionBucketAndObjToNorBucketAndObj();
 	}
 
+	/**
+	 * [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
-	// 복사 성공 확인
 	void testCopyEncryptionBucketAndObjToNorBucketEncryptionObj() {
 		test.testCopyEncryptionBucketAndObjToNorBucketEncryptionObj();
 		testV2.testCopyEncryptionBucketAndObjToNorBucketEncryptionObj();
 	}
 
+	/**
+	 * [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
-	// 복사 성공 확인
 	void testCopyEncryptionBucketAndObjToEncryptionBucketNorObj() {
 		test.testCopyEncryptionBucketAndObjToEncryptionBucketNorObj();
 		testV2.testCopyEncryptionBucketAndObjToEncryptionBucketNorObj();
 	}
 
+	/**
+	 * [source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// [source obj : encryption, dest bucket : encryption, dest obj : encryption]
-	// 오브젝트 복사 성공 확인
 	void testCopyEncryptionBucketAndObjToEncryptionBucketAndObj() {
 		test.testCopyEncryptionBucketAndObjToEncryptionBucketAndObj();
 		testV2.testCopyEncryptionBucketAndObjToEncryptionBucketAndObj();
 	}
 
+	/**
+	 * 일반 오브젝트에서 다양한 방식으로 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// 일반 오브젝트에서 다양한 방식으로 복사 성공 확인
 	void testCopyToNormalSource() {
 		test.testCopyToNormalSource();
 		testV2.testCopyToNormalSource();
 	}
 
+	/**
+	 * SSE-S3암호화 된 오브젝트에서 다양한 방식으로 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// SSE-S3암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
 	void testCopyToSseS3Source() {
 		test.testCopyToSseS3Source();
 		testV2.testCopyToSseS3Source();
 	}
 
+	/**
+	 * SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공을 확인하는 테스트
+	 */
 	@Test
 	@Tag("encryption")
-	// SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인
 	void testCopyToSseCSource() {
 		test.testCopyToSseCSource();
 		testV2.testCopyToSseCSource();
 	}
 
+	/**
+	 * 삭제된 오브젝트 복사 실패를 확인하는 테스트
+	 */
 	@Test
 	@Tag("ERROR")
-	// 삭제된 오브젝트 복사 실패 확인
 	void testCopyToDeletedObject() {
 		test.testCopyToDeletedObject();
 		testV2.testCopyToDeletedObject();
 	}
 
+	/**
+	 * 버저닝된 버킷에서 삭제된 오브젝트 복사 실패를 확인하는 테스트
+	 */
 	@Test
 	@Tag("ERROR")
-	// 버저닝된 버킷에서 삭제된 오브젝트 복사 실패 확인
 	void testCopyToDeleteMarkerObject() {
 		test.testCopyToDeleteMarkerObject();
 		testV2.testCopyToDeleteMarkerObject();
 	}
 
+	/**
+	 * copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 추가 가능한지 확인하는 테스트 (Versioning 설정)
+	 */
 	@Test
 	@Tag("OverWrite")
-	// copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 추가 가능한지 확인(Versioning 설정)
 	void testObjectVersioningCopyToItselfWithMetadata() {
 		test.testObjectVersioningCopyToItselfWithMetadata();
 		testV2.testObjectVersioningCopyToItselfWithMetadata();
 	}
 
+	/**
+	 * copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인하는 테스트
+	 */
 	@Test
 	@Tag("OverWrite")
-	// copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인
 	void testObjectCopyToItselfWithMetadataOverwrite() {
 		test.testObjectCopyToItselfWithMetadataOverwrite();
 		testV2.testObjectCopyToItselfWithMetadataOverwrite();
 	}
 
+	/**
+	 * copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인하는 테스트 (Versioning 설정)
+	 */
 	@Test
 	@Tag("OverWrite")
-	// copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인(Versioning 설정)
 	void testObjectVersioningCopyToItselfWithMetadataOverwrite() {
 		test.testObjectVersioningCopyToItselfWithMetadataOverwrite();
 		testV2.testObjectVersioningCopyToItselfWithMetadataOverwrite();
 	}
 
+	/**
+	 * sse-c로 암호화된 오브젝트를 복사할때 Algorithm을 누락하면 오류가 발생하는지 확인하는 테스트
+	 */
 	@Test
 	@Tag("ERROR")
-	// sse-c로 암호화된 오브젝트를 복사할때 Algorithm을 누락하면 오류가 발생하는지 확인
 	void testCopyRevokeSseAlgorithm() {
 		test.testCopyRevokeSseAlgorithm();
 		testV2.testCopyRevokeSseAlgorithm();
 	}
 
+	/**
+	 * UseChunkEncoding을 사용하는 오브젝트 복사 시 체크섬 계산 및 검증을 확인하는 테스트
+	 */
 	@Test
 	@Tag("checksum")
-	// UseChunkEncoding을 사용하는 오브젝트 복사 시 체크섬 계산 및 검증 확인
 	void testCopyObjectChecksumUseChunkEncoding() {
 		testV2.testCopyObjectChecksumUseChunkEncoding();
+	}
+
+	/**
+	 * 메타데이터와 태그가 복사되는지 확인하는 테스트
+	 */
+	@Test
+	@Tag("metadata")
+	void testCopyObjectMetadataAndTags() {
+		test.testCopyObjectMetadataAndTags();
+		testV2.testCopyObjectMetadataAndTags();
 	}
 }

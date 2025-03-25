@@ -15,35 +15,48 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 
+/**
+ * 버킷의 웹사이트 기능을 테스트하는 클래스
+ */
 class Website {
 	org.example.test.Website test = new org.example.test.Website();
 	org.example.testV2.Website testV2 = new org.example.testV2.Website();
 
+	/**
+	 * 테스트 정리 작업 수행
+	 * @param testInfo 테스트 정보
+	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * 버킷의 Website 설정 조회 확인
+	 */
 	@Test
 	@Tag("Check")
-	// 버킷의 Website 설정 조회 확인
 	void testWebsiteGetBuckets() {
 		test.testWebsiteGetBuckets();
 		testV2.testWebsiteGetBuckets();
 	}
 
+	/**
+	 * 버킷의 Website 설정이 가능한지 확인
+	 */
 	@Test
 	@Tag("Check")
-	// 버킷의 Website 설정이 가능한지 확인
 	void testWebsitePutBuckets() {
 		test.testWebsitePutBuckets();
 		testV2.testWebsitePutBuckets();
 	}
 
+	/**
+	 * 버킷의 Website 설정이 삭제가능한지 확인
+	 */
 	@Test
 	@Tag("Delete")
-	// 버킷의 Website 설정이 삭제가능한지 확인
 	void testWebsiteDeleteBuckets() {
 		test.testWebsiteDeleteBuckets();
 		testV2.testWebsiteDeleteBuckets();

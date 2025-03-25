@@ -15,295 +15,368 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 버킷과 오브젝트의 권한 관리 테스트
+ */
 class Grants {
 
 	org.example.test.Grants test = new org.example.test.Grants();
 	org.example.testV2.Grants testV2 = new org.example.testV2.Grants();
 
+	/**
+	 * 테스트 정리 작업 수행
+	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * 권한을 설정하지 않고 생성한 버킷의 default acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Bucket")
-	// 권한을 설정하지 않고 생성한 버킷의 default acl정보가 올바른지 확인
 	void testBucketAclDefault() {
 		test.testBucketAclDefault();
 		testV2.testBucketAclDefault();
 	}
 
+	/**
+	 * [bucket : public-read => private] 권한을 변경할경우 올바르게 적용되는지 확인
+	 */
 	@Test
 	@Tag("Bucket")
-	// [bucket : public-read => private] 권한을 변경할경우 올바르게 적용되는지 확인
 	void testBucketAclChanged() {
 		test.testBucketAclChanged();
 		testV2.testBucketAclChanged();
 	}
 
+	/**
+	 * [bucket : private] 생성한 버킷의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Bucket")
-	// [bucket : private] 생성한 버킷의 acl정보가 올바른지 확인
 	void testBucketAclPrivate() {
 		test.testBucketAclPrivate();
 		testV2.testBucketAclPrivate();
 	}
 
+	/**
+	 * [bucket : public-read] 생성한 버킷의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Bucket")
-	// [bucket : public-read] 생성한 버킷의 acl정보가 올바른지 확인
 	void testBucketAclPublicRead() {
 		test.testBucketAclPublicRead();
 		testV2.testBucketAclPublicRead();
 	}
 
+	/**
+	 * [bucket : public-read-write] 생성한 버킷의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Bucket")
-	// [bucket : public-read-write] 생성한 버킷의 acl정보가 올바른지 확인
 	void testBucketAclPublicRW() {
 		test.testBucketAclPublicRW();
 		testV2.testBucketAclPublicRW();
 	}
 
+	/**
+	 * [bucket : authenticated-read] 생성한 버킷의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Bucket")
-	// [bucket : authenticated-read] 생성한 버킷의 acl정보가 올바른지 확인
 	void testBucketAclAuthenticatedRead() {
 		test.testBucketAclAuthenticatedRead();
 		testV2.testBucketAclAuthenticatedRead();
 	}
 
+	/**
+	 * 권한을 설정하지 않고 생성한 오브젝트의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// 권한을 설정하지 않고 생성한 오브젝트의 acl정보가 올바른지 확인
 	void testObjectAclDefault() {
 		test.testObjectAclDefault();
 		testV2.testObjectAclDefault();
 	}
 
+	/**
+	 * [object:public-read => private] 오브젝트의 권한을 변경할경우 올바르게 적용되는지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// [object:public-read => private] 오브젝트의 권한을 변경할경우 올바르게 적용되는지 확인
 	void testObjectAclChange() {
 		test.testObjectAclChange();
 		testV2.testObjectAclChange();
 	}
 
+	/**
+	 * [object:private] 생성한 오브젝트의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// [object:private] 생성한 오브젝트의 acl정보가 올바른지 확인
 	void testObjectAclPrivate() {
 		test.testObjectAclPrivate();
 		testV2.testObjectAclPrivate();
 	}
 
+	/**
+	 * [object:public-read] 생성한 오브젝트의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// [object:public-read] 생성한 오브젝트의 acl정보가 올바른지 확인
 	void testObjectAclPublicRead() {
 		test.testObjectAclPublicRead();
 		testV2.testObjectAclPublicRead();
 	}
 
+	/**
+	 * [object:public-read-write] 생성한 오브젝트의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// [object:public-read-write] 생성한 오브젝트의 acl정보가 올바른지 확인
 	void testObjectAclPublicRW() {
 		test.testObjectAclPublicRW();
 		testV2.testObjectAclPublicRW();
 	}
 
+	/**
+	 * [object:authenticated-read] 생성한 오브젝트의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// [object:authenticated-read] 생성한 오브젝트의 acl정보가 올바른지 확인
 	void testObjectAclAuthenticatedRead() {
 		test.testObjectAclAuthenticatedRead();
 		testV2.testObjectAclAuthenticatedRead();
 	}
 
+	/**
+	 * [object:bucket-owner-read] 생성한 오브젝트의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// [object:bucket-owner-read] 생성한 오브젝트의 acl정보가 올바른지 확인
 	void testObjectAclBucketOwnerRead() {
 		test.testObjectAclBucketOwnerRead();
 		testV2.testObjectAclBucketOwnerRead();
 	}
 
+	/**
+	 * [ObjectWriter][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// [ObjectWriter][object:bucket-owner-full-control]
-	// 생성한 오브젝트의 acl정보가 올바른지 확인
 	void testBucketObjectWriterObjectOwnerFullControl() {
 		test.testBucketObjectWriterObjectOwnerFullControl();
 		testV2.testBucketObjectWriterObjectOwnerFullControl();
 	}
 
+	/**
+	 * [BucketOwnerEnforced][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가 올바른지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// [BucketOwnerEnforced][object:bucket-owner-full-control]
-	// 생성한 오브젝트의 acl정보가 올바른지 확인
 	void testBucketOwnerEnforcedObjectOwnerFullControl() {
 		test.testBucketOwnerEnforcedObjectOwnerFullControl();
 		testV2.testBucketOwnerEnforcedObjectOwnerFullControl();
 	}
 
+	/**
+	 * [object: public-read-write => alt-user-full-control => alt-user-read-acl] 권한을 변경해도 소유주가 변경되지 않는지 확인
+	 */
 	@Test
 	@Tag("Object")
-	// [object: public-read-write => alt-user-full-control => alt-user-read-acl]
-	// 권한을 변경해도 소유주가 변경되지 않는지 확인
 	void testObjectAclOwnerNotChange() {
 		test.testObjectAclOwnerNotChange();
 		testV2.testObjectAclOwnerNotChange();
 	}
 
+	/**
+	 * 권한을 변경해도 오브젝트에 영향을 주지 않는지 확인
+	 */
 	@Test
 	@Tag("Effect")
-	// 권한을 변경해도 오브젝트에 영향을 주지 않는지 확인
 	void testBucketAclChangeNotEffect() {
 		test.testBucketAclChangeNotEffect();
 		testV2.testBucketAclChangeNotEffect();
 	}
 
+	/**
+	 * [bucket:private] 버킷에 ACL 중복 설정이 가능한지 확인
+	 */
 	@Test
 	@Tag("Overwrite")
-	// [bucket:private] 버킷에 ACL 중복 설정이 가능한지 확인
 	void testBucketAclDuplicated() {
 		test.testBucketAclDuplicated();
 		testV2.testBucketAclDuplicated();
 	}
 
+	/**
+	 * 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
+	 */
 	@Test
 	@Tag("Permission")
-	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
 	void testBucketPermissionFullControl() {
 		test.testBucketPermissionFullControl();
 		testV2.testBucketPermissionFullControl();
 	}
 
+	/**
+	 * 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
+	 */
 	@Test
 	@Tag("Permission")
-	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
 	void testBucketPermissionWrite() {
 		test.testBucketPermissionWrite();
 		testV2.testBucketPermissionWrite();
 	}
 
+	/**
+	 * 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
+	 */
 	@Test
 	@Tag("Permission")
-	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
 	void testBucketPermissionWriteAcp() {
 		test.testBucketPermissionWriteAcp();
 		testV2.testBucketPermissionWriteAcp();
 	}
 
+	/**
+	 * 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
+	 */
 	@Test
 	@Tag("Permission")
-	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
 	void testBucketPermissionRead() {
 		test.testBucketPermissionRead();
 		testV2.testBucketPermissionRead();
 	}
 
+	/**
+	 * 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
+	 */
 	@Test
 	@Tag("Permission")
-	// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
 	void testBucketPermissionReadAcp() {
 		test.testBucketPermissionReadAcp();
 		testV2.testBucketPermissionReadAcp();
 	}
 
+	/**
+	 * 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
+	 */
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
 	void testObjectPermissionFullControl() {
 		test.testObjectPermissionFullControl();
 		testV2.testObjectPermissionFullControl();
 	}
 
+	/**
+	 * 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
+	 */
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
 	void testObjectPermissionWrite() {
 		test.testObjectPermissionWrite();
 		testV2.testObjectPermissionWrite();
 	}
 
+	/**
+	 * 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
+	 */
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
 	void testObjectPermissionWriteAcp() {
 		test.testObjectPermissionWriteAcp();
 		testV2.testObjectPermissionWriteAcp();
 	}
 
+	/**
+	 * 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
+	 */
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
 	void testObjectPermissionRead() {
 		test.testObjectPermissionRead();
 		testV2.testObjectPermissionRead();
 	}
 
+	/**
+	 * 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
+	 */
 	@Test
 	@Tag("Permission")
-	// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
 	void testObjectAclPermissionReadAcp() {
 		test.testObjectPermissionReadAcp();
 		testV2.testObjectPermissionReadAcp();
 	}
 
+	/**
+	 * 버킷에 존재하지 않는 유저를 추가하려고 하면 에러 발생 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 버킷에 존재하지 않는 유저를 추가하려고 하면 에러 발생 확인
 	void testBucketAclGrantNonExistUser() {
 		test.testBucketAclGrantNonExistUser();
 		testV2.testBucketAclGrantNonExistUser();
 	}
 
+	/**
+	 * 버킷에 권한정보를 모두 제거했을때 오브젝트를 업데이트 하면 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 버킷에 권한정보를 모두 제거했을때 오브젝트를 업데이트 하면 실패 확인
 	void testBucketAclNoGrants() {
 		test.testBucketAclNoGrants();
 		testV2.testBucketAclNoGrants();
 	}
 
+	/**
+	 * 버킷 생성하면서 권한정보를 여러개 보낼때 모두 올바르게 적용되었는지 확인
+	 */
 	@Test
 	@Tag("Grant")
-	// 버킷 생성하면서 권한정보를 여러개 보낼때 모두 올바르게 적용되었는지 확인
 	void testBucketAclMultiGrants() {
 		test.testBucketAclMultiGrants();
 		testV2.testBucketAclMultiGrants();
 	}
 
+	/**
+	 * 오브젝트를 생성하면서 권한정보를 여러개보낼때 모두 올바르게 적용되었는지 확인
+	 */
 	@Test
 	@Tag("Grant")
-	// 오브젝트를 생성하면서 권한정보를 여러개보낼때 모두 올바르게 적용되었는지 확인
 	void testObjectAclMultiGrants() {
 		test.testObjectAclMultiGrants();
 		testV2.testObjectAclMultiGrants();
 	}
 
+	/**
+	 * 버킷의 acl 설정이 누락될 경우 실패함을 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 버킷의 acl 설정이 누락될 경우 실패함을 확인
 	void testBucketAclRevokeAll() {
 		test.testBucketAclRevokeAll();
 		testV2.testBucketAclRevokeAll();
 	}
 
+	/**
+	 * 오브젝트의 acl 설정이 누락될 경우 실패함을 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 오브젝트의 acl 설정이 누락될 경우 실패함을 확인
 	void testObjectAclRevokeAll() {
 		test.testObjectAclRevokeAll();
 		testV2.testObjectAclRevokeAll();
 	}
 
+	/**
+	 * 버킷의 acl 설정에 Id가 누락될 경우 실패함을 확인
+	 */
 	@Test
 	@Tag("Error")
-	// 버킷의 acl 설정에 Id가 누락될 경우 실패함을 확인
 	void testBucketAclRevokeAllId() {
 		test.testBucketAclRevokeAllId();
 		testV2.testBucketAclRevokeAllId();

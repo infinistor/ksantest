@@ -15,60 +15,78 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 오브젝트 삭제 기능 테스트
+ */
 class DeleteObjects {
 
 	org.example.test.DeleteObjects test = new org.example.test.DeleteObjects();
 	org.example.testV2.DeleteObjects testV2 = new org.example.testV2.DeleteObjects();
 
+	/**
+	 * 테스트 정리 작업 수행
+	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
+	 */
 	@Test
 	@Tag("ListObject")
-	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 	void testMultiObjectDelete() {
 		test.testMultiObjectDelete();
 		testV2.testMultiObjectDelete();
 	}
 
+	/**
+	 * 버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
+	 */
 	@Test
 	@Tag("ListObjectsV2")
-	// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
 	void testMultiObjectV2Delete() {
 		test.testMultiObjectV2Delete();
 		testV2.testMultiObjectV2Delete();
 	}
 
+	/**
+	 * 버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제
+	 */
 	@Test
 	@Tag("Versioning")
-	//버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제
 	void testMultiObjectDeleteVersions() {
 		test.testMultiObjectDeleteVersions();
 		testV2.testMultiObjectDeleteVersions();
 	}
 
+	/**
+	 * quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
+	 */
 	@Test
 	@Tag("quiet")
-	// quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 	void testMultiObjectDeleteQuiet() {
 		test.testMultiObjectDeleteQuiet();
 		testV2.testMultiObjectDeleteQuiet();
 	}
 
+	/**
+	 * 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
+	 */
 	@Test
 	@Tag("Directory")
-	// 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 	void testDirectoryDelete() {
 		test.testDirectoryDelete();
 		testV2.testDirectoryDelete();
 	}
 
+	/**
+	 * 버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
+	 */
 	@Test
 	@Tag("versioning")
-	//버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 	void testDirectoryDeleteVersions() {
 		test.testDirectoryDeleteVersions();
 		testV2.testDirectoryDeleteVersions();

@@ -15,52 +15,69 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 버킷의 복제 기능을 테스트하는 클래스
+ */
 class Replication {
 
 	org.example.test.Replication test = new org.example.test.Replication();
 	org.example.testV2.Replication testV2 = new org.example.testV2.Replication();
 
+	/**
+	 * 테스트 정리 작업 수행
+	 * @param testInfo 테스트 정보
+	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * 버킷의 Replication 설정이 되는지 확인(put/get/delete)
+	 */
 	@Test
 	@Tag("Check")
-	// 버킷의 Replication 설정이 되는지 확인(put/get/delete)
 	void testReplicationSet() {
 		test.testReplicationSet();
 		testV2.testReplicationSet();
 	}
 
+	/**
+	 * 원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
 	void testReplicationInvalidSourceBucketName() {
 		test.testReplicationInvalidSourceBucketName();
 		testV2.testReplicationInvalidSourceBucketName();
 	}
 
+	/**
+	 * 원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
 	void testReplicationInvalidSourceBucketVersioning() {
 		test.testReplicationInvalidSourceBucketVersioning();
 		testV2.testReplicationInvalidSourceBucketVersioning();
 	}
 
+	/**
+	 * 대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
 	void testReplicationInvalidTargetBucketName() {
 		test.testReplicationInvalidTargetBucketName();
 		testV2.testReplicationInvalidTargetBucketName();
 	}
 
+	/**
+	 * 대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
 	void testReplicationInvalidTargetBucketVersioning() {
 		test.testReplicationInvalidTargetBucketVersioning();
 		testV2.testReplicationInvalidTargetBucketVersioning();

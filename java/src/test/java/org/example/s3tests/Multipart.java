@@ -15,247 +15,314 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 멀티파트 업로드 기능을 테스트하는 클래스
+ */
 class Multipart {
 
 	org.example.test.Multipart test = new org.example.test.Multipart();
 	org.example.testV2.Multipart testV2 = new org.example.testV2.Multipart();
 
+	/**
+	 * 테스트 정리 작업 수행
+	 * @param testInfo 테스트 정보
+	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
 		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
+	/**
+	 * 비어있는 오브젝트를 멀티파트로 업로드 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 비어있는 오브젝트를 멀티파트로 업로드 실패 확인
 	void testMultipartUploadEmpty() {
 		test.testMultipartUploadEmpty();
 		testV2.testMultipartUploadEmpty();
 	}
 
+	/**
+	 * 파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인
+	 */
 	@Test
 	@Tag("Check")
-	// 파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인
 	void testMultipartUploadSmall() {
 		test.testMultipartUploadSmall();
 		testV2.testMultipartUploadSmall();
 	}
 
+	/**
+	 * 버킷a에서 버킷b로 멀티파트 복사 성공확인
+	 */
 	@Test
 	@Tag("Copy")
-	// 버킷a에서 버킷b로 멀티파트 복사 성공확인
 	void testMultipartCopySmall() {
 		test.testMultipartCopySmall();
 		testV2.testMultipartCopySmall();
 	}
 
+	/**
+	 * 범위설정을 잘못한 멀티파트 복사 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 범위설정을 잘못한 멀티파트 복사 실패 확인
 	void testMultipartCopyInvalidRange() {
 		test.testMultipartCopyInvalidRange();
 		testV2.testMultipartCopyInvalidRange();
 	}
 
+	/**
+	 * 범위를 지정한 멀티파트 복사 성공확인
+	 */
 	@Test
 	@Tag("Range")
-	// 범위를 지정한 멀티파트 복사 성공확인
 	void testMultipartCopyWithoutRange() {
 		test.testMultipartCopyWithoutRange();
 		testV2.testMultipartCopyWithoutRange();
 	}
 
+	/**
+	 * 특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인
+	 */
 	@Test
 	@Tag("SpecialNames")
-	// 특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인
 	void testMultipartCopySpecialNames() {
 		test.testMultipartCopySpecialNames();
 		testV2.testMultipartCopySpecialNames();
 	}
 
+	/**
+	 * 멀티파트 업로드 확인
+	 */
 	@Test
 	@Tag("Put")
-	// 멀티파트 업로드 확인
 	void testMultipartUpload() {
 		test.testMultipartUpload();
 		testV2.testMultipartUpload();
 	}
 
+	/**
+	 * 버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인
+	 */
 	@Test
 	@Tag("Copy")
-	// 버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인
 	void testMultipartCopyVersioned() {
 		test.testMultipartCopyVersioned();
 		testV2.testMultipartCopyVersioned();
 	}
 
+	/**
+	 * 멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
+	 */
 	@Test
 	@Tag("Duplicate")
-	// 멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
 	void testMultipartUploadResendPart() {
 		test.testMultipartUploadResendPart();
 		testV2.testMultipartUploadResendPart();
 	}
 
+	/**
+	 * 한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
+	 */
 	@Test
 	@Tag("Put")
-	// 한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
 	void testMultipartUploadMultipleSizes() {
 		test.testMultipartUploadMultipleSizes();
 		testV2.testMultipartUploadMultipleSizes();
 	}
 
+	/**
+	 * 한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인
+	 */
 	@Test
 	@Tag("Copy")
-	// 한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인
 	void testMultipartCopyMultipleSizes() {
 		test.testMultipartCopyMultipleSizes();
 		testV2.testMultipartCopyMultipleSizes();
 	}
 
+	/**
+	 * 멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
 	void testMultipartUploadSizeTooSmall() {
 		test.testMultipartUploadSizeTooSmall();
 		testV2.testMultipartUploadSizeTooSmall();
 	}
 
+	/**
+	 * 내용물을 채운 멀티파트 업로드 성공 확인
+	 */
 	@Test
 	@Tag("Check")
-	// 내용물을 채운 멀티파트 업로드 성공 확인
 	void testMultipartUploadContents() {
 		test.testMultipartUploadContents();
 		testV2.testMultipartUploadContents();
 	}
 
+	/**
+	 * 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
+	 */
 	@Test
 	@Tag("OverWrite")
-	// 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
 	void testMultipartUploadOverwriteExistingObject() {
 		test.testMultipartUploadOverwriteExistingObject();
 		testV2.testMultipartUploadOverwriteExistingObject();
 	}
 
+	/**
+	 * 멀티파트 업로드하는 도중 중단 성공 확인
+	 */
 	@Test
 	@Tag("Cancel")
-	// 멀티파트 업로드하는 도중 중단 성공 확인
 	void testAbortMultipartUpload() {
 		test.testAbortMultipartUpload();
 		testV2.testAbortMultipartUpload();
 	}
 
+	/**
+	 * 존재하지 않은 멀티파트 업로드 중단 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 존재하지 않은 멀티파트 업로드 중단 실패 확인
 	void testAbortMultipartUploadNotFound() {
 		test.testAbortMultipartUploadNotFound();
 		testV2.testAbortMultipartUploadNotFound();
 	}
 
+	/**
+	 * 멀티파트 업로드 중인 목록 확인
+	 */
 	@Test
 	@Tag("List")
-	// 멀티파트 업로드 중인 목록 확인
 	void testListMultipartUpload() {
 		test.testListMultipartUpload();
 		testV2.testListMultipartUpload();
 	}
 
+	/**
+	 * 업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인
 	void testMultipartUploadMissingPart() {
 		test.testMultipartUploadMissingPart();
 		testV2.testMultipartUploadMissingPart();
 	}
 
+	/**
+	 * 잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인
+	 */
 	@Test
 	@Tag("ERROR")
-	// 잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인
 	void testMultipartUploadIncorrectEtag() {
 		test.testMultipartUploadIncorrectEtag();
 		testV2.testMultipartUploadIncorrectEtag();
 	}
 
+	/**
+	 * 버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인
+	 */
 	@Test
 	@Tag("Overwrite")
-	// 버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인
 	void testAtomicMultipartUploadWrite() {
 		test.testAtomicMultipartUploadWrite();
 		testV2.testAtomicMultipartUploadWrite();
 	}
 
+	/**
+	 * 멀티파트 업로드 목록 확인
+	 */
 	@Test
 	@Tag("List")
-	// 멀티파트 업로드 목록 확인
 	void testMultipartUploadList() {
 		test.testMultipartUploadList();
 		testV2.testMultipartUploadList();
 	}
 
+	/**
+	 * 멀티파트 업로드하는 도중 중단 성공 확인
+	 */
 	@Test
 	@Tag("Cancel")
-	// 멀티파트 업로드하는 도중 중단 성공 확인
 	void testAbortMultipartUploadList() {
 		test.testAbortMultipartUploadList();
 		testV2.testAbortMultipartUploadList();
 	}
 
+	/**
+	 * 멀티파트업로드와 멀티파티 카피로 오브젝트가 업로드 가능한지 확인
+	 */
 	@Test
 	@Tag("Copy")
-	// 멀티파트업로드와 멀티파티 카피로 오브젝트가 업로드 가능한지 확인
 	void testMultipartCopyMany() {
 		test.testMultipartCopyMany();
 		testV2.testMultipartCopyMany();
 	}
 
+	/**
+	 * 멀티파트 목록 확인
+	 */
 	@Test
 	@Tag("List")
-	// 멀티파트 목록 확인
 	void testMultipartListParts() {
 		test.testMultipartListParts();
 		testV2.testMultipartListParts();
 	}
 
+	/**
+	 * UseChunkEncoding을 사용하는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
+	 */
 	@Test
 	@Tag("checksum")
-	// UseChunkEncoding을 사용하는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
 	void testMultipartUploadChecksumUseChunkEncoding() {
 		testV2.testMultipartUploadChecksumUseChunkEncoding();
 	}
 
+	/**
+	 * UseChunkEncoding을 사용하지 않는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
+	 */
 	@Test
 	@Tag("checksum")
-	// UseChunkEncoding을 사용하지 않는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
 	void testMultipartUploadChecksum() {
 		testV2.testMultipartUploadChecksum();
 	}
 
+	/**
+	 * 멀티파트 업로드 시 체크섬 계산 및 검증 실패 확인
+	 */
 	@Test
 	@Tag("checksum-failure")
-	// 멀티파트 업로드 시 체크섬 계산 및 검증 실패 확인
 	void testMultipartUploadChecksumFailure() {
 		testV2.testMultipartUploadChecksumFailure();
 	}
 
+	/**
+	 * 멀티파트 업로드 시 체크섬 계산 및 검증 확인
+	 */
 	@Test
 	@Tag("checksum")
-	// 멀티파트 업로드 시 체크섬 계산 및 검증 확인
 	void testMultipartCopyChecksum() {
 		testV2.testMultipartCopyChecksum();
 	}
 
+	/**
+	 * 멀티파트 업로드 시 체크섬 알고리즘이 누락될 경우 에러 확인
+	 */
 	@Test
 	@Tag("error")
-	// 멀티파트 업로드 시 체크섬 알고리즘이 누락될 경우 에러 확인
 	void testcreateMultipartUploadEmptyChecksumAlgorithm() {
 		testV2.testcreateMultipartUploadEmptyChecksumAlgorithm();
 	}
 
+	/**
+	 * 멀티파트 업로드 시 체크섬 타입이 누락될 경우 에러 확인
+	 */
 	@Test
 	@Tag("error")
-	// 멀티파트 업로드 시 체크섬 타입이 누락될 경우 에러 확인
 	void testcreateMultipartUploadEmptyChecksumType() {
 		testV2.testcreateMultipartUploadEmptyChecksumType();
 	}
