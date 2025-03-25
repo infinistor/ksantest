@@ -34,6 +34,7 @@ import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.Permission;
+import software.amazon.awssdk.services.s3.model.Tagging;
 
 @Execution(ExecutionMode.CONCURRENT)
 public class CopyObject extends TestBase {
@@ -885,5 +886,38 @@ public class CopyObject extends TestBase {
 				checksumCompare(checksum, asyncSourceKey, asyncCopyResponse.join());
 			}
 		}
+	}
+
+	@Test
+	@Tag("metadata")
+	public void testCopyObjectMetadataAndTags() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var sourceKey = "testCopyObjectMetadataAndTagsSource";
+		var targetKey = "testCopyObjectMetadataAndTagsTarget";
+
+		var metadata = new HashMap<String, String>();
+		metadata.put("foo", "bar");
+
+		var tags = List.of(software.amazon.awssdk.services.s3.model.Tag.builder().key("tag1").value("value1").build());
+		var tagSet = Tagging.builder().tagSet(tags).build();
+
+		client.putObject(p -> p.bucket(bucketName).key(sourceKey).metadata(metadata).tagging(tagSet),
+				RequestBody.fromString(sourceKey));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(sourceKey));
+		assertEquals(metadata, response.response().metadata());
+
+		var tagResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(sourceKey));
+		assertEquals(tags, tagResponse.tagSet());
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey).destinationBucket(bucketName)
+				.destinationKey(targetKey));
+
+		response = client.getObject(g -> g.bucket(bucketName).key(targetKey));
+		assertEquals(metadata, response.response().metadata());
+
+		tagResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(targetKey));
+		assertEquals(tags, tagResponse.tagSet());
 	}
 }

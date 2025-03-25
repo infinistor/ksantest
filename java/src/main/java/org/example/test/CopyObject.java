@@ -13,6 +13,8 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.List;
+
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
@@ -27,8 +29,10 @@ import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.MetadataDirective;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.ObjectTagging;
 import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.SSECustomerKey;
@@ -807,5 +811,36 @@ public class CopyObject extends TestBase {
 		var response = client.getObject(bucketName, targetKey);
 		var body = getBody(response.getObjectContent());
 		assertEquals(data, body);
+	}
+
+	@Test
+	@Tag("metadata")
+	public void testCopyObjectMetadataAndTags() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var sourceKey = "testCopyObjectMetadataAndTagsSource";
+		var targetKey = "testCopyObjectMetadataAndTagsTarget";
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("foo", "bar");
+
+		var tags = List.of(new com.amazonaws.services.s3.model.Tag("tag1", "value1"));
+		var tagSet = new ObjectTagging(tags);
+
+		client.putObject(
+				new PutObjectRequest(bucketName, sourceKey, createBody(sourceKey), metadata).withTagging(tagSet));
+
+		var response = client.getObject(bucketName, sourceKey);
+		assertEquals(metadata.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
+
+		var tagResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, sourceKey));
+		tagCompare(tags, tagResponse.getTagSet());
+
+		client.copyObject(new CopyObjectRequest(bucketName, sourceKey, bucketName, targetKey));
+
+		response = client.getObject(bucketName, targetKey);
+		assertEquals(metadata.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
+
+		tagResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, targetKey));
+		tagCompare(tags, tagResponse.getTagSet());
 	}
 }

@@ -1940,8 +1940,9 @@ public class TestBase {
 	}
 
 	public List<Tag> taggingSort(List<Tag> tagList) {
-		tagList.sort(Comparator.comparing(Tag::getKey));
-		return tagList;
+		var newList = new ArrayList<>(tagList);
+		newList.sort(Comparator.comparing(Tag::getKey));
+		return newList;
 	}
 
 	public void bucketTaggingCompare(List<TagSet> expected, List<TagSet> actual) {
