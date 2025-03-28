@@ -25,6 +25,7 @@ class Policy {
 
 	/**
 	 * 테스트 정리 작업 수행
+	 * 
 	 * @param testInfo 테스트 정보
 	 */
 	@AfterEach
@@ -104,7 +105,8 @@ class Policy {
 	}
 
 	/**
-	 * [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
+	 * [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용]
+	 * 조건부 정책설정시 올바르게 동작하는지 확인
 	 */
 	@Test
 	@Tag("TagOptions")
@@ -114,7 +116,8 @@ class Policy {
 	}
 
 	/**
-	 * [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
+	 * [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectTagging허용]
+	 * 조건부 정책설정시 올바르게 동작하는지 확인
 	 */
 	@Test
 	@Tag("TagOptions")
@@ -124,7 +127,8 @@ class Policy {
 	}
 
 	/**
-	 * [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 PutObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
+	 * [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 PutObjectTagging허용]
+	 * 조건부 정책설정시 올바르게 동작하는지 확인
 	 */
 	@Test
 	@Tag("TagOptions")
@@ -134,7 +138,8 @@ class Policy {
 	}
 
 	/**
-	 * [복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
+	 * [복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용]
+	 * 조건부 정책설정시 올바르게 동작하는지 확인
 	 */
 	@Test
 	@Tag("PathOptions")
@@ -144,7 +149,8 @@ class Policy {
 	}
 
 	/**
-	 * [오브젝트의 메타데이터값이 'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
+	 * [오브젝트의 메타데이터값이 'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게 PutObject허용]
+	 * 조건부 정책설정시 올바르게 동작하는지 확인
 	 */
 	@Test
 	@Tag("MetadataOptions")
@@ -154,7 +160,8 @@ class Policy {
 	}
 
 	/**
-	 * [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시 올바르게 동작하는지 확인
+	 * [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음]
+	 * 조건부 정책설정시 올바르게 동작하는지 확인
 	 */
 	@Test
 	@Tag("ACLOptions")
@@ -164,7 +171,8 @@ class Policy {
 	}
 
 	/**
-	 * [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
+	 * [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용]
+	 * 조건부 정책설정시 올바르게 동작하는지 확인
 	 */
 	@Test
 	@Tag("GrantOptions")
@@ -174,7 +182,8 @@ class Policy {
 	}
 
 	/**
-	 * [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용] 조건부 정책설정시 올바르게 동작하는지 확인
+	 * [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용]
+	 * 조건부 정책설정시 올바르게 동작하는지 확인
 	 */
 	@Test
 	@Tag("TagOptions")
@@ -184,22 +193,63 @@ class Policy {
 	}
 
 	/**
-	 * [모든 사용자가 버킷에 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
+	 * 모든 사용자가 버킷에 접근 가능(public으으로 간주)
 	 */
 	@Test
 	@Tag("Status")
-	void testGetPublicPolicyAclBucketPolicyStatus() {
-		test.testGetPublicPolicyAclBucketPolicyStatus();
-		testV2.testGetPublicPolicyAclBucketPolicyStatus();
+	void testBucketPolicyStatusWithAllUser() {
+		test.testBucketPolicyStatusWithAllUser();
+		testV2.testBucketPolicyStatusWithAllUser();
 	}
 
 	/**
-	 * [특정 ip로 접근했을때만 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인
+	 * 특정 사용자만 버킷에 접근 가능(private)
 	 */
 	@Test
 	@Tag("Status")
-	void testGetNonpublicPolicyAclBucketPolicyStatus() {
-		test.testGetNonpublicPolicyAclBucketPolicyStatus();
-		testV2.testGetNonpublicPolicyAclBucketPolicyStatus();
+	void testBucketPolicyStatusWithSpecificUserAccess() {
+		test.testBucketPolicyStatusWithSpecificUserAccess();
+		testV2.testBucketPolicyStatusWithSpecificUserAccess();
 	}
+
+	/**
+	 * 너무 넓은 IP 범위를 가진 정책 (public으으로 간주)
+	 */
+	@Test
+	@Tag("Status")
+	void testBucketPolicyStatusWithWideIPRange() {
+		test.testBucketPolicyStatusWithWideIPRange();
+		testV2.testBucketPolicyStatusWithWideIPRange();
+	}
+
+	/**
+	 * 특정 IP 범위를 가진 정책 (private)
+	 */
+	@Test
+	@Tag("Status")
+	void testBucketPolicyStatusWithIPRange() {
+		test.testBucketPolicyStatusWithIPRange();
+		testV2.testBucketPolicyStatusWithIPRange();
+	}
+
+	/**
+	 * 매우 제한적인 시간에 대한 접근 허용 정책 (public으로 간주)
+	 */
+	@Test
+	@Tag("Status")
+	void testBucketPolicyStatusWithTimeCondition() {
+		test.testBucketPolicyStatusWithTimeCondition();
+		testV2.testBucketPolicyStatusWithTimeCondition();
+	}
+
+	/**
+	 * 특정 태그를 가진 오브젝트에 대한 접근 허용용 정책 (public으로 간주)
+	 */
+	@Test
+	@Tag("Status")
+	void testBucketPolicyStatusWithTagCondition() {
+		test.testBucketPolicyStatusWithTagCondition();
+		testV2.testBucketPolicyStatusWithTagCondition();
+	}
+
 }

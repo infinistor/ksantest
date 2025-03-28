@@ -69,4 +69,8 @@ public class UserData {
 				.displayName(displayName)
 				.build();
 	}
+
+	public String getArn() {
+		return "arn:aws:iam::" + id + ":user/" + displayName;
+	}
 }

@@ -633,7 +633,7 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Status")
-	public void testGetPublicPolicyAclBucketPolicyStatus() {
+	public void testBucketPolicyStatusWithAllUser() {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client);
 
@@ -672,7 +672,7 @@ public class Policy extends TestBase {
 
 	@Test
 	@Tag("Status")
-	public void testGetNonpublicPolicyAclBucketPolicyStatus() {
+	public void testBucketPolicyStatusWithSpecificUserAccess() {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client);
 
@@ -691,7 +691,7 @@ public class Policy extends TestBase {
 		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
 
 		var principal = new JsonObject();
-		principal.addProperty("AWS", "*");
+		principal.addProperty("AWS", config.mainUser.getArn());
 		statement.add(MainData.POLICY_PRINCIPAL, principal);
 
 		statement.addProperty(MainData.POLICY_ACTION, "s3:ListBucket");
@@ -701,8 +701,71 @@ public class Policy extends TestBase {
 		resources.add(resource2);
 		statement.add(MainData.POLICY_RESOURCE, resources);
 
+		statements.add(statement);
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
+
+		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()));
+		var response = client.getBucketPolicyStatus(g -> g.bucket(bucketName));
+		assertFalse(response.policyStatus().isPublic());
+	}
+
+	@Test
+	@Tag("Status")
+	public void testBucketPolicyStatusWithWideIPRange() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
+
+		// 너무 넓은 IP 범위를 가진 정책 (public으로 간주)
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
+
+		var statements = new JsonArray();
+		var statement = new JsonObject();
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
+		var principal = new JsonObject();
+		principal.addProperty("AWS", "*");
+		statement.add(MainData.POLICY_PRINCIPAL, principal);
+		statement.addProperty(MainData.POLICY_ACTION, "s3:GetObject");
+		statement.addProperty(MainData.POLICY_RESOURCE, makeArnResource(String.format("%s/*", bucketName)));
+
 		var ipAddress = new JsonObject();
-		ipAddress.addProperty("aws:SourceIp", "10.0.0.0/32");
+		ipAddress.addProperty("aws:SourceIp", "0.0.0.0/1"); // 너무 넓은 IP 범위
+		var condition = new JsonObject();
+		condition.add("IpAddress", ipAddress);
+		statement.add(MainData.POLICY_CONDITION, condition);
+
+		statements.add(statement);
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
+
+		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()));
+		var response = client.getBucketPolicyStatus(g -> g.bucket(bucketName));
+		assertTrue(response.policyStatus().isPublic());
+	}
+
+	@Test
+	@Tag("Status")
+	public void testBucketPolicyStatusWithIPRange() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
+
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
+
+		var statements = new JsonArray();
+		var statement = new JsonObject();
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
+
+		var principal = new JsonObject();
+		principal.addProperty("AWS", "*");
+		statement.add(MainData.POLICY_PRINCIPAL, principal);
+		statement.addProperty(MainData.POLICY_ACTION, "s3:GetObject");
+
+		var resources = new JsonArray();
+		resources.add(makeArnResource(String.format("%s/*", bucketName)));
+		statement.add(MainData.POLICY_RESOURCE, resources);
+
+		var ipAddress = new JsonObject();
+		ipAddress.addProperty("aws:SourceIp", "192.168.1.0/24");
 		var condition = new JsonObject();
 		condition.add("IpAddress", ipAddress);
 		statement.add(MainData.POLICY_CONDITION, condition);
@@ -713,5 +776,86 @@ public class Policy extends TestBase {
 		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()));
 		var response = client.getBucketPolicyStatus(g -> g.bucket(bucketName));
 		assertFalse(response.policyStatus().isPublic());
+	}
+
+	@Test
+	@Tag("Status")
+	public void testBucketPolicyStatusWithTimeCondition() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
+
+		var resource = makeArnResource(String.format("%s/*", bucketName));
+
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
+
+		var statements = new JsonArray();
+
+		// 매우 제한적인 시간대에만 허용하는 정책 (1초)
+		var allowStatement = new JsonObject();
+		allowStatement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
+		var allowPrincipal = new JsonObject();
+		allowPrincipal.addProperty("AWS", "*");
+		allowStatement.add(MainData.POLICY_PRINCIPAL, allowPrincipal);
+		allowStatement.addProperty(MainData.POLICY_ACTION, "s3:GetObject");
+		allowStatement.addProperty(MainData.POLICY_RESOURCE, resource);
+
+		// 매우 제한적인 시간 조건 추가 (1초)
+		var condition = new JsonObject();
+
+		var startTimeCondition = new JsonObject();
+		startTimeCondition.addProperty("aws:CurrentTime", java.time.OffsetDateTime.now().plusMinutes(10).toString());
+		condition.add("DateGreaterThan", startTimeCondition);
+
+		var endTimeCondition = new JsonObject();
+		endTimeCondition.addProperty("aws:CurrentTime",
+				java.time.OffsetDateTime.now().plusMinutes(10).plusSeconds(1).toString());
+		condition.add("DateLessThan", endTimeCondition);
+
+		allowStatement.add(MainData.POLICY_CONDITION, condition);
+		statements.add(allowStatement);
+
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
+
+		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()));
+		var response = client.getBucketPolicyStatus(g -> g.bucket(bucketName));
+		assertTrue(response.policyStatus().isPublic());
+	}
+
+	@Test
+	@Tag("Status")
+	public void testBucketPolicyStatusWithTagCondition() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client);
+
+		var resource = makeArnResource(String.format("%s/*", bucketName));
+
+		var policyDocument = new JsonObject();
+		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
+
+		var statements = new JsonArray();
+		var statement = new JsonObject();
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
+
+		var principal = new JsonObject();
+		principal.addProperty("AWS", "*");
+		statement.add(MainData.POLICY_PRINCIPAL, principal);
+
+		statement.addProperty(MainData.POLICY_ACTION, "s3:GetObject");
+		statement.addProperty(MainData.POLICY_RESOURCE, resource);
+
+		// 태그 조건 추가
+		var tagCondition = new JsonObject();
+		tagCondition.addProperty("s3:ExistingObjectTag/access", "restricted");
+		var condition = new JsonObject();
+		condition.add("StringEquals", tagCondition);
+		statement.add(MainData.POLICY_CONDITION, condition);
+
+		statements.add(statement);
+		policyDocument.add(MainData.POLICY_STATEMENT, statements);
+
+		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()));
+		var response = client.getBucketPolicyStatus(g -> g.bucket(bucketName));
+		assertTrue(response.policyStatus().isPublic());
 	}
 }
