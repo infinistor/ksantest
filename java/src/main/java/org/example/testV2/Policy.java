@@ -317,6 +317,7 @@ public class Policy extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> altClient.getObject(g -> g.bucket(bucketName).key(privateTag)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 
 		e = assertThrows(AwsServiceException.class,
 				() -> altClient.getObject(g -> g.bucket(bucketName).key(invalidTag)));
@@ -358,6 +359,7 @@ public class Policy extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> altClient.getObject(g -> g.bucket(bucketName).key(publicTag)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 
 		e = assertThrows(AwsServiceException.class,
 				() -> altClient.getObjectTagging(g -> g.bucket(bucketName).key(privateTag)));
@@ -391,7 +393,8 @@ public class Policy extends TestBase {
 		client.putObjectTagging(p -> p.bucket(bucketName).key(publicTag).tagging(
 				t -> t.tagSet(tag1 -> tag1.key("security").value("public"), tag2 -> tag2.key("foo").value("bar"))));
 		client.putObjectTagging(
-				p -> p.bucket(bucketName).key(privateTag).tagging(t -> t.tagSet(tag -> tag.key("security").value("private"))));
+				p -> p.bucket(bucketName).key(privateTag)
+						.tagging(t -> t.tagSet(tag -> tag.key("security").value("private"))));
 
 		client.putObjectTagging(p -> p.bucket(bucketName).key(invalidTag)
 				.tagging(t -> t.tagSet(tag -> tag.key("security1").value("public"))));
@@ -404,6 +407,7 @@ public class Policy extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> altClient.putObjectTagging(p -> p.bucket(bucketName).key(privateTag).tagging(testTagSet)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 
 		altClient.putObjectTagging(p -> p.bucket(bucketName).key(publicTag)
 				.tagging(t -> t.tagSet(tag -> tag.key("security").value("private").build())));
@@ -564,7 +568,8 @@ public class Policy extends TestBase {
 		var altClient = getAltClient();
 		var key1 = "key1";
 
-		altClient.putObject(p -> p.bucket(bucketName1).key(key1).grantFullControl(ownerId), RequestBody.fromString(key1));
+		altClient.putObject(p -> p.bucket(bucketName1).key(key1).grantFullControl(ownerId),
+				RequestBody.fromString(key1));
 
 		var key2 = "key2";
 		altClient.putObject(p -> p.bucket(bucketName2).key(key2), RequestBody.fromString(key2));
@@ -615,6 +620,7 @@ public class Policy extends TestBase {
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> altClient.getObject(g -> g.bucket(bucketName).key(publicTag)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 
 		e = assertThrows(AwsServiceException.class,
 				() -> altClient.getObjectTagging(g -> g.bucket(bucketName).key(privateTag)));

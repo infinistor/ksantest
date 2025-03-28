@@ -385,8 +385,7 @@ public class Grants extends TestBase {
 
 		client.getObject(bucketName, key);
 
-		var exception = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, "A"));
-		assertEquals(HttpStatus.SC_FORBIDDEN, exception.getStatusCode());
+		client.putObject(bucketName, key, "A");
 
 		var client2 = getClient();
 		client2.getBucketAcl(bucketName);

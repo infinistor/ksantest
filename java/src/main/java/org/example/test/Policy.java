@@ -327,6 +327,7 @@ public class Policy extends TestBase {
 		assertNotNull(getResponse);
 
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, privateTag));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 
 		e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, invalidTag));
 		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
@@ -374,6 +375,7 @@ public class Policy extends TestBase {
 		assertNotNull(getResponse);
 
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, publicTag));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 
 		e = assertThrows(AmazonServiceException.class,
 				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privateTag)));
@@ -422,6 +424,7 @@ public class Policy extends TestBase {
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, privateTag, testTagSet)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 
 		altClient.setObjectTagging(new SetObjectTaggingRequest(bucketName, publicTag,
 				new ObjectTagging(List.of(new com.amazonaws.services.s3.model.Tag("security", "private")))));
@@ -644,6 +647,7 @@ public class Policy extends TestBase {
 		assertNotNull(aclResponse);
 
 		var e = assertThrows(AmazonServiceException.class, () -> altClient.getObject(bucketName, publicTag));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
 
 		e = assertThrows(AmazonServiceException.class,
 				() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, privateTag)));

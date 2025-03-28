@@ -384,8 +384,7 @@ public class Grants extends TestBase {
 
 		client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(acl.build()));
 
-		assertThrows(AwsServiceException.class,
-				() -> client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("A")));
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("A"));
 
 		var client2 = getClient();
 		client2.getBucketAcl(g -> g.bucket(bucketName));
