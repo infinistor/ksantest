@@ -135,6 +135,7 @@
 						<include>DeleteBucket.java</include>
 						<include>DeleteObjects.java</include>
 						<include>GetObject.java</include>
+						<include>GetObjectAttributes.java</include>
 						<include>Grants.java</include>
 						<include>Inventory.java</include>
 						<include>LifeCycle.java</include>
@@ -144,8 +145,8 @@
 						<include>ListObjectsVersions.java</include>
 						<include>Lock.java</include>
 						<include>Logging.java</include>
-						<include>Multipart.java</include>
 						<include>Metrics.java</include>
+						<include>Multipart.java</include>
 						<include>Notification.java</include>
 						<include>Ownership.java</include>
 						<include>Payment.java</include>
