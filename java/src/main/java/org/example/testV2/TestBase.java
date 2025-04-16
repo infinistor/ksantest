@@ -372,6 +372,10 @@ public class TestBase {
 	public String createBucket(S3Client client) {
 		var bucketName = getNewBucketName();
 		client.createBucket(c -> c.bucket(bucketName));
+		if (config.isOldSystem()) {
+			var oldClient = getOldClient();
+			oldClient.createBucket(c -> c.bucket(bucketName));
+		}
 		return bucketName;
 	}
 
