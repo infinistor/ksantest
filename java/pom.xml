@@ -114,6 +114,12 @@
 			<artifactId>aws-crt</artifactId>
 			<version>0.34.1</version>
 		</dependency>
+		<!-- Commons Lang3 -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.16.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
