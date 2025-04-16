@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 
@@ -297,7 +299,6 @@ public class ListObjectsVersions extends TestBase {
 		var client = getClient();
 		var keyNames = List.of("bar", "baz", "cab", "foo");
 		var bucketName = createObjects(client, keyNames);
-
 
 		var response = client.listObjectVersions(l -> l.bucket(bucketName));
 
@@ -791,5 +792,32 @@ public class ListObjectsVersions extends TestBase {
 		assertEquals(delimiter, response.delimiter());
 		assertEquals(maxKeys, response.maxKeys());
 		assertEquals(false, response.isTruncated());
+	}
+
+	@Test
+	@Tag("Object")
+	public void testVersioningObjListMarker() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var keyName = "testVersioningObjListMarker";
+		var objects = new ArrayList<String>();
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		for (var i = 0; i < 10; i++) {
+			var response = client.putObject(p -> p.bucket(bucketName).key(keyName),
+					RequestBody.fromString(keyName + i));
+			objects.add(response.versionId());
+		}
+
+		// 역순으로 재정렬
+		Collections.reverse(objects);
+
+		var response = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(objects.size(), response.versions().size());
+
+		for (var i = 0; i < objects.size(); i++) {
+			assertEquals(objects.get(i), response.versions().get(i).versionId());
+		}
 	}
 }

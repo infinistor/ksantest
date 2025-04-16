@@ -133,7 +133,10 @@ public class S3Config {
 	}
 
 	int readKeyToInt(String section, String key) {
-		return Integer.parseInt(ini.get(section, key));
+		var value = ini.get(section, key);
+		if (StringUtils.isBlank(value))
+			return -1;
+		return Integer.parseInt(value);
 	}
 
 	boolean readKeyToBoolean(String section, String key) {

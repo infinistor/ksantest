@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
@@ -810,5 +811,31 @@ public class ListObjectsVersions extends TestBase {
 		assertEquals(delimiter, response.getDelimiter());
 		assertEquals(maxKeys, response.getMaxKeys());
 		assertEquals(false, response.isTruncated());
+	}
+
+	@Test
+	@Tag("Object")
+	public void testVersioningObjListMarker() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var keyName = "testVersioningObjListMarker";
+		var objects = new ArrayList<String>();
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+
+		for (var i = 0; i < 10; i++) {
+			var response = client.putObject(bucketName, keyName, keyName + i);
+			objects.add(response.getVersionId());
+		}
+
+		// 역순으로 재정렬
+		Collections.reverse(objects);
+
+		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
+		assertEquals(objects.size(), response.getVersionSummaries().size());
+
+		for (var i = 0; i < objects.size(); i++) {
+			assertEquals(objects.get(i), response.getVersionSummaries().get(i).getVersionId());
+		}
 	}
 }

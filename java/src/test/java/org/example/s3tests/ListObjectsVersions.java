@@ -422,4 +422,14 @@ class ListObjectsVersions {
 		test.testVersioningBucketListFilteringAll();
 		testV2.testVersioningBucketListFilteringAll();
 	}
+
+	/**
+	 * 단일 오브젝트의 버전 목록을 올바르게 가져오는지 확인
+	 */
+	@Test
+	@Tag("Object")
+	void testVersioningObjListMarker() {
+		test.testVersioningObjListMarker();
+		testV2.testVersioningObjListMarker();
+	}
 }
