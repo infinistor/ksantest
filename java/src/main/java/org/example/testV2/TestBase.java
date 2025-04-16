@@ -215,7 +215,7 @@ public class TestBase {
 	}
 
 	public S3Client getOldClient() {
-		var url = NetUtils.createURLToHTTP(config.oldUrl, config.port);
+		var url = NetUtils.createURLToHTTP(config.url, config.oldPort);
 		var credential = StaticCredentialsProvider.create(AwsBasicCredentials.create(config.mainUser.accessKey,
 				config.mainUser.secretKey));
 		var httpClient = ApacheHttpClient.builder()

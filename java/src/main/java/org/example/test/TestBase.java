@@ -193,7 +193,7 @@ public class TestBase {
 	}
 
 	public AmazonS3 getOldClient() {
-		var address = NetUtils.createURLToHTTP(config.oldUrl, config.port);
+		var address = NetUtils.createURLToHTTP(config.url, config.oldPort);
 		var credential = new AWSStaticCredentialsProvider(new BasicAWSCredentials(config.mainUser.accessKey,
 				config.mainUser.secretKey));
 		var s3Config = new ClientConfiguration()

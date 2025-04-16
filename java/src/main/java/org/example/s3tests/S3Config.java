@@ -28,8 +28,8 @@ public class S3Config {
 	///////////////////////////////////// S3///////////////////////////////////////////
 	static final String STR_S3 = "S3";
 	static final String STR_URL = "URL";
-	static final String STR_OLD_URL = "OldURL";
 	static final String STR_PORT = "Port";
+	static final String STR_OLD_PORT = "OldPort";
 	static final String STR_SSL_PORT = "SSLPort";
 	static final String STR_SIGNATURE_VERSION = "SignatureVersion";
 	static final String STR_IS_SECURE = "IsSecure";
@@ -56,8 +56,8 @@ public class S3Config {
 	final Ini ini = new Ini();
 	/*********************************************************************************************************/
 	public String url;
-	public String oldUrl;
 	public int port;
+	public int oldPort;
 	public int sslPort;
 	public String regionName;
 	public String signatureVersion;
@@ -82,8 +82,8 @@ public class S3Config {
 			ini.load(new FileReader(file));
 
 			url = readKeyToString(STR_S3, STR_URL);
-			oldUrl = readKeyToString(STR_S3, STR_OLD_URL);
 			port = readKeyToInt(STR_S3, STR_PORT);
+			oldPort = readKeyToInt(STR_S3, STR_OLD_PORT);
 			sslPort = readKeyToInt(STR_S3, STR_SSL_PORT);
 			regionName = readKeyToString(STR_S3, STR_REGION);
 			signatureVersion = readKeyToString(STR_S3, STR_SIGNATURE_VERSION);
@@ -112,7 +112,7 @@ public class S3Config {
 	}
 
 	public boolean isOldSystem() {
-		return StringUtils.isNotBlank(oldUrl);
+		return oldPort > 0;
 	}
 
 	UserData readUser(String section) {
