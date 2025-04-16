@@ -13,6 +13,7 @@ package org.example.s3tests;
 import java.io.File;
 import java.io.FileReader;
 
+import org.apache.commons.lang3.StringUtils;
 import org.example.Data.UserData;
 import org.ini4j.Ini;
 
@@ -27,6 +28,7 @@ public class S3Config {
 	///////////////////////////////////// S3///////////////////////////////////////////
 	static final String STR_S3 = "S3";
 	static final String STR_URL = "URL";
+	static final String STR_OLD_URL = "OldURL";
 	static final String STR_PORT = "Port";
 	static final String STR_SSL_PORT = "SSLPort";
 	static final String STR_SIGNATURE_VERSION = "SignatureVersion";
@@ -54,6 +56,7 @@ public class S3Config {
 	final Ini ini = new Ini();
 	/*********************************************************************************************************/
 	public String url;
+	public String oldUrl;
 	public int port;
 	public int sslPort;
 	public String regionName;
@@ -79,6 +82,7 @@ public class S3Config {
 			ini.load(new FileReader(file));
 
 			url = readKeyToString(STR_S3, STR_URL);
+			oldUrl = readKeyToString(STR_S3, STR_OLD_URL);
 			port = readKeyToInt(STR_S3, STR_PORT);
 			sslPort = readKeyToInt(STR_S3, STR_SSL_PORT);
 			regionName = readKeyToString(STR_S3, STR_REGION);
@@ -104,7 +108,11 @@ public class S3Config {
 	}
 
 	public boolean isAWS() {
-		return url == null || url.length() == 0;
+		return StringUtils.isNotBlank(url);
+	}
+
+	public boolean isOldSystem() {
+		return StringUtils.isNotBlank(oldUrl);
 	}
 
 	UserData readUser(String section) {

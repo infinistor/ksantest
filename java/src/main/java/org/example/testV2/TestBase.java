@@ -214,6 +214,20 @@ public class TestBase {
 				.endpointOverride(URI.create(address)).build();
 	}
 
+	public S3Client getOldClient() {
+		var url = NetUtils.createURLToHTTP(config.oldUrl, config.port);
+		var credential = StaticCredentialsProvider.create(AwsBasicCredentials.create(config.mainUser.accessKey,
+				config.mainUser.secretKey));
+		var httpClient = ApacheHttpClient.builder()
+				.connectionTimeout(Duration.ofSeconds(10))
+				.socketTimeout(Duration.ofSeconds(10));
+		var s3Config = S3Configuration.builder().pathStyleAccessEnabled(true).build();
+		return S3Client.builder()
+				.region(Region.AP_NORTHEAST_2)
+				.credentialsProvider(credential).httpClientBuilder(httpClient)
+				.serviceConfiguration(s3Config).endpointOverride(URI.create(url)).build();
+	}
+
 	public S3Client getClient() {
 		return createClient(config.isSecure, config.mainUser, false, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);

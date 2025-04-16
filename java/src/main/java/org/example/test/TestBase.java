@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -191,6 +192,26 @@ public class TestBase {
 		return clientBuilder.build();
 	}
 
+	public AmazonS3 getOldClient() {
+		var address = NetUtils.createURLToHTTP(config.oldUrl, config.port);
+		var credential = new AWSStaticCredentialsProvider(new BasicAWSCredentials(config.mainUser.accessKey,
+				config.mainUser.secretKey));
+		var s3Config = new ClientConfiguration()
+				.withProtocol(Protocol.HTTP)
+				.withMaxErrorRetry(1)
+				.withConnectionTimeout(60000)
+				.withSocketTimeout(60000);
+
+		return AmazonS3ClientBuilder.standard()
+				.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(address, ""))
+				.withCredentials(credential)
+				.withClientConfiguration(s3Config)
+				.withChunkedEncodingDisabled(true)
+				.withPayloadSigningEnabled(false)
+				.withPathStyleAccessEnabled(true)
+				.build();
+	}
+
 	public AmazonS3 getClient() {
 		return createClient(config.isSecure, config.mainUser, true, true, config.getSignatureVersion());
 	}
@@ -276,6 +297,10 @@ public class TestBase {
 	public String createBucket(AmazonS3 client) {
 		var bucketName = getNewBucketName();
 		client.createBucket(bucketName);
+		if (config.isOldSystem()) {
+			var oldClient = getOldClient();
+			oldClient.createBucket(bucketName);
+		}
 		return bucketName;
 	}
 
@@ -624,7 +649,7 @@ public class TestBase {
 				for (int length; (length = data.read(buffer)) != -1;) {
 					result.write(buffer, 0, length);
 				}
-				return result.toString("UTF-8");
+				return result.toString(StandardCharsets.UTF_8);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
