@@ -391,8 +391,8 @@ public class Grants extends TestBase {
 		client2.getBucketAcl(bucketName);
 		client2.setBucketAcl(bucketName, CannedAccessControlList.Private);
 
-		for (var MyGrant : oldGrants)
-			acl.grantAllPermissions(MyGrant);
+		for (var myGrant : oldGrants)
+			acl.grantAllPermissions(myGrant);
 		client2.setBucketAcl(bucketName, acl);
 	}
 
