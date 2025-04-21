@@ -108,7 +108,7 @@ public class S3Config {
 	}
 
 	public boolean isAWS() {
-		return StringUtils.isNotBlank(url);
+		return StringUtils.isBlank(url);
 	}
 
 	public boolean isOldSystem() {
