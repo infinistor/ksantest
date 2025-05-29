@@ -54,27 +54,29 @@ def main():
 
 
 def merge_results(xml_files):
-    failures = 0
     tests = 0
     errors = 0
+    skipped = 0
+    failures = 0
     time = 0.0
     cases = []
 
     for file_name in xml_files:
         tree = ET.parse(file_name)
         test_suite = tree.getroot()
-        failures += int(test_suite.attrib["failures"])
         tests += int(test_suite.attrib["tests"])
         errors += int(test_suite.attrib["errors"])
+        skipped += int(test_suite.attrib["skipped"])
+        failures += int(test_suite.attrib["failures"])
         time += float(test_suite.attrib["time"])
         cases.extend(list(test_suite))
 
     new_root = ET.Element("testsuite")
-    new_root.attrib["failures"] = "%s" % failures
     new_root.attrib["tests"] = "%s" % tests
     new_root.attrib["errors"] = "%s" % errors
+    new_root.attrib["skipped"] = "%s" % skipped
+    new_root.attrib["failures"] = "%s" % failures
     new_root.attrib["time"] = "%s" % time
-
     for case in cases:
         new_root.append(case)
 
