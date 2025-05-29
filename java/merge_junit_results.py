@@ -1,33 +1,8 @@
 #!/usr/bin/env python
-
-"""Merge multiple JUnit XML results files into a single results file."""
-
-#  MIT License
-#
-#  Copyright (c) 2012 Corey Goldberg
-#
-#  Permission is hereby granted, free of charge, to any person obtaining a copy
-#  of this software and associated documentation files (the "Software"), to deal
-#  in the Software without restriction, including without limitation the rights
-#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#  copies of the Software, and to permit persons to whom the Software is
-#  furnished to do so, subject to the following conditions:
-#
-#  The above copyright notice and this permission notice shall be included in all
-#  copies or substantial portions of the Software.
-#
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#  SOFTWARE.
-
 import sys
 import glob
 import xml.etree.ElementTree as ET
-
+from typing import List
 
 """Merge multiple JUnit XML files into a single results file.
 Output dumps to stdout.
@@ -53,7 +28,7 @@ def main():
     merge_results(expanded_args)
 
 
-def merge_results(xml_files):
+def merge_results(xml_files: List[str]) -> None:
     tests = 0
     errors = 0
     skipped = 0
@@ -62,26 +37,44 @@ def merge_results(xml_files):
     cases = []
 
     for file_name in xml_files:
-        tree = ET.parse(file_name)
-        test_suite = tree.getroot()
-        tests += int(test_suite.attrib["tests"])
-        errors += int(test_suite.attrib["errors"])
-        skipped += int(test_suite.attrib["skipped"])
-        failures += int(test_suite.attrib["failures"])
-        time += float(test_suite.attrib["time"])
-        cases.extend(list(test_suite))
+        try:
+            tree = ET.parse(file_name)
+            test_suite = tree.getroot()
+            
+            # 필수 속성이 없을 경우 기본값 0 사용
+            tests += int(test_suite.attrib.get("tests", 0))
+            errors += int(test_suite.attrib.get("errors", 0))
+            skipped += int(test_suite.attrib.get("skipped", 0))
+            failures += int(test_suite.attrib.get("failures", 0))
+            time += float(test_suite.attrib.get("time", 0.0))
+            
+            # properties 요소 제거
+            for case in test_suite:
+                for prop in case.findall("properties"):
+                    case.remove(prop)
+            cases.extend(list(test_suite))
+        except ET.ParseError:
+            print(f"Warning: Failed to parse {file_name}", file=sys.stderr)
+            continue
 
     new_root = ET.Element("testsuite")
-    new_root.attrib["tests"] = "%s" % tests
-    new_root.attrib["errors"] = "%s" % errors
-    new_root.attrib["skipped"] = "%s" % skipped
-    new_root.attrib["failures"] = "%s" % failures
-    new_root.attrib["time"] = "%s" % time
+    new_root.attrib["tests"] = str(tests)
+    new_root.attrib["errors"] = str(errors)
+    new_root.attrib["skipped"] = str(skipped)
+    new_root.attrib["failures"] = str(failures)
+    new_root.attrib["time"] = str(time)
+    
     for case in cases:
         new_root.append(case)
 
     tree = ET.ElementTree(new_root)
-    tree.write(sys.stdout, encoding="unicode")
+    
+    # UTF-8로 인코딩하여 출력
+    xml_content = ET.tostring(new_root, encoding='utf-8', xml_declaration=True)
+    if hasattr(sys.stdout, 'buffer'):
+        sys.stdout.buffer.write(xml_content)
+    else:
+        sys.stdout.write(xml_content.decode('utf-8'))
 
 
 def usage():
