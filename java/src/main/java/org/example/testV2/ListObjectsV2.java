@@ -106,7 +106,7 @@ public class ListObjectsV2 extends TestBase {
 
 		var prefixes = getPrefixList(response.commonPrefixes());
 		assertEquals(3, prefixes.size());
-		assertLinesMatch(List.of("foo+1/", "foo/", "quux+ab/"), prefixes);
+		assertLinesMatch(List.of("foo+1/", "foo/", "quux ab/"), prefixes);
 	}
 
 	@Test

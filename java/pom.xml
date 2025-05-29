@@ -8,7 +8,7 @@
 	<name>s3tests_java</name>
 
 	<properties>
-		<aws.java.sdk.version>2.30.21</aws.java.sdk.version>
+		<aws.java.sdk.version>2.31.25</aws.java.sdk.version>
 		<org.springframework-version>5.1.14.RELEASE</org.springframework-version>
 		<org.apache.httpcomponents-version>5.3.1</org.apache.httpcomponents-version>
 		<project.build.sourceEncoding>utf-8</project.build.sourceEncoding>

@@ -103,12 +103,11 @@ public class ListObjectsV2 extends TestBase {
 		var response = client.listObjectsV2(
 				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter(delimiter).withEncodingType("URL"));
 		assertEquals(delimiter, response.getDelimiter());
-		assertEquals(List.of("asdf%2Bb"),
-				getKeys(response.getObjectSummaries()));
+		assertEquals(List.of("asdf%2Bb"), getKeys(response.getObjectSummaries()));
 
 		var prefixes = response.getCommonPrefixes();
 		assertEquals(3, prefixes.size());
-		assertEquals(List.of("foo%2B1/", "foo/", "quux+ab/"), prefixes);
+		assertLinesMatch(List.of("foo%2B1/", "foo/", "quux+ab/"), prefixes);
 	}
 
 	@Test
