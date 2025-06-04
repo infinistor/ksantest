@@ -149,7 +149,7 @@ public class TestBase {
 	protected final S3Config config;
 
 	protected TestBase() {
-		String fileName = System.getenv(MainData.S3TESTS_INI);
+		String fileName = System.getProperty("s3tests.ini", "default.ini");
 		config = new S3Config(fileName);
 		config.getConfig();
 	}

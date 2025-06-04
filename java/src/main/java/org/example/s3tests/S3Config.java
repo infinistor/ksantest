@@ -18,10 +18,7 @@ import org.example.Data.UserData;
 import org.ini4j.Ini;
 
 public class S3Config {
-	// static final String STR_FILENAME = "config.ini";
-	// static final String STR_FILENAME = "s3tests-ksan.ini";
-	// static final String STR_FILENAME = "s3tests-229.ini";
-	static final String STR_FILENAME = "awstests.ini";
+	static final String STR_FILENAME = "config.ini";
 
 	public static final String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
 	public static final String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";

@@ -12,6 +12,7 @@ package org.example.s3tests;
 
 import java.io.PrintWriter;
 
+import org.apache.commons.cli.*;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
@@ -22,23 +23,66 @@ import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 public class Main {
 	public static void main(String[] args) {
+		// Create command line options
+		Options options = new Options();
+		options.addOption(Option.builder("c")
+				.longOpt("class")
+				.desc("Run tests for specific class")
+				.hasArg()
+				.argName("className")
+				.build());
+		options.addOption(Option.builder("m")
+				.longOpt("method")
+				.desc("Run specific test method (requires -c)")
+				.hasArg()
+				.argName("methodName")
+				.build());
+		options.addOption(Option.builder("f")
+				.longOpt("config")
+				.desc("Specify config file path")
+				.hasArg()
+				.argName("file")
+				.build());
+		options.addOption(Option.builder("h")
+				.longOpt("help")
+				.desc("Show this help message")
+				.build());
+
+		CommandLineParser parser = new DefaultParser();
+		HelpFormatter formatter = new HelpFormatter();
+		CommandLine cmd = null;
+
+		try {
+			cmd = parser.parse(options, args);
+		} catch (ParseException e) {
+			System.err.println(e.getMessage());
+			formatter.printHelp("s3test", options, true);
+			System.exit(1);
+		}
+
+		if (cmd.hasOption("h")) {
+			formatter.printHelp("s3test", options, true);
+			return;
+		}
+
+		// Set config file if specified
+		if (cmd.hasOption("f")) {
+			System.setProperty("s3tests.ini", cmd.getOptionValue("f"));
+		}
 
 		LauncherDiscoveryRequest request = null;
+		String className = cmd.getOptionValue("c");
+		String methodName = cmd.getOptionValue("m");
 
-		if (args.length == 1) {
-			String className = args[0];
-			System.out.println("Class Test " + className);
-
-			request = LauncherDiscoveryRequestBuilder.request()
-					.selectors(DiscoverySelectors.selectClass(getTestPackageName(className, null)))
-					.build();
-		} else if (args.length == 2) {
-			String className = args[0];
-			String methodName = args[1];
+		if (className != null && methodName != null) {
 			System.out.printf("Method Test %s.%s%n", className, methodName);
-
 			request = LauncherDiscoveryRequestBuilder.request()
 					.selectors(DiscoverySelectors.selectMethod(getTestPackageName(className, methodName)))
+					.build();
+		} else if (className != null) {
+			System.out.println("Class Test " + className);
+			request = LauncherDiscoveryRequestBuilder.request()
+					.selectors(DiscoverySelectors.selectClass(getTestPackageName(className, null)))
 					.build();
 		} else {
 			System.out.println("Full Test");
