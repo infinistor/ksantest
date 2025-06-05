@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<pattern>%-5level %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread{5}][%logger{10}.%method:%line] : %msg%n</pattern>
+		</layout>
+	</appender>
+	<root level="INFO">
+		<appender-ref ref="STDOUT"/>
+	</root>
+</configuration>

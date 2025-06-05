@@ -1,0 +1,8 @@
+db:
+  host: 192.168.11.245
+  port: 3306
+  database: jenkins
+  user: jenkins
+  password: jenkins123
+jenkins:
+  url: http://192.168.11.245:8080
