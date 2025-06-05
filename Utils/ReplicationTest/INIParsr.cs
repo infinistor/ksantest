@@ -768,7 +768,7 @@ public class IniSection : IEnumerable<KeyValuePair<string, IniValue>>, IDictiona
 		{
 			if (Ordered != value)
 			{
-				orderedKeys = value ? new List<string>(values.Keys) : null;
+				orderedKeys = value ? values.Keys.ToList() : null;
 			}
 		}
 	}

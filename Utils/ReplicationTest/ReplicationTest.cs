@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
@@ -29,123 +29,146 @@ namespace ReplicationTest
 		const int TEST_OPTION_HTTP_ONLY = 1;
 		const int TEST_OPTION_HTTPS_ONLY = 2;
 
-		readonly MainConfig Config;
-		readonly DBManager DB;
+		readonly MainConfig _config;
+		readonly DBManager _db;
+
+		public ReplicationTest(MainConfig config, DBManager db)
+		{
+			_config = config;
+			_db = db;
+		}
 
 		// 버킷 구성
-		const string Prefix = "1/";
-		readonly Tag MyTag = new() { Key = "Replication", Value = "True" };
-
-		public ReplicationTest(MainConfig Config, DBManager DB)
-		{
-			this.Config = Config;
-			this.DB = DB;
-		}
+		const string PREFIX = "2/";
+		static readonly Tag _defaultTag = new() { Key = "Replication", Value = "True" };
 
 		public void Test()
 		{
 			// http 테스트
-			if (Config.SSL != TEST_OPTION_HTTPS_ONLY)
+			if (_config.SSL != TEST_OPTION_HTTPS_ONLY)
 			{
-				Start(Config.Normal, false);
-				Start(Config.Encryption, false);
+				Start(_config.Normal, false);
+				Start(_config.Encryption, false);
 			}
 			// https 테스트
-			if (Config.SSL != TEST_OPTION_HTTP_ONLY)
+			if (_config.SSL != TEST_OPTION_HTTP_ONLY)
 			{
-				Start(Config.Normal, true);
-				Start(Config.Encryption, true);
+				Start(_config.Normal, true);
+				Start(_config.Encryption, true);
 			}
 		}
 
-		public void Start(BucketData MainBucket, bool SSL)
+		public void Start(BucketData mainBucket, bool ssl)
 		{
 			// 클라이언트 선언
-			AmazonS3Client MainClient = SSL ? CreateClientHttps(Config.MainUser) : CreateClient(Config.MainUser);
-			AmazonS3Client AltClient = SSL ? CreateClientHttps(Config.AltUser) : CreateClient(Config.AltUser);
+			var mainClient = ssl ? CreateClientHttps(_config.MainUser) : CreateClient(_config.MainUser);
+			var altClient = ssl ? CreateClientHttps(_config.AltUser) : CreateClient(_config.AltUser);
 
 			// 타겟 버킷 설정
-			var MainTargetList = CreateTargetBucketList(Config.TargetBucketPrefix);
-			var AltTargetList = CreateTargetBucketList($"{Config.TargetBucketPrefix}alt-");
+			var mainTargetList = CreateTargetBucketList(_config.TargetBucketPrefix);
+			var altTargetList = CreateTargetBucketList($"{_config.TargetBucketPrefix}alt-");
 
 			//원본 버킷 생성 및 버저닝 설정
-			if (!SetBucket(MainClient, MainBucket)) return;
+			if (!SetBucket(mainClient, mainBucket)) return;
 			//로컬 시스템 타깃 버킷 생성 및 버저닝 설정
-			var Create = true;
-			if (Config.TestOption != TEST_OPTION_ANOTHER_ONLY)
+			var create = true;
+			if (_config.TestOption != TEST_OPTION_ANOTHER_ONLY)
 			{
-				foreach (var Bucket in MainTargetList)
+				foreach (var bucket in mainTargetList)
 				{
-					if (!SetBucket(MainClient, Bucket))
+					if (!SetBucket(mainClient, bucket))
 					{
-						Create = false;
+						create = false;
 						break;
 					}
-					else Bucket.Create = true;
+					else bucket.Create = true;
 				}
 			}
 
 			//다른 시스템 타깃 버킷 생성 및 버저닝 설정
-			if (Config.TestOption != TEST_OPTION_LOCAL_ONLY)
+			if (_config.TestOption != TEST_OPTION_LOCAL_ONLY)
 			{
-				foreach (var Bucket in AltTargetList)
+				foreach (var bucket in altTargetList)
 				{
-					if (!SetBucket(AltClient, Bucket))
+					if (!SetBucket(altClient, bucket))
 					{
-						Create = false;
+						create = false;
 						break;
 					}
-					else Bucket.Create = true;
+					else bucket.Create = true;
 				}
 			}
 
-			if (Create)
+			if (create)
 			{
 				log.Info("Create Bucket!");
 
 				//룰 생성
-				var MainRuleList = CreateReplicationRules(MainTargetList);
-				var AltRuleList = CreateReplicationRules(AltTargetList, MainRuleList.Count + 1, Config.AltUser);
-				var Replication = new ReplicationConfiguration { Role = "" };
-				if (Config.TestOption != TEST_OPTION_ANOTHER_ONLY) Replication.Rules.AddRange(MainRuleList);
-				if (Config.TestOption != TEST_OPTION_LOCAL_ONLY) Replication.Rules.AddRange(AltRuleList);
+				var mainRuleList = CreateReplicationRules(mainTargetList);
+				var altRuleList = CreateReplicationRules(altTargetList, mainRuleList.Count + 1, _config.AltUser);
+				var replication = new ReplicationConfiguration { Role = "" };
+				if (_config.TestOption != TEST_OPTION_ANOTHER_ONLY) replication.Rules.AddRange(mainRuleList);
+				if (_config.TestOption != TEST_OPTION_LOCAL_ONLY) replication.Rules.AddRange(altRuleList);
 
 				// 복제 설정
-				if (PutBucketReplication(MainClient, MainBucket.BucketName, Replication))
+				if (PutBucketReplication(mainClient, mainBucket.BucketName, replication))
 				{
 					log.Info("Bucket Replication!");
 
 					// 파일 업로드
-					var ObjectList = new List<string>() { "aaa", "bbb", "ccc", "1/ddd", "1/eee", "2/fff", "3/ggg" };
+					var keys = new List<string>() { "normal", "1/normal", "2/normal", "2/3/normal" };
+
+					// 삭제할 파일 목록 추가
+					var deleteKey = "delete";
+					keys.Add(deleteKey);
+
+					// 삭제할 파일 목록 추가
+					var deleteKeys = new List<string>() { "1/delete", "2/delete", "2/3/delete" };
+					keys.AddRange(deleteKeys);
 
 					// Put
-					foreach (var ObjectName in ObjectList) PutObject(MainClient, MainBucket.BucketName, ObjectName);
+					foreach (var key in keys) PutObject(mainClient, mainBucket.BucketName, key);
+
+					// checksum 파일 목록 추가
+					var checksumCrc32 = "crc32";
+					var checksumCrc32c = "crc32c";
+					var checksumCrc64nvme = "crc64nvme";
+					var checksumSha1 = "sha1";
+					var checksumSha256 = "sha256";
+					keys.AddRange([checksumCrc32, checksumCrc32c, checksumCrc64nvme, checksumSha1, checksumSha256]);
+
+					// Put Checksum
+					PutObject(mainClient, mainBucket.BucketName, checksumCrc32, ChecksumAlgorithm.CRC32);
+					PutObject(mainClient, mainBucket.BucketName, checksumCrc32c, ChecksumAlgorithm.CRC32C);
+					PutObject(mainClient, mainBucket.BucketName, checksumCrc64nvme, ChecksumAlgorithm.CRC64NVME);
+					PutObject(mainClient, mainBucket.BucketName, checksumSha1, ChecksumAlgorithm.SHA1);
+					PutObject(mainClient, mainBucket.BucketName, checksumSha256, ChecksumAlgorithm.SHA256);
 
 					// Delete
-					DeleteObject(MainClient, MainBucket.BucketName, "bbb");
-					DeleteObjects(MainClient, MainBucket.BucketName, new List<string>() { "1/ddd", "1/eee" });
+					DeleteObject(mainClient, mainBucket.BucketName, deleteKey);
+					DeleteObjects(mainClient, mainBucket.BucketName, deleteKeys);
 
 					// Copy
-					CopyObject(MainClient, MainBucket.BucketName, ObjectList[0], MainBucket.BucketName, "copy");
+					CopyObject(mainClient, mainBucket.BucketName, keys[0], mainBucket.BucketName, keys[0] + "-copy");
 
 					// another copy
-					var AntherBucket = MainBucket.BucketName + "-anther";
-					var CopyKey = "source-copy";
-					CreateBucket(MainClient, AntherBucket);
-					PutObject(MainClient, AntherBucket, CopyKey);
-					CopyObject(MainClient, AntherBucket, CopyKey, MainBucket.BucketName, "another-copy");
+					var antherBucket = mainBucket.BucketName + "-anther";
+					var copyKey = "source";
+					CreateBucket(mainClient, antherBucket);
+					PutObject(mainClient, antherBucket, copyKey);
+					CopyObject(mainClient, antherBucket, copyKey, mainBucket.BucketName, "another-copy");
 
 					// multipart
-					MultipartUpload(MainClient, MainBucket.BucketName, "multi");
+					MultipartUpload(mainClient, mainBucket.BucketName, "multipart");
 					log.Info("Upload End!");
 
-					Thread.Sleep(Config.Delay * 1000);
+					Thread.Sleep(_config.Delay * 1000);
 
 					// 버저닝 정보를 포함한 비교
-					if (Config.TestOption != TEST_OPTION_ANOTHER_ONLY) MainCompare(MainClient, MainBucket, MainClient, MainTargetList);
-					if (Config.TestOption != TEST_OPTION_LOCAL_ONLY) MainCompare(MainClient, MainBucket, AltClient, AltTargetList);
+					if (_config.TestOption != TEST_OPTION_ANOTHER_ONLY) Compare(mainClient, mainBucket, mainClient, mainTargetList);
+					if (_config.TestOption != TEST_OPTION_LOCAL_ONLY) Compare(mainClient, mainBucket, altClient, altTargetList);
 					log.Info("Replication Check End!");
-					BucketClear(MainClient, AntherBucket);
+					BucketClear(mainClient, antherBucket);
 				}
 				else
 					log.Info("Bucket Replication Failed!");
@@ -154,16 +177,16 @@ namespace ReplicationTest
 				log.Error("Bucket Create Failed");
 
 			// 버킷 삭제
-			BucketClear(MainClient, MainBucket.BucketName);
-			if (Config.TestOption != TEST_OPTION_ANOTHER_ONLY) foreach (var Bucket in MainTargetList) if (Bucket.Create) BucketClear(MainClient, Bucket.BucketName);
-			if (Config.TestOption != TEST_OPTION_LOCAL_ONLY) foreach (var Bucket in AltTargetList) if (Bucket.Create) BucketClear(AltClient, Bucket.BucketName);
+			BucketClear(mainClient, mainBucket.BucketName);
+			if (_config.TestOption != TEST_OPTION_ANOTHER_ONLY) foreach (var Bucket in mainTargetList) if (Bucket.Create) BucketClear(mainClient, Bucket.BucketName);
+			if (_config.TestOption != TEST_OPTION_LOCAL_ONLY) foreach (var Bucket in altTargetList) if (Bucket.Create) BucketClear(altClient, Bucket.BucketName);
 			log.Info("Bucket Delete End");
 		}
 
 		#region Utility
-		List<ReplicationRule> CreateReplicationRules(List<BucketData> Buckets, int Index = 1, UserData User = null)
+		static List<ReplicationRule> CreateReplicationRules(List<BucketData> Buckets, int Index = 1, UserData User = null)
 		{
-			var BucketArnPrefix = "";
+			string BucketArnPrefix;
 			if (User == null) BucketArnPrefix = "arn:aws:s3:::";
 			else BucketArnPrefix = User.IsRegion ? $"arn:aws:s3:{User.RegionName}::" : $"arn:aws:s3:{User.URL}:{User.AccessKey}-{User.SecretKey}:";
 			var Rules = new List<ReplicationRule>();
@@ -177,13 +200,12 @@ namespace ReplicationTest
 					Status = ReplicationRuleStatus.Enabled,
 					Filter = new ReplicationRuleFilter()
 					{
-						Prefix = Bucket.Prefix ? Prefix : null,
-						Tag = Bucket.Tag ? MyTag : null,
+						Prefix = Bucket.Prefix ? PREFIX : null,
+						Tag = Bucket.Tag ? _defaultTag : null,
 					},
 					Destination = new ReplicationDestination() { BucketArn = $"{BucketArnPrefix}{Bucket.BucketName}" },
 					DeleteMarkerReplication = new DeleteMarkerReplication() { Status = Bucket.DeleteMarker ? DeleteMarkerReplicationStatus.Enabled : DeleteMarkerReplicationStatus.Disabled }
 				};
-
 
 				Rules.Add(Rule);
 			}
@@ -191,52 +213,72 @@ namespace ReplicationTest
 			return Rules;
 		}
 
-		void MainCompare(AmazonS3Client MainClient, BucketData MainBucket, AmazonS3Client AltClient, List<BucketData> Buckets)
+		void Compare(AmazonS3Client mainClient, BucketData mainBucket, AmazonS3Client altClient, List<BucketData> buckets)
 		{
-			foreach (var Bucket in Buckets)
+			foreach (var bucket in buckets)
 			{
-				log.Info($"[{Bucket.BucketName}] Compare Check!");
-				var SourceData = GetListVersions(MainClient, MainBucket.BucketName, Bucket.Prefix ? Prefix : null).OrderBy(x => x.Key).ThenByDescending(x => x.VersionId).ToList();
-				var TargetData = GetListVersions(AltClient, Bucket.BucketName, Bucket.Prefix ? Prefix : null).OrderBy(x => x.Key).ThenByDescending(x => x.VersionId).ToList();
+				log.Info($"[{bucket.BucketName}] Compare Check!");
+				var SourceData = GetListVersions(mainClient, mainBucket.BucketName, bucket.Prefix ? PREFIX : null).OrderBy(x => x.Key).ThenByDescending(x => x.VersionId).ToList();
+				var TargetData = GetListVersions(altClient, bucket.BucketName, bucket.Prefix ? PREFIX : null).OrderBy(x => x.Key).ThenByDescending(x => x.VersionId).ToList();
 
-				if (!Bucket.DeleteMarker) SourceData.RemoveAll(i => i.IsDeleteMarker);
+				if (!bucket.DeleteMarker) SourceData.RemoveAll(i => i.IsDeleteMarker);
 
-				var Result = "Pass";
+				var result = "Pass";
 				// 메타데이터 비교
-				if (!SubCompare(SourceData, TargetData, MainClient, AltClient, Bucket.Tag, out string Message))
+				if (!CompareObject(SourceData, TargetData, mainClient, altClient, out string Message))
 				{
-					Result = "Failed";
-					log.Error($"[{Bucket.BucketName}] is not match! -> {Message}");
+					result = "Failed";
+					log.Error($"[{bucket.BucketName}] is not match! -> {Message}");
 				}
 				else
-					log.Info($"[{Bucket.BucketName}] is match!");
-
-				DB?.Insert(MainBucket, Bucket, MainClient.Config.ServiceURL, Config.AltUser, Result, Message);
+					log.Info($"[{bucket.BucketName}] is match!");
+				
+				_db?.Insert(mainBucket, bucket, mainClient.Config.ServiceURL, altClient.Config.ServiceURL, result, Message);
 			}
 		}
 
-		bool SubCompare(List<S3ObjectVersion> Source, List<S3ObjectVersion> Target, AmazonS3Client SourceClient, AmazonS3Client TargetClient, bool TagChecking, out string Message)
+		bool CompareObject(List<S3ObjectVersion> Source, List<S3ObjectVersion> Target, AmazonS3Client SourceClient, AmazonS3Client TargetClient, out string Message)
 		{
 			Message = "";
 			if (Source.Count != Target.Count) { Message = $"{Source.Count} != {Target.Count}"; return false; }
+
 			for (int Index = 0; Index < Source.Count; Index++)
 			{
-				// 오브젝트 명 비교
-				if (Source[Index].Key != Target[Index].Key) { Message = $"{Source[Index].Key} != {Target[Index].Key}"; return false; }
-				// 오브젝트 사이즈 비교
-				if (Source[Index].Size != Target[Index].Size) { Message = $"{Source[Index].Key} Size does not match! {Source[Index].Size} != {Target[Index].Size}"; return false; }
-				// 오브젝트 ETag 비교
-				if (Config.CheckEtag && Source[Index].ETag != Target[Index].ETag) { Message = $"{Source[Index].Key} ETag does not match! {Source[Index].ETag} != {Target[Index].ETag}"; return false; }
-				// 오브젝트 DeleteMarker 비교
-				if (Source[Index].IsDeleteMarker != Target[Index].IsDeleteMarker) { Message = $"{Source[Index].Key} DeleteMarker does not match! {Source[Index].IsDeleteMarker} != {Target[Index].IsDeleteMarker}"; return false; }
-				// 오브젝트 VersionId 비교
-				if (Config.CheckVersionId && Source[Index].VersionId != Target[Index].VersionId) { Message = $"{Source[Index].Key} VersionId does not match! {Source[Index].VersionId} != {Target[Index].VersionId}"; return false; }
+				var sourceObj = Source[Index];
+				var targetObj = Target[Index];
 
-				// 메타데이터 비교
-				if (!CompareMetadata(SourceClient, TargetClient, Source[Index].BucketName, Source[Index].Key, Source[Index].VersionId, out Message)) return false;
-				// 태그 비교
-				if (!CompareTagSet(SourceClient, TargetClient, Source[Index].BucketName, Source[Index].Key, Source[Index].VersionId, out Message)) ; return false;
+				// 둘다 삭제 마커인 경우 패스
+				if (sourceObj.IsDeleteMarker && targetObj.IsDeleteMarker) continue;
+
+				if (!CompareObjectProperties(sourceObj, targetObj, _config, out Message)) return false;
+				if (!CompareMetadata(SourceClient, TargetClient, sourceObj.BucketName, sourceObj.Key, sourceObj.VersionId, out Message)) return false;
+				if (!CompareTagSet(SourceClient, TargetClient, sourceObj.BucketName, sourceObj.Key, sourceObj.VersionId, out Message)) return false;
 			}
+			return true;
+		}
+
+		static bool CompareObjectProperties(S3ObjectVersion source, S3ObjectVersion target, MainConfig config, out string message)
+		{
+			message = "";
+
+			var comparisons = new List<(string property, bool condition, string sourceValue, string targetValue)>
+			{
+				("Key", source.Key != target.Key, source.Key, target.Key),
+				("Size", source.Size != target.Size, source.Size.ToString(), target.Size.ToString()),
+				("ETag", config.CheckEtag && source.ETag != target.ETag, source.ETag, target.ETag),
+				("DeleteMarker", source.IsDeleteMarker != target.IsDeleteMarker, source.IsDeleteMarker.ToString(), target.IsDeleteMarker.ToString()),
+				("VersionId", config.CheckVersionId && source.VersionId != target.VersionId, source.VersionId, target.VersionId)
+			};
+
+			foreach (var (property, condition, sourceValue, targetValue) in comparisons)
+			{
+				if (condition)
+				{
+					message = $"{property} does not match for object '{source.Key}'! {sourceValue} != {targetValue}";
+					return false;
+				}
+			}
+
 			return true;
 		}
 
@@ -279,23 +321,6 @@ namespace ReplicationTest
 			return true;
 		}
 
-		static void ObjectClear(AmazonS3Client Client, string BucketName)
-		{
-			try
-			{
-				while (true)
-				{
-					var Response = Client.ListVersionsAsync(BucketName);
-					Response.Wait();
-					var Versions = Response.Result;
-
-					foreach (var Object in Versions.Versions) Client.DeleteObjectAsync(BucketName, Object.Key, Object.VersionId).Wait();
-				}
-			}
-			catch (AggregateException e) { log.Error($"StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}", e); }
-			catch (Exception e) { log.Error(e); }
-		}
-
 		static void BucketClear(AmazonS3Client Client, string BucketName)
 		{
 			try
@@ -313,9 +338,9 @@ namespace ReplicationTest
 		}
 		#endregion
 		#region S3 API
-		AmazonS3Client CreateClient(UserData User)
+		static AmazonS3Client CreateClient(UserData User)
 		{
-			var Config = new AmazonS3Config
+			var config = new AmazonS3Config
 			{
 				ServiceURL = $"http://{User.URL}:{User.Port}",
 				Timeout = TimeSpan.FromSeconds(3600),
@@ -324,11 +349,11 @@ namespace ReplicationTest
 				UseHttp = true,
 			};
 
-			return new AmazonS3Client(User.AccessKey, User.SecretKey, Config);
+			return new AmazonS3Client(User.AccessKey, User.SecretKey, config);
 		}
-		AmazonS3Client CreateClientHttps(UserData User)
+		static AmazonS3Client CreateClientHttps(UserData User)
 		{
-			var Config = new AmazonS3Config
+			var config = new AmazonS3Config
 			{
 				ServiceURL = $"https://{User.URL}:{User.SSLPort}",
 				Timeout = TimeSpan.FromSeconds(3600),
@@ -337,21 +362,18 @@ namespace ReplicationTest
 				UseHttp = true,
 			};
 
-			return new AmazonS3Client(User.AccessKey, User.SecretKey, Config);
+			return new AmazonS3Client(User.AccessKey, User.SecretKey, config);
 		}
 
 		static bool SetBucket(AmazonS3Client Client, BucketData Bucket)
 		{
-			// if (!CreateBucket(Client, Bucket.BucketName)) ObjectClear(Client, Bucket.BucketName);
 			CreateBucket(Client, Bucket.BucketName);
+
 			// 암호화 설정
-			if (Bucket.Encryption)
+			if (Bucket.Encryption && !BucketEncryption(Client, Bucket.BucketName))
 			{
-				if (!BucketEncryption(Client, Bucket.BucketName))
-				{
-					log.Error($"[{Bucket.BucketName}] is not enabled Encryption");
-					return false;
-				}
+				log.Error($"[{Bucket.BucketName}] is not enabled Encryption");
+				return false;
 			}
 			// 버저닝 설정
 			if (!BucketVersioning(Client, Bucket.BucketName, VersionStatus.Enabled))
@@ -364,23 +386,16 @@ namespace ReplicationTest
 			return true;
 		}
 
-		static bool CreateBucket(AmazonS3Client Client, string BucketName)
+		static bool CreateBucket(AmazonS3Client client, string bucketName)
 		{
 			try
 			{
-				var putBucketRequest = new PutBucketRequest { BucketName = BucketName };
+				PutBucketRequest request = new() { BucketName = bucketName };
+				var response = client.PutBucketAsync(request).GetAwaiter().GetResult();
 
-				var TaskResponse = Client.PutBucketAsync(putBucketRequest); //Create Bucket request
-				TaskResponse.Wait();
-				var Response = TaskResponse.Result;
-
-				if (Response.HttpStatusCode != System.Net.HttpStatusCode.OK)
-				{
-					log.Info($"CreateBucket({BucketName}) : Create!!");
-					return true;
-				}
+				if (response.HttpStatusCode == System.Net.HttpStatusCode.OK) return true;
 			}
-			catch (AggregateException e) { log.Error($"{BucketName} StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}"); }
+			catch (AggregateException e) { log.Error($"{bucketName} StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}"); }
 			catch (Exception e) { log.Error(e); }
 			return false;
 		}
@@ -411,9 +426,9 @@ namespace ReplicationTest
 					BucketName = BucketName,
 					ServerSideEncryptionConfiguration = new ServerSideEncryptionConfiguration()
 					{
-						ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
+						ServerSideEncryptionRules = new()
 						{
-							new ServerSideEncryptionRule()
+							new()
 							{
 								ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
 								{
@@ -452,7 +467,7 @@ namespace ReplicationTest
 			catch (Exception e) { log.Error(e); }
 			return false;
 		}
-		static void PutObject(AmazonS3Client Client, string BucketName, string ObjectName)
+		static bool PutObject(AmazonS3Client Client, string BucketName, string ObjectName, ChecksumAlgorithm checksumAlgorithm = null)
 		{
 			try
 			{
@@ -461,16 +476,20 @@ namespace ReplicationTest
 					BucketName = BucketName,
 					Key = ObjectName,
 					ContentBody = Utility.RandomTextToLong(100),
-					TagSet = new List<Tag> { new Tag { Key = BucketName, Value = ObjectName } },
+					TagSet = new() { new Tag { Key = BucketName, Value = ObjectName }, _defaultTag },
 				};
 
 				Request.Metadata["x-amz-meta-Test"] = ObjectName;
+				if (checksumAlgorithm != null) Request.ChecksumAlgorithm = checksumAlgorithm;
 
-				var TaskResponse = Client.PutObjectAsync(Request);
-				TaskResponse.Wait();
+				var TaskResponse = Client.PutObjectAsync(Request).GetAwaiter().GetResult();
+				if (TaskResponse.HttpStatusCode == System.Net.HttpStatusCode.OK) return true;
+				log.Error($"[s3://{BucketName}/{ObjectName}] PutObject Failed! {TaskResponse.HttpStatusCode}");
+				return false;
 			}
 			catch (AggregateException e) { log.Error($"StatusCode : {Utility.GetStatus(e)}, ErrorCode : {Utility.GetErrorCode(e)}", e); }
 			catch (Exception e) { log.Error(e); }
+			return false;
 		}
 		static void DeleteObject(AmazonS3Client Client, string BucketName, string ObjectName)
 		{
@@ -516,6 +535,7 @@ namespace ReplicationTest
 					SourceKey = SourceKey,
 					DestinationBucket = DestinationBucket,
 					DestinationKey = DestinationKey,
+					MetadataDirective = S3MetadataDirective.COPY,
 				};
 
 				var TaskResponse = Client.CopyObjectAsync(Request);
@@ -532,7 +552,7 @@ namespace ReplicationTest
 				{
 					BucketName = BucketName,
 					Key = ObjectName,
-					TagSet = new List<Tag> { new() { Key = BucketName, Value = ObjectName } },
+					TagSet = new() { new() { Key = BucketName, Value = ObjectName }, _defaultTag },
 				};
 				InitRequest.Metadata["x-amz-meta-Test"] = ObjectName;
 				var InitResponse = Client.InitiateMultipartUploadAsync(InitRequest);
@@ -584,7 +604,7 @@ namespace ReplicationTest
 		{
 			try
 			{
-				var Request = new GetObjectMetadataRequest { BucketName = BucketName, Key = ObjectName, VersionId = VersionId, };
+				var Request = new GetObjectMetadataRequest { BucketName = BucketName, Key = ObjectName, VersionId = VersionId, ChecksumMode = ChecksumMode.ENABLED };
 				var TaskResponse = Client.GetObjectMetadataAsync(Request);
 				TaskResponse.Wait();
 
@@ -612,47 +632,17 @@ namespace ReplicationTest
 		#endregion
 
 		#region Util
-		public static List<BucketData> CreateTargetBucketList(string BucketPrefix)
-		=> new()
-			{
-				new(){
-					BucketName = $"{BucketPrefix}target-prefix",
-					Prefix = true,
-				},
-				new(){
-					BucketName = $"{BucketPrefix}target-tag",
-					Tag=true,
-				},
-				new(){
-					BucketName = $"{BucketPrefix}target-prefix-tag",
-					Prefix = true,
-					Tag=true,
-				},
-				new(){
-					BucketName = $"{BucketPrefix}target-del-all",
-					DeleteMarker = true,
-				},
-				new(){
-					BucketName = $"{BucketPrefix}target-e-prefix",
-					Encryption = true,
-					Prefix = true,
-				},
-				new(){
-					BucketName = $"{BucketPrefix}target-e-tag",
-					Encryption = true,
-					Tag=true,
-				},
-				new(){
-					BucketName = $"{BucketPrefix}target-e-prefix-tag",
-					Encryption = true,
-					Prefix = true,
-					Tag=true,
-				},
-				new(){
-					BucketName = $"{BucketPrefix}target-e-del-all",
-					Encryption = true,
-					DeleteMarker = true,
-				},
+		public static List<BucketData> CreateTargetBucketList(string prefix)
+		=>
+			new(){
+				new(){ BucketName = $"{prefix}target-prefix"      , Prefix=true, },
+				new(){ BucketName = $"{prefix}target-tag"         , Tag=true, },
+				new(){ BucketName = $"{prefix}target-prefix-tag"  , Prefix=true, Tag=true, },
+				new(){ BucketName = $"{prefix}target-del-all"     , DeleteMarker=true, },
+				new(){ BucketName = $"{prefix}e-target-prefix"    , Encryption=true, Prefix=true, },
+				new(){ BucketName = $"{prefix}e-target-tag"       , Encryption=true, Tag=true, },
+				new(){ BucketName = $"{prefix}e-target-prefix-tag", Encryption=true, Prefix=true, Tag=true, },
+				new(){ BucketName = $"{prefix}e-target-del-all"   , Encryption=true, DeleteMarker=true, },
 			};
 
 		#endregion

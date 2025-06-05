@@ -16,43 +16,43 @@ using System.Reflection;
 
 namespace ReplicationTest
 {
-	class Program
+	static class Program
 	{
 		private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 		static void Main(string[] args)
 		{
-			DBManager DB = null;
-			int BuildID = 0;
-			string ConfigPath = null;
+			DBManager db = null;
+			int buildId = 0;
+			string configPath = null;
 
 			// Config 설정
 			if (args.Length > 1)
 			{
-				ConfigPath = args[1];
-				if (string.IsNullOrEmpty(ConfigPath))
+				configPath = args[1];
+				if (string.IsNullOrEmpty(configPath))
 				{
 					log.Error("config path is empty!");
 					return;
 				}
 			}
 
-			MainConfig Config = new MainConfig(ConfigPath);
-			Config.GetConfig();
+			MainConfig config = new(configPath);
+			config.GetConfig();
 			log.Info("Get Config!");
 
 			// DB 설정
 			if (args.Length > 0)
 			{
-				if (!int.TryParse(args[0], out BuildID))
+				if (!int.TryParse(args[0], out buildId))
 				{
 					log.Error("is Not Build id");
 					return;
 				}
-				if (BuildID > 0)
+				if (buildId > 0)
 				{
 					//DB 연결
-					DB = new DBManager(Config.DB, BuildID);
-					if (!DB.Connect())
+					db = new DBManager(config.DB, buildId);
+					if (!db.Connect())
 					{
 						log.Error("DB is not connected");
 						return;
@@ -61,8 +61,8 @@ namespace ReplicationTest
 				}
 			}
 
-			var Test = new ReplicationTest(Config, DB);
-			Test.Test();
+			var test = new ReplicationTest(config, db);
+			test.Test();
 		}
 	}
 }

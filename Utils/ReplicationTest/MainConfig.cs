@@ -36,32 +36,33 @@ namespace ReplicationTest
 		#endregion
 		#region DB
 		private const string STR_DB = "DB";
-		private const string STR_DB_HOST = "host";
-		private const string STR_DB_PORT = "port";
-		private const string STR_DB_NAME = "name";
-		private const string STR_DB_USERNAME = "username";
-		private const string STR_DB_PASSWORD = "password";
+		private const string STR_DB_HOST = "Host";
+		private const string STR_DB_PORT = "Port";
+		private const string STR_DB_NAME = "DBName";
+		private const string STR_DB_TABLE_NAME = "TableName";
+		private const string STR_DB_USERNAME = "UserName";
+		private const string STR_DB_PASSWORD = "Password";
 		#endregion
 
-		private readonly IniFile Ini = new IniFile();
+		private readonly IniFile Ini = [];
 
 		public readonly string FileName;
 
-		public int Delay;
-		public bool CheckVersionId;
-		public bool CheckEtag;
-		public string NormalBucket;
-		public string EncryptionBucket;
-		public string TargetBucketPrefix;
-		public int TestOption;
-		public int SSL;
+		public int Delay { get; private set; }
+		public bool CheckVersionId { get; private set; }
+		public bool CheckEtag { get; private set; }
+		public string NormalBucket { get; private set; }
+		public string EncryptionBucket { get; private set; }
+		public string TargetBucketPrefix { get; private set; }
+		public int TestOption { get; private set; }
+		public int SSL { get; private set; }
 
-		public DBInfo DB;
-		public UserData MainUser;
-		public UserData AltUser;
+		public BucketData Normal { get; private set; }
+		public BucketData Encryption { get; private set; }
 
-		public BucketData Normal { get => new BucketData(){BucketName = NormalBucket, Encryption = false};}
-		public BucketData Encryption { get => new BucketData(){BucketName = EncryptionBucket, Encryption = true};}
+		public DBConfig DB { get; private set; }
+		public UserData MainUser { get; private set; }
+		public UserData AltUser { get; private set; }
 
 		public MainConfig(string FileName = null)
 		{
@@ -81,24 +82,28 @@ namespace ReplicationTest
 			TargetBucketPrefix = ReadKeyToString(STR_GLOBAL, STR_TARGET_BUCKET_PREFIX);
 			TestOption = ReadKeyToInt(STR_GLOBAL, STR_TEST_OPTION);
 			SSL = ReadKeyToInt(STR_GLOBAL, STR_CHECK_SSL);
-			DB = GetDBInfo();
+			DB = GetDBConfig();
 
 			MainUser = GetUser(STR_MAINUSER);
 			AltUser = GetUser(STR_ALTUSER);
+
+			Normal = new() { BucketName = NormalBucket, Encryption = false };
+			Encryption = new() { BucketName = EncryptionBucket, Encryption = true };
 		}
 
-		private DBInfo GetDBInfo()
-		=> new DBInfo()
-		{
-			Host = ReadKeyToString(STR_DB, STR_DB_HOST),
-			Port = ReadKeyToInt(STR_DB, STR_DB_PORT),
-			Name = ReadKeyToString(STR_DB, STR_DB_NAME),
-			UserName = ReadKeyToString(STR_DB, STR_DB_USERNAME),
-			Password = ReadKeyToString(STR_DB, STR_DB_PASSWORD)
-		};
+		private DBConfig GetDBConfig()
+		=> new
+		(
+			ReadKeyToString(STR_DB, STR_DB_HOST),
+			ReadKeyToInt(STR_DB, STR_DB_PORT),
+			ReadKeyToString(STR_DB, STR_DB_NAME),
+			ReadKeyToString(STR_DB, STR_DB_TABLE_NAME),
+			ReadKeyToString(STR_DB, STR_DB_USERNAME),
+			ReadKeyToString(STR_DB, STR_DB_PASSWORD)
+		);
 
 		private UserData GetUser(string Section)
-		=> new UserData()
+		=> new()
 		{
 			URL = ReadKeyToString(Section, STR_URL),
 			Port = ReadKeyToInt(Section, STR_PORT),
@@ -107,7 +112,7 @@ namespace ReplicationTest
 			AccessKey = ReadKeyToString(Section, STR_ACCESSKEY),
 			SecretKey = ReadKeyToString(Section, STR_SECRETKEY)
 		};
-		
+
 		private string ReadKeyToString(string Section, string Key) => Ini[Section][Key].ToString();
 		private int ReadKeyToInt(string Section, string Key) => int.TryParse(Ini[Section][Key].ToString(), out int Value) ? Value : -1;
 		private bool ReadKeyToBoolean(string Section, string Key) => bool.TryParse(Ini[Section][Key].ToString(), out bool Value) && Value;
