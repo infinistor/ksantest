@@ -1,8 +1,0 @@
-.svn/
-bin/
-obj/
-packages/
-s3tests_*
-awstests.ini
-*.bat
-*.ps1
