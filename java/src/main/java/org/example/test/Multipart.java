@@ -624,8 +624,9 @@ public class Multipart extends TestBase {
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size, 1 * MainData.MB);
 
-		for (int i = 0; i < 5; i++) {
-			var partNumber = i * 10;
+		var index = 0;
+		while (true) {
+			var partNumber = index;
 			var response = client.listParts(
 					new ListPartsRequest(bucketName, key, uploadData.uploadId)
 							.withMaxParts(10)
@@ -633,8 +634,13 @@ public class Multipart extends TestBase {
 
 			assertEquals(10, response.getParts().size());
 			partsETagCompare(uploadData.parts.subList(partNumber, partNumber + 10), response.getParts());
+			if (response.isTruncated()) {
+				index = response.getNextPartNumberMarker();
+			} else {
+				break;
+			}
 		}
-		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
 
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
 	}
 }

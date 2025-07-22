@@ -581,14 +581,21 @@ public class Multipart extends TestBase {
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size, 1 * MainData.MB);
 
-		for (int i = 0; i < 5; i++) {
-			var partNumber = i * 10;
+		var index = 0;
+		while (true) {
+			var partNumber = index;
 			var response = client.listParts(l -> l.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
-					.maxParts(10).partNumberMarker(partNumber));
+				.maxParts(10).partNumberMarker(partNumber));
 
 			assertEquals(10, response.parts().size());
-			partsETagCompare(uploadData.parts.subList(partNumber, partNumber + 10), response.parts());
+			partsETagCompare(uploadData.parts.subList(index, index + 10), response.parts());
+			if (response.isTruncated()) {
+				index = response.nextPartNumberMarker();
+			} else {
+				break;
+			}
 		}
+
 		client.abortMultipartUpload(a -> a.bucket(bucketName).key(key).uploadId(uploadData.uploadId));
 	}
 
