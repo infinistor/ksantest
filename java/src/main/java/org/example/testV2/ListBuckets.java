@@ -19,6 +19,7 @@ import java.util.ArrayList;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -91,7 +92,7 @@ public class ListBuckets extends TestBase {
 	public void testListBucketsPrefix() {
 		var client = getClient();
 		var prefix = "1111-my-test";
-		var bucketName = getNewBucketName(prefix);
+		var bucketName = Utils.getNewBucketName(prefix);
 		client.createBucket(b -> b.bucket(bucketName));
 
 		for (int i = 0; i < 5; i++) {

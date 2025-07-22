@@ -31,6 +31,7 @@ public class Utils {
 			'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 			'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3',
 			'4', '5', '6', '7', '8', '9' };
+	static final int BUCKET_MAX_LENGTH = 63;
 
 	public static String randomText(int length) {
 		var sb = new StringBuilder();
@@ -114,4 +115,14 @@ public class Utils {
 		var formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
 		return formatter.format(secondsBefore);
 	}
+
+	public static String getNewBucketName(String prefix) {
+		String bucketName = prefix + Utils.randomText(BUCKET_MAX_LENGTH);
+		return bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
+	}
+
+	public static String makeArnResource(String path) {
+		return String.format("arn:aws:s3:::%s", path);
+	}
+
 }

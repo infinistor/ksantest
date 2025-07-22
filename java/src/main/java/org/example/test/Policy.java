@@ -32,6 +32,7 @@ import com.amazonaws.services.s3.model.SetObjectTaggingRequest;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -227,7 +228,7 @@ public class Policy extends TestBase {
 		var bucketName = createBucketCannedAcl(client);
 		createKeyWithRandomContent(client, key, 0, bucketName);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, key));
 		var policyDocument = makeJsonPolicy("s3:GetObjectTagging", resource, null, null);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -249,7 +250,7 @@ public class Policy extends TestBase {
 		var bucketName = createBucketCannedAcl(client);
 		createKeyWithRandomContent(client, key, 0, bucketName);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, key));
 		var policyDocument = makeJsonPolicy("s3:PutObjectTagging", resource, null, null);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -270,7 +271,7 @@ public class Policy extends TestBase {
 		var bucketName = createBucketCannedAcl(client);
 		createKeyWithRandomContent(client, key, 0, bucketName);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName, key));
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, key));
 		var policyDocument = makeJsonPolicy("s3:DeleteObjectTagging", resource, null, null);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -300,7 +301,7 @@ public class Policy extends TestBase {
 		var tagConditional = new JsonObject();
 		tagConditional.add("StringEquals", conditional);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObject", resource, null, tagConditional);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -348,7 +349,7 @@ public class Policy extends TestBase {
 		var tagConditional = new JsonObject();
 		tagConditional.add("StringEquals", conditional);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObjectTagging", resource, null, tagConditional);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -401,7 +402,7 @@ public class Policy extends TestBase {
 		var tagConditional = new JsonObject();
 		tagConditional.add("StringEquals", conditional);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:PutObjectTagging", resource, null, tagConditional);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -449,7 +450,7 @@ public class Policy extends TestBase {
 
 		createObjects(client, sourceBucketName, List.of(publicFoo, publicBar, privateFoo));
 
-		var sourceResource = makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
+		var sourceResource = Utils.makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObject", sourceResource, null, null);
 		client.setBucketPolicy(sourceBucketName, policyDocument.toString());
 
@@ -458,7 +459,7 @@ public class Policy extends TestBase {
 		var tagConditional = new JsonObject();
 		tagConditional.add("StringLike", conditional);
 
-		var resource = makeArnResource(String.format("%s/%s", targetBucketName, "*"));
+		var resource = Utils.makeArnResource(String.format("%s/%s", targetBucketName, "*"));
 		var policyDocument2 = makeJsonPolicy("s3:PutObject", resource, null, tagConditional);
 		client.setBucketPolicy(targetBucketName, policyDocument2.toString());
 
@@ -489,7 +490,7 @@ public class Policy extends TestBase {
 		var sourceBucketName = createBucketCannedAcl(client);
 		createObjects(client, sourceBucketName, List.of(publicFoo, publicBar));
 
-		var sourceResource = makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
+		var sourceResource = Utils.makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObject", sourceResource, null, null);
 		client.setBucketPolicy(sourceBucketName, policyDocument.toString());
 
@@ -500,7 +501,7 @@ public class Policy extends TestBase {
 		var s3Conditional = new JsonObject();
 		s3Conditional.add("StringEquals", conditional);
 
-		var resource = makeArnResource(String.format("%s/%s", targetBucketName, "*"));
+		var resource = Utils.makeArnResource(String.format("%s/%s", targetBucketName, "*"));
 		policyDocument = makeJsonPolicy("s3:PutObject", resource, null, s3Conditional);
 		client.setBucketPolicy(targetBucketName, policyDocument.toString());
 
@@ -533,7 +534,7 @@ public class Policy extends TestBase {
 		var tagConditional = new JsonObject();
 		tagConditional.add("StringLike", conditional);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var s1 = makeJsonStatement("s3:PutObject", resource, null, null, null);
 		var s2 = makeJsonStatement("s3:PutObject", resource, MainData.POLICY_EFFECT_DENY, null, tagConditional);
 		var policyDocument = makeJsonPolicy(s1, s2);
@@ -573,10 +574,10 @@ public class Policy extends TestBase {
 		var s3Conditional = new JsonObject();
 		s3Conditional.add("StringEquals", conditional);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName1, "*"));
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName1, "*"));
 		var policyDocument = makeJsonPolicy("s3:PutObject", resource, null, s3Conditional);
 
-		var resource2 = makeArnResource(String.format("%s/%s", bucketName2, "*"));
+		var resource2 = Utils.makeArnResource(String.format("%s/%s", bucketName2, "*"));
 		var policyDocument2 = makeJsonPolicy("s3:PutObject", resource2, null, null);
 
 		client.setBucketPolicy(bucketName1, policyDocument.toString());
@@ -620,7 +621,7 @@ public class Policy extends TestBase {
 		var tagConditional = new JsonObject();
 		tagConditional.add("StringEquals", conditional);
 
-		var resource = makeArnResource(String.format("%s/%s", bucketName, "*"));
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObjectAcl", resource, null, tagConditional);
 
 		client.setBucketPolicy(bucketName, policyDocument.toString());
@@ -756,7 +757,7 @@ public class Policy extends TestBase {
 		statement.addProperty(MainData.POLICY_ACTION, "s3:GetObject");
 
 		var resources = new JsonArray();
-		resources.add(makeArnResource(String.format("%s/*", bucketName)));
+		resources.add(Utils.makeArnResource(String.format("%s/*", bucketName)));
 		statement.add(MainData.POLICY_RESOURCE, resources);
 
 		var ipAddress = new JsonObject();
@@ -793,7 +794,7 @@ public class Policy extends TestBase {
 		statement.addProperty(MainData.POLICY_ACTION, "s3:GetObject");
 
 		var resources = new JsonArray();
-		resources.add(makeArnResource(String.format("%s/*", bucketName)));
+		resources.add(Utils.makeArnResource(String.format("%s/*", bucketName)));
 		statement.add(MainData.POLICY_RESOURCE, resources);
 
 		var ipAddress = new JsonObject();
@@ -816,7 +817,7 @@ public class Policy extends TestBase {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client);
 
-		var resource = makeArnResource(String.format("%s/*", bucketName));
+		var resource = Utils.makeArnResource(String.format("%s/*", bucketName));
 		
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
@@ -859,7 +860,7 @@ public class Policy extends TestBase {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client);
 
-		var resource = makeArnResource(String.format("%s/*", bucketName));
+		var resource = Utils.makeArnResource(String.format("%s/*", bucketName));
 		
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);

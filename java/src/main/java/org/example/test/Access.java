@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Tag;
 
@@ -118,7 +119,7 @@ public class Access extends TestBase {
 		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
 				.withPublicAccessBlockConfiguration(accessConf));
 
-		var resource = makeArnResource(String.format("%s/*", bucketName));
+		var resource = Utils.makeArnResource(String.format("%s/*", bucketName));
 		var policyDocument = makeJsonPolicy("s3:GetObject", resource, null, null);
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketPolicy(bucketName, policyDocument.toString()));

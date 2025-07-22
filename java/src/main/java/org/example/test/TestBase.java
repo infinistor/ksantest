@@ -149,7 +149,7 @@ public class TestBase {
 	protected final S3Config config;
 
 	protected TestBase() {
-		String fileName = System.getProperty("s3tests.ini", "config.ini");
+		String fileName = System.getProperty("s3tests.ini", S3Config.STR_FILENAME);
 		config = new S3Config(fileName);
 		config.getConfig();
 	}
@@ -261,13 +261,8 @@ public class TestBase {
 		return new ByteArrayInputStream(body.getBytes());
 	}
 
-	public static String getNewBucketName(String prefix) {
-		String bucketName = prefix + Utils.randomText(BUCKET_MAX_LENGTH);
-		return bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
-	}
-
 	public String getNewBucketName() {
-		var bucketName = getNewBucketName(getPrefix());
+		var bucketName = Utils.getNewBucketName(getPrefix());
 		buckets.add(bucketName);
 		return bucketName;
 	}
@@ -277,11 +272,11 @@ public class TestBase {
 	}
 
 	public String getNewBucketNameOnly() {
-		return getNewBucketName(getPrefix());
+		return Utils.getNewBucketName(getPrefix());
 	}
 
 	public String getNewBucketNameOnly(int length) {
-		var bucketName = getNewBucketName(getPrefix());
+		var bucketName = Utils.getNewBucketName(getPrefix());
 		if (bucketName.length() > length)
 			bucketName = bucketName.substring(0, length);
 		else if (bucketName.length() < length)
@@ -409,11 +404,7 @@ public class TestBase {
 				: NetUtils.getEndpoint(protocol, config.url, port, bucketName, key);
 	}
 
-	public String makeArnResource(String path) {
-		return String.format("arn:aws:s3:::%s", path);
-	}
-
-	public JsonObject makeJsonStatement(String action, String resource, String effect, JsonObject principal,
+	public static JsonObject makeJsonStatement(String action, String resource, String effect, JsonObject principal,
 			JsonObject conditions) {
 		if (principal == null) {
 			principal = new JsonObject();
@@ -435,7 +426,7 @@ public class TestBase {
 		return statement;
 	}
 
-	public JsonObject makeJsonPolicy(String action, String resource, JsonObject principal, JsonObject conditions) {
+	public static JsonObject makeJsonPolicy(String action, String resource, JsonObject principal, JsonObject conditions) {
 		var policy = new JsonObject();
 
 		policy.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
@@ -447,7 +438,7 @@ public class TestBase {
 		return policy;
 	}
 
-	public JsonObject makeJsonPolicy(JsonObject... statementList) {
+	public static JsonObject makeJsonPolicy(JsonObject... statementList) {
 		var policy = new JsonObject();
 
 		policy.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
@@ -458,7 +449,7 @@ public class TestBase {
 		return policy;
 	}
 
-	public List<Tag> makeSimpleTagSet(int count) {
+	public static List<Tag> makeSimpleTagSet(int count) {
 		var tagSets = new ArrayList<Tag>();
 
 		for (int i = 0; i < count; i++)

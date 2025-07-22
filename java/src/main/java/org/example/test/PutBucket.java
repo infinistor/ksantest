@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
+import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -109,7 +110,7 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingDnsLong() {
-		checkGoodBucketName(getNewBucketName(""));
+		checkGoodBucketName(Utils.getNewBucketName(""));
 	}
 
 	@Test
@@ -168,25 +169,25 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsAlpha() {
-		checkGoodBucketName(getNewBucketName("a"));
+		checkGoodBucketName(Utils.getNewBucketName("a"));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsDigit() {
-		checkGoodBucketName(getNewBucketName("1"));
+		checkGoodBucketName(Utils.getNewBucketName("1"));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsPeriod() {
-		checkGoodBucketName(getNewBucketName("a."));
+		checkGoodBucketName(Utils.getNewBucketName("a."));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsHyphen() {
-		checkGoodBucketName(getNewBucketName("a-"));
+		checkGoodBucketName(Utils.getNewBucketName("a-"));
 	}
 
 	@Test

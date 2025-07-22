@@ -44,7 +44,6 @@ public class Accelerate extends TestBase {
 		var bucketName = createBucket(client);
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
-				.withBucketName(bucketName)
 				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Enabled)));
 	}
 
@@ -55,11 +54,10 @@ public class Accelerate extends TestBase {
 		var bucketName = createBucket(client);
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
-				.withBucketName(bucketName)
 				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Enabled)));
 
 		var response = client.getBucketAccelerateConfiguration(bucketName);
-		assertEquals("Enabled", response.getStatus());
+		assertEquals(BucketAccelerateStatus.Enabled, response.getStatus());
 	}
 
 	@Test
@@ -69,18 +67,16 @@ public class Accelerate extends TestBase {
 		var bucketName = createBucket(client);
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
-				.withBucketName(bucketName)
 				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Enabled)));
 
 		var response = client.getBucketAccelerateConfiguration(bucketName);
-		assertEquals("Enabled", response.getStatus());
+		assertEquals(BucketAccelerateStatus.Enabled, response.getStatus());
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
-				.withBucketName(bucketName)
 				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Suspended)));
 
 		response = client.getBucketAccelerateConfiguration(bucketName);
-		assertEquals("Suspended", response.getStatus());
+		assertEquals(BucketAccelerateStatus.Suspended, response.getStatus());
 	}
 
 	@Test
@@ -92,7 +88,6 @@ public class Accelerate extends TestBase {
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client
 						.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
-								.withBucketName(bucketName)
 								.withAccelerateConfiguration(new BucketAccelerateConfiguration("Invalid"))));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
