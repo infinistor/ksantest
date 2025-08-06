@@ -134,6 +134,26 @@ class Lock {
 	}
 
 	/**
+	 * [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 오브젝트에 반영되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testObjectLockReflectedObject() {
+		test.testObjectLockReflectedObject();
+		testV2.testObjectLockReflectedObject();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 오브젝트 업로드시 md5 값이 없을 경우 업로드 실패 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjectLockMD5() {
+		test.testObjectLockMD5();
+		testV2.testObjectLockMD5();
+	}
+
+	/**
 	 * 버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정 조회 실패
 	 */
 	@Test

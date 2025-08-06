@@ -86,7 +86,7 @@
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-s3</artifactId>
-			<version>1.12.777</version>
+			<version>1.12.788</version>
 		</dependency>
 		<!-- AWS SDK V2 -->
 		<dependency>

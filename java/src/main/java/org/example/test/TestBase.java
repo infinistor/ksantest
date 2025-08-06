@@ -970,6 +970,36 @@ public class TestBase {
 
 		return uploadData;
 	}
+	public MultipartUploadData setupMultipartUploadLock(AmazonS3 client, String bucketName, String key, int size) {
+		var uploadData = new MultipartUploadData();
+
+		var initMultiPartResponse = client
+				.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		uploadData.uploadId = initMultiPartResponse.getUploadId();
+
+		var parts = Utils.generateRandomString(size, DEFAULT_PART_SIZE);
+
+		for (var Part : parts) {
+			uploadData.appendBody(Part);
+			var metadata = new ObjectMetadata();
+			metadata.setContentMD5(Utils.getMD5(Part));
+			metadata.setContentType("text/plain");
+			metadata.setContentLength(Part.length());
+
+			var partResponse = client.uploadPart(
+					new UploadPartRequest()
+							.withBucketName(bucketName)
+							.withKey(key)
+							.withUploadId(uploadData.uploadId)
+							.withPartNumber(uploadData.nextPartNumber())
+							.withInputStream(createBody(Part))
+							.withPartSize(Part.length())
+							.withObjectMetadata(metadata));
+			uploadData.parts.add(partResponse.getPartETag());
+		}
+
+		return uploadData;
+	}
 
 	public MultipartUploadData setupMultipartUpload(AmazonS3 client, String bucketName, String key, int size,
 			int partSize) {

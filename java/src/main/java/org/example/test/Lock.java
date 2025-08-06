@@ -12,6 +12,7 @@ package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -24,12 +25,14 @@ import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.DefaultRetention;
 import com.amazonaws.services.s3.model.DeleteVersionRequest;
 import com.amazonaws.services.s3.model.GetObjectLegalHoldRequest;
 import com.amazonaws.services.s3.model.GetObjectLockConfigurationRequest;
 import com.amazonaws.services.s3.model.GetObjectRetentionRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.ObjectLockConfiguration;
 import com.amazonaws.services.s3.model.ObjectLockEnabled;
 import com.amazonaws.services.s3.model.ObjectLockLegalHold;
@@ -42,6 +45,7 @@ import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
 import com.amazonaws.services.s3.model.SetObjectLegalHoldRequest;
 import com.amazonaws.services.s3.model.SetObjectLockConfigurationRequest;
 import com.amazonaws.services.s3.model.SetObjectRetentionRequest;
+import com.amazonaws.services.s3.model.UploadPartRequest;
 
 public class Lock extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -216,6 +220,96 @@ public class Lock extends TestBase {
 		var response = client
 				.getObjectLockConfiguration(new GetObjectLockConfigurationRequest().withBucketName(bucketName));
 		lockCompare(conf, response.getObjectLockConfiguration());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testObjectLockReflectedObject() {
+		var client = getClient();
+		var bucketName = getNewBucketName();
+		var key = "testObjectLockReflectedObject";
+		var key2 = "testObjectLockReflectedObject2";
+		var key3 = "testObjectLockReflectedObject3";
+
+		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
+
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+				.withRule(new ObjectLockRule().withDefaultRetention(
+						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withDays(1)));
+		client.setObjectLockConfiguration(
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf));
+
+		// Put Object
+		var metadata = new ObjectMetadata();
+		metadata.setContentMD5(Utils.getMD5(key));
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(key.length());
+
+		client.putObject(bucketName, key, createBody(key), metadata);
+
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals("GOVERNANCE", response.getObjectLockMode());
+		assertNotNull(response.getObjectLockRetainUntilDate());
+
+		// Copy Object
+		client.copyObject(bucketName, key, bucketName, key2);
+
+		var response2 = client.getObjectMetadata(bucketName, key2);
+		assertEquals("GOVERNANCE", response2.getObjectLockMode());
+		assertNotNull(response2.getObjectLockRetainUntilDate());
+
+		// Multipart Upload
+		var uploadData = setupMultipartUploadLock(client, bucketName, key3, 1 * MainData.MB);
+		System.out.println(uploadData.uploadId);
+		client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key3, uploadData.uploadId, uploadData.parts));
+
+		var response3 = client.getObjectMetadata(bucketName, key3);
+		assertEquals("GOVERNANCE", response3.getObjectLockMode());
+		assertNotNull(response3.getObjectLockRetainUntilDate());
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.deleteVersion(bucketName, key, response.getVersionId()));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, response.getVersionId())
+				.withBypassGovernanceRetention(true));
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key2, response2.getVersionId())
+				.withBypassGovernanceRetention(true));
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key3, response3.getVersionId())
+				.withBypassGovernanceRetention(true));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjectLockMD5() {
+		var client = getClient();
+		var bucketName = getNewBucketName();
+		var key = "testObjectLockMD5";
+		var content = Utils.randomTextToLong(1 * MainData.MB);
+
+		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
+
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+				.withRule(new ObjectLockRule().withDefaultRetention(
+						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withDays(1)));
+		client.setObjectLockConfiguration(
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf));
+
+		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.getErrorCode());
+
+		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		var uploadId = initResponse.getUploadId();
+
+		var e2 = assertThrows(AmazonServiceException.class,
+				() -> client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+						.withUploadId(uploadId).withInputStream(createBody(content)).withPartNumber(1)
+						.withPartSize(content.length())));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e2.getStatusCode());
+		assertEquals(MainData.INVALID_REQUEST, e2.getErrorCode());
 	}
 
 	@Test

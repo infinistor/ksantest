@@ -1184,7 +1184,8 @@ public class TestBase {
 					.bucket(bucketName)
 					.key(key)
 					.uploadId(uploadData.uploadId)
-					.partNumber(uploadData.nextPartNumber()),
+					.partNumber(uploadData.nextPartNumber())
+					.contentMD5(Utils.getMD5(Part)),
 					RequestBody.fromString(Part));
 			uploadData.addPart(partResponse.eTag());
 		}
@@ -1810,7 +1811,7 @@ public class TestBase {
 		else
 			client.putObject(p -> p.bucket(sourceBucketName).key(sourceKey),
 					RequestBody.fromString(data));
-		//// Source Object Check
+		// Source Object Check
 		var sourceResponse = client
 				.getObject(g -> g.bucket(sourceBucketName).key(sourceKey));
 		var sourceBody = getBody(sourceResponse);
