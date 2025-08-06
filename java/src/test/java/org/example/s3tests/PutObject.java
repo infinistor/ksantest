@@ -159,6 +159,7 @@ class PutObject {
 		testV2.testBucketCreateSpecialKeyNames();
 	}
 
+	@Test
 	@Tag("SpecialKeyName")
 	// [_], [/]가 포함된 이름을 가진 오브젝트를 업로드 한뒤 prefix정보를 설정한 GetObjectList가 가능한지
 	// 확인
@@ -167,6 +168,7 @@ class PutObject {
 		testV2.testBucketListSpecialPrefix();
 	}
 
+	@Test
 	@Tag("Lock")
 	// [버킷의 Lock옵션을 활성화] LegalHold와 Lock유지기한을 설정하여 오브젝트 업로드할 경우 설정이 적용되는지
 	// 메타데이터를 통해 확인

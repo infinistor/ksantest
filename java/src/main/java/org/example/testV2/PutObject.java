@@ -361,9 +361,9 @@ public class PutObject extends TestBase {
 				RequestBody.fromString(key));
 
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
-		assertEquals(ObjectLockMode.GOVERNANCE.toString(), response.objectLockMode());
+		assertEquals("GOVERNANCE", response.objectLockMode().toString());
 		assertEquals(days.toInstant(), response.objectLockRetainUntilDate());
-		assertEquals(ObjectLockLegalHoldStatus.ON.toString(), response.objectLockLegalHoldStatus());
+		assertEquals(ObjectLockLegalHoldStatus.ON.toString(), response.objectLockLegalHoldStatus().toString());
 
 		var legalHold = ObjectLockLegalHold.builder().status(ObjectLockLegalHoldStatus.OFF).build();
 		client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).legalHold(legalHold));
