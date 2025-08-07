@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 
@@ -771,5 +772,26 @@ public class ListObjectsV2 extends TestBase {
 		assertEquals(delimiter, response.getDelimiter());
 		assertEquals(maxKeys, response.getMaxKeys());
 		assertEquals(false, response.isTruncated());
+	}
+
+	
+	@Test
+	@Tag("Versioning")
+	public void testBucketListV2Versioning() {
+		var keyNames = List.of("aaa", "bbb", "ccc");
+		var client = getClient();
+		var bucketName = createBucket(client);
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+
+		for (var key : keyNames) {
+			for (int i = 0; i < 3; i++) {
+				client.putObject(bucketName, key, key + i);
+			}
+		}
+
+		var response = client.listObjectsV2(bucketName);
+		assertEquals(3, response.getObjectSummaries().size());
+		assertLinesMatch(List.of("aaa", "bbb", "ccc"), getKeys(response.getObjectSummaries()));
 	}
 }

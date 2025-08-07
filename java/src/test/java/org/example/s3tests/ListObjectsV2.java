@@ -442,4 +442,14 @@ class ListObjectsV2 {
 		test.testBucketListV2FilteringAll();
 		testV2.testBucketListV2FilteringAll();
 	}
+
+	/**
+	 * versioning 활성화 버킷에서 오브젝트 목록을 가져올때 버전정보가 포함되어 있는지 확인
+	 */
+	@Test
+	@Tag("Versioning")
+	void testBucketListV2Versioning() {
+		test.testBucketListV2Versioning();
+		testV2.testBucketListV2Versioning();
+	}
 }

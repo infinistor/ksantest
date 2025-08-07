@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 
 public class ListObjectsV2 extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -748,5 +749,26 @@ public class ListObjectsV2 extends TestBase {
 		assertEquals(delimiter, response.delimiter());
 		assertEquals(maxKeys, response.maxKeys());
 		assertEquals(false, response.isTruncated());
+	}
+
+	
+	@Test
+	@Tag("Versioning")
+	public void testBucketListV2Versioning() {
+		var keyNames = List.of("aaa", "bbb", "ccc");
+		var client = getClient();
+		var bucketName = createBucket(client);
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		for (var key : keyNames) {
+			for (int i = 0; i < 3; i++) {
+				client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key + i));
+			}
+		}
+
+		var response = client.listObjectsV2(l -> l.bucket(bucketName));
+		assertEquals(3, response.contents().size());
+		assertLinesMatch(List.of("aaa", "bbb", "ccc"), getKeys(response.contents()));
 	}
 }
