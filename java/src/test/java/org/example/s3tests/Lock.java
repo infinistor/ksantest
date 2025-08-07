@@ -134,13 +134,33 @@ class Lock {
 	}
 
 	/**
-	 * [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 오브젝트에 반영되는지 확인
+	 * [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 오브젝트 업로드가 정상적으로 이루어지는지 확인
 	 */
 	@Test
 	@Tag("Check")
-	void testObjectLockReflectedObject() {
-		test.testObjectLockReflectedObject();
-		testV2.testObjectLockReflectedObject();
+	void testObjectLockPutObject() {
+		test.testObjectLockPutObject();
+		testV2.testObjectLockPutObject();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 오브젝트 복제가 정상적으로 이루어지는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testObjectLockCopyObject() {
+		test.testObjectLockCopyObject();
+		testV2.testObjectLockCopyObject();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 멀티파트 업로드가 정상적으로 이루어지는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testObjectLockMultipart() {
+		test.testObjectLockMultipart();
+		testV2.testObjectLockMultipart();
 	}
 
 	/**

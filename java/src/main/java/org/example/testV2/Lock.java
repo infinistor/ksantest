@@ -13,6 +13,7 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -203,12 +204,10 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("Check")
-	public void testObjectLockReflectedObject() {
+	public void testObjectLockPutObject() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
-		var key = "testObjectLockReflectedObject";
-		var key2 = "testObjectLockReflectedObject2";
-		var key3 = "testObjectLockReflectedObject3";
+		var key = "testObjectLockPutObject";
 
 		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
 
@@ -223,25 +222,8 @@ public class Lock extends TestBase {
 				RequestBody.fromString(key));
 
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
-		assertEquals("GOVERNANCE", response.objectLockMode().toString());
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE.toString(), response.objectLockMode().toString());
 		assertNotNull(response.objectLockRetainUntilDate());
-
-		// Copy Object
-		client.copyObject(
-				c -> c.sourceBucket(bucketName).sourceKey(key).destinationBucket(bucketName).destinationKey(key2));
-
-		var response2 = client.headObject(h -> h.bucket(bucketName).key(key2));
-		assertEquals("GOVERNANCE", response2.objectLockMode().toString());
-		assertNotNull(response2.objectLockRetainUntilDate());
-
-		// Multipart Upload
-		var uploadData = setupMultipartUpload(client, bucketName, key3, 1 * MainData.MB);
-		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key3).uploadId(uploadData.uploadId)
-				.multipartUpload(p -> p.parts(uploadData.parts)));
-
-		var response3 = client.headObject(h -> h.bucket(bucketName).key(key3));
-		assertEquals("GOVERNANCE", response3.objectLockMode().toString());
-		assertNotNull(response3.objectLockRetainUntilDate());
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(response.versionId())));
@@ -250,10 +232,104 @@ public class Lock extends TestBase {
 
 		client.deleteObject(
 				d -> d.bucket(bucketName).key(key).versionId(response.versionId()).bypassGovernanceRetention(true));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testObjectLockCopyObject() {
+		var client = getClient();
+		var bucketName = getNewBucketName();
+		var bucketName2 = getNewBucketName();
+		var key = "testObjectLockCopyObject-lock";
+		var keyCopy = key + "-copy";
+		var key2 = "testObjectLockCopyObject";
+		var key2Copy = key2 + "-copy";
+
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+		client.createBucket(c -> c.bucket(bucketName2).objectLockEnabledForBucket(true));
+
+		var conf = ObjectLockConfiguration.builder().objectLockEnabled(ObjectLockEnabled.ENABLED)
+				.rule(r -> r.defaultRetention(retention -> retention.mode(ObjectLockRetentionMode.GOVERNANCE).days(1)))
+				.build();
+
+		client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf));
+
+		client.putObject(p -> p.bucket(bucketName).key(key).contentMD5(Utils.getMD5(key)).build(),
+				RequestBody.fromString(key));
+		client.putObject(p -> p.bucket(bucketName2).key(key2).build(), RequestBody.fromString(key2));
+
+		client.copyObject(
+				c -> c.sourceBucket(bucketName).sourceKey(key).destinationBucket(bucketName2).destinationKey(keyCopy));
+		client.copyObject(c -> c.sourceBucket(bucketName2).sourceKey(key2).destinationBucket(bucketName)
+				.destinationKey(key2Copy));
+
+		var response = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE.toString(), response.objectLockMode().toString());
+		assertNotNull(response.objectLockRetainUntilDate());
+
+		var response2 = client.headObject(h -> h.bucket(bucketName2).key(keyCopy));
+		assertNull(response2.objectLockMode());
+		assertNull(response2.objectLockRetainUntilDate());
+
+		var response3 = client.headObject(h -> h.bucket(bucketName2).key(key2));
+		assertNull(response3.objectLockMode());
+		assertNull(response3.objectLockRetainUntilDate());
+
+		var response4 = client.headObject(h -> h.bucket(bucketName).key(key2Copy));
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE.toString(), response4.objectLockMode().toString());
+		assertNotNull(response4.objectLockRetainUntilDate());
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(response.versionId())));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+
+		var e2 = assertThrows(AwsServiceException.class,
+				() -> client.deleteObject(d -> d.bucket(bucketName).key(key2Copy).versionId(response4.versionId())));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e2.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e2.awsErrorDetails().errorCode());
+
+		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(response.versionId())
+				.bypassGovernanceRetention(true));
+		client.deleteObject(d -> d.bucket(bucketName2).key(keyCopy).versionId(response2.versionId())
+				.bypassGovernanceRetention(true));
+		client.deleteObject(d -> d.bucket(bucketName).key(key2).versionId(response3.versionId())
+				.bypassGovernanceRetention(true));
+		client.deleteObject(d -> d.bucket(bucketName2).key(key2Copy).versionId(response4.versionId())
+				.bypassGovernanceRetention(true));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testObjectLockMultipart() {
+		var client = getClient();
+		var bucketName = getNewBucketName();
+		var key = "testObjectLockMultipart";
+
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+
+		var conf = ObjectLockConfiguration.builder().objectLockEnabled(ObjectLockEnabled.ENABLED)
+				.rule(r -> r.defaultRetention(retention -> retention.mode(ObjectLockRetentionMode.GOVERNANCE).days(1)))
+				.build();
+
+		client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf));
+		
+		// Multipart Upload
+		var uploadData = setupMultipartUpload(client, bucketName, key, 1 * MainData.MB);
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
+				.multipartUpload(p -> p.parts(uploadData.parts)));
+
+		var response = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE.toString(), response.objectLockMode().toString());
+		assertNotNull(response.objectLockRetainUntilDate());
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(response.versionId())));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+
 		client.deleteObject(
-				d -> d.bucket(bucketName).key(key2).versionId(response2.versionId()).bypassGovernanceRetention(true));
-		client.deleteObject(
-				d -> d.bucket(bucketName).key(key3).versionId(response3.versionId()).bypassGovernanceRetention(true));
+				d -> d.bucket(bucketName).key(key).versionId(response.versionId()).bypassGovernanceRetention(true));
 	}
 
 	@Test
@@ -272,16 +348,18 @@ public class Lock extends TestBase {
 
 		client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf));
 
-		var e = assertThrows(AwsServiceException.class, () -> client.putObject(p -> p.bucket(bucketName).key(key).build(),
-				RequestBody.fromString(content)));
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).build(),
+						RequestBody.fromString(content)));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 
 		var initResponse = client.createMultipartUpload(p -> p.bucket(bucketName).key(key));
 		var uploadId = initResponse.uploadId();
 
-		var e2 = assertThrows(AwsServiceException.class, () -> client.uploadPart(p -> p.bucket(bucketName).key(key).uploadId(uploadId).partNumber(1).build(),
-				RequestBody.fromString(content)));
+		var e2 = assertThrows(AwsServiceException.class,
+				() -> client.uploadPart(p -> p.bucket(bucketName).key(key).uploadId(uploadId).partNumber(1).build(),
+						RequestBody.fromString(content)));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e2.statusCode());
 		assertEquals(MainData.INVALID_REQUEST, e2.awsErrorDetails().errorCode());
 	}

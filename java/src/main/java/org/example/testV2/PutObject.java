@@ -361,7 +361,7 @@ public class PutObject extends TestBase {
 				RequestBody.fromString(key));
 
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
-		assertEquals("GOVERNANCE", response.objectLockMode().toString());
+		assertEquals(ObjectLockMode.GOVERNANCE.toString(), response.objectLockMode().toString());
 		assertEquals(days.toInstant(), response.objectLockRetainUntilDate());
 		assertEquals(ObjectLockLegalHoldStatus.ON.toString(), response.objectLockLegalHoldStatus().toString());
 

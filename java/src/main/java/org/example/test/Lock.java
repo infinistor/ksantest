@@ -13,6 +13,7 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -224,12 +225,10 @@ public class Lock extends TestBase {
 
 	@Test
 	@Tag("Check")
-	public void testObjectLockReflectedObject() {
+	public void testObjectLockPutObject() {
 		var client = getClient();
 		var bucketName = getNewBucketName();
-		var key = "testObjectLockReflectedObject";
-		var key2 = "testObjectLockReflectedObject2";
-		var key3 = "testObjectLockReflectedObject3";
+		var key = "testObjectLockPutObject";
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -248,25 +247,8 @@ public class Lock extends TestBase {
 		client.putObject(bucketName, key, createBody(key), metadata);
 
 		var response = client.getObjectMetadata(bucketName, key);
-		assertEquals("GOVERNANCE", response.getObjectLockMode());
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE.toString(), response.getObjectLockMode());
 		assertNotNull(response.getObjectLockRetainUntilDate());
-
-		// Copy Object
-		client.copyObject(bucketName, key, bucketName, key2);
-
-		var response2 = client.getObjectMetadata(bucketName, key2);
-		assertEquals("GOVERNANCE", response2.getObjectLockMode());
-		assertNotNull(response2.getObjectLockRetainUntilDate());
-
-		// Multipart Upload
-		var uploadData = setupMultipartUploadLock(client, bucketName, key3, 1 * MainData.MB);
-		System.out.println(uploadData.uploadId);
-		client.completeMultipartUpload(
-				new CompleteMultipartUploadRequest(bucketName, key3, uploadData.uploadId, uploadData.parts));
-
-		var response3 = client.getObjectMetadata(bucketName, key3);
-		assertEquals("GOVERNANCE", response3.getObjectLockMode());
-		assertNotNull(response3.getObjectLockRetainUntilDate());
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.deleteVersion(bucketName, key, response.getVersionId()));
@@ -275,9 +257,108 @@ public class Lock extends TestBase {
 
 		client.deleteVersion(new DeleteVersionRequest(bucketName, key, response.getVersionId())
 				.withBypassGovernanceRetention(true));
-		client.deleteVersion(new DeleteVersionRequest(bucketName, key2, response2.getVersionId())
+	}
+
+	@Test
+	@Tag("Check")
+	public void testObjectLockCopyObject() {
+		var client = getClient();
+		var bucketName = getNewBucketName();
+		var bucketName2 = getNewBucketName();
+		var key = "testObjectLockCopyObject-lock";
+		var keyCopy = key + "-copy";
+		var key2 = "testObjectLockCopyObject";
+		var key2Copy = key2 + "-copy";
+
+		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
+		client.createBucket(new CreateBucketRequest(bucketName2).withObjectLockEnabledForBucket(true));
+
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+				.withRule(new ObjectLockRule().withDefaultRetention(
+						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withDays(1)));
+		client.setObjectLockConfiguration(
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf));
+
+		// Put Object
+		var metadata = new ObjectMetadata();
+		metadata.setContentMD5(Utils.getMD5(key));
+		metadata.setContentType("text/plain");
+		metadata.setContentLength(key.length());
+
+		client.putObject(bucketName, key, createBody(key), metadata);
+		client.putObject(bucketName2, key2, key2);
+
+		client.copyObject(bucketName, key, bucketName2, keyCopy);
+		client.copyObject(bucketName2, key2, bucketName, key2Copy);
+
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE.toString(), response.getObjectLockMode());
+		assertNotNull(response.getObjectLockRetainUntilDate());
+
+		var response2 = client.getObjectMetadata(bucketName2, keyCopy);
+		assertNull(response2.getObjectLockMode());
+		assertNull(response2.getObjectLockRetainUntilDate());
+
+		var response3 = client.getObjectMetadata(bucketName2, key2);
+		assertNull(response3.getObjectLockMode());
+		assertNull(response3.getObjectLockRetainUntilDate());
+
+		var response4 = client.getObjectMetadata(bucketName, key2Copy);
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE.toString(), response4.getObjectLockMode());
+		assertNotNull(response4.getObjectLockRetainUntilDate());
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.deleteVersion(bucketName, key, response.getVersionId()));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+
+		var e2 = assertThrows(AmazonServiceException.class,
+				() -> client.deleteVersion(bucketName, key2Copy, response4.getVersionId()));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e2.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e2.getErrorCode());
+
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, response.getVersionId())
 				.withBypassGovernanceRetention(true));
-		client.deleteVersion(new DeleteVersionRequest(bucketName, key3, response3.getVersionId())
+		client.deleteVersion(new DeleteVersionRequest(bucketName2, keyCopy, response2.getVersionId())
+				.withBypassGovernanceRetention(true));
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key2, response3.getVersionId())
+				.withBypassGovernanceRetention(true));
+		client.deleteVersion(new DeleteVersionRequest(bucketName2, key2Copy, response4.getVersionId())
+				.withBypassGovernanceRetention(true));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testObjectLockMultipart() {
+
+		var client = getClient();
+		var bucketName = getNewBucketName();
+		var key = "testObjectLockMultipart";
+
+		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
+
+		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
+				.withRule(new ObjectLockRule().withDefaultRetention(
+						new DefaultRetention().withMode(ObjectLockRetentionMode.GOVERNANCE).withDays(1)));
+		client.setObjectLockConfiguration(
+				new SetObjectLockConfigurationRequest().withBucketName(bucketName).withObjectLockConfiguration(conf));
+
+		// Multipart Upload
+		var uploadData = setupMultipartUploadLock(client, bucketName, key, 1 * MainData.MB);
+		System.out.println(uploadData.uploadId);
+		client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
+
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE.toString(), response.getObjectLockMode());
+		assertNotNull(response.getObjectLockRetainUntilDate());
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.deleteVersion(bucketName, key, response.getVersionId()));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key, response.getVersionId())
 				.withBypassGovernanceRetention(true));
 	}
 
@@ -474,13 +555,18 @@ public class Lock extends TestBase {
 		var putResponse = client.putObject(bucketName, key, createBody(key), metadata);
 		var versionId = putResponse.getVersionId();
 
+		var response = client
+				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(key));
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE.toString(), response.getRetention().getMode());
+		assertNotNull(response.getRetention().getRetainUntilDate());
+
 		var retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
 				.withRetainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
 						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().getTime());
 
 		client.setObjectRetention(
 				new SetObjectRetentionRequest().withBucketName(bucketName).withKey(key).withRetention(retention));
-		var response = client
+		response = client
 				.getObjectRetention(new GetObjectRetentionRequest().withBucketName(bucketName).withKey(key));
 		retentionCompare(retention, response.getRetention());
 
