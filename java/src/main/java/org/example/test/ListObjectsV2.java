@@ -774,7 +774,6 @@ public class ListObjectsV2 extends TestBase {
 		assertEquals(false, response.isTruncated());
 	}
 
-	
 	@Test
 	@Tag("Versioning")
 	public void testBucketListV2Versioning() {
