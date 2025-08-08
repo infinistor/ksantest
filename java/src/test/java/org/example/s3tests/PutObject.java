@@ -296,4 +296,84 @@ class PutObject {
 	void testPutObjectChecksum() {
 		testV2.testPutObjectChecksum();
 	}
+
+	@Test
+	@Tag("KeyLength")
+	// 최대 길이(1024자)의 오브젝트 키로 업로드 성공 확인
+	void testPutObjectKeyMaxLength() {
+		test.testPutObjectKeyMaxLength();
+		testV2.testPutObjectKeyMaxLength();
+	}
+
+	@Test
+	@Tag("KeyLength")
+	// 최소 길이(1자)의 오브젝트 키로 업로드 성공 확인
+	void testPutObjectKeyMinLength() {
+		test.testPutObjectKeyMinLength();
+		testV2.testPutObjectKeyMinLength();
+	}
+
+	@Test
+	@Tag("KeyLength")
+	// 최대 길이(1024자)를 초과하는 오브젝트 키로 업로드 실패 확인
+	void testPutObjectKeyTooLong() {
+		test.testPutObjectKeyTooLong();
+		testV2.testPutObjectKeyTooLong();
+	}
+
+	@Test
+	@Tag("KeyLength")
+	// 특수문자로 시작하는 오브젝트 키로 업로드 성공 확인
+	void testPutObjectKeySpecialCharactersAtStart() {
+		test.testPutObjectKeySpecialCharactersAtStart();
+		testV2.testPutObjectKeySpecialCharactersAtStart();
+	}
+
+	@Test
+	@Tag("KeyLength")
+	// 특수문자로 끝나는 오브젝트 키로 업로드 성공 확인
+	void testPutObjectKeySpecialCharactersAtEnd() {
+		test.testPutObjectKeySpecialCharactersAtEnd();
+		testV2.testPutObjectKeySpecialCharactersAtEnd();
+	}
+
+	@Test
+	@Tag("KeyLength")
+	// 유니코드 문자를 포함한 오브젝트 키로 업로드 성공 확인
+	void testPutObjectKeyUnicodeCharacters() {
+		test.testPutObjectKeyUnicodeCharacters();
+		testV2.testPutObjectKeyUnicodeCharacters();
+	}
+
+	@Test
+	@Tag("KeyLength")
+	// 1024바이트를 초과하는 키로 업로드 실패 확인
+	void testPutObjectKeyUnicodeCharactersTooLong() {
+		test.testPutObjectKeyUnicodeCharactersTooLong();
+		testV2.testPutObjectKeyUnicodeCharactersTooLong();
+	}
+
+	@Test
+	@Tag("KeyLength")
+	// 앞뒤 공백문자를 포함한 오브젝트 키로 업로드 성공 확인
+	void testPutObjectKeyWithLeadingAndTrailingSpaces() {
+		test.testPutObjectKeyWithLeadingAndTrailingSpaces();
+		testV2.testPutObjectKeyWithLeadingAndTrailingSpaces();
+	}
+
+	@Test
+	@Tag("KeyLength")
+	// 연속된 슬래시를 포함한 오브젝트 키로 업로드 성공 확인
+	void testPutObjectKeyWithConsecutiveSlashes() {
+		test.testPutObjectKeyWithConsecutiveSlashes();
+		testV2.testPutObjectKeyWithConsecutiveSlashes();
+	}
+
+	@Test
+	@Tag("KeyLength")
+	// 다양한 경계 길이의 오브젝트 키로 업로드 성공 확인
+	void testPutObjectKeyBoundaryLengths() {
+		test.testPutObjectKeyBoundaryLengths();
+		testV2.testPutObjectKeyBoundaryLengths();
+	}
 }
