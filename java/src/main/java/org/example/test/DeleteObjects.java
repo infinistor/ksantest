@@ -11,12 +11,17 @@
 package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.http.HttpStatus;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 
@@ -188,5 +193,41 @@ public class DeleteObjects extends TestBase {
 
 		versResponse = client.listVersions(bucketName, "");
 		assertEquals(18, versResponse.getVersionSummaries().size());
+	}
+
+	@Test
+	@Tag("DeleteObjects")
+	public void testDeleteObjects() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var keyCount = 100;
+		var keyNames = new ArrayList<String>();
+
+		for (var i = 0; i < keyCount; i++) {
+			// key-001
+			var key = String.format("key-%03d", i);
+
+			keyNames.add(key);
+			client.putObject(bucketName, key, key);
+		}
+
+		// 100개의 오브젝트가 있는지 확인
+		var listResponse = client.listObjects(bucketName);
+		assertEquals(keyCount, listResponse.getObjectSummaries().size());
+
+		// 모두 삭제
+		var objectList = getKeyVersions(keyNames);
+		client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(objectList));
+		client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(objectList));
+
+		// 0개의 오브젝트가 있는지 확인
+		listResponse = client.listObjects(bucketName);
+		assertEquals(0, listResponse.getObjectSummaries().size());
+
+		// 모두 올바르게 삭제되었는지 확인
+		for (var key : keyNames) {
+			var e = assertThrows(AmazonServiceException.class, () -> client.getObjectMetadata(bucketName, key));
+			assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		}
 	}
 }

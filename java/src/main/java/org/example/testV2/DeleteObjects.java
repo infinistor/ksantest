@@ -11,12 +11,18 @@
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.http.HttpStatus;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 
 public class DeleteObjects extends TestBase {
@@ -179,16 +185,52 @@ public class DeleteObjects extends TestBase {
 		versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(15, versResponse.versions().size());
 		assertEquals(1, versResponse.deleteMarkers().size());
-		
+
 		var deleteList = List.of("a/obj1", "a/obj2");
 		var objectList = getKeyVersions(deleteList);
-		
+
 		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
 		assertEquals(2, delResponse.deleted().size());
-		
+
 		versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(15, versResponse.versions().size());
 		assertEquals(3, versResponse.deleteMarkers().size());
+	}
 
+	@Test
+	@Tag("DeleteObjects")
+	public void testDeleteObjects() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+
+		var keyCount = 100;
+		var keyNames = new ArrayList<String>();
+
+		// 100개의 오브젝트 생성
+		for (var i = 0; i < keyCount; i++) {
+			var key = String.format("key-%03d", i);
+
+			keyNames.add(key);
+			client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
+		}
+
+		// 100개의 오브젝트가 있는지 확인
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(keyCount, listResponse.contents().size());
+
+		// 모두 삭제
+		var objectList = getKeyVersions(keyNames);
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
+		assertEquals(keyCount, delResponse.deleted().size());
+
+		// 0개의 오브젝트가 있는지 확인
+		listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(0, listResponse.contents().size());
+
+		// 모두 올바르게 삭제되었는지 확인
+		for (var key : keyNames) {
+			var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
+			assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		}
 	}
 }

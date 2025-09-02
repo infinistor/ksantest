@@ -91,4 +91,14 @@ class DeleteObjects {
 		test.testDirectoryDeleteVersions();
 		testV2.testDirectoryDeleteVersions();
 	}
+
+	/**
+	 * 삭제한 오브젝트가 재대로 삭제 되었는지 확인
+	 */
+	@Test
+	@Tag("DeleteObjects")
+	void testDeleteObjects() {
+		test.testDeleteObjects();
+		testV2.testDeleteObjects();
+	}
 }
