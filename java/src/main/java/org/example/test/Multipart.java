@@ -163,8 +163,8 @@ public class Multipart extends TestBase {
 			client.completeMultipartUpload(
 					new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId,
 							uploadData.parts));
-			var response = client.getObject(targetBucketName, targetKey);
-			assertEquals(size, response.getObjectMetadata().getContentLength());
+			var response = client.getObjectMetadata(targetBucketName, targetKey);
+			assertEquals(size, response.getContentLength());
 			checkCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey, MainData.MB);
 		}
 

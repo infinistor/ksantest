@@ -166,8 +166,8 @@ public class Multipart extends TestBase {
 			client.completeMultipartUpload(
 					c -> c.bucket(targetBucketName).key(targetKey).uploadId(uploadData.uploadId)
 							.multipartUpload(p -> p.parts(uploadData.parts)));
-			var response = client.getObject(g -> g.bucket(targetBucketName).key(targetKey));
-			assertEquals(size, response.response().contentLength());
+			var response = client.headObject(g -> g.bucket(targetBucketName).key(targetKey));
+			assertEquals(size, response.contentLength());
 			checkCopyContentUsingRange(sourceBucketName, sourceKey, targetBucketName, targetKey, MainData.MB);
 		}
 
@@ -308,7 +308,6 @@ public class Multipart extends TestBase {
 		var initResponse = client.createMultipartUpload(c -> c.bucket(bucketName).key(key));
 		var uploadId = initResponse.uploadId();
 		var parts = new ArrayList<CompletedPart>();
-		var totalContent = new StringBuilder();
 
 		for (int i = 0; i < 10; i++) {
 			var partNumber = i + 1;
@@ -316,7 +315,6 @@ public class Multipart extends TestBase {
 					u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(partNumber),
 					RequestBody.fromString(content));
 			parts.add(CompletedPart.builder().partNumber(partNumber).eTag(partResponse.eTag()).build());
-			totalContent.append(content);
 		}
 
 		var e = assertThrows(AwsServiceException.class,
@@ -585,11 +583,11 @@ public class Multipart extends TestBase {
 		while (true) {
 			var partNumber = index;
 			var response = client.listParts(l -> l.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
-				.maxParts(10).partNumberMarker(partNumber));
+					.maxParts(10).partNumberMarker(partNumber));
 
 			assertEquals(10, response.parts().size());
 			partsETagCompare(uploadData.parts.subList(index, index + 10), response.parts());
-			if (response.isTruncated()) {
+			if (Boolean.TRUE.equals(response.isTruncated())) {
 				index = response.nextPartNumberMarker();
 			} else {
 				break;
