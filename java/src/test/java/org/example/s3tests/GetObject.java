@@ -220,4 +220,14 @@ class GetObject {
 	void testMultipartObjectRange() {
 		testV2.testMultipartObjectRange();
 	}
+
+	/**
+	 * GetObject에서 파일을 읽지 않고 버려도 무시되는지 확인
+	 */
+	@Test
+	@Tag("Get")
+	void testGetObjectIgnore() {
+		test.testGetObjectIgnore();
+		testV2.testGetObjectIgnore();
+	}
 }

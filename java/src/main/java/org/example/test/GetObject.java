@@ -336,4 +336,15 @@ public class GetObject extends TestBase {
 		assertEquals("esperanto", response.getObjectMetadata().getContentLanguage());
 		assertEquals("foo/bar", response.getObjectMetadata().getContentType());
 	}
+
+	@Test
+	@Tag("Get")
+	public void testGetObjectIgnore() {
+		var key = "testObjectIgnore";
+		var client = getClient();
+		var bucketName = createObjects(client, key);
+
+		var response = client.getObject(new GetObjectRequest(bucketName, key));
+		assertEquals(key.length(), response.getObjectMetadata().getContentLength());
+	}
 }

@@ -353,4 +353,15 @@ public class GetObject extends TestBase {
 		var body = getBody(response);
 		assertEquals(multipartUploadData.getBody().substring(0, 5 * MainData.MB), body);
 	}
+
+	@Test
+	@Tag("Get")
+	public void testGetObjectIgnore() {
+		var key = "testObjectIgnore";
+		var client = getClient();
+		var bucketName = createObjects(client, key);
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(key.length(), response.response().contentLength());
+	}
 }
