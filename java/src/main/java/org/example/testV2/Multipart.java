@@ -76,8 +76,8 @@ public class Multipart extends TestBase {
 		var uploadData = setupMultipartUpload(client, bucketName, key, size);
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
 				.multipartUpload(p -> p.parts(uploadData.parts)));
-		var response = client.getObject(g -> g.bucket(bucketName).key(key));
-		assertEquals(size, response.response().contentLength());
+		var response = client.headObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(size, response.contentLength());
 
 	}
 
@@ -96,8 +96,8 @@ public class Multipart extends TestBase {
 		client.completeMultipartUpload(c -> c.bucket(targetBucketName).key(targetKey).uploadId(uploadData.uploadId)
 				.multipartUpload(p -> p.parts(uploadData.parts)));
 
-		var response = client.getObject(g -> g.bucket(targetBucketName).key(targetKey));
-		assertEquals(size, response.response().contentLength());
+		var response = client.headObject(g -> g.bucket(targetBucketName).key(targetKey));
+		assertEquals(size, response.contentLength());
 
 	}
 
@@ -144,9 +144,8 @@ public class Multipart extends TestBase {
 		client.completeMultipartUpload(c -> c.bucket(targetBucketName).key(targetKey).uploadId(uploadId)
 				.multipartUpload(p -> p.parts(parts)));
 
-		var response = client.getObject(g -> g.bucket(targetBucketName).key(targetKey));
-		assertEquals(10, response.response().contentLength());
-
+		var response = client.headObject(g -> g.bucket(targetBucketName).key(targetKey));
+		assertEquals(10, response.contentLength());
 	}
 
 	@Test
@@ -231,8 +230,8 @@ public class Multipart extends TestBase {
 			client.completeMultipartUpload(
 					c -> c.bucket(targetBucketName).key(targetKey).uploadId(uploadData.uploadId)
 							.multipartUpload(p -> p.parts(uploadData.parts)));
-			var response = client.getObject(g -> g.bucket(targetBucketName).key(targetKey));
-			assertEquals(size, response.response().contentLength());
+			var response = client.headObject(g -> g.bucket(targetBucketName).key(targetKey));
+			assertEquals(size, response.contentLength());
 			checkCopyContent(sourceBucketName, sourceKey, targetBucketName, targetKey, versionId);
 		}
 
