@@ -448,7 +448,8 @@ public class CopyObject extends TestBase {
 
 		var target4 = "testObjectCopyVersioningMultipartUploadTarget4";
 		client.copyObject(
-				new CopyObjectRequest(bucketName, source, bucketName3, target4).withSourceVersionId(sourceVid));
+				new CopyObjectRequest(bucketName, source, bucketName3, target4)
+				.withSourceVersionId(sourceVid));
 		response = client.getObjectMetadata(bucketName3, target4);
 		assertEquals(sourceSize, response.getContentLength());
 		assertEquals(sourceMetadata.getUserMetadata(), response.getUserMetadata());
