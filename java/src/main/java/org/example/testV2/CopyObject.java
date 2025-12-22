@@ -300,8 +300,8 @@ public class CopyObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("testObjectCopyBucketNotFoundSource")
-						.destinationBucket(bucketName + "-fake").destinationKey("testObjectCopyBucketNotFoundTarget")));
+				() -> client.copyObject(c -> c.sourceBucket(bucketName + "-fake").sourceKey("testObjectCopyBucketNotFoundSource")
+						.destinationBucket(bucketName).destinationKey("testObjectCopyBucketNotFoundTarget")));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 	}
