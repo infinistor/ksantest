@@ -28,8 +28,10 @@ import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
+import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
 
 public class GetObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -346,5 +348,109 @@ public class GetObject extends TestBase {
 
 		var response = client.getObject(new GetObjectRequest(bucketName, key));
 		assertEquals(key.length(), response.getObjectMetadata().getContentLength());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testGetObjectAfterDelete() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectAfterDelete";
+		var body = "testContent";
+
+		// 오브젝트 업로드
+		client.putObject(bucketName, key, body);
+
+		// GetObject로 업로드 확인
+		var getResponse = client.getObject(bucketName, key);
+		var fetchedBody = getBody(getResponse.getObjectContent());
+		assertEquals(body, fetchedBody);
+		assertEquals(body.length(), getResponse.getObjectMetadata().getContentLength());
+
+		// 오브젝트 삭제
+		client.deleteObject(bucketName, key);
+
+		// 삭제 후 GetObject 실패 확인
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testGetObjectAfterDeleteVersioning() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectAfterDeleteVersioning";
+		var body = "testContent";
+
+		// 버저닝 활성화
+		client.setBucketVersioningConfiguration(
+				new SetBucketVersioningConfigurationRequest(bucketName,
+						new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED)));
+
+		// 오브젝트 업로드
+		client.putObject(bucketName, key, body);
+
+		// GetObject로 업로드 확인
+		var getResponse = client.getObject(bucketName, key);
+		var fetchedBody = getBody(getResponse.getObjectContent());
+		assertEquals(body, fetchedBody);
+		assertEquals(body.length(), getResponse.getObjectMetadata().getContentLength());
+
+		// 오브젝트 삭제 (DeleteMarker 생성)
+		client.deleteObject(bucketName, key);
+
+		// 삭제 후 GetObject 실패 확인
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Versioning")
+	public void testGetObjectDeleteMarker() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectDeleteMarker";
+		var body = "testContent";
+
+		// 버저닝 활성화
+		client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
+				new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED)));
+
+		// 오브젝트 업로드
+		client.putObject(bucketName, key, body);
+
+		// GetObject로 업로드 확인
+		var getResponse = client.getObject(bucketName, key);
+		var fetchedBody = getBody(getResponse.getObjectContent());
+		assertEquals(body, fetchedBody);
+
+		// 오브젝트 삭제 (DeleteMarker 생성)
+		client.deleteObject(bucketName, key);
+
+		// ListObjectVersions로 버전 목록 조회
+		var listResponse = client.listVersions(bucketName, "");
+		var versions = listResponse.getVersionSummaries();
+
+		// 2개의 버전이 있어야 함 (DeleteMarker + 실제 오브젝트)
+		assertEquals(2, versions.size());
+
+		// 각 버전에 대해 순차적으로 GetObject 시도
+		for (var version : versions) {
+			if (version.isDeleteMarker()) {
+				// DeleteMarker는 GetObject 실패
+				var e = assertThrows(AmazonServiceException.class, () -> client
+						.getObject(new GetObjectRequest(bucketName, key).withVersionId(version.getVersionId())));
+				assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, e.getStatusCode());
+			} else {
+				// 실제 오브젝트 버전은 GetObject 성공
+				var response = client
+						.getObject(new GetObjectRequest(bucketName, key).withVersionId(version.getVersionId()));
+				var content = getBody(response.getObjectContent());
+				assertEquals(body, content);
+			}
+		}
 	}
 }

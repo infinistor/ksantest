@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 
 public class GetObject extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -363,5 +364,110 @@ public class GetObject extends TestBase {
 
 		var response = client.getObject(g -> g.bucket(bucketName).key(key));
 		assertEquals(key.length(), response.response().contentLength());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testGetObjectAfterDelete() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectAfterDelete";
+		var body = "testContent";
+
+		// 오브젝트 업로드
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(body));
+
+		// GetObject로 업로드 확인
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		var fetchedBody = getBody(getResponse);
+		assertEquals(body, fetchedBody);
+		assertEquals(body.length(), getResponse.response().contentLength());
+
+		// 오브젝트 삭제
+		client.deleteObject(d -> d.bucket(bucketName).key(key));
+
+		// 삭제 후 GetObject 실패 확인
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testGetObjectAfterDeleteVersioning() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectAfterDeleteVersioning";
+		var body = "testContent";
+
+		// 버저닝 활성화
+		client.putBucketVersioning(p -> p.bucket(bucketName)
+				.versioningConfiguration(
+						v -> v.status(BucketVersioningStatus.ENABLED)));
+
+		// 오브젝트 업로드
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(body));
+
+		// GetObject로 업로드 확인
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		var fetchedBody = getBody(getResponse);
+		assertEquals(body, fetchedBody);
+		assertEquals(body.length(), getResponse.response().contentLength());
+
+		// 오브젝트 삭제 (DeleteMarker 생성)
+		client.deleteObject(d -> d.bucket(bucketName).key(key));
+
+		// 삭제 후 GetObject 실패 확인
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("Versioning")
+	public void testGetObjectDeleteMarker() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectDeleteMarker";
+		var body = "testContent";
+
+		// 버저닝 활성화
+		client.putBucketVersioning(p -> p.bucket(bucketName)
+				.versioningConfiguration(
+						v -> v.status(BucketVersioningStatus.ENABLED)));
+
+		// 오브젝트 업로드
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(body));
+
+		// GetObject로 업로드 확인
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		var fetchedBody = getBody(getResponse);
+		assertEquals(body, fetchedBody);
+
+		// 오브젝트 삭제 (DeleteMarker 생성)
+		client.deleteObject(d -> d.bucket(bucketName).key(key));
+
+		// ListObjectVersions로 버전 목록 조회
+		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		var versions = listResponse.versions();
+		var deleteMarkers = listResponse.deleteMarkers();
+
+		// DeleteMarker 1개, 실제 오브젝트 1개가 있어야 함
+		assertEquals(1, deleteMarkers.size());
+		assertEquals(1, versions.size());
+
+		// DeleteMarker로 GetObject 시도 - 실패
+		var deleteMarker = deleteMarkers.get(0);
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).versionId(deleteMarker.versionId())));
+		assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, e.statusCode());
+
+		// 실제 오브젝트 버전으로 GetObject - 성공
+		var version = versions.get(0);
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).versionId(version.versionId()));
+		var content = getBody(response);
+		assertEquals(body, content);
 	}
 }

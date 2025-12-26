@@ -230,4 +230,34 @@ class GetObject {
 		test.testGetObjectIgnore();
 		testV2.testGetObjectIgnore();
 	}
+
+	/**
+	 * 삭제한 파일 GetObject 실패 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testGetObjectAfterDelete() {
+		test.testGetObjectAfterDelete();
+		testV2.testGetObjectAfterDelete();
+	}
+
+	/**
+	 * 버저닝한 버킷에서 삭제한 파일 GetObject 실패 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testGetObjectAfterDeleteVersioning() {
+		test.testGetObjectAfterDeleteVersioning();
+		testV2.testGetObjectAfterDeleteVersioning();
+	}
+
+	/**
+	 * 버저닝한 버킷에서 DeleteMarker로 GetObject 실패 확인
+	 */
+	@Test
+	@Tag("Versioning")
+	void testGetObjectDeleteMarker() {
+		test.testGetObjectDeleteMarker();
+		testV2.testGetObjectDeleteMarker();
+	}
 }
