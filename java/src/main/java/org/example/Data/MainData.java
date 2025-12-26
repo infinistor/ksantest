@@ -92,7 +92,8 @@ public class MainData {
 	public static final String ACCESS_CONTROL_LIST_NOT_SUPPORTED = "AccessControlListNotSupported";
 	public static final String KEY_TOO_LONG = "KeyTooLongError";
 	public static final String NOT_MATCHED = "Source does not match target";
-
+	public static final String METHOD_NOT_ALLOWED = "MethodNotAllowed";
+	
 	public static final String ALL_USERS = "http://acs.amazonaws.com/groups/global/AllUsers";
 	public static final String AUTHENTICATED_USERS = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers";
 }

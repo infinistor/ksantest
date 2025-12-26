@@ -444,6 +444,7 @@ public class GetObject extends TestBase {
 				var e = assertThrows(AmazonServiceException.class, () -> client
 						.getObject(new GetObjectRequest(bucketName, key).withVersionId(version.getVersionId())));
 				assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, e.getStatusCode());
+				assertEquals(MainData.METHOD_NOT_ALLOWED, e.getErrorCode());
 			} else {
 				// 실제 오브젝트 버전은 GetObject 성공
 				var response = client

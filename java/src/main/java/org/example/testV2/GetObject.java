@@ -463,6 +463,7 @@ public class GetObject extends TestBase {
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key(key).versionId(deleteMarker.versionId())));
 		assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, e.statusCode());
+		assertEquals(MainData.METHOD_NOT_ALLOWED, e.awsErrorDetails().errorCode());
 
 		// 실제 오브젝트 버전으로 GetObject - 성공
 		var version = versions.get(0);
