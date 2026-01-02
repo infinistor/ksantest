@@ -424,7 +424,7 @@ class CopyObject {
 	}
 
 	/**
-	 * copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 추가 가능한지 확인하는 테스트 (Versioning 설정)
+	 * 버저닝된 버킷에서 copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 추가 가능한지 확인하는 테스트
 	 */
 	@Test
 	@Tag("OverWrite")
@@ -444,7 +444,7 @@ class CopyObject {
 	}
 
 	/**
-	 * copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인하는 테스트 (Versioning 설정)
+	 * 버저닝된 버킷에서 copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인하는 테스트
 	 */
 	@Test
 	@Tag("OverWrite")

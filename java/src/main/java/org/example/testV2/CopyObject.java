@@ -754,6 +754,10 @@ public class CopyObject extends TestBase {
 		var response = client.getObject(g -> g.bucket(bucketName).key(source));
 
 		assertEquals(metaData, response.response().metadata());
+
+		//버전이 2개인지 확인
+		var versionResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(2, versionResponse.versions().size());
 	}
 
 	@Test
@@ -800,6 +804,10 @@ public class CopyObject extends TestBase {
 		response = client.headObject(h -> h.bucket(bucketName).key(source));
 
 		assertEquals(metadata, response.metadata());
+		
+		//버전이 2개인지 확인
+		var versionResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(2, versionResponse.versions().size());
 	}
 
 	@Test

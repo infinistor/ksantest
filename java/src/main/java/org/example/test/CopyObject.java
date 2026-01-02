@@ -30,6 +30,7 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
+import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.amazonaws.services.s3.model.MetadataDirective;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.ObjectTagging;
@@ -449,7 +450,7 @@ public class CopyObject extends TestBase {
 		var target4 = "testObjectCopyVersioningMultipartUploadTarget4";
 		client.copyObject(
 				new CopyObjectRequest(bucketName, source, bucketName3, target4)
-				.withSourceVersionId(sourceVid));
+						.withSourceVersionId(sourceVid));
 		response = client.getObjectMetadata(bucketName3, target4);
 		assertEquals(sourceSize, response.getContentLength());
 		assertEquals(sourceMetadata.getUserMetadata(), response.getUserMetadata());
@@ -740,6 +741,10 @@ public class CopyObject extends TestBase {
 		var response = client.getObject(bucketName, source);
 
 		assertEquals(metaData.getUserMetadata(), response.getObjectMetadata().getUserMetadata());
+
+		// 버전이 2개인지 확인
+		var versionResponse = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
+		assertEquals(2, versionResponse.getVersionSummaries().size());
 	}
 
 	@Test
@@ -784,6 +789,10 @@ public class CopyObject extends TestBase {
 		response = client.getObjectMetadata(bucketName, source);
 
 		assertEquals(metadata.getUserMetadata(), response.getUserMetadata());
+
+		// 버전이 2개인지 확인
+		var versionResponse = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
+		assertEquals(2, versionResponse.getVersionSummaries().size());
 	}
 
 	@Disabled("SDK v1에서는 알고리즘을 누락해도 기본값이 적용되어 에러가 발생하지 않음")
