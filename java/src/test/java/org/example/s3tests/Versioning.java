@@ -254,4 +254,14 @@ class Versioning {
 		test.testVersioningInvalidVersionId();
 		testV2.testVersioningInvalidVersionId();
 	}
+
+	/**
+	 * CopyObject로 복사할 경우 버저닝이 올바르게 동작하는지 확인
+	 */
+	@Test
+	@Tag("Copy")
+	void testVersioningCopyObject() {
+		test.testVersioningCopyObject();
+		testV2.testVersioningCopyObject();
+	}
 }

@@ -13,6 +13,7 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -748,5 +749,137 @@ public class Versioning extends TestBase {
 				.getObject(new GetObjectRequest(bucketName, key).withVersionId("f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59")));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_VERSION, e.getErrorCode());
+	}
+
+	// CopyObject로 복사할 경우 버저닝이 올바르게 동작하는지 확인
+	@Test
+	@Tag("Copy")
+	public void testVersioningCopyObject() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var sourceKey = "source";
+		var targetKey = "target";
+		var content = "content-version1";
+		var expectedVersions = new ArrayList<String>();
+
+		// 버저닝 설정
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+
+		// putObject - 첫 번째 버전 생성
+		var putResponse = client.putObject(bucketName, sourceKey, content);
+		var sourceVersion1 = putResponse.getVersionId();
+		expectedVersions.add(sourceVersion1);
+
+		// copyObject - 복제가 정상적인지 확인
+		var copyResponse = client.copyObject(bucketName, sourceKey, bucketName, targetKey);
+		var targetVersion1 = copyResponse.getVersionId();
+		expectedVersions.add(targetVersion1);
+
+		var getResponse = client.getObject(bucketName, targetKey);
+		var body = getBody(getResponse.getObjectContent());
+		assertEquals(content, body);
+		assertEquals(targetVersion1, getResponse.getObjectMetadata().getVersionId());
+
+		// listVersions 확인 - source(1), target(1)
+		var listResponse = client.listVersions(bucketName, "");
+		assertEquals(2, listResponse.getVersionSummaries().size());
+		var versions = getVersions(listResponse.getVersionSummaries());
+		for (var version : versions) {
+			assertTrue(expectedVersions.contains(version.getVersionId()),
+					"Version " + version.getVersionId() + " should be in expected list");
+		}
+
+		copyResponse = client.copyObject(bucketName, sourceKey, bucketName, targetKey);
+		var targetVersion2 = copyResponse.getVersionId();
+		expectedVersions.add(targetVersion2);
+
+		// 복제가 정상적인지 확인
+		getResponse = client.getObject(bucketName, targetKey);
+		body = getBody(getResponse.getObjectContent());
+		assertEquals(content, body);
+		assertEquals(targetVersion2, getResponse.getObjectMetadata().getVersionId());
+
+		// listVersions로 버전 목록이 일치하는지 확인
+		listResponse = client.listVersions(bucketName, "");
+		assertEquals(3, listResponse.getVersionSummaries().size());
+		versions = getVersions(listResponse.getVersionSummaries());
+		assertEquals(expectedVersions.size(), versions.size());
+		for (var version : versions) {
+			assertTrue(expectedVersions.contains(version.getVersionId()),
+					"Version " + version.getVersionId() + " should be in expected list");
+		}
+
+		// copyObject(metadata only overwrite) - 메타데이터만 변경하여 복사
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("test-key", "test-value");
+		metadata.setContentType("text/plain");
+		var copyRequest = new CopyObjectRequest(bucketName, sourceKey, bucketName, targetKey)
+				.withNewObjectMetadata(metadata);
+		copyResponse = client.copyObject(copyRequest);
+		var targetVersion3 = copyResponse.getVersionId();
+		expectedVersions.add(targetVersion3);
+
+		// 복제가 정상적인지 확인
+		var metadataResponse = client.getObjectMetadata(bucketName, targetKey);
+		assertEquals("test-value", metadataResponse.getUserMetadata().get("test-key"));
+		assertEquals("text/plain", metadataResponse.getContentType());
+		assertEquals(targetVersion3, metadataResponse.getVersionId());
+
+		// listVersions로 버전 목록이 일치하는지 확인 - source(1), target(3)
+		listResponse = client.listVersions(bucketName, "");
+		assertEquals(4, listResponse.getVersionSummaries().size());
+		versions = getVersions(listResponse.getVersionSummaries());
+		assertEquals(expectedVersions.size(), versions.size());
+		for (var version : versions) {
+			assertTrue(expectedVersions.contains(version.getVersionId()),
+					"Version " + version.getVersionId() + " should be in expected list");
+		}
+
+		// 버저닝 중단
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
+
+		// copyObject - 버저닝 중단 상태에서 기존 버전 복사
+		copyResponse = client.copyObject(bucketName, sourceKey, bucketName, targetKey);
+		var targetVersion4 = copyResponse.getVersionId();
+		assertTrue(targetVersion4 == null || "null".equals(targetVersion4)); // 버저닝 중단 상태에서는 versionId가 null 또는 "null"
+		expectedVersions.add("null");
+
+		// 복제가 정상적인지 확인 - source의 최신 버전(content2)이 복사되어야 함
+		getResponse = client.getObject(bucketName, targetKey);
+		body = getBody(getResponse.getObjectContent());
+		assertEquals(content, body);
+
+		// listVersions로 버전 목록 확인 - source(1), target(3+null)
+		listResponse = client.listVersions(bucketName, "");
+		assertEquals(5, listResponse.getVersionSummaries().size());
+		versions = getVersions(listResponse.getVersionSummaries());
+		assertEquals(expectedVersions.size(), versions.size());
+		for (var version : versions) {
+			var versionId = version.getVersionId() == null ? "null" : version.getVersionId();
+			assertTrue(expectedVersions.contains(versionId),
+					"Version " + versionId + " should be in expected list");
+		}
+
+		// copyObject(overwrite) - 버저닝 중단 상태에서 다시 덮어쓰기
+		copyResponse = client.copyObject(bucketName, sourceKey, bucketName, targetKey);
+		var targetVersion5 = copyResponse.getVersionId();
+		assertTrue(targetVersion5 == null || "null".equals(targetVersion5)); // 버저닝 중단 상태에서는 versionId가 null 또는 "null"
+		// null 버전은 덮어쓰기되므로 expectedVersions에 추가하지 않음
+
+		// 복제가 정상적인지 확인 - 여전히 content이어야 함
+		getResponse = client.getObject(bucketName, targetKey);
+		body = getBody(getResponse.getObjectContent());
+		assertEquals(content, body);
+
+		// listVersions로 버전 목록이 일치하는지 확인 - null 버전은 덮어써지므로 개수 유지
+		listResponse = client.listVersions(bucketName, "");
+		assertEquals(5, listResponse.getVersionSummaries().size());
+		versions = getVersions(listResponse.getVersionSummaries());
+		assertEquals(expectedVersions.size(), versions.size());
+		for (var version : versions) {
+			var versionId = version.getVersionId() == null ? "null" : version.getVersionId();
+			assertTrue(expectedVersions.contains(versionId),
+					"Version " + versionId + " should be in expected list");
+		}
 	}
 }

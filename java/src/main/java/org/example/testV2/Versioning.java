@@ -12,6 +12,7 @@ package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -706,8 +707,142 @@ public class Versioning extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(key));
 
-		var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key).versionId("f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59")));
+		var e = assertThrows(AwsServiceException.class, () -> client
+				.getObject(g -> g.bucket(bucketName).key(key).versionId("f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59")));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_VERSION, e.awsErrorDetails().errorCode());
+	}
+
+	// CopyObject로 복사할 경우 버저닝이 올바르게 동작하는지 확인
+	@Test
+	@Tag("Copy")
+	public void testVersioningCopyObject() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var sourceKey = "source";
+		var targetKey = "target";
+		var content = "content-version1";
+		var expectedVersions = new ArrayList<String>();
+
+		// 버저닝 설정
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// putObject - 첫 번째 버전 생성
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(sourceKey).build(),
+				RequestBody.fromString(content));
+		var sourceVersion1 = putResponse.versionId();
+		expectedVersions.add(sourceVersion1);
+
+		// copyObject - 복제가 정상적인지 확인
+		var copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey)
+				.destinationBucket(bucketName).destinationKey(targetKey));
+		var targetVersion1 = copyResponse.versionId();
+		expectedVersions.add(targetVersion1);
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
+		var body = getBody(getResponse);
+		assertEquals(content, body);
+		assertEquals(targetVersion1, getResponse.response().versionId());
+
+		// listVersions 확인 - source(1), target(1)
+		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(2, listResponse.versions().size());
+		for (var version : listResponse.versions()) {
+			assertTrue(expectedVersions.contains(version.versionId()),
+					"Version " + version.versionId() + " should be in expected list");
+		}
+
+		copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey)
+				.destinationBucket(bucketName).destinationKey(targetKey));
+		var targetVersion2 = copyResponse.versionId();
+		expectedVersions.add(targetVersion2);
+
+		// 복제가 정상적인지 확인
+		getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
+		body = getBody(getResponse);
+		assertEquals(content, body);
+		assertEquals(targetVersion2, getResponse.response().versionId());
+
+		// listVersions로 버전 목록이 일치하는지 확인 - source(1), target(2)
+		listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(3, listResponse.versions().size());
+		assertEquals(expectedVersions.size(), listResponse.versions().size());
+		for (var version : listResponse.versions()) {
+			assertTrue(expectedVersions.contains(version.versionId()),
+					"Version " + version.versionId() + " should be in expected list");
+		}
+
+		// copyObject(metadata only overwrite) - 메타데이터만 변경하여 복사
+		var metadata = new HashMap<String, String>();
+		metadata.put("test-key", "test-value");
+		copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey)
+				.destinationBucket(bucketName).destinationKey(targetKey)
+				.contentType("text/plain")
+				.metadata(metadata)
+				.metadataDirective("REPLACE"));
+		var targetVersion3 = copyResponse.versionId();
+		expectedVersions.add(targetVersion3);
+
+		// 복제가 정상적인지 확인
+		var metadataResponse = client.headObject(h -> h.bucket(bucketName).key(targetKey));
+		assertEquals("test-value", metadataResponse.metadata().get("test-key"));
+		assertEquals("text/plain", metadataResponse.contentType());
+		assertEquals(targetVersion3, metadataResponse.versionId());
+
+		// listVersions로 버전 목록이 일치하는지 확인 - source(1), target(3)
+		listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(4, listResponse.versions().size());
+		assertEquals(expectedVersions.size(), listResponse.versions().size());
+		for (var version : listResponse.versions()) {
+			assertTrue(expectedVersions.contains(version.versionId()),
+					"Version " + version.versionId() + " should be in expected list");
+		}
+
+		// 버저닝 중단
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
+		
+		// copyObject - 버저닝 중단 상태에서 기존 버전 복사
+		copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey)
+				.destinationBucket(bucketName).destinationKey(targetKey));
+		var targetVersion4 = copyResponse.versionId();
+		assertTrue(targetVersion4 == null || "null".equals(targetVersion4)); // 버저닝 중단 상태에서는 versionId가 null 또는 "null"
+		expectedVersions.add("null");
+		
+		// 복제가 정상적인지 확인 - source의 최신 버전(content2)이 복사되어야 함
+		getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
+		body = getBody(getResponse);
+		assertEquals(content, body);
+		
+		// listVersions로 버전 목록 확인 - source(1), target(3+null)
+		listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(5, listResponse.versions().size());
+		assertEquals(expectedVersions.size(), listResponse.versions().size());
+		for (var version : listResponse.versions()) {
+			var versionId = version.versionId() == null ? "null" : version.versionId();
+			assertTrue(expectedVersions.contains(versionId), 
+					"Version " + versionId + " should be in expected list");
+		}
+		
+		// copyObject(overwrite) - 버저닝 중단 상태에서 다시 덮어쓰기
+		copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey)
+				.destinationBucket(bucketName).destinationKey(targetKey));
+		var targetVersion5 = copyResponse.versionId();
+		assertTrue(targetVersion5 == null || "null".equals(targetVersion5)); // 버저닝 중단 상태에서는 versionId가 null 또는 "null"
+		// null 버전은 덮어쓰기되므로 expectedVersions에 추가하지 않음
+		
+		// 복제가 정상적인지 확인 - 여전히 content2이어야 함
+		getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
+		body = getBody(getResponse);
+		assertEquals(content, body);
+		
+		// listVersions로 버전 목록이 일치하는지 확인 - null 버전은 덮어써지므로 개수 유지
+		listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(5, listResponse.versions().size());
+		assertEquals(expectedVersions.size(), listResponse.versions().size());
+		for (var version : listResponse.versions()) {
+			var versionId = version.versionId() == null ? "null" : version.versionId();
+			assertTrue(expectedVersions.contains(versionId), 
+					"Version " + versionId + " should be in expected list");
+		}
 	}
 }

@@ -315,7 +315,7 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Version")
-	public void testObjectCopyVersionedBucket() {
+	public void testObjectCopyVersioningBucket() {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var size = 1 * 5;
@@ -376,7 +376,7 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Version")
-	public void testObjectCopyVersionedUrlEncoding() {
+	public void testObjectCopyVersioningUrlEncoding() {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);

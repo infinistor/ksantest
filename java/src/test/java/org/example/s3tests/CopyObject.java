@@ -24,6 +24,7 @@ class CopyObject {
 
 	/**
 	 * 테스트 완료 후 정리 작업을 수행합니다.
+	 * 
 	 * @param testInfo 테스트 정보
 	 */
 	@AfterEach
@@ -73,7 +74,8 @@ class CopyObject {
 	}
 
 	/**
-	 * 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인하는 테스트
+	 * 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인하는
+	 * 테스트
 	 */
 	@Test
 	@Tag("OverWrite")
@@ -93,7 +95,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [bucket1:created main user, object:created main user / bucket2:created sub user] 
+	 * [bucket1:created main user, object:created main user / bucket2:created sub
+	 * user]
 	 * 메인유저가 만든 버킷, 오브젝트를 서브유저가 만든 버킷으로 오브젝트 복사가 불가능한지 확인하는 테스트
 	 */
 	@Test
@@ -168,9 +171,9 @@ class CopyObject {
 	 */
 	@Test
 	@Tag("Version")
-	void testObjectCopyVersionedBucket() {
-		test.testObjectCopyVersionedBucket();
-		testV2.testObjectCopyVersionedBucket();
+	void testObjectCopyVersioningBucket() {
+		test.testObjectCopyVersioningBucket();
+		testV2.testObjectCopyVersioningBucket();
 	}
 
 	/**
@@ -178,9 +181,9 @@ class CopyObject {
 	 */
 	@Test
 	@Tag("Version")
-	void testObjectCopyVersionedUrlEncoding() {
-		test.testObjectCopyVersionedUrlEncoding();
-		testV2.testObjectCopyVersionedUrlEncoding();
+	void testObjectCopyVersioningUrlEncoding() {
+		test.testObjectCopyVersioningUrlEncoding();
+		testV2.testObjectCopyVersioningUrlEncoding();
 	}
 
 	/**
@@ -214,7 +217,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을
+	 * 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -224,7 +228,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사
+	 * 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -234,7 +239,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사
+	 * 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -244,7 +250,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
+	 * 복사 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -254,7 +261,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사
+	 * 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -264,7 +272,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
+	 * 복사 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -274,7 +283,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
+	 * 복사 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -284,7 +294,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : encryption, dest bucket : encryption, dest obj : encryption]
+	 * 오브젝트 복사 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -294,7 +305,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source bucket : encryption, source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source bucket : encryption, source obj : normal, dest bucket : normal, dest
+	 * obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -304,7 +316,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사
+	 * 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -314,7 +327,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사
+	 * 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -324,7 +338,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트
+	 * 복사 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -334,7 +349,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사
+	 * 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -344,7 +360,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트
+	 * 복사 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -354,7 +371,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트
+	 * 복사 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
@@ -364,7 +382,8 @@ class CopyObject {
 	}
 
 	/**
-	 * [source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
+	 * [source obj : encryption, dest bucket : encryption, dest obj : encryption]
+	 * 오브젝트 복사 성공을 확인하는 테스트
 	 */
 	@Test
 	@Tag("encryption")
