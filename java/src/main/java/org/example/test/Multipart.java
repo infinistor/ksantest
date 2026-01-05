@@ -73,8 +73,8 @@ public class Multipart extends TestBase {
 		var uploadData = setupMultipartUpload(client, bucketName, key, size);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
-		var response = client.getObject(bucketName, key);
-		assertEquals(size, response.getObjectMetadata().getContentLength());
+		var response = client.getObjectMetadata(bucketName, key);
+		assertEquals(size, response.getContentLength());
 
 	}
 
@@ -93,8 +93,8 @@ public class Multipart extends TestBase {
 				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadData.uploadId,
 						uploadData.parts));
 
-		var response = client.getObject(targetBucketName, targetKey);
-		assertEquals(size, response.getObjectMetadata().getContentLength());
+		var response = client.getObjectMetadata(targetBucketName, targetKey);
+		assertEquals(size, response.getContentLength());
 
 	}
 
@@ -141,8 +141,8 @@ public class Multipart extends TestBase {
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(targetBucketName, targetKey, uploadId, parts));
 
-		var response = client.getObject(targetBucketName, targetKey);
-		assertEquals(10, response.getObjectMetadata().getContentLength());
+		var response = client.getObjectMetadata(targetBucketName, targetKey);
+		assertEquals(10, response.getContentLength());
 
 	}
 
@@ -232,8 +232,8 @@ public class Multipart extends TestBase {
 					versionId);
 			client.completeMultipartUpload(new CompleteMultipartUploadRequest(targetBucketName, targetKey,
 					uploadData.uploadId, uploadData.parts));
-			var response = client.getObject(targetBucketName, targetKey);
-			assertEquals(size, response.getObjectMetadata().getContentLength());
+			var response = client.getObjectMetadata(targetBucketName, targetKey);
+			assertEquals(size, response.getContentLength());
 			checkCopyContent(sourceBucketName, sourceKey, targetBucketName, targetKey, versionId);
 		}
 
