@@ -10,13 +10,14 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Versioning : TestBase
 	{
@@ -80,7 +81,7 @@ namespace s3tests
 
 			client.DeleteObject(bucketName, key, versionId: removedVersionId);
 			var getResponse = client.GetObject(bucketName, key);
-			var body = GetBody(getResponse);
+			var body = S3Utils.GetBody(getResponse);
 			Assert.Equal(contents[^1], body);
 
 			var delResponse = client.DeleteObject(bucketName, key);
@@ -142,13 +143,13 @@ namespace s3tests
 			var content2 = "zzz";
 			client.PutObject(bucketName, key, body: content2);
 			var response = client.GetObject(bucketName, key);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(content2, body);
 
 			var versionId = response.VersionId;
 			client.DeleteObject(bucketName, key, versionId: versionId);
 			response = client.GetObject(bucketName, key);
-			body = GetBody(response);
+			body = S3Utils.GetBody(response);
 			Assert.Equal(content, body);
 
 			client.DeleteObject(bucketName, key, versionId: "null");
@@ -183,7 +184,7 @@ namespace s3tests
 			var content2 = "zzz";
 			client.PutObject(bucketName, key, body: content2);
 			var response = client.GetObject(bucketName, key);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(content2, body);
 
 			var listResponse = client.ListVersions(bucketName);
@@ -414,7 +415,7 @@ namespace s3tests
 				var newKeyName = string.Format("key_{0}", i);
 				client.CopyObject(bucketName, key, bucketName, newKeyName, versionId: versionIds[i]);
 				var getResponse = client.GetObject(bucketName, newKeyName);
-				var content = GetBody(getResponse);
+				var content = S3Utils.GetBody(getResponse);
 				Assert.Equal(contents[i], content);
 			}
 
@@ -425,7 +426,7 @@ namespace s3tests
 				var newKeyName = string.Format("key_{0}", i);
 				client.CopyObject(bucketName, key, anotherBucketName, newKeyName, versionId: versionIds[i]);
 				var getResponse = client.GetObject(bucketName, newKeyName);
-				var content = GetBody(getResponse);
+				var content = S3Utils.GetBody(getResponse);
 				Assert.Equal(contents[i], content);
 			}
 
@@ -433,7 +434,7 @@ namespace s3tests
 			client.CopyObject(bucketName, key, anotherBucketName, newKeyName2);
 
 			var response = client.GetObject(anotherBucketName, newKeyName2);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(body, contents[^1]);
 		}
 
@@ -578,8 +579,8 @@ namespace s3tests
 			Assert.Equal(userId, response.AccessControlList.Owner.Id);
 
 			var getGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -591,7 +592,7 @@ namespace s3tests
 						EmailAddress = null,
 					}
 				},
-			},
+			],
 			getGrants);
 		}
 
@@ -647,8 +648,8 @@ namespace s3tests
 			response = client.GetObjectACL(bucketName, key, versionId: versionId);
 			getGrants = response.AccessControlList.Grants;
 
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -671,7 +672,7 @@ namespace s3tests
 						EmailAddress = null,
 					}
 				},
-			},
+			],
 			getGrants);
 		}
 
@@ -759,7 +760,7 @@ namespace s3tests
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var uploadData = SetupMultipartUpload(client, bucketName, key, size, metadataList: metadata, contentType: contentType);
+			var uploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size, metadataList: metadata, contentType: contentType);
 
 			var compResponse = client.CompleteMultipartUpload(bucketName, key, uploadData.UploadId, uploadData.Parts);
 			var versionId = compResponse.VersionId;
@@ -772,14 +773,14 @@ namespace s3tests
 			bucketName = GetNewBucket();
 			key = "baz";
 
-			uploadData = SetupMultipartUpload(client, bucketName, key, size, metadataList: metadata, contentType: contentType);
+			uploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size, metadataList: metadata, contentType: contentType);
 			compResponse = client.CompleteMultipartUpload(bucketName, key, uploadData.UploadId, uploadData.Parts);
 			Assert.Null(compResponse.VersionId);
 
 			bucketName = GetNewBucket();
 			key = "foo";
 
-			uploadData = SetupMultipartUpload(client, bucketName, key, size, metadataList: metadata, contentType: contentType);
+			uploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size, metadataList: metadata, contentType: contentType);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
 			compResponse = client.CompleteMultipartUpload(bucketName, key, uploadData.UploadId, uploadData.Parts);
 			Assert.Null(compResponse.VersionId);

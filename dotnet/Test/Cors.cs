@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Cors : TestBase
 	{
@@ -35,12 +35,12 @@ namespace s3tests
 
 			var corsConfig = new CORSConfiguration()
 			{
-				Rules = new List<CORSRule>() {
+				Rules = [
 					new(){
 						AllowedMethods = allowedMethods,
 						AllowedOrigins = allowedOrigins
 					},
-				}
+				]
 			};
 
 			var response = client.GetCORSConfiguration(bucketName);
@@ -69,24 +69,24 @@ namespace s3tests
 
 			var corsConfig = new CORSConfiguration()
 			{
-				Rules = new List<CORSRule>() {
+				Rules = [
 					new(){
-						AllowedMethods =  new List<string>() { "GET" },
-						AllowedOrigins =  new List<string>() { "*suffix" },
+						AllowedMethods =  ["GET"],
+						AllowedOrigins =  ["*suffix"],
 					},
 					new(){
-						AllowedMethods =  new List<string>() { "GET" },
-						AllowedOrigins =  new List<string>() { "start*end" },
+						AllowedMethods =  ["GET"],
+						AllowedOrigins =  ["start*end"],
 					},
 					new(){
-						AllowedMethods =  new List<string>() { "GET" },
-						AllowedOrigins =  new List<string>() { "prefix*" },
+						AllowedMethods =  ["GET"],
+						AllowedOrigins =  ["prefix*"],
 					},
 					new(){
-						AllowedMethods =  new List<string>() { "PUT" },
-						AllowedOrigins =  new List<string>() { "*.put" },
+						AllowedMethods =  ["PUT"],
+						AllowedOrigins =  ["*.put"],
 					},
-				}
+				]
 			};
 
 			var response = client.GetCORSConfiguration(bucketName);
@@ -94,44 +94,44 @@ namespace s3tests
 
 			client.PutCORSConfiguration(bucketName, corsConfig);
 
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>(), HttpStatusCode.OK, null, null);
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix") }, HttpStatusCode.OK, "foo.suffix", "GET");
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.bar") }, HttpStatusCode.OK, null, null);
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix.get") }, HttpStatusCode.OK, null, null);
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "startend") }, HttpStatusCode.OK, "startend", "GET");
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "start1end") }, HttpStatusCode.OK, "start1end", "GET");
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "start12end") }, HttpStatusCode.OK, "start12end", "GET");
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "0start12end") }, HttpStatusCode.OK, null, null);
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "prefix") }, HttpStatusCode.OK, "prefix", "GET");
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "prefix.suffix") }, HttpStatusCode.OK, "prefix.suffix", "GET");
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "bla.prefix") }, HttpStatusCode.OK, null, null);
+			CorsRequestAndCheck("Get", bucketName, [], HttpStatusCode.OK, null, null);
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "foo.suffix")], HttpStatusCode.OK, "foo.suffix", "GET");
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "foo.bar")], HttpStatusCode.OK, null, null);
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "foo.suffix.get")], HttpStatusCode.OK, null, null);
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "startend")], HttpStatusCode.OK, "startend", "GET");
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "start1end")], HttpStatusCode.OK, "start1end", "GET");
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "start12end")], HttpStatusCode.OK, "start12end", "GET");
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "0start12end")], HttpStatusCode.OK, null, null);
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "prefix")], HttpStatusCode.OK, "prefix", "GET");
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "prefix.suffix")], HttpStatusCode.OK, "prefix.suffix", "GET");
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "bla.prefix")], HttpStatusCode.OK, null, null);
 
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix") }, HttpStatusCode.NotFound, "foo.suffix", "GET", key: "bar");
-			CorsRequestAndCheck("Put", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix"), new("Access-Control-Request-Method", "GET"), new("content-length", "0") }, HttpStatusCode.Forbidden, "foo.suffix", "GET", key: "bar");
-			CorsRequestAndCheck("Put", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix"), new("Access-Control-Request-Method", "PUT"), new("content-length", "0") }, HttpStatusCode.Forbidden, null, null, key: "bar");
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "foo.suffix")], HttpStatusCode.NotFound, "foo.suffix", "GET", key: "bar");
+			CorsRequestAndCheck("Put", bucketName, [new("Origin", "foo.suffix"), new("Access-Control-Request-Method", "GET"), new("content-length", "0")], HttpStatusCode.Forbidden, "foo.suffix", "GET", key: "bar");
+			CorsRequestAndCheck("Put", bucketName, [new("Origin", "foo.suffix"), new("Access-Control-Request-Method", "PUT"), new("content-length", "0")], HttpStatusCode.Forbidden, null, null, key: "bar");
 
-			CorsRequestAndCheck("Put", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix"), new("Access-Control-Request-Method", "DELETE"), new("content-length", "0") }, HttpStatusCode.Forbidden, null, null, key: "bar");
-			CorsRequestAndCheck("Put", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix"), new("content-length", "0") }, HttpStatusCode.Forbidden, null, null, key: "bar");
+			CorsRequestAndCheck("Put", bucketName, [new("Origin", "foo.suffix"), new("Access-Control-Request-Method", "DELETE"), new("content-length", "0")], HttpStatusCode.Forbidden, null, null, key: "bar");
+			CorsRequestAndCheck("Put", bucketName, [new("Origin", "foo.suffix"), new("content-length", "0")], HttpStatusCode.Forbidden, null, null, key: "bar");
 
-			CorsRequestAndCheck("Put", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.put"), new("content-length", "0") }, HttpStatusCode.Forbidden, "foo.put", "PUT", key: "bar");
+			CorsRequestAndCheck("Put", bucketName, [new("Origin", "foo.put"), new("content-length", "0")], HttpStatusCode.Forbidden, "foo.put", "PUT", key: "bar");
 
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix") }, HttpStatusCode.NotFound, "foo.suffix", "GET", key: "bar");
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "foo.suffix")], HttpStatusCode.NotFound, "foo.suffix", "GET", key: "bar");
 
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>(), HttpStatusCode.BadRequest, null, null);
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix") }, HttpStatusCode.Forbidden, null, null);
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.bla") }, HttpStatusCode.Forbidden, null, null);
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix"), new("Access-Control-Request-Method", "GET"), new("content-length", "0") }, HttpStatusCode.OK, "foo.suffix", "GET", key: "bar");
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.bar"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.Forbidden, null, null);
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.suffix.get"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.Forbidden, null, null);
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "startend"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.OK, "startend", "GET");
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "start1end"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.OK, "start1end", "GET");
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "start12end"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.OK, "start12end", "GET");
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "0start12end"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.Forbidden, null, null);
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "prefix"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.OK, "prefix", "GET");
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "prefix.suffix"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.OK, "prefix.suffix", "GET");
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "bla.prefix"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.Forbidden, null, null);
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.put"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.Forbidden, null, null);
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "foo.put"), new("Access-Control-Request-Method", "PUT") }, HttpStatusCode.OK, "foo.put", "PUT");
+			CorsRequestAndCheck("OPTIONS", bucketName, [], HttpStatusCode.BadRequest, null, null);
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "foo.suffix")], HttpStatusCode.Forbidden, null, null);
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "foo.bla")], HttpStatusCode.Forbidden, null, null);
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "foo.suffix"), new("Access-Control-Request-Method", "GET"), new("content-length", "0")], HttpStatusCode.OK, "foo.suffix", "GET", key: "bar");
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "foo.bar"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.Forbidden, null, null);
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "foo.suffix.get"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.Forbidden, null, null);
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "startend"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.OK, "startend", "GET");
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "start1end"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.OK, "start1end", "GET");
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "start12end"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.OK, "start12end", "GET");
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "0start12end"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.Forbidden, null, null);
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "prefix"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.OK, "prefix", "GET");
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "prefix.suffix"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.OK, "prefix.suffix", "GET");
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "bla.prefix"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.Forbidden, null, null);
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "foo.put"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.Forbidden, null, null);
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "foo.put"), new("Access-Control-Request-Method", "PUT")], HttpStatusCode.OK, "foo.put", "PUT");
 		}
 
 		[Fact]
@@ -147,12 +147,12 @@ namespace s3tests
 
 			var corsConfig = new CORSConfiguration()
 			{
-				Rules = new List<CORSRule>() {
+				Rules = [
 					new(){
-						AllowedMethods =  new List<string>() { "GET" },
-						AllowedOrigins =  new List<string>() { "*" },
+						AllowedMethods =  ["GET"],
+						AllowedOrigins =  ["*"],
 					},
-				}
+				]
 			};
 
 			var response = client.GetCORSConfiguration(bucketName);
@@ -160,8 +160,8 @@ namespace s3tests
 
 			client.PutCORSConfiguration(bucketName, corsConfig);
 
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>(), HttpStatusCode.OK, null, null);
-			CorsRequestAndCheck("Get", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "example.origin") }, HttpStatusCode.OK, "*", "GET");
+			CorsRequestAndCheck("Get", bucketName, [], HttpStatusCode.OK, null, null);
+			CorsRequestAndCheck("Get", bucketName, [new("Origin", "example.origin")], HttpStatusCode.OK, "*", "GET");
 		}
 
 		[Fact]
@@ -177,13 +177,13 @@ namespace s3tests
 
 			var corsConfig = new CORSConfiguration()
 			{
-				Rules = new List<CORSRule>() {
+				Rules = [
 					new(){
-						AllowedMethods = new List<string>() { "GET" },
-						AllowedOrigins = new List<string>() { "*" },
-						ExposeHeaders  = new List<string>() { "x-amz-meta-header1" },
+						AllowedMethods = ["GET"],
+						AllowedOrigins = ["*"],
+						ExposeHeaders  = ["x-amz-meta-header1"],
 					},
-				}
+				]
 			};
 
 			var response = client.GetCORSConfiguration(bucketName);
@@ -191,7 +191,7 @@ namespace s3tests
 
 			client.PutCORSConfiguration(bucketName, corsConfig);
 
-			CorsRequestAndCheck("OPTIONS", bucketName, new List<KeyValuePair<string, string>>() { new("Origin", "example.origin"), new("Access-Control-Request-Headers", "x-amz-meta-header2"), new("Access-Control-Request-Method", "GET") }, HttpStatusCode.Forbidden, null, null, key: "bar");
+			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "example.origin"), new("Access-Control-Request-Headers", "x-amz-meta-header2"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.Forbidden, null, null, key: "bar");
 		}
 	}
 }

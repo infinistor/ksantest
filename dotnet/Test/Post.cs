@@ -17,8 +17,9 @@ using System.Net;
 using System.Text;
 using Xunit;
 using s3tests.Data;
+using s3tests.Utils;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Post : TestBase
 	{
@@ -50,7 +51,7 @@ namespace s3tests
 			AssertX.Equal(HttpStatusCode.NoContent, result.StatusCode, result.Message);
 
 			var response = client.GetObject(bucketName, key);
-			Assert.Equal(key, GetBody(response));
+			Assert.Equal(key, S3Utils.GetBody(response));
 		}
 
 		[Fact]
@@ -82,7 +83,7 @@ namespace s3tests
 			var bytesJsonPolicyDocument = Encoding.UTF8.GetBytes(policyDocument.ToString());
 			var policy = Convert.ToBase64String(bytesJsonPolicyDocument);
 
-			var signature = GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
+			var signature = S3Utils.GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
 			var fileData = new FormFile() { Name = key, ContentType = contentType, Body = key };
 			var payload = new Dictionary<string, object>() {
 					{ "key", key },
@@ -98,7 +99,7 @@ namespace s3tests
 			AssertX.Equal(HttpStatusCode.NoContent, result.StatusCode, result.Message);
 
 			var response = client.GetObject(bucketName, key);
-			Assert.Equal(key, GetBody(response));
+			Assert.Equal(key, S3Utils.GetBody(response));
 		}
 
 		[Fact]
@@ -130,7 +131,7 @@ namespace s3tests
 			var bytesJsonPolicyDocument = Encoding.UTF8.GetBytes(policyDocument.ToString());
 			var policy = Convert.ToBase64String(bytesJsonPolicyDocument);
 
-			var signature = GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
+			var signature = S3Utils.GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
 			var fileData = new FormFile() { Name = key, ContentType = contentType, Body = key };
 			var payload = new Dictionary<string, object>() {
 					{ "key", key },
@@ -145,7 +146,7 @@ namespace s3tests
 			AssertX.Equal(HttpStatusCode.NoContent, result.StatusCode, result.Message);
 
 			var response = client.GetObject(bucketName, key);
-			Assert.Equal(key, GetBody(response));
+			Assert.Equal(key, S3Utils.GetBody(response));
 		}
 
 		[Fact]
@@ -179,7 +180,7 @@ namespace s3tests
 			var bytesJsonPolicyDocument = Encoding.UTF8.GetBytes(policyDocument.ToString());
 			var policy = Convert.ToBase64String(bytesJsonPolicyDocument);
 
-			var signature = GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
+			var signature = S3Utils.GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
 			var fileData = new FormFile() { Name = key, ContentType = contentType, Body = key };
 			var payload = new Dictionary<string, object>() {
 					{ "key", key },
@@ -222,7 +223,7 @@ namespace s3tests
 			AssertX.Equal(HttpStatusCode.Created, result.StatusCode, result.Message);
 
 			var response = client.GetObject(bucketName, key);
-			Assert.Equal(key, GetBody(response));
+			Assert.Equal(key, S3Utils.GetBody(response));
 		}
 
 		[Fact]
@@ -251,7 +252,7 @@ namespace s3tests
 			AssertX.Equal(HttpStatusCode.NoContent, result.StatusCode, result.Message);
 
 			var response = client.GetObject(bucketName, key);
-			Assert.Equal(key, GetBody(response));
+			Assert.Equal(key, S3Utils.GetBody(response));
 		}
 
 		[Fact]
@@ -285,7 +286,7 @@ namespace s3tests
 			var bytesJsonPolicyDocument = Encoding.UTF8.GetBytes(policyDocument.ToString());
 			var policy = Convert.ToBase64String(bytesJsonPolicyDocument);
 
-			var signature = GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
+			var signature = S3Utils.GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
 			var fileData = new FormFile() { Name = key, ContentType = contentType, Body = key };
 			var payload = new Dictionary<string, object>() {
 					{ "key", key },
@@ -301,7 +302,7 @@ namespace s3tests
 			AssertX.Equal(HttpStatusCode.NoContent, result.StatusCode, result.Message);
 
 			var response = client.GetObject(bucketName, key);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(key, body);
 		}
 
@@ -336,7 +337,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -352,7 +353,7 @@ namespace s3tests
 			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = client.GetObject(bucketName, Key);
-			Assert.Equal("bar", GetBody(Response));
+			Assert.Equal("bar", S3Utils.GetBody(Response));
 		}
 
 		[Fact]
@@ -384,7 +385,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -431,7 +432,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "kEy", Key },
@@ -478,7 +479,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -494,7 +495,7 @@ namespace s3tests
 			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = client.GetObject(bucketName, Key);
-			Assert.Equal("bar", GetBody(Response));
+			Assert.Equal("bar", S3Utils.GetBody(Response));
 		}
 
 		[Fact]
@@ -530,7 +531,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -579,7 +580,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -624,7 +625,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -669,7 +670,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -712,7 +713,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = "", ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
@@ -756,7 +757,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -799,7 +800,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -846,7 +847,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -896,7 +897,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -941,7 +942,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -986,7 +987,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1031,7 +1032,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1077,7 +1078,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1122,7 +1123,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1158,7 +1159,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1203,7 +1204,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1248,7 +1249,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1293,7 +1294,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1338,7 +1339,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1376,7 +1377,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -1407,13 +1408,11 @@ namespace s3tests
 			var PutResponse = PutObject(PutURL, Key);
 
 			Assert.Equal(HttpStatusCode.OK, PutResponse.StatusCode);
-			PutResponse.Close();
 
 			var GetURL = client.GeneratePresignedURL(bucketName, Key, DateTime.Now.AddSeconds(100000), HttpVerb.GET);
 			var GetResponse = GetObject(GetURL);
 
 			Assert.Equal(HttpStatusCode.OK, GetResponse.StatusCode);
-			GetResponse.Close();
 		}
 
 
@@ -1434,13 +1433,11 @@ namespace s3tests
 			var PutResponse = PutObject(PutURL, Key);
 
 			Assert.Equal(HttpStatusCode.OK, PutResponse.StatusCode);
-			PutResponse.Close();
 
 			var GetURL = client.GeneratePresignedURL(bucketName, Key, DateTime.Now.AddSeconds(100000), HttpVerb.GET);
 			var GetResponse = GetObject(GetURL);
 
 			Assert.Equal(HttpStatusCode.OK, GetResponse.StatusCode);
-			GetResponse.Close();
 		}
 
 		[Fact]
@@ -1454,7 +1451,7 @@ namespace s3tests
 			var ContentType = "text/plain";
 			var Key = "foo";
 			var Size = 100;
-			var Content = RandomTextToLong(Size);
+			var Content = S3Utils.RandomTextToLong(Size);
 
 			var client = new MyHttpClient(GetURL(bucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey);
 
@@ -1473,7 +1470,7 @@ namespace s3tests
 			var ContentType = "text/plain";
 			var Key = "foo";
 			var Size = 100;
-			var Content = RandomTextToLong(Size);
+			var Content = S3Utils.RandomTextToLong(Size);
 
 			var client = new MyHttpClient(GetURL(bucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey);
 
@@ -1492,7 +1489,7 @@ namespace s3tests
 			var bucketName = GetNewBucket(client);
 			var Key = "foo";
 			var Size = 100;
-			var Content = RandomTextToLong(Size);
+			var Content = S3Utils.RandomTextToLong(Size);
 
 			client.PutObject(bucketName, Key, Content);
 

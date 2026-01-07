@@ -12,7 +12,7 @@ using Amazon.S3.Model;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Website : TestBase
 	{

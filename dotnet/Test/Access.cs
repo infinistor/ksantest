@@ -10,11 +10,12 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Access : TestBase
 	{
@@ -142,8 +143,8 @@ namespace s3tests
 			};
 			client.PutPublicAccessBlock(bucketName, access);
 
-			var resource = MakeArnResource(string.Format("{0}/*", bucketName));
-			var policyDocument = MakeJsonPolicy("s3:GetObject", resource);
+			var resource = S3Utils.MakeArnResource(string.Format("{0}/*", bucketName));
+			var policyDocument = S3Utils.MakeJsonPolicy("s3:GetObject", resource);
 			var e = Assert.Throws<AggregateException>(() => client.PutBucketPolicy(bucketName, policyDocument.ToString()));
 			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
 		}
@@ -164,7 +165,7 @@ namespace s3tests
 
 			client.PutObject(bucketName, "key1", body: "abcde", acl: S3CannedACL.PublicRead);
 			var response = altClient.GetObject(bucketName, "key1");
-			Assert.Equal("abcde", GetBody(response));
+			Assert.Equal("abcde", S3Utils.GetBody(response));
 
 			PublicAccessBlockConfiguration access = new()
 			{

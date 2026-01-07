@@ -11,13 +11,14 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class PutObject : TestBase
 	{
@@ -90,7 +91,7 @@ namespace s3tests
 
 			var response = client.PutObject(bucketName, key: key, body: key);
 			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
-			Assert.Equal(GetMD5(key), response.ETag.Replace("\"", ""));
+			Assert.Equal(S3Utils.GetMD5(key), response.ETag.Replace("\"", ""));
 		}
 
 		[Fact]
@@ -145,7 +146,7 @@ namespace s3tests
 
 			// Read
 			var getResponse = client.GetObject(bucketName, key: key);
-			Assert.Equal(key, GetBody(getResponse));
+			Assert.Equal(key, S3Utils.GetBody(getResponse));
 
 
 			// Delete
@@ -266,7 +267,7 @@ namespace s3tests
 			client.PutObject(bucketName, key: key, byteBody: body);
 
 			var response = client.GetObject(bucketName, key: key);
-			Assert.Equal(key, GetBody(response));
+			Assert.Equal(key, S3Utils.GetBody(response));
 		}
 
 		[Fact]
@@ -289,7 +290,7 @@ namespace s3tests
 				if (string.IsNullOrWhiteSpace(key)) continue;
 				Assert.Contains(key, objectList);
 				var response = client.GetObject(bucketName, key);
-				Assert.Equal(key, GetBody(response));
+				Assert.Equal(key, S3Utils.GetBody(response));
 				client.PutObjectACL(bucketName, key, acl: S3CannedACL.Private);
 			}
 		}
@@ -326,14 +327,14 @@ namespace s3tests
 
 			var key = "TestObjectLockUploadingObj";
 			var body = "abc";
-			var md5 = GetMD5(body);
+			var md5 = S3Utils.GetMD5(body);
 			var putResponse = client.PutObject(bucketName, key: key, body: "abc", md5Digest: md5, objectLockMode: ObjectLockMode.Governance,
 				objectLockRetainUntilDate: new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc),
 				objectLockLegalHoldStatus: ObjectLockLegalHoldStatus.On);
 
 			var response = client.GetObjectMetadata(bucketName, key: key);
 			Assert.Equal(ObjectLockMode.Governance, response.ObjectLockMode);
-			Assert.Equal(new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc), response.ObjectLockRetainUntilDate.ToUniversalTime());
+			Assert.Equal(new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc), response.ObjectLockRetainUntilDate.Value);
 			Assert.Equal(ObjectLockLegalHoldStatus.On, response.ObjectLockLegalHoldStatus);
 
 			var legalHold = new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.Off };
@@ -563,14 +564,14 @@ namespace s3tests
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestObjectOverwrite";
-			var content1 = RandomTextToLong(10 * MainData.KB);
-			var content2 = RandomTextToLong(1 * MainData.MB);
+			var content1 = S3Utils.RandomTextToLong(10 * MainData.KB);
+			var content2 = S3Utils.RandomTextToLong(1 * MainData.MB);
 
 			client.PutObject(bucketName, key: key, body: content1);
 			client.PutObject(bucketName, key: key, body: content2);
 
 			var response = client.GetObject(bucketName, key: key);
-			Assert.Equal(content2, GetBody(response));
+			Assert.Equal(content2, S3Utils.GetBody(response));
 		}
 
 		[Fact]
@@ -615,16 +616,16 @@ namespace s3tests
 				client.PutObject(bucketName, key: $"{key}/11", body: key, checksumAlgorithm: checksum);
 
 				// var response = client.GetObject(bucketName, key: $"{key}/00");
-				// Assert.Equal(key, GetBody(response));
+				// Assert.Equal(key, S3Utils.GetBody(response));
 
 				// response = client.GetObject(bucketName, key: $"{key}/01");
-				// Assert.Equal(key, GetBody(response));
+				// Assert.Equal(key, S3Utils.GetBody(response));
 
 				// response = client.GetObject(bucketName, key: $"{key}/10");
-				// Assert.Equal(key, GetBody(response));
+				// Assert.Equal(key, S3Utils.GetBody(response));
 
 				// response = client.GetObject(bucketName, key: $"{key}/11");
-				// Assert.Equal(key, GetBody(response));
+				// Assert.Equal(key, S3Utils.GetBody(response));
 			}
 		}
 	}

@@ -10,12 +10,13 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Lifecycle : TestBase
 	{
@@ -119,7 +120,7 @@ namespace s3tests
 			for (int i = 0; i < Rules.Count; i++)
 			{
 				Assert.NotEmpty(CurrentLifeCycle[i].Id);
-				Assert.Equal(Rules[i].Expiration.DateUtc, CurrentLifeCycle[i].Expiration.DateUtc);
+				Assert.Equal(Rules[i].Expiration.Date, CurrentLifeCycle[i].Expiration.Date);
 				Assert.Equal(Rules[i].Expiration.Days, CurrentLifeCycle[i].Expiration.Days);
 				Assert.Equal((Rules[i].Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix,
 							 (CurrentLifeCycle[i].Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix);
@@ -175,7 +176,7 @@ namespace s3tests
 			{
 				new()
 				{
-					Id = RandomTextToLong(256),
+					Id = S3Utils.RandomTextToLong(256),
 					Expiration = new LifecycleRuleExpiration(){ Days = 2 },
 					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "tset1/" } },
 					Status = LifecycleRuleStatus.Enabled,
@@ -264,7 +265,7 @@ namespace s3tests
 				new()
 				{
 					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ DateUtc = DateTime.Parse("2099-10-10 00:00:00 GMT") },
+					Expiration = new LifecycleRuleExpiration(){ Date = DateTime.Parse("2099-10-10 00:00:00 GMT") },
 					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "tset1/" } },
 					Status = LifecycleRuleStatus.Enabled,
 				},
@@ -290,7 +291,7 @@ namespace s3tests
 				new()
 				{
 					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ DateUtc = DateTime.Parse("2017-09-27") },
+					Expiration = new LifecycleRuleExpiration(){ Date = DateTime.Parse("2017-09-27") },
 					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "tset1/" } },
 					Status = LifecycleRuleStatus.Enabled,
 				},
@@ -308,7 +309,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_lifecycle_set_noncurrent()
 		{
-			var bucketName = SetupObjects(new List<string>() { "past/foo", "future/bar" });
+			var bucketName = SetupObjects(["past/foo", "future/bar"]);
 			var client = GetClient();
 
 			var Rules = new List<LifecycleRule>()

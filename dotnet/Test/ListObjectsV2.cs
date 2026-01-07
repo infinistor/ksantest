@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class ListObjectsV2 : TestBase
 	{
@@ -26,16 +26,16 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2Many()
 		{
-			var bucketName = SetupObjects(new List<string>() { "foo", "bar", "baz" });
+			var bucketName = SetupObjects(["foo", "bar", "baz"]);
 			var client = GetClient();
 
 			var Response = client.ListObjectsV2(bucketName, maxKeys: 2);
-			Assert.Equal(new List<string>() { "bar", "baz" }, GetKeys(Response));
+			Assert.Equal(["bar", "baz"], GetKeys(Response));
 			Assert.Equal(2, Response.S3Objects.Count);
 			Assert.True(Response.IsTruncated);
 
 			Response = client.ListObjectsV2(bucketName, startAfter: "baz", maxKeys: 2);
-			Assert.Equal(new List<string>() { "foo" }, GetKeys(Response));
+			Assert.Equal(["foo"], GetKeys(Response));
 			Assert.Single(Response.S3Objects);
 			Assert.False(Response.IsTruncated);
 		}
@@ -64,18 +64,18 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_delimiter_basic()
 		{
-			var bucketName = SetupObjects(new List<string>() { "foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf" });
+			var bucketName = SetupObjects(["foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf"]);
 			var client = GetClient();
 
 			string MyDelimiter = "/";
 
 			var Response = client.ListObjectsV2(bucketName, delimiter: MyDelimiter);
 			Assert.Equal(MyDelimiter, Response.Delimiter);
-			Assert.Equal(new List<string>() { "asdf" }, GetKeys(Response));
+			Assert.Equal(["asdf"], GetKeys(Response));
 
 			var Prefixes = Response.CommonPrefixes;
 			Assert.Equal(2, Prefixes.Count);
-			Assert.Equal(new List<string>() { "foo/", "quux/" }, Prefixes);
+			Assert.Equal(["foo/", "quux/"], Prefixes);
 		}
 
 		[Fact]
@@ -86,18 +86,18 @@ namespace s3tests
 		[Trait(MainData.Different, MainData.True)]
 		public void test_bucket_listv2_encoding_basic()
 		{
-			var bucketName = SetupObjects(new List<string>() { "foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b" });
+			var bucketName = SetupObjects(["foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"]);
 			var client = GetClient();
 
 			string Delimiter = "/";
 
 			var Response = client.ListObjectsV2(bucketName, delimiter: Delimiter, encodingTypeName: "url");
 			Assert.Equal(Delimiter, Response.Delimiter);
-			Assert.Equal(new List<string>() { "asdf%2Bb" }, GetKeys(Response));
+			Assert.Equal(["asdf%2Bb"], GetKeys(Response));
 
 			var Prefixes = Response.CommonPrefixes;
 			Assert.Equal(3, Prefixes.Count);
-			Assert.Equal(new List<string>() { "foo%2B1/", "foo/", "quux+ab/" }, Prefixes);
+			Assert.Equal(["foo%2B1/", "foo/", "quux+ab/"], Prefixes);
 		}
 
 		[Fact]
@@ -107,25 +107,25 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_delimiter_prefix()
 		{
-			var bucketName = SetupObjects(new List<string>() { "asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla" });
+			var bucketName = SetupObjects(["asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla"]);
 
 			string Delimiter = "/";
 			string ContinuationToken = "";
 			string prefix = "";
 
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, null, 1, true, new List<string>() { "asdf" }, new List<string>());
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, ContinuationToken, 1, true, EmptyList, new List<string>() { "boo/" });
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, ContinuationToken, 1, false, EmptyList, new List<string>() { "cquux/" }, true);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, null, 1, true, ["asdf"], []);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, ContinuationToken, 1, true, EmptyList, ["boo/"]);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, ContinuationToken, 1, false, EmptyList, ["cquux/"], true);
 
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, null, 2, true, new List<string>() { "asdf" }, new List<string>() { "boo/" });
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, ContinuationToken, 2, false, EmptyList, new List<string>() { "cquux/" }, true);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, null, 2, true, ["asdf"], ["boo/"]);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, ContinuationToken, 2, false, EmptyList, ["cquux/"], true);
 
 			prefix = "boo/";
 
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, null, 1, true, new List<string>() { "boo/bar" }, new List<string>());
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, ContinuationToken, 1, false, EmptyList, new List<string>() { "boo/baz/" }, true);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, null, 1, true, ["boo/bar"], []);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, ContinuationToken, 1, false, EmptyList, ["boo/baz/"], true);
 
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, null, 2, false, new List<string>() { "boo/bar" }, new List<string>() { "boo/baz/" }, true);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, Delimiter, null, 2, false, ["boo/bar"], ["boo/baz/"], true);
 		}
 
 		[Fact]
@@ -135,8 +135,8 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_delimiter_prefix_ends_with_delimiter()
 		{
-			var bucketName = SetupObjects(new List<string>() { "asdf/" }, body: "");
-			ValidateListObjcetV2(bucketName, "asdf/", "/", null, 1000, false, new List<string>() { "asdf/" }, EmptyList, true);
+			var bucketName = SetupObjects(["asdf/"], body: "");
+			ValidateListObjcetV2(bucketName, "asdf/", "/", null, 1000, false, ["asdf/"], EmptyList, true);
 		}
 
 		[Fact]
@@ -146,7 +146,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_delimiter_alt()
 		{
-			var bucketName = SetupObjects(new List<string>() { "bar", "baz", "cab", "foo" });
+			var bucketName = SetupObjects(["bar", "baz", "cab", "foo"]);
 			var client = GetClient();
 
 			string Delimiter = "a";
@@ -155,11 +155,11 @@ namespace s3tests
 			Assert.Equal(Delimiter, Response.Delimiter);
 
 			var Keys = GetKeys(Response);
-			Assert.Equal(new List<string>() { "foo" }, Keys);
+			Assert.Equal(["foo"], Keys);
 
 			var Profixes = Response.CommonPrefixes;
 			Assert.Equal(2, Profixes.Count);
-			Assert.Equal(new List<string>() { "ba", "ca" }, Profixes);
+			Assert.Equal(["ba", "ca"], Profixes);
 		}
 
 		[Fact]
@@ -169,25 +169,25 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_delimiter_prefix_underscore()
 		{
-			var bucketName = SetupObjects(new List<string>() { "_obj1_", "_under1/bar", "_under1/baz/xyzzy", "_under2/thud", "_under2/bla" });
+			var bucketName = SetupObjects(["_obj1_", "_under1/bar", "_under1/baz/xyzzy", "_under2/thud", "_under2/bla"]);
 
 			string delim = "/";
 			string ContinuationToken = "";
 			string prefix = "";
 
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, null, 1, true, new List<string>() { "_obj1_" }, new List<string>());
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, ContinuationToken, 1, true, EmptyList, new List<string>() { "_under1/" });
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, ContinuationToken, 1, false, EmptyList, new List<string>() { "_under2/" }, true);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, null, 1, true, ["_obj1_"], []);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, ContinuationToken, 1, true, EmptyList, ["_under1/"]);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, ContinuationToken, 1, false, EmptyList, ["_under2/"], true);
 
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, null, 2, true, new List<string>() { "_obj1_" }, new List<string>() { "_under1/" });
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, ContinuationToken, 2, false, EmptyList, new List<string>() { "_under2/" }, true);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, null, 2, true, ["_obj1_"], ["_under1/"]);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, ContinuationToken, 2, false, EmptyList, ["_under2/"], true);
 
 			prefix = "_under1/";
 
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, null, 1, true, new List<string>() { "_under1/bar" }, new List<string>());
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, ContinuationToken, 1, false, EmptyList, new List<string>() { "_under1/baz/" }, true);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, null, 1, true, ["_under1/bar"], []);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, ContinuationToken, 1, false, EmptyList, ["_under1/baz/"], true);
 
-			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, null, 2, false, new List<string>() { "_under1/bar" }, new List<string>() { "_under1/baz/" }, true);
+			ContinuationToken = ValidateListObjcetV2(bucketName, prefix, delim, null, 2, false, ["_under1/bar"], ["_under1/baz/"], true);
 		}
 
 		[Fact]
@@ -197,7 +197,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_delimiter_percentage()
 		{
-			var bucketName = SetupObjects(new List<string>() { "b%ar", "b%az", "c%ab", "foo" });
+			var bucketName = SetupObjects(["b%ar", "b%az", "c%ab", "foo"]);
 			var client = GetClient();
 
 			string Delimiter = "%";
@@ -206,11 +206,11 @@ namespace s3tests
 			Assert.Equal(Delimiter, Response.Delimiter);
 
 			var Keys = GetKeys(Response);
-			Assert.Equal(new List<string>() { "foo" }, Keys);
+			Assert.Equal(["foo"], Keys);
 
 			var Prefixes = Response.CommonPrefixes;
 			Assert.Equal(2, Prefixes.Count);
-			Assert.Equal(new List<string>() { "b%", "c%" }, Prefixes);
+			Assert.Equal(["b%", "c%"], Prefixes);
 		}
 
 		[Fact]
@@ -221,7 +221,7 @@ namespace s3tests
 		[Trait(MainData.Different, MainData.True)]//s3 라이브러리에서 Delimiter가 공백일경우 string.Empty 반환
 		public void test_bucket_listv2_delimiter_whitespace()
 		{
-			var bucketName = SetupObjects(new List<string>() { "b ar", "b az", "c ab", "foo" });
+			var bucketName = SetupObjects(["b ar", "b az", "c ab", "foo"]);
 			var client = GetClient();
 
 			string Delimiter = " ";
@@ -230,11 +230,11 @@ namespace s3tests
 			Assert.Empty(Response.Delimiter);
 
 			var Keys = GetKeys(Response);
-			Assert.Equal(new List<string>() { "foo" }, Keys);
+			Assert.Equal(["foo"], Keys);
 
 			var Prefixes = Response.CommonPrefixes;
 			Assert.Equal(2, Prefixes.Count);
-			Assert.Equal(new List<string>() { "b ", "c " }, Prefixes);
+			Assert.Equal(["b ", "c "], Prefixes);
 		}
 
 		[Fact]
@@ -244,7 +244,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_delimiter_dot()
 		{
-			var bucketName = SetupObjects(new List<string>() { "b.ar", "b.az", "c.ab", "foo" });
+			var bucketName = SetupObjects(["b.ar", "b.az", "c.ab", "foo"]);
 			var client = GetClient();
 
 			string Delimiter = ".";
@@ -253,11 +253,11 @@ namespace s3tests
 			Assert.Equal(Delimiter, Response.Delimiter);
 
 			var Keys = GetKeys(Response);
-			Assert.Equal(new List<string>() { "foo" }, Keys);
+			Assert.Equal(["foo"], Keys);
 
 			var Prefixes = Response.CommonPrefixes;
 			Assert.Equal(2, Prefixes.Count);
-			Assert.Equal(new List<string>() { "b.", "c." }, Prefixes);
+			Assert.Equal(["b.", "c."], Prefixes);
 		}
 
 		[Fact]
@@ -409,7 +409,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_prefix_basic()
 		{
-			var bucketName = SetupObjects(new List<string>() { "foo/bar", "foo/baz", "quux" });
+			var bucketName = SetupObjects(["foo/bar", "foo/baz", "quux"]);
 			var client = GetClient();
 
 			string Prefix = "foo/";
@@ -418,7 +418,7 @@ namespace s3tests
 
 			var Keys = GetKeys(Response);
 			var Prefixes = Response.CommonPrefixes;
-			Assert.Equal(new List<string>() { "foo/bar", "foo/baz" }, Keys);
+			Assert.Equal(["foo/bar", "foo/baz"], Keys);
 			Assert.Empty(Prefixes);
 		}
 
@@ -429,7 +429,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_prefix_alt()
 		{
-			var bucketName = SetupObjects(new List<string>() { "bar", "baz", "foo" });
+			var bucketName = SetupObjects(["bar", "baz", "foo"]);
 			var client = GetClient();
 
 			string Prefix = "ba";
@@ -438,7 +438,7 @@ namespace s3tests
 
 			var Keys = GetKeys(Response);
 			var Prefixes = Response.CommonPrefixes;
-			Assert.Equal(new List<string>() { "bar", "baz" }, Keys);
+			Assert.Equal(["bar", "baz"], Keys);
 			Assert.Empty(Prefixes);
 		}
 
@@ -545,8 +545,8 @@ namespace s3tests
 
 			var Keys = GetKeys(Response);
 			var Prefixes = Response.CommonPrefixes;
-			Assert.Equal(new List<string>() { "foo/bar" }, Keys);
-			Assert.Equal(new List<string>() { "foo/baz/" }, Prefixes);
+			Assert.Equal(["foo/bar"], Keys);
+			Assert.Equal(["foo/baz/"], Prefixes);
 		}
 
 		[Fact]
@@ -569,8 +569,8 @@ namespace s3tests
 
 			var Keys = GetKeys(Response);
 			var Prefixes = Response.CommonPrefixes;
-			Assert.Equal(new List<string>() { "bar" }, Keys);
-			Assert.Equal(new List<string>() { "baza" }, Prefixes);
+			Assert.Equal(["bar"], Keys);
+			Assert.Equal(["baza"], Prefixes);
 		}
 
 		[Fact]
@@ -581,7 +581,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_prefix_delimiter_prefix_not_exist()
 		{
-			var bucketName = SetupObjects(new List<string>() { "b/a/r", "b/a/c", "b/a/g", "g" });
+			var bucketName = SetupObjects(["b/a/r", "b/a/c", "b/a/g", "g"]);
 			var client = GetClient();
 
 			var Response = client.ListObjectsV2(bucketName, delimiter: "d", prefix: "/");
@@ -600,14 +600,14 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_prefix_delimiter_delimiter_not_exist()
 		{
-			var bucketName = SetupObjects(new List<string>() { "b/a/c", "b/a/g", "b/a/r", "g" });
+			var bucketName = SetupObjects(["b/a/c", "b/a/g", "b/a/r", "g"]);
 			var client = GetClient();
 
 			var Response = client.ListObjectsV2(bucketName, delimiter: "z", prefix: "b");
 
 			var Keys = GetKeys(Response);
 			var Prefixes = Response.CommonPrefixes;
-			Assert.Equal(new List<string>() { "b/a/c", "b/a/g", "b/a/r" }, Keys);
+			Assert.Equal(["b/a/c", "b/a/g", "b/a/r"], Keys);
 			Assert.Empty(Prefixes);
 		}
 
@@ -619,7 +619,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void test_bucket_listv2_prefix_delimiter_prefix_delimiter_not_exist()
 		{
-			var bucketName = SetupObjects(new List<string>() { "b/a/r", "b/a/c", "b/a/g", "g" });
+			var bucketName = SetupObjects(["b/a/r", "b/a/c", "b/a/g", "g"]);
 			var client = GetClient();
 
 			var Response = client.ListObjectsV2(bucketName, delimiter: "z", prefix: "y");
@@ -775,7 +775,7 @@ namespace s3tests
 			var Response = client.ListObjectsV2(bucketName, startAfter: startAfter);
 			Assert.Equal(startAfter, Response.StartAfter);
 			var Keys = GetKeys(Response);
-			Assert.Equal(new List<string>() { "foo", "quxx" }, Keys);
+			Assert.Equal(["foo", "quxx"], Keys);
 		}
 
 		[Fact]

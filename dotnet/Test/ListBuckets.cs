@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class ListBuckets : TestBase
 	{

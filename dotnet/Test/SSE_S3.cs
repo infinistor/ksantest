@@ -10,12 +10,13 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class SSE_S3 : TestBase
 	{
@@ -97,7 +98,7 @@ namespace s3tests
 			var Metadata = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar"), };
 			var ContentType = "text/plain";
 
-			var UploadData = SetupMultipartUpload(client, bucketName, key, Size, metadataList: Metadata, contentType: ContentType, sseKey: ServerSideEncryptionMethod.AES256);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, Size, metadataList: Metadata, contentType: ContentType, sseKey: ServerSideEncryptionMethod.AES256);
 
 			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
@@ -112,7 +113,7 @@ namespace s3tests
 			Assert.Equal(Metadata, ResMetaData);
 			Assert.Equal(ContentType, GetResponse.Headers["content-type"]);
 
-			var body = GetBody(GetResponse);
+			var body = S3Utils.GetBody(GetResponse);
 			Assert.Equal(UploadData.Body, body);
 			Assert.Equal(Size, GetResponse.ContentLength);
 
@@ -147,8 +148,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -156,7 +157,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -177,8 +178,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -186,7 +187,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -213,8 +214,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -222,7 +223,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -283,8 +284,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -292,7 +293,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -304,7 +305,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: Data);
 
 			var Response = client.GetObject(bucketName, key);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
 			Assert.Equal(body, body);
 		}
@@ -322,8 +323,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -331,7 +332,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -343,7 +344,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: Data);
 
 			var Response = client.GetObject(bucketName, key);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
 			Assert.Equal(body, body);
 		}
@@ -361,8 +362,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -370,7 +371,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -382,7 +383,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: Data, useChunkEncoding: true);
 
 			var Response = client.GetObject(bucketName, key);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
 			Assert.Equal(body, body);
 		}
@@ -400,8 +401,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -409,7 +410,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -421,7 +422,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: Data, useChunkEncoding: true, disablePayloadSigning: true);
 
 			var Response = client.GetObject(bucketName, key);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
 			Assert.Equal(body, body);
 		}
@@ -439,8 +440,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -448,7 +449,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -460,7 +461,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: Data, useChunkEncoding: false);
 
 			var Response = client.GetObject(bucketName, key);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
 			Assert.Equal(body, body);
 		}
@@ -478,8 +479,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -487,7 +488,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -499,7 +500,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: Data, useChunkEncoding: false, disablePayloadSigning: true);
 
 			var Response = client.GetObject(bucketName, key);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
 			Assert.Equal(body, body);
 		}
@@ -518,8 +519,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -527,7 +528,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -536,13 +537,11 @@ namespace s3tests
 			var PutResponse = PutObject(PutURL, key);
 
 			Assert.Equal(HttpStatusCode.OK, PutResponse.StatusCode);
-			PutResponse.Close();
 
 			var GetURL = client.GeneratePresignedURL(bucketName, key, DateTime.Now.AddSeconds(100000), HttpVerb.GET);
 			var GetResponse = GetObject(GetURL);
 
 			Assert.Equal(HttpStatusCode.OK, GetResponse.StatusCode);
-			GetResponse.Close();
 		}
 
 		[Fact]
@@ -558,8 +557,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -567,7 +566,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -576,13 +575,11 @@ namespace s3tests
 			var PutResponse = PutObject(PutURL, key);
 
 			Assert.Equal(HttpStatusCode.OK, PutResponse.StatusCode);
-			PutResponse.Close();
 
 			var GetURL = client.GeneratePresignedURL(bucketName, key, DateTime.Now.AddSeconds(100000), HttpVerb.GET);
 			var GetResponse = GetObject(GetURL);
 
 			Assert.Equal(HttpStatusCode.OK, GetResponse.StatusCode);
-			GetResponse.Close();
 		}
 
 		[Fact]
@@ -595,7 +592,7 @@ namespace s3tests
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo";
-			var Data = RandomTextToLong(15 * 1024 * 1024);
+			var Data = S3Utils.RandomTextToLong(15 * 1024 * 1024);
 
 			client.PutObject(bucketName, key, body: Data, sseKey: ServerSideEncryptionMethod.AES256);
 			CheckContent(client, bucketName, key, Data, loopCount: 100);
@@ -612,7 +609,7 @@ namespace s3tests
 			var bucketName = GetNewBucket(client);
 			var key = "foo";
 			var Size = 15 * 1024 * 1024;
-			var Data = RandomTextToLong(Size);
+			var Data = S3Utils.RandomTextToLong(Size);
 
 			client.PutObject(bucketName, key, body: Data, sseKey: ServerSideEncryptionMethod.AES256);
 			CheckContentUsingRandomRange(client, bucketName, key, Data, 100);
@@ -632,7 +629,7 @@ namespace s3tests
 			var Metadata = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar"), };
 			var ContentType = "text/plain";
 
-			var UploadData = SetupMultipartUpload(client, bucketName, SrcKey, Size, metadataList: Metadata, contentType: ContentType, sseKey: ServerSideEncryptionMethod.AES256);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, SrcKey, Size, metadataList: Metadata, contentType: ContentType, sseKey: ServerSideEncryptionMethod.AES256);
 
 			client.CompleteMultipartUpload(bucketName, SrcKey, UploadData.UploadId, UploadData.Parts);
 
@@ -646,7 +643,7 @@ namespace s3tests
 			Assert.Equal(Metadata, GetMetaData(GetResponse.Metadata));
 			Assert.Equal(ContentType, GetResponse.Headers["content-type"]);
 
-			var body = GetBody(GetResponse);
+			var body = S3Utils.GetBody(GetResponse);
 			Assert.Equal(UploadData.Body, body);
 			Assert.Equal(Size, GetResponse.ContentLength);
 
@@ -670,7 +667,7 @@ namespace s3tests
 			var client = GetClient();
 			var body = "";
 			// 멀티파트 업로드
-			var UploadData = SetupMultipartUpload(client, bucketName, SrcKey, Size, sseKey: ServerSideEncryptionMethod.AES256);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, SrcKey, Size, sseKey: ServerSideEncryptionMethod.AES256);
 			client.CompleteMultipartUpload(bucketName, SrcKey, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
@@ -681,7 +678,7 @@ namespace s3tests
 			var DestKey1 = "mymultipart1_enc";
 			UploadData = SetupMultipartCopy(client, bucketName, SrcKey, bucketName, DestKey1, Size, SSE_S3: ServerSideEncryptionMethod.AES256);
 			// 추가파츠 업로드
-			UploadData = SetupMultipartUpload(client, bucketName, DestKey1, Size, uploadData: UploadData);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, DestKey1, Size, uploadData: UploadData);
 			client.CompleteMultipartUpload(bucketName, DestKey1, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
@@ -692,7 +689,7 @@ namespace s3tests
 			var DestKey2 = "mymultipart2_enc";
 			UploadData = SetupMultipartCopy(client, bucketName, DestKey1, bucketName, DestKey2, Size * 2, SSE_S3: ServerSideEncryptionMethod.AES256);
 			// 추가파츠 업로드
-			UploadData = SetupMultipartUpload(client, bucketName, DestKey2, Size, uploadData: UploadData);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, DestKey2, Size, uploadData: UploadData);
 			client.CompleteMultipartUpload(bucketName, DestKey2, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
@@ -713,13 +710,13 @@ namespace s3tests
 			var PutKey = "PutKey";
 			var CopyKey = "CopyKey";
 			var MultiKey = "MultiKey";
-			var PutData = RandomTextToLong(1000);
+			var PutData = S3Utils.RandomTextToLong(1000);
 
-			var SSEConfig = new ServerSideEncryptionConfiguration() { ServerSideEncryptionRules = new List<ServerSideEncryptionRule>() { new() { ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault() { ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256) } } } };
+			var SSEConfig = new ServerSideEncryptionConfiguration() { ServerSideEncryptionRules = [new() { ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault() { ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256) } }] };
 
 			client.PutObject(bucketName, PutKey, PutData);
 			client.CopyObject(bucketName, PutKey, bucketName, CopyKey);
-			var UploadData = SetupMultipartUpload(client, bucketName, MultiKey, 1000, sseKey: ServerSideEncryptionMethod.AES256);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, MultiKey, 1000, sseKey: ServerSideEncryptionMethod.AES256);
 
 			// SSE-S3 설정
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -727,21 +724,21 @@ namespace s3tests
 
 			// 오브젝트 다운로드 확인
 			var Response = client.GetObject(bucketName, PutKey);
-			Assert.Equal(PutData, GetBody(Response));
+			Assert.Equal(PutData, S3Utils.GetBody(Response));
 			Response = client.GetObject(bucketName, CopyKey);
-			Assert.Equal(PutData, GetBody(Response));
+			Assert.Equal(PutData, S3Utils.GetBody(Response));
 			Response = client.GetObject(bucketName, MultiKey);
-			Assert.Equal(UploadData.Body, GetBody(Response));
+			Assert.Equal(UploadData.Body, S3Utils.GetBody(Response));
 
 			// 오브젝트 업로드
 			var PutKey2 = "key2";
-			var PutData2 = RandomTextToLong(1000);
+			var PutData2 = S3Utils.RandomTextToLong(1000);
 			var CopyKey2 = "CopyKey2";
 			var MultiKey2 = "MultiKey2";
 
 			client.PutObject(bucketName, PutKey2, PutData2);
 			client.CopyObject(bucketName, PutKey2, bucketName, CopyKey2);
-			UploadData = SetupMultipartUpload(client, bucketName, MultiKey2, 1000, sseKey: ServerSideEncryptionMethod.AES256);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, MultiKey2, 1000, sseKey: ServerSideEncryptionMethod.AES256);
 
 			// SSE-S3 설정 해제
 			Assert.Equal(HttpStatusCode.NoContent, client.DeleteBucketEncryption(bucketName).HttpStatusCode);
@@ -749,11 +746,11 @@ namespace s3tests
 
 			// 오브젝트 다운로드 확인
 			Response = client.GetObject(bucketName, PutKey2);
-			Assert.Equal(PutData2, GetBody(Response));
+			Assert.Equal(PutData2, S3Utils.GetBody(Response));
 			Response = client.GetObject(bucketName, CopyKey2);
-			Assert.Equal(PutData2, GetBody(Response));
+			Assert.Equal(PutData2, S3Utils.GetBody(Response));
 			Response = client.GetObject(bucketName, MultiKey2);
-			Assert.Equal(UploadData.Body, GetBody(Response));
+			Assert.Equal(UploadData.Body, S3Utils.GetBody(Response));
 
 		}
 	}

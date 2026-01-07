@@ -14,7 +14,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	/// <summary> AES256 암호화 클래스 </summary>
 	class AES256

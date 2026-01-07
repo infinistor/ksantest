@@ -320,7 +320,7 @@ public class IniFile : IEnumerable<KeyValuePair<string, IniSection>>, IDictionar
 		}
 	}
 
-	private bool LoadValue(string line, out string key, out IniValue val)
+	private static bool LoadValue(string line, out string key, out IniValue val)
 	{
 		var assignIndex = line.IndexOf('=');
 		if (assignIndex <= 0)
@@ -768,7 +768,7 @@ public class IniSection : IEnumerable<KeyValuePair<string, IniValue>>, IDictiona
 		{
 			if (Ordered != value)
 			{
-				orderedKeys = value ? new List<string>(values.Keys) : null;
+				orderedKeys = value ? [.. values.Keys] : null;
 			}
 		}
 	}

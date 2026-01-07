@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Logging : TestBase
 	{
@@ -122,8 +122,8 @@ namespace s3tests
 			var client = GetClient();
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -131,7 +131,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(SourceBucketName, SSEConfig);

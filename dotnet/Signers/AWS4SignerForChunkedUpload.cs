@@ -171,7 +171,7 @@ namespace s3tests.Signers
 		/// <returns>
 		/// The overall payload size to use as content-length on a chunked upload
 		/// </returns>
-		public long CalculateChunkedContentLength(long originalLength, long chunkSize)
+		public static long CalculateChunkedContentLength(long originalLength, long chunkSize)
 		{
 			if (originalLength <= 0)
 				throw new ArgumentOutOfRangeException("originalLength");

@@ -23,7 +23,7 @@ namespace s3tests
 		{
 			UploadId = string.Empty;
 			Body = string.Empty;
-			Parts = new List<PartETag>();
+			Parts = [];
 		}
 
 		public void AddPart(int PartNumber, string Etag) => Parts.Add(new PartETag(PartNumber, Etag));

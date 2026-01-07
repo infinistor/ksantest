@@ -15,8 +15,6 @@ namespace s3tests
 		#region Default Define
 		// public const string STR_DEF_FILENAME = "awstests.ini";
 		public const string STR_DEF_FILENAME = "s3tests_229.ini";
-		public const string STR_SIGNATURE_VERSION_2 = "2";
-		public const string STR_SIGNATURE_VERSION_4 = "4";
 		#endregion
 
 		#region S3 Define
@@ -24,7 +22,6 @@ namespace s3tests
 		private const string STR_URL = "URL";
 		private const string STR_PORT = "Port";
 		private const string STR_SSL_PORT = "SSLPort";
-		private const string STR_SIGNATURE_VERSION = "SignatureVersion";
 		private const string STR_REGION_NAME = "RegionName";
 		#endregion
 
@@ -47,7 +44,6 @@ namespace s3tests
 
 		#region 설정 변수 선언
 		public S3Config S3 { get; private set; }
-		public string SignatureVersion { get; private set; }
 		public string KMS { get; private set; }
 		public bool IsSecure { get; private set; }
 
@@ -58,7 +54,7 @@ namespace s3tests
 		#endregion
 
 		readonly string FileName;
-		readonly IniFile Ini = new();
+		readonly IniFile Ini = [];
 
 		public MainConfig(string FileName)
 		{
@@ -68,7 +64,6 @@ namespace s3tests
 		public void Init()
 		{
 			S3 = null;
-			SignatureVersion = "";
 			KMS = "";
 			IsSecure = false;
 			BucketPrefix = string.Empty;
@@ -81,7 +76,6 @@ namespace s3tests
 			Ini.Load(FileName);
 
 			S3 = ReadS3Config();
-			SignatureVersion = ReadKeyToString(STR_S3, STR_SIGNATURE_VERSION);
 			KMS = ReadKeyToString(STR_S3, STR_KMS);
 			IsSecure = ReadKeyToBoolean(STR_S3, STR_SECURE);
 

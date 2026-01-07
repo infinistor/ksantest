@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class DeleteBucket : TestBase
 	{
@@ -40,7 +40,7 @@ namespace s3tests
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketDeleteNonempty()
 		{
-			var bucketName = SetupObjects(new List<string>() { "foo" });
+			var bucketName = SetupObjects(["foo"]);
 			var client = GetClient();
 
 			var exception = Assert.Throws<AggregateException>(() => client.DeleteBucket(bucketName));

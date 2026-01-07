@@ -9,12 +9,12 @@
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Net;
-using System.Threading;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class GetObject : TestBase
 	{
@@ -51,7 +51,7 @@ namespace s3tests
 			var eTag = putResponse.ETag;
 
 			var getResponse = client.GetObject(bucketName, key, ifMatch: eTag);
-			var body = GetBody(getResponse);
+			var body = S3Utils.GetBody(getResponse);
 			Assert.Equal(key, body);
 		}
 
@@ -106,7 +106,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: key);
 
 			var getResponse = client.GetObject(bucketName, key, ifNoneMatch: "ABCORZ");
-			var body = GetBody(getResponse);
+			var body = S3Utils.GetBody(getResponse);
 			Assert.Equal(key, body);
 		}
 
@@ -125,7 +125,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: key);
 
 			var getResponse = client.GetObject(bucketName, key, ifModifiedSince: "Sat, 29 Oct 1994 19:43:31 GMT");
-			var body = GetBody(getResponse);
+			var body = S3Utils.GetBody(getResponse);
 			Assert.Equal(key, body);
 		}
 
@@ -144,7 +144,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: key);
 			var response = client.GetObject(bucketName, key);
 			var lastModified = response.LastModified;
-			var after = lastModified.AddSeconds(1);
+			var after = lastModified?.AddSeconds(1);
 
 			var e = Assert.Throws<AggregateException>(() => client.GetObject(bucketName, key, ifModifiedSinceDateTime: after));
 			Assert.Equal(HttpStatusCode.NotModified, GetStatus(e));
@@ -185,7 +185,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: key);
 
 			var response = client.GetObject(bucketName, key, ifUnmodifiedSince: "Fri, 29 Oct 2100 19:43:31 GMT");
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(key, body);
 		}
 
@@ -205,7 +205,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: content);
 			var response = client.GetObject(bucketName, key, range: new ByteRange(4, 7));
 
-			var fetchedContent = GetBody(response);
+			var fetchedContent = S3Utils.GetBody(response);
 			Assert.Equal(content.Substring(4, 4), fetchedContent);
 			Assert.Equal("bytes 4-7/11", response.ContentRange);
 			Assert.Equal(HttpStatusCode.PartialContent, response.HttpStatusCode);
@@ -219,7 +219,7 @@ namespace s3tests
 		public void TestRangedBigRequestResponseCode()
 		{
 			var key = "TestRangedBigRequestResponseCode";
-			var content = RandomTextToLong(8 * MainData.MB);
+			var content = S3Utils.RandomTextToLong(8 * MainData.MB);
 
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -227,7 +227,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: content);
 			var response = client.GetObject(bucketName, key, range: new ByteRange(3145728, 5242880));
 
-			var fetchedContent = GetBody(response);
+			var fetchedContent = S3Utils.GetBody(response);
 			Assert.Equal(content.Substring(3145728, 5242880 - 3145728 + 1), fetchedContent);
 			Assert.Equal("bytes 3145728-5242880/8388608", response.ContentRange);
 			Assert.Equal(HttpStatusCode.PartialContent, response.HttpStatusCode);
@@ -249,7 +249,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: content);
 			var response = client.GetObject(bucketName, key, range: new ByteRange("bytes=4-"));
 
-			var fetchedContent = GetBody(response);
+			var fetchedContent = S3Utils.GetBody(response);
 			Assert.Equal(content[4..], fetchedContent);
 			Assert.Equal("bytes 4-10/11", response.ContentRange);
 			Assert.Equal(HttpStatusCode.PartialContent, response.HttpStatusCode);
@@ -271,7 +271,7 @@ namespace s3tests
 			client.PutObject(bucketName, key, body: content);
 			var response = client.GetObject(bucketName, key, range: new ByteRange("bytes=-7"));
 
-			var fetchedContent = GetBody(response);
+			var fetchedContent = S3Utils.GetBody(response);
 			Assert.Equal(content.Substring(content.Length - 7, 7), fetchedContent);
 			Assert.Equal("bytes 4-10/11", response.ContentRange);
 			Assert.Equal(HttpStatusCode.PartialContent, response.HttpStatusCode);
@@ -325,7 +325,7 @@ namespace s3tests
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectMany";
-			var data = RandomTextToLong(15 * 1024 * 1024);
+			var data = S3Utils.RandomTextToLong(15 * 1024 * 1024);
 
 			client.PutObject(bucketName, key, body: data);
 			CheckContent(client, bucketName, key, data, loopCount: 100);
@@ -342,7 +342,7 @@ namespace s3tests
 			var bucketName = GetNewBucket(client);
 			var key = "TestRangeObjectMany";
 			var size = 15 * 1024 * 1024;
-			var data = RandomTextToLong(size);
+			var data = S3Utils.RandomTextToLong(size);
 
 			client.PutObject(bucketName, key, body: data);
 			CheckContentUsingRandomRange(client, bucketName, key, data, 100);

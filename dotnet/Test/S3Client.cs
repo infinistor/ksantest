@@ -19,7 +19,7 @@ using System.Net.Http;
 using System.Text;
 using Xunit.Abstractions;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class S3Client
 	{
@@ -28,7 +28,7 @@ namespace s3tests
 
 		public AmazonS3Client Client { get; private set; }
 
-		public S3Client(S3Config s3, string signatureVersion, bool isSecure, UserData user, ITestOutputHelper output = null,
+		public S3Client(S3Config s3, bool isSecure, UserData user, ITestOutputHelper output = null,
 		RequestChecksumCalculation? requestChecksumCalculation = null,
 		ResponseChecksumValidation? responseChecksumValidation = null)
 		{
@@ -48,7 +48,6 @@ namespace s3tests
 			}
 
 			s3Config.Timeout = TimeSpan.FromSeconds(S3_TIMEOUT);
-			s3Config.SignatureVersion = signatureVersion;
 			s3Config.ForcePathStyle = true;
 			if (requestChecksumCalculation != null) s3Config.RequestChecksumCalculation = requestChecksumCalculation.Value;
 			if (responseChecksumValidation != null) s3Config.ResponseChecksumValidation = responseChecksumValidation.Value;
@@ -872,10 +871,10 @@ namespace s3tests
 				request.ServerSideEncryptionCustomerProvidedKeyMD5 = sseCustomerKey.MD5;
 			}
 
-			if (ifModifiedSince != null) request.ModifiedSinceDateUtc = DateTime.Parse(ifModifiedSince);
-			if (ifModifiedSinceDateTime != null) request.ModifiedSinceDateUtc = ifModifiedSinceDateTime.Value;
-			if (ifUnmodifiedSince != null) request.UnmodifiedSinceDateUtc = DateTime.Parse(ifUnmodifiedSince);
-			if (ifUnmodifiedSinceDateTime != null) request.ModifiedSinceDateUtc = ifUnmodifiedSinceDateTime.Value;
+			if (ifModifiedSince != null) request.ModifiedSinceDate = DateTime.Parse(ifModifiedSince);
+			if (ifModifiedSinceDateTime != null) request.ModifiedSinceDate = ifModifiedSinceDateTime.Value;
+			if (ifUnmodifiedSince != null) request.UnmodifiedSinceDate = DateTime.Parse(ifUnmodifiedSince);
+			if (ifUnmodifiedSinceDateTime != null) request.ModifiedSinceDate = ifUnmodifiedSinceDateTime.Value;
 
 			//ResponseHeaderOverrides
 			if (responseContentType != null) request.ResponseHeaderOverrides.ContentType = responseContentType;

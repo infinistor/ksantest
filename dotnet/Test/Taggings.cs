@@ -10,13 +10,14 @@
 */
 using Amazon.S3.Model;
 using Newtonsoft.Json.Linq;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Taggings : TestBase
 	{
@@ -61,7 +62,7 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var InputTagSet = MakeSimpleTagset(2);
+			var InputTagSet = S3Utils.MakeSimpleTagset(2);
 
 			var PutResponse = client.PutObjectTagging(bucketName, Key, InputTagSet);
 			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
@@ -82,7 +83,7 @@ namespace s3tests
 			var client = GetClient();
 			var Count = 2;
 
-			var InputTagSet = MakeSimpleTagset(Count);
+			var InputTagSet = S3Utils.MakeSimpleTagset(Count);
 
 			var PutResponse = client.PutObjectTagging(bucketName, Key, InputTagSet);
 			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
@@ -103,7 +104,7 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var InputTagSet = MakeSimpleTagset(10);
+			var InputTagSet = S3Utils.MakeSimpleTagset(10);
 
 			var PutResponse = client.PutObjectTagging(bucketName, Key, InputTagSet);
 			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
@@ -123,7 +124,7 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var InputTagSet = MakeSimpleTagset(11);
+			var InputTagSet = S3Utils.MakeSimpleTagset(11);
 
 			var e = Assert.Throws<AggregateException>(() => client.PutObjectTagging(bucketName, Key, InputTagSet));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
@@ -144,7 +145,7 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var InputTagSet = new Tagging() { TagSet = MakeTagList(128, 256) };
+			var InputTagSet = new Tagging() { TagSet = S3Utils.MakeTagList(128, 256) };
 
 			var PutResponse = client.PutObjectTagging(bucketName, Key, InputTagSet);
 			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
@@ -164,7 +165,7 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var InputTagSet = new Tagging() { TagSet = MakeTagList(129, 256) };
+			var InputTagSet = new Tagging() { TagSet = S3Utils.MakeTagList(129, 256) };
 
 			var e = Assert.Throws<AggregateException>(() => client.PutObjectTagging(bucketName, Key, InputTagSet));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
@@ -185,7 +186,7 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var InputTagSet = new Tagging() { TagSet = MakeTagList(128, 257) };
+			var InputTagSet = new Tagging() { TagSet = S3Utils.MakeTagList(128, 257) };
 
 			var e = Assert.Throws<AggregateException>(() => client.PutObjectTagging(bucketName, Key, InputTagSet));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
@@ -208,11 +209,11 @@ namespace s3tests
 
 			var InputTagSet = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new(){ Key = "key", Value = "val"},
 					new(){ Key = "key2", Value = "val2"},
-				}
+				]
 			};
 
 			var PutResponse = client.PutObjectTagging(bucketName, Key, InputTagSet);
@@ -223,10 +224,10 @@ namespace s3tests
 
 			var InputTagSet2 = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new(){ Key = "key3", Value = "val3"},
-				}
+				]
 			};
 
 			PutResponse = client.PutObjectTagging(bucketName, Key, InputTagSet2);
@@ -247,7 +248,7 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var InputTagSet = MakeSimpleTagset(2);
+			var InputTagSet = S3Utils.MakeSimpleTagset(2);
 
 			var PutResponse = client.PutObjectTagging(bucketName, Key, InputTagSet);
 			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
@@ -274,7 +275,7 @@ namespace s3tests
 			var ContentType = "text/plain";
 			var Key = "foo.txt";
 
-			var InputTagSet = MakeSimpleTagset(2);
+			var InputTagSet = S3Utils.MakeSimpleTagset(2);
 			var XmlInputTagset = "<Tagging><TagSet><Tag><Key>0</Key><Value>0</Value></Tag><Tag><Key>1</Key><Value>1</Value></Tag></TagSet></Tagging>";
 
 			var PolicyDocument = new JObject()
@@ -295,7 +296,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
@@ -312,7 +313,7 @@ namespace s3tests
 			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
 
 			var Response = client.GetObject(bucketName, Key);
-			var Body = GetBody(Response);
+			var Body = S3Utils.GetBody(Response);
 			Assert.Equal("bar", Body);
 
 			var GetResponse = client.GetObjectTagging(bucketName, Key);
@@ -329,7 +330,7 @@ namespace s3tests
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var Key = "testtagobj1";
-			var Data = RandomTextToLong(100);
+			var Data = S3Utils.RandomTextToLong(100);
 
 			var TagSet = new List<Tag>()
 			{
@@ -341,7 +342,7 @@ namespace s3tests
 
 			client.PutObject(bucketName, Key, body: Data, headerList: Headers);
 			var Response = client.GetObject(bucketName, Key);
-			var Body = GetBody(Response);
+			var Body = S3Utils.GetBody(Response);
 			Assert.Equal(Data, Body);
 
 			var GetResponse = client.GetObjectTagging(bucketName, Key);

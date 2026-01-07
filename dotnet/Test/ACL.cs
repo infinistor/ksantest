@@ -13,7 +13,7 @@ using System;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class ACL : TestBase
 	{
@@ -264,7 +264,6 @@ namespace s3tests
 			var response = GetObject(url);
 
 			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-			response.Close();
 		}
 
 		[Fact]

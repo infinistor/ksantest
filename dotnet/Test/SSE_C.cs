@@ -10,13 +10,14 @@
 */
 using Amazon.S3;
 using Newtonsoft.Json.Linq;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class sseC : TestBase
 	{
@@ -192,7 +193,7 @@ namespace s3tests
 
 			Client.PutObject(bucketName, key: key, body: body, sseCustomerKey: sseC);
 			var Response = Client.GetObject(bucketName, key: key, sseCustomerKey: sseC);
-			Assert.Equal(body, GetBody(Response));
+			Assert.Equal(body, S3Utils.GetBody(Response));
 		}
 
 		[Fact]
@@ -259,7 +260,7 @@ namespace s3tests
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
 
-			var UploadData = SetupMultipartUpload(Client, bucketName, key, Size, metadataList: Metadata, contentType: ContentType, sseCustomerKey: sseC);
+			var UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, key, Size, metadataList: Metadata, contentType: ContentType, sseCustomerKey: sseC);
 
 			Client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
@@ -273,7 +274,7 @@ namespace s3tests
 			Assert.Equal(Metadata, GetMetaData(GetResponse.Metadata));
 			Assert.Equal(ContentType, GetResponse.Headers["content-type"]);
 
-			var body = GetBody(GetResponse);
+			var body = S3Utils.GetBody(GetResponse);
 			Assert.Equal(UploadData.Body, body);
 			Assert.Equal(Size, GetResponse.ContentLength);
 
@@ -308,7 +309,7 @@ namespace s3tests
 				MD5 = "arxBvwY2V4SiOne6yppVPQ==",
 			};
 
-			var UploadData = SetupMultipartUpload(Client, bucketName, key, Size, metadataList: Metadata, contentType: ContentType, sseCustomerKey: PutSSEC);
+			var UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, key, Size, metadataList: Metadata, contentType: ContentType, sseCustomerKey: PutSSEC);
 
 			Client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
@@ -366,7 +367,7 @@ namespace s3tests
 			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
 			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
 
-			var Signature = GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
 			var FileData = new FormFile() { Name = key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", key },
@@ -385,7 +386,7 @@ namespace s3tests
 			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
 
 			var Response = Client.GetObject(bucketName, key, sseCustomerKey: sseC);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal("bar", body);
 		}
 
@@ -454,7 +455,7 @@ namespace s3tests
 				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
 			};
 
-			var UploadData = SetupMultipartUpload(Client, bucketName, SrcKey, Size, metadataList: Metadata, contentType: ContentType, sseCustomerKey: sseC);
+			var UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, SrcKey, Size, metadataList: Metadata, contentType: ContentType, sseCustomerKey: sseC);
 
 			Client.CompleteMultipartUpload(bucketName, SrcKey, UploadData.UploadId, UploadData.Parts);
 
@@ -468,7 +469,7 @@ namespace s3tests
 			Assert.Equal(Metadata, GetMetaData(GetResponse.Metadata));
 			Assert.Equal(ContentType, GetResponse.Headers["content-type"]);
 
-			var body = GetBody(GetResponse);
+			var body = S3Utils.GetBody(GetResponse);
 			Assert.Equal(UploadData.Body, body);
 			Assert.Equal(Size, GetResponse.ContentLength);
 
@@ -499,7 +500,7 @@ namespace s3tests
 			};
 
 			// 멀티파트 업로드
-			var UploadData = SetupMultipartUpload(Client, bucketName, SrcKey, Size, sseCustomerKey: sseC);
+			var UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, SrcKey, Size, sseCustomerKey: sseC);
 			Client.CompleteMultipartUpload(bucketName, SrcKey, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
@@ -510,7 +511,7 @@ namespace s3tests
 			var DestKey1 = "mymultipart1_enc";
 			UploadData = SetupMultipartCopy(Client, bucketName, SrcKey, bucketName, DestKey1, Size, srcCustomerKey: sseC, destCustomerKey: sseC);
 			// 추가파츠 업로드
-			UploadData = SetupMultipartUpload(Client, bucketName, DestKey1, Size, uploadData: UploadData, sseCustomerKey: sseC);
+			UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, DestKey1, Size, uploadData: UploadData, sseCustomerKey: sseC);
 			Client.CompleteMultipartUpload(bucketName, DestKey1, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
@@ -521,7 +522,7 @@ namespace s3tests
 			var DestKey2 = "mymultipart2_enc";
 			UploadData = SetupMultipartCopy(Client, bucketName, DestKey1, bucketName, DestKey2, Size * 2, srcCustomerKey: sseC, destCustomerKey: sseC);
 			// 추가파츠 업로드
-			UploadData = SetupMultipartUpload(Client, bucketName, DestKey2, Size, uploadData: UploadData, sseCustomerKey: sseC);
+			UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, DestKey2, Size, uploadData: UploadData, sseCustomerKey: sseC);
 			Client.CompleteMultipartUpload(bucketName, DestKey2, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인

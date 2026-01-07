@@ -11,12 +11,13 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using Newtonsoft.Json.Linq;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Policy : TestBase
 	{
@@ -192,12 +193,12 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var Resource = MakeArnResource(string.Format("{0}/{1}", bucketName, Key));
-			var PolicyDocument = MakeJsonPolicy("s3:GetObjectTagging", Resource);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, Key));
+			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:GetObjectTagging", Resource);
 
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 
-			var InputTagset = MakeSimpleTagset(10);
+			var InputTagset = S3Utils.MakeSimpleTagset(10);
 			var PutResponse = client.PutObjectTagging(bucketName, Key, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
 
@@ -218,12 +219,12 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var Resource = MakeArnResource(string.Format("{0}/{1}", bucketName, Key));
-			var PolicyDocument = MakeJsonPolicy("s3:PutObjectTagging", Resource);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, Key));
+			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:PutObjectTagging", Resource);
 
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 
-			var InputTagset = MakeSimpleTagset(10);
+			var InputTagset = S3Utils.MakeSimpleTagset(10);
 			var AltClient = GetAltClient();
 			var PutResponse = AltClient.PutObjectTagging(bucketName, Key, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
@@ -243,12 +244,12 @@ namespace s3tests
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
-			var Resource = MakeArnResource(string.Format("{0}/{1}", bucketName, Key));
-			var PolicyDocument = MakeJsonPolicy("s3:DeleteObjectTagging", Resource);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, Key));
+			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:DeleteObjectTagging", Resource);
 
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 
-			var InputTagset = MakeSimpleTagset(10);
+			var InputTagset = S3Utils.MakeSimpleTagset(10);
 			var PutResponse = client.PutObjectTagging(bucketName, Key, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
 
@@ -271,7 +272,7 @@ namespace s3tests
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
-			var bucketName = SetupObjects(new List<string>() { publictag, privatetag, invalidtag });
+			var bucketName = SetupObjects([publictag, privatetag, invalidtag]);
 			var client = GetClient();
 
 			var TagConditional = new JObject() {
@@ -282,38 +283,38 @@ namespace s3tests
 				}
 			};
 
-			var Resource = MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
-			var PolicyDocument = MakeJsonPolicy("s3:GetObject", Resource, conditions: TagConditional);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
+			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:GetObject", Resource, conditions: TagConditional);
 
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 
 			var InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="public" },
 					new() { Key= "foo", Value="bar" },
-				},
+				],
 			};
 			var Response = client.PutObjectTagging(bucketName, publictag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
 			InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="private" },
-				},
+				],
 			};
 			Response = client.PutObjectTagging(bucketName, privatetag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
 			InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security1", Value="public" },
-				},
+				],
 			};
 			Response = client.PutObjectTagging(bucketName, invalidtag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
@@ -340,7 +341,7 @@ namespace s3tests
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
-			var bucketName = SetupObjects(new List<string>() { publictag, privatetag, invalidtag });
+			var bucketName = SetupObjects([publictag, privatetag, invalidtag]);
 			var client = GetClient();
 
 			var TagConditional = new JObject() {
@@ -351,38 +352,38 @@ namespace s3tests
 				}
 			};
 
-			var Resource = MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
-			var PolicyDocument = MakeJsonPolicy("s3:GetObjectTagging", Resource, conditions: TagConditional);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
+			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:GetObjectTagging", Resource, conditions: TagConditional);
 
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 
 			var InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="public" },
 					new() { Key= "foo", Value="bar" },
-				},
+				],
 			};
 			var Response = client.PutObjectTagging(bucketName, publictag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
 			InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="private" },
-				},
+				],
 			};
 			Response = client.PutObjectTagging(bucketName, privatetag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
 			InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security1", Value="public" },
-				},
+				],
 			};
 			Response = client.PutObjectTagging(bucketName, invalidtag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
@@ -412,7 +413,7 @@ namespace s3tests
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
-			var bucketName = SetupObjects(new List<string>() { publictag, privatetag, invalidtag });
+			var bucketName = SetupObjects([publictag, privatetag, invalidtag]);
 			var client = GetClient();
 
 			var TagConditional = new JObject() {
@@ -423,38 +424,38 @@ namespace s3tests
 				}
 			};
 
-			var Resource = MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
-			var PolicyDocument = MakeJsonPolicy("s3:PutObjectTagging", Resource, conditions: TagConditional);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
+			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:PutObjectTagging", Resource, conditions: TagConditional);
 
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 
 			var InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="public" },
 					new() { Key= "foo", Value="bar" },
-				},
+				],
 			};
 			var Response = client.PutObjectTagging(bucketName, publictag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
 			InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="private" },
-				},
+				],
 			};
 			Response = client.PutObjectTagging(bucketName, privatetag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
 			InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security1", Value="public" },
-				},
+				],
 			};
 			Response = client.PutObjectTagging(bucketName, invalidtag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
@@ -462,11 +463,11 @@ namespace s3tests
 
 			var TestTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="public" },
 					new() { Key= "foo", Value="bar" },
-				},
+				],
 			};
 
 			var AltClient = GetAltClient();
@@ -478,10 +479,10 @@ namespace s3tests
 
 			TestTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="private" },
-				},
+				],
 			};
 			Response = AltClient.PutObjectTagging(bucketName, publictag, TestTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
@@ -489,11 +490,11 @@ namespace s3tests
 
 			TestTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="public" },
 					new() { Key= "foo", Value="bar" },
-				},
+				],
 			};
 
 			e = Assert.Throws<AggregateException>(() => AltClient.PutObjectTagging(bucketName, publictag, TestTagset));
@@ -511,11 +512,11 @@ namespace s3tests
 			var public_foo = "public/foo";
 			var public_bar = "public/bar";
 			var private_foo = "private/foo";
-			var SrcbucketName = SetupObjects(new List<string>() { public_foo, public_bar, private_foo });
+			var SrcbucketName = SetupObjects([public_foo, public_bar, private_foo]);
 			var client = GetClient();
 
-			var SrcResource = MakeArnResource(string.Format("{0}/{1}", SrcbucketName, "*"));
-			var SrcPolicyDocument = MakeJsonPolicy("s3:GetObject", SrcResource);
+			var SrcResource = S3Utils.MakeArnResource(string.Format("{0}/{1}", SrcbucketName, "*"));
+			var SrcPolicyDocument = S3Utils.MakeJsonPolicy("s3:GetObject", SrcResource);
 			client.PutBucketPolicy(SrcbucketName, SrcPolicyDocument.ToString());
 
 			var DestbucketName = GetNewBucket();
@@ -527,8 +528,8 @@ namespace s3tests
 					}
 				}
 			};
-			var Resource = MakeArnResource(string.Format("{0}/{1}", DestbucketName, "*"));
-			var DestPolicyDocument = MakeJsonPolicy("s3:PutObject", Resource, conditions: TagConditional);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", DestbucketName, "*"));
+			var DestPolicyDocument = S3Utils.MakeJsonPolicy("s3:PutObject", Resource, conditions: TagConditional);
 			client.PutBucketPolicy(DestbucketName, DestPolicyDocument.ToString());
 
 			var AltClient = GetAltClient();
@@ -536,14 +537,14 @@ namespace s3tests
 			AltClient.CopyObject(SrcbucketName, public_foo, DestbucketName, new_foo);
 
 			var Response = AltClient.GetObject(DestbucketName, new_foo);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal(public_foo, body);
 
 			var new_foo2 = "new_foo2";
 			AltClient.CopyObject(SrcbucketName, public_bar, DestbucketName, new_foo2);
 
 			var Response2 = AltClient.GetObject(DestbucketName, new_foo2);
-			var Body2 = GetBody(Response2);
+			var Body2 = S3Utils.GetBody(Response2);
 			Assert.Equal(public_bar, Body2);
 
 			var e = Assert.Throws<AggregateException>(() => AltClient.CopyObject(SrcbucketName, private_foo, DestbucketName, new_foo2));
@@ -559,11 +560,11 @@ namespace s3tests
 		{
 			var public_foo = "public/foo";
 			var public_bar = "public/bar";
-			var SrcbucketName = SetupObjects(new List<string>() { public_foo, public_bar });
+			var SrcbucketName = SetupObjects([public_foo, public_bar]);
 			var client = GetClient();
 
-			var SrcResource = MakeArnResource(string.Format("{0}/{1}", SrcbucketName, "*"));
-			var PolicyDocument = MakeJsonPolicy("s3:GetObject", SrcResource);
+			var SrcResource = S3Utils.MakeArnResource(string.Format("{0}/{1}", SrcbucketName, "*"));
+			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:GetObject", SrcResource);
 			client.PutBucketPolicy(SrcbucketName, PolicyDocument.ToString());
 
 			var DestbucketName = GetNewBucket();
@@ -575,8 +576,8 @@ namespace s3tests
 					}
 				}
 			};
-			var Resource = MakeArnResource(string.Format("{0}/{1}", DestbucketName, "*"));
-			PolicyDocument = MakeJsonPolicy("s3:PutObject", Resource, conditions: S3Conditional);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", DestbucketName, "*"));
+			PolicyDocument = S3Utils.MakeJsonPolicy("s3:PutObject", Resource, conditions: S3Conditional);
 			client.PutBucketPolicy(DestbucketName, PolicyDocument.ToString());
 
 			var AltClient = GetAltClient();
@@ -584,14 +585,14 @@ namespace s3tests
 			AltClient.CopyObject(SrcbucketName, public_foo, DestbucketName, new_foo, metadataDirective: S3MetadataDirective.COPY);
 
 			var Response = AltClient.GetObject(DestbucketName, new_foo);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal(public_foo, body);
 
 			var new_foo2 = "new_foo2";
 			AltClient.CopyObject(SrcbucketName, public_bar, DestbucketName, new_foo2);
 
 			Response = AltClient.GetObject(DestbucketName, new_foo2);
-			body = GetBody(Response);
+			body = S3Utils.GetBody(Response);
 			Assert.Equal(public_bar, body);
 
 			var e = Assert.Throws<AggregateException>(() => AltClient.CopyObject(SrcbucketName, public_bar, DestbucketName, new_foo2, metadataDirective: S3MetadataDirective.REPLACE));
@@ -615,10 +616,10 @@ namespace s3tests
 					}
 				}
 			};
-			var Resource = MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
-			var s1 = MakeJsonStatement("s3:PutObject", Resource);
-			var s2 = MakeJsonStatement("s3:PutObject", Resource, effect: MainData.PolicyEffectDeny, conditions: Conditional);
-			var PolicyDocument = MakeJsonPolicy(new JArray() { s1, s2 });
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
+			var s1 = S3Utils.MakeJsonStatement("s3:PutObject", Resource);
+			var s2 = S3Utils.MakeJsonStatement("s3:PutObject", Resource, effect: MainData.PolicyEffectDeny, conditions: Conditional);
+			var PolicyDocument = S3Utils.MakeJsonPolicy([s1, s2]);
 
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 
@@ -660,11 +661,11 @@ namespace s3tests
 				}
 			};
 
-			var Resource = MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
-			var PolicyDocument = MakeJsonPolicy("s3:PutObject", Resource, conditions: S3Conditional);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
+			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:PutObject", Resource, conditions: S3Conditional);
 
-			var Resource2 = MakeArnResource(string.Format("{0}/{1}", bucketName2, "*"));
-			var PolicyDocument2 = MakeJsonPolicy("s3:PutObject", Resource2);
+			var Resource2 = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName2, "*"));
+			var PolicyDocument2 = S3Utils.MakeJsonPolicy("s3:PutObject", Resource2);
 
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 			client.PutBucketPolicy(bucketName2, PolicyDocument2.ToString());
@@ -702,7 +703,7 @@ namespace s3tests
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
-			var bucketName = SetupObjects(new List<string>() { publictag, privatetag, invalidtag });
+			var bucketName = SetupObjects([publictag, privatetag, invalidtag]);
 			var client = GetClient();
 
 			var TagConditional = new JObject() {
@@ -713,38 +714,38 @@ namespace s3tests
 				}
 			};
 
-			var Resource = MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
-			var PolicyDocument = MakeJsonPolicy("s3:GetObjectAcl", Resource, conditions: TagConditional);
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, "*"));
+			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:GetObjectAcl", Resource, conditions: TagConditional);
 
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 
 			var InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="public" },
 					new() { Key= "foo", Value="bar" },
-				},
+				],
 			};
 			var Response = client.PutObjectTagging(bucketName, publictag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
 			InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security", Value="private" },
-				},
+				],
 			};
 			Response = client.PutObjectTagging(bucketName, privatetag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
 			InputTagset = new Tagging()
 			{
-				TagSet = new List<Tag>()
-				{
+				TagSet =
+				[
 					new() { Key= "security1", Value="public" },
-				},
+				],
 			};
 			Response = client.PutObjectTagging(bucketName, invalidtag, InputTagset);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);

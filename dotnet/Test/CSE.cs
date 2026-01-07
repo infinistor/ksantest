@@ -9,12 +9,13 @@
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class CSE : TestBase
 	{
@@ -74,10 +75,10 @@ namespace s3tests
 			var aes = new AES256();
 			var data = new string('A', 1000);
 			var encodedData = aes.AESEncrypt(data);
-			List<KeyValuePair<string, string>> metadataList = new()
-			{
+			List<KeyValuePair<string, string>> metadataList =
+			[
 				new("x-amz-meta-key", aes.Key),
-			};
+			];
 			client.PutObject(bucketName, key: key, body: encodedData, metadataList: metadataList);
 
 			var response = client.GetObjectMetadata(bucketName, key: key);
@@ -106,7 +107,7 @@ namespace s3tests
 			client.PutObject(bucketName, key: key, body: encodedData, metadataList: metadataList);
 
 			var response = client.GetObject(bucketName, key: key);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.NotEqual(data, body);
 		}
 
@@ -130,7 +131,7 @@ namespace s3tests
 			client.PutObject(bucketName, key: key, body: data, metadataList: metadataList);
 
 			var response = client.GetObject(bucketName, key: key);
-			var encodedBody = GetBody(response);
+			var encodedBody = S3Utils.GetBody(response);
 
 			Assert.Throws<CryptographicException>(() => aes.AESDecrypt(encodedBody));
 		}
@@ -147,7 +148,7 @@ namespace s3tests
 			var key = "testobj";
 
 			var aes = new AES256();
-			var data = RandomTextToLong(1024 * 1024);
+			var data = S3Utils.RandomTextToLong(1024 * 1024);
 			var encodedData = aes.AESEncrypt(data);
 			var metadataList = new List<KeyValuePair<string, string>>()
 			{
@@ -159,7 +160,7 @@ namespace s3tests
 			var startPoint = r.Next(0, 1024 * 1024 - 1001);
 			var range = new ByteRange(startPoint, startPoint + 1000);
 			var response = client.GetObject(bucketName, key: key, range: range);
-			var encodedBody = GetBody(response);
+			var encodedBody = S3Utils.GetBody(response);
 			Assert.Equal(encodedData.Substring((int)range.Start, (int)(range.End - range.Start + 1)), encodedBody);
 		}
 
@@ -177,14 +178,14 @@ namespace s3tests
 			var contentType = "text/plain";
 
 			var aes = new AES256();
-			var data = RandomTextToLong(size);
+			var data = S3Utils.RandomTextToLong(size);
 			var encodedData = aes.AESEncrypt(data);
 			var metadataList = new List<KeyValuePair<string, string>>()
 			{
 				new("x-amz-meta-key", aes.Key),
 			};
 
-			var uploadData = SetupMultipartUploadData(client, bucketName, key, encodedData, metadataList: metadataList, contentType: contentType);
+			var uploadData = S3Utils.SetupMultipartUploadData(client, bucketName, key, encodedData, metadataList: metadataList, contentType: contentType);
 
 			client.CompleteMultipartUpload(bucketName, key, uploadData.UploadId, uploadData.Parts);
 
@@ -197,7 +198,7 @@ namespace s3tests
 			Assert.Equal(metadataList, GetMetaData(getResponse.Metadata));
 			Assert.Equal(contentType, getResponse.Headers["content-type"]);
 
-			var encodedBody = GetBody(getResponse);
+			var encodedBody = S3Utils.GetBody(getResponse);
 			var body = aes.AESDecrypt(encodedBody);
 			Assert.Equal(size, body.Length);
 			Assert.Equal(data, body);
@@ -219,7 +220,7 @@ namespace s3tests
 			var key = "foo";
 
 			var aes = new AES256();
-			var data = RandomTextToLong(15 * 1024 * 1024);
+			var data = S3Utils.RandomTextToLong(15 * 1024 * 1024);
 			var encodedData = aes.AESEncrypt(data);
 
 			client.PutObject(bucketName, key, body: encodedData);
@@ -238,7 +239,7 @@ namespace s3tests
 			var key = "foo";
 
 			var aes = new AES256();
-			var data = RandomTextToLong(15 * 1024 * 1024);
+			var data = S3Utils.RandomTextToLong(15 * 1024 * 1024);
 			var encodedData = aes.AESEncrypt(data);
 
 			client.PutObject(bucketName, key, body: encodedData);

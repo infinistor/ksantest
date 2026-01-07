@@ -10,12 +10,13 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class CopyObject : TestBase
 	{
@@ -30,7 +31,7 @@ namespace s3tests
 		{
 			var key = "foo123bar";
 			var newKey = "bar321foo";
-			var bucketName = SetupObjects(new List<string>() { key });
+			var bucketName = SetupObjects([key]);
 			var client = GetClient();
 
 			client.PutObject(bucketName, key, body: "");
@@ -58,7 +59,7 @@ namespace s3tests
 			client.CopyObject(bucketName, key, bucketName, newKey);
 
 			var response = client.GetObject(bucketName, newKey);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foo", body);
 		}
 
@@ -80,7 +81,7 @@ namespace s3tests
 			client.CopyObject(bucketName, key, bucketName, newKey);
 
 			var response = client.GetObject(bucketName, newKey);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foo", body);
 			var responseContentType = response.Headers.ContentType;
 			Assert.Equal(contentType, responseContentType);
@@ -124,7 +125,7 @@ namespace s3tests
 			client.CopyObject(bucketName1, key1, bucketName2, key2);
 
 			var response = client.GetObject(bucketName2, key2);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foo", body);
 		}
 
@@ -244,7 +245,7 @@ namespace s3tests
 					new("x-amz-meta-key1", "value1"),
 					new("x-amz-meta-key2", "value2")
 				};
-				client.PutObject(bucketName, key1, metadataList: metaData, contentType: contentType, body: RandomTextToLong(size));
+				client.PutObject(bucketName, key1, metadataList: metaData, contentType: contentType, body: S3Utils.RandomTextToLong(size));
 
 				client.CopyObject(bucketName, key1, bucketName, key2);
 
@@ -276,7 +277,7 @@ namespace s3tests
 					new("x-amz-meta-key1", "value1"),
 					new("x-amz-meta-key2", "value2")
 				};
-				client.PutObject(bucketName, key1, metadataList: metaData, contentType: contentType, body: RandomTextToLong(size));
+				client.PutObject(bucketName, key1, metadataList: metaData, contentType: contentType, body: S3Utils.RandomTextToLong(size));
 
 				var newMetaData = new List<KeyValuePair<string, string>>()
 				{
@@ -332,7 +333,7 @@ namespace s3tests
 			var bucketName = GetNewBucket(client);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 			var size = 1 * 5;
-			var data = RandomTextToLong(size);
+			var data = S3Utils.RandomTextToLong(size);
 			var key1 = "foo123bar";
 			var key2 = "bar321foo";
 			var key3 = "bar321foo2";
@@ -343,14 +344,14 @@ namespace s3tests
 
 			client.CopyObject(bucketName, key1, bucketName, key2, versionId: versionId);
 			response = client.GetObject(bucketName, key2);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(data, body);
 			Assert.Equal(size, response.ContentLength);
 
 			var versionId2 = response.VersionId;
 			client.CopyObject(bucketName, key2, bucketName, key3, versionId: versionId2);
 			response = client.GetObject(bucketName, key3);
-			body = GetBody(response);
+			body = S3Utils.GetBody(response);
 			Assert.Equal(data, body);
 			Assert.Equal(size, response.ContentLength);
 
@@ -359,7 +360,7 @@ namespace s3tests
 			var key4 = "bar321foo3";
 			client.CopyObject(bucketName, key1, bucketName2, key4, versionId: versionId);
 			response = client.GetObject(bucketName2, key4);
-			body = GetBody(response);
+			body = S3Utils.GetBody(response);
 			Assert.Equal(data, body);
 			Assert.Equal(size, response.ContentLength);
 
@@ -368,14 +369,14 @@ namespace s3tests
 			var key5 = "bar321foo4";
 			client.CopyObject(bucketName, key1, bucketName3, key5, versionId: versionId);
 			response = client.GetObject(bucketName3, key5);
-			body = GetBody(response);
+			body = S3Utils.GetBody(response);
 			Assert.Equal(data, body);
 			Assert.Equal(size, response.ContentLength);
 
 			var key6 = "foo123bar2";
 			client.CopyObject(bucketName3, key5, bucketName, key6);
 			response = client.GetObject(bucketName, key6);
-			body = GetBody(response);
+			body = S3Utils.GetBody(response);
 			Assert.Equal(data, body);
 			Assert.Equal(size, response.ContentLength);
 		}
@@ -415,7 +416,7 @@ namespace s3tests
 			var key1MetaData = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
 			var contentType = "text/bla";
 
-			var uploadData = SetupMultipartUpload(client, bucketName, key1, size, contentType: contentType, metadataList: key1MetaData);
+			var uploadData = S3Utils.SetupMultipartUpload(client, bucketName, key1, size, contentType: contentType, metadataList: key1MetaData);
 			client.CompleteMultipartUpload(bucketName, key1, uploadData.UploadId, uploadData.Parts);
 
 			var response = client.GetObject(bucketName, key1);
@@ -426,7 +427,7 @@ namespace s3tests
 			client.CopyObject(bucketName, key1, bucketName, key2, versionId: versionId);
 			response = client.GetObject(bucketName, key2);
 			var versionId2 = response.VersionId;
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(uploadData.Body, body);
 			Assert.Equal(key1Size, response.ContentLength);
 			Assert.Equal(key1MetaData, GetMetaData(response.Metadata));
@@ -436,7 +437,7 @@ namespace s3tests
 			var key3 = "dstmultipart2";
 			client.CopyObject(bucketName, key2, bucketName, key3, versionId: versionId2);
 			response = client.GetObject(bucketName, key3);
-			body = GetBody(response);
+			body = S3Utils.GetBody(response);
 			Assert.Equal(uploadData.Body, body);
 			Assert.Equal(key1Size, response.ContentLength);
 			Assert.Equal(key1MetaData, GetMetaData(response.Metadata));
@@ -447,7 +448,7 @@ namespace s3tests
 			var key4 = "dstmultipart3";
 			client.CopyObject(bucketName, key1, bucketName2, key4, versionId: versionId);
 			response = client.GetObject(bucketName2, key4);
-			body = GetBody(response);
+			body = S3Utils.GetBody(response);
 			Assert.Equal(uploadData.Body, body);
 			Assert.Equal(key1Size, response.ContentLength);
 			Assert.Equal(key1MetaData, GetMetaData(response.Metadata));
@@ -458,7 +459,7 @@ namespace s3tests
 			var key5 = "dstmultipart4";
 			client.CopyObject(bucketName, key1, bucketName3, key5, versionId: versionId);
 			response = client.GetObject(bucketName3, key5);
-			body = GetBody(response);
+			body = S3Utils.GetBody(response);
 			Assert.Equal(uploadData.Body, body);
 			Assert.Equal(key1Size, response.ContentLength);
 			Assert.Equal(key1MetaData, GetMetaData(response.Metadata));
@@ -467,7 +468,7 @@ namespace s3tests
 			var key6 = "dstmultipart5";
 			client.CopyObject(bucketName3, key5, bucketName, key6);
 			response = client.GetObject(bucketName, key6);
-			body = GetBody(response);
+			body = S3Utils.GetBody(response);
 			Assert.Equal(uploadData.Body, body);
 			Assert.Equal(key1Size, response.ContentLength);
 			Assert.Equal(key1MetaData, GetMetaData(response.Metadata));
@@ -488,7 +489,7 @@ namespace s3tests
 
 			client.CopyObject(bucketName, "foo", bucketName, "bar", eTagToMatch: putResponse.ETag);
 			var getResponse = client.GetObject(bucketName, "bar");
-			var body = GetBody(getResponse);
+			var body = S3Utils.GetBody(getResponse);
 			Assert.Equal("bar", body);
 		}
 

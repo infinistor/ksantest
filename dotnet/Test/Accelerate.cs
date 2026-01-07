@@ -14,26 +14,11 @@ using System;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Accelerate : TestBase
 	{
 		public Accelerate(Xunit.Abstractions.ITestOutputHelper Output) => this.Output = Output;
-
-
-		[Fact]
-		[Trait(MainData.Major, "Accelerate")]
-		[Trait(MainData.Minor, "Get")]
-		[Trait(MainData.Explanation, "버킷의 Accelerate 설정 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestGetBucketAccelerate()
-		{
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-
-			var response = client.GetBucketAccelerateConfiguration(bucketName);
-			Assert.Equal(BucketAccelerateStatus.Suspended, response.Status);
-		}
 
 		[Fact]
 		[Trait(MainData.Major, "Accelerate")]
@@ -41,6 +26,20 @@ namespace s3tests
 		[Trait(MainData.Explanation, "버킷의 Accelerate 설정 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutBucketAccelerate()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			var response = client.PutBucketAccelerateConfiguration(bucketName, BucketAccelerateStatus.Enabled);
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Accelerate")]
+		[Trait(MainData.Minor, "Get")]
+		[Trait(MainData.Explanation, "버킷의 Accelerate 설정 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestGetBucketAccelerate()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -85,15 +84,12 @@ namespace s3tests
 			var request = new PutBucketAccelerateConfigurationRequest
 			{
 				BucketName = bucketName,
-				AccelerateConfiguration = new AccelerateConfiguration
-				{
-					Status = "Invalid"
-				}
+				AccelerateConfiguration = new AccelerateConfiguration { Status = "Invalid" }
 			};
 
 			var e = Assert.Throws<AggregateException>(() => client.PutBucketAccelerateConfiguration(request));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
-			Assert.Equal("MalformedXML", GetErrorCode(e));
+			Assert.Equal(MainData.MALFORMED_XML, GetErrorCode(e));
 		}
 	}
 }

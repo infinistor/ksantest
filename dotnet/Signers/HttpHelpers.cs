@@ -39,13 +39,11 @@ namespace s3tests.Signers
 				{
 					var buffer = new byte[8192]; // arbitrary buffer size
 					var requestStream = request.GetRequestStream();
-					using (var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(requestBody)))
+					using var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(requestBody));
+					var bytesRead = 0;
+					while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
 					{
-						var bytesRead = 0;
-						while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
-						{
-							requestStream.Write(buffer, 0, bytesRead);
-						}
+						requestStream.Write(buffer, 0, bytesRead);
 					}
 				}
 
@@ -53,18 +51,16 @@ namespace s3tests.Signers
 			}
 			catch (WebException ex)
 			{
-				using (var Response = ex.Response as HttpWebResponse)
+				using var Response = ex.Response as HttpWebResponse;
+				var xs = new XmlSerializer(typeof(ErrorResponse));
+				var Result = (ErrorResponse)xs.Deserialize(Response.GetResponseStream());
+				if (Response != null)
 				{
-					var xs = new XmlSerializer(typeof(ErrorResponse));
-					var Result = (ErrorResponse)xs.Deserialize(Response.GetResponseStream());
-					if (Response != null)
-					{
-						var errorMsg = ReadResponseBody(Response);
-						Console.WriteLine("\n-- HTTP call failed with exception '{0}', status code '{1}'", errorMsg, Response.StatusCode);
-					}
-					else
-						throw new S3Exception(Result, ex.InnerException);
+					var errorMsg = ReadResponseBody(Response);
+					Console.WriteLine("\n-- HTTP call failed with exception '{0}', status code '{1}'", errorMsg, Response.StatusCode);
 				}
+				else
+					throw new S3Exception(Result, ex.InnerException);
 			}
 		}
 
@@ -102,21 +98,19 @@ namespace s3tests.Signers
 		public static void CheckResponse(HttpWebRequest request)
 		{
 			// Get the response and read any body into a string, then display.
-			using (var response = (HttpWebResponse)request.GetResponse())
+			using var response = (HttpWebResponse)request.GetResponse();
+			if (response.StatusCode == HttpStatusCode.OK)
 			{
-				if (response.StatusCode == HttpStatusCode.OK)
+				Console.WriteLine("\n-- HTTP call succeeded");
+				var responseBody = ReadResponseBody(response);
+				if (!string.IsNullOrEmpty(responseBody))
 				{
-					Console.WriteLine("\n-- HTTP call succeeded");
-					var responseBody = ReadResponseBody(response);
-					if (!string.IsNullOrEmpty(responseBody))
-					{
-						Console.WriteLine("\n-- Response body:");
-						Console.WriteLine(responseBody);
-					}
+					Console.WriteLine("\n-- Response body:");
+					Console.WriteLine(responseBody);
 				}
-				else
-					Console.WriteLine("\n-- HTTP call failed, status code: {0}", response.StatusCode);
 			}
+			else
+				Console.WriteLine("\n-- HTTP call failed, status code: {0}", response.StatusCode);
 		}
 
 		/// <summary>
@@ -138,10 +132,8 @@ namespace s3tests.Signers
 			{
 				if (responseStream != null)
 				{
-					using (var reader = new StreamReader(responseStream))
-					{
-						responseBody = reader.ReadToEnd();
-					}
+					using var reader = new StreamReader(responseStream);
+					responseBody = reader.ReadToEnd();
 				}
 			}
 			return responseBody;

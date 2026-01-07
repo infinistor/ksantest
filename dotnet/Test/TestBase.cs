@@ -11,36 +11,33 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
+using System.Net.Http;
+using s3tests.Utils;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public abstract class TestBase : IDisposable
 	{
 
 		#region Define
-		private static readonly char[] TEXT = "abcdefghijklmnopqrstuvwxyz0123456789".ToCharArray();
-		private static readonly char[] TEXT_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
 		private const int RANDOM_PREFIX_TEXT_LENGTH = 30;
 		private const int RANDOM_SUFFIX_TEXT_LENGTH = 5;
 		private const int BUCKET_MAX_LENGTH = 63;
 		private const string STR_RANDOM = "{random}";
-		readonly Random rand = new(Guid.NewGuid().GetHashCode());
 		#endregion
 
 		#region Values
 		public ITestOutputHelper Output;
-		public readonly List<string> EmptyList = new();
+		public readonly List<string> EmptyList = [];
 		public MainConfig Config { get; private set; }
 		private List<string> BucketList { get; set; }
 		#endregion
@@ -63,61 +60,47 @@ namespace s3tests
 			Config = new MainConfig(configFilePath);
 			Config.GetConfig();
 
-			BucketList = new List<string>();
+			BucketList = [];
 		}
 
-		public void Dispose() => Clear();
+		public void Dispose()
+		{
+			Clear();
+			GC.SuppressFinalize(this);
+		}
 		public void Clear() => BucketClear();
 
 		#region Get client
-		public S3Client GetClient() => new(Config.S3, Config.SignatureVersion, Config.IsSecure, Config.MainUser, Output);
-		public S3Client GetClientV4() => new(Config.S3, MainConfig.STR_SIGNATURE_VERSION_4, Config.IsSecure, Config.MainUser, Output);
-		public S3Client GetClientHttps() => new(Config.S3, Config.SignatureVersion, true, Config.MainUser, Output);
+		public S3Client GetClient() => new(Config.S3, Config.IsSecure, Config.MainUser, Output);
+		public S3Client GetClientV4() => new(Config.S3, Config.IsSecure, Config.MainUser, Output);
+		public S3Client GetClientHttps() => new(Config.S3, true, Config.MainUser, Output);
 		public S3Client GetClientHttpsV4(RequestChecksumCalculation? requestChecksumCalculation = null,
-		ResponseChecksumValidation? responseChecksumValidation = null) => new(Config.S3, MainConfig.STR_SIGNATURE_VERSION_4, true, Config.MainUser, Output, requestChecksumCalculation, responseChecksumValidation);
-		public S3Client GetAltClient() => new(Config.S3, Config.SignatureVersion, Config.IsSecure, Config.AltUser, Output);
-		public S3Client GetUnauthenticatedClient() => new(Config.S3, Config.SignatureVersion, Config.IsSecure, null, Output);
+		ResponseChecksumValidation? responseChecksumValidation = null) => new(Config.S3, true, Config.MainUser, Output, requestChecksumCalculation, responseChecksumValidation);
+		public S3Client GetAltClient() => new(Config.S3, Config.IsSecure, Config.AltUser, Output);
+		public S3Client GetUnauthenticatedClient() => new(Config.S3, Config.IsSecure, null, Output);
 		public S3Client GetBadAuthClient(string accessKey = null, string secretKey = null)
 		{
-			if (accessKey == null) accessKey = "aaaaaaaaaaaaaaa";
-			if (secretKey == null) secretKey = "bbbbbbbbbbbbbbb";
+			accessKey ??= "aaaaaaaaaaaaaaa";
+			secretKey ??= "bbbbbbbbbbbbbbb";
 			var user = new UserData() { AccessKey = accessKey, SecretKey = secretKey };
-			return new S3Client(Config.S3, Config.SignatureVersion, Config.IsSecure, user);
+			return new S3Client(Config.S3, Config.IsSecure, user);
 		}
 		#endregion
 
 		#region Create Data
-		public string RandomText(int length) => new(Enumerable.Range(0, length).Select(x => TEXT[rand.Next(0, TEXT.Length)]).ToArray());
-		public string RandomTextToLong(int length) => new(Enumerable.Range(0, length).Select(x => TEXT_STRING[rand.Next(0, TEXT_STRING.Length)]).ToArray());
 
-		public string GetBase64EncodedSHA1Hash(string policy, string secretKey)
-		{
-			var data = Encoding.UTF8.GetBytes(policy);
-			var keyBytes = Encoding.UTF8.GetBytes(secretKey);
-
-			using HMACSHA1 sha1 = new(keyBytes);
-			return Convert.ToBase64String(sha1.ComputeHash(data));
-		}
-		public string GetMD5(string data)
-		{
-			using var md5 = MD5.Create();
-			var byteData = Encoding.UTF8.GetBytes(data);
-			var hash = md5.ComputeHash(byteData, 0, byteData.Length);
-			return Convert.ToBase64String(hash);
-		}
-
-		public string GetPrefix() => Config.BucketPrefix.Replace(STR_RANDOM, RandomText(RANDOM_PREFIX_TEXT_LENGTH));
+		public string GetPrefix() => Config.BucketPrefix.Replace(STR_RANDOM, S3Utils.RandomText(RANDOM_PREFIX_TEXT_LENGTH));
 		public string GetNewBucketName(bool create = true)
 		{
-			string bucketName = GetPrefix() + RandomText(RANDOM_SUFFIX_TEXT_LENGTH);
+			string bucketName = GetPrefix() + S3Utils.RandomText(RANDOM_SUFFIX_TEXT_LENGTH);
 			if (bucketName.Length > BUCKET_MAX_LENGTH) bucketName = bucketName.Substring(0, BUCKET_MAX_LENGTH - 1);
 			if (create) BucketList.Add(bucketName);
 			return bucketName;
 		}
 		public string GetNewBucketName(int length)
 		{
-			string bucketName = GetPrefix() + RandomText(BUCKET_MAX_LENGTH);
-			bucketName = bucketName.Substring(0, length);
+			string bucketName = GetPrefix() + S3Utils.RandomText(BUCKET_MAX_LENGTH);
+			bucketName = bucketName[..length];
 			BucketList.Add(bucketName);
 			return bucketName;
 		}
@@ -127,200 +110,94 @@ namespace s3tests
 		public string GetHost(string bucketName)
 			=> Config.S3.IsAWS ? $"{bucketName}.s3-{Config.S3.RegionName}.amazonaws.com" : $"{Config.S3.Address}:{Config.S3.Port}/{bucketName}";
 
-		public static string HtmlParser(string data, string flag1, string flag2)
-		{
-			int index1 = data.IndexOf(flag1) + flag1.Length;
-			int index2 = data.IndexOf(flag2);
 
-			return data[index1..index2];
-		}
-
-		public List<string> MakePartData(int size, int partSize)
-		{
-			List<string> stringList = new();
-
-			int remainSize = size;
-			while (remainSize > 0)
-			{
-				int nowPartSize;
-				if (remainSize > partSize) nowPartSize = partSize;
-				else nowPartSize = remainSize;
-
-				stringList.Add(RandomTextToLong(nowPartSize));
-
-				remainSize -= nowPartSize;
-			}
-
-			return stringList;
-		}
-		public List<string> MakePartData(string data, int partSize)
-		{
-			List<string> stringList = new();
-
-			int startPoint = 0;
-			while (startPoint < data.Length)
-			{
-				int endPoint;
-				if ((startPoint + partSize) < data.Length) endPoint = partSize;
-				else endPoint = data.Length - startPoint;
-
-				stringList.Add(data.Substring(startPoint, endPoint));
-				startPoint += partSize;
-			}
-
-			return stringList;
-		}
-
-		public ByteRange MakeRandomRange(int fileSize)
-		{
-			var offset = rand.Next(fileSize - 1000);
-			var length = rand.Next(fileSize - offset) - 1;
-
-			return new ByteRange(offset, offset + length);
-		}
-
-		public List<Tag> MakeTagList(int keySize, int valueSize)
-		{
-			var tagSet = new List<Tag>();
-			for (int i = 0; i < 10; i++)
-				tagSet.Add(new Tag() { Key = RandomTextToLong(keySize), Value = RandomTextToLong(valueSize) });
-
-			return tagSet;
-		}
-		public Tagging MakeSimpleTagset(int count)
-		{
-			var tagList = new Tagging() { TagSet = new List<Tag>() };
-
-			for (int i = 0; i < count; i++)
-				tagList.TagSet.Add(new Tag() { Key = i.ToString(), Value = i.ToString() });
-			return tagList;
-		}
-		public string MakeArnResource(string path = "*") => $"arn:aws:s3:::{path}";
-		public JObject MakeJsonStatement(string action, string resource, string effect = MainData.PolicyEffectAllow,
-										JObject principal = null, JObject conditions = null)
-		{
-			if (principal == null) principal = new JObject() { { "AWS", "*" } };
-
-			var statement = new JObject()
-			{
-				{ MainData.PolicyEffect, effect },
-				{ MainData.PolicyPrincipal, principal },
-				{ MainData.PolicyAction, action },
-				{ MainData.PolicyResource, resource },
-			};
-
-			if (conditions != null) statement.Add(MainData.PolicyCondition, conditions);
-
-			return statement;
-		}
-		public JObject MakeJsonPolicy(string action, string resource, JObject principal = null, JObject conditions = null)
-			=> new(){
-				{ MainData.PolicyVersion, MainData.PolicyVersionDate },
-				{ MainData.PolicyStatement, new JArray(){ MakeJsonStatement(action, resource, principal: principal, conditions: conditions) } },
-			};
-		public JObject MakeJsonPolicy(JArray statements)
-			=> new() { { MainData.PolicyVersion, MainData.PolicyVersionDate }, { MainData.PolicyStatement, statements }, };
 		#endregion
 
 		#region POST
-		public HttpWebResponse PutObject(string url, string body = null, string contentType = null)
+		public static HttpResponseMessage PutObject(string url, string body = null, string contentType = null)
 		{
-			HttpWebRequest httpRequest = WebRequest.Create(url) as HttpWebRequest;
-			httpRequest.Method = "PUT";
-			if (contentType != null) httpRequest.ContentType = contentType;
+			using var client = new HttpClient();
+			using var request = new HttpRequestMessage(HttpMethod.Put, url);
+
+			if (contentType != null)
+				request.Headers.Add("Content-Type", contentType);
 
 			if (body != null)
-			{
-				var byteStream = Encoding.ASCII.GetBytes(body);
-				using Stream dataStream = httpRequest.GetRequestStream();
-				dataStream.Write(byteStream);
-			}
+				request.Content = new StringContent(body);
 
-			HttpWebResponse response = httpRequest.GetResponse() as HttpWebResponse;
-			return response;
+			return client.SendAsync(request).GetAwaiter().GetResult();
 		}
 
-		public HttpWebResponse GetObject(string url)
+		public static HttpResponseMessage GetObject(string url)
 		{
-			HttpWebRequest httpRequest = WebRequest.Create(url) as HttpWebRequest;
-			httpRequest.Method = "GET";
-			HttpWebResponse response = httpRequest.GetResponse() as HttpWebResponse;
-
-			return response;
+			using var client = new HttpClient();
+			using var request = new HttpRequestMessage(HttpMethod.Get, url);
+			return client.SendAsync(request).GetAwaiter().GetResult();
 		}
 
 		public MyResult PostUpload(string bucketName, Dictionary<string, object> parameters)
 		{
 			//https://spirit32.tistory.com/21
 			string boundary = DateTime.Now.Ticks.ToString("x");
-			byte[] boundaryBytes = Encoding.ASCII.GetBytes(string.Format("\r\n--{0}\r\n", boundary));
-
+			using var client = new HttpClient();
+			using var formData = new MultipartFormDataContent(boundary);
 			var url = GetURL(bucketName);
-			HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-			request.ContentType = "multipart/form-data; boundary=" + boundary;
-			request.Method = "POST";
-			request.KeepAlive = true;
-			request.Credentials = CredentialCache.DefaultCredentials;
-			if (Config.S3.IsAWS) request.Host = GetHost(bucketName);
+
+			if (Config.S3.IsAWS)
+				client.DefaultRequestHeaders.Host = GetHost(bucketName);
 
 			if (parameters != null && parameters.Count > 0)
 			{
-				using Stream requestStream = request.GetRequestStream();
-				foreach (KeyValuePair<string, object> pair in parameters)
+				foreach (var pair in parameters)
 				{
-					requestStream.Write(boundaryBytes, 0, boundaryBytes.Length);
-					if (pair.Value is FormFile)
+					if (pair.Value is FormFile file)
 					{
-						FormFile file = pair.Value as FormFile;
-						string header = string.Format("Content-Disposition: form-data; name=\"{0}\"; filename=\"{1}\"\r\nContent-Type: {2}\r\n\r\n", pair.Key, file.Name, file.ContentType);
-						byte[] bytes = Encoding.UTF8.GetBytes(header);
-						requestStream.Write(bytes, 0, bytes.Length);
-
-						byte[] buffer = Encoding.UTF8.GetBytes(file.Body);
-						requestStream.Write(buffer, 0, buffer.Length);
+						var fileContent = new StringContent(file.Body);
+						fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+						formData.Add(fileContent, pair.Key, file.Name);
 					}
 					else
 					{
-						string data = string.Format("Content-Disposition: form-data; name=\"{0}\"\r\n\r\n{1}", pair.Key, pair.Value);
-						byte[] bytes = Encoding.UTF8.GetBytes(data);
-						requestStream.Write(bytes, 0, bytes.Length);
+						formData.Add(new StringContent(pair.Value.ToString()), pair.Key);
 					}
 				}
-
-				byte[] trailer = Encoding.ASCII.GetBytes(string.Format("\r\n--{0}--\r\n", boundary));
-				requestStream.Write(trailer, 0, trailer.Length);
-				requestStream.Close();
 			}
 
 			try
 			{
-				var response = request.GetResponse() as HttpWebResponse;
+				var response = client.PostAsync(url, formData).GetAwaiter().GetResult();
+				var webHeaders = new WebHeaderCollection();
+				foreach (var header in response.Headers)
+				{
+					foreach (var value in header.Value)
+					{
+						webHeaders.Add(header.Key, value);
+					}
+				}
 
 				return new MyResult()
 				{
-					URL = response.ResponseUri.AbsoluteUri,
+					URL = response.RequestMessage.RequestUri.AbsoluteUri,
 					StatusCode = response.StatusCode,
+					Headers = webHeaders
 				};
 			}
-			catch (WebException e)
+			catch (HttpRequestException e)
 			{
-				var stream = e.Response.GetResponseStream();
-				StreamReader reader = new(stream);
-				string data = reader.ReadToEnd();
-
+				var responseContent = e.Message;
 				return new MyResult()
 				{
-					URL = ((HttpWebResponse)e.Response).ResponseUri.AbsoluteUri,
-					StatusCode = ((HttpWebResponse)e.Response).StatusCode,
-					ErrorCode = HtmlParser(data, "<Code>", "</Code>"),
-					Message = HtmlParser(data, "<Message>", "</Message>"),
+					URL = url,
+					StatusCode = HttpStatusCode.BadRequest,
+					ErrorCode = S3Utils.GetXmlValue(responseContent, "Code"),
+					Message = S3Utils.GetXmlValue(responseContent, "Message"),
 				};
 			}
 		}
 		#endregion
 
 		#region Check
-		public bool ErrorCheck(HttpStatusCode statusCode)
+		public static bool ErrorCheck(HttpStatusCode statusCode)
 		{
 			if (statusCode.Equals(HttpStatusCode.BadRequest)) return true;
 			if (statusCode.Equals(HttpStatusCode.Forbidden)) return true;
@@ -330,9 +207,7 @@ namespace s3tests
 		public void CheckVersioning(string bucketName, VersionStatus statusCode)
 		{
 			var client = GetClient();
-
-			var response = client.GetBucketVersioning(bucketName);
-			Assert.Equal(statusCode, response.VersioningConfig.Status);
+			S3Utils.CheckVersioning(client, bucketName, statusCode);
 		}
 		public void CheckConfigureVersioningRetry(string bucketName, VersionStatus status)
 		{
@@ -361,17 +236,17 @@ namespace s3tests
 			Assert.Equal(status, readStatus);
 		}
 
-		public void CheckContent(S3Client client, string bucketName, string key, string data, int loopCount = 1, SSECustomerKey sseC = null)
+		public static void CheckContent(S3Client client, string bucketName, string key, string data, int loopCount = 1, SSECustomerKey sseC = null)
 		{
 			for (int i = 0; i < loopCount; i++)
 			{
 				var response = client.GetObject(bucketName, key, sseCustomerKey: sseC);
-				var body = GetBody(response);
+				var body = S3Utils.GetBody(response);
 				Assert.Equal(data, body);
 			}
 		}
 
-		public void CheckContentUsingRange(S3Client client, string bucketName, string key, string data, long step, SSECustomerKey sseC = null)
+		public static void CheckContentUsingRange(S3Client client, string bucketName, string key, string data, long step, SSECustomerKey sseC = null)
 		{
 			var size = data.Length;
 			long startPosition = 0;
@@ -385,7 +260,7 @@ namespace s3tests
 
 				var range = new ByteRange(startPosition, endPosition);
 				var response = client.GetObject(bucketName, key, range: range, sseCustomerKey: sseC);
-				var body = GetBody(response);
+				var body = S3Utils.GetBody(response);
 				var length = endPosition - startPosition + 1;
 
 				Assert.Equal(length, response.ContentLength);
@@ -393,15 +268,15 @@ namespace s3tests
 				startPosition += step;
 			}
 		}
-		public void CheckContentUsingRandomRange(S3Client client, string bucketName, string key, string data, int loopCount, SSECustomerKey sseC = null)
+		public static void CheckContentUsingRandomRange(S3Client client, string bucketName, string key, string data, int loopCount, SSECustomerKey sseC = null)
 		{
 			for (int i = 0; i < loopCount; i++)
 			{
-				var range = MakeRandomRange(data.Length);
+				var range = S3Utils.MakeRandomRange(data.Length);
 				var length = range.End - range.Start;
 
 				var response = client.GetObject(bucketName, key, range: range, sseCustomerKey: sseC);
-				var body = GetBody(response);
+				var body = S3Utils.GetBody(response);
 
 				Assert.Equal(length + 1, response.ContentLength);
 				Assert.Equal(data.Substring((int)range.Start, (int)length + 1), body);
@@ -467,7 +342,7 @@ namespace s3tests
 		}
 		public void CheckGoodBucketName(string name, string prefix = null)
 		{
-			if (prefix == null) prefix = GetPrefix();
+			prefix ??= GetPrefix();
 
 			var bucketName = string.Format("{0}{1}", prefix, name);
 			BucketList.Add(bucketName);
@@ -477,12 +352,12 @@ namespace s3tests
 			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
-		public void CheckGrants(List<S3Grant> expected, List<S3Grant> actual)
+		public static void CheckGrants(List<S3Grant> expected, List<S3Grant> actual)
 		{
 			Assert.Equal(expected.Count, actual.Count);
 
-			expected = GrantsSort(expected);
-			actual = GrantsSort(actual);
+			expected = S3Utils.GrantsSort(expected);
+			actual = S3Utils.GrantsSort(actual);
 
 			for (int i = 0; i < expected.Count; i++)
 			{
@@ -513,8 +388,8 @@ namespace s3tests
 			var mainUserId = Config.MainUser.UserId;
 			var mainDispalyName = Config.MainUser.DisplayName;
 
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					 Permission = permission,
@@ -526,57 +401,57 @@ namespace s3tests
 						 EmailAddress = null,
 					 }
 				}
-			},
+			],
 			grants);
 		}
 
-		public void CheckCopyContent(S3Client client,
+		public static void CheckCopyContent(S3Client client,
 									string srcBucketName, string srcKey, string destBucketName, string destKey,
 									string srcVersionId = null, SSECustomerKey srcCustomerKey = null,
 									string destVersionId = null, SSECustomerKey destCustomerKey = null)
 		{
 			var srcResponse = client.GetObject(srcBucketName, srcKey, versionId: srcVersionId, sseCustomerKey: srcCustomerKey);
 			var srcSize = srcResponse.ContentLength;
-			var srcBody = GetBody(srcResponse);
+			var srcBody = S3Utils.GetBody(srcResponse);
 
 			var destResponse = client.GetObject(destBucketName, destKey, versionId: destVersionId, sseCustomerKey: destCustomerKey);
 			var destSize = destResponse.ContentLength;
-			var destBody = GetBody(destResponse);
+			var destBody = S3Utils.GetBody(destResponse);
 
 			Assert.Equal(srcSize, destSize);
 			Assert.Equal(srcBody, destBody);
 		}
-		public void CheckCopyContentUsingRange(S3Client client, string srcBucketName, string srcKey, string destBucketName, string destKey, string versionId = null)
+		public static void CheckCopyContentUsingRange(S3Client client, string srcBucketName, string srcKey, string destBucketName, string destKey, string versionId = null)
 		{
 			var headResponse = client.GetObjectMetadata(srcBucketName, srcKey, versionId: versionId);
 			var srcSize = headResponse.ContentLength;
 
 			var response = client.GetObject(destBucketName, destKey);
 			var destSize = response.ContentLength;
-			var destBody = GetBody(response);
+			var destBody = S3Utils.GetBody(response);
 			Assert.True(srcSize >= destSize);
 
 			var range = new ByteRange(0, destSize - 1);
 			response = client.GetObject(srcBucketName, srcKey, range: range, versionId: versionId);
-			var srcBody = GetBody(response);
+			var srcBody = S3Utils.GetBody(response);
 			Assert.Equal(srcBody, destBody);
 		}
 
-		public void CheckObjContent(S3Client client, string bucketName, string key, string versionId, string content)
+		public static void CheckObjContent(S3Client client, string bucketName, string key, string versionId, string content)
 		{
 			var response = client.GetObject(bucketName, key, versionId: versionId);
 			if (content != null)
 			{
-				var body = GetBody(response);
+				var body = S3Utils.GetBody(response);
 				Assert.Equal(content, body);
 			}
 			else
 				Assert.Equal("True", response.DeleteMarker);
 		}
-		public void CheckObjVersions(S3Client client, string bucketName, string key, List<string> versionIds, List<string> contents)
+		public static void CheckObjVersions(S3Client client, string bucketName, string key, List<string> versionIds, List<string> contents)
 		{
 			var response = client.ListVersions(bucketName);
-			var versions = GetVersions(response.Versions);
+			var versions = S3Utils.GetVersions(response.Versions);
 
 			versions.Reverse();
 
@@ -594,13 +469,13 @@ namespace s3tests
 			var contentType = "text/bla";
 			var metadata = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
 			var client = GetClient();
-			var uploadData = SetupMultipartUpload(client, bucketName, key, size, contentType: contentType, metadataList: metadata, resendParts: resendParts);
+			var uploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size, contentType: contentType, metadataList: metadata, resendParts: resendParts);
 			client.CompleteMultipartUpload(bucketName, key, uploadData.UploadId, uploadData.Parts);
 
 			var response = client.GetObject(bucketName, key);
 			Assert.Equal(contentType, response.Headers.ContentType);
-			Assert.Equal(metadata, GetMetaData(response.Metadata));
-			var body = GetBody(response);
+			Assert.Equal(metadata, S3Utils.GetMetaData(response.Metadata));
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(body.Length, response.ContentLength);
 			Assert.Equal(uploadData.Body, body);
 
@@ -608,14 +483,14 @@ namespace s3tests
 			CheckContentUsingRange(client, bucketName, key, uploadData.Body, 10000000);
 		}
 
-		public void PrefixLifecycleConfigurationCheck(List<LifecycleRule> expected, List<LifecycleRule> actual)
+		public static void PrefixLifecycleConfigurationCheck(List<LifecycleRule> expected, List<LifecycleRule> actual)
 		{
 			Assert.Equal(expected.Count, actual.Count);
 
 			for (int i = 0; i < expected.Count; i++)
 			{
 				Assert.Equal(expected[i].Id, actual[i].Id);
-				Assert.Equal(expected[i].Expiration.DateUtc, actual[i].Expiration.DateUtc);
+				Assert.Equal(expected[i].Expiration.Date, actual[i].Expiration.Date);
 				Assert.Equal(expected[i].Expiration.Days, actual[i].Expiration.Days);
 				Assert.Equal(expected[i].Expiration.ExpiredObjectDeleteMarker, actual[i].Expiration.ExpiredObjectDeleteMarker);
 				Assert.Equal((expected[i].Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix,
@@ -630,42 +505,48 @@ namespace s3tests
 		}
 
 		public void CorsRequestAndCheck(string method, string bucketName, List<KeyValuePair<string, string>> headers, HttpStatusCode statusCode,
-			string expectAllowOrigin, string expectAllowMethods, string key = null)
+	string expectAllowOrigin, string expectAllowMethods, string key = null)
 		{
-			//https://spirit32.tistory.com/21
 			var url = GetURL(bucketName);
 			if (key != null) url += string.Format("/{0}", key);
 
-			WebRequest request = WebRequest.Create(url);
-			request.Method = method;
-			request.Credentials = CredentialCache.DefaultCredentials;
-			foreach (var item in headers) request.Headers.Add(item.Key, item.Value);
+			using var client = new HttpClient();
+			using var request = new HttpRequestMessage(new HttpMethod(method), url);
+
+			request.Headers.Add("Keep-Alive", "true");
+			foreach (var item in headers)
+				request.Headers.Add(item.Key, item.Value);
 
 			MyResult result;
 			try
 			{
-				var response = request.GetResponse() as HttpWebResponse;
+				var response = client.SendAsync(request).GetAwaiter().GetResult();
+				var webHeaders = new WebHeaderCollection();
+				foreach (var header in response.Headers)
+				{
+					foreach (var value in header.Value)
+					{
+						webHeaders.Add(header.Key, value);
+					}
+				}
 
 				result = new MyResult()
 				{
-					URL = response.ResponseUri.AbsoluteUri,
+					URL = response.RequestMessage.RequestUri.AbsoluteUri,
 					StatusCode = response.StatusCode,
-					Headers = response.Headers,
+					Headers = webHeaders,
 				};
 			}
-			catch (WebException e)
+			catch (HttpRequestException e)
 			{
-				var stream = e.Response.GetResponseStream();
-				StreamReader reader = new(stream);
-				string data = reader.ReadToEnd();
-
+				var responseContent = e.Message;
 				result = new MyResult()
 				{
-					URL = ((HttpWebResponse)e.Response).ResponseUri.AbsoluteUri,
-					StatusCode = ((HttpWebResponse)e.Response).StatusCode,
-					Headers = ((HttpWebResponse)e.Response).Headers,
-					ErrorCode = HtmlParser(data, "<Code>", "</Code>"),
-					Message = HtmlParser(data, "<Message>", "</Message>"),
+					URL = url,
+					StatusCode = HttpStatusCode.BadRequest,
+					Headers = [],
+					ErrorCode = S3Utils.GetXmlValue(responseContent, "Code"),
+					Message = S3Utils.GetXmlValue(responseContent, "Message"),
 				};
 			}
 
@@ -674,7 +555,7 @@ namespace s3tests
 			Assert.Equal(result.Headers.Get("access-control-allow-methods"), expectAllowMethods);
 		}
 
-		public void TaggingCompare(List<Tag> expected, List<Tag> actual)
+		public static void TaggingCompare(List<Tag> expected, List<Tag> actual)
 		{
 			Assert.Equal(expected.Count, actual.Count);
 
@@ -687,20 +568,20 @@ namespace s3tests
 				Assert.Equal(orderExpected[i].Value, orderActual[i].Value);
 			}
 		}
-		public void LockCompare(ObjectLockConfiguration expected, ObjectLockConfiguration actual)
+		public static void LockCompare(ObjectLockConfiguration expected, ObjectLockConfiguration actual)
 		{
 			Assert.Equal(expected.ObjectLockEnabled, actual.ObjectLockEnabled);
 			Assert.Equal(expected.Rule.DefaultRetention.Mode, actual.Rule.DefaultRetention.Mode);
 			Assert.Equal(expected.Rule.DefaultRetention.Years, actual.Rule.DefaultRetention.Years);
 			Assert.Equal(expected.Rule.DefaultRetention.Days, actual.Rule.DefaultRetention.Days);
 		}
-		public void RetentionCompare(ObjectLockRetention expected, ObjectLockRetention actual)
+		public static void RetentionCompare(ObjectLockRetention expected, ObjectLockRetention actual)
 		{
 			Assert.Equal(expected.Mode, actual.Mode);
-			Assert.Equal(expected.RetainUntilDate, actual.RetainUntilDate.ToUniversalTime());
+			Assert.Equal(expected.RetainUntilDate, actual.RetainUntilDate?.ToUniversalTime());
 
 		}
-		public void VersionIdsCompare(List<S3ObjectVersion> expected, List<S3ObjectVersion> actual)
+		public static void VersionIdsCompare(List<S3ObjectVersion> expected, List<S3ObjectVersion> actual)
 		{
 			Assert.Equal(expected.Count, actual.Count);
 
@@ -713,7 +594,7 @@ namespace s3tests
 			}
 		}
 
-		public void LoggingConfigCompare(S3BucketLoggingConfig expected, S3BucketLoggingConfig actual)
+		public static void LoggingConfigCompare(S3BucketLoggingConfig expected, S3BucketLoggingConfig actual)
 		{
 			Assert.Equal(expected.TargetBucketName, actual.TargetBucketName);
 
@@ -724,25 +605,20 @@ namespace s3tests
 			CheckGrants(expected.Grants, actual.Grants);
 		}
 
-		public void PartsETagCompare(List<PartETag> expected, List<PartDetail> actual)
+		public static void PartsETagCompare(List<PartETag> expected, List<PartDetail> actual)
 		{
-			Assert.Equal(expected.Count, actual.Count);
-			for (int i = 0; i < expected.Count; i++)
-			{
-				Assert.Equal(expected[i].ETag, actual[i].ETag);
-				Assert.Equal(expected[i].PartNumber, actual[i].PartNumber);
-			}
+			S3Utils.PartsETagCompare(expected, actual);
 		}
 
 		#endregion
 
 		#region Get Data
-		public string TimeToString(DateTime time) => time.ToString(S3Headers.TimeFormat, S3Headers.TimeCulture);
-		public List<string> GetKeys(ListObjectsResponse response)
+		public static string TimeToString(DateTime time) => time.ToString(S3Headers.TimeFormat, S3Headers.TimeCulture);
+		public static List<string> GetKeys(ListObjectsResponse response)
 		{
 			if (response != null)
 			{
-				List<string> temp = new();
+				List<string> temp = [];
 
 				foreach (var s3Object in response.S3Objects) temp.Add(s3Object.Key);
 
@@ -750,11 +626,11 @@ namespace s3tests
 			}
 			return null;
 		}
-		public List<string> GetKeys(ListObjectsV2Response response)
+		public static List<string> GetKeys(ListObjectsV2Response response)
 		{
 			if (response != null)
 			{
-				List<string> temp = new();
+				List<string> temp = [];
 
 				foreach (var s3Object in response.S3Objects) temp.Add(s3Object.Key);
 
@@ -781,9 +657,9 @@ namespace s3tests
 			}
 			return null;
 		}
-		public List<KeyVersion> GetKeyVersions(List<string> keyList)
+		public static List<KeyVersion> GetKeyVersions(List<string> keyList)
 		{
-			List<KeyVersion> keyVersions = new();
+			List<KeyVersion> keyVersions = [];
 			foreach (var key in keyList) keyVersions.Add(new KeyVersion() { Key = key });
 
 			return keyVersions;
@@ -793,7 +669,7 @@ namespace s3tests
 
 		public static string GetErrorCode(AggregateException e) => (e.InnerException is AmazonS3Exception e2) ? e2.ErrorCode : null;
 
-		public long GetBytesUsed(ListObjectsV2Response response)
+		public static long GetBytesUsed(ListObjectsV2Response response)
 		{
 			if (response == null) return 0;
 			if (response.S3Objects == null) return 0;
@@ -801,11 +677,11 @@ namespace s3tests
 
 			long size = 0;
 
-			foreach (var obj in response.S3Objects) size += obj.Size;
+			foreach (var obj in response.S3Objects) size += obj.Size ?? 0;
 
 			return size;
 		}
-		public List<KeyValuePair<string, string>> GetMetaData(MetadataCollection response)
+		public static List<KeyValuePair<string, string>> GetMetaData(MetadataCollection response)
 		{
 			var metaDataList = new List<KeyValuePair<string, string>>();
 
@@ -816,11 +692,11 @@ namespace s3tests
 		}
 		public List<KeyValuePair<string, string>> GetACLHeader(string userId = null, string[] perms = null)
 		{
-			string[] allHeaders = { "read", "write", "read-acp", "write-acp", "full-control" };
+			List<string> allHeaders = ["read", "write", "read-acp", "write-acp", "full-control"];
 
 			var headers = new List<KeyValuePair<string, string>>();
 
-			if (userId == null) userId = Config.AltUser.UserId;
+			userId ??= Config.AltUser.UserId;
 			if (perms == null)
 			{
 				foreach (var perm in allHeaders)
@@ -835,11 +711,11 @@ namespace s3tests
 		}
 		public List<S3Grant> GetGrantList(string userId = null, S3Permission[] perms = null)
 		{
-			S3Permission[] allHeaders = { S3Permission.READ, S3Permission.WRITE, S3Permission.READ_ACP, S3Permission.WRITE_ACP, S3Permission.FULL_CONTROL };
+			S3Permission[] allHeaders = [S3Permission.READ, S3Permission.WRITE, S3Permission.READ_ACP, S3Permission.WRITE_ACP, S3Permission.FULL_CONTROL];
 
-			var headers = new List<S3Grant>();
+			List<S3Grant> headers = [];
 
-			if (userId == null) userId = Config.AltUser.UserId;
+			userId ??= Config.AltUser.UserId;
 			if (perms == null)
 			{
 				foreach (var perm in allHeaders)
@@ -852,7 +728,7 @@ namespace s3tests
 			}
 			return headers;
 		}
-		public List<string> GetBucketList(ListBucketsResponse response)
+		public static List<string> GetBucketList(ListBucketsResponse response)
 		{
 			if (response == null) return null;
 			var buckets = response.Buckets;
@@ -868,43 +744,43 @@ namespace s3tests
 			var response = client.ListObjects(bucketName, prefix: prefix);
 			return GetKeys(response);
 		}
-		public List<S3ObjectVersion> GetVersions(List<S3ObjectVersion> versions)
+		public static List<S3ObjectVersion> GetVersions(List<S3ObjectVersion> versions)
 		{
 			if (versions == null) return null;
 
 			var lists = new List<S3ObjectVersion>();
 			foreach (var item in versions)
-				if (!item.IsDeleteMarker) lists.Add(item);
+				if (item.IsDeleteMarker != true) lists.Add(item);
 			return lists;
 		}
-		public List<string> GetVersionIds(List<S3ObjectVersion> versions)
+		public static List<string> GetVersionIds(List<S3ObjectVersion> versions)
 		{
 			if (versions == null) return null;
 
 			var lists = new List<string>();
 			foreach (var item in versions)
-				if (!item.IsDeleteMarker) lists.Add(item.VersionId);
+				if (item.IsDeleteMarker != true) lists.Add(item.VersionId);
 			return lists;
 		}
-		public int GetDeleteMarkerCount(List<S3ObjectVersion> versions)
+		public static int GetDeleteMarkerCount(List<S3ObjectVersion> versions)
 		{
 			if (versions == null) return 0;
 			int count = 0;
 			foreach (var item in versions)
-				if (item.IsDeleteMarker) count++;
+				if (item.IsDeleteMarker == true) count++;
 			return count;
 		}
-		public List<S3ObjectVersion> GetDeleteMarkers(List<S3ObjectVersion> versions)
+		public static List<S3ObjectVersion> GetDeleteMarkers(List<S3ObjectVersion> versions)
 		{
 			if (versions == null) return null;
 
 			var deleteMarkers = new List<S3ObjectVersion>();
 
 			foreach (var item in versions)
-				if (item.IsDeleteMarker) deleteMarkers.Add(item);
+				if (item.IsDeleteMarker == true) deleteMarkers.Add(item);
 			return deleteMarkers;
 		}
-		public List<S3Grant> GrantsSort(List<S3Grant> data)
+		public static List<S3Grant> GrantsSort(List<S3Grant> data)
 		{
 			var newList = new List<S3Grant>();
 
@@ -917,12 +793,12 @@ namespace s3tests
 			return newList;
 		}
 
-		public string GetResponsebody(Stream data)
+		public static string GetResponsebody(Stream data)
 		{
 			StreamReader reader = new(data, Encoding.UTF8);
 			return reader.ReadToEnd();
 		}
-		public string GetResponseErrorCode(Stream data)
+		public static string GetResponseErrorCode(Stream data)
 		{
 			StreamReader reader = new(data, Encoding.UTF8);
 			var result = reader.ReadToEnd();
@@ -1005,7 +881,7 @@ namespace s3tests
 			{
 				foreach (var key in keyList)
 				{
-					if (body == null) body = key;
+					body ??= key;
 					client.PutObject(bucketName, key, body, useChunkEncoding: useChunkEncoding, disablePayloadSigning: disablePayloadSigning);
 				}
 			}
@@ -1015,10 +891,10 @@ namespace s3tests
 
 		public string SetupKeyWithRandomContent(string key, int size = 7 * MainData.MB, string bucketName = null, S3Client client = null)
 		{
-			if (bucketName == null) bucketName = GetNewBucket();
-			if (client == null) client = GetClient();
+			bucketName ??= GetNewBucket();
+			client ??= GetClient();
 
-			var data = RandomTextToLong(size);
+			var data = S3Utils.RandomTextToLong(size);
 			client.PutObject(bucketName, key, body: data);
 
 			return bucketName;
@@ -1049,7 +925,7 @@ namespace s3tests
 			return bucketName;
 		}
 
-		public MultipartUploadData SetupMultipartCopy(S3Client client, string srcBucketName, string srcKey, string destBucketName, string destKey, int size,
+		public static MultipartUploadData SetupMultipartCopy(S3Client client, string srcBucketName, string srcKey, string destBucketName, string destKey, int size,
 			int partSize = 5 * MainData.MB, string versionId = null, SSECustomerKey srcCustomerKey = null, SSECustomerKey destCustomerKey = null, ServerSideEncryptionMethod SSE_S3 = null)
 		{
 			var uploadData = new MultipartUploadData();
@@ -1073,51 +949,7 @@ namespace s3tests
 			return uploadData;
 		}
 
-		public MultipartUploadData SetupMultipartUpload(S3Client client, string bucketName, string key, int size, MultipartUploadData uploadData = null,
-			int partSize = 5 * MainData.MB, List<KeyValuePair<string, string>> metadataList = null, string contentType = null,
-			List<int> resendParts = null, SSECustomerKey sseCustomerKey = null, ServerSideEncryptionMethod sseKey = null)
-		{
-			if (uploadData == null)
-			{
-				uploadData = new MultipartUploadData();
-				var initResponse = client.InitiateMultipartUpload(bucketName, key, metadataList: metadataList, contentType: contentType, sseCustomerKey: sseCustomerKey, sseKey: sseKey);
-				uploadData.UploadId = initResponse.UploadId;
-			}
 
-			var parts = MakePartData(size, partSize);
-
-			foreach (var part in parts)
-			{
-				uploadData.AppendBody(part);
-				var partNumber = uploadData.NextPartNumber;
-				var partResPonse = client.UploadPart(bucketName, key, uploadData.UploadId, part, partNumber, sseC: sseCustomerKey);
-				uploadData.Parts.Add(new PartETag(partResPonse.PartNumber, partResPonse.ETag));
-
-				if (resendParts != null && resendParts.Contains(partNumber)) client.UploadPart(bucketName, key, uploadData.UploadId, part, partNumber);
-			}
-
-			return uploadData;
-		}
-
-		public MultipartUploadData SetupMultipartUploadData(S3Client client, string bucketName, string key, string data, int partSize = 5 * MainData.MB,
-			List<KeyValuePair<string, string>> metadataList = null, string contentType = null)
-		{
-			var uploadData = new MultipartUploadData();
-
-			var initMultiPartResponse = client.InitiateMultipartUpload(bucketName, key, metadataList: metadataList, contentType: contentType);
-			uploadData.UploadId = initMultiPartResponse.UploadId;
-
-			var parts = MakePartData(data, partSize);
-
-			int uploadCount = 1;
-			foreach (var part in parts)
-			{
-				var partResPonse = client.UploadPart(bucketName, key, uploadData.UploadId, part, uploadCount);
-				uploadData.Parts.Add(new PartETag(uploadCount++, partResPonse.ETag));
-			}
-
-			return uploadData;
-		}
 
 		public S3AccessControlList AddObjectUserGrant(string bucketName, string key, S3Grant grant)
 		{
@@ -1185,8 +1017,8 @@ namespace s3tests
 
 			var getGrants = response.AccessControlList.Grants;
 
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					 Permission = S3Permission.FULL_CONTROL,
@@ -1209,16 +1041,16 @@ namespace s3tests
 						 EmailAddress = null,
 					 }
 				},
-			},
+			],
 			getGrants);
 
 			return bucketName;
 		}
 
-		public void SetupMultipleVersions(S3Client client, string bucketName, string key, int numVersions, ref List<string> versionIds, ref List<string> contents, bool checkVersion = true)
+		public static void SetupMultipleVersions(S3Client client, string bucketName, string key, int numVersions, ref List<string> versionIds, ref List<string> contents, bool checkVersion = true)
 		{
-			if (versionIds == null) versionIds = new List<string>();
-			if (contents == null) contents = new List<string>();
+			versionIds ??= [];
+			contents ??= [];
 
 			for (int i = 0; i < numVersions; i++)
 			{
@@ -1233,7 +1065,7 @@ namespace s3tests
 			if (checkVersion) CheckObjVersions(client, bucketName, key, versionIds, contents);
 
 		}
-		public void SetupMultipleVersion(S3Client client, string bucketName, string key, int numVersions, bool checkVersion = true)
+		public static void SetupMultipleVersion(S3Client client, string bucketName, string key, int numVersions, bool checkVersion = true)
 		{
 			var versionIds = new List<string>();
 			var contents = new List<string>();
@@ -1250,7 +1082,7 @@ namespace s3tests
 
 			if (checkVersion) CheckObjVersions(client, bucketName, key, versionIds, contents);
 		}
-		public void OverwriteSuspendedVersioningObj(S3Client client, string bucketName, string key, ref List<string> versionIds, ref List<string> contents, string content)
+		public static void OverwriteSuspendedVersioningObj(S3Client client, string bucketName, string key, ref List<string> versionIds, ref List<string> contents, string content)
 		{
 			client.PutObject(bucketName, key, body: content);
 
@@ -1269,7 +1101,7 @@ namespace s3tests
 			Thread.Sleep(100);
 		}
 
-		public List<Thread> SetupVersionedObjConcurrent(S3Client client, string bucketName, string key, int num)
+		public static List<Thread> SetupVersionedObjConcurrent(S3Client client, string bucketName, string key, int num)
 		{
 			var tList = new List<Thread>();
 			for (int i = 0; i < num; i++)
@@ -1283,7 +1115,7 @@ namespace s3tests
 		#endregion
 
 		#region Remove
-		public void RemoveObjVersion(S3Client client, string bucketName, string key, List<string> versionIds, List<string> contents, int index)
+		public static void RemoveObjVersion(S3Client client, string bucketName, string key, List<string> versionIds, List<string> contents, int index)
 		{
 			Assert.Equal(versionIds.Count, contents.Count);
 			var rmVersionId = versionIds[index]; versionIds.RemoveAt(index);
@@ -1296,7 +1128,7 @@ namespace s3tests
 			if (versionIds.Count != 0)
 				CheckObjVersions(client, bucketName, key, versionIds, contents);
 		}
-		public void DeleteSuspendedVersioningObj(S3Client client, string bucketName, string key, ref List<string> versionIds, ref List<string> contents)
+		public static void DeleteSuspendedVersioningObj(S3Client client, string bucketName, string key, ref List<string> versionIds, ref List<string> contents)
 		{
 			client.DeleteObject(bucketName, key);
 
@@ -1313,7 +1145,7 @@ namespace s3tests
 			Thread.Sleep(100);
 		}
 
-		public List<Thread> DoClearVersionedBucketConcurrent(S3Client client, string bucketName)
+		public static List<Thread> DoClearVersionedBucketConcurrent(S3Client client, string bucketName)
 		{
 			var tList = new List<Thread>();
 			var response = client.ListVersions(bucketName);
@@ -1330,7 +1162,7 @@ namespace s3tests
 
 		#region Test
 
-		public void TestACL(string bucketName, string key, S3Client client, bool pass)
+		public static void TestACL(string bucketName, string key, S3Client client, bool pass)
 		{
 			if (pass)
 			{
@@ -1371,7 +1203,7 @@ namespace s3tests
 		public void TestBucketCreateNamingGoodLong(int length)
 		{
 			var bucketName = GetPrefix();
-			if (bucketName.Length < length) bucketName += RandomText(length - bucketName.Length);
+			if (bucketName.Length < length) bucketName += S3Utils.RandomText(length - bucketName.Length);
 			else bucketName = bucketName.Substring(0, length - 1);
 			BucketList.Add(bucketName);
 
@@ -1380,16 +1212,16 @@ namespace s3tests
 			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
-		public void TestCreateRemoveVersions(S3Client client, string bucketName, string key, int numversions, int removeStartIdx, int idxInc)
+		public static void TestCreateRemoveVersions(S3Client client, string bucketName, string key, int numversions, int removeStartIdx, int idxInc)
 		{
 			List<string> versionIds = null;
 			List<string> contents = null;
-			SetupMultipleVersions(client, bucketName, key, numversions, ref versionIds, ref contents);
+			S3Utils.SetupMultipleVersions(client, bucketName, key, numversions, ref versionIds, ref contents);
 			var idx = removeStartIdx;
 
 			for (int i = 0; i < numversions; i++)
 			{
-				RemoveObjVersion(client, bucketName, key, versionIds, contents, idx);
+				S3Utils.RemoveObjVersion(client, bucketName, key, versionIds, contents, idx);
 				idx += idxInc;
 			}
 		}
@@ -1412,7 +1244,7 @@ namespace s3tests
 			client.PutObject(bucketName, key: key, body: encodingData, metadataList: metadataList);
 
 			var response = client.GetObject(bucketName, key: key);
-			var encodingbody = GetBody(response);
+			var encodingbody = S3Utils.GetBody(response);
 			var body = AES.AESDecrypt(encodingbody);
 			Assert.Equal(data, body);
 		}
@@ -1431,7 +1263,7 @@ namespace s3tests
 			client.PutObject(bucketName, key: key, body: data, sseCustomerKey: sseC);
 
 			var response = client.GetObject(bucketName, key: key, sseCustomerKey: sseC);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(data, body);
 		}
 		public void TestEncryptionSSES3ustomerWrite(int fileSize)
@@ -1444,7 +1276,7 @@ namespace s3tests
 			client.PutObject(bucketName, key: key, body: data, sseKey: ServerSideEncryptionMethod.AES256);
 
 			var response = client.GetObject(bucketName, key: key);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(data, body);
 		}
 		public void TestEncryptionSSES3Copy(int fileSize)
@@ -1455,8 +1287,8 @@ namespace s3tests
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -1464,7 +1296,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -1476,7 +1308,7 @@ namespace s3tests
 			client.PutObject(bucketName, sourceKey, body: data);
 
 			var sourceResponse = client.GetObject(bucketName, sourceKey);
-			var sourceBody = GetBody(sourceResponse);
+			var sourceBody = S3Utils.GetBody(sourceResponse);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, sourceResponse.ServerSideEncryptionMethod);
 
 			var destKey = "foo";
@@ -1484,7 +1316,7 @@ namespace s3tests
 			var destResponse = client.GetObject(bucketName, destKey);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, destResponse.ServerSideEncryptionMethod);
 
-			var destBody = GetBody(destResponse);
+			var destBody = S3Utils.GetBody(destResponse);
 			Assert.Equal(sourceBody, destBody);
 		}
 
@@ -1503,15 +1335,15 @@ namespace s3tests
 
 			////Source Object Check
 			var sourceResponse = client.GetObject(sourceBucketName, sourceKey);
-			var sourceBody = GetBody(sourceResponse);
+			var sourceBody = S3Utils.GetBody(sourceResponse);
 			if (sourceObjectEncryption) Assert.Equal(ServerSideEncryptionMethod.AES256, sourceResponse.ServerSideEncryptionMethod);
 			else Assert.Null(sourceResponse.ServerSideEncryptionMethod);
 			Assert.Equal(data, sourceBody);
 
 			var SSEConfig = new ServerSideEncryptionConfiguration()
 			{
-				ServerSideEncryptionRules = new List<ServerSideEncryptionRule>()
-				{
+				ServerSideEncryptionRules =
+				[
 					new()
 					{
 						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
@@ -1519,7 +1351,7 @@ namespace s3tests
 							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
 						}
 					}
-				}
+				]
 			};
 
 			//Source Bucket Encryption
@@ -1546,7 +1378,7 @@ namespace s3tests
 
 			//Dest Object Check
 			var destResponse = client.GetObject(destBucketName, destKey);
-			var destBody = GetBody(destResponse);
+			var destBody = S3Utils.GetBody(destResponse);
 			if (destBucketEncryption || destObjectEncryption)
 				Assert.Equal(ServerSideEncryptionMethod.AES256, destResponse.ServerSideEncryptionMethod);
 			else Assert.Null(destResponse.ServerSideEncryptionMethod);
@@ -1559,7 +1391,7 @@ namespace s3tests
 			var targetKey = "TargetKey";
 			var bucketName = GetNewBucket();
 			var client = GetClientHttps();
-			var content = RandomTextToLong(fileSize);
+			var content = S3Utils.RandomTextToLong(fileSize);
 
 			var sseC = new SSECustomerKey()
 			{
@@ -1588,15 +1420,15 @@ namespace s3tests
 								destCustomerKey: target == EncryptionType.SSE_C ? sseC : null);
 
 			var sourceResponse = client.GetObject(bucketName, sourceKey, sseCustomerKey: source == EncryptionType.SSE_C ? sseC : null);
-			Assert.Equal(content, GetBody(sourceResponse));
+			Assert.Equal(content, S3Utils.GetBody(sourceResponse));
 
 			var targetResponse = client.GetObject(bucketName, targetKey, sseCustomerKey: sseC);
-			Assert.Equal(content, GetBody(targetResponse));
+			Assert.Equal(content, S3Utils.GetBody(targetResponse));
 		}
 
 		public string TestMultipartUploadContents(string bucketName, string key, int numParts)
 		{
-			var payload = RandomTextToLong(5 * MainData.MB);
+			var payload = S3Utils.RandomTextToLong(5 * MainData.MB);
 			var client = GetClient();
 
 			var initResponse = client.InitiateMultipartUpload(bucketName, key);
@@ -1611,7 +1443,7 @@ namespace s3tests
 				parts.Add(new PartETag(partNumber, partResponse.ETag));
 				allPayload += payload;
 			}
-			var lestPayload = RandomTextToLong(MainData.MB);
+			var lestPayload = S3Utils.RandomTextToLong(MainData.MB);
 			var lestPartResponse = client.UploadPart(bucketName, key, uploadId, lestPayload, numParts + 1);
 			parts.Add(new PartETag(numParts + 1, lestPartResponse.ETag));
 			allPayload += lestPayload;
@@ -1619,7 +1451,7 @@ namespace s3tests
 			client.CompleteMultipartUpload(bucketName, key, uploadId, parts);
 
 			var response = client.GetObject(bucketName, key);
-			var text = GetBody(response);
+			var text = S3Utils.GetBody(response);
 
 			Assert.Equal(allPayload, text);
 

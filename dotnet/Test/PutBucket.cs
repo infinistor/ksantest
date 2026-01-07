@@ -11,9 +11,10 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using s3tests.Utils;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class PutBucket : TestBase
 	{
@@ -146,7 +147,7 @@ namespace s3tests
 		{
 			var prefix = GetPrefix();
 			var AddLength = 63 - prefix.Length;
-			prefix = RandomText(AddLength);
+			prefix = S3Utils.RandomText(AddLength);
 			CheckGoodBucketName(prefix);
 		}
 

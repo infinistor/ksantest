@@ -11,7 +11,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class ListObjectsVersions : TestBase
 	{
@@ -45,7 +45,7 @@ namespace s3tests
 					DisplayName = ACLResponse.AccessControlList.Owner.DisplayName,
 					Id = ACLResponse.AccessControlList.Owner.Id,
 					ETag = ObjResponse.ETag,
-					LastModified = ObjResponse.LastModified,
+					LastModified = ObjResponse.LastModified.Value,
 					ContentLength = ObjResponse.ContentLength,
 					VersionId = ObjResponse.VersionId
 				});
@@ -65,7 +65,7 @@ namespace s3tests
 				Assert.Equal(KeyData.DisplayName, Object.Owner.DisplayName);
 				Assert.Equal(KeyData.Id, Object.Owner.Id);
 				Assert.Equal(KeyData.VersionId, Object.VersionId);
-				Assert.Equal(KeyData.LastModified, Object.LastModified.ToUniversalTime());
+				Assert.Equal(KeyData.LastModified, Object.LastModified.Value);
 			}
 		}
 	}

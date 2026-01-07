@@ -10,11 +10,12 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Lock : TestBase
 	{
@@ -458,7 +459,7 @@ namespace s3tests
 
 			var Key = "file1";
 			var body = "abc";
-			var MD5 = GetMD5(body);
+			var MD5 = S3Utils.GetMD5(body);
 			var PutResponse = Client.PutObject(bucketName, Key, body: body, md5Digest: MD5);
 			var VersionId = PutResponse.VersionId;
 
@@ -791,7 +792,7 @@ namespace s3tests
 
 			var Response = Client.GetObjectMetadata(bucketName, Key);
 			Assert.Equal(Retention.Mode, Response.ObjectLockMode);
-			Assert.Equal(Retention.RetainUntilDate, Response.ObjectLockRetainUntilDate.ToUniversalTime());
+			Assert.Equal(Retention.RetainUntilDate, Response.ObjectLockRetainUntilDate.Value);
 			Assert.Equal(LegalHold.Status, Response.ObjectLockLegalHoldStatus);
 
 			LegalHold = new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.Off };

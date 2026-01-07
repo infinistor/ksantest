@@ -10,12 +10,13 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Grants : TestBase
 	{
@@ -41,8 +42,8 @@ namespace s3tests
 			Assert.Equal(userId, response.AccessControlList.Owner.Id);
 
 			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -52,7 +53,7 @@ namespace s3tests
 						DisplayName = displayName,
 					}
 				}
-			},
+			],
 			GetGrants);
 		}
 
@@ -74,8 +75,8 @@ namespace s3tests
 			var userId = Config.MainUser.UserId;
 
 			var getGrants = response.AccessControlList.Grants;
-			CheckGrants(new()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -93,7 +94,7 @@ namespace s3tests
 						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
 					}
 				},
-			},
+			],
 			getGrants);
 		}
 
@@ -115,8 +116,8 @@ namespace s3tests
 			var userId = Config.MainUser.UserId;
 
 			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -134,15 +135,15 @@ namespace s3tests
 						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
 					}
 				},
-			},
+			],
 			GetGrants);
 
 			client.PutBucketACL(bucketName, acl: S3CannedACL.Private);
 			response = client.GetBucketACL(bucketName);
 			GetGrants = response.AccessControlList.Grants;
 
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -152,7 +153,7 @@ namespace s3tests
 						DisplayName = displayName,
 					}
 				}
-			},
+			],
 			GetGrants);
 		}
 
@@ -174,8 +175,8 @@ namespace s3tests
 			var userId = Config.MainUser.UserId;
 
 			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -201,7 +202,7 @@ namespace s3tests
 						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -223,8 +224,8 @@ namespace s3tests
 			var userId = Config.MainUser.UserId;
 
 			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -242,7 +243,7 @@ namespace s3tests
 						URI = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -266,8 +267,8 @@ namespace s3tests
 			var userId = Config.MainUser.UserId;
 
 			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -277,7 +278,7 @@ namespace s3tests
 						DisplayName = displayName,
 					}
 				}
-			},
+			],
 			GetGrants);
 		}
 
@@ -301,8 +302,8 @@ namespace s3tests
 			var userId = Config.MainUser.UserId;
 
 			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -320,7 +321,7 @@ namespace s3tests
 						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -344,8 +345,8 @@ namespace s3tests
 			var userId = Config.MainUser.UserId;
 
 			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -363,15 +364,15 @@ namespace s3tests
 						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
 					}
 				},
-			},
+			],
 			GetGrants);
 
 			client.PutObjectACL(bucketName, key, acl: S3CannedACL.Private);
 			response = client.GetObjectACL(bucketName, key);
 
 			GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -381,7 +382,7 @@ namespace s3tests
 						DisplayName = displayName,
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -407,8 +408,8 @@ namespace s3tests
 
 			var GetGrants = response.AccessControlList.Grants;
 
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -434,7 +435,7 @@ namespace s3tests
 						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -459,8 +460,8 @@ namespace s3tests
 
 			var GetGrants = response.AccessControlList.Grants;
 
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -478,7 +479,7 @@ namespace s3tests
 						URI = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -513,8 +514,8 @@ namespace s3tests
 
 			var GetGrants = response.AccessControlList.Grants;
 
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -533,7 +534,7 @@ namespace s3tests
 						DisplayName = BucketOwnerDisplayName,
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -567,8 +568,8 @@ namespace s3tests
 
 			var GetGrants = response.AccessControlList.Grants;
 
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -587,7 +588,7 @@ namespace s3tests
 						DisplayName = BucketOwnerDisplayName,
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -618,8 +619,8 @@ namespace s3tests
 			var Grant = new S3AccessControlList()
 			{
 				Owner = new Owner() { DisplayName = MainDisplayName, Id = MainUserId },
-				Grants = new List<S3Grant>()
-				{
+				Grants =
+				[
 					new()
 					{
 						Permission = S3Permission.FULL_CONTROL,
@@ -629,7 +630,7 @@ namespace s3tests
 							DisplayName = AltDisplayName,
 						}
 					},
-				}
+				]
 			};
 
 			MainClient.PutObjectACL(bucketName, key, accessControlPolicy: Grant);
@@ -637,8 +638,8 @@ namespace s3tests
 			Grant = new S3AccessControlList()
 			{
 				Owner = new Owner() { DisplayName = MainDisplayName, Id = MainUserId },
-				Grants = new List<S3Grant>()
-				{
+				Grants =
+				[
 					new()
 					{
 						Permission = S3Permission.READ_ACP,
@@ -648,7 +649,7 @@ namespace s3tests
 							DisplayName = AltDisplayName,
 						}
 					},
-				}
+				]
 			};
 
 			AltClient.PutObjectACL(bucketName, key, accessControlPolicy: Grant);
@@ -890,7 +891,7 @@ namespace s3tests
 			var Policy = new S3AccessControlList()
 			{
 				Owner = response.AccessControlList.Owner,
-				Grants = new List<S3Grant>()
+				Grants = []
 			};
 
 			client.PutBucketACL(bucketName, accessControlPolicy: Policy);
@@ -928,8 +929,8 @@ namespace s3tests
 			var response = client.GetObjectACL(bucketName, key);
 
 			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -975,7 +976,7 @@ namespace s3tests
 						DisplayName = AltDisplayName,
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -998,8 +999,8 @@ namespace s3tests
 			var response = client.GetBucketACL(bucketName);
 
 			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(new List<S3Grant>()
-			{
+			CheckGrants(
+			[
 				new()
 				{
 					Permission = S3Permission.FULL_CONTROL,
@@ -1045,7 +1046,7 @@ namespace s3tests
 						DisplayName = AltDisplayName,
 					}
 				},
-			},
+			],
 			GetGrants);
 		}
 
@@ -1068,11 +1069,11 @@ namespace s3tests
 			Assert.Throws<AggregateException>(()
 				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = null }));
 			Assert.Throws<AggregateException>(()
-				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = new() }));
+				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = [] }));
 			Assert.Throws<AggregateException>(()
 				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = null, Grants = null }));
 			Assert.Throws<AggregateException>(()
-				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = new(), Grants = new() }));
+				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = new(), Grants = [] }));
 		}
 
 		[Fact]
@@ -1096,11 +1097,11 @@ namespace s3tests
 			Assert.Throws<AggregateException>(()
 				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = null }));
 			Assert.Throws<AggregateException>(()
-				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = new() }));
+				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = [] }));
 			Assert.Throws<AggregateException>(()
 				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = null, Grants = null }));
 			Assert.Throws<AggregateException>(()
-				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = new(), Grants = new() }));
+				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = new(), Grants = [] }));
 		}
 
 		[Fact]
@@ -1161,7 +1162,7 @@ namespace s3tests
 			var AltClient = GetAltClient();
 			var response = AltClient.GetObject(bucketName, Key1);
 
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foocontent", body);
 
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
@@ -1188,7 +1189,7 @@ namespace s3tests
 			var AltClient = GetAltClient();
 			var response = AltClient.GetObject(bucketName, Key1);
 
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foocontent", body);
 
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
@@ -1216,7 +1217,7 @@ namespace s3tests
 			var AltClient = GetAltClient();
 			var response = AltClient.GetObject(bucketName, Key1);
 
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foocontent", body);
 
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
@@ -1227,7 +1228,7 @@ namespace s3tests
 
 			var AltClient3 = GetAltClient();
 			var ObjList = GetKeys(AltClient3.ListObjects(bucketName));
-			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);
+			Assert.Equal([Key2, Key1], ObjList);
 			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
 		}
 
@@ -1245,7 +1246,7 @@ namespace s3tests
 			var AltClient = GetAltClient();
 			var response = AltClient.GetObject(bucketName, Key1);
 
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foocontent", body);
 
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
@@ -1280,7 +1281,7 @@ namespace s3tests
 
 			var AltClient3 = GetAltClient();
 			var ObjList = GetKeys(AltClient3.ListObjects(bucketName));
-			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);
+			Assert.Equal([Key2, Key1], ObjList);
 			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
 		}
 
@@ -1297,7 +1298,7 @@ namespace s3tests
 			var AltClient = GetAltClient();
 
 			var response = AltClient.GetObject(bucketName, Key1);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foocontent", body);
 
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
@@ -1308,7 +1309,7 @@ namespace s3tests
 
 			var AltClient3 = GetAltClient();
 			var ObjList = GetKeys(AltClient3.ListObjects(bucketName));
-			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);
+			Assert.Equal([Key2, Key1], ObjList);
 			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
 		}
 
@@ -1326,7 +1327,7 @@ namespace s3tests
 			var AltClient = GetAltClient();
 
 			var response = AltClient.GetObject(bucketName, Key1);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foocontent", body);
 
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
@@ -1337,7 +1338,7 @@ namespace s3tests
 
 			var AltClient3 = GetAltClient();
 			var ObjList = GetKeys(AltClient3.ListObjects(bucketName));
-			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);
+			Assert.Equal([Key2, Key1], ObjList);
 			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
 		}
 
@@ -1360,7 +1361,7 @@ namespace s3tests
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key2, body: Key2));
 
 			var ObjList = GetKeys(AltClient.ListObjects(bucketName));
-			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);
+			Assert.Equal([Key2, Key1], ObjList);
 			AltClient.PutObject(bucketName, NewKey, body: NewKey);
 		}
 
@@ -1377,7 +1378,7 @@ namespace s3tests
 			var AltClient = GetAltClient();
 
 			var response = AltClient.GetObject(bucketName, Key1);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal("foocontent", body);
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
 
@@ -1385,7 +1386,7 @@ namespace s3tests
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key2, body: Key2));
 
 			var ObjList = GetKeys(AltClient.ListObjects(bucketName));
-			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);
+			Assert.Equal([Key2, Key1], ObjList);
 			AltClient.PutObject(bucketName, NewKey, body: NewKey);
 		}
 
@@ -1402,7 +1403,7 @@ namespace s3tests
 			var AltClient = GetAltClient();
 
 			var response = AltClient.GetObject(bucketName, Key1);
-			var body = GetBody(response);
+			var body = S3Utils.GetBody(response);
 			Assert.Equal(Key1, body);
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
 
@@ -1410,7 +1411,7 @@ namespace s3tests
 			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key2, body: Key2));
 
 			var ObjList = GetKeys(AltClient.ListObjects(bucketName));
-			Assert.Equal(new List<string>() { Key2, Key1 }, ObjList);
+			Assert.Equal([Key2, Key1], ObjList);
 			AltClient.PutObject(bucketName, NewKey, body: NewKey);
 		}
 	}

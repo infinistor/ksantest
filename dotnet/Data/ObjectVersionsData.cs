@@ -35,8 +35,8 @@ namespace s3tests
 			Body = "";
 			ETag = "";
 			ContentLength = 0;
-			TagSet = new List<Tag>();
-			VersionId = new List<string>();
+			TagSet = [];
+			VersionId = [];
 		}
 	}
 }

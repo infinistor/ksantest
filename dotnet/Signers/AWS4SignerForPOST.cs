@@ -13,17 +13,17 @@ namespace s3tests.Signers
 	/// </summary>
 	public class AWS4SignerForPOST : AWS4SignerBase
 	{
-		public string FormatCredentialStringForPolicy(DateTime dateTimeStamp)
+		public static string FormatCredentialStringForPolicy(DateTime dateTimeStamp)
 		{
 			return "AKIAIOSFODNN7EXAMPLE/20130806/cn-north-1/s3/aws4_request";
 		}
 
-		public string FormatAlgorithmForPolicy
+		public static string FormatAlgorithmForPolicy
 		{
 			get { return "AWS4-HMAC-SHA256"; }
 		}
 
-		public string FormatDateTimeForPolicy(DateTime dateTimeStamp)
+		public static string FormatDateTimeForPolicy(DateTime dateTimeStamp)
 		{
 			return dateTimeStamp.ToString(ISO8601BasicFormat, CultureInfo.InvariantCulture);
 		}

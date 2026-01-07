@@ -10,12 +10,13 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Multipart : TestBase
 	{
@@ -33,7 +34,7 @@ namespace s3tests
 			var Key1 = "mymultipart";
 			var size = 0;
 
-			var UploadData = SetupMultipartUpload(client, bucketName, Key1, size);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, Key1, size);
 			var e = Assert.Throws<AggregateException>(() => client.CompleteMultipartUpload(bucketName, Key1, UploadData.UploadId, UploadData.Parts));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.MALFORMED_XML, GetErrorCode(e));
@@ -51,7 +52,7 @@ namespace s3tests
 			var Key1 = "mymultipart";
 			var size = 1;
 
-			var UploadData = SetupMultipartUpload(client, bucketName, Key1, size);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, Key1, size);
 			client.CompleteMultipartUpload(bucketName, Key1, UploadData.UploadId, UploadData.Parts);
 			var Response = client.GetObject(bucketName, Key1);
 			Assert.Equal(size, Response.ContentLength);
@@ -165,7 +166,7 @@ namespace s3tests
 			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
 			var client = GetClient();
 
-			var UploadData = SetupMultipartUpload(client, bucketName, key, size, metadataList: metadataList, contentType: ContentType);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size, metadataList: metadataList, contentType: ContentType);
 			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
 			var HeadResponse = client.ListObjectsV2(bucketName);
@@ -177,7 +178,7 @@ namespace s3tests
 			var GetResponse = client.GetObject(bucketName, key);
 			Assert.Equal(ContentType, GetResponse.Headers["content-type"]);
 			Assert.Equal(metadataList, GetMetaData(GetResponse.Metadata));
-			var body = GetBody(GetResponse);
+			var body = S3Utils.GetBody(GetResponse);
 			Assert.Equal(UploadData.Body, body);
 
 			CheckContentUsingRange(client, bucketName, key, UploadData.Body, 1000000);
@@ -233,11 +234,11 @@ namespace s3tests
 			var key = "mymultipart";
 			var size = 50 * MainData.MB;
 
-			CheckUploadMultipartResend(bucketName, key, size, new List<int>() { 0 });
-			CheckUploadMultipartResend(bucketName, key, size, new List<int>() { 1 });
-			CheckUploadMultipartResend(bucketName, key, size, new List<int>() { 2 });
-			CheckUploadMultipartResend(bucketName, key, size, new List<int>() { 1, 2 });
-			CheckUploadMultipartResend(bucketName, key, size, new List<int>() { 0, 1, 2, 3, 4, 5 });
+			CheckUploadMultipartResend(bucketName, key, size, [0]);
+			CheckUploadMultipartResend(bucketName, key, size, [1]);
+			CheckUploadMultipartResend(bucketName, key, size, [2]);
+			CheckUploadMultipartResend(bucketName, key, size, [1, 2]);
+			CheckUploadMultipartResend(bucketName, key, size, [0, 1, 2, 3, 4, 5]);
 		}
 
 		[Fact]
@@ -252,27 +253,27 @@ namespace s3tests
 			var client = GetClient();
 
 			var size = 5 * MainData.MB;
-			var UploadData = SetupMultipartUpload(client, bucketName, key, size);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
 			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
 			size = 5 * MainData.MB + 100 * MainData.KB;
-			UploadData = SetupMultipartUpload(client, bucketName, key, size);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
 			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
 			size = 5 * MainData.MB + 600 * MainData.KB;
-			UploadData = SetupMultipartUpload(client, bucketName, key, size);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
 			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
 			size = 10 * MainData.MB;
-			UploadData = SetupMultipartUpload(client, bucketName, key, size);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
 			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
 			size = 10 * MainData.MB + 100 * MainData.KB;
-			UploadData = SetupMultipartUpload(client, bucketName, key, size);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
 			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
 			size = 10 * MainData.MB + 600 * MainData.KB;
-			UploadData = SetupMultipartUpload(client, bucketName, key, size);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
 			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
 
 		}
@@ -334,7 +335,7 @@ namespace s3tests
 			var client = GetClient();
 
 			var size = 1 * MainData.MB;
-			var UploadData = SetupMultipartUpload(client, bucketName, key, size: size, partSize: 10 * MainData.KB);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size: size, partSize: 10 * MainData.KB);
 			var e = Assert.Throws<AggregateException>(() => client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.ENTITY_TOO_SMALL, GetErrorCode(e));
@@ -361,7 +362,7 @@ namespace s3tests
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "mymultipart";
-			var Payload = RandomTextToLong(5 * MainData.MB);
+			var Payload = S3Utils.RandomTextToLong(5 * MainData.MB);
 			var NumParts = 2;
 
 			client.PutObject(bucketName, key, body: Payload);
@@ -382,7 +383,7 @@ namespace s3tests
 			client.CompleteMultipartUpload(bucketName, key, UploadId, Parts);
 
 			var Response = client.GetObject(bucketName, key);
-			var Text = GetBody(Response);
+			var Text = S3Utils.GetBody(Response);
 			Assert.Equal(AllPayload, Text);
 		}
 
@@ -398,7 +399,7 @@ namespace s3tests
 			var size = 10 * MainData.MB;
 			var client = GetClient();
 
-			var UploadData = SetupMultipartUpload(client, bucketName, key, size);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
 			client.AbortMultipartUpload(bucketName, key, UploadData.UploadId);
 
 			var HeadResponse = client.ListObjectsV2(bucketName);
@@ -439,9 +440,9 @@ namespace s3tests
 
 			var UploadIds = new List<string>
 			{
-				SetupMultipartUpload(client, bucketName, key, 5 * MainData.MB).UploadId,
-				SetupMultipartUpload(client, bucketName, key, 6 * MainData.MB).UploadId,
-				SetupMultipartUpload(client, bucketName, Key2, 5 * MainData.MB).UploadId,
+				S3Utils.SetupMultipartUpload(client, bucketName, key, 5 * MainData.MB).UploadId,
+				S3Utils.SetupMultipartUpload(client, bucketName, key, 6 * MainData.MB).UploadId,
+				S3Utils.SetupMultipartUpload(client, bucketName, Key2, 5 * MainData.MB).UploadId,
 			};
 
 			var Response = client.ListMultipartUploads(bucketName);
@@ -521,13 +522,13 @@ namespace s3tests
 			var UploadId = InitResponse.UploadId;
 
 			var Response = client.GetObject(bucketName, key);
-			var body = GetBody(Response);
+			var body = S3Utils.GetBody(Response);
 			Assert.Equal("bar", body);
 
 			client.AbortMultipartUpload(bucketName, key, UploadId);
 
 			Response = client.GetObject(bucketName, key);
-			body = GetBody(Response);
+			body = S3Utils.GetBody(Response);
 			Assert.Equal("bar", body);
 		}
 
@@ -545,7 +546,7 @@ namespace s3tests
 			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
 			var client = GetClient();
 
-			var UploadData = SetupMultipartUpload(client, bucketName, key, size, metadataList: metadataList, contentType: ContentType);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size, metadataList: metadataList, contentType: ContentType);
 
 			var Response = client.ListParts(bucketName, key, UploadData.UploadId);
 			Assert.Equal(UploadData.Parts.Count, Response.Parts.Count);
@@ -564,7 +565,7 @@ namespace s3tests
 			var size = 10 * MainData.MB;
 			var client = GetClient();
 
-			var UploadData = SetupMultipartUpload(client, bucketName, key, size);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
 			client.AbortMultipartUpload(bucketName, key, UploadData.UploadId);
 
 			var ListResponse = client.ListMultipartUploads(bucketName);
@@ -584,7 +585,7 @@ namespace s3tests
 			var client = GetClient();
 			var body = "";
 			// 멀티파트 업로드
-			var UploadData = SetupMultipartUpload(client, bucketName, SrcKey, size);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, SrcKey, size);
 			client.CompleteMultipartUpload(bucketName, SrcKey, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
@@ -595,7 +596,7 @@ namespace s3tests
 			var DestKey1 = "mymultipart1";
 			UploadData = SetupMultipartCopy(client, bucketName, SrcKey, bucketName, DestKey1, size);
 			// 추가파츠 업로드
-			UploadData = SetupMultipartUpload(client, bucketName, DestKey1, size, uploadData: UploadData);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, DestKey1, size, uploadData: UploadData);
 			client.CompleteMultipartUpload(bucketName, DestKey1, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
@@ -606,7 +607,7 @@ namespace s3tests
 			var DestKey2 = "mymultipart2";
 			UploadData = SetupMultipartCopy(client, bucketName, DestKey1, bucketName, DestKey2, size * 2);
 			// 추가파츠 업로드
-			UploadData = SetupMultipartUpload(client, bucketName, DestKey2, size, uploadData: UploadData);
+			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, DestKey2, size, uploadData: UploadData);
 			client.CompleteMultipartUpload(bucketName, DestKey2, UploadData.UploadId, UploadData.Parts);
 
 			// 업로드가 올바르게 되었는지 확인
@@ -627,7 +628,7 @@ namespace s3tests
 			var size = 50 * MainData.MB;
 			var client = GetClient();
 
-			var UploadData = SetupMultipartUpload(client, bucketName, key, size, partSize: MainData.MB, contentType: ContentType);
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size, partSize: MainData.MB, contentType: ContentType);
 
 			for (var i = 0; i < 41; i += 10)
 			{

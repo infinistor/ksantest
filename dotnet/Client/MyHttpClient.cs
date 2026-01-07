@@ -26,16 +26,11 @@ namespace s3tests.Client
 		private static readonly string METHOD_LIST = "GET";
 		private static readonly string METHOD_PUT = "PUT";
 
-		public static string HEADER_DATA = "NONE";
-		public static string HEADER_BACKEND = "x-ifs-admin";
-		public static string HEADER_REPLICATION = "x-ifs-replication";
-		public static string HEADER_VERSION_ID = "x-ifs-version-id";
-
 		public const int UserDataBlockSize = 65536;
 
-		private string URL;
-		private string AccessKey;
-		private string SecretKey;
+		private string URL { get; set; }
+		private string AccessKey { get; set; }
+		private string SecretKey { get; set; }
 
 		public MyHttpClient(string URL, string AccessKey, string SecretKey)
 		{
@@ -46,8 +41,8 @@ namespace s3tests.Client
 
 		public MyResult PutObject(string Key, string Content, string ContentType = "text/plain")
 		{
-			byte[] contentHash = AWS4SignerBase.CanonicalRequestHashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(Content));
-			String ContentHashString = AWS4SignerBase.ToHexString(contentHash, true);
+			var contentHash = AWS4SignerBase.CanonicalRequestHashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(Content));
+			var ContentHashString = AWS4SignerBase.ToHexString(contentHash, true);
 
 			var Headers = new Dictionary<string, string>()
 			{
@@ -82,7 +77,7 @@ namespace s3tests.Client
 			var URI = new Uri($"{URL}/{Key}");
 
 			var Signer = new AWS4SignerForChunkedUpload { EndpointUri = URI, HttpMethod = "PUT", Service = "s3", Region = "us-west-2" };
-			var TotalLength = Signer.CalculateChunkedContentLength(Content.Length, UserDataBlockSize);
+			var TotalLength = AWS4SignerForChunkedUpload.CalculateChunkedContentLength(Content.Length, UserDataBlockSize);
 
 			var Authorization = Signer.ComputeSignature(Headers, "", AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256, AccessKey, SecretKey);
 			Headers.Add("Authorization", Authorization);
@@ -93,28 +88,24 @@ namespace s3tests.Client
 				var Request = HttpHelpers.ConstructWebRequest(URI, "PUT", Headers);
 				var buffer = new byte[UserDataBlockSize];
 				var requestStream = Request.GetRequestStream();
-				using (var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(Content)))
+				using var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(Content));
+				var bytesRead = 0;
+				while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
 				{
-					var bytesRead = 0;
-					while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
-					{
-						// process into a chunk
-						var chunk = Signer.ConstructSignedChunk(bytesRead, buffer);
+					// process into a chunk
+					var chunk = Signer.ConstructSignedChunk(bytesRead, buffer);
 
-						// send the chunk
-						requestStream.Write(chunk, 0, chunk.Length);
-					}
-
-					// last step is to send a signed zero-length chunk to complete the upload
-					var FinalChunk = Signer.ConstructSignedChunk(0, buffer);
-					requestStream.Write(FinalChunk, 0, FinalChunk.Length);
-
-					using (var Response = (HttpWebResponse)Request.GetResponse())
-					{
-						var Msg = HttpHelpers.ReadResponseBody(Response);
-						return new MyResult() { StatusCode = Response.StatusCode, Message = Msg };
-					}
+					// send the chunk
+					requestStream.Write(chunk, 0, chunk.Length);
 				}
+
+				// last step is to send a signed zero-length chunk to complete the upload
+				var FinalChunk = Signer.ConstructSignedChunk(0, buffer);
+				requestStream.Write(FinalChunk, 0, FinalChunk.Length);
+
+				using var Response = (HttpWebResponse)Request.GetResponse();
+				var Msg = HttpHelpers.ReadResponseBody(Response);
+				return new MyResult() { StatusCode = Response.StatusCode, Message = Msg };
 			}
 			catch (WebException ex) { throw GetError(ex); }
 		}
@@ -161,21 +152,17 @@ namespace s3tests.Client
 				{
 					var buffer = new byte[8192]; // arbitrary buffer size
 					var requestStream = request.GetRequestStream();
-					using (var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(RequestBody)))
-					{
-						var bytesRead = 0;
-						while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0) requestStream.Write(buffer, 0, bytesRead);
-					}
+					using var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(RequestBody));
+					var bytesRead = 0;
+					while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0) requestStream.Write(buffer, 0, bytesRead);
 				}
 
 				// Get the response and read any body into a string, then display.
-				using (var Response = (HttpWebResponse)request.GetResponse())
+				using var Response = (HttpWebResponse)request.GetResponse();
+				return new MyResult()
 				{
-					return new MyResult()
-					{
-						StatusCode = Response.StatusCode
-					};
-				}
+					StatusCode = Response.StatusCode
+				};
 			}
 			catch (WebException ex) { throw GetError(ex); }
 		}
@@ -206,17 +193,15 @@ namespace s3tests.Client
 				}
 
 				// Get the response and read any body into a string, then display.
-				using (var Response = (HttpWebResponse)request.GetResponse())
-				{
-					return new MyResult() { StatusCode = Response.StatusCode };
-					// if (Response.StatusCode == HttpStatusCode.OK)
-					// {
-					// 	var ResponseBody = ReadResponseBody(Response);
-					// 	if (!string.IsNullOrEmpty(ResponseBody)) return ResponseBody;
-					// }
-					// else
-					// 	throw new Exception($"HTTP call failed, status code: {Response.StatusCode}");
-				}
+				using var Response = (HttpWebResponse)request.GetResponse();
+				return new MyResult() { StatusCode = Response.StatusCode };
+				// if (Response.StatusCode == HttpStatusCode.OK)
+				// {
+				// 	var ResponseBody = ReadResponseBody(Response);
+				// 	if (!string.IsNullOrEmpty(ResponseBody)) return ResponseBody;
+				// }
+				// else
+				// 	throw new Exception($"HTTP call failed, status code: {Response.StatusCode}");
 			}
 			catch (WebException ex) { throw GetError(ex); }
 		}
@@ -234,22 +219,16 @@ namespace s3tests.Client
 				var request = ConstructWebRequest(Endpoint, METHOD_GET, Headers);
 
 				// Get the response and read any body into a string, then display.
-				using (var Response = (HttpWebResponse)request.GetResponse())
-				{
-					if (Response.StatusCode != HttpStatusCode.OK)
-						throw new InvalidOperationException($"HTTP call failed, status code: {Response.StatusCode}");
+				using var Response = (HttpWebResponse)request.GetResponse();
+				if (Response.StatusCode != HttpStatusCode.OK)
+					throw new InvalidOperationException($"HTTP call failed, status code: {Response.StatusCode}");
 
-					using (var ResponseStream = Response.GetResponseStream())
-					{
-						if (ResponseStream != null)
-						{
-							using (var reader = new StreamReader(ResponseStream))
-							{
-								var serializer = new XmlSerializer(typeof(T));
-								return serializer.Deserialize(reader) as T;
-							}
-						}
-					}
+				using var ResponseStream = Response.GetResponseStream();
+				if (ResponseStream != null)
+				{
+					using var reader = new StreamReader(ResponseStream);
+					var serializer = new XmlSerializer(typeof(T));
+					return serializer.Deserialize(reader) as T;
 				}
 			}
 			catch (WebException ex) { throw GetError(ex); }
@@ -268,21 +247,15 @@ namespace s3tests.Client
 				var request = ConstructWebRequest(Endpoint, METHOD_GET, Headers);
 
 				// Get the response and read any body into a string, then display.
-				using (var Response = (HttpWebResponse)request.GetResponse())
-				{
-					if (Response.StatusCode != HttpStatusCode.OK)
-						throw new InvalidOperationException($"HTTP call failed, status code: {Response.StatusCode}");
+				using var Response = (HttpWebResponse)request.GetResponse();
+				if (Response.StatusCode != HttpStatusCode.OK)
+					throw new InvalidOperationException($"HTTP call failed, status code: {Response.StatusCode}");
 
-					using (var ResponseStream = Response.GetResponseStream())
-					{
-						if (ResponseStream != null)
-						{
-							using (var reader = new StreamReader(ResponseStream))
-							{
-								return reader.ReadToEnd();
-							}
-						}
-					}
+				using var ResponseStream = Response.GetResponseStream();
+				if (ResponseStream != null)
+				{
+					using var reader = new StreamReader(ResponseStream);
+					return reader.ReadToEnd();
 				}
 			}
 			catch (WebException ex) { throw GetError(ex); }
@@ -302,22 +275,16 @@ namespace s3tests.Client
 				var request = ConstructWebRequest(Endpoint, METHOD_LIST, Headers);
 
 				// Get the response and read any body into a string, then display.
-				using (var Response = (HttpWebResponse)request.GetResponse())
+				using var Response = (HttpWebResponse)request.GetResponse();
+				if (Response.StatusCode != HttpStatusCode.OK)
+					throw new InvalidOperationException($"HTTP call failed, status code: {Response.StatusCode}");
+				// Console.WriteLine(ReadResponseBody(Response));
+				using var ResponseStream = Response.GetResponseStream();
+				if (ResponseStream != null)
 				{
-					if (Response.StatusCode != HttpStatusCode.OK)
-						throw new InvalidOperationException($"HTTP call failed, status code: {Response.StatusCode}");
-					// Console.WriteLine(ReadResponseBody(Response));
-					using (var ResponseStream = Response.GetResponseStream())
-					{
-						if (ResponseStream != null)
-						{
-							using (var reader = new StreamReader(ResponseStream))
-							{
-								var serializer = new XmlSerializer(typeof(T));
-								return serializer.Deserialize(reader) as T;
-							}
-						}
-					}
+					using var reader = new StreamReader(ResponseStream);
+					var serializer = new XmlSerializer(typeof(T));
+					return serializer.Deserialize(reader) as T;
 				}
 			}
 			catch (WebException ex) { throw GetError(ex); }
@@ -337,11 +304,9 @@ namespace s3tests.Client
 				var request = ConstructWebRequest(Endpoint, METHOD_DELETE, Headers);
 
 				// Get the response and read any body into a string, then display.
-				using (var Response = (HttpWebResponse)request.GetResponse())
-				{
-					if (Response.StatusCode != HttpStatusCode.NoContent)
-						throw new Exception($"HTTP call failed, status code: {Response.StatusCode}");
-				}
+				using var Response = (HttpWebResponse)request.GetResponse();
+				if (Response.StatusCode != HttpStatusCode.NoContent)
+					throw new Exception($"HTTP call failed, status code: {Response.StatusCode}");
 			}
 			catch (WebException ex) { throw GetError(ex); }
 		}
@@ -393,10 +358,8 @@ namespace s3tests.Client
 			{
 				if (responseStream != null)
 				{
-					using (var reader = new StreamReader(responseStream))
-					{
-						responseBody = reader.ReadToEnd();
-					}
+					using var reader = new StreamReader(responseStream);
+					responseBody = reader.ReadToEnd();
 				}
 			}
 			return responseBody;
@@ -404,16 +367,13 @@ namespace s3tests.Client
 
 		public static S3Exception GetError(WebException ex)
 		{
-			using (var Response = ex.Response as HttpWebResponse)
-			{
-				var xs = new XmlSerializer(typeof(ErrorResponse));
-				var Result = (ErrorResponse)xs.Deserialize(Response.GetResponseStream());
-				if (Result == null)
-					return new S3Exception(new ErrorResponse() { Message = $"HTTP call failed. status code '{Response.StatusCode}'" }, ex.InnerException);
-				else
-					return new S3Exception(Result, ex.InnerException);
-
-			}
+			using var Response = ex.Response as HttpWebResponse;
+			var xs = new XmlSerializer(typeof(ErrorResponse));
+			var Result = (ErrorResponse)xs.Deserialize(Response.GetResponseStream());
+			if (Result == null)
+				return new S3Exception(new ErrorResponse() { Message = $"HTTP call failed. status code '{Response.StatusCode}'" }, ex.InnerException);
+			else
+				return new S3Exception(Result, ex.InnerException);
 		}
 		#endregion
 	}

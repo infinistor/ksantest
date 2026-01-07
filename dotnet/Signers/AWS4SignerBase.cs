@@ -74,7 +74,7 @@ namespace s3tests.Signers
 		/// <returns>
 		/// The set of header names canonicalized to a flattened, ;-delimited string
 		/// </returns>
-		protected string CanonicalizeHeaderNames(IDictionary<string, string> headers)
+		protected static string CanonicalizeHeaderNames(IDictionary<string, string> headers)
 		{
 			var headersToSign = new List<string>(headers.Keys);
 			headersToSign.Sort(StringComparer.OrdinalIgnoreCase);
@@ -139,7 +139,7 @@ namespace s3tests.Signers
 		/// should be the fixed string ''.
 		/// </param>
 		/// <returns>String representing the canonicalized request for signing</returns>
-		protected string CanonicalizeRequest(Uri endpointUri,
+		protected static string CanonicalizeRequest(Uri endpointUri,
 											 string httpMethod,
 											 string queryParameters,
 											 string canonicalizedHeaderNames,
@@ -165,7 +165,7 @@ namespace s3tests.Signers
 		/// </summary>
 		/// <param name="endpointUri">Endpoint to the service/resource</param>
 		/// <returns>Canonicalized resource path for the endpoint</returns>
-		protected string CanonicalResourcePath(Uri endpointUri)
+		protected static string CanonicalResourcePath(Uri endpointUri)
 		{
 			if (string.IsNullOrEmpty(endpointUri.AbsolutePath))
 				return "/";
@@ -183,7 +183,7 @@ namespace s3tests.Signers
 		/// <param name="date">Date of the request, in yyyyMMdd format</param>
 		/// <param name="service">The name of the service being called by the request</param>
 		/// <returns>Computed signing key</returns>
-		protected byte[] DeriveSigningKey(string algorithm, string awsSecretAccessKey, string region, string date, string service)
+		protected static byte[] DeriveSigningKey(string algorithm, string awsSecretAccessKey, string region, string date, string service)
 		{
 			const string ksecretPrefix = SCHEME;
 			char[] ksecret = null;
@@ -204,7 +204,7 @@ namespace s3tests.Signers
 		/// <param name="key">Hash key</param>
 		/// <param name="data">Data blob</param>
 		/// <returns>Hash of the data</returns>
-		protected byte[] ComputeKeyedHash(string algorithm, byte[] key, byte[] data)
+		protected static byte[] ComputeKeyedHash(string algorithm, byte[] key, byte[] data)
 		{
 			var kha = KeyedHashAlgorithm.Create(algorithm);
 			kha.Key = key;

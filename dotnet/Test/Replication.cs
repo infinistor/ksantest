@@ -16,7 +16,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class Replication : TestBase
 	{

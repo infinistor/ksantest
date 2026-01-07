@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using Amazon.S3;
 using Xunit;
 
-namespace s3tests
+namespace s3tests.Test
 {
 	public class DeleteObjects : TestBase
 	{
