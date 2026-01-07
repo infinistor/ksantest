@@ -10,6 +10,7 @@
 */
 using log4net;
 using log4net.Config;
+using System;
 using System.Reflection;
 
 [assembly: XmlConfigurator(ConfigFile = "LogConfig.xml")]
@@ -37,8 +38,22 @@ namespace ReplicationTest
 			}
 
 			MainConfig config = new(configPath);
-			config.GetConfig();
-			log.Info("Get Config!");
+			try
+			{
+				config.GetConfig();
+				log.Info("Get Config!");
+				log.Info(config.ToString());
+			}
+			catch (InvalidOperationException e)
+			{
+				log.Error($"Configuration error: {e.Message}");
+				return;
+			}
+			catch (Exception e)
+			{
+				log.Error($"Failed to load configuration: {e.Message}", e);
+				return;
+			}
 
 			// DB 설정
 			if (args.Length > 0)
@@ -61,8 +76,16 @@ namespace ReplicationTest
 				}
 			}
 
-			var test = new ReplicationTest(config, db);
-			test.Test();
+			try
+			{
+				var test = new ReplicationTest(config, db);
+				test.Test();
+			}
+			finally
+			{
+				// DB 연결 종료
+				db?.Dispose();
+			}
 		}
 	}
 }

@@ -8,6 +8,10 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+
 namespace ReplicationTest
 {
 	class MainConfig
@@ -89,6 +93,57 @@ namespace ReplicationTest
 
 			Normal = new() { BucketName = NormalBucket, Encryption = false };
 			Encryption = new() { BucketName = EncryptionBucket, Encryption = true };
+
+			// 설정 검증
+			ValidateConfig();
+		}
+
+		private void ValidateConfig()
+		{
+			var errors = new List<string>();
+
+			// Global 설정 검증
+			if (Delay <= 0) errors.Add($"{STR_GLOBAL}.{STR_DELAY} must be greater than 0 (current: {Delay})");
+			if (string.IsNullOrWhiteSpace(NormalBucket)) errors.Add($"{STR_GLOBAL}.{STR_NORMAL_BUCKET_NAME} is required");
+			if (string.IsNullOrWhiteSpace(EncryptionBucket)) errors.Add($"{STR_GLOBAL}.{STR_ENCRYPTION_BUCKET_NAME} is required");
+			if (string.IsNullOrWhiteSpace(TargetBucketPrefix)) errors.Add($"{STR_GLOBAL}.{STR_TARGET_BUCKET_PREFIX} is required");
+			if (TestOption < 0 || TestOption > 2) errors.Add($"{STR_GLOBAL}.{STR_TEST_OPTION} must be 0, 1, or 2 (current: {TestOption})");
+			if (SSL < 0 || SSL > 2) errors.Add($"{STR_GLOBAL}.{STR_CHECK_SSL} must be 0, 1, or 2 (current: {SSL})");
+
+			// DB 설정 검증
+			if (DB != null)
+			{
+				if (string.IsNullOrWhiteSpace(DB.Host)) errors.Add($"{STR_DB}.{STR_DB_HOST} is required");
+				if (DB.Port <= 0 || DB.Port > 65535) errors.Add($"{STR_DB}.{STR_DB_PORT} must be between 1 and 65535 (current: {DB.Port})");
+				if (string.IsNullOrWhiteSpace(DB.DBName)) errors.Add($"{STR_DB}.{STR_DB_NAME} is required");
+				if (string.IsNullOrWhiteSpace(DB.TableName)) errors.Add($"{STR_DB}.{STR_DB_TABLE_NAME} is required");
+				if (string.IsNullOrWhiteSpace(DB.UserName)) errors.Add($"{STR_DB}.{STR_DB_USERNAME} is required");
+			}
+
+			// Main User 설정 검증
+			if (MainUser != null)
+			{
+				if (string.IsNullOrWhiteSpace(MainUser.URL)) errors.Add($"{STR_MAINUSER}.{STR_URL} is required");
+				if (MainUser.Port <= 0 || MainUser.Port > 65535) errors.Add($"{STR_MAINUSER}.{STR_PORT} must be between 1 and 65535 (current: {MainUser.Port})");
+				if (MainUser.SSLPort <= 0 || MainUser.SSLPort > 65535) errors.Add($"{STR_MAINUSER}.{STR_SSL_PORT} must be between 1 and 65535 (current: {MainUser.SSLPort})");
+				if (string.IsNullOrWhiteSpace(MainUser.AccessKey)) errors.Add($"{STR_MAINUSER}.{STR_ACCESSKEY} is required");
+				if (string.IsNullOrWhiteSpace(MainUser.SecretKey)) errors.Add($"{STR_MAINUSER}.{STR_SECRETKEY} is required");
+			}
+
+			// Alt User 설정 검증 (TestOption이 LOCAL_ONLY가 아닐 때만)
+			if (TestOption != 1 && AltUser != null)
+			{
+				if (string.IsNullOrWhiteSpace(AltUser.URL)) errors.Add($"{STR_ALTUSER}.{STR_URL} is required");
+				if (AltUser.Port <= 0 || AltUser.Port > 65535) errors.Add($"{STR_ALTUSER}.{STR_PORT} must be between 1 and 65535 (current: {AltUser.Port})");
+				if (AltUser.SSLPort <= 0 || AltUser.SSLPort > 65535) errors.Add($"{STR_ALTUSER}.{STR_SSL_PORT} must be between 1 and 65535 (current: {AltUser.SSLPort})");
+				if (string.IsNullOrWhiteSpace(AltUser.AccessKey)) errors.Add($"{STR_ALTUSER}.{STR_ACCESSKEY} is required");
+				if (string.IsNullOrWhiteSpace(AltUser.SecretKey)) errors.Add($"{STR_ALTUSER}.{STR_SECRETKEY} is required");
+			}
+
+			if (errors.Count > 0)
+			{
+				throw new InvalidOperationException($"Configuration validation failed:\n{string.Join("\n", errors)}");
+			}
 		}
 
 		private DBConfig GetDBConfig()
@@ -113,8 +168,31 @@ namespace ReplicationTest
 			SecretKey = ReadKeyToString(Section, STR_SECRETKEY)
 		};
 
-		private string ReadKeyToString(string Section, string Key) => Ini[Section][Key].ToString();
-		private int ReadKeyToInt(string Section, string Key) => int.TryParse(Ini[Section][Key].ToString(), out int Value) ? Value : -1;
-		private bool ReadKeyToBoolean(string Section, string Key) => bool.TryParse(Ini[Section][Key].ToString(), out bool Value) && Value;
+		private string ReadKeyToString(string Section, string Key)
+		{
+			if (!Ini.ContainsSection(Section) || !Ini[Section].ContainsKey(Key))
+				return string.Empty;
+			return Ini[Section][Key].ToString();
+		}
+
+		private int ReadKeyToInt(string Section, string Key)
+		{
+			if (!Ini.ContainsSection(Section) || !Ini[Section].ContainsKey(Key))
+				return -1;
+			return int.TryParse(Ini[Section][Key].ToString(), out int Value) ? Value : -1;
+		}
+
+		private bool ReadKeyToBoolean(string Section, string Key)
+		{
+			if (!Ini.ContainsSection(Section) || !Ini[Section].ContainsKey(Key))
+				return false;
+			return bool.TryParse(Ini[Section][Key].ToString(), out bool Value) && Value;
+		}
+
+		public override string ToString()
+		{
+			// json 형식으로 변환
+			return JsonSerializer.Serialize(this);
+		}
 	}
 }

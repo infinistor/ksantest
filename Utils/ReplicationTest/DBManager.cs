@@ -15,7 +15,7 @@ using System.Reflection;
 
 namespace ReplicationTest
 {
-	class DBManager(DBConfig DB, int BuildId)
+	class DBManager(DBConfig DB, int BuildId) : IDisposable
 	{
 		private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 		private const string DB_ID = "id";
@@ -36,7 +36,8 @@ namespace ReplicationTest
 		public readonly DBConfig DB = DB;
 		public readonly int BuildId = BuildId;
 
-		public MySqlConnection _conn = null;
+		private MySqlConnection _conn = null;
+		private bool _disposed = false;
 
 		public bool Connect()
 		{
@@ -87,11 +88,22 @@ namespace ReplicationTest
 		{
 			if (_conn == null) return false;
 			string query = $"insert into `{DB.TableName}`({DB_BUILD_ID}, {DB_SOURCE_URL}, {DB_SOURCE_BUCKET}, {DB_SOURCE_ENCRYPTION}, {DB_TARGET_URL}, {DB_TARGET_BUCKET}, {DB_TARGET_ENCRYPTION}, {DB_TARGET_FILTERING}, {DB_TARGET_DELETEMARKER}, {DB_RESULT}, {DB_MESSAGE})"
-						 + $" values({BuildId}, '{MainUrl}', '{Source.BucketName}', {Source.Encryption}, '{AltUrl}', '{Target.BucketName}', {Target.Encryption}, {Target.Filtering}, {Target.DeleteMarker}, '{Result}', '{Message}');";
+						 + $" values(@BuildId, @MainUrl, @SourceBucket, @SourceEncryption, @AltUrl, @TargetBucket, @TargetEncryption, @TargetFiltering, @TargetDeleteMarker, @Result, @Message);";
 			try
 			{
-
 				MySqlCommand command = new(query, _conn);
+				command.Parameters.AddWithValue("@BuildId", BuildId);
+				command.Parameters.AddWithValue("@MainUrl", MainUrl ?? string.Empty);
+				command.Parameters.AddWithValue("@SourceBucket", Source.BucketName ?? string.Empty);
+				command.Parameters.AddWithValue("@SourceEncryption", Source.Encryption);
+				command.Parameters.AddWithValue("@AltUrl", AltUrl ?? string.Empty);
+				command.Parameters.AddWithValue("@TargetBucket", Target.BucketName ?? string.Empty);
+				command.Parameters.AddWithValue("@TargetEncryption", Target.Encryption);
+				command.Parameters.AddWithValue("@TargetFiltering", Target.Filtering);
+				command.Parameters.AddWithValue("@TargetDeleteMarker", Target.DeleteMarker);
+				command.Parameters.AddWithValue("@Result", Result ?? string.Empty);
+				command.Parameters.AddWithValue("@Message", Message ?? string.Empty);
+
 				if (command.ExecuteNonQuery() != 1)
 				{
 					_log.ErrorFormat("Insert Failed({0})", query);
@@ -108,7 +120,27 @@ namespace ReplicationTest
 
 		public void Close()
 		{
-			_conn?.Close();
+			Dispose();
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!_disposed)
+			{
+				if (disposing)
+				{
+					_conn?.Close();
+					_conn?.Dispose();
+				}
+				_conn = null;
+				_disposed = true;
+			}
 		}
 	}
 }
