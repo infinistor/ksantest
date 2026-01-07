@@ -55,6 +55,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.example.Data.AES256;
+import org.example.Data.BackendHeaders;
 import org.example.Data.MainData;
 import org.example.Data.MultipartUploadV2Data;
 import org.example.Data.ObjectDataV2;
@@ -75,13 +76,19 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
 import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.interceptor.Context;
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.SdkHttpConfigurationOption;
+import software.amazon.awssdk.http.SdkHttpRequest;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -336,6 +343,60 @@ public class TestBase {
 
 		return createClient(config.isSecure, dummyUser, true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
+	}
+
+	public S3Client getBackendClient() {
+		String address = "";
+
+		if (config.isSecure) {
+			if (config.url.isEmpty())
+				address = NetUtils.createRegion2Https(config.regionName);
+			else
+				address = NetUtils.createURLToHTTPS(config.url, config.sslPort);
+		} else {
+			if (config.url.isEmpty())
+				address = NetUtils.createRegion2Http(config.regionName);
+			else
+				address = NetUtils.createURLToHTTP(config.url, config.port);
+		}
+
+		// 공통 헤더 인터셉터
+		ClientOverrideConfiguration.Builder configBuilder = ClientOverrideConfiguration.builder();
+
+		ExecutionInterceptor headerInterceptor = new ExecutionInterceptor() {
+			@Override
+			public SdkHttpRequest modifyHttpRequest(Context.ModifyHttpRequest context,
+					ExecutionAttributes executionAttributes) {
+				return context.httpRequest().toBuilder()
+						.putHeader(BackendHeaders.HEADER_IFS_ADMIN, BackendHeaders.HEADER_DATA)
+						.putHeader(BackendHeaders.HEADER_IFS_BACKEND, BackendHeaders.HEADER_DATA)
+						.putHeader(BackendHeaders.X_KSAN_BACKEND, BackendHeaders.HEADER_DATA)
+						.putHeader(BackendHeaders.HEADER_USER_AGENT, BackendHeaders.HEADER_USER_AGENT_VALUE)
+						.putHeader(BackendHeaders.HEADER_REPLICATION, BackendHeaders.HEADER_DATA)
+						.build();
+			}
+		};
+		configBuilder.addExecutionInterceptor(headerInterceptor);
+		configBuilder.retryStrategy(r -> r.maxAttempts(1));
+
+		var awsCred = StaticCredentialsProvider.create(
+				AwsBasicCredentials.create(config.backendUser.accessKey, config.backendUser.secretKey));
+
+		var s3Config = S3Configuration.builder()
+				.chunkedEncodingEnabled(true)
+				.pathStyleAccessEnabled(true)
+				.build();
+
+		// HTTP 클라이언트를 지정하지 않음 (기본 클라이언트 사용, mark/reset 문제 없음)
+		return S3Client.builder()
+				.region(config.regionName != null ? Region.of(config.regionName) : Region.AP_NORTHEAST_2)
+				.credentialsProvider(awsCred)
+				.serviceConfiguration(s3Config)
+				.requestChecksumCalculation(RequestChecksumCalculation.WHEN_SUPPORTED)
+				.responseChecksumValidation(ResponseChecksumValidation.WHEN_SUPPORTED)
+				.endpointOverride(URI.create(address))
+				.overrideConfiguration(configBuilder.build())
+				.build();
 	}
 	// endregion
 
@@ -1571,6 +1632,30 @@ public class TestBase {
 		}
 	}
 
+	public void checkContentUsingRange(String bucketName, String key, String versionId, String data, long step) {
+		var client = getClient();
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key).versionId(versionId));
+		var size = headResponse.contentLength();
+		assertEquals(data.length(), size, bucketName + "/" + key + " : " + data.length() + " != " + size);
+
+		var index = 0L;
+		while (index < size) {
+			var start = index;
+			var end = Math.min(start + step, size - 1L);
+
+			var response = client.getObject(
+					g -> g.bucket(bucketName).key(key).range("bytes=" + start + "-" + (end - 1)).versionId(versionId));
+			var body = getBody(response);
+			var length = end - start;
+			var partBody = data.substring((int) start, (int) end);
+
+			assertEquals(length, response.response().contentLength(),
+					bucketName + "/" + key + " : " + length + " != " + response.response().contentLength());
+			assertTrue(partBody.equals(body), MainData.NOT_MATCHED);
+			index += step;
+		}
+	}
+
 	public void checkContentUsingRangeEnc(S3Client client, String bucketName, String key, String data, long step) {
 		if (client == null)
 			client = getClient();
@@ -2419,6 +2504,184 @@ public class TestBase {
 		var message = String.format("%s 체크섬 비교 실패", algorithm);
 		assertEquals(expected, actual, message);
 	}
+	// endregion
+
+	// region Backend Utils
+
+	/**
+	 * Backend 클라이언트로 다운로드하여 바로 PutObject로 업로드
+	 * 
+	 * @param client           Backend 클라이언트
+	 * @param sourceBucketName 소스 버킷 이름
+	 * @param sourceKey        소스 키
+	 * @param targetBucketName 타겟 버킷 이름
+	 * @param targetKey        타겟 키
+	 * @param versionId        버전 ID
+	 */
+	public static void backendPutObject(S3Client client, String sourceBucketName, String sourceKey,
+			String targetBucketName, String targetKey, String versionId) {
+
+		// Backend 클라이언트로 다운로드
+		var response = client.getObject(g -> g.bucket(sourceBucketName).key(sourceKey).versionId(versionId));
+		var contentLength = response.response().contentLength();
+		var backendBody = RequestBody.fromInputStream(response, contentLength);
+
+		// 메타데이터 복사
+		var userMetadata = new java.util.HashMap<String, String>();
+		java.util.Map<String, java.util.List<String>> headers = null;
+
+		// User 메타데이터 복사
+		if (response.response().metadata() != null)
+			userMetadata.putAll(response.response().metadata());
+
+		// Header 복사
+		if (response.response().sdkHttpResponse().headers() != null)
+			headers = response.response().sdkHttpResponse().headers();
+
+		// 리퀘스트 생성
+		var putRequestConfig = AwsRequestOverrideConfiguration.builder()
+				.putHeader(BackendHeaders.HEADER_IFS_VERSION_ID, versionId)
+				.putHeader(BackendHeaders.X_KSAN_VERSION_ID, versionId);
+
+		// Header 복사
+		if (headers != null) {
+			for (var k : headers.entrySet()) {
+				var header = k.getKey();
+				var value = k.getValue().get(0);
+				if (value == null)
+					value = "";
+				// UTF-8 sign 에러를 배제하기 위해 대문자로 변경
+				if (k.getKey().equalsIgnoreCase("content-type"))
+					value = value.replace("UTF-8", "utf-8");
+				putRequestConfig.putHeader(header, value);
+			}
+		}
+
+		// Backend 클라이언트로 업로드
+		client.putObject(p -> p.bucket(targetBucketName).key(targetKey)
+				.overrideConfiguration(putRequestConfig.build()), backendBody);
+		try {
+			response.close();
+		} catch (IOException e) {
+			fail("Response Close Failed");
+		}
+	}
+
+	/**
+	 * Backend 클라이언트로 복사
+	 * 
+	 * @param client           Backend 클라이언트
+	 * @param sourceBucketName 소스 버킷 이름
+	 * @param sourceKey        소스 키
+	 * @param targetBucketName 타겟 버킷 이름
+	 * @param targetKey        타겟 키
+	 * @param sourceVersionId  소스 버전 ID
+	 * @param targetVersionId  타겟 버전 ID
+	 */
+	public static void backendCopyObject(S3Client client, String sourceBucketName, String sourceKey,
+			String targetBucketName, String targetKey, String sourceVersionId, String targetVersionId) {
+		// Backend 클라이언트로 복사
+		client.copyObject(c -> c
+				.sourceBucket(sourceBucketName)
+				.sourceKey(sourceKey)
+				.destinationBucket(targetBucketName)
+				.destinationKey(targetKey)
+				.sourceVersionId(sourceVersionId)
+				.overrideConfiguration(o -> o.putHeader(BackendHeaders.HEADER_IFS_VERSION_ID, targetVersionId)
+						.putHeader(BackendHeaders.X_KSAN_VERSION_ID, targetVersionId)));
+	}
+
+	/**
+	 * Backend 클라이언트로 멀티파트 업로드
+	 * 
+	 * @param client           Backend 클라이언트
+	 * @param sourceBucketName 소스 버킷 이름
+	 * @param sourceKey        소스 키
+	 * @param targetBucketName 타겟 버킷 이름
+	 * @param targetKey        타겟 키
+	 * @param versionId        버전 ID
+	 * @return
+	 */
+	public static void backendMultipartUpload(S3Client client, String sourceBucketName, String sourceKey,
+			String targetBucketName, String targetKey, String versionId) {
+		var partsSize = 5 * MainData.MB;
+		// 메타 정보 가져오기
+		var metadata = client.headObject(g -> g.bucket(sourceBucketName).key(sourceKey).versionId(versionId));
+
+		var initRequestConfig = AwsRequestOverrideConfiguration.builder();
+
+		// Header 복사
+		if (metadata.sdkHttpResponse().headers() != null) {
+
+			for (var k : metadata.sdkHttpResponse().headers().entrySet()) {
+				var header = k.getKey();
+				var value = k.getValue().get(0);
+				if (value == null)
+					value = "";
+
+				// UTF-8 sign 에러를 배제하기 위해 대문자로 변경
+				if (k.getKey().equalsIgnoreCase("content-type"))
+					value = value.replace("UTF-8", "utf-8");
+				// content-length는 자동으로 설정되므로 제외
+				if (k.getKey().equalsIgnoreCase("content-length"))
+					continue;
+				initRequestConfig.putHeader(header, value);
+			}
+		}
+
+		// Multipart 등록
+		var initResponse = client.createMultipartUpload(c -> c
+				.bucket(targetBucketName)
+				.key(targetKey)
+				.metadata(metadata.metadata())
+				.overrideConfiguration(initRequestConfig.build()));
+		var uploadId = initResponse.uploadId();
+		final String finalUploadId = uploadId;
+
+		// 오브젝트의 사이즈 확인
+		var size = metadata.contentLength();
+
+		// 업로드 시작
+		var partList = new ArrayList<CompletedPart>();
+		// int partNumber = 1;
+		long index = 0;
+
+		while (index < size) {
+			var start = index;
+			var partNumber = partList.size() + 1;
+			var end = Math.min(start + partsSize, size) - 1L;
+			var partSize = end - start + 1;
+
+			// 업로드할 내용 가져오기
+			var s3Object = client.getObject(
+					g -> g.bucket(sourceBucketName).key(sourceKey).versionId(versionId)
+							.range("bytes=" + start + "-" + end));
+			var body = RequestBody.fromInputStream(s3Object, s3Object.response().contentLength());
+
+			// 업로드 파츠
+			var partResponse = client.uploadPart(u -> u.bucket(targetBucketName).key(targetKey)
+					.uploadId(finalUploadId).partNumber(partNumber), body);
+			partList.add(CompletedPart.builder().partNumber(partNumber).eTag(partResponse.eTag()).build());
+
+			index += partSize;
+			try {
+				s3Object.close();
+			} catch (IOException e) {
+				fail("Response Close Failed");
+			}
+		}
+
+		// 헤더추가
+		var compRequestConfig = AwsRequestOverrideConfiguration.builder()
+				.putHeader(BackendHeaders.HEADER_IFS_VERSION_ID, versionId)
+				.putHeader(BackendHeaders.X_KSAN_VERSION_ID, versionId);
+
+		// 업로드 완료 요청
+		client.completeMultipartUpload(
+				c -> c.bucket(targetBucketName).key(targetKey).uploadId(finalUploadId)
+						.multipartUpload(p -> p.parts(partList)).overrideConfiguration(compRequestConfig.build()));
+	}
+
 	// endregion
 
 	// region Bucket Clear
