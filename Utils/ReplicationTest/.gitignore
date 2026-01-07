@@ -1,8 +1,6 @@
 bin/
 obj/
 .vscode/
-config.ini
-gw2gw.ini
-gw2proxy.ini
+*.ini
 *.sh
 *.ps1
