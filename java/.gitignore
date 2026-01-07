@@ -19,4 +19,7 @@ junit-merger.exe
 suwon*
 bundang*
 allinone*
-config.ini
+*.ini
+*.ps1
+.editorconfig
+.prettierrc
