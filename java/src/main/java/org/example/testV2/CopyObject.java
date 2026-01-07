@@ -300,8 +300,9 @@ public class CopyObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.copyObject(c -> c.sourceBucket(bucketName + "-fake").sourceKey("testObjectCopyBucketNotFoundSource")
-						.destinationBucket(bucketName).destinationKey("testObjectCopyBucketNotFoundTarget")));
+				() -> client.copyObject(
+						c -> c.sourceBucket(bucketName + "-fake").sourceKey("testObjectCopyBucketNotFoundSource")
+								.destinationBucket(bucketName).destinationKey("testObjectCopyBucketNotFoundTarget")));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
 	}
@@ -331,16 +332,18 @@ public class CopyObject extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(data));
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(data));
+		var sourceVid = putResponse.versionId();
 
-		var response = client.getObject(g -> g.bucket(bucketName).key(source));
-		var sourceVid = response.response().versionId();
+		var copyResponse = client.copyObject(c -> c
+				.sourceBucket(bucketName)
+				.sourceKey(source)
+				.sourceVersionId(sourceVid)
+				.destinationBucket(bucketName)
+				.destinationKey(target));
+		var targetVid = copyResponse.versionId();
 
-		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source).sourceVersionId(sourceVid)
-				.destinationBucket(bucketName).destinationKey(target));
-
-		response = client.getObject(g -> g.bucket(bucketName).key(target));
-		var targetVid = response.response().versionId();
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
 
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
@@ -755,7 +758,7 @@ public class CopyObject extends TestBase {
 
 		assertEquals(metaData, response.response().metadata());
 
-		//버전이 2개인지 확인
+		// 버전이 2개인지 확인
 		var versionResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(2, versionResponse.versions().size());
 	}
@@ -804,8 +807,8 @@ public class CopyObject extends TestBase {
 		response = client.headObject(h -> h.bucket(bucketName).key(source));
 
 		assertEquals(metadata, response.metadata());
-		
-		//버전이 2개인지 확인
+
+		// 버전이 2개인지 확인
 		var versionResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(2, versionResponse.versions().size());
 	}
