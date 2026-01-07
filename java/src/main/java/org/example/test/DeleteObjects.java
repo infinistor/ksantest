@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.HttpStatus;
-import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
