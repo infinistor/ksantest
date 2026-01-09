@@ -294,8 +294,8 @@ public class Backend {
 	 */
 	@Test
 	@Tag("Replication")
-	void testPutObjectTaggingReplication() {
-		testV2.testPutObjectTaggingReplication();
+	void testPutObjectWithTaggingReplication() {
+		testV2.testPutObjectWithTaggingReplication();
 	}
 
 	/**
@@ -303,8 +303,8 @@ public class Backend {
 	 */
 	@Test
 	@Tag("Replication")
-	void testPutObjectMetadataReplication() {
-		testV2.testPutObjectMetadataReplication();
+	void testPutObjectWithMetadataReplication() {
+		testV2.testPutObjectWithMetadataReplication();
 	}
 
 	/**
@@ -321,8 +321,8 @@ public class Backend {
 	 */
 	@Test
 	@Tag("Replication")
-	void testCopyObjectTaggingReplication() {
-		testV2.testCopyObjectTaggingReplication();
+	void testCopyObjectWithTaggingReplication() {
+		testV2.testCopyObjectWithTaggingReplication();
 	}
 
 	/**
@@ -330,8 +330,8 @@ public class Backend {
 	 */
 	@Test
 	@Tag("Replication")
-	void testCopyObjectMetadataReplication() {
-		testV2.testCopyObjectMetadataReplication();
+	void testCopyObjectWithMetadataReplication() {
+		testV2.testCopyObjectWithMetadataReplication();
 	}
 
 	/**
@@ -339,8 +339,8 @@ public class Backend {
 	 */
 	@Test
 	@Tag("Replication")
-	void testCopyObjectMetadataReplicationReplace() {
-		testV2.testCopyObjectMetadataReplicationReplace();
+	void testCopyObjectMetadataReplaceReplication() {
+		testV2.testCopyObjectMetadataReplaceReplication();
 	}
 
 	/**
@@ -357,8 +357,8 @@ public class Backend {
 	 */
 	@Test
 	@Tag("Replication")
-	void testMultipartUploadTaggingReplication() {
-		testV2.testMultipartUploadTaggingReplication();
+	void testMultipartUploadWithTaggingReplication() {
+		testV2.testMultipartUploadWithTaggingReplication();
 	}
 
 	/**
@@ -366,7 +366,43 @@ public class Backend {
 	 */
 	@Test
 	@Tag("Replication")
-	void testMultipartUploadMetadataReplication() {
-		testV2.testMultipartUploadMetadataReplication();
+	void testMultipartUploadWithMetadataReplication() {
+		testV2.testMultipartUploadWithMetadataReplication();
+	}
+
+	/**
+	 * PutObjectAcl 복제가 정상 동작하는지 확인
+	 */
+	@Test
+	@Tag("Replication")
+	void testPutObjectAclReplication() {
+		testV2.testPutObjectAclReplication();
+	}
+
+	/**
+	 * putObjectTagging 복제가 정상 동작하는지 확인
+	 */
+	@Test
+	@Tag("Replication")
+	void testPutObjectTaggingReplication() {
+		testV2.testPutObjectTaggingReplication();
+	}
+
+	/**
+	 * deleteObject 복제가 정상 동작하는지 확인
+	 */
+	@Test
+	@Tag("Replication")
+	void testDeleteObjectReplication() {
+		testV2.testDeleteObjectReplication();
+	}
+
+	/**
+	 * deleteObjectTagging 복제가 정상 동작하는지 확인
+	 */
+	@Test
+	@Tag("Replication")
+	void testDeleteObjectTaggingReplication() {
+		testV2.testDeleteObjectTaggingReplication();
 	}
 }

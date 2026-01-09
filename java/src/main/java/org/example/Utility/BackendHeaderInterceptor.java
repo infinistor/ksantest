@@ -23,7 +23,7 @@ public class BackendHeaderInterceptor implements ExecutionInterceptor {
 	public SdkHttpRequest modifyHttpRequest(Context.ModifyHttpRequest context,
 			ExecutionAttributes executionAttributes) {
 		return context.httpRequest().toBuilder()
-				.putHeader(BackendHeaders.HEADER_IFS_BACKEND, BackendHeaders.HEADER_DATA)
+				.putHeader(BackendHeaders.IFS_BACKEND, BackendHeaders.HEADER_DATA)
 				.putHeader(BackendHeaders.HEADER_USER_AGENT, BackendHeaders.HEADER_USER_AGENT_REPLICATION)
 				.putHeader(BackendHeaders.HEADER_REPLICATION, BackendHeaders.HEADER_DATA)
 				.build();

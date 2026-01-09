@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.ObjectLockRetentionMode;
+import software.amazon.awssdk.services.s3.model.Permission;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.model.Tagging;
 
@@ -376,8 +377,8 @@ public class Backend extends TestBase {
 		var response = backendClient.putObject(
 				p -> p.bucket(bucketName).key(key2)
 						.overrideConfiguration(o -> o
-								.putHeader(BackendHeaders.HEADER_IFS_VERSION_ID, versionId)
-								.putHeader(BackendHeaders.X_KSAN_VERSION_ID, versionId)),
+								.putHeader(BackendHeaders.IFS_VERSION_ID, versionId)
+								.putHeader(BackendHeaders.KSAN_VERSION_ID, versionId)),
 				RequestBody.fromString(content2));
 		assertEquals(200, response.sdkHttpResponse().statusCode());
 
@@ -508,8 +509,8 @@ public class Backend extends TestBase {
 				.destinationKey(targetKey)
 				.sourceVersionId(targetVid)
 				.overrideConfiguration(o -> o
-						.putHeader(BackendHeaders.HEADER_IFS_VERSION_ID, targetVid)
-						.putHeader(BackendHeaders.X_KSAN_VERSION_ID, targetVid)));
+						.putHeader(BackendHeaders.IFS_VERSION_ID, targetVid)
+						.putHeader(BackendHeaders.KSAN_VERSION_ID, targetVid)));
 
 		// 일반 클라이언트로 타겟 오브젝트 확인
 		var getResponse = client.getObject(g -> g.bucket(targetBucket).key(targetKey));
@@ -759,7 +760,7 @@ public class Backend extends TestBase {
 	/**
 	 * PutObject 태그가 복제되는지 확인
 	 */
-	public void testPutObjectTaggingReplication() {
+	public void testPutObjectWithTaggingReplication() {
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var sourceBucketName = createBucket(client);
@@ -793,7 +794,7 @@ public class Backend extends TestBase {
 	/**
 	 * PutObject 헤더와 메타데이터가 복제되는지 확인
 	 */
-	public void testPutObjectMetadataReplication() {
+	public void testPutObjectWithMetadataReplication() {
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var sourceBucketName = createBucket(client);
@@ -863,7 +864,7 @@ public class Backend extends TestBase {
 	/**
 	 * CopyObject 태그가 복제되는지 확인
 	 */
-	public void testCopyObjectTaggingReplication() {
+	public void testCopyObjectWithTaggingReplication() {
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucket = createBucket(client);
@@ -905,7 +906,7 @@ public class Backend extends TestBase {
 	/**
 	 * CopyObject 헤더와 메타데이터가 복제되는지 확인
 	 */
-	public void testCopyObjectMetadataReplication() {
+	public void testCopyObjectWithMetadataReplication() {
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucket = createBucket(client);
@@ -946,7 +947,7 @@ public class Backend extends TestBase {
 	/**
 	 * CopyObject 메타데이터가 Replace되었을 경우 복제되는지 확인
 	 */
-	public void testCopyObjectMetadataReplicationReplace() {
+	public void testCopyObjectMetadataReplaceReplication() {
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucket = createBucket(client);
@@ -1024,7 +1025,7 @@ public class Backend extends TestBase {
 	/**
 	 * MultipartUpload 태그가 복제되는지 확인
 	 */
-	public void testMultipartUploadTaggingReplication() {
+	public void testMultipartUploadWithTaggingReplication() {
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -1073,7 +1074,7 @@ public class Backend extends TestBase {
 	/**
 	 * MultipartUpload 헤더와 메타데이터가 복제되는지 확인
 	 */
-	public void testMultipartUploadMetadataReplication() {
+	public void testMultipartUploadWithMetadataReplication() {
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -1110,4 +1111,169 @@ public class Backend extends TestBase {
 		checkContentUsingRange(bucketName, targetKey, versionId, uploadData.getBody(), MainData.MB);
 	}
 
+	/**
+	 * PutObjectAcl 복제가 정상 동작하는지 확인
+	 */
+	public void testPutObjectAclReplication() {
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucketCannedAcl(client);
+		var sourceKey = "testPutObjectAclReplicationSource";
+		var targetKey = "testPutObjectAclReplicationTarget";
+		var content = "test content";
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 일반 클라이언트로 업로드
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(sourceKey), RequestBody.fromString(content));
+		var versionId = putResponse.versionId();
+
+		// 일반 클라이언트로 ACL 변경
+		client.putObjectAcl(p -> p.bucket(bucketName).key(sourceKey).acl(ObjectCannedACL.PUBLIC_READ));
+
+		// Backend 클라이언트로 복사
+		backendPutObject(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+
+		// Backend 클라이언트로 ACL 설정
+		backendPutObjectAcl(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+
+		// 일반 클라이언트로 복제 확인
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
+		var body = getBody(getResponse);
+		assertEquals(content, body);
+		assertEquals(versionId, getResponse.response().versionId());
+
+		// ACL 확인
+		var aclResponse = client.getObjectAcl(g -> g.bucket(bucketName).key(targetKey));
+		assertEquals(2, aclResponse.grants().size());
+		checkAcl(createPublicAcl(Permission.READ), aclResponse);
+	}
+
+	/**
+	 * putObjectTagging 복제가 정상 동작하는지 확인
+	 */
+	public void testPutObjectTaggingReplication() {
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucket(client);
+		var sourceKey = "testPutObjectTaggingReplicationSource";
+		var targetKey = "testPutObjectTaggingReplicationTarget";
+		var content = "test content";
+		var tagging = Tagging.builder().tagSet(Tag.builder().key("testKey").value("testValue").build()).build();
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 일반 클라이언트로 업로드
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(sourceKey).tagging(tagging),
+				RequestBody.fromString(content));
+		var versionId = putResponse.versionId();
+
+		// Backend 클라이언트로 복사
+		backendPutObject(backendClient, bucketName, sourceKey, bucketName, targetKey,
+				versionId);
+
+		// Backend 클라이언트로 태그 설정
+		backendPutObjectTagging(backendClient, bucketName, sourceKey, bucketName,
+				targetKey, versionId);
+
+		// 일반 클라이언트로 복제 확인
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
+		var body = getBody(getResponse);
+		assertEquals(content, body);
+		assertEquals(versionId, getResponse.response().versionId());
+
+		// 태그 확인
+		var tagResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(targetKey));
+		tagCompare(tagging.tagSet(), tagResponse.tagSet());
+	}
+
+	/**
+	 * deleteObject 복제가 정상 동작하는지 확인
+	 */
+	public void testDeleteObjectReplication() {
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucket(client);
+		var sourceKey = "testDeleteObjectReplicationSource";
+		var targetKey = "testDeleteObjectReplicationTarget";
+		var content = "test content";
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 일반 클라이언트로 업로드
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(sourceKey), RequestBody.fromString(content));
+		var versionId = putResponse.versionId();
+
+		// Backend 클라이언트로 복사
+		backendPutObject(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+
+		// 일반 클라이언트로 삭제
+		var deleteResponse = client.deleteObject(d -> d.bucket(bucketName).key(sourceKey));
+		var markerVersionId = deleteResponse.versionId();
+
+		// Backend 클라이언트로 삭제
+		backendDeleteObject(backendClient, bucketName, targetKey, markerVersionId);
+
+		// 일반 클라이언트로 DeleteMarker 확인
+		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(2, listResponse.deleteMarkers().size());
+
+		var sourceMarker = listResponse.deleteMarkers().get(0);
+		assertEquals(markerVersionId, sourceMarker.versionId());
+
+		var targetMarker = listResponse.deleteMarkers().get(1);
+		assertEquals(markerVersionId, targetMarker.versionId());
+	}
+
+	/**
+	 * deleteObjectTagging 복제가 정상 동작하는지 확인
+	 */
+	public void testDeleteObjectTaggingReplication() {
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucket(client);
+		var sourceKey = "testDeleteObjectTaggingReplicationSource";
+		var targetKey = "testDeleteObjectTaggingReplicationTarget";
+		var content = "test content";
+		var tagging = Tagging.builder().tagSet(Tag.builder().key("testKey").value("testValue").build()).build();
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 일반 클라이언트로 업로드
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(sourceKey), RequestBody.fromString(content));
+		var versionId = putResponse.versionId();
+
+		// Backend 클라이언트로 복사
+		backendPutObject(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+
+		// 일반 클라이언트로 태그 설정
+		client.putObjectTagging(p -> p.bucket(bucketName).key(sourceKey).tagging(tagging));
+
+		// Backend 클라이언트로 태그 복사
+		backendPutObjectTagging(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+
+		// 일반 클라이언트로 태그 확인
+		var tagResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(targetKey));
+		tagCompare(tagging.tagSet(), tagResponse.tagSet());
+
+		var tagResponse2 = client.getObjectTagging(g -> g.bucket(bucketName).key(sourceKey));
+		tagCompare(tagging.tagSet(), tagResponse2.tagSet());
+
+		// 일반 클라이언트로 태그 삭제
+		client.deleteObjectTagging(d -> d.bucket(bucketName).key(targetKey));
+
+		// Backend 클라이언트로 태그 삭제
+		backendDeleteObjectTagging(backendClient, bucketName, targetKey, versionId);
+
+		// 일반 클라이언트로 태그 확인
+		var tagResponse3 = client.getObjectTagging(g -> g.bucket(bucketName).key(sourceKey));
+		tagCompare(tagging.tagSet(), tagResponse3.tagSet());
+
+		var tagResponse4 = client.getObjectTagging(g -> g.bucket(bucketName).key(targetKey));
+		assertEquals(0, tagResponse4.tagSet().size());
+	}
 }

@@ -14,11 +14,11 @@ public class BackendHeaders {
 	public static final String S3_NOT_ACTIVATED = "This S3 is not active.";
 
 	public static final String HEADER_DATA = "NONE";
-	public static final String HEADER_IFS_ADMIN = "x-ifs-admin";
-	public static final String HEADER_IFS_BACKEND = "x-ifs-backend";
-	public static final String HEADER_IFS_VERSION_ID = "x-ifs-version-id";
-	public static final String HEADER_DELETE_MARKER_VERSION_ID = "x-ifs-delete-marker-version-id";
-	public static final String HEADER_ADMIN_HEALTH = "x-ifs-admin-health";
+
+	public static final String IFS_ADMIN = "x-ifs-admin";
+	public static final String IFS_BACKEND = "x-ifs-backend";
+	public static final String IFS_VERSION_ID = "x-ifs-version-id";
+	public static final String DELETE_MARKER_VERSION_ID = "x-ifs-delete-marker-version-id";
 
 	public static final String HEADER_REPLICATION = "x-ifs-replication";
 	public static final String HEADER_LOGGING = "x-ifs-logging";
@@ -42,7 +42,8 @@ public class BackendHeaders {
 	public static final String S3_VALUE_VERSION_ID = "?versionId=";
 	public static final String S3_NULL_VERSION = "null";
 
-	public static final String X_KSAN_BACKEND = "x-ksan-backend";
-	public static final String X_KSAN_VERSION_ID = "x-ksan-version-id";
-	public static final String X_KSAN_REPLICATION = "x-ksan-replication";
+	public static final String KSAN_BACKEND = "x-ksan-backend";
+	public static final String KSAN_VERSION_ID = "x-ksan-version-id";
+	public static final String KSAN_DELETE_MARKER_VERSION_ID = "x-ksan-delete-marker-version-id";
+	public static final String KSAN_REPLICATION = "x-ksan-replication";
 }

@@ -136,6 +136,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 import software.amazon.awssdk.services.s3.model.ServerSideEncryptionConfiguration;
 import software.amazon.awssdk.services.s3.model.Tag;
+import software.amazon.awssdk.services.s3.model.Tagging;
 import software.amazon.awssdk.services.s3.model.Type;
 import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -368,9 +369,9 @@ public class TestBase {
 			public SdkHttpRequest modifyHttpRequest(Context.ModifyHttpRequest context,
 					ExecutionAttributes executionAttributes) {
 				return context.httpRequest().toBuilder()
-						.putHeader(BackendHeaders.HEADER_IFS_ADMIN, BackendHeaders.HEADER_DATA)
-						.putHeader(BackendHeaders.HEADER_IFS_BACKEND, BackendHeaders.HEADER_DATA)
-						.putHeader(BackendHeaders.X_KSAN_BACKEND, BackendHeaders.HEADER_DATA)
+						.putHeader(BackendHeaders.IFS_ADMIN, BackendHeaders.HEADER_DATA)
+						.putHeader(BackendHeaders.IFS_BACKEND, BackendHeaders.HEADER_DATA)
+						.putHeader(BackendHeaders.KSAN_BACKEND, BackendHeaders.HEADER_DATA)
 						.putHeader(BackendHeaders.HEADER_USER_AGENT, BackendHeaders.HEADER_USER_AGENT_VALUE)
 						.putHeader(BackendHeaders.HEADER_REPLICATION, BackendHeaders.HEADER_DATA)
 						.build();
@@ -2540,8 +2541,8 @@ public class TestBase {
 
 		// 리퀘스트 생성
 		var putRequestConfig = AwsRequestOverrideConfiguration.builder()
-				.putHeader(BackendHeaders.HEADER_IFS_VERSION_ID, versionId)
-				.putHeader(BackendHeaders.X_KSAN_VERSION_ID, versionId);
+				.putHeader(BackendHeaders.IFS_VERSION_ID, versionId)
+				.putHeader(BackendHeaders.KSAN_VERSION_ID, versionId);
 
 		// Header 복사
 		if (headers != null) {
@@ -2587,8 +2588,8 @@ public class TestBase {
 				.destinationBucket(targetBucketName)
 				.destinationKey(targetKey)
 				.sourceVersionId(sourceVersionId)
-				.overrideConfiguration(o -> o.putHeader(BackendHeaders.HEADER_IFS_VERSION_ID, targetVersionId)
-						.putHeader(BackendHeaders.X_KSAN_VERSION_ID, targetVersionId)));
+				.overrideConfiguration(o -> o.putHeader(BackendHeaders.IFS_VERSION_ID, targetVersionId)
+						.putHeader(BackendHeaders.KSAN_VERSION_ID, targetVersionId)));
 	}
 
 	/**
@@ -2673,8 +2674,8 @@ public class TestBase {
 
 		// 헤더추가
 		var compRequestConfig = AwsRequestOverrideConfiguration.builder()
-				.putHeader(BackendHeaders.HEADER_IFS_VERSION_ID, versionId)
-				.putHeader(BackendHeaders.X_KSAN_VERSION_ID, versionId);
+				.putHeader(BackendHeaders.IFS_VERSION_ID, versionId)
+				.putHeader(BackendHeaders.KSAN_VERSION_ID, versionId);
 
 		// 업로드 완료 요청
 		client.completeMultipartUpload(
@@ -2682,6 +2683,78 @@ public class TestBase {
 						.multipartUpload(p -> p.parts(partList)).overrideConfiguration(compRequestConfig.build()));
 	}
 
+	/**
+	 * Backend 클라이언트로 ACL 설정
+	 * 
+	 * @param client           Backend 클라이언트
+	 * @param sourceBucketName 소스 버킷 이름
+	 * @param sourceKey        소스 키
+	 * @param targetBucketName 타겟 버킷 이름
+	 * @param targetKey        타겟 키
+	 * @param versionId        버전 ID
+	 */
+	public static void backendPutObjectAcl(S3Client client, String sourceBucketName, String sourceKey,
+			String targetBucketName, String targetKey, String versionId) {
+		// ACL 정보 가져오기
+		var acl = client.getObjectAcl(g -> g.bucket(sourceBucketName).key(sourceKey).versionId(versionId));
+
+		// ACL 설정
+		client.putObjectAcl(p -> p
+				.bucket(targetBucketName)
+				.key(targetKey)
+				.versionId(versionId)
+				.accessControlPolicy(a -> a.owner(acl.owner()).grants(acl.grants())));
+	}
+
+	/**
+	 * Backend 클라이언트로 태그 설정
+	 * 
+	 * @param client           Backend 클라이언트
+	 * @param sourceBucketName 소스 버킷 이름
+	 * @param sourceKey        소스 키
+	 * @param targetBucketName 타겟 버킷 이름
+	 * @param targetKey        타겟 키
+	 * @param versionId        버전 ID
+	 */
+	public static void backendPutObjectTagging(S3Client client, String sourceBucketName, String sourceKey,
+			String targetBucketName, String targetKey, String versionId) {
+		// 태그 정보 가져오기
+		var tagging = client.getObjectTagging(g -> g.bucket(sourceBucketName).key(sourceKey).versionId(versionId));
+
+		// 태그 설정
+		client.putObjectTagging(p -> p.bucket(targetBucketName).key(targetKey).versionId(versionId)
+				.tagging(Tagging.builder().tagSet(tagging.tagSet()).build()));
+	}
+
+	/**
+	 * Backend 클라이언트로 삭제
+	 * 
+	 * @param client     Backend 클라이언트
+	 * @param bucketName 버킷 이름
+	 * @param key        Object 키
+	 * @param versionId  버전 ID
+	 */
+	public static void backendDeleteObject(S3Client client, String bucketName, String key, String versionId) {
+		client.putObject(p -> p
+				.bucket(bucketName)
+				.key(key)
+				.overrideConfiguration(o -> o
+						.putHeader(BackendHeaders.DELETE_MARKER_VERSION_ID, versionId)
+						.putHeader(BackendHeaders.KSAN_DELETE_MARKER_VERSION_ID, versionId)),
+				RequestBody.empty());
+	}
+
+	/**
+	 * Backend 클라이언트로 태그 삭제
+	 * 
+	 * @param client     Backend 클라이언트
+	 * @param bucketName 버킷 이름
+	 * @param key        Object 키
+	 * @param versionId  버전 ID
+	 */
+	public static void backendDeleteObjectTagging(S3Client client, String bucketName, String key, String versionId) {
+		client.deleteObjectTagging(d -> d.bucket(bucketName).key(key).versionId(versionId));
+	}
 	// endregion
 
 	// region Bucket Clear
