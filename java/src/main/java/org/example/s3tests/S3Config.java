@@ -49,7 +49,7 @@ public class S3Config {
 	static final String STR_ACCESS_KEY = "AccessKey";
 	static final String STR_SECRET_KEY = "SecretKey";
 	static final String STR_KMS = "KMS";
-
+	static final String STR_BACKEND_USER = "Backend User";
 	/*********************************************************************************************************/
 	public final String fileName;
 	final Ini ini = new Ini();
@@ -65,6 +65,7 @@ public class S3Config {
 	public boolean notDelete;
 	public UserData mainUser;
 	public UserData altUser;
+	public UserData backendUser;
 
 	public S3Config(String fileName) {
 		if (fileName == null || fileName.isBlank())
@@ -91,6 +92,7 @@ public class S3Config {
 
 			mainUser = readUser(STR_MAIN_USER);
 			altUser = readUser(STR_ALT_USER);
+			backendUser = readUser(STR_BACKEND_USER);
 
 		} catch (Exception e) {
 			e.printStackTrace();
