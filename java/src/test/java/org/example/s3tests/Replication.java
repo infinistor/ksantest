@@ -25,6 +25,7 @@ class Replication {
 
 	/**
 	 * 테스트 정리 작업 수행
+	 * 
 	 * @param testInfo 테스트 정보
 	 */
 	@AfterEach
@@ -81,6 +82,16 @@ class Replication {
 	void testReplicationInvalidTargetBucketVersioning() {
 		test.testReplicationInvalidTargetBucketVersioning();
 		testV2.testReplicationInvalidTargetBucketVersioning();
+	}
+
+	/**
+	 * 버킷에 복제 설정을 하고 버저닝 설정을 중단 했을 때 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationBucketVersioningSuspend() {
+		test.testReplicationBucketVersioningSuspend();
+		testV2.testReplicationBucketVersioningSuspend();
 	}
 
 }

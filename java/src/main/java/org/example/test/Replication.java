@@ -19,6 +19,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.BucketReplicationConfiguration;
 import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
+import com.amazonaws.services.s3.model.DeleteMarkerReplication;
 import com.amazonaws.services.s3.model.ReplicationDestinationConfig;
 import com.amazonaws.services.s3.model.ReplicationRule;
 import com.amazonaws.services.s3.model.replication.ReplicationFilter;
@@ -53,7 +54,7 @@ public class Replication extends TestBase {
 		var destination = new ReplicationDestinationConfig().withBucketARN(targetBucketARN);
 		var rule = new ReplicationRule().withStatus("Enabled").withDestinationConfig(destination);
 		var config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/aws_replication_test");
+		config.setRoleARN("arn:aws:iam::635518764071:role/replication");
 		config.addRule("rule1", rule);
 
 		client.setBucketReplicationConfiguration(sourceBucketName, config);
@@ -83,7 +84,7 @@ public class Replication extends TestBase {
 				.withDestinationConfig(destination)
 				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(prefix)));
 		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/aws_replication_test");
+		config.setRoleARN("arn:aws:iam::635518764071:role/replication");
 		config.addRule("rule1", rule);
 
 		var e = assertThrows(AmazonS3Exception.class,
@@ -109,7 +110,7 @@ public class Replication extends TestBase {
 				.withDestinationConfig(destination)
 				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(prefix)));
 		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/aws_replication_test");
+		config.setRoleARN("arn:aws:iam::635518764071:role/replication");
 		config.addRule("rule1", rule);
 
 		var e = assertThrows(
@@ -140,7 +141,7 @@ public class Replication extends TestBase {
 				.withDestinationConfig(destination)
 				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(prefix)));
 		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/aws_replication_test");
+		config.setRoleARN("arn:aws:iam::635518764071:role/replication");
 		config.addRule("rule1", rule);
 
 		var e = assertThrows(
@@ -170,7 +171,7 @@ public class Replication extends TestBase {
 				.withDestinationConfig(destination)
 				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(prefix)));
 		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
-		config.setRoleARN("arn:aws:iam::635518764071:role/aws_replication_test");
+		config.setRoleARN("arn:aws:iam::635518764071:role/replication");
 		config.addRule("rule1", rule);
 
 		var e = assertThrows(
@@ -178,5 +179,48 @@ public class Replication extends TestBase {
 				() -> client.setBucketReplicationConfiguration(sourceBucketName, config));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals("InvalidRequest", e.getErrorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationBucketVersioningSuspend() {
+		var prefix = "test1";
+		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
+
+		// 원본, 대상 버킷 버저닝 설정
+		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningConfiguration.ENABLED);
+		checkConfigureVersioningRetry(targetBucketName, BucketVersioningConfiguration.ENABLED);
+
+		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
+
+		// 원본 버킷 복제 설정
+		ReplicationDestinationConfig destination = new ReplicationDestinationConfig().withBucketARN(targetBucketARN);
+		ReplicationRule rule = new ReplicationRule()
+				.withPriority(1)
+				.withStatus("Enabled")
+				.withDestinationConfig(destination)
+				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(prefix)))
+				.withDeleteMarkerReplication(new DeleteMarkerReplication().withStatus("Disabled"));
+		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
+		config.setRoleARN("arn:aws:iam::635518764071:role/replication");
+		config.addRule("rule1", rule);
+
+		client.setBucketReplicationConfiguration(sourceBucketName, config);
+
+		// 원본 버킷 버저닝 중단 실패 확인
+		var e1 = assertThrows(
+				AmazonS3Exception.class,
+				() -> checkConfigureVersioningRetry(sourceBucketName, BucketVersioningConfiguration.SUSPENDED));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e1.getStatusCode());
+		assertEquals("InvalidBucketState", e1.getErrorCode());
+
+		// 대상 버킷 버저닝 중단 실패 확인
+		var e2 = assertThrows(
+				AmazonS3Exception.class,
+				() -> checkConfigureVersioningRetry(targetBucketName, BucketVersioningConfiguration.SUSPENDED));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e2.getStatusCode());
+		assertEquals("InvalidBucketState", e2.getErrorCode());
 	}
 }

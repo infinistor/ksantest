@@ -49,7 +49,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
 				.rules(ReplicationRule.builder().status("Enabled").priority(1)
 						.destination(Destination.builder().bucket(targetBucketARN).build())
 						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
@@ -77,7 +77,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
 				.rules(ReplicationRule.builder().status("Enabled")
 						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
 				.build();
@@ -97,7 +97,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
 				.rules(ReplicationRule.builder().status("Enabled")
 						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
 				.build();
@@ -121,7 +121,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
 				.rules(ReplicationRule.builder().status("Enabled").priority(1)
 						.destination(Destination.builder().bucket(targetBucketARN).build())
 						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
@@ -149,7 +149,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/aws_replication_test")
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
 				.rules(ReplicationRule.builder().status("Enabled").priority(1)
 						.destination(Destination.builder().bucket(targetBucketARN).build())
 						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
@@ -161,5 +161,45 @@ public class Replication extends TestBase {
 				() -> client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config)));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals("InvalidRequest", e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationBucketVersioningSuspend() {
+		var prefix = "test/";
+		var client = getClient();
+		var sourceBucketName = createBucket(client);
+		var targetBucketName = createBucket(client);
+
+		// 원본, 대상 버킷 버저닝 설정
+		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
+		checkConfigureVersioningRetry(targetBucketName, BucketVersioningStatus.ENABLED);
+
+		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
+
+		// 원본 버킷 복제 설정
+		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
+				.rules(ReplicationRule.builder().status("Enabled").priority(1)
+						.destination(Destination.builder().bucket(targetBucketARN).build())
+						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
+						.deleteMarkerReplication(d -> d.status("Disabled"))
+						.build())
+				.build();
+
+		client.putBucketReplication(p -> p.bucket(sourceBucketName).replicationConfiguration(config));
+
+		// 원본 버킷 버저닝 중단 실패 확인
+		var e1 = assertThrows(
+				AwsServiceException.class,
+				() -> checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.SUSPENDED));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e1.statusCode());
+		assertEquals("InvalidBucketState", e1.awsErrorDetails().errorCode());
+
+		// 대상 버킷 버저닝 중단 실패 확인
+		var e2 = assertThrows(
+				AwsServiceException.class,
+				() -> checkConfigureVersioningRetry(targetBucketName, BucketVersioningStatus.SUSPENDED));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e2.statusCode());
+		assertEquals("InvalidBucketState", e2.awsErrorDetails().errorCode());
 	}
 }
