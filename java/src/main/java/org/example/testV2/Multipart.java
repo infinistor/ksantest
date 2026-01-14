@@ -727,12 +727,7 @@ public class Multipart extends TestBase {
 				var asyncKey = prefix + "/async/" + config.checksumType().name().toLowerCase() + "/" + checksum.name();
 
 				multipartUpload(client, bucketName, key, config.checksumType, checksum);
-
-				var e = assertThrows(CompletionException.class,
-						() -> multipartUpload(asyncClient, bucketName, asyncKey, config.checksumType, checksum));
-				var e2 = (AwsServiceException) e.getCause();
-				assertEquals(HttpStatus.SC_BAD_REQUEST, e2.statusCode());
-				assertEquals(MainData.INVALID_REQUEST, e2.awsErrorDetails().errorCode());
+				multipartUpload(asyncClient, bucketName, asyncKey, config.checksumType, checksum);
 			}
 		}
 	}

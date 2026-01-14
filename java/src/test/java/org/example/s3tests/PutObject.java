@@ -292,7 +292,7 @@ class PutObject {
 
 	@Test
 	@Tag("checksum")
-	// useChunkEncoding을 사용하지 않는 오브젝트 업로드 시 체크섬 계산 및 검증 실패 확인
+	// useChunkEncoding을 사용하지 않는 오브젝트 업로드 시 체크섬 계산 및 검증 확인
 	void testPutObjectChecksum() {
 		testV2.testPutObjectChecksum();
 	}
