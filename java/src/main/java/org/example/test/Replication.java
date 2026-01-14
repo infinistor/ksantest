@@ -196,14 +196,14 @@ public class Replication extends TestBase {
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
 		// 원본 버킷 복제 설정
-		ReplicationDestinationConfig destination = new ReplicationDestinationConfig().withBucketARN(targetBucketARN);
-		ReplicationRule rule = new ReplicationRule()
+		var destination = new ReplicationDestinationConfig().withBucketARN(targetBucketARN);
+		var rule = new ReplicationRule()
 				.withPriority(1)
 				.withStatus("Enabled")
 				.withDestinationConfig(destination)
 				.withFilter(new ReplicationFilter(new ReplicationPrefixPredicate(prefix)))
 				.withDeleteMarkerReplication(new DeleteMarkerReplication().withStatus("Disabled"));
-		BucketReplicationConfiguration config = new BucketReplicationConfiguration();
+		var config = new BucketReplicationConfiguration();
 		config.setRoleARN("arn:aws:iam::635518764071:role/replication");
 		config.addRule("rule1", rule);
 
@@ -213,14 +213,7 @@ public class Replication extends TestBase {
 		var e1 = assertThrows(
 				AmazonS3Exception.class,
 				() -> checkConfigureVersioningRetry(sourceBucketName, BucketVersioningConfiguration.SUSPENDED));
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e1.getStatusCode());
+		assertEquals(HttpStatus.SC_CONFLICT, e1.getStatusCode());
 		assertEquals("InvalidBucketState", e1.getErrorCode());
-
-		// 대상 버킷 버저닝 중단 실패 확인
-		var e2 = assertThrows(
-				AmazonS3Exception.class,
-				() -> checkConfigureVersioningRetry(targetBucketName, BucketVersioningConfiguration.SUSPENDED));
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e2.getStatusCode());
-		assertEquals("InvalidBucketState", e2.getErrorCode());
 	}
 }

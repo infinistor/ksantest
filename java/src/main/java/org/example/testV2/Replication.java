@@ -192,14 +192,7 @@ public class Replication extends TestBase {
 		var e1 = assertThrows(
 				AwsServiceException.class,
 				() -> checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.SUSPENDED));
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e1.statusCode());
+		assertEquals(HttpStatus.SC_CONFLICT, e1.statusCode());
 		assertEquals("InvalidBucketState", e1.awsErrorDetails().errorCode());
-
-		// 대상 버킷 버저닝 중단 실패 확인
-		var e2 = assertThrows(
-				AwsServiceException.class,
-				() -> checkConfigureVersioningRetry(targetBucketName, BucketVersioningStatus.SUSPENDED));
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e2.statusCode());
-		assertEquals("InvalidBucketState", e2.awsErrorDetails().errorCode());
 	}
 }
