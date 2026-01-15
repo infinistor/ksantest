@@ -764,7 +764,7 @@ public class PutObject extends TestBase {
 		for (var unicodeChar : unicodeChars) {
 			// 실제 바이트 길이 확인
 			var singleCharBytes = unicodeChar.getBytes(StandardCharsets.UTF_8).length;
-			var maxLength = 1024 / singleCharBytes; // 1024바이트 제한에 맞는 최대 문자 수
+			var maxLength = 200 / singleCharBytes; // 200자 제한에 맞는 최대 문자 수
 
 			System.out.println("문자: " + unicodeChar + ", 바이트: " + singleCharBytes + ", 최대길이: " + maxLength);
 
