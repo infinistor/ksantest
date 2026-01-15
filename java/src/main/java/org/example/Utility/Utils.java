@@ -68,6 +68,26 @@ public class Utils {
 		return stringList;
 	}
 
+	public static String randomObjectName(int length) {
+		// 200자에 /를 추가하여 생성하도록 구현
+		final int MAX_LENGTH = 200;
+
+		var name = new StringBuilder();
+		int index = 0;
+		while (name.length() <= length) {
+			if (index + MAX_LENGTH < length) {
+				name.append(randomTextToLong(MAX_LENGTH));
+				index += MAX_LENGTH;
+			} else {
+				name.append(randomTextToLong(length - index));
+				index = length;
+			}
+			name.append('/');
+		}
+		return name.toString().substring(0, length);
+
+	}
+
 	public static String getMD5(String str) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("MD5");

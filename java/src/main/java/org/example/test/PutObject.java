@@ -556,7 +556,7 @@ public class PutObject extends TestBase {
 	public void testPutObjectKeyMaxLength() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = Utils.randomTextToLong(MainData.MAX_KEY_LENGTH);
+		var key = Utils.randomObjectName(MainData.MAX_KEY_LENGTH);
 		var body = "test-max-length";
 
 		var response = client.putObject(bucketName, key, body);
@@ -586,7 +586,7 @@ public class PutObject extends TestBase {
 	public void testPutObjectKeyTooLong() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = Utils.randomTextToLong(MainData.MAX_KEY_LENGTH + 1);
+		var key = Utils.randomObjectName(MainData.MAX_KEY_LENGTH + 1);
 		var body = "test-too-long";
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, body));
@@ -599,12 +599,13 @@ public class PutObject extends TestBase {
 	public void testPutObjectKeySpecialCharactersAtStart() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var specialChars = List.of("!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{", "}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`");
-		
+		var specialChars = List.of("!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{",
+				"}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`");
+
 		for (var specialChar : specialChars) {
 			// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
 			var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.length();
-			var key = specialChar + Utils.randomTextToLong(remainingLength);
+			var key = specialChar + Utils.randomObjectName(remainingLength);
 			var body = "test-body-" + specialChar;
 
 			assertEquals(MainData.MAX_KEY_LENGTH, key.length());
@@ -621,12 +622,13 @@ public class PutObject extends TestBase {
 	public void testPutObjectKeySpecialCharactersAtEnd() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var specialChars = List.of("!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{", "}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`");
-		
+		var specialChars = List.of("!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{",
+				"}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`");
+
 		for (var specialChar : specialChars) {
 			// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
 			var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.length();
-			var key = Utils.randomTextToLong(remainingLength) + specialChar;
+			var key = Utils.randomObjectName(remainingLength) + specialChar;
 			var body = "test-body-" + specialChar;
 
 			assertEquals(MainData.MAX_KEY_LENGTH, key.length());
@@ -644,14 +646,14 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var unicodeChars = List.of("한", "中", "日", "а", "α", "ع", "т", "ф");
-		
+
 		for (var unicodeChar : unicodeChars) {
 			// 실제 바이트 길이 확인
 			var singleCharBytes = unicodeChar.getBytes(StandardCharsets.UTF_8).length;
 			var maxLength = 1024 / singleCharBytes; // 1024바이트 제한에 맞는 최대 문자 수
-			
+
 			System.out.println("문자: " + unicodeChar + ", 바이트: " + singleCharBytes + ", 최대길이: " + maxLength);
-			
+
 			// 안전하게 조금 작은 길이로 시도
 			var safeLength = Math.max(1, maxLength - 1);
 			var key = unicodeChar.repeat(safeLength);
@@ -659,7 +661,7 @@ public class PutObject extends TestBase {
 
 			var actualBytes = key.getBytes(StandardCharsets.UTF_8).length;
 			System.out.println("키길이: " + key.length() + "자, 실제바이트: " + actualBytes);
-			
+
 			var response = client.putObject(bucketName, key, body);
 			assertNotNull(response.getETag());
 
@@ -674,12 +676,12 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var unicodeChars = List.of("한", "中", "日", "а", "α", "ع", "т", "ф");
-		
+
 		for (var unicodeChar : unicodeChars) {
 			// 실제 바이트 길이 확인
 			var singleCharBytes = unicodeChar.getBytes(StandardCharsets.UTF_8).length;
 			var maxLength = 1024 / singleCharBytes; // 1024바이트 제한에 맞는 최대 문자 수
-			
+
 			// 1024바이트를 초과하는 길이로 시도
 			var tooLongLength = maxLength + 1;
 			var key = unicodeChar.repeat(tooLongLength);
@@ -687,7 +689,7 @@ public class PutObject extends TestBase {
 
 			var actualBytes = key.getBytes(StandardCharsets.UTF_8).length;
 			System.out.println("실패테스트 - 문자: " + unicodeChar + ", 키길이: " + key.length() + "자, 실제바이트: " + actualBytes);
-			
+
 			var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, body));
 			assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 			assertEquals(MainData.KEY_TOO_LONG, e.getErrorCode());
@@ -700,16 +702,16 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var testCases = List.of(
-			1,  // " " + 1022자 + " " = 1024자
-			2,  // "  " + 1020자 + "  " = 1024자
-			3,  // "   " + 1018자 + "   " = 1024자
-			5   // "     " + 1014자 + "     " = 1024자
+				1, // " " + 1022자 + " " = 1024자
+				2, // " " + 1020자 + " " = 1024자
+				3, // " " + 1018자 + " " = 1024자
+				5 // " " + 1014자 + " " = 1024자
 		);
-		
+
 		for (var spaceCount : testCases) {
 			var spaces = " ".repeat(spaceCount);
 			var middleLength = MainData.MAX_KEY_LENGTH - (spaceCount * 2);
-			var middle = Utils.randomTextToLong(middleLength);
+			var middle = Utils.randomObjectName(middleLength);
 			var key = spaces + middle + spaces;
 			var body = "space-test-" + spaceCount;
 
@@ -728,13 +730,12 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var keys = List.of(
-			"folder//double-slash",
-			"folder///triple-slash",
-			"//leading-double-slash",
-			"trailing-double-slash//",
-			"folder////multiple-slashes"
-		);
-		
+				"folder//double-slash",
+				"folder///triple-slash",
+				"//leading-double-slash",
+				"trailing-double-slash//",
+				"folder////multiple-slashes");
+
 		for (var key : keys) {
 			var body = "slash-test-" + key.replace("/", "-");
 
@@ -752,15 +753,15 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var testCases = List.of(
-			MainData.MAX_KEY_LENGTH - 1,  // 1023
-			MainData.MAX_KEY_LENGTH,      // 1024
-			500,  // 중간 길이
-			100,  // 짧은 길이
-			50    // 매우 짧은 길이
+				MainData.MAX_KEY_LENGTH - 1, // 1023
+				MainData.MAX_KEY_LENGTH, // 1024
+				500, // 중간 길이
+				100, // 짧은 길이
+				50 // 매우 짧은 길이
 		);
-		
+
 		for (var length : testCases) {
-			var key = Utils.randomTextToLong(length);
+			var key = Utils.randomObjectName(length);
 			var body = "boundary-test-" + length;
 
 			var response = client.putObject(bucketName, key, body);
@@ -771,5 +772,4 @@ public class PutObject extends TestBase {
 		}
 	}
 
-	
 }

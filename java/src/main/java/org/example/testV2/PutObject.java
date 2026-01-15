@@ -669,7 +669,7 @@ public class PutObject extends TestBase {
 	public void testPutObjectKeyMaxLength() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = Utils.randomTextToLong(MainData.MAX_KEY_LENGTH);
+		var key = Utils.randomObjectName(MainData.MAX_KEY_LENGTH);
 		var body = "test-max-length";
 
 		var response = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(body));
@@ -699,7 +699,7 @@ public class PutObject extends TestBase {
 	public void testPutObjectKeyTooLong() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = Utils.randomTextToLong(MainData.MAX_KEY_LENGTH + 1);
+		var key = Utils.randomObjectName(MainData.MAX_KEY_LENGTH + 1);
 		var body = "test-too-long";
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putObject(p -> p.bucket(bucketName).key(key),
@@ -719,7 +719,7 @@ public class PutObject extends TestBase {
 		for (var specialChar : specialChars) {
 			// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
 			var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.length();
-			var key = specialChar + Utils.randomTextToLong(remainingLength);
+			var key = specialChar + Utils.randomObjectName(remainingLength);
 			var body = "test-body-" + specialChar;
 
 			assertEquals(MainData.MAX_KEY_LENGTH, key.length());
@@ -742,7 +742,7 @@ public class PutObject extends TestBase {
 		for (var specialChar : specialChars) {
 			// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
 			var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.length();
-			var key = Utils.randomTextToLong(remainingLength) + specialChar;
+			var key = Utils.randomObjectName(remainingLength) + specialChar;
 			var body = "test-body-" + specialChar;
 
 			assertEquals(MainData.MAX_KEY_LENGTH, key.length());
@@ -826,7 +826,7 @@ public class PutObject extends TestBase {
 		for (var spaceCount : testCases) {
 			var spaces = " ".repeat(spaceCount);
 			var middleLength = MainData.MAX_KEY_LENGTH - (spaceCount * 2);
-			var middle = Utils.randomTextToLong(middleLength);
+			var middle = Utils.randomObjectName(middleLength);
 			var key = spaces + middle + spaces;
 			var body = "space-test-" + spaceCount;
 
@@ -876,7 +876,7 @@ public class PutObject extends TestBase {
 		);
 
 		for (var length : testCases) {
-			var key = Utils.randomTextToLong(length);
+			var key = Utils.randomObjectName(length);
 			var body = "boundary-test-" + length;
 
 			var response = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(body));
