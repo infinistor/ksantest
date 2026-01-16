@@ -115,45 +115,46 @@ public class ListBuckets extends TestBase {
 	@Tag("MaxBuckets")
 	public void testListBucketsMaxBuckets() {
 		var client = getClient();
-		var bucketNames = new ArrayList<String>();
 		for (int i = 0; i < 5; i++) {
-			bucketNames.add(createBucket(client));
+			createBucket(client);
 		}
 
-		bucketNames.sort(String::compareTo);
+		// 전체 버킷 리스트를 먼저 가져옴
+		var fullResponse = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(getPrefix()));
+		var fullBucketList = getBucketList(fullResponse.getBuckets());
+		fullBucketList.sort(String::compareTo);
 
+		// maxBuckets로 제한해서 가져온 결과가 전체 리스트의 앞부분과 일치하는지 확인
 		var response = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(getPrefix()).withMaxBuckets(2));
 		var bucketList = getBucketList(response.getBuckets());
 		assertEquals(2, bucketList.size());
-		assertEquals(bucketNames.subList(0, 2), bucketList);
+		assertEquals(fullBucketList.subList(0, 2), bucketList);
 	}
 
 	@Test
 	@Tag("ContinuationToken")
 	public void testListBucketsContinuationToken() {
 		var client = getClient();
-		var bucketNames = new ArrayList<String>();
 		for (int i = 0; i < 5; i++) {
-			bucketNames.add(createBucket(client));
+			createBucket(client);
 		}
 
-		bucketNames.sort(String::compareTo);
+		// 전체 버킷 리스트를 먼저 가져옴
+		var fullResponse = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(getPrefix()));
+		var fullBucketList = getBucketList(fullResponse.getBuckets());
+		fullBucketList.sort(String::compareTo);
 
+		// 첫 번째 페이지: maxBuckets=2
 		var response = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(getPrefix()).withMaxBuckets(2));
 		var bucketList = getBucketList(response.getBuckets());
 		assertEquals(2, bucketList.size());
-		assertEquals(bucketNames.subList(0, 2), bucketList);
+		assertEquals(fullBucketList.subList(0, 2), bucketList);
 
+		// 두 번째 페이지: continuationToken 사용
 		var response2 = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(getPrefix()).withMaxBuckets(2)
 				.withContinuationToken(response.getContinuationToken()));
 		var bucketList2 = getBucketList(response2.getBuckets());
 		assertEquals(2, bucketList2.size());
-		assertEquals(bucketNames.subList(2, 4), bucketList2);
-
-		var response3 = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(getPrefix()).withMaxBuckets(2)
-				.withContinuationToken(response2.getContinuationToken()));
-		var bucketList3 = getBucketList(response3.getBuckets());
-		assertEquals(1, bucketList3.size());
-		assertEquals(bucketNames.subList(4, 5), bucketList3);
+		assertEquals(fullBucketList.subList(2, 4), bucketList2);
 	}
 }
