@@ -286,7 +286,7 @@ public class Backend extends TestBase {
 		// Backend 클라이언트로 보존 설정
 		var retainUntilDate = getExpiredDate(Instant.now(), 1);
 		var response = backendClient.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.COMPLIANCE).retainUntilDate(retainUntilDate))
+				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE).retainUntilDate(retainUntilDate))
 				.bypassGovernanceRetention(true));
 		assertEquals(200, response.sdkHttpResponse().statusCode());
 	}
@@ -327,7 +327,7 @@ public class Backend extends TestBase {
 		// Object Lock이 활성화되지 않은 경우 예외 발생
 		assertThrows(AwsServiceException.class,
 				() -> backendClient.putObjectRetention(p -> p.bucket(bucketName).key(key)
-						.retention(r -> r.mode(ObjectLockRetentionMode.COMPLIANCE))
+						.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE))
 						.bypassGovernanceRetention(true)));
 	}
 
@@ -698,7 +698,7 @@ public class Backend extends TestBase {
 		// Backend 클라이언트로 보존 설정
 		var retainUntilDate = getExpiredDate(Instant.now(), 1);
 		var response = backendClient.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.COMPLIANCE).retainUntilDate(retainUntilDate))
+				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE).retainUntilDate(retainUntilDate))
 				.bypassGovernanceRetention(true));
 		assertEquals(200, response.sdkHttpResponse().statusCode());
 	}
