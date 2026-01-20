@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
 
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.ObjectLockConfiguration;
 import software.amazon.awssdk.services.s3.model.ObjectLockEnabled;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
@@ -313,7 +315,7 @@ public class Lock extends TestBase {
 				.build();
 
 		client.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf));
-		
+
 		// Multipart Upload
 		var uploadData = setupMultipartUpload(client, bucketName, key, 1 * MainData.MB);
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
@@ -651,6 +653,56 @@ public class Lock extends TestBase {
 		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
 
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
+	}
+
+	@Test
+	@Tag("Retention")
+	public void testObjectLockDeleteObjectWithRetentionBypass() {
+		var key = "testObjectLockDeleteObjectWithRetentionBypass";
+		var client = getClient();
+		var bucketName = getNewBucketName();
+
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(key));
+		var versionId = putResponse.versionId();
+
+		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
+				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
+						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.build();
+		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention));
+
+		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
+	}
+
+	@Test
+	@Tag("Retention")
+	public void testObjectLockDeleteObjectsWithRetentionBypass() {
+		var client = getClient();
+		var bucketName = getNewBucketName();
+		var keyVersions = new ArrayList<ObjectIdentifier>();
+
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+
+		for (int i = 0; i < 10; i++) {
+			var key = String.format("testObjectLockDeleteObjectsWithRetentionBypass-%03d", i);
+			var putResponse = client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(key));
+			var versionId = putResponse.versionId();
+
+			var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
+					.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
+							.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+					.build();
+			client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention).versionId(versionId));
+
+			keyVersions.add(ObjectIdentifier.builder().key(key).versionId(versionId).build());
+		}
+
+		client.deleteObjects(d -> d
+				.bucket(bucketName)
+				.delete(o -> o.objects(keyVersions))
+				.bypassGovernanceRetention(true));
 	}
 
 	@Test

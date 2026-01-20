@@ -25,6 +25,7 @@ class Lock {
 
 	/**
 	 * 테스트 정리 작업 수행
+	 * 
 	 * @param testInfo 테스트 정보
 	 */
 	@AfterEach
@@ -294,6 +295,26 @@ class Lock {
 	}
 
 	/**
+	 * [버킷의 Lock옵션을 활성화] 오브젝트의 Lock 유지기한이 있어도 바이패스를 통해 삭제가 가능한지 확인
+	 */
+	@Test
+	@Tag("Retention")
+	void testObjectLockDeleteObjectWithRetentionBypass() {
+		test.testObjectLockDeleteObjectWithRetentionBypass();
+		testV2.testObjectLockDeleteObjectWithRetentionBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] 오브젝트의 Lock 유지기한이 있어도 바이패스를 통해 삭제가 가능한지 확인
+	 */
+	@Test
+	@Tag("Retention")
+	void testObjectLockDeleteObjectsWithRetentionBypass() {
+		test.testObjectLockDeleteObjectsWithRetentionBypass();
+		testV2.testObjectLockDeleteObjectsWithRetentionBypass();
+	}
+
+	/**
 	 * [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold를 활성화 가능한지 확인
 	 */
 	@Test
@@ -372,5 +393,4 @@ class Lock {
 		test.testObjectLockGetObjMetadata();
 		testV2.testObjectLockGetObjMetadata();
 	}
-
 }
