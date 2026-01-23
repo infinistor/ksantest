@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 
 public class DeleteObjects extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -231,5 +232,95 @@ public class DeleteObjects extends TestBase {
 			var e = assertThrows(AwsServiceException.class, () -> client.getObject(g -> g.bucket(bucketName).key(key)));
 			assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		}
+	}
+
+	@Test
+	@Tag("versioning")
+	public void testDeleteObjectsWithVersioning() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var methodName = "testDeleteObjectsWithVersioning";
+		var keyNames = List.of(
+				methodName + "-0",
+				methodName + "-1",
+				methodName + "-2",
+				methodName + "-3",
+				methodName + "-4");
+
+		// 1. 버킷 생성 및 버저닝 설정
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 2. 오브젝트 5개 업로드 * 2개 버전
+		for (var key : keyNames) {
+			createMultipleVersions(client, bucketName, key, 2, false);
+		}
+
+		// 2-1. 각 오브젝트의 nonCurrent version(첫 번째 버전) 수집
+		var initialVersResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		var initialVersions = initialVersResponse.versions();
+		var nonCurrentVersions = new ArrayList<ObjectIdentifier>();
+
+		// 각 key별로 가장 오래된 버전(nonCurrent) 찾기
+		for (var key : keyNames) {
+			var keyVersions = new ArrayList<software.amazon.awssdk.services.s3.model.ObjectVersion>();
+			for (var version : initialVersions) {
+				if (version.key().equals(key)) {
+					keyVersions.add(version);
+				}
+			}
+			// 가장 오래된 버전(첫 번째 버전) 추가
+			if (!keyVersions.isEmpty()) {
+				var oldestVersion = keyVersions.get(keyVersions.size() - 1); // 가장 오래된 버전
+				nonCurrentVersions.add(ObjectIdentifier.builder()
+						.key(oldestVersion.key())
+						.versionId(oldestVersion.versionId())
+						.build());
+			}
+		}
+
+		// 3. 버전 정보를 추가하지 않고 오브젝트 삭제 + nonCurrent version 삭제 (섞여있는 경우)
+		var objectList = getKeyVersions(keyNames);
+		var mixedDeleteList = new ArrayList<ObjectIdentifier>();
+		mixedDeleteList.addAll(objectList); // 버전 정보 없는 삭제 (deleteMarker 생성)
+		mixedDeleteList.addAll(nonCurrentVersions); // 버전 정보 포함 삭제 (nonCurrent version 삭제)
+
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(mixedDeleteList)));
+		assertEquals(keyNames.size() + nonCurrentVersions.size(), delResponse.deleted().size());
+
+		// 4. deleteMarker 갯수가 5개, version object 갯수가 5개인지 확인
+		var versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		var deleteMarkers = versResponse.deleteMarkers();
+		var remainingVersions = versResponse.versions();
+		assertEquals(5, deleteMarkers.size());
+		assertEquals(5, remainingVersions.size()); // 10개에서 5개 nonCurrent 삭제되어 5개 남음
+
+		// 5. deleteMarker와 버전정보를 포함한 오브젝트 삭제(DeleteObjects)
+		var finalVersions = versResponse.versions();
+		var finalDeleteMarkers = versResponse.deleteMarkers();
+		var deleteList = new ArrayList<ObjectIdentifier>();
+
+		// 모든 버전을 삭제 리스트에 추가
+		for (var version : finalVersions) {
+			deleteList.add(ObjectIdentifier.builder()
+					.key(version.key())
+					.versionId(version.versionId())
+					.build());
+		}
+
+		// 모든 deleteMarker를 삭제 리스트에 추가
+		for (var deleteMarker : finalDeleteMarkers) {
+			deleteList.add(ObjectIdentifier.builder()
+					.key(deleteMarker.key())
+					.versionId(deleteMarker.versionId())
+					.build());
+		}
+
+		delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(deleteList)));
+		assertEquals(finalVersions.size() + finalDeleteMarkers.size(), delResponse.deleted().size());
+
+		// 6. listVersions로 완전히 삭제됨을 확인
+		versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(0, versResponse.versions().size());
+		assertEquals(0, versResponse.deleteMarkers().size());
 	}
 }

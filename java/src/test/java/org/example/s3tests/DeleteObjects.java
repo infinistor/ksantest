@@ -101,4 +101,14 @@ class DeleteObjects {
 		test.testDeleteObjects();
 		testV2.testDeleteObjects();
 	}
+
+	/**
+	 * 버저닝 된 버켓에서 버전 정보를 포함한 삭제가 정상 동작하는지 확인
+	 */
+	@Test
+	@Tag("versioning")
+	void testDeleteObjectsWithVersioning() {
+		test.testDeleteObjectsWithVersioning();
+		testV2.testDeleteObjectsWithVersioning();
+	}
 }
