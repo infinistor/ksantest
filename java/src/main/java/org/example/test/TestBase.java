@@ -59,11 +59,13 @@ import org.junit.platform.commons.util.StringUtils;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
+import com.amazonaws.Request;
 import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.handlers.RequestHandler2;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.AccessControlList;
@@ -128,6 +130,24 @@ public class TestBase {
 
 	/************************************************************************************************************/
 
+	// Custom Request Handler to add X-Auth-Token header
+	private static class AuthTokenRequestHandler extends RequestHandler2 {
+		private final String authToken;
+
+		public AuthTokenRequestHandler(String authToken) {
+			this.authToken = authToken;
+		}
+
+		@Override
+		public void beforeRequest(Request<?> request) {
+			if (authToken != null && !authToken.isEmpty()) {
+				request.addHeader("X-Auth-Token", authToken);
+			}
+		}
+	}
+
+	/************************************************************************************************************/
+
 	public enum EncryptionType {
 		NORMAL, SSE_S3, SSE_C
 	}
@@ -172,6 +192,7 @@ public class TestBase {
 		s3Config.setMaxErrorRetry(1);
 		s3Config.setConnectionTimeout(60000);
 		s3Config.setSocketTimeout(60000);
+
 		var clientBuilder = AmazonS3ClientBuilder.standard();
 
 		if (user == null)
@@ -189,6 +210,12 @@ public class TestBase {
 		clientBuilder.setChunkedEncodingDisabled(useChunkEncoding);
 		clientBuilder.setPayloadSigningEnabled(payloadSigning);
 		clientBuilder.setPathStyleAccessEnabled(true);
+
+		// Add X-Auth-Token handler if authToken is provided
+		if (StringUtils.isNotBlank(config.xAuthToken)) {
+			clientBuilder.withRequestHandlers(new AuthTokenRequestHandler(config.xAuthToken));
+		}
+
 		return clientBuilder.build();
 	}
 
@@ -426,7 +453,8 @@ public class TestBase {
 		return statement;
 	}
 
-	public static JsonObject makeJsonPolicy(String action, String resource, JsonObject principal, JsonObject conditions) {
+	public static JsonObject makeJsonPolicy(String action, String resource, JsonObject principal,
+			JsonObject conditions) {
 		var policy = new JsonObject();
 
 		policy.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
@@ -970,6 +998,7 @@ public class TestBase {
 
 		return uploadData;
 	}
+
 	public MultipartUploadData setupMultipartUploadLock(AmazonS3 client, String bucketName, String key, int size) {
 		var uploadData = new MultipartUploadData();
 

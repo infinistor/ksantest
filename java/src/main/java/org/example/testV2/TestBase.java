@@ -211,14 +211,32 @@ public class TestBase {
 				.pathStyleAccessEnabled(true)
 				.build();
 
-		return S3Client.builder()
+		var clientBuilder = S3Client.builder()
 				.region(config.regionName != null ? Region.of(config.regionName) : Region.AP_NORTHEAST_2)
 				.credentialsProvider(awsCred)
 				.httpClientBuilder(httpClient)
 				.serviceConfiguration(s3Config)
 				.requestChecksumCalculation(request)
 				.responseChecksumValidation(response)
-				.endpointOverride(URI.create(address)).build();
+				.endpointOverride(URI.create(address));
+
+		// Add X-Auth-Token header if configured
+		if (StringUtils.isNotBlank(config.xAuthToken)) {
+			ClientOverrideConfiguration.Builder configBuilder = ClientOverrideConfiguration.builder();
+			ExecutionInterceptor authTokenInterceptor = new ExecutionInterceptor() {
+				@Override
+				public SdkHttpRequest modifyHttpRequest(Context.ModifyHttpRequest context,
+						ExecutionAttributes executionAttributes) {
+					return context.httpRequest().toBuilder()
+							.putHeader("X-Auth-Token", config.xAuthToken)
+							.build();
+				}
+			};
+			configBuilder.addExecutionInterceptor(authTokenInterceptor);
+			clientBuilder.overrideConfiguration(configBuilder.build());
+		}
+
+		return clientBuilder.build();
 	}
 
 	public S3Client getOldClient() {
@@ -300,14 +318,32 @@ public class TestBase {
 				.pathStyleAccessEnabled(true)
 				.build();
 
-		return S3AsyncClient.builder()
+		var clientBuilder = S3AsyncClient.builder()
 				.region(config.regionName != null ? Region.of(config.regionName) : Region.AP_NORTHEAST_2)
 				.httpClient(httpClient.build())
 				.credentialsProvider(awsCred)
 				.serviceConfiguration(s3Config)
 				.requestChecksumCalculation(request)
 				.responseChecksumValidation(response)
-				.endpointOverride(URI.create(address)).build();
+				.endpointOverride(URI.create(address));
+
+		// Add X-Auth-Token header if configured
+		if (StringUtils.isNotBlank(config.xAuthToken)) {
+			ClientOverrideConfiguration.Builder configBuilder = ClientOverrideConfiguration.builder();
+			ExecutionInterceptor authTokenInterceptor = new ExecutionInterceptor() {
+				@Override
+				public SdkHttpRequest modifyHttpRequest(Context.ModifyHttpRequest context,
+						ExecutionAttributes executionAttributes) {
+					return context.httpRequest().toBuilder()
+							.putHeader("X-Auth-Token", config.xAuthToken)
+							.build();
+				}
+			};
+			configBuilder.addExecutionInterceptor(authTokenInterceptor);
+			clientBuilder.overrideConfiguration(configBuilder.build());
+		}
+
+		return clientBuilder.build();
 	}
 
 	public S3AsyncClient getAsyncClient(boolean useChunkEncoding, RequestChecksumCalculation request,
