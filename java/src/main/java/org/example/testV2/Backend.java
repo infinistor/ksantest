@@ -1219,13 +1219,14 @@ public class Backend extends TestBase {
 
 		// 일반 클라이언트로 DeleteMarker 확인
 		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+
 		assertEquals(2, listResponse.deleteMarkers().size());
+		assertEquals(markerVersionId, listResponse.deleteMarkers().get(0).versionId());
+		assertEquals(markerVersionId, listResponse.deleteMarkers().get(1).versionId());
 
-		var sourceMarker = listResponse.deleteMarkers().get(0);
-		assertEquals(markerVersionId, sourceMarker.versionId());
-
-		var targetMarker = listResponse.deleteMarkers().get(1);
-		assertEquals(markerVersionId, targetMarker.versionId());
+		assertEquals(2, listResponse.versions().size());
+		assertEquals(versionId, listResponse.versions().get(0).versionId());
+		assertEquals(versionId, listResponse.versions().get(1).versionId());
 	}
 
 	/**
