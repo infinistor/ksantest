@@ -45,7 +45,7 @@ public class Access extends TestBase {
 	public void testBlockPublicAclAndPolicy() {
 		var client = getClient();
 		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter);
-		
+
 		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(true).withIgnorePublicAcls(false)
 				.withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
 		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
@@ -205,5 +205,6 @@ public class Access extends TestBase {
 				response.getPublicAccessBlockConfiguration().getIgnorePublicAcls());
 		assertEquals(accessConf.getRestrictPublicBuckets(),
 				response.getPublicAccessBlockConfiguration().getRestrictPublicBuckets());
+		client.deletePublicAccessBlock(new DeletePublicAccessBlockRequest().withBucketName(bucketName));
 	}
 }

@@ -295,9 +295,9 @@ public class Lock extends TestBase {
 				.bypassGovernanceRetention(true));
 		client.deleteObject(d -> d.bucket(bucketName2).key(keyCopy).versionId(response2.versionId())
 				.bypassGovernanceRetention(true));
-		client.deleteObject(d -> d.bucket(bucketName).key(key2).versionId(response3.versionId())
+		client.deleteObject(d -> d.bucket(bucketName2).key(key2).versionId(response3.versionId())
 				.bypassGovernanceRetention(true));
-		client.deleteObject(d -> d.bucket(bucketName2).key(key2Copy).versionId(response4.versionId())
+		client.deleteObject(d -> d.bucket(bucketName).key(key2Copy).versionId(response4.versionId())
 				.bypassGovernanceRetention(true));
 	}
 

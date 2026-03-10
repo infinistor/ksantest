@@ -435,8 +435,7 @@ public class GetObject extends TestBase {
 
 		// 버저닝 활성화
 		client.putBucketVersioning(p -> p.bucket(bucketName)
-				.versioningConfiguration(
-						v -> v.status(BucketVersioningStatus.ENABLED)));
+				.versioningConfiguration(v -> v.status(BucketVersioningStatus.ENABLED)));
 
 		// 오브젝트 업로드
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(body));

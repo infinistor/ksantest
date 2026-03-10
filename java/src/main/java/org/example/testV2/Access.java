@@ -52,9 +52,9 @@ public class Access extends TestBase {
 		assertEquals(accessConf.blockPublicPolicy(), response.publicAccessBlockConfiguration().blockPublicPolicy());
 
 		BucketCannedACL[] publicAcls = {
-			BucketCannedACL.PUBLIC_READ,
-			BucketCannedACL.PUBLIC_READ_WRITE,
-			BucketCannedACL.AUTHENTICATED_READ
+				BucketCannedACL.PUBLIC_READ,
+				BucketCannedACL.PUBLIC_READ_WRITE,
+				BucketCannedACL.AUTHENTICATED_READ
 		};
 
 		for (var acl : publicAcls) {
@@ -81,9 +81,9 @@ public class Access extends TestBase {
 		assertEquals(accessConf.blockPublicAcls(), response.publicAccessBlockConfiguration().blockPublicAcls());
 
 		ObjectCannedACL[] publicAcls = {
-			ObjectCannedACL.PUBLIC_READ,
-			ObjectCannedACL.PUBLIC_READ_WRITE,
-			ObjectCannedACL.AUTHENTICATED_READ
+				ObjectCannedACL.PUBLIC_READ,
+				ObjectCannedACL.PUBLIC_READ_WRITE,
+				ObjectCannedACL.AUTHENTICATED_READ
 		};
 
 		for (ObjectCannedACL acl : publicAcls) {
@@ -181,5 +181,6 @@ public class Access extends TestBase {
 		assertEquals(accessConf.ignorePublicAcls(), response.publicAccessBlockConfiguration().ignorePublicAcls());
 		assertEquals(accessConf.restrictPublicBuckets(),
 				response.publicAccessBlockConfiguration().restrictPublicBuckets());
+		client.deletePublicAccessBlock(d -> d.bucket(bucketName));
 	}
 }

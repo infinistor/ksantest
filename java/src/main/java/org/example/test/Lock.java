@@ -324,9 +324,9 @@ public class Lock extends TestBase {
 				.withBypassGovernanceRetention(true));
 		client.deleteVersion(new DeleteVersionRequest(bucketName2, keyCopy, response2.getVersionId())
 				.withBypassGovernanceRetention(true));
-		client.deleteVersion(new DeleteVersionRequest(bucketName, key2, response3.getVersionId())
+		client.deleteVersion(new DeleteVersionRequest(bucketName2, key2, response3.getVersionId())
 				.withBypassGovernanceRetention(true));
-		client.deleteVersion(new DeleteVersionRequest(bucketName2, key2Copy, response4.getVersionId())
+		client.deleteVersion(new DeleteVersionRequest(bucketName, key2Copy, response4.getVersionId())
 				.withBypassGovernanceRetention(true));
 	}
 

@@ -2818,10 +2818,17 @@ public class TestBase {
 			var isTruncated = true;
 			while (isTruncated) {
 				var response = client.listObjectVersions(l -> l.bucket(bucketName));
-				var objects = response.versions();
 
-				for (var version : objects)
+				// Delete object versions
+				var versions = response.versions();
+				for (var version : versions)
 					client.deleteObject(d -> d.bucket(bucketName).key(version.key()).versionId(version.versionId()));
+
+				// Delete delete markers
+				var deleteMarkers = response.deleteMarkers();
+				for (var marker : deleteMarkers)
+					client.deleteObject(d -> d.bucket(bucketName).key(marker.key()).versionId(marker.versionId()));
+
 				isTruncated = response.isTruncated();
 			}
 
