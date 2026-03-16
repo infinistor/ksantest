@@ -127,33 +127,6 @@ public class Backend {
 	// testV2.testDeleteObjectTagging();
 	// }
 
-	// /**
-	// * PutObjectRetention가 정상 동작하는지 확인
-	// */
-	// @Test
-	// @Tag("RETENTION")
-	// void testPutObjectRetention() {
-	// testV2.testPutObjectRetention();
-	// }
-
-	// /**
-	// * GetObjectRetention가 정상 동작하는지 확인
-	// */
-	// @Test
-	// @Tag("RETENTION")
-	// void testGetObjectRetention() {
-	// testV2.testGetObjectRetention();
-	// }
-
-	// /**
-	// * DeleteObjectRetention가 정상 동작하는지 확인
-	// */
-	// @Test
-	// @Tag("RETENTION")
-	// void testDeleteObjectRetention() {
-	// testV2.testDeleteObjectRetention();
-	// }
-
 	/**
 	 * [Versioning] PutObject가 정상 동작하는지 확인
 	 */

@@ -270,68 +270,6 @@ public class Backend extends TestBase {
 	}
 
 	/**
-	 * Backend 헤더를 사용하여 오브젝트 보존 설정을 할 수 있는지 확인
-	 */
-	public void testPutObjectRetention() {
-		var client = getClient();
-		var backendClient = getBackendClient();
-		var bucketName = createBucket(client);
-		var key = "testPutObjectRetention";
-		var content = "test content";
-
-		// Object Lock이 활성화된 버킷이 필요하므로 테스트 제한
-		// 일반 클라이언트로 업로드
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
-
-		// Backend 클라이언트로 보존 설정
-		var retainUntilDate = getExpiredDate(Instant.now(), 1);
-		var response = backendClient.putObjectRetention(p -> p.bucket(bucketName).key(key)
-				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE).retainUntilDate(retainUntilDate))
-				.bypassGovernanceRetention(true));
-		assertEquals(200, response.sdkHttpResponse().statusCode());
-	}
-
-	/**
-	 * Backend 헤더를 사용하여 오브젝트 보존 설정을 조회할 수 있는지 확인
-	 */
-	public void testGetObjectRetention() {
-		var client = getClient();
-		var backendClient = getBackendClient();
-		var bucketName = createBucket(client);
-		var key = "testGetObjectRetention";
-		var content = "test content";
-
-		// 일반 클라이언트로 업로드
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
-
-		// Backend 클라이언트로 보존 설정 조회
-		// Object Lock이 활성화되지 않은 경우 예외 발생
-		assertThrows(AwsServiceException.class,
-				() -> backendClient.getObjectRetention(g -> g.bucket(bucketName).key(key)));
-	}
-
-	/**
-	 * Backend 헤더를 사용하여 오브젝트 보존 설정을 삭제할 수 있는지 확인
-	 */
-	public void testDeleteObjectRetention() {
-		var client = getClient();
-		var backendClient = getBackendClient();
-		var bucketName = createBucket(client);
-		var key = "testDeleteObjectRetention";
-		var content = "test content";
-
-		// 일반 클라이언트로 업로드
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
-
-		// Backend 클라이언트로 보존 설정 삭제
-		// Object Lock이 활성화되지 않은 경우 예외 발생
-		assertThrows(AwsServiceException.class,
-				() -> backendClient.putObjectRetention(p -> p.bucket(bucketName).key(key)
-						.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE))
-						.bypassGovernanceRetention(true)));
-	}
-
-	/**
 	 * [Versioning] PutObject가 정상 동작하는지 확인
 	 */
 	public void testPutObjectVersioning() {
@@ -758,7 +696,7 @@ public class Backend extends TestBase {
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
 		// 일반 클라이언트로 업로드
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 
 		// Backend 클라이언트로 보존 설정
 		var retainUntilDate = getExpiredDate(Instant.now(), 1);
@@ -766,6 +704,9 @@ public class Backend extends TestBase {
 				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE).retainUntilDate(retainUntilDate))
 				.bypassGovernanceRetention(true));
 		assertEquals(200, response.sdkHttpResponse().statusCode());
+
+		client.deleteObject(
+				d -> d.bucket(bucketName).key(key).versionId(putResponse.versionId()).bypassGovernanceRetention(true));
 	}
 
 	/**
