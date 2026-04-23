@@ -39,7 +39,7 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("ListObject")
 	public void testMultiObjectDelete() {
-		var keyNames = List.of("key0", "key1", "key2");
+		var keyNames = List.of("testMultiObjectDelete0", "testMultiObjectDelete1", "testMultiObjectDelete2");
 		var client = getClient();
 		var bucketName = createObjects(client, keyNames);
 
@@ -64,7 +64,7 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("ListObjectsV2")
 	public void testMultiObjectV2Delete() {
-		var keyNames = List.of("key0", "key1", "key2");
+		var keyNames = List.of("testMultiObjectV2Delete0", "testMultiObjectV2Delete1", "testMultiObjectV2Delete2");
 		var client = getClient();
 		var bucketName = createObjects(client, keyNames);
 
@@ -89,7 +89,8 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("Versioning")
 	public void testMultiObjectDeleteVersions() {
-		var keyNames = List.of("key0", "key1", "key2");
+		var keyNames = List.of("testMultiObjectDeleteVersions0", "testMultiObjectDeleteVersions1",
+				"testMultiObjectDeleteVersions2");
 		var client = getClient();
 		var bucketName = createBucket(client);
 
@@ -118,7 +119,8 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("quiet")
 	public void testMultiObjectDeleteQuiet() {
-		var keyNames = List.of("key0", "key1", "key2");
+		var keyNames = List.of("testMultiObjectDeleteQuiet0", "testMultiObjectDeleteQuiet1",
+				"testMultiObjectDeleteQuiet2");
 		var client = getClient();
 		var bucketName = createObjects(client, keyNames);
 
@@ -138,7 +140,8 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("Directory")
 	public void testDirectoryDelete() {
-		var keyNames = List.of("a/b/", "a/b/c/d/obj1", "a/b/c/d/obj2", "1/2/", "1/2/3/4/obj1", "q/w/e/r/obj");
+		var keyNames = List.of("a/b/", "a/b/c/d/testDirectoryDelete1", "a/b/c/d/testDirectoryDelete2", "1/2/",
+				"1/2/3/4/testDirectoryDelete1", "q/w/e/r/testDirectoryDelete");
 		var client = getClient();
 		var bucketName = createObjects(client, keyNames);
 
@@ -163,7 +166,8 @@ public class DeleteObjects extends TestBase {
 	@Test
 	@Tag("versioning")
 	public void testDirectoryDeleteVersions() {
-		var keyNames = List.of("a/", "a/obj1", "a/obj2", "b/", "b/obj1");
+		var keyNames = List.of("a/", "a/testDirectoryDeleteVersions1", "a/testDirectoryDeleteVersions2", "b/",
+				"b/testDirectoryDeleteVersions1");
 		var client = getClient();
 		var bucketName = createBucket(client);
 
