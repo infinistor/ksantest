@@ -501,189 +501,208 @@ public class CopyObject extends TestBase {
 	@Test
 	@Tag("encryption")
 	public void testCopyNorSrcToNorBucketAndObj() {
-		testObjectCopy(false, false, false, false, 1024);
-		testObjectCopy(false, false, false, false, 256 * 1024);
-		testObjectCopy(false, false, false, false, 1024 * 1024);
+		var prefix = "testCopyNorSrcToNorBucketAndObj";
+		testObjectCopy(prefix, false, false, false, false, 1024);
+		testObjectCopy(prefix, false, false, false, false, 256 * 1024);
+		testObjectCopy(prefix, false, false, false, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyNorSrcToNorBucketEncryptionObj() {
-		testObjectCopy(false, false, false, true, 1024);
-		testObjectCopy(false, false, false, true, 256 * 1024);
-		testObjectCopy(false, false, false, true, 1024 * 1024);
+		var prefix = "testCopyNorSrcToNorBucketEncryptionObj";
+		testObjectCopy(prefix, false, false, false, true, 1024);
+		testObjectCopy(prefix, false, false, false, true, 256 * 1024);
+		testObjectCopy(prefix, false, false, false, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyNorSrcToEncryptionBucketNorObj() {
-		testObjectCopy(false, false, true, false, 1024);
-		testObjectCopy(false, false, true, false, 256 * 1024);
-		testObjectCopy(false, false, true, false, 1024 * 1024);
+		var prefix = "testCopyNorSrcToEncryptionBucketNorObj";
+		testObjectCopy(prefix, false, false, true, false, 1024);
+		testObjectCopy(prefix, false, false, true, false, 256 * 1024);
+		testObjectCopy(prefix, false, false, true, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyNorSrcToEncryptionBucketAndObj() {
-		testObjectCopy(false, false, true, true, 1024);
-		testObjectCopy(false, false, true, true, 256 * 1024);
-		testObjectCopy(false, false, true, true, 1024 * 1024);
+		var prefix = "testCopyNorSrcToEncryptionBucketAndObj";
+		testObjectCopy(prefix, false, false, true, true, 1024);
+		testObjectCopy(prefix, false, false, true, true, 256 * 1024);
+		testObjectCopy(prefix, false, false, true, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionSrcToNorBucketAndObj() {
-		testObjectCopy(true, false, false, false, 1024);
-		testObjectCopy(true, false, false, false, 256 * 1024);
-		testObjectCopy(true, false, false, false, 1024 * 1024);
+		var prefix = "testCopyEncryptionSrcToNorBucketAndObj";
+		testObjectCopy(prefix, true, false, false, false, 1024);
+		testObjectCopy(prefix, true, false, false, false, 256 * 1024);
+		testObjectCopy(prefix, true, false, false, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionSrcToNorBucketEncryptionObj() {
-		testObjectCopy(true, false, false, true, 1024);
-		testObjectCopy(true, false, false, true, 256 * 1024);
-		testObjectCopy(true, false, false, true, 1024 * 1024);
+		var prefix = "testCopyEncryptionSrcToNorBucketEncryptionObj";
+		testObjectCopy(prefix, true, false, false, true, 1024);
+		testObjectCopy(prefix, true, false, false, true, 256 * 1024);
+		testObjectCopy(prefix, true, false, false, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionSrcToEncryptionBucketNorObj() {
-		testObjectCopy(true, false, true, false, 1024);
-		testObjectCopy(true, false, true, false, 256 * 1024);
-		testObjectCopy(true, false, true, false, 1024 * 1024);
+		var prefix = "testCopyEncryptionSrcToEncryptionBucketNorObj";
+		testObjectCopy(prefix, true, false, true, false, 1024);
+		testObjectCopy(prefix, true, false, true, false, 256 * 1024);
+		testObjectCopy(prefix, true, false, true, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionSrcToEncryptionBucketAndObj() {
-		testObjectCopy(true, false, true, true, 1024);
-		testObjectCopy(true, false, true, true, 256 * 1024);
-		testObjectCopy(true, false, true, true, 1024 * 1024);
+		var prefix = "testCopyEncryptionSrcToEncryptionBucketAndObj";
+		testObjectCopy(prefix, true, false, true, true, 1024);
+		testObjectCopy(prefix, true, false, true, true, 256 * 1024);
+		testObjectCopy(prefix, true, false, true, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketNorObjToNorBucketAndObj() {
-		testObjectCopy(false, true, false, false, 1024);
-		testObjectCopy(false, true, false, false, 256 * 1024);
-		testObjectCopy(false, true, false, false, 1024 * 1024);
+		var prefix = "testCopyEncryptionBucketNorObjToNorBucketAndObj";
+		testObjectCopy(prefix, false, true, false, false, 1024);
+		testObjectCopy(prefix, false, true, false, false, 256 * 1024);
+		testObjectCopy(prefix, false, true, false, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketNorObjToNorBucketEncryptionObj() {
-		testObjectCopy(false, true, false, true, 1024);
-		testObjectCopy(false, true, false, true, 256 * 1024);
-		testObjectCopy(false, true, false, true, 1024 * 1024);
+		var prefix = "testCopyEncryptionBucketNorObjToNorBucketEncryptionObj";
+		testObjectCopy(prefix, false, true, false, true, 1024);
+		testObjectCopy(prefix, false, true, false, true, 256 * 1024);
+		testObjectCopy(prefix, false, true, false, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketNorObjToEncryptionBucketNorObj() {
-		testObjectCopy(false, true, true, false, 1024);
-		testObjectCopy(false, true, true, false, 256 * 1024);
-		testObjectCopy(false, true, true, false, 1024 * 1024);
+		var prefix = "testCopyEncryptionBucketNorObjToEncryptionBucketNorObj";
+		testObjectCopy(prefix, false, true, true, false, 1024);
+		testObjectCopy(prefix, false, true, true, false, 256 * 1024);
+		testObjectCopy(prefix, false, true, true, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketNorObjToEncryptionBucketAndObj() {
-		testObjectCopy(false, true, true, true, 1024);
-		testObjectCopy(false, true, true, true, 256 * 1024);
-		testObjectCopy(false, true, true, true, 1024 * 1024);
+		var prefix = "testCopyEncryptionBucketNorObjToEncryptionBucketAndObj";
+		testObjectCopy(prefix, false, true, true, true, 1024);
+		testObjectCopy(prefix, false, true, true, true, 256 * 1024);
+		testObjectCopy(prefix, false, true, true, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketAndObjToNorBucketAndObj() {
-		testObjectCopy(true, true, false, false, 1024);
-		testObjectCopy(true, true, false, false, 256 * 1024);
-		testObjectCopy(true, true, false, false, 1024 * 1024);
+		var prefix = "testCopyEncryptionBucketAndObjToNorBucketAndObj";
+		testObjectCopy(prefix, true, true, false, false, 1024);
+		testObjectCopy(prefix, true, true, false, false, 256 * 1024);
+		testObjectCopy(prefix, true, true, false, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketAndObjToNorBucketEncryptionObj() {
-		testObjectCopy(true, true, false, true, 1024);
-		testObjectCopy(true, true, false, true, 256 * 1024);
-		testObjectCopy(true, true, false, true, 1024 * 1024);
+		var prefix = "testCopyEncryptionBucketAndObjToNorBucketEncryptionObj";
+		testObjectCopy(prefix, true, true, false, true, 1024);
+		testObjectCopy(prefix, true, true, false, true, 256 * 1024);
+		testObjectCopy(prefix, true, true, false, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketAndObjToEncryptionBucketNorObj() {
-		testObjectCopy(true, true, true, false, 1024);
-		testObjectCopy(true, true, true, false, 256 * 1024);
-		testObjectCopy(true, true, true, false, 1024 * 1024);
+		var prefix = "testCopyEncryptionBucketAndObjToEncryptionBucketNorObj";
+		testObjectCopy(prefix, true, true, true, false, 1024);
+		testObjectCopy(prefix, true, true, true, false, 256 * 1024);
+		testObjectCopy(prefix, true, true, true, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketAndObjToEncryptionBucketAndObj() {
-		testObjectCopy(true, true, true, true, 1024);
-		testObjectCopy(true, true, true, true, 256 * 1024);
-		testObjectCopy(true, true, true, true, 1024 * 1024);
+		var prefix = "testCopyEncryptionBucketAndObjToEncryptionBucketAndObj";
+		testObjectCopy(prefix, true, true, true, true, 1024);
+		testObjectCopy(prefix, true, true, true, true, 256 * 1024);
+		testObjectCopy(prefix, true, true, true, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyToNormalSource() {
+		var prefix = "testCopyToNormalSource";
 		var size1 = 1024;
 		var size2 = 256 * 1024;
 		var size3 = 1024 * 1024;
 
-		testObjectCopy(EncryptionType.NORMAL, EncryptionType.NORMAL, size1);
-		testObjectCopy(EncryptionType.NORMAL, EncryptionType.NORMAL, size2);
-		testObjectCopy(EncryptionType.NORMAL, EncryptionType.NORMAL, size3);
+		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, size1);
+		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, size2);
+		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, size3);
 
-		testObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_S3, size1);
-		testObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_S3, size2);
-		testObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_S3, size3);
+		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size1);
+		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size2);
+		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size3);
 
-		testObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_C, size1);
-		testObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_C, size2);
-		testObjectCopy(EncryptionType.NORMAL, EncryptionType.SSE_C, size3);
+		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size1);
+		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size2);
+		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size3);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyToSseS3Source() {
+		var prefix = "testCopyToSseS3Source";
 		var size1 = 1024;
 		var size2 = 256 * 1024;
 		var size3 = 1024 * 1024;
 
-		testObjectCopy(EncryptionType.SSE_S3, EncryptionType.NORMAL, size1);
-		testObjectCopy(EncryptionType.SSE_S3, EncryptionType.NORMAL, size2);
-		testObjectCopy(EncryptionType.SSE_S3, EncryptionType.NORMAL, size3);
+		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, size1);
+		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, size2);
+		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, size3);
 
-		testObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_S3, size1);
-		testObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_S3, size2);
-		testObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_S3, size3);
+		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size1);
+		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size2);
+		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size3);
 
-		testObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_C, size1);
-		testObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_C, size2);
-		testObjectCopy(EncryptionType.SSE_S3, EncryptionType.SSE_C, size3);
+		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size1);
+		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size2);
+		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size3);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyToSseCSource() {
+		var prefix = "testCopyToSseCSource";
 		var size1 = 1024;
 		var size2 = 256 * 1024;
 		var size3 = 1024 * 1024;
 
-		testObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, size1);
-		testObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, size2);
-		testObjectCopy(EncryptionType.SSE_C, EncryptionType.NORMAL, size3);
+		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size1);
+		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size2);
+		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size3);
 
-		testObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, size1);
-		testObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, size2);
-		testObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_S3, size3);
+		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size1);
+		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size2);
+		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size3);
 
-		testObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, size1);
-		testObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, size2);
-		testObjectCopy(EncryptionType.SSE_C, EncryptionType.SSE_C, size3);
+		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size1);
+		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size2);
+		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size3);
 	}
 
 	@Test
@@ -691,14 +710,14 @@ public class CopyObject extends TestBase {
 	public void testCopyToDeletedObject() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var source = "foo123bar";
-		var ker2 = "bar321foo";
+		var source = "testCopyToDeletedObjectSource";
+		var target = "testCopyToDeletedObjectTarget";
 
 		client.putObject(bucketName, source, source);
 		client.deleteObject(bucketName, source);
 
 		var e = assertThrows(AmazonServiceException.class,
-				() -> client.copyObject(bucketName, source, bucketName, ker2));
+				() -> client.copyObject(bucketName, source, bucketName, target));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 	}

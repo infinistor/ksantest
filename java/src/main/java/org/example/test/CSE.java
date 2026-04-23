@@ -46,25 +46,25 @@ public class CSE extends TestBase {
 	@Test
 	@Tag("PutGet")
 	public void testCseEncryptedTransfer1b() {
-		testEncryptionCSEWrite(1);
+		testEncryptionCSEWrite("testCseEncryptedTransfer1b", 1);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testCseEncryptedTransfer1kb() {
-		testEncryptionCSEWrite(1024);
+		testEncryptionCSEWrite("testCseEncryptedTransfer1kb", 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testCseEncryptedTransfer1MB() {
-		testEncryptionCSEWrite(1024 * 1024);
+		testEncryptionCSEWrite("testCseEncryptedTransfer1MB", 1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testCseEncryptedTransfer13b() {
-		testEncryptionCSEWrite(13);
+		testEncryptionCSEWrite("testCseEncryptedTransfer13b", 13);
 	}
 
 	@Test
@@ -72,7 +72,7 @@ public class CSE extends TestBase {
 	public void testCseEncryptionMethodHead() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = "obj";
+		var key = "testCseEncryptionMethodHead/obj";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
 
@@ -98,7 +98,7 @@ public class CSE extends TestBase {
 	public void testCseEncryptionNonDecryption() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = "obj";
+		var key = "testCseEncryptionNonDecryption/obj";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
 
@@ -126,7 +126,7 @@ public class CSE extends TestBase {
 	public void testCseNonEncryptionDecryption() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = "obj";
+		var key = "testCseNonEncryptionDecryption";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
 
@@ -148,7 +148,7 @@ public class CSE extends TestBase {
 	public void testCseEncryptionRangeRead() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = "obj";
+		var key = "testCseEncryptionRangeRead";
 
 		var aesKey = Utils.randomTextToLong(32);
 
@@ -178,7 +178,7 @@ public class CSE extends TestBase {
 	public void testCseEncryptionMultipartUpload() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = "multipartEnc";
+		var key = "testCseEncryptionMultipartUpload";
 		var size = 50 * MainData.MB;
 		var contentType = "text/plain";
 		var data = Utils.randomTextToLong(size);
@@ -229,7 +229,7 @@ public class CSE extends TestBase {
 	public void testCseGetObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = "foo";
+		var key = "testCseGetObjectMany";
 		var aesKey = Utils.randomTextToLong(32);
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
@@ -258,7 +258,7 @@ public class CSE extends TestBase {
 	public void testCseRangeObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = "foo";
+		var key = "testCseRangeObjectMany";
 
 		var aesKey = Utils.randomTextToLong(32);
 		var fileSize = 15 * 1024 * 1024;

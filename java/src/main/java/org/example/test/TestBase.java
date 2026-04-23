@@ -1538,10 +1538,9 @@ public class TestBase {
 		return statusCode.equals(HttpStatus.SC_BAD_REQUEST) || statusCode.equals(HttpStatus.SC_FORBIDDEN);
 	}
 
-	public void testEncryptionCSEWrite(int fileSize) {
+	public void testEncryptionCSEWrite(String key, int fileSize) {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = "test_obj";
 		var aesKey = Utils.randomTextToLong(32);
 		var data = Utils.randomTextToLong(fileSize);
 
@@ -1635,10 +1634,10 @@ public class TestBase {
 		assertTrue(sourceBody.equals(targetBody), MainData.NOT_MATCHED);
 	}
 
-	public void testObjectCopy(boolean sourceObjectEncryption, boolean sourceBucketEncryption,
+	public void testObjectCopy(String prefix, boolean sourceObjectEncryption, boolean sourceBucketEncryption,
 			boolean targetBucketEncryption, boolean targetObjectEncryption, int fileSize) {
-		var sourceKey = "SourceKey";
-		var targetKey = "TargetKey";
+		var sourceKey = prefix + "Source";
+		var targetKey = prefix + "Target";
 		var data = Utils.randomTextToLong(fileSize);
 		var client = getClient();
 		var sourceBucketName = createBucket(client);
@@ -1706,9 +1705,9 @@ public class TestBase {
 		assertTrue(sourceBody.equals(targetBody), MainData.NOT_MATCHED);
 	}
 
-	public void testObjectCopy(EncryptionType source, EncryptionType target, int fileSize) {
-		var sourceKey = "SourceKey";
-		var targetKey = "TargetKey";
+	public void testObjectCopy(String prefix, EncryptionType source, EncryptionType target, int fileSize) {
+		var sourceKey = prefix + "Source";
+		var targetKey = prefix + "Target";
 		var client = getClientHttps();
 		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(fileSize);
