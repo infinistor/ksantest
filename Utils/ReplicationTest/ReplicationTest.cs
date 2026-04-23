@@ -21,7 +21,7 @@ using System.Threading;
 
 namespace ReplicationTest
 {
-	class ReplicationTest
+	class ReplicationTest(MainConfig config, DBManager db)
 	{
 		static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 		const int TEST_OPTION_LOCAL_ONLY = 1;
@@ -29,14 +29,8 @@ namespace ReplicationTest
 		const int TEST_OPTION_HTTP_ONLY = 1;
 		const int TEST_OPTION_HTTPS_ONLY = 2;
 
-		readonly MainConfig _config;
-		readonly DBManager _db;
-
-		public ReplicationTest(MainConfig config, DBManager db)
-		{
-			_config = config;
-			_db = db;
-		}
+		readonly MainConfig _config = config;
+		readonly DBManager _db = db;
 
 		// 버킷 구성
 		const string PREFIX = "2/";
@@ -294,7 +288,10 @@ namespace ReplicationTest
 						Prefix = Bucket.Prefix ? PREFIX : null,
 						Tag = Bucket.Tag ? _defaultTag : null,
 					},
-					Destination = new ReplicationDestination() { BucketArn = $"{BucketArnPrefix}{Bucket.BucketName}" },
+					Destination = new ReplicationDestination()
+					{
+						BucketArn = $"{BucketArnPrefix}{Bucket.BucketName}"
+					},
 					DeleteMarkerReplication = new DeleteMarkerReplication() { Status = Bucket.DeleteMarker ? DeleteMarkerReplicationStatus.Enabled : DeleteMarkerReplicationStatus.Disabled }
 				};
 
@@ -342,8 +339,8 @@ namespace ReplicationTest
 				if (sourceObj.IsDeleteMarker && targetObj.IsDeleteMarker) continue;
 
 				if (!CompareObjectProperties(sourceObj, targetObj, _config, out Message)) return false;
-				if (!CompareMetadata(SourceClient, TargetClient, sourceObj.BucketName, sourceObj.Key, sourceObj.VersionId, out Message)) return false;
-				if (!CompareTagSet(SourceClient, TargetClient, sourceObj.BucketName, sourceObj.Key, sourceObj.VersionId, out Message)) return false;
+				if (!CompareMetadata(SourceClient, TargetClient, sourceObj, targetObj, out Message)) return false;
+				if (!CompareTagSet(SourceClient, TargetClient, sourceObj, targetObj, out Message)) return false;
 			}
 			return true;
 		}
@@ -373,11 +370,11 @@ namespace ReplicationTest
 			return true;
 		}
 
-		static bool CompareMetadata(AmazonS3Client SourceClient, AmazonS3Client TargetClient, string BucketName, string Key, string VersionId, out string Message)
+		static bool CompareMetadata(AmazonS3Client SourceClient, AmazonS3Client TargetClient, S3ObjectVersion source, S3ObjectVersion target, out string Message)
 		{
 			Message = "";
-			var MainResponse = GetObjectMetadata(SourceClient, BucketName, Key, VersionId);
-			var AltResponse = GetObjectMetadata(TargetClient, BucketName, Key, VersionId);
+			var MainResponse = GetObjectMetadata(SourceClient, source.BucketName, source.Key, source.VersionId);
+			var AltResponse = GetObjectMetadata(TargetClient, target.BucketName, target.Key, target.VersionId);
 
 			if (MainResponse == null) { Message = $"MainResponse is null!"; return false; }
 			if (AltResponse == null) { Message = $"AltResponse is null!"; return false; }
@@ -392,11 +389,11 @@ namespace ReplicationTest
 			return true;
 		}
 
-		static bool CompareTagSet(AmazonS3Client Main, AmazonS3Client Alt, string BucketName, string Key, string VersionId, out string Message)
+		static bool CompareTagSet(AmazonS3Client Main, AmazonS3Client Alt, S3ObjectVersion source, S3ObjectVersion target, out string Message)
 		{
 			Message = "";
-			var MainResponse = GetObjectTagging(Main, BucketName, Key, VersionId);
-			var AltResponse = GetObjectTagging(Alt, BucketName, Key, VersionId);
+			var MainResponse = GetObjectTagging(Main, source.BucketName, source.Key, source.VersionId);
+			var AltResponse = GetObjectTagging(Alt, target.BucketName, target.Key, target.VersionId);
 
 			if (MainResponse == null) { Message = $"MainResponse is null!"; return false; }
 			if (AltResponse == null) { Message = $"AltResponse is null!"; return false; }
@@ -643,7 +640,7 @@ namespace ReplicationTest
 		{
 			try
 			{
-				var InitRequest = new InitiateMultipartUploadRequest()
+				InitiateMultipartUploadRequest InitRequest = new()
 				{
 					BucketName = BucketName,
 					Key = ObjectName,
@@ -664,15 +661,16 @@ namespace ReplicationTest
 				};
 				var PartResponse = Client.UploadPartAsync(PartRequest);
 				PartResponse.Wait();
-				var PartList = new List<PartETag>() { new PartETag(PartResponse.Result.PartNumber, PartResponse.Result.ETag) };
+				List<PartETag> PartList = [new(PartResponse.Result.PartNumber, PartResponse.Result.ETag)];
 
-				var CompRequest = new CompleteMultipartUploadRequest()
+				CompleteMultipartUploadRequest CompRequest = new()
 				{
 					BucketName = BucketName,
 					Key = ObjectName,
 					UploadId = UploadId,
 					PartETags = PartList,
 				};
+
 				var CompResponse = Client.CompleteMultipartUploadAsync(CompRequest);
 				CompResponse.Wait();
 				return CompResponse.Result.HttpStatusCode == System.Net.HttpStatusCode.OK;

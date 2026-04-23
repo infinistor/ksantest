@@ -29,14 +29,14 @@ namespace ReplicationTest
 		private const string STR_CHECK_SSL = "SSL";
 		#endregion
 		#region  User Data
-		private const string STR_MAINUSER = "Main User";
-		private const string STR_ALTUSER = "Alt User";
+		private const string STR_MAIN_USER = "Main User";
+		private const string STR_ALT_USER = "Alt User";
 		private const string STR_URL = "URL";
 		private const string STR_PORT = "Port";
 		private const string STR_SSL_PORT = "SSLPort";
 		private const string STR_REGION_NAME = "RegionName";
-		private const string STR_ACCESSKEY = "AccessKey";
-		private const string STR_SECRETKEY = "SecretKey";
+		private const string STR_ACCESS_KEY = "AccessKey";
+		private const string STR_SECRET_KEY = "SecretKey";
 		#endregion
 		#region DB
 		private const string STR_DB = "DB";
@@ -88,8 +88,8 @@ namespace ReplicationTest
 			SSL = ReadKeyToInt(STR_GLOBAL, STR_CHECK_SSL);
 			DB = GetDBConfig();
 
-			MainUser = GetUser(STR_MAINUSER);
-			AltUser = GetUser(STR_ALTUSER);
+			MainUser = GetUser(STR_MAIN_USER);
+			AltUser = GetUser(STR_ALT_USER);
 
 			Normal = new() { BucketName = NormalBucket, Encryption = false };
 			Encryption = new() { BucketName = EncryptionBucket, Encryption = true };
@@ -123,21 +123,21 @@ namespace ReplicationTest
 			// Main User 설정 검증
 			if (MainUser != null)
 			{
-				if (string.IsNullOrWhiteSpace(MainUser.URL)) errors.Add($"{STR_MAINUSER}.{STR_URL} is required");
-				if (MainUser.Port <= 0 || MainUser.Port > 65535) errors.Add($"{STR_MAINUSER}.{STR_PORT} must be between 1 and 65535 (current: {MainUser.Port})");
-				if (MainUser.SSLPort <= 0 || MainUser.SSLPort > 65535) errors.Add($"{STR_MAINUSER}.{STR_SSL_PORT} must be between 1 and 65535 (current: {MainUser.SSLPort})");
-				if (string.IsNullOrWhiteSpace(MainUser.AccessKey)) errors.Add($"{STR_MAINUSER}.{STR_ACCESSKEY} is required");
-				if (string.IsNullOrWhiteSpace(MainUser.SecretKey)) errors.Add($"{STR_MAINUSER}.{STR_SECRETKEY} is required");
+				if (string.IsNullOrWhiteSpace(MainUser.URL)) errors.Add($"{STR_MAIN_USER}.{STR_URL} is required");
+				if (MainUser.Port <= 0 || MainUser.Port > 65535) errors.Add($"{STR_MAIN_USER}.{STR_PORT} must be between 1 and 65535 (current: {MainUser.Port})");
+				if (MainUser.SSLPort <= 0 || MainUser.SSLPort > 65535) errors.Add($"{STR_MAIN_USER}.{STR_SSL_PORT} must be between 1 and 65535 (current: {MainUser.SSLPort})");
+				if (string.IsNullOrWhiteSpace(MainUser.AccessKey)) errors.Add($"{STR_MAIN_USER}.{STR_ACCESS_KEY} is required");
+				if (string.IsNullOrWhiteSpace(MainUser.SecretKey)) errors.Add($"{STR_MAIN_USER}.{STR_SECRET_KEY} is required");
 			}
 
 			// Alt User 설정 검증 (TestOption이 LOCAL_ONLY가 아닐 때만)
 			if (TestOption != 1 && AltUser != null)
 			{
-				if (string.IsNullOrWhiteSpace(AltUser.URL)) errors.Add($"{STR_ALTUSER}.{STR_URL} is required");
-				if (AltUser.Port <= 0 || AltUser.Port > 65535) errors.Add($"{STR_ALTUSER}.{STR_PORT} must be between 1 and 65535 (current: {AltUser.Port})");
-				if (AltUser.SSLPort <= 0 || AltUser.SSLPort > 65535) errors.Add($"{STR_ALTUSER}.{STR_SSL_PORT} must be between 1 and 65535 (current: {AltUser.SSLPort})");
-				if (string.IsNullOrWhiteSpace(AltUser.AccessKey)) errors.Add($"{STR_ALTUSER}.{STR_ACCESSKEY} is required");
-				if (string.IsNullOrWhiteSpace(AltUser.SecretKey)) errors.Add($"{STR_ALTUSER}.{STR_SECRETKEY} is required");
+				if (string.IsNullOrWhiteSpace(AltUser.URL)) errors.Add($"{STR_ALT_USER}.{STR_URL} is required");
+				if (AltUser.Port <= 0 || AltUser.Port > 65535) errors.Add($"{STR_ALT_USER}.{STR_PORT} must be between 1 and 65535 (current: {AltUser.Port})");
+				if (AltUser.SSLPort <= 0 || AltUser.SSLPort > 65535) errors.Add($"{STR_ALT_USER}.{STR_SSL_PORT} must be between 1 and 65535 (current: {AltUser.SSLPort})");
+				if (string.IsNullOrWhiteSpace(AltUser.AccessKey)) errors.Add($"{STR_ALT_USER}.{STR_ACCESS_KEY} is required");
+				if (string.IsNullOrWhiteSpace(AltUser.SecretKey)) errors.Add($"{STR_ALT_USER}.{STR_SECRET_KEY} is required");
 			}
 
 			if (errors.Count > 0)
@@ -164,8 +164,8 @@ namespace ReplicationTest
 			Port = ReadKeyToInt(Section, STR_PORT),
 			SSLPort = ReadKeyToInt(Section, STR_SSL_PORT),
 			RegionName = ReadKeyToString(Section, STR_REGION_NAME),
-			AccessKey = ReadKeyToString(Section, STR_ACCESSKEY),
-			SecretKey = ReadKeyToString(Section, STR_SECRETKEY)
+			AccessKey = ReadKeyToString(Section, STR_ACCESS_KEY),
+			SecretKey = ReadKeyToString(Section, STR_SECRET_KEY)
 		};
 
 		private string ReadKeyToString(string Section, string Key)
