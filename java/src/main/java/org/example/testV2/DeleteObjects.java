@@ -327,4 +327,83 @@ public class DeleteObjects extends TestBase {
 		assertEquals(0, versResponse.versions().size());
 		assertEquals(0, versResponse.deleteMarkers().size());
 	}
+
+	@Test
+	@Tag("versioning")
+	public void testDeleteObjectsWithVersioningDeleteMarker() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testDeleteObjectsWithVersioningDeleteMarker";
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
+
+		client.deleteObject(d -> d.bucket(bucketName).key(key));
+
+		var versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(1, versResponse.versions().size());
+		assertEquals(1, versResponse.deleteMarkers().size());
+	}
+
+	@Test
+	@Tag("versioning")
+	public void testVersioningMultiObjectDeleteWithMarker() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var keyNames = List.of(
+				"testVersioningMultiObjectDeleteWithMarker-0",
+				"testVersioningMultiObjectDeleteWithMarker-1",
+				"testVersioningMultiObjectDeleteWithMarker-2");
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		for (var key : keyNames) {
+			client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
+		}
+
+		var objectList = getKeyVersions(keyNames);
+		client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
+
+		var versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(keyNames.size(), versResponse.versions().size());
+		assertEquals(keyNames.size(), versResponse.deleteMarkers().size());
+	}
+
+	@Test
+	@Tag("versioning")
+	public void testVersioningMultiObjectDeleteWithMarkerCreate() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningMultiObjectDeleteWithMarkerCreate";
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		for (int i = 0; i < 10; i++) {
+			client.deleteObject(d -> d.bucket(bucketName).key(key));
+		}
+
+		var versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(0, versResponse.versions().size());
+		assertEquals(10, versResponse.deleteMarkers().size());
+	}
+
+	@Test
+	@Tag("versioning")
+	public void testVersioningMultiObjectDeleteWithMarkerCreateObjects() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningMultiObjectDeleteWithMarkerCreateObjects";
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		for (int i = 0; i < 10; i++) {
+			var objectList = getKeyVersions(List.of(key));
+			client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
+		}
+
+		var versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(0, versResponse.versions().size());
+		assertEquals(10, versResponse.deleteMarkers().size());
+	}
 }

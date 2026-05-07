@@ -111,4 +111,44 @@ class DeleteObjects {
 		test.testDeleteObjectsWithVersioning();
 		testV2.testDeleteObjectsWithVersioning();
 	}
+
+	/**
+	 * 버저닝된 버킷에서 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
+	 */
+	@Test
+	@Tag("versioning")
+	void testDeleteObjectsWithVersioningDeleteMarker() {
+		test.testDeleteObjectsWithVersioningDeleteMarker();
+		testV2.testDeleteObjectsWithVersioningDeleteMarker();
+	}
+
+	/**
+	 * 버저닝된 버킷에서 여러 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
+	 */
+	@Test
+	@Tag("versioning")
+	void testVersioningMultiObjectDeleteWithMarker() {
+		test.testVersioningMultiObjectDeleteWithMarker();
+		testV2.testVersioningMultiObjectDeleteWithMarker();
+	}
+
+	/**
+	 * 버저닝된 버킷에서 존재하지 않는 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
+	 */
+	@Test
+	@Tag("versioning")
+	void testVersioningMultiObjectDeleteWithMarkerCreate() {
+		test.testVersioningMultiObjectDeleteWithMarkerCreate();
+		testV2.testVersioningMultiObjectDeleteWithMarkerCreate();
+	}
+
+	/**
+	 * 버저닝된 버킷에서 존재하지 않는 여러개의 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
+	 */
+	@Test
+	@Tag("versioning")
+	void testVersioningMultiObjectDeleteWithMarkerCreateObjects() {
+		test.testVersioningMultiObjectDeleteWithMarkerCreateObjects();
+		testV2.testVersioningMultiObjectDeleteWithMarkerCreateObjects();
+	}
 }
