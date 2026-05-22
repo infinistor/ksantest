@@ -887,6 +887,16 @@ public class TestBase {
 		assertEquals(status, readStatus);
 	}
 
+	public void waitForBucketCrossOriginConfiguration(AmazonS3 client, String bucketName) {
+		for (int i = 0; i < 5; i++) {
+			var response = client.getBucketCrossOriginConfiguration(bucketName);
+			if (response != null && response.getRules() != null && !response.getRules().isEmpty())
+				return;
+			delay(1000);
+		}
+		fail("Bucket CORS configuration not visible after retries: " + bucketName);
+	}
+
 	public void checkObjContent(AmazonS3 client, String bucketName, String key, String versionId, String content) {
 		var response = client.getObject(new GetObjectRequest(bucketName, key).withVersionId(versionId));
 		if (content != null) {

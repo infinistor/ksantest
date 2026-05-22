@@ -89,6 +89,7 @@ public class Cors extends TestBase {
 		assertNull(response);
 
 		client.setBucketCrossOriginConfiguration(bucketName, corsConfig);
+		waitForBucketCrossOriginConfiguration(client, bucketName);
 
 		var headers = new HashMap<String, String>();
 
@@ -232,6 +233,7 @@ public class Cors extends TestBase {
 		assertNull(response);
 
 		client.setBucketCrossOriginConfiguration(bucketName, corsConfig);
+		waitForBucketCrossOriginConfiguration(client, bucketName);
 
 		var headers = new HashMap<String, String>();
 		corsRequestAndCheck("GET", bucketName, new HashMap<>(), 200, null, null, null);
@@ -259,6 +261,7 @@ public class Cors extends TestBase {
 		assertNull(response);
 
 		client.setBucketCrossOriginConfiguration(bucketName, corsConfig);
+		waitForBucketCrossOriginConfiguration(client, bucketName);
 
 		var headers = new HashMap<String, String>();
 		headers.clear();
