@@ -145,6 +145,7 @@
 						<include>Access.java</include>
 						<include>ACL.java</include>
 						<include>Analytics.java</include>
+						<include>Backend.java</include>
 						<include>CopyObject.java</include>
 						<include>Cors.java</include>
 						<include>CSE.java</include>
@@ -154,6 +155,7 @@
 						<include>GetObjectAttributes.java</include>
 						<include>Grants.java</include>
 						<include>Inventory.java</include>
+						<include>KsanApiTest.java</include>
 						<include>LifeCycle.java</include>
 						<include>ListBuckets.java</include>
 						<include>ListObjects.java</include>
@@ -171,6 +173,7 @@
 						<include>PutBucket.java</include>
 						<include>PutObject.java</include>
 						<include>Replication.java</include>
+						<include>SelectObjectContent.java</include>
 						<include>SSE_C.java</include>
 						<include>SSE_S3.java</include>
 						<include>Taggings.java</include>
