@@ -393,6 +393,10 @@ public class LifeCycle extends TestBase {
 
 		client.putBucketLifecycleConfiguration(p -> p.bucket(bucketName).lifecycleConfiguration(c -> c.rules(rules)));
 		assertEquals(2, uploads.size());
+
+		for (var upload : uploads) {
+			client.abortMultipartUpload(a -> a.bucket(bucketName).key(upload.key()).uploadId(upload.uploadId()));
+		}
 	}
 
 	@Test

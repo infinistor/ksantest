@@ -118,6 +118,7 @@ public class Multipart extends TestBase {
 		assertTrue(e.getStatusCode() == HttpStatus.SC_BAD_REQUEST || e.getStatusCode() == 416);
 		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(sourceBucketName, targetKey, uploadId));
 	}
 
 	@Test
@@ -492,6 +493,7 @@ public class Multipart extends TestBase {
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_PART, e.getErrorCode());
 
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId));
 	}
 
 	@Test
@@ -514,6 +516,8 @@ public class Multipart extends TestBase {
 
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_PART, e.getErrorCode());
+
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId));
 
 	}
 

@@ -364,6 +364,8 @@ public class Lock extends TestBase {
 						RequestBody.fromString(content)));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e2.statusCode());
 		assertEquals(MainData.INVALID_REQUEST, e2.awsErrorDetails().errorCode());
+
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(key).uploadId(uploadId));
 	}
 
 	@Test

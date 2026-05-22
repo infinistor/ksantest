@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
@@ -394,6 +395,8 @@ public class Lock extends TestBase {
 						.withPartSize(content.length())));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e2.getStatusCode());
 		assertEquals(MainData.INVALID_REQUEST, e2.getErrorCode());
+
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId));
 	}
 
 	@Test

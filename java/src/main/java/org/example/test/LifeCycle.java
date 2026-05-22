@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.AbortIncompleteMultipartUpload;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.NoncurrentVersionExpiration;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration.Rule;
@@ -373,7 +374,6 @@ public class LifeCycle extends TestBase {
 
 		var myLifeCycle = new BucketLifecycleConfiguration(rules);
 		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
-
 	}
 
 	@Test
@@ -404,6 +404,11 @@ public class LifeCycle extends TestBase {
 		client.setBucketLifecycleConfiguration(bucketName, myLifeCycle);
 
 		assertEquals(2, initUploads.size());
+
+		for (var upload : initUploads) {
+			client.abortMultipartUpload(
+					new AbortMultipartUploadRequest(bucketName, upload.getKey(), upload.getUploadId()));
+		}
 	}
 
 	@Test
