@@ -60,6 +60,7 @@ public class Multipart extends TestBase {
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
 
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
 	}
 
 	@Test
@@ -362,6 +363,7 @@ public class Multipart extends TestBase {
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.ENTITY_TOO_SMALL, e.getErrorCode());
 
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
 	}
 
 	@Test

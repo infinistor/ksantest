@@ -63,6 +63,7 @@ public class Multipart extends TestBase {
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_XML, e.awsErrorDetails().errorCode());
 
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(key).uploadId(uploadData.uploadId));
 	}
 
 	@Test
@@ -323,6 +324,7 @@ public class Multipart extends TestBase {
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.ENTITY_TOO_SMALL, e.awsErrorDetails().errorCode());
 
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(key).uploadId(uploadId));
 	}
 
 	@Test
