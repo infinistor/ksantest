@@ -68,6 +68,7 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.handlers.RequestHandler2;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
@@ -90,6 +91,7 @@ import com.amazonaws.services.s3.model.GroupGrantee;
 import com.amazonaws.services.s3.model.HeadBucketRequest;
 import com.amazonaws.services.s3.model.IllegalBucketNameException;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.ListMultipartUploadsRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
@@ -2259,29 +2261,56 @@ public class TestBase {
 			bucketClear();
 	}
 
+	public void abortBucketMultipartUploads(AmazonS3 client, String bucketName) {
+		try {
+			var isTruncated = true;
+			String keyMarker = null;
+			String uploadIdMarker = null;
+			while (isTruncated) {
+				var listRequest = new ListMultipartUploadsRequest(bucketName);
+				if (keyMarker != null)
+					listRequest.withKeyMarker(keyMarker).withUploadIdMarker(uploadIdMarker);
+				var listResponse = client.listMultipartUploads(listRequest);
+				for (var upload : listResponse.getMultipartUploads())
+					client.abortMultipartUpload(
+							new AbortMultipartUploadRequest(bucketName, upload.getKey(), upload.getUploadId()));
+				isTruncated = listResponse.isTruncated();
+				if (isTruncated) {
+					keyMarker = listResponse.getNextKeyMarker();
+					uploadIdMarker = listResponse.getNextUploadIdMarker();
+				}
+			}
+		} catch (AmazonServiceException e) {
+			System.out.format("Error : Bucket(%s) Abort Multipart Uploads Failed(%s, %d)%n", bucketName,
+					e.getErrorCode(), e.getStatusCode());
+		}
+	}
+
+	public void clearBucketObjectVersions(AmazonS3 client, String bucketName) {
+		try {
+			var isTruncated = true;
+			while (isTruncated) {
+				var response = client
+						.listVersions(new ListVersionsRequest().withBucketName(bucketName).withMaxResults(1000));
+				for (var version : response.getVersionSummaries())
+					client.deleteVersion(
+							new DeleteVersionRequest(bucketName, version.getKey(), version.getVersionId()));
+				isTruncated = response.isTruncated();
+			}
+		} catch (AmazonServiceException e) {
+			System.out.format("Error : Bucket(%s) Clear Failed(%s, %d)%n", bucketName, e.getErrorCode(),
+					e.getStatusCode());
+		}
+	}
+
 	public void bucketClear(AmazonS3 client, String bucketName) {
 		if (client == null)
 			return;
 		if (StringUtils.isBlank(bucketName))
 			return;
 
-		try {
-			var isTruncated = true;
-			while (isTruncated) {
-				var response = client
-						.listVersions(new ListVersionsRequest().withBucketName(bucketName).withMaxResults(1000));
-				var objects = response.getVersionSummaries();
-
-				for (var version : objects)
-					client.deleteVersion(
-							new DeleteVersionRequest(bucketName, version.getKey(), version.getVersionId()));
-				isTruncated = response.isTruncated();
-			}
-
-		} catch (AmazonServiceException e) {
-			System.out.format("Error : Bucket(%s) Clear Failed(%s, %d)%n", bucketName, e.getErrorCode(),
-					e.getStatusCode());
-		}
+		abortBucketMultipartUploads(client, bucketName);
+		clearBucketObjectVersions(client, bucketName);
 
 		try {
 			client.deleteBucket(bucketName);
