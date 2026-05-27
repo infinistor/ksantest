@@ -21,6 +21,7 @@ import java.util.HashMap;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -97,7 +98,7 @@ public class SSE_C extends TestBase {
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObjectMetadata(bucketName, key));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 
-		client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(sse));
+		client.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key).withSSECustomerKey(sse));
 	}
 
 	@Test
@@ -254,10 +255,11 @@ public class SSE_C extends TestBase {
 		var bytesUsed = getBytesUsed(headResponse);
 		assertEquals(size, bytesUsed);
 
-		var getResponse = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(sse));
-		assertEquals(metadata.getUserMetadata(), getResponse.getObjectMetadata().getUserMetadata());
-		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
-		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSECustomerAlgorithm());
+		var getResponse = client.getObjectMetadata(
+				new GetObjectMetadataRequest(bucketName, key).withSSECustomerKey(sse));
+		assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
+		assertEquals(contentType, getResponse.getContentType());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getSSECustomerAlgorithm());
 
 		var body = uploadData.getBody();
 		checkContentUsingRangeEnc(client, bucketName, key, body, MainData.MB, sse);
@@ -297,10 +299,11 @@ public class SSE_C extends TestBase {
 		var bytesUsed = getBytesUsed(headResponse);
 		assertEquals(size, bytesUsed);
 
-		var getResponse = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(sseSet));
-		assertEquals(metadata.getUserMetadata(), getResponse.getObjectMetadata().getUserMetadata());
-		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
-		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSECustomerAlgorithm());
+		var getResponse = client
+				.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key).withSSECustomerKey(sseSet));
+		assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
+		assertEquals(contentType, getResponse.getContentType());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getSSECustomerAlgorithm());
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(sseGet)));
@@ -468,10 +471,11 @@ public class SSE_C extends TestBase {
 		var bytesUsed = getBytesUsed(headResponse);
 		assertEquals(size, bytesUsed);
 
-		var getResponse = client.getObject(new GetObjectRequest(bucketName, sourceKey).withSSECustomerKey(sse));
-		assertEquals(metadata.getUserMetadata(), getResponse.getObjectMetadata().getUserMetadata());
-		assertEquals(contentType, getResponse.getObjectMetadata().getContentType());
-		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getObjectMetadata().getSSECustomerAlgorithm());
+		var getResponse = client.getObjectMetadata(
+				new GetObjectMetadataRequest(bucketName, sourceKey).withSSECustomerKey(sse));
+		assertEquals(metadata.getUserMetadata(), getResponse.getUserMetadata());
+		assertEquals(contentType, getResponse.getContentType());
+		assertEquals(SSEAlgorithm.AES256.toString(), getResponse.getSSECustomerAlgorithm());
 
 		var targetKey = "multipartEncCopy";
 		uploadData = multipartCopySseC(client, bucketName, sourceKey, bucketName, targetKey, size, metadata, sse);

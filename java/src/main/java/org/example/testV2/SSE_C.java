@@ -226,10 +226,10 @@ public class SSE_C extends TestBase {
 		var bytesUsed = getBytesUsed(headResponse);
 		assertEquals(size, bytesUsed);
 
-		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key)
+		var getResponse = client.headObject(g -> g.bucket(bucketName).key(key)
 				.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM).sseCustomerKey(SSE_KEY));
-		assertEquals(metadata, getResponse.response().metadata());
-		assertEquals(SSE_ALGORITHM, getResponse.response().sseCustomerAlgorithm());
+		assertEquals(metadata, getResponse.metadata());
+		assertEquals(SSE_ALGORITHM, getResponse.sseCustomerAlgorithm());
 
 		var body = uploadData.getBody();
 		checkContentUsingRangeEnc(client, bucketName, key, body, MainData.MB);
@@ -263,15 +263,14 @@ public class SSE_C extends TestBase {
 		assertEquals(size, bytesUsed);
 
 		var getResponse = client
-				.getObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+				.headObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
 						.sseCustomerKey(SSE_KEY).sseCustomerKeyMD5(SSE_KEY_MD5));
-		assertEquals(metadata, getResponse.response().metadata());
-		assertEquals(SSE_ALGORITHM, getResponse.response().sseCustomerAlgorithm());
+		assertEquals(metadata, getResponse.metadata());
+		assertEquals(SSE_ALGORITHM, getResponse.sseCustomerAlgorithm());
 
-		var e = assertThrows(AwsServiceException.class,
-				() -> client.getObject(
-						g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
-								.sseCustomerKey(sseGetKey).sseCustomerKeyMD5(sseGetMd5)));
+		var e = assertThrows(AwsServiceException.class, () -> client.getObject(
+				g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+						.sseCustomerKey(sseGetKey).sseCustomerKeyMD5(sseGetMd5)));
 		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
 	}
 
@@ -425,9 +424,9 @@ public class SSE_C extends TestBase {
 		var bytesUsed = getBytesUsed(listResponse);
 		assertEquals(size, bytesUsed);
 
-		var getResponse = client.getObject(g -> g.bucket(bucketName).key(sourceKey)
+		var getResponse = client.headObject(g -> g.bucket(bucketName).key(sourceKey)
 				.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM).sseCustomerKey(SSE_KEY));
-		assertEquals(SSE_ALGORITHM, getResponse.response().sseCustomerAlgorithm());
+		assertEquals(SSE_ALGORITHM, getResponse.sseCustomerAlgorithm());
 
 		var targetKey = "multipartEncCopy";
 		var uploadData2 = multipartCopySseC(client, bucketName, sourceKey, bucketName, targetKey, size);

@@ -933,17 +933,6 @@ public class TestBase {
 	// endregion
 
 	// region Check data
-	public static void checkGetObject(S3Client client, String bucketName, String key, boolean pass) {
-		if (pass) {
-			var response = client.getObject(g -> g.bucket(bucketName).key(key));
-			assertTrue(response != null);
-		} else {
-			var e = assertThrows(S3Exception.class,
-					() -> client.getObject(g -> g.bucket(bucketName).key(key)));
-			assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
-			assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
-		}
-	}
 
 	public static void succeedGetObject(S3Client client, String bucketName, String key, String content) {
 		var response = client.getObject(g -> g.bucket(bucketName).key(key));
@@ -2178,7 +2167,8 @@ public class TestBase {
 	}
 
 	public static void checkObjectAclAllowRead(S3Client client, String bucketName, String key) {
-		client.getObject(g -> g.bucket(bucketName).key(key));
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		getBody(response);
 	}
 
 	public static void checkObjectAclDenyRead(S3Client client, String bucketName, String key) {

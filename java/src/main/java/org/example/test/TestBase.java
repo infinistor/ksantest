@@ -571,8 +571,8 @@ public class TestBase {
 		metadata.setContentLength(3);
 		client.putObject(bucketName, key, createBody("bar"), metadata);
 
-		var response = client.getObject(bucketName, key);
-		return response.getObjectMetadata().getUserMetaDataOf(metadataKey);
+		var response = client.getObjectMetadata(bucketName, key);
+		return response.getUserMetaDataOf(metadataKey);
 	}
 
 	public String setupBucketPermission(Permission permission) {
@@ -763,16 +763,6 @@ public class TestBase {
 	// endregion
 
 	// region Check Data
-	public static void checkGetObject(AmazonS3 client, String bucketName, String key, boolean pass) {
-		if (pass) {
-			var response = client.getObject(bucketName, key);
-			assertEquals(key, response.getKey());
-		} else {
-			var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, key));
-			assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
-			assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
-		}
-	}
 
 	public static void succeedGetObject(AmazonS3 client, String bucketName, String key, String content) {
 		var response = client.getObject(bucketName, key);
