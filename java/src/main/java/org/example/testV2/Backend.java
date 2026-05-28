@@ -735,6 +735,43 @@ public class Backend extends TestBase {
 	}
 
 	/**
+	 * [Versioning] PutObjectRetention 후 GetObjectRetention으로 조회가 정상 동작하는지 확인
+	 */
+	public void testPutAndGetObjectRetentionVersioning() {
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = getNewBucketName();
+		var key = "testPutAndGetObjectRetentionVersioning";
+		var content = "test content";
+
+		// 버킷 생성
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 일반 클라이언트로 업로드
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+
+		// Backend 클라이언트로 보존 설정
+		var retainUntilDate = getExpiredDate(Instant.now(), 1);
+		var putRetentionResponse = backendClient.putObjectRetention(p -> p.bucket(bucketName).key(key)
+				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE).retainUntilDate(retainUntilDate))
+				.bypassGovernanceRetention(true));
+		assertEquals(200, putRetentionResponse.sdkHttpResponse().statusCode());
+
+		// Backend 클라이언트로 보존 설정 조회
+		var getRetentionResponse = backendClient.getObjectRetention(g -> g.bucket(bucketName).key(key));
+		assertEquals(200, getRetentionResponse.sdkHttpResponse().statusCode());
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE, getRetentionResponse.retention().mode());
+		assertEquals(retainUntilDate, getRetentionResponse.retention().retainUntilDate());
+
+		// 정리
+		client.deleteObject(
+				d -> d.bucket(bucketName).key(key).versionId(putResponse.versionId()).bypassGovernanceRetention(true));
+	}
+
+	/**
 	 * PutObject 복제가 정상 동작하는지 확인
 	 */
 	public void testPutObjectReplication() {

@@ -263,6 +263,15 @@ public class Backend {
 	}
 
 	/**
+	 * [Versioning] PutObjectRetention 후 GetObjectRetention으로 조회가 정상 동작하는지 확인
+	 */
+	@Test
+	@Tag("RETENTION")
+	void testPutAndGetObjectRetentionVersioning() {
+		testV2.testPutAndGetObjectRetentionVersioning();
+	}
+
+	/**
 	 * PutObject 복제가 정상 동작하는지 확인
 	 */
 	@Test
