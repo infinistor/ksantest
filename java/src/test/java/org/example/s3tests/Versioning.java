@@ -26,6 +26,7 @@ class Versioning {
 
 	/**
 	 * 테스트 정리 작업 수행
+	 * 
 	 * @param testInfo 테스트 정보
 	 */
 	@AfterEach
@@ -263,5 +264,15 @@ class Versioning {
 	void testVersioningCopyObject() {
 		test.testVersioningCopyObject();
 		testV2.testVersioningCopyObject();
+	}
+
+	/**
+	 * Current가 DeleteMarker인 오브젝트를 HeadObject 요청 시 올바르게 동작하는지 확인
+	 */
+	@Test
+	@Tag("HeadObject")
+	void testVersioningHeadObjectDeleteMarker() {
+		test.testVersioningHeadObjectDeleteMarker();
+		testV2.testVersioningHeadObjectDeleteMarker();
 	}
 }

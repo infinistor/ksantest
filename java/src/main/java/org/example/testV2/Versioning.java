@@ -845,4 +845,40 @@ public class Versioning extends TestBase {
 					"Version " + versionId + " should be in expected list");
 		}
 	}
+
+	@Test
+	@Tag("HeadObject")
+	public void testVersioningHeadObjectDeleteMarker() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningHeadObjectDeleteMarker";
+		var content = "testContent";
+
+		// 1. 버킷 생성 및 버저닝 설정
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 2. 오브젝트 업로드
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+		var versionId = putResponse.versionId();
+
+		// 3. 업로드 확인
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(content.length(), headResponse.contentLength());
+		assertEquals(versionId, headResponse.versionId());
+
+		// 4. 오브젝트 삭제
+		client.deleteObject(d -> d.bucket(bucketName).key(key));
+
+		// 5. DeleteMarker 생성 확인
+		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(1, listResponse.versions().size());
+		assertEquals(1, listResponse.deleteMarkers().size());
+		assertEquals(key, listResponse.deleteMarkers().get(0).key());
+
+		// 6. HeadObject 실패 확인
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.headObject(h -> h.bucket(bucketName).key(key)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
+	}
 }
