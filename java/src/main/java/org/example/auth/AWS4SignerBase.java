@@ -128,6 +128,15 @@ public abstract class AWS4SignerBase {
 		}
 	}
 
+	protected static String formatHostHeader(URL endpointUrl) {
+		var hostHeader = endpointUrl.getHost();
+		var port = endpointUrl.getPort();
+		if (port > -1 && port != endpointUrl.getDefaultPort()) {
+			hostHeader = hostHeader.concat(":" + port);
+		}
+		return hostHeader;
+	}
+
 	/**
 	 * Examines the specified query string parameters and returns a
 	 * canonicalized form.

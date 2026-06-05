@@ -32,11 +32,7 @@ public class AWS4SignerForChunkedUpload extends AWS4SignerBase {
 
 		headers.put("x-amz-date", dateTimeStamp);
 
-		String hostHeader = endpointUrl.getHost();
-		int port = endpointUrl.getPort();
-		if (port > -1) {
-			hostHeader = hostHeader.concat(":" + Integer.toString(port));
-		}
+		String hostHeader = formatHostHeader(endpointUrl);
 		headers.put("Host", hostHeader);
 
 		String canonicalizedHeaderNames = getCanonicalizeHeaderNames(headers);

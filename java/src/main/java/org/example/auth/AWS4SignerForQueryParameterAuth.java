@@ -16,11 +16,7 @@ public class AWS4SignerForQueryParameterAuth extends AWS4SignerBase {
 		Date now = new Date();
 		String dateTimeStamp = dateTimeFormat.format(now);
 
-		String hostHeader = endpointUrl.getHost();
-		int port = endpointUrl.getPort();
-		if (port > -1) {
-			hostHeader = hostHeader.concat(":" + Integer.toString(port));
-		}
+		String hostHeader = formatHostHeader(endpointUrl);
 		headers.put("Host", hostHeader);
 
 		String canonicalizedHeaderNames = getCanonicalizeHeaderNames(headers);

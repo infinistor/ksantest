@@ -10,6 +10,7 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -54,7 +55,7 @@ public class NetUtils {
 		if (url.endsWith("/"))
 			url = url.substring(0, url.length() - 1);
 
-		return String.format("%s:%d", url, port);
+		return appendPortIfNonDefault(url, port, 80);
 	}
 
 	public static String createURLToHTTPS(String address, int port) {
@@ -63,26 +64,43 @@ public class NetUtils {
 		if (url.endsWith("/"))
 			url = url.substring(0, url.length() - 1);
 
+		return appendPortIfNonDefault(url, port, 443);
+	}
+
+	static String appendPortIfNonDefault(String url, int port, int defaultPort) {
+		if (port <= 0 || port == defaultPort)
+			return url;
 		return String.format("%s:%d", url, port);
+	}
+
+	static String formatAuthority(String protocol, String address, int port) {
+		var defaultPort = MainData.HTTPS.equals(protocol) ? 443 : 80;
+		if (port <= 0 || port == defaultPort)
+			return String.format("%s%s", protocol, address);
+		return String.format("%s%s:%d", protocol, address, port);
+	}
+
+	private static URL toUrl(String spec) throws MalformedURLException {
+		return URI.create(spec).toURL();
 	}
 
 	public static URL getEndpoint(String protocol, String address, int port, String bucketName)
 			throws MalformedURLException {
-		return new URL(String.format("%s%s:%d/%s", protocol, address, port, bucketName));
+		return toUrl(String.format("%s/%s", formatAuthority(protocol, address, port), bucketName));
 	}
 
 	public static URL getEndpoint(String protocol, String regionName, String bucketName) throws MalformedURLException {
-		return new URL(String.format("%s%s.s3-%s.amazonaws.com", protocol, bucketName, regionName));
+		return toUrl(String.format("%s%s.s3-%s.amazonaws.com", protocol, bucketName, regionName));
 	}
 
 	public static URL getEndpoint(String protocol, String address, int port, String bucketName, String key)
 			throws MalformedURLException {
-		return new URL(String.format("%s%s:%d/%s/%s", protocol, address, port, bucketName, key));
+		return toUrl(String.format("%s/%s/%s", formatAuthority(protocol, address, port), bucketName, key));
 	}
 
 	public static URL getEndpoint(String protocol, String regionName, String bucketName, String key)
 			throws MalformedURLException {
-		return new URL(String.format("%s%s.s3-%s.amazonaws.com/%s", protocol, bucketName, regionName, key));
+		return toUrl(String.format("%s%s.s3-%s.amazonaws.com/%s", protocol, bucketName, regionName, key));
 	}
 
 	public static MyResult postUpload(URL sendURL, Map<String, String> headers, FormFile fileData) {

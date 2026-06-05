@@ -1782,7 +1782,6 @@ public class Post extends TestBase {
 		var getURL = client.generatePresignedUrl(bucketName, key, getTimeToAddSeconds(100000), HttpMethod.GET);
 		var getResponse = getObject(getURL);
 		assertEquals(HttpStatus.SC_OK, getResponse.getStatusLine().getStatusCode());
-
 	}
 
 	@Test
