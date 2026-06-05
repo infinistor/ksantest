@@ -649,4 +649,25 @@ public class Multipart extends TestBase {
 
 		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
 	}
+
+	@Test
+	@Tag("Cancel")
+	public void testMultipartUploadAbortDuringUpload() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testMultipartUploadAbortDuringUpload";
+		var partBody = Utils.randomTextToLong(5 * MainData.MB);
+
+		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		var uploadId = initResponse.getUploadId();
+
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId));
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+						.withUploadId(uploadId).withInputStream(createBody(partBody)).withPartNumber(1)
+						.withPartSize(partBody.length())));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_UPLOAD, e.getErrorCode());
+	}
 }

@@ -328,4 +328,13 @@ class Multipart {
 		testV2.testcreateMultipartUploadEmptyChecksumType();
 	}
 
+	/**
+	 * 멀티파티 업로드 abort 이후 uploadPart가 실패하는지 확인
+	 */
+	@Test
+	@Tag("Cancel")
+	void testMultipartUploadAbortDuringUpload() {
+		test.testMultipartUploadAbortDuringUpload();
+		testV2.testMultipartUploadAbortDuringUpload();
+	}
 }

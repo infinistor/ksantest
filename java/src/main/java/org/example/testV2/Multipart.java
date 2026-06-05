@@ -35,6 +35,7 @@ import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.ChecksumType;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
 import software.amazon.awssdk.services.s3.model.InvalidRequestException;
+import software.amazon.awssdk.services.s3.model.NoSuchUploadException;
 
 public class Multipart extends TestBase {
 	@org.junit.jupiter.api.BeforeAll
@@ -938,6 +939,26 @@ public class Multipart extends TestBase {
 				.multipartUpload(p -> p.parts(uploadData.parts)));
 
 		checksumCompare(checksum, uploadData, completeResponse);
+	}
+
+	@Test
+	@Tag("Cancel")
+	public void testMultipartUploadAbortDuringUpload() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testMultipartUploadAbortDuringUpload";
+		var partBody = Utils.randomTextToLong(5 * MainData.MB);
+
+		var initResponse = client.createMultipartUpload(c -> c.bucket(bucketName).key(key));
+		var uploadId = initResponse.uploadId();
+
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(key).uploadId(uploadId));
+
+		var e = assertThrows(NoSuchUploadException.class,
+				() -> client.uploadPart(u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(1),
+						RequestBody.fromString(partBody)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_UPLOAD, e.awsErrorDetails().errorCode());
 	}
 
 }
