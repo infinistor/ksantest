@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
+import org.example.Utility.CheckSum;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -32,7 +33,6 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
 import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
 import software.amazon.awssdk.services.s3.model.ObjectLockMode;
@@ -576,12 +576,8 @@ public class PutObject extends TestBase {
 				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
 						ResponseChecksumValidation.WHEN_SUPPORTED));
 
-		var checksums = List.of(
-				ChecksumAlgorithm.CRC32,
-				ChecksumAlgorithm.CRC32_C,
-				ChecksumAlgorithm.CRC64_NVME,
-				ChecksumAlgorithm.SHA1,
-				ChecksumAlgorithm.SHA256);
+		// PutObject는 모든 체크섬 알고리즘 사용 가능
+		var checksums = CheckSum.ALL_ALGORITHMS;
 
 		for (var config : configs) {
 			var client = getClient(true, config.requestOption, config.responseOption);
@@ -595,12 +591,13 @@ public class PutObject extends TestBase {
 				var key = prefix + "/sync/" + checksum.name();
 				var asyncKey = prefix + "/async/" + checksum.name();
 
-				var response = client.putObject(p -> p.bucket(bucketName).key(key).checksumAlgorithm(checksum),
+				var response = client.putObject(
+						p -> CheckSum.applyChecksum(p.bucket(bucketName).key(key), checksum, key),
 						RequestBody.fromString(key));
 				checksumCompare(checksum, key, response);
 
 				var asyncResponse = asyncClient.putObject(
-						p -> p.bucket(bucketName).key(asyncKey).checksumAlgorithm(checksum),
+						p -> CheckSum.applyChecksum(p.bucket(bucketName).key(asyncKey), checksum, asyncKey),
 						AsyncRequestBody.fromString(asyncKey));
 				checksumCompare(checksum, asyncKey, asyncResponse.join());
 			}
@@ -626,12 +623,8 @@ public class PutObject extends TestBase {
 				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
 						ResponseChecksumValidation.WHEN_SUPPORTED));
 
-		var checksums = List.of(
-				ChecksumAlgorithm.CRC32,
-				ChecksumAlgorithm.CRC32_C,
-				ChecksumAlgorithm.CRC64_NVME,
-				ChecksumAlgorithm.SHA1,
-				ChecksumAlgorithm.SHA256);
+		// PutObject는 모든 체크섬 알고리즘 사용 가능
+		var checksums = CheckSum.ALL_ALGORITHMS;
 
 		for (var config : configs) {
 			var client = getClient(false, config.requestOption, config.responseOption);
@@ -645,22 +638,58 @@ public class PutObject extends TestBase {
 				var key = prefix + "/sync/" + checksum.name();
 				var asyncKey = prefix + "/async/" + checksum.name();
 
-				// 체크섬 계산 성공 확인
-				var response = client.putObject(p -> p
-						.bucket(bucketName)
-						.key(key)
-						.checksumAlgorithm(checksum),
+				// 동기 클라이언트 체크섬 확인
+				var response = client.putObject(
+						p -> CheckSum.applyChecksum(p.bucket(bucketName).key(key), checksum, key),
 						RequestBody.fromString(key));
 				checksumCompare(checksum, key, response);
 
-				// 체크섬 계산 실패 확인
-				var asyncResponse = asyncClient.putObject(p -> p
-						.bucket(bucketName)
-						.key(asyncKey)
-						.checksumAlgorithm(checksum),
+				// 비동기 클라이언트 체크섬 확인
+				var asyncResponse = asyncClient.putObject(
+						p -> CheckSum.applyChecksum(p.bucket(bucketName).key(asyncKey), checksum, asyncKey),
 						AsyncRequestBody.fromString(asyncKey));
 				checksumCompare(checksum, asyncKey, asyncResponse.join());
 			}
+		}
+	}
+
+	@Test
+	@Tag("checksum")
+	public void testPutObjectChecksumWithValue() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+
+		// 사전 계산한 체크섬 값을 직접 지정하여 업로드 성공 확인
+		for (var checksum : CheckSum.ALL_ALGORITHMS) {
+			var key = "precomputed/" + checksum.name();
+			var value = CheckSum.calculateChecksum(checksum, key);
+
+			var response = client.putObject(p -> {
+				p.bucket(bucketName).key(key);
+				CheckSum.setChecksum(p, checksum, value);
+			}, RequestBody.fromString(key));
+			checksumCompare(checksum, key, response);
+		}
+	}
+
+	@Test
+	@Tag("checksum-failure")
+	public void testPutObjectChecksumFailure() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+
+		// 잘못된 체크섬 값을 지정할 경우 BadDigest 에러 확인
+		for (var checksum : CheckSum.ALL_ALGORITHMS) {
+			var key = "wrong-checksum/" + checksum.name();
+			var wrongValue = CheckSum.calculateChecksum(checksum, key + "-wrong");
+
+			var e = assertThrows(AwsServiceException.class,
+					() -> client.putObject(p -> {
+						p.bucket(bucketName).key(key);
+						CheckSum.setChecksum(p, checksum, wrongValue);
+					}, RequestBody.fromString(key)));
+			assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+			assertEquals(MainData.BAD_DIGEST, e.awsErrorDetails().errorCode());
 		}
 	}
 

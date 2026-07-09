@@ -8,7 +8,7 @@
 	<name>s3tests_java</name>
 
 	<properties>
-		<aws.java.sdk.version>2.41.1</aws.java.sdk.version>
+		<aws.java.sdk.version>2.47.0</aws.java.sdk.version>
 		<org.springframework-version>5.1.14.RELEASE</org.springframework-version>
 		<org.apache.httpcomponents-version>5.3.1</org.apache.httpcomponents-version>
 		<project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
@@ -78,9 +78,9 @@
 		</dependency>
 		<!-- INI Reader -->
 		<dependency>
-			<groupId>org.ini4j</groupId>
-			<artifactId>ini4j</artifactId>
-			<version>0.5.4</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-configuration2</artifactId>
+			<version>2.15.1</version>
 		</dependency>
 		<!-- AWS SDK V1 -->
 		<dependency>
@@ -112,7 +112,7 @@
 		<dependency>
 			<groupId>software.amazon.awssdk.crt</groupId>
 			<artifactId>aws-crt</artifactId>
-			<version>0.34.1</version>
+			<version>0.46.1</version>
 		</dependency>
 		<!-- Commons Lang3 -->
 		<dependency>
@@ -190,7 +190,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
-					<release>17</release>
+					<release>21</release>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>

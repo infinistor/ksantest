@@ -298,6 +298,20 @@ class PutObject {
 	}
 
 	@Test
+	@Tag("checksum")
+	// 사전 계산한 체크섬 값을 직접 지정하여 오브젝트 업로드 시 검증 성공 확인
+	void testPutObjectChecksumWithValue() {
+		testV2.testPutObjectChecksumWithValue();
+	}
+
+	@Test
+	@Tag("checksum-failure")
+	// 잘못된 체크섬 값을 지정하여 오브젝트 업로드 시 BadDigest 실패 확인
+	void testPutObjectChecksumFailure() {
+		testV2.testPutObjectChecksumFailure();
+	}
+
+	@Test
 	@Tag("KeyLength")
 	// 최대 길이(1024자)의 오브젝트 키로 업로드 성공 확인
 	void testPutObjectKeyMaxLength() {

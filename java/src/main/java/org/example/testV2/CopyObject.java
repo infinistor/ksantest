@@ -18,6 +18,7 @@ import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
+import org.example.Utility.CheckSum;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,6 @@ import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
 import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
-import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.Permission;
@@ -874,12 +874,8 @@ public class CopyObject extends TestBase {
 				new TestConfig(RequestChecksumCalculation.WHEN_SUPPORTED,
 						ResponseChecksumValidation.WHEN_SUPPORTED));
 
-		var checksums = List.of(
-				ChecksumAlgorithm.CRC32,
-				ChecksumAlgorithm.CRC32_C,
-				ChecksumAlgorithm.CRC64_NVME,
-				ChecksumAlgorithm.SHA1,
-				ChecksumAlgorithm.SHA256);
+		// CopyObject는 모든 체크섬 알고리즘 사용 가능
+		var checksums = CheckSum.ALL_ALGORITHMS;
 
 		for (var config : configs) {
 			var client = getClient(true, config.requestOption, config.responseOption);
@@ -894,7 +890,8 @@ public class CopyObject extends TestBase {
 				var sourceKey = prefix + "/source/sync/" + checksum.name();
 				var targetKey = prefix + "/target/sync/" + checksum.name();
 
-				var response = client.putObject(p -> p.bucket(bucketName).key(sourceKey).checksumAlgorithm(checksum),
+				var response = client.putObject(
+						p -> CheckSum.applyChecksum(p.bucket(bucketName).key(sourceKey), checksum, sourceKey),
 						RequestBody.fromString(sourceKey));
 				checksumCompare(checksum, sourceKey, response);
 
@@ -907,7 +904,8 @@ public class CopyObject extends TestBase {
 				var asyncSourceKey = prefix + "/source/async/" + checksum.name();
 				var asyncTargetKey = prefix + "/target/async/" + checksum.name();
 				var asyncResponse = asyncClient.putObject(
-						p -> p.bucket(bucketName).key(asyncSourceKey).checksumAlgorithm(checksum),
+						p -> CheckSum.applyChecksum(p.bucket(bucketName).key(asyncSourceKey), checksum,
+								asyncSourceKey),
 						AsyncRequestBody.fromString(asyncSourceKey));
 				checksumCompare(checksum, asyncSourceKey, asyncResponse.join());
 				var asyncCopyResponse = asyncClient

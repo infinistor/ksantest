@@ -1136,12 +1136,11 @@ public class TestBase {
 
 		for (var Part : parts) {
 			uploadData.appendBody(Part);
-			var partResponse = client.uploadPart(u -> u
+			var partResponse = client.uploadPart(u -> CheckSum.applyChecksum(u
 					.bucket(bucketName)
 					.key(key)
 					.uploadId(uploadData.uploadId)
-					.checksumAlgorithm(checksum)
-					.partNumber(uploadData.nextPartNumber()),
+					.partNumber(uploadData.nextPartNumber()), checksum, Part),
 					RequestBody.fromString(Part));
 			checksumCompare(checksum, Part, partResponse);
 			uploadData.addPart(checksum, partResponse);
@@ -1154,6 +1153,7 @@ public class TestBase {
 				.checksumType(checksumType)
 				.multipartUpload(p -> p.parts(uploadData.parts)));
 
+		assertEquals(checksumType, completeResponse.checksumType());
 		checksumCompare(checksum, uploadData, completeResponse);
 	}
 
@@ -1174,12 +1174,11 @@ public class TestBase {
 
 		for (var Part : parts) {
 			uploadData.appendBody(Part);
-			var partResponse = client.uploadPart(u -> u
+			var partResponse = client.uploadPart(u -> CheckSum.applyChecksum(u
 					.bucket(bucketName)
 					.key(key)
 					.uploadId(uploadData.uploadId)
-					.checksumAlgorithm(checksum)
-					.partNumber(uploadData.nextPartNumber()),
+					.partNumber(uploadData.nextPartNumber()), checksum, Part),
 					AsyncRequestBody.fromString(Part)).join();
 			checksumCompare(checksum, Part, partResponse);
 			uploadData.addPart(checksum, partResponse);
@@ -1192,6 +1191,7 @@ public class TestBase {
 				.checksumType(checksumType)
 				.multipartUpload(p -> p.parts(uploadData.parts))).join();
 
+		assertEquals(checksumType, completeResponse.checksumType());
 		checksumCompare(checksum, uploadData, completeResponse);
 	}
 
@@ -2464,70 +2464,32 @@ public class TestBase {
 
 	public static void checksumCompare(ChecksumAlgorithm algorithm, String content, PutObjectResponse response) {
 		String expected = CheckSum.calculateChecksum(algorithm, content);
-
-		String actual = switch (algorithm) {
-			case CRC32 -> response.checksumCRC32();
-			case CRC32_C -> response.checksumCRC32C();
-			case CRC64_NVME -> response.checksumCRC64NVME();
-			case SHA1 -> response.checksumSHA1();
-			case SHA256 -> response.checksumSHA256();
-			default -> throw new IllegalArgumentException("Invalid algorithm: " + algorithm);
-		};
-		assertEquals(expected, actual);
+		assertEquals(expected, CheckSum.getChecksum(response, algorithm));
+		// PutObject는 항상 FULL_OBJECT 타입
+		assertEquals(ChecksumType.FULL_OBJECT, response.checksumType());
 	}
 
 	public static void checksumCompare(ChecksumAlgorithm algorithm, String content, CopyObjectResponse response) {
 		String expected = CheckSum.calculateChecksum(algorithm, content);
-
-		String actual = switch (algorithm) {
-			case CRC32 -> response.copyObjectResult().checksumCRC32();
-			case CRC32_C -> response.copyObjectResult().checksumCRC32C();
-			case CRC64_NVME -> response.copyObjectResult().checksumCRC64NVME();
-			case SHA1 -> response.copyObjectResult().checksumSHA1();
-			case SHA256 -> response.copyObjectResult().checksumSHA256();
-			default -> throw new IllegalArgumentException("Invalid algorithm: " + algorithm);
-		};
-		assertEquals(expected, actual);
+		assertEquals(expected, CheckSum.getChecksum(response.copyObjectResult(), algorithm));
 	}
 
 	public static void checksumCompare(ChecksumAlgorithm algorithm, String content, UploadPartResponse response) {
 		String expected = CheckSum.calculateChecksum(algorithm, content);
-
-		String actual = switch (algorithm) {
-			case CRC32 -> response.checksumCRC32();
-			case CRC32_C -> response.checksumCRC32C();
-			case CRC64_NVME -> response.checksumCRC64NVME();
-			case SHA1 -> response.checksumSHA1();
-			case SHA256 -> response.checksumSHA256();
-			default -> throw new IllegalArgumentException("Invalid algorithm: " + algorithm);
-		};
-		assertEquals(expected, actual);
+		assertEquals(expected, CheckSum.getChecksum(response, algorithm));
 	}
 
 	public static void checksumCompare(ChecksumAlgorithm algorithm, MultipartUploadV2Data uploadData,
 			CompleteMultipartUploadResponse response) {
 		var contents = uploadData.parts.stream()
-				.map(part -> switch (algorithm) {
-					case CRC32 -> part.checksumCRC32();
-					case CRC32_C -> part.checksumCRC32C();
-					case CRC64_NVME -> part.checksumCRC64NVME();
-					case SHA1 -> part.checksumSHA1();
-					case SHA256 -> part.checksumSHA256();
-					default -> null;
-				}).toList();
+				.map(part -> CheckSum.getChecksum(part, algorithm))
+				.toList();
 
 		String expected = response.checksumType() == ChecksumType.COMPOSITE
 				? CheckSum.calculateChecksumByBase64(algorithm, contents)
 				: CheckSum.combineChecksumByBase64(algorithm, uploadData.partSize, contents);
 
-		String actual = switch (algorithm) {
-			case CRC32 -> response.checksumCRC32();
-			case CRC32_C -> response.checksumCRC32C();
-			case CRC64_NVME -> response.checksumCRC64NVME();
-			case SHA1 -> response.checksumSHA1();
-			case SHA256 -> response.checksumSHA256();
-			default -> null;
-		};
+		String actual = CheckSum.getChecksum(response, algorithm);
 
 		var message = String.format("%s 체크섬 비교 실패", algorithm);
 		assertEquals(expected, actual, message);

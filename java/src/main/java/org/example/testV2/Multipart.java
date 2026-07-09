@@ -22,6 +22,7 @@ import java.util.concurrent.CompletionException;
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Data.MultipartUploadV2Data;
+import org.example.Utility.CheckSum;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -615,16 +616,8 @@ public class Multipart extends TestBase {
 		var bucketName = createBucket();
 
 		// FULL_OBJECT와 COMPOSITE 타입의 체크섬 알고리즘 정의
-		var fullObjectChecksums = List.of(
-				ChecksumAlgorithm.CRC32,
-				ChecksumAlgorithm.CRC32_C,
-				ChecksumAlgorithm.CRC64_NVME);
-
-		var compositeChecksums = List.of(
-				ChecksumAlgorithm.CRC32,
-				ChecksumAlgorithm.CRC32_C,
-				ChecksumAlgorithm.SHA1,
-				ChecksumAlgorithm.SHA256);
+		var fullObjectChecksums = CheckSum.FULL_OBJECT_ALGORITHMS;
+		var compositeChecksums = CheckSum.COMPOSITE_ALGORITHMS;
 
 		var configs = List.of(
 				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
@@ -683,16 +676,8 @@ public class Multipart extends TestBase {
 		var bucketName = createBucket();
 
 		// FULL_OBJECT와 COMPOSITE 타입의 체크섬 알고리즘 정의
-		var fullObjectChecksums = List.of(
-				ChecksumAlgorithm.CRC32,
-				ChecksumAlgorithm.CRC32_C,
-				ChecksumAlgorithm.CRC64_NVME);
-
-		var compositeChecksums = List.of(
-				ChecksumAlgorithm.CRC32,
-				ChecksumAlgorithm.CRC32_C,
-				ChecksumAlgorithm.SHA1,
-				ChecksumAlgorithm.SHA256);
+		var fullObjectChecksums = CheckSum.FULL_OBJECT_ALGORITHMS;
+		var compositeChecksums = CheckSum.COMPOSITE_ALGORITHMS;
 
 		var configs = List.of(
 				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
@@ -750,10 +735,15 @@ public class Multipart extends TestBase {
 
 		var bucketName = createBucket();
 
-		// FULL_OBJECT 타입에서 지원되지 않는 체크섬 알고리즘
+		// FULL_OBJECT 타입에서 지원되지 않는 체크섬 알고리즘 (CRC 계열 이외 전체)
 		var unsupportedFullObjectChecksums = List.of(
 				ChecksumAlgorithm.SHA1,
-				ChecksumAlgorithm.SHA256);
+				ChecksumAlgorithm.SHA256,
+				ChecksumAlgorithm.MD5,
+				ChecksumAlgorithm.SHA512,
+				ChecksumAlgorithm.XXHASH64,
+				ChecksumAlgorithm.XXHASH3,
+				ChecksumAlgorithm.XXHASH128);
 
 		// COMPOSITE 타입에서 지원되지 않는 체크섬 알고리즘
 		var unsupportedCompositeChecksums = List.of(
@@ -824,16 +814,8 @@ public class Multipart extends TestBase {
 		var bucketName = createBucket();
 
 		// FULL_OBJECT와 COMPOSITE 타입의 체크섬 알고리즘 정의
-		var fullObjectChecksums = List.of(
-				ChecksumAlgorithm.CRC32,
-				ChecksumAlgorithm.CRC32_C,
-				ChecksumAlgorithm.CRC64_NVME);
-
-		var compositeChecksums = List.of(
-				ChecksumAlgorithm.CRC32,
-				ChecksumAlgorithm.CRC32_C,
-				ChecksumAlgorithm.SHA1,
-				ChecksumAlgorithm.SHA256);
+		var fullObjectChecksums = CheckSum.FULL_OBJECT_ALGORITHMS;
+		var compositeChecksums = CheckSum.COMPOSITE_ALGORITHMS;
 
 		var configs = List.of(
 				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,

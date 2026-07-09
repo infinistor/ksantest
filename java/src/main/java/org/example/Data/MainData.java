@@ -66,6 +66,7 @@ public class MainData {
 	public static final String BUCKET_ALREADY_EXISTS = "BucketAlreadyExists";
 	public static final String UNRESOLVABLE_GRANT_BY_EMAIL_ADDRESS = "UnresolvableGrantByEmailAddress";
 	public static final String INVALID_REQUEST = "InvalidRequest";
+	public static final String BAD_DIGEST = "BadDigest";
 	public static final String MALFORMED_XML = "MalformedXML";
 	public static final String MALFORMED_ACL_ERROR = "MalformedACLError";
 	public static final String INVALID_RANGE = "InvalidRange";
