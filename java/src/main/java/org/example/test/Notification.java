@@ -10,6 +10,8 @@
 */
 package org.example.test;
 
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+
 import java.util.EnumSet;
 
 import org.junit.Test;
@@ -45,6 +47,8 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Put")
 	public void testNotificationPut() {
+		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var mainUserId = config.mainUser.id;
@@ -65,6 +69,8 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Get")
 	public void testNotificationGet() {
+		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var mainUserId = config.mainUser.id;
@@ -90,6 +96,8 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Delete")
 	public void testNotificationDelete() {
+		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var mainUserId = config.mainUser.id;

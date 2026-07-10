@@ -11,6 +11,7 @@
 package org.example.testV2;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.util.List;
 
@@ -49,6 +50,8 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Put")
 	public void testNotificationPut() {
+		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var roleId = "my-lambda";
@@ -68,6 +71,8 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Get")
 	public void testNotificationGet() {
+		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var roleId = "my-lambda";
@@ -92,6 +97,8 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Delete")
 	public void testNotificationDelete() {
+		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client);
 		var roleId = "my-lambda";
