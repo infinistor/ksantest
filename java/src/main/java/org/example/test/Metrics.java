@@ -13,6 +13,7 @@ package org.example.test;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -231,8 +232,20 @@ public class Metrics extends TestBase {
 		client.setBucketMetricsConfiguration(bucketName, metrics);
 		var response = client.getBucketMetricsConfiguration(bucketName, "metrics-id");
 		var and = (MetricsAndOperator) response.getMetricsConfiguration().getFilter().getPredicate();
-		assertEquals(prefix, ((MetricsPrefixPredicate) and.getOperands().get(0)).getPrefix());
-		assertEquals(tag.getKey(), ((MetricsTagPredicate) and.getOperands().get(1)).getTag().getKey());
-		assertEquals(tag.getValue(), ((MetricsTagPredicate) and.getOperands().get(1)).getTag().getValue());
+
+		// AWS는 And 연산자 내 조건 순서를 보장하지 않으므로 타입으로 구분하여 검증
+		String actualPrefix = null;
+		com.amazonaws.services.s3.model.Tag actualTag = null;
+		for (var operand : and.getOperands()) {
+			if (operand instanceof MetricsPrefixPredicate)
+				actualPrefix = ((MetricsPrefixPredicate) operand).getPrefix();
+			else if (operand instanceof MetricsTagPredicate)
+				actualTag = ((MetricsTagPredicate) operand).getTag();
+		}
+
+		assertEquals(prefix, actualPrefix);
+		assertNotNull(actualTag);
+		assertEquals(tag.getKey(), actualTag.getKey());
+		assertEquals(tag.getValue(), actualTag.getValue());
 	}
 }
