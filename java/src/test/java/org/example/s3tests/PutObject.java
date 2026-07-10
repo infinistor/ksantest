@@ -252,6 +252,41 @@ class PutObject {
 	}
 
 	@Test
+	@Tag("SpecialCharacters")
+	// [AWS SDK V2] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	void testPutObjectSpecialCharacters() {
+		testV2.testPutObjectSpecialCharacters();
+	}
+
+	@Test
+	@Tag("Encoding")
+	// [AWS SDK V2, UseChunkEncoding = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	void testPutObjectSpecialCharactersUseChunkEncoding() {
+		testV2.testPutObjectSpecialCharactersUseChunkEncoding();
+	}
+
+	@Test
+	@Tag("Encoding")
+	// [AWS SDK V2, UseChunkEncoding = true, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	void testPutObjectUseSpecialCharactersChunkEncodingAndDisablePayloadSigning() {
+		testV2.testPutObjectUseSpecialCharactersChunkEncodingAndDisablePayloadSigning();
+	}
+
+	@Test
+	@Tag("Encoding")
+	// [AWS SDK V2, UseChunkEncoding = false] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	void testPutObjectSpecialCharactersNotChunkEncoding() {
+		testV2.testPutObjectSpecialCharactersNotChunkEncoding();
+	}
+
+	@Test
+	@Tag("Encoding")
+	// [AWS SDK V2, UseChunkEncoding = false, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	void testPutObjectSpecialCharactersNotChunkEncodingAndDisablePayloadSigning() {
+		testV2.testPutObjectSpecialCharactersNotChunkEncodingAndDisablePayloadSigning();
+	}
+
+	@Test
 	@Tag("Directory")
 	// 폴더의 이름과 동일한 오브젝트 업로드가 가능한지 확인
 	void testPutObjectDirAndFile() {
