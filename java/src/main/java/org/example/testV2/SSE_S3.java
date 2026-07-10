@@ -137,7 +137,14 @@ public class SSE_S3 extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 
-		assertThrows(AwsServiceException.class, () -> client.getBucketEncryption(g -> g.bucket(bucketName)));
+		if (config.isAWS()) {
+			// 2023년 1월부터 AWS는 모든 버킷에 SSE-S3 기본 암호화를 적용하므로 기본 설정이 반환됨
+			var response = client.getBucketEncryption(g -> g.bucket(bucketName));
+			assertEquals(ServerSideEncryption.AES256, response.serverSideEncryptionConfiguration().rules().get(0)
+					.applyServerSideEncryptionByDefault().sseAlgorithm());
+		} else {
+			assertThrows(AwsServiceException.class, () -> client.getBucketEncryption(g -> g.bucket(bucketName)));
+		}
 	}
 
 	@Test
@@ -168,7 +175,14 @@ public class SSE_S3 extends TestBase {
 
 		client.deleteBucketEncryption(d -> d.bucket(bucketName));
 
-		assertThrows(AwsServiceException.class, () -> client.getBucketEncryption(g -> g.bucket(bucketName)));
+		if (config.isAWS()) {
+			// 2023년 1월부터 AWS는 모든 버킷에 SSE-S3 기본 암호화를 적용하므로 삭제 후에도 기본 설정이 반환됨
+			var getResponse = client.getBucketEncryption(g -> g.bucket(bucketName));
+			assertEquals(ServerSideEncryption.AES256, getResponse.serverSideEncryptionConfiguration().rules().get(0)
+					.applyServerSideEncryptionByDefault().sseAlgorithm());
+		} else {
+			assertThrows(AwsServiceException.class, () -> client.getBucketEncryption(g -> g.bucket(bucketName)));
+		}
 	}
 
 	@Test

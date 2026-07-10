@@ -142,10 +142,18 @@ public class SSE_S3 extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client);
 
-		var e = assertThrows(AmazonS3Exception.class, () -> client.getBucketEncryption(bucketName));
+		if (config.isAWS()) {
+			// 2023년 1월부터 AWS는 모든 버킷에 SSE-S3 기본 암호화를 적용하므로 기본 설정이 반환됨
+			var response = client.getBucketEncryption(bucketName);
+			assertEquals(SSEAlgorithm.AES256.toString(),
+					response.getServerSideEncryptionConfiguration().getRules().get(0)
+							.getApplyServerSideEncryptionByDefault().getSSEAlgorithm());
+		} else {
+			var e = assertThrows(AmazonS3Exception.class, () -> client.getBucketEncryption(bucketName));
 
-		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
-		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
+			assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+			assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
+		}
 	}
 
 	@Test
@@ -184,9 +192,17 @@ public class SSE_S3 extends TestBase {
 
 		client.deleteBucketEncryption(bucketName);
 
-		var e = assertThrows(AmazonS3Exception.class, () -> client.getBucketEncryption(bucketName));
-		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
-		assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
+		if (config.isAWS()) {
+			// 2023년 1월부터 AWS는 모든 버킷에 SSE-S3 기본 암호화를 적용하므로 삭제 후에도 기본 설정이 반환됨
+			var getResponse = client.getBucketEncryption(bucketName);
+			assertEquals(SSEAlgorithm.AES256.toString(),
+					getResponse.getServerSideEncryptionConfiguration().getRules().get(0)
+							.getApplyServerSideEncryptionByDefault().getSSEAlgorithm());
+		} else {
+			var e = assertThrows(AmazonS3Exception.class, () -> client.getBucketEncryption(bucketName));
+			assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+			assertEquals(MainData.NO_SUCH_CONFIGURATION, e.getErrorCode());
+		}
 	}
 
 	@Test
