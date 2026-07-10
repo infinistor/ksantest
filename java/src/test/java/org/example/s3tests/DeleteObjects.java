@@ -151,4 +151,49 @@ class DeleteObjects {
 		test.testVersioningMultiObjectDeleteWithMarkerCreateObjects();
 		testV2.testVersioningMultiObjectDeleteWithMarkerCreateObjects();
 	}
+
+	/**
+	 * 일치하는 If-Match 조건으로 오브젝트 삭제 성공 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testDeleteObjectIfMatchGood() {
+		testV2.testDeleteObjectIfMatchGood();
+	}
+
+	/**
+	 * 일치하지 않는 If-Match 조건으로 오브젝트 삭제 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testDeleteObjectIfMatchFailed() {
+		testV2.testDeleteObjectIfMatchFailed();
+	}
+
+	/**
+	 * If-Match: * 조건으로 존재하는 오브젝트 삭제 성공 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testDeleteObjectIfMatchAny() {
+		testV2.testDeleteObjectIfMatchAny();
+	}
+
+	/**
+	 * 모든 오브젝트의 ETag 조건이 일치하는 DeleteObjects 성공 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testDeleteObjectsIfMatchGood() {
+		testV2.testDeleteObjectsIfMatchGood();
+	}
+
+	/**
+	 * ETag 조건이 일치하지 않는 오브젝트만 삭제에 실패(PreconditionFailed)하는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testDeleteObjectsIfMatchMixed() {
+		testV2.testDeleteObjectsIfMatchMixed();
+	}
 }

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.HttpStatus;
+import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -405,5 +406,110 @@ public class DeleteObjects extends TestBase {
 		var versResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(0, versResponse.versions().size());
 		assertEquals(10, versResponse.deleteMarkers().size());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// 일치하는 If-Match 조건으로 오브젝트 삭제 성공 확인
+	public void testDeleteObjectIfMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testDeleteObjectIfMatchGood";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).eTag();
+
+		client.deleteObject(d -> d.bucket(bucketName).key(key).ifMatch(eTag));
+
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(0, listResponse.contents().size());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// 일치하지 않는 If-Match 조건으로 오브젝트 삭제 시 412 실패 확인
+	public void testDeleteObjectIfMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testDeleteObjectIfMatchFailed";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.deleteObject(d -> d.bucket(bucketName).key(key)
+						.ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ")));
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		// 삭제되지 않았는지 확인
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(1, listResponse.contents().size());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// If-Match: * 조건으로 존재하는 오브젝트 삭제 성공 확인
+	public void testDeleteObjectIfMatchAny() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testDeleteObjectIfMatchAny";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
+
+		client.deleteObject(d -> d.bucket(bucketName).key(key).ifMatch("*"));
+
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(0, listResponse.contents().size());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// 모든 오브젝트의 ETag 조건이 일치하는 DeleteObjects 성공 확인
+	public void testDeleteObjectsIfMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var keyNames = List.of("testDeleteObjectsIfMatchGood0", "testDeleteObjectsIfMatchGood1");
+
+		var objectList = new ArrayList<ObjectIdentifier>();
+		for (var key : keyNames) {
+			var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).eTag();
+			objectList.add(ObjectIdentifier.builder().key(key).eTag(eTag).build());
+		}
+
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
+		assertEquals(keyNames.size(), delResponse.deleted().size());
+
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(0, listResponse.contents().size());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// ETag 조건이 일치하지 않는 오브젝트만 삭제에 실패(PreconditionFailed)하는지 확인
+	public void testDeleteObjectsIfMatchMixed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var goodKey = "testDeleteObjectsIfMatchMixedGood";
+		var badKey = "testDeleteObjectsIfMatchMixedBad";
+
+		var goodETag = client.putObject(p -> p.bucket(bucketName).key(goodKey), RequestBody.fromString(goodKey))
+				.eTag();
+		client.putObject(p -> p.bucket(bucketName).key(badKey), RequestBody.fromString(badKey));
+
+		var objectList = List.of(
+				ObjectIdentifier.builder().key(goodKey).eTag(goodETag).build(),
+				ObjectIdentifier.builder().key(badKey).eTag("\"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"").build());
+
+		var delResponse = client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList)));
+
+		// 일치하는 오브젝트만 삭제되고 일치하지 않는 오브젝트는 PreconditionFailed 에러 반환
+		assertEquals(1, delResponse.deleted().size());
+		assertEquals(goodKey, delResponse.deleted().get(0).key());
+		assertEquals(1, delResponse.errors().size());
+		assertEquals(badKey, delResponse.errors().get(0).key());
+		assertEquals(MainData.PRECONDITION_FAILED, delResponse.errors().get(0).code());
+
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(1, listResponse.contents().size());
+		assertEquals(badKey, listResponse.contents().get(0).key());
 	}
 }

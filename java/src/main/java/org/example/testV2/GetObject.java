@@ -190,6 +190,175 @@ public class GetObject extends TestBase {
 	}
 
 	@Test
+	@Tag("IfMatch")
+	// If-Match(일치)와 If-Unmodified-Since(불일치)를 함께 사용할 경우 ETag 조건이 우선되어 성공하는지 확인
+	public void testGetObjectIfMatchWithIfUnmodifiedSince() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectIfMatchWithIfUnmodifiedSince";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+
+		// If-Match: true, If-Unmodified-Since: false -> 200 OK
+		var response = client.getObject(
+				g -> g.bucket(bucketName).key(key).ifMatch(eTag).ifUnmodifiedSince(days.toInstant()));
+		assertEquals("bar", getBody(response));
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// If-None-Match(불일치)와 If-Modified-Since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 304가 반환되는지 확인
+	public void testGetObjectIfNoneMatchWithIfModifiedSince() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectIfNoneMatchWithIfModifiedSince";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+
+		// If-None-Match: false, If-Modified-Since: true -> 304 Not Modified
+		var e = assertThrows(AwsServiceException.class, () -> client.getObject(
+				g -> g.bucket(bucketName).key(key).ifNoneMatch(eTag).ifModifiedSince(days.toInstant())));
+		assertEquals(HttpStatus.SC_NOT_MODIFIED, e.statusCode());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// HeadObject에서 일치하는 If-Match 조건으로 성공 확인
+	public void testHeadObjectIfMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testHeadObjectIfMatchGood";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
+
+		var response = client.headObject(h -> h.bucket(bucketName).key(key).ifMatch(eTag));
+		assertEquals(eTag, response.eTag());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// HeadObject에서 일치하지 않는 If-Match 조건으로 412 실패 확인
+	public void testHeadObjectIfMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testHeadObjectIfMatchFailed";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+
+		// HEAD 응답에는 에러 본문이 없어 상태 코드만 확인
+		var e = assertThrows(AwsServiceException.class, () -> client
+				.headObject(h -> h.bucket(bucketName).key(key).ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ")));
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// HeadObject에서 일치하는 If-None-Match 조건으로 304 반환 확인
+	public void testHeadObjectIfNoneMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testHeadObjectIfNoneMatchGood";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.headObject(h -> h.bucket(bucketName).key(key).ifNoneMatch(eTag)));
+		assertEquals(HttpStatus.SC_NOT_MODIFIED, e.statusCode());
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// HeadObject에서 일치하지 않는 If-None-Match 조건으로 성공 확인
+	public void testHeadObjectIfNoneMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testHeadObjectIfNoneMatchFailed";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+
+		var response = client
+				.headObject(h -> h.bucket(bucketName).key(key).ifNoneMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+		assertEquals(3, response.contentLength());
+	}
+
+	@Test
+	@Tag("IfModifiedSince")
+	// HeadObject에서 오브젝트 업로드 이전 시간의 If-Modified-Since 조건으로 성공 확인
+	public void testHeadObjectIfModifiedSinceGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testHeadObjectIfModifiedSinceGood";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+		var response = client.headObject(h -> h.bucket(bucketName).key(key).ifModifiedSince(days.toInstant()));
+		assertEquals(3, response.contentLength());
+	}
+
+	@Test
+	@Tag("IfModifiedSince")
+	// HeadObject에서 오브젝트 업로드 이후 시간의 If-Modified-Since 조건으로 304 반환 확인
+	public void testHeadObjectIfModifiedSinceFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testHeadObjectIfModifiedSinceFailed";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+
+		var response = client.headObject(h -> h.bucket(bucketName).key(key));
+		var after = response.lastModified().plus(1, ChronoUnit.SECONDS);
+
+		delay(1000);
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.headObject(h -> h.bucket(bucketName).key(key).ifModifiedSince(after)));
+		assertEquals(HttpStatus.SC_NOT_MODIFIED, e.statusCode());
+	}
+
+	@Test
+	@Tag("ifUnmodifiedSince")
+	// HeadObject에서 오브젝트 업로드 이전 시간의 If-Unmodified-Since 조건으로 412 실패 확인
+	public void testHeadObjectIfUnmodifiedSinceGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testHeadObjectIfUnmodifiedSinceGood";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.headObject(h -> h.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant())));
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+	}
+
+	@Test
+	@Tag("ifUnmodifiedSince")
+	// HeadObject에서 오브젝트 업로드 이후 시간의 If-Unmodified-Since 조건으로 성공 확인
+	public void testHeadObjectIfUnmodifiedSinceFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testHeadObjectIfUnmodifiedSinceFailed";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
+
+		var days = Calendar.getInstance();
+		days.set(2100, 8, 29, 19, 43, 31);
+		var response = client
+				.headObject(h -> h.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant()));
+		assertEquals(3, response.contentLength());
+	}
+
+	@Test
 	@Tag("Range")
 	public void testRangedRequestResponseCode() {
 		var key = "obj";

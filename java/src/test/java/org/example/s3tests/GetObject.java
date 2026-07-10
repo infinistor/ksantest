@@ -123,6 +123,96 @@ class GetObject {
 	}
 
 	/**
+	 * If-Match(일치)와 If-Unmodified-Since(불일치)를 함께 사용할 경우 ETag 조건이 우선되어 성공하는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testGetObjectIfMatchWithIfUnmodifiedSince() {
+		testV2.testGetObjectIfMatchWithIfUnmodifiedSince();
+	}
+
+	/**
+	 * If-None-Match(불일치)와 If-Modified-Since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 304가 반환되는지 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testGetObjectIfNoneMatchWithIfModifiedSince() {
+		testV2.testGetObjectIfNoneMatchWithIfModifiedSince();
+	}
+
+	/**
+	 * HeadObject에서 일치하는 If-Match 조건으로 성공 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testHeadObjectIfMatchGood() {
+		testV2.testHeadObjectIfMatchGood();
+	}
+
+	/**
+	 * HeadObject에서 일치하지 않는 If-Match 조건으로 412 실패 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testHeadObjectIfMatchFailed() {
+		testV2.testHeadObjectIfMatchFailed();
+	}
+
+	/**
+	 * HeadObject에서 일치하는 If-None-Match 조건으로 304 반환 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testHeadObjectIfNoneMatchGood() {
+		testV2.testHeadObjectIfNoneMatchGood();
+	}
+
+	/**
+	 * HeadObject에서 일치하지 않는 If-None-Match 조건으로 성공 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testHeadObjectIfNoneMatchFailed() {
+		testV2.testHeadObjectIfNoneMatchFailed();
+	}
+
+	/**
+	 * HeadObject에서 오브젝트 업로드 이전 시간의 If-Modified-Since 조건으로 성공 확인
+	 */
+	@Test
+	@Tag("IfModifiedSince")
+	void testHeadObjectIfModifiedSinceGood() {
+		testV2.testHeadObjectIfModifiedSinceGood();
+	}
+
+	/**
+	 * HeadObject에서 오브젝트 업로드 이후 시간의 If-Modified-Since 조건으로 304 반환 확인
+	 */
+	@Test
+	@Tag("IfModifiedSince")
+	void testHeadObjectIfModifiedSinceFailed() {
+		testV2.testHeadObjectIfModifiedSinceFailed();
+	}
+
+	/**
+	 * HeadObject에서 오브젝트 업로드 이전 시간의 If-Unmodified-Since 조건으로 412 실패 확인
+	 */
+	@Test
+	@Tag("IfUnmodifiedSince")
+	void testHeadObjectIfUnmodifiedSinceGood() {
+		testV2.testHeadObjectIfUnmodifiedSinceGood();
+	}
+
+	/**
+	 * HeadObject에서 오브젝트 업로드 이후 시간의 If-Unmodified-Since 조건으로 성공 확인
+	 */
+	@Test
+	@Tag("IfUnmodifiedSince")
+	void testHeadObjectIfUnmodifiedSinceFailed() {
+		testV2.testHeadObjectIfUnmodifiedSinceFailed();
+	}
+
+	/**
 	 * 지정한 범위로 오브젝트 다운로드가 가능한지 확인
 	 */
 	@Test

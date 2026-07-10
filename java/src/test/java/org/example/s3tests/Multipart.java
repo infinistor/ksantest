@@ -337,4 +337,112 @@ class Multipart {
 		test.testMultipartUploadAbortDuringUpload();
 		testV2.testMultipartUploadAbortDuringUpload();
 	}
+
+	/**
+	 * 소스 오브젝트와 일치하는 copy-source-if-match 조건으로 UploadPartCopy 성공 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testUploadPartCopyIfMatchGood() {
+		testV2.testUploadPartCopyIfMatchGood();
+	}
+
+	/**
+	 * 소스 오브젝트와 일치하지 않는 copy-source-if-match 조건으로 UploadPartCopy 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testUploadPartCopyIfMatchFailed() {
+		testV2.testUploadPartCopyIfMatchFailed();
+	}
+
+	/**
+	 * 소스 오브젝트와 일치하지 않는 copy-source-if-none-match 조건으로 UploadPartCopy 성공 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testUploadPartCopyIfNoneMatchGood() {
+		testV2.testUploadPartCopyIfNoneMatchGood();
+	}
+
+	/**
+	 * 소스 오브젝트와 일치하는 copy-source-if-none-match 조건으로 UploadPartCopy 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testUploadPartCopyIfNoneMatchFailed() {
+		testV2.testUploadPartCopyIfNoneMatchFailed();
+	}
+
+	/**
+	 * 소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 UploadPartCopy 성공 확인
+	 */
+	@Test
+	@Tag("IfModifiedSince")
+	void testUploadPartCopyIfModifiedSinceGood() {
+		testV2.testUploadPartCopyIfModifiedSinceGood();
+	}
+
+	/**
+	 * 소스 오브젝트 업로드 이후 시간의 copy-source-if-modified-since 조건으로 UploadPartCopy 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfModifiedSince")
+	void testUploadPartCopyIfModifiedSinceFailed() {
+		testV2.testUploadPartCopyIfModifiedSinceFailed();
+	}
+
+	/**
+	 * 소스 오브젝트 업로드 이후 시간의 copy-source-if-unmodified-since 조건으로 UploadPartCopy 성공 확인
+	 */
+	@Test
+	@Tag("IfUnmodifiedSince")
+	void testUploadPartCopyIfUnmodifiedSinceGood() {
+		testV2.testUploadPartCopyIfUnmodifiedSinceGood();
+	}
+
+	/**
+	 * 소스 오브젝트 업로드 이전 시간의 copy-source-if-unmodified-since 조건으로 UploadPartCopy 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfUnmodifiedSince")
+	void testUploadPartCopyIfUnmodifiedSinceFailed() {
+		testV2.testUploadPartCopyIfUnmodifiedSinceFailed();
+	}
+
+	/**
+	 * 대상 오브젝트와 일치하는 If-Match 조건으로 CompleteMultipartUpload 덮어쓰기 성공 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testCompleteMultipartUploadIfMatchGood() {
+		testV2.testCompleteMultipartUploadIfMatchGood();
+	}
+
+	/**
+	 * 대상 오브젝트와 일치하지 않는 If-Match 조건으로 CompleteMultipartUpload 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testCompleteMultipartUploadIfMatchFailed() {
+		testV2.testCompleteMultipartUploadIfMatchFailed();
+	}
+
+	/**
+	 * 존재하지 않는 키에 If-None-Match: * 조건으로 CompleteMultipartUpload 성공 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testCompleteMultipartUploadIfNoneMatchGood() {
+		testV2.testCompleteMultipartUploadIfNoneMatchGood();
+	}
+
+	/**
+	 * 이미 존재하는 키에 If-None-Match: * 조건으로 CompleteMultipartUpload 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testCompleteMultipartUploadIfNoneMatchFailed() {
+		testV2.testCompleteMultipartUploadIfNoneMatchFailed();
+	}
 }

@@ -312,6 +312,34 @@ class PutObject {
 	}
 
 	@Test
+	@Tag("IfMatch")
+	// 일치하는 If-Match 조건으로 오브젝트 덮어쓰기 성공 확인
+	void testPutObjectIfMatchGood() {
+		testV2.testPutObjectIfMatchGood();
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// 일치하지 않는 If-Match 조건으로 오브젝트 덮어쓰기 시 412 실패 확인
+	void testPutObjectIfMatchFailed() {
+		testV2.testPutObjectIfMatchFailed();
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// 존재하지 않는 키에 If-None-Match: * 조건으로 업로드 성공 확인
+	void testPutObjectIfNoneMatchGood() {
+		testV2.testPutObjectIfNoneMatchGood();
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// 이미 존재하는 키에 If-None-Match: * 조건으로 업로드 시 412 실패 확인
+	void testPutObjectIfNoneMatchFailed() {
+		testV2.testPutObjectIfNoneMatchFailed();
+	}
+
+	@Test
 	@Tag("KeyLength")
 	// 최대 길이(1024자)의 오브젝트 키로 업로드 성공 확인
 	void testPutObjectKeyMaxLength() {

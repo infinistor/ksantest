@@ -694,6 +694,78 @@ public class PutObject extends TestBase {
 	}
 
 	@Test
+	@Tag("IfMatch")
+	// 일치하는 If-Match 조건으로 오브젝트 덮어쓰기 성공 확인
+	public void testPutObjectIfMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testPutObjectIfMatchGood";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("old")).eTag();
+
+		client.putObject(p -> p.bucket(bucketName).key(key).ifMatch(eTag), RequestBody.fromString("new"));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("new", getBody(response));
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// 일치하지 않는 If-Match 조건으로 오브젝트 덮어쓰기 시 412 실패 확인
+	public void testPutObjectIfMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testPutObjectIfMatchFailed";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("old"));
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+						RequestBody.fromString("new")));
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		// 덮어쓰기 되지 않았는지 확인
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("old", getBody(response));
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// 존재하지 않는 키에 If-None-Match: * 조건으로 업로드 성공 확인
+	public void testPutObjectIfNoneMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testPutObjectIfNoneMatchGood";
+
+		client.putObject(p -> p.bucket(bucketName).key(key).ifNoneMatch("*"), RequestBody.fromString("bar"));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("bar", getBody(response));
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// 이미 존재하는 키에 If-None-Match: * 조건으로 업로드 시 412 실패 확인
+	public void testPutObjectIfNoneMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testPutObjectIfNoneMatchFailed";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("old"));
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).ifNoneMatch("*"),
+						RequestBody.fromString("new")));
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		// 덮어쓰기 되지 않았는지 확인
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("old", getBody(response));
+	}
+
+	@Test
 	@Tag("KeyLength")
 	public void testPutObjectKeyMaxLength() {
 		var client = getClient();
@@ -795,15 +867,12 @@ public class PutObject extends TestBase {
 			var singleCharBytes = unicodeChar.getBytes(StandardCharsets.UTF_8).length;
 			var maxLength = 200 / singleCharBytes; // 200자 제한에 맞는 최대 문자 수
 
-			System.out.println("문자: " + unicodeChar + ", 바이트: " + singleCharBytes + ", 최대길이: " + maxLength);
-
 			// 안전하게 조금 작은 길이로 시도
 			var safeLength = Math.max(1, maxLength - 1);
 			var key = unicodeChar.repeat(safeLength);
 			var body = "unicode-test-" + unicodeChar;
 
 			var actualBytes = key.getBytes(StandardCharsets.UTF_8).length;
-			System.out.println("키길이: " + key.length() + "자, 실제바이트: " + actualBytes);
 
 			var response = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(body));
 			assertNotNull(response.eTag());
@@ -829,9 +898,6 @@ public class PutObject extends TestBase {
 			var tooLongLength = maxLength + 1;
 			var key = unicodeChar.repeat(tooLongLength);
 			var body = "unicode-test-fail-" + unicodeChar;
-
-			var actualBytes = key.getBytes(StandardCharsets.UTF_8).length;
-			System.out.println("실패테스트 - 문자: " + unicodeChar + ", 키길이: " + key.length() + "자, 실제바이트: " + actualBytes);
 
 			var e = assertThrows(AwsServiceException.class, () -> client.putObject(p -> p.bucket(bucketName).key(key),
 					RequestBody.fromString(body)));

@@ -217,6 +217,116 @@ class CopyObject {
 	}
 
 	/**
+	 * 소스 오브젝트와 일치하지 않는 copy-source-if-none-match 조건으로 복사 성공 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testCopyObjectIfNoneMatchGood() {
+		testV2.testCopyObjectIfNoneMatchGood();
+	}
+
+	/**
+	 * 소스 오브젝트와 일치하는 copy-source-if-none-match 조건으로 복사 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testCopyObjectIfNoneMatchFailed() {
+		testV2.testCopyObjectIfNoneMatchFailed();
+	}
+
+	/**
+	 * 소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 복사 성공 확인
+	 */
+	@Test
+	@Tag("IfModifiedSince")
+	void testCopyObjectIfModifiedSinceGood() {
+		testV2.testCopyObjectIfModifiedSinceGood();
+	}
+
+	/**
+	 * 소스 오브젝트 업로드 이후 시간의 copy-source-if-modified-since 조건으로 복사 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfModifiedSince")
+	void testCopyObjectIfModifiedSinceFailed() {
+		testV2.testCopyObjectIfModifiedSinceFailed();
+	}
+
+	/**
+	 * 소스 오브젝트 업로드 이후 시간의 copy-source-if-unmodified-since 조건으로 복사 성공 확인
+	 */
+	@Test
+	@Tag("IfUnmodifiedSince")
+	void testCopyObjectIfUnmodifiedSinceGood() {
+		testV2.testCopyObjectIfUnmodifiedSinceGood();
+	}
+
+	/**
+	 * 소스 오브젝트 업로드 이전 시간의 copy-source-if-unmodified-since 조건으로 복사 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfUnmodifiedSince")
+	void testCopyObjectIfUnmodifiedSinceFailed() {
+		testV2.testCopyObjectIfUnmodifiedSinceFailed();
+	}
+
+	/**
+	 * copy-source-if-match(일치)와 copy-source-if-unmodified-since(불일치)를 함께 사용할 경우
+	 * ETag 조건이 우선되어 복사에 성공하는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testCopyObjectIfMatchWithIfUnmodifiedSince() {
+		testV2.testCopyObjectIfMatchWithIfUnmodifiedSince();
+	}
+
+	/**
+	 * copy-source-if-none-match(불일치)와 copy-source-if-modified-since(일치)를 함께 사용할 경우
+	 * ETag 조건이 우선되어 412가 반환되는지 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testCopyObjectIfNoneMatchWithIfModifiedSince() {
+		testV2.testCopyObjectIfNoneMatchWithIfModifiedSince();
+	}
+
+	/**
+	 * 대상 오브젝트와 일치하는 If-Match 조건으로 덮어쓰기 복사 성공 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testCopyObjectDestinationIfMatchGood() {
+		testV2.testCopyObjectDestinationIfMatchGood();
+	}
+
+	/**
+	 * 대상 오브젝트와 일치하지 않는 If-Match 조건으로 덮어쓰기 복사 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testCopyObjectDestinationIfMatchFailed() {
+		testV2.testCopyObjectDestinationIfMatchFailed();
+	}
+
+	/**
+	 * 존재하지 않는 대상 키에 If-None-Match: * 조건으로 복사 성공 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testCopyObjectDestinationIfNoneMatchGood() {
+		testV2.testCopyObjectDestinationIfNoneMatchGood();
+	}
+
+	/**
+	 * 이미 존재하는 대상 키에 If-None-Match: * 조건으로 복사 시 412 실패 확인
+	 */
+	@Test
+	@Tag("IfNoneMatch")
+	void testCopyObjectDestinationIfNoneMatchFailed() {
+		testV2.testCopyObjectDestinationIfNoneMatchFailed();
+	}
+
+	/**
 	 * [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을
 	 * 확인하는 테스트
 	 */
@@ -414,11 +524,11 @@ class CopyObject {
 
 	/**
 	 * SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공을 확인하는 테스트
+	 * SDK V1은 SSE-C 차단 해제(BlockedEncryptionTypes)를 지원하지 않아 V2만 테스트한다.
 	 */
 	@Test
 	@Tag("encryption")
 	void testCopyToSseCSource() {
-		test.testCopyToSseCSource();
 		testV2.testCopyToSseCSource();
 	}
 
@@ -474,11 +584,11 @@ class CopyObject {
 
 	/**
 	 * sse-c로 암호화된 오브젝트를 복사할때 Algorithm을 누락하면 오류가 발생하는지 확인하는 테스트
+	 * SDK V1은 SSE-C 차단 해제(BlockedEncryptionTypes)를 지원하지 않아 V2만 테스트한다.
 	 */
 	@Test
 	@Tag("ERROR")
 	void testCopyRevokeSseAlgorithm() {
-		test.testCopyRevokeSseAlgorithm();
 		testV2.testCopyRevokeSseAlgorithm();
 	}
 

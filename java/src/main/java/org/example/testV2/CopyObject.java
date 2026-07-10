@@ -13,6 +13,8 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
@@ -511,6 +513,266 @@ public class CopyObject extends TestBase {
 	}
 
 	@Test
+	@Tag("If Match")
+	// 소스 오브젝트와 일치하지 않는 copy-source-if-none-match 조건으로 복사 성공 확인
+	public void testCopyObjectIfNoneMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfNoneMatchGoodSource";
+		var target = "testCopyObjectIfNoneMatchGoodTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source).copySourceIfNoneMatch("ABC")
+				.destinationBucket(bucketName).destinationKey(target));
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트와 일치하는 copy-source-if-none-match 조건으로 복사 시 412 실패 확인
+	public void testCopyObjectIfNoneMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfNoneMatchFailedSource";
+		var target = "testCopyObjectIfNoneMatchFailedTarget";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.destinationBucket(bucketName).destinationKey(target).copySourceIfNoneMatch(eTag)));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 복사 성공 확인
+	public void testCopyObjectIfModifiedSinceGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfModifiedSinceGoodSource";
+		var target = "testCopyObjectIfModifiedSinceGoodTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+				.copySourceIfModifiedSince(days.toInstant())
+				.destinationBucket(bucketName).destinationKey(target));
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트 업로드 이후 시간의 copy-source-if-modified-since 조건으로 복사 시 412 실패 확인
+	public void testCopyObjectIfModifiedSinceFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfModifiedSinceFailedSource";
+		var target = "testCopyObjectIfModifiedSinceFailedTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+
+		// 미래 날짜는 RFC 7232에 따라 무시되므로 업로드 시간 + 1초를 지정하고 1초 대기
+		var lastModified = client.headObject(h -> h.bucket(bucketName).key(source)).lastModified();
+		var after = lastModified.plus(1, ChronoUnit.SECONDS);
+
+		delay(1000);
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.copySourceIfModifiedSince(after)
+						.destinationBucket(bucketName).destinationKey(target)));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트 업로드 이후 시간의 copy-source-if-unmodified-since 조건으로 복사 성공 확인
+	public void testCopyObjectIfUnmodifiedSinceGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfUnmodifiedSinceGoodSource";
+		var target = "testCopyObjectIfUnmodifiedSinceGoodTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+
+		var days = Calendar.getInstance();
+		days.set(2100, 8, 29, 19, 43, 31);
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+				.copySourceIfUnmodifiedSince(days.toInstant())
+				.destinationBucket(bucketName).destinationKey(target));
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트 업로드 이전 시간의 copy-source-if-unmodified-since 조건으로 복사 시 412 실패 확인
+	public void testCopyObjectIfUnmodifiedSinceFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfUnmodifiedSinceFailedSource";
+		var target = "testCopyObjectIfUnmodifiedSinceFailedTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.copySourceIfUnmodifiedSince(days.toInstant())
+						.destinationBucket(bucketName).destinationKey(target)));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("If Match")
+	// copy-source-if-match(일치)와 copy-source-if-unmodified-since(불일치)를 함께 사용할 경우 ETag 조건이
+	// 우선되어 복사에 성공하는지 확인
+	public void testCopyObjectIfMatchWithIfUnmodifiedSince() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfMatchWithIfUnmodifiedSinceSource";
+		var target = "testCopyObjectIfMatchWithIfUnmodifiedSinceTarget";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+
+		// copy-source-if-match: true, copy-source-if-unmodified-since: false -> 200 OK
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+				.copySourceIfMatch(eTag).copySourceIfUnmodifiedSince(days.toInstant())
+				.destinationBucket(bucketName).destinationKey(target));
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("If Match")
+	// copy-source-if-none-match(불일치)와 copy-source-if-modified-since(일치)를 함께 사용할 경우 ETag 조건이
+	// 우선되어 412가 반환되는지 확인
+	public void testCopyObjectIfNoneMatchWithIfModifiedSince() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfNoneMatchWithIfModifiedSinceSource";
+		var target = "testCopyObjectIfNoneMatchWithIfModifiedSinceTarget";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+
+		// copy-source-if-none-match: false, copy-source-if-modified-since: true -> 412
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.copySourceIfNoneMatch(eTag).copySourceIfModifiedSince(days.toInstant())
+						.destinationBucket(bucketName).destinationKey(target)));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// 대상 오브젝트와 일치하는 If-Match 조건으로 덮어쓰기 복사 성공 확인
+	public void testCopyObjectDestinationIfMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectDestinationIfMatchGoodSource";
+		var target = "testCopyObjectDestinationIfMatchGoodTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var targetETag = client.putObject(p -> p.bucket(bucketName).key(target), RequestBody.fromString("old"))
+				.eTag();
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+				.destinationBucket(bucketName).destinationKey(target).ifMatch(targetETag));
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// 대상 오브젝트와 일치하지 않는 If-Match 조건으로 덮어쓰기 복사 시 412 실패 확인
+	public void testCopyObjectDestinationIfMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectDestinationIfMatchFailedSource";
+		var target = "testCopyObjectDestinationIfMatchFailedTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		client.putObject(p -> p.bucket(bucketName).key(target), RequestBody.fromString("old"));
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.destinationBucket(bucketName).destinationKey(target)
+						.ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ")));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		// 덮어쓰기 되지 않았는지 확인
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals("old", getBody(response));
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// 존재하지 않는 대상 키에 If-None-Match: * 조건으로 복사 성공 확인
+	public void testCopyObjectDestinationIfNoneMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectDestinationIfNoneMatchGoodSource";
+		var target = "testCopyObjectDestinationIfNoneMatchGoodTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+				.destinationBucket(bucketName).destinationKey(target).ifNoneMatch("*"));
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// 이미 존재하는 대상 키에 If-None-Match: * 조건으로 복사 시 412 실패 확인
+	public void testCopyObjectDestinationIfNoneMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectDestinationIfNoneMatchFailedSource";
+		var target = "testCopyObjectDestinationIfNoneMatchFailedTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		client.putObject(p -> p.bucket(bucketName).key(target), RequestBody.fromString("old"));
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.destinationBucket(bucketName).destinationKey(target).ifNoneMatch("*")));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		// 덮어쓰기 되지 않았는지 확인
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals("old", getBody(response));
+	}
+
+	@Test
 	@Tag("encryption")
 	public void testCopyNorSrcToNorBucketAndObj() {
 		var prefix = "testCopyNorSrcToNorBucketAndObj";
@@ -837,6 +1099,7 @@ public class CopyObject extends TestBase {
 	public void testCopyRevokeSseAlgorithm() {
 		var client = getClientHttps(true);
 		var bucketName = createBucket(client);
+		unblockSseC(bucketName);
 		var sourceKey = "testCopyRevokeSseAlgorithmSource";
 		var targetKey = "testCopyRevokeSseAlgorithmTarget";
 		var data = Utils.randomTextToLong(1024);

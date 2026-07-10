@@ -14,7 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletionException;
@@ -921,6 +923,301 @@ public class Multipart extends TestBase {
 				.multipartUpload(p -> p.parts(uploadData.parts)));
 
 		checksumCompare(checksum, uploadData, completeResponse);
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트와 일치하는 copy-source-if-match 조건으로 UploadPartCopy 성공 확인
+	public void testUploadPartCopyIfMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfMatchGoodSource";
+		var target = "testUploadPartCopyIfMatchGoodTarget";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		var partResponse = client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+				.copySourceIfMatch(eTag)
+				.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1));
+
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(target).uploadId(uploadId)
+				.multipartUpload(p -> p.parts(CompletedPart.builder().partNumber(1)
+						.eTag(partResponse.copyPartResult().eTag()).build())));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트와 일치하지 않는 copy-source-if-match 조건으로 UploadPartCopy 시 412 실패 확인
+	public void testUploadPartCopyIfMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfMatchFailedSource";
+		var target = "testUploadPartCopyIfMatchFailedTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.copySourceIfMatch("ABC")
+						.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1)));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(target).uploadId(uploadId));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트와 일치하지 않는 copy-source-if-none-match 조건으로 UploadPartCopy 성공 확인
+	public void testUploadPartCopyIfNoneMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfNoneMatchGoodSource";
+		var target = "testUploadPartCopyIfNoneMatchGoodTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		var partResponse = client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+				.copySourceIfNoneMatch("ABC")
+				.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1));
+
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(target).uploadId(uploadId)
+				.multipartUpload(p -> p.parts(CompletedPart.builder().partNumber(1)
+						.eTag(partResponse.copyPartResult().eTag()).build())));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트와 일치하는 copy-source-if-none-match 조건으로 UploadPartCopy 시 412 실패 확인
+	public void testUploadPartCopyIfNoneMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfNoneMatchFailedSource";
+		var target = "testUploadPartCopyIfNoneMatchFailedTarget";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.copySourceIfNoneMatch(eTag)
+						.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1)));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(target).uploadId(uploadId));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 UploadPartCopy 성공 확인
+	public void testUploadPartCopyIfModifiedSinceGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfModifiedSinceGoodSource";
+		var target = "testUploadPartCopyIfModifiedSinceGoodTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+
+		var partResponse = client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+				.copySourceIfModifiedSince(days.toInstant())
+				.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1));
+
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(target).uploadId(uploadId)
+				.multipartUpload(p -> p.parts(CompletedPart.builder().partNumber(1)
+						.eTag(partResponse.copyPartResult().eTag()).build())));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트 업로드 이후 시간의 copy-source-if-modified-since 조건으로 UploadPartCopy 시 412 실패 확인
+	public void testUploadPartCopyIfModifiedSinceFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfModifiedSinceFailedSource";
+		var target = "testUploadPartCopyIfModifiedSinceFailedTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		// 미래 날짜는 RFC 7232에 따라 무시되므로 업로드 시간 + 1초를 지정하고 1초 대기
+		var lastModified = client.headObject(h -> h.bucket(bucketName).key(source)).lastModified();
+		var after = lastModified.plus(1, ChronoUnit.SECONDS);
+
+		delay(1000);
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.copySourceIfModifiedSince(after)
+						.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1)));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(target).uploadId(uploadId));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트 업로드 이후 시간의 copy-source-if-unmodified-since 조건으로 UploadPartCopy 성공 확인
+	public void testUploadPartCopyIfUnmodifiedSinceGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfUnmodifiedSinceGoodSource";
+		var target = "testUploadPartCopyIfUnmodifiedSinceGoodTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		var days = Calendar.getInstance();
+		days.set(2100, 8, 29, 19, 43, 31);
+
+		var partResponse = client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+				.copySourceIfUnmodifiedSince(days.toInstant())
+				.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1));
+
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(target).uploadId(uploadId)
+				.multipartUpload(p -> p.parts(CompletedPart.builder().partNumber(1)
+						.eTag(partResponse.copyPartResult().eTag()).build())));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
+	}
+
+	@Test
+	@Tag("If Match")
+	// 소스 오브젝트 업로드 이전 시간의 copy-source-if-unmodified-since 조건으로 UploadPartCopy 시 412 실패 확인
+	public void testUploadPartCopyIfUnmodifiedSinceFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfUnmodifiedSinceFailedSource";
+		var target = "testUploadPartCopyIfUnmodifiedSinceFailedTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		var days = Calendar.getInstance();
+		days.set(1994, 8, 29, 19, 43, 31);
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.copySourceIfUnmodifiedSince(days.toInstant())
+						.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1)));
+
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(target).uploadId(uploadId));
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// 대상 오브젝트와 일치하는 If-Match 조건으로 CompleteMultipartUpload 덮어쓰기 성공 확인
+	public void testCompleteMultipartUploadIfMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testCompleteMultipartUploadIfMatchGood";
+		var size = 5 * MainData.MB;
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("old")).eTag();
+
+		var uploadData = setupMultipartUpload(client, bucketName, key, size);
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
+				.multipartUpload(p -> p.parts(uploadData.parts)).ifMatch(eTag));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(uploadData.getBody(), getBody(response));
+	}
+
+	@Test
+	@Tag("IfMatch")
+	// 대상 오브젝트와 일치하지 않는 If-Match 조건으로 CompleteMultipartUpload 시 412 실패 확인
+	public void testCompleteMultipartUploadIfMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testCompleteMultipartUploadIfMatchFailed";
+		var size = 5 * MainData.MB;
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("old"));
+
+		var uploadData = setupMultipartUpload(client, bucketName, key, size);
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.completeMultipartUpload(c -> c.bucket(bucketName).key(key)
+						.uploadId(uploadData.uploadId)
+						.multipartUpload(p -> p.parts(uploadData.parts))
+						.ifMatch("ABCDEFGHIJKLMNOPQRSTUVWXYZ")));
+
+		// CompleteMultipartUpload는 처리 시작 후 실패할 경우 200 OK 본문에 에러가 포함될 수 있음
+		assertTrue(e.statusCode() == HttpStatus.SC_PRECONDITION_FAILED || e.statusCode() == HttpStatus.SC_OK,
+				"statusCode: " + e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		// 덮어쓰기 되지 않았는지 확인
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("old", getBody(response));
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// 존재하지 않는 키에 If-None-Match: * 조건으로 CompleteMultipartUpload 성공 확인
+	public void testCompleteMultipartUploadIfNoneMatchGood() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testCompleteMultipartUploadIfNoneMatchGood";
+		var size = 5 * MainData.MB;
+
+		var uploadData = setupMultipartUpload(client, bucketName, key, size);
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
+				.multipartUpload(p -> p.parts(uploadData.parts)).ifNoneMatch("*"));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(uploadData.getBody(), getBody(response));
+	}
+
+	@Test
+	@Tag("IfNoneMatch")
+	// 이미 존재하는 키에 If-None-Match: * 조건으로 CompleteMultipartUpload 시 412 실패 확인
+	public void testCompleteMultipartUploadIfNoneMatchFailed() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testCompleteMultipartUploadIfNoneMatchFailed";
+		var size = 5 * MainData.MB;
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("old"));
+
+		var uploadData = setupMultipartUpload(client, bucketName, key, size);
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.completeMultipartUpload(c -> c.bucket(bucketName).key(key)
+						.uploadId(uploadData.uploadId)
+						.multipartUpload(p -> p.parts(uploadData.parts))
+						.ifNoneMatch("*")));
+
+		// CompleteMultipartUpload는 처리 시작 후 실패할 경우 200 OK 본문에 에러가 포함될 수 있음
+		assertTrue(e.statusCode() == HttpStatus.SC_PRECONDITION_FAILED || e.statusCode() == HttpStatus.SC_OK,
+				"statusCode: " + e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+
+		// 덮어쓰기 되지 않았는지 확인
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("old", getBody(response));
 	}
 
 	@Test
