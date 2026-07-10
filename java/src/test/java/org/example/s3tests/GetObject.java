@@ -132,7 +132,8 @@ class GetObject {
 	}
 
 	/**
-	 * If-None-Match(불일치)와 If-Modified-Since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 304가 반환되는지 확인
+	 * If-None-Match(불일치)와 If-Modified-Since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 304가 반환되는지
+	 * 확인
 	 */
 	@Test
 	@Tag("IfNoneMatch")
@@ -248,7 +249,6 @@ class GetObject {
 	@Test
 	@Tag("Range")
 	void testRangedRequestReturnTrailingBytesResponseCode() {
-		test.testRangedRequestReturnTrailingBytesResponseCode();
 		testV2.testRangedRequestReturnTrailingBytesResponseCode();
 	}
 

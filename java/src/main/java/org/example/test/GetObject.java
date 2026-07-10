@@ -240,23 +240,6 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("Range")
-	public void testRangedRequestReturnTrailingBytesResponseCode() {
-		var key = "obj";
-		var content = "contentData";
-
-		var client = getClient();
-		var bucketName = createBucket(client);
-
-		client.putObject(bucketName, key, content);
-		var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(4));
-
-		var fetchedContent = getBody(response.getObjectContent());
-		assertEquals(content.substring(4), fetchedContent);
-		assertEquals("bytes 4-10/11", response.getObjectMetadata().getRawMetadataValue(Headers.CONTENT_RANGE));
-	}
-
-	@Test
-	@Tag("Range")
 	public void testRangedRequestInvalidRange() {
 		var key = "obj";
 		var content = "contentData";
