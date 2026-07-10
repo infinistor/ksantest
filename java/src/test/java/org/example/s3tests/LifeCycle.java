@@ -24,6 +24,7 @@ class LifeCycle {
 
 	/**
 	 * 테스트 정리 작업 수행
+	 * 
 	 * @param testInfo 테스트 정보
 	 */
 	@AfterEach
@@ -217,7 +218,7 @@ class LifeCycle {
 	 */
 	@Test
 	@Tag("ERROR")
-	void testLifecycleSetExpirationZero(){
+	void testLifecycleSetExpirationZero() {
 		test.testLifecycleSetExpirationZero();
 		testV2.testLifecycleSetExpirationZero();
 	}
@@ -227,7 +228,7 @@ class LifeCycle {
 	 */
 	@Test
 	@Tag("metadata")
-	void testLifecycleSetExpiration(){
+	void testLifecycleSetExpiration() {
 		test.testLifecycleSetExpiration();
 		// testV2.testLifecycleSetExpiration();
 	}
