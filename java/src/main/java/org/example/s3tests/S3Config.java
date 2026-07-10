@@ -13,14 +13,15 @@ package org.example.s3tests;
 import java.io.File;
 import java.io.FileReader;
 
+import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.example.Data.UserData;
-import org.ini4j.Ini;
 
 public class S3Config {
 	public static final String STR_FILENAME = "config.ini";
 	// public static final String STR_FILENAME = "228.ini";
-	// // public static final String STR_FILENAME = "227.ini";
+	// public static final String STR_FILENAME = "227.ini";
+	// public static final String STR_FILENAME = "11.151.ini";
 	// public static final String STR_FILENAME = "awstests.ini";
 	// public static final String STR_FILENAME = "ksan.ini";
 
@@ -53,7 +54,7 @@ public class S3Config {
 	static final String STR_BACKEND_USER = "Backend User";
 
 	public final String fileName;
-	final Ini ini = new Ini();
+	final INIConfiguration ini = new INIConfiguration();
 
 	public String url;
 	public int port;
@@ -77,8 +78,8 @@ public class S3Config {
 
 	public boolean getConfig() {
 		File file = new File(fileName);
-		try {
-			ini.load(new FileReader(file));
+		try (FileReader reader = new FileReader(file)) {
+			ini.read(reader);
 
 			url = readKeyToString(STR_S3, STR_URL);
 			port = readKeyToInt(STR_S3, STR_PORT);
@@ -129,17 +130,17 @@ public class S3Config {
 	}
 
 	String readKeyToString(String section, String key) {
-		return ini.get(section, key);
+		return ini.getSection(section).getString(key);
 	}
 
 	int readKeyToInt(String section, String key) {
-		var value = ini.get(section, key);
+		var value = readKeyToString(section, key);
 		if (StringUtils.isBlank(value))
 			return -1;
 		return Integer.parseInt(value);
 	}
 
 	boolean readKeyToBoolean(String section, String key) {
-		return Boolean.parseBoolean(ini.get(section, key));
+		return Boolean.parseBoolean(readKeyToString(section, key));
 	}
 }
