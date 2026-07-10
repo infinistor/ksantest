@@ -103,7 +103,7 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingDnsUnderscore() {
-		checkBadBucketName("fooBar");
+		checkBadBucketName("foo_bar");
 	}
 
 	@Test
