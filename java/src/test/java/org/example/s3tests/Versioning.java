@@ -46,6 +46,16 @@ class Versioning {
 	}
 
 	/**
+	 * 버저닝 오브젝트의 생성/읽기/삭제 확인
+	 */
+	@Test
+	@Tag("Object")
+	void testVersioningObjCreateReadRemove() {
+		test.testVersioningObjCreateReadRemove();
+		testV2.testVersioningObjCreateReadRemove();
+	}
+
+	/**
 	 * 버저닝 오브젝트의 해더 정보를 사용하여 읽기/쓰기/삭제확인
 	 */
 	@Test

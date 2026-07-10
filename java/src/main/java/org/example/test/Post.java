@@ -1907,7 +1907,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectWrongBucket() throws MalformedURLException {
-		var bucketName = createBucket();
+		var bucketName = getNewBucketName();
 		var badBucketName = getNewBucketName();
 
 		var contentType = "text/plain";
@@ -1944,21 +1944,42 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		// AWS 신규 리전은 SigV2 POST를 지원하지 않으므로 SigV4 방식으로 서명
+		var amzDate = AWS4SignerBase.getAmzDate();
+		var dateStamp = amzDate.substring(0, 8);
+		var region = config.regionName == null || config.regionName.isBlank() ? "us-east-1" : config.regionName;
+		var credential = config.mainUser.accessKey + "/" + dateStamp + "/" + region + "/s3/aws4_request";
+
+		var algorithmCondition = new JsonObject();
+		algorithmCondition.addProperty("x-amz-algorithm", "AWS4-HMAC-SHA256");
+		conditions.add(algorithmCondition);
+
+		var credentialCondition = new JsonObject();
+		credentialCondition.addProperty("x-amz-credential", credential);
+		conditions.add(credentialCondition);
+
+		var dateCondition = new JsonObject();
+		dateCondition.addProperty("x-amz-date", amzDate);
+		conditions.add(dateCondition);
+
 		policyDocument.add("conditions", conditions);
 
 		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
 		var encoder = Base64.getEncoder();
 		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
 
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var signature = AWS4SignerBase.getPostPolicySignature(config.mainUser.secretKey, dateStamp, region, policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
+		payload.put("bucket", bucketName);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
+		payload.put("x-amz-algorithm", "AWS4-HMAC-SHA256");
+		payload.put("x-amz-credential", credential);
+		payload.put("x-amz-date", amzDate);
+		payload.put("x-amz-signature", signature);
 
 		var result = NetUtils.postUpload(createURL(badBucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_NOT_FOUND, result.statusCode, result.getErrorCode());

@@ -25,7 +25,7 @@ public abstract class AWS4SignerBase {
 
 	public static final String SCHEME = "AWS4";
 	public static final String ALGORITHM = "HMAC-SHA256";
-	public static final String TERMINATOR = "aws4Request";
+	public static final String TERMINATOR = "aws4_request";
 	public static final String X_AMZ_CONTENT_SHA256 = "X-Amz-Content-SHA256";
 
 	public static final String ISO8601_BASIC_FORMAT = "yyyyMMdd'T'HHmmss'Z'";

@@ -414,6 +414,18 @@ class Post {
 	}
 
 	/**
+	 * [policy에 설정된 버킷과 다른 버킷으로 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("ERROR")
+	void testPostObjectWrongBucket() throws MalformedURLException {
+		test.testPostObjectWrongBucket();
+		testV2.testPostObjectWrongBucket();
+	}
+
+	/**
 	 * PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	 * 
 	 * @throws UnsupportedOperationException 지원하지 않는 작업을 수행할 경우 발생하는 예외
@@ -442,8 +454,8 @@ class Post {
 	@Test
 	@Tag("signV4")
 	void testPutObjectV4() throws MalformedURLException {
-		// test.testPutObjectV4();
-		// testV2.testPutObjectV4();
+		test.testPutObjectV4();
+		testV2.testPutObjectV4();
 	}
 
 	/**
@@ -454,8 +466,8 @@ class Post {
 	@Test
 	@Tag("signV4")
 	void testPutObjectChunkedV4() throws MalformedURLException {
-		// test.testPutObjectChunkedV4();
-		// testV2.testPutObjectChunkedV4();
+		test.testPutObjectChunkedV4();
+		testV2.testPutObjectChunkedV4();
 	}
 
 	/**
@@ -466,7 +478,7 @@ class Post {
 	@Test
 	@Tag("signV4")
 	void testGetObjectV4() throws MalformedURLException {
-		// test.testGetObjectV4();
-		// testV2.testGetObjectV4();
+		test.testGetObjectV4();
+		testV2.testGetObjectV4();
 	}
 }
