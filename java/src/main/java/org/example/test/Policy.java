@@ -719,7 +719,7 @@ public class Policy extends TestBase {
 		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_ALLOW);
 
 		var principal = new JsonObject();
-		principal.addProperty("AWS", config.mainUser.getArn());
+		principal.addProperty("CanonicalUser", config.mainUser.id);
 		statement.add(MainData.POLICY_PRINCIPAL, principal);
 
 		statement.addProperty(MainData.POLICY_ACTION, "s3:ListBucket");
