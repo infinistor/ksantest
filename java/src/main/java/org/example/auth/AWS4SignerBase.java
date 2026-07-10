@@ -218,4 +218,22 @@ public abstract class AWS4SignerBase {
 			throw new RuntimeException("Unable to calculate a request signature: " + e.getMessage(), e);
 		}
 	}
+
+	/** 현재 시각을 SigV4용 ISO8601 basic 포맷(yyyyMMdd'T'HHmmss'Z', UTC)으로 반환한다. */
+	public static String getAmzDate() {
+		var format = new SimpleDateFormat(ISO8601_BASIC_FORMAT);
+		format.setTimeZone(new SimpleTimeZone(0, "UTC"));
+		return format.format(new java.util.Date());
+	}
+
+	/** base64 인코딩된 POST policy를 SigV4 방식으로 서명하여 hex 문자열로 반환한다. */
+	public static String getPostPolicySignature(String secretKey, String dateStamp, String regionName,
+			String policyBase64) {
+		byte[] kSecret = (SCHEME + secretKey).getBytes(StandardCharsets.UTF_8);
+		byte[] kDate = sign(dateStamp, kSecret, "HmacSHA256");
+		byte[] kRegion = sign(regionName, kDate, "HmacSHA256");
+		byte[] kService = sign("s3", kRegion, "HmacSHA256");
+		byte[] kSigning = sign("aws4_request", kService, "HmacSHA256");
+		return BinaryUtils.toHex(sign(policyBase64, kSigning, "HmacSHA256"));
+	}
 }
