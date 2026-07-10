@@ -652,15 +652,10 @@ public class PutObject extends TestBase {
 			var singleCharBytes = unicodeChar.getBytes(StandardCharsets.UTF_8).length;
 			var maxLength = 200 / singleCharBytes; // 200자 제한에 맞는 최대 문자 수
 
-			System.out.println("문자: " + unicodeChar + ", 바이트: " + singleCharBytes + ", 최대길이: " + maxLength);
-
 			// 안전하게 조금 작은 길이로 시도
 			var safeLength = Math.max(1, maxLength - 1);
 			var key = unicodeChar.repeat(safeLength);
 			var body = "unicode-test-" + unicodeChar;
-
-			var actualBytes = key.getBytes(StandardCharsets.UTF_8).length;
-			System.out.println("키길이: " + key.length() + "자, 실제바이트: " + actualBytes);
 
 			var response = client.putObject(bucketName, key, body);
 			assertNotNull(response.getETag());
@@ -686,9 +681,6 @@ public class PutObject extends TestBase {
 			var tooLongLength = maxLength + 1;
 			var key = unicodeChar.repeat(tooLongLength);
 			var body = "unicode-test-fail-" + unicodeChar;
-
-			var actualBytes = key.getBytes(StandardCharsets.UTF_8).length;
-			System.out.println("실패테스트 - 문자: " + unicodeChar + ", 키길이: " + key.length() + "자, 실제바이트: " + actualBytes);
 
 			var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, body));
 			assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
