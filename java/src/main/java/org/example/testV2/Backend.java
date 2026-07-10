@@ -12,6 +12,7 @@ package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 오브젝트를 업로드할 수 있는지 확인
 	 */
 	public void testPutObject() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -66,6 +68,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 오브젝트를 다운로드할 수 있는지 확인
 	 */
 	public void testGetObject() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -85,6 +88,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 오브젝트를 삭제할 수 있는지 확인
 	 */
 	public void testDeleteObject() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -107,6 +111,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 오브젝트를 복사할 수 있는지 확인
 	 */
 	public void testCopyObject() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var sourceBucket = createBucket(client);
@@ -136,6 +141,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 멀티파트 업로드를 수행할 수 있는지 확인
 	 */
 	public void testMultipartUpload() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -160,6 +166,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 오브젝트 ACL을 설정할 수 있는지 확인
 	 */
 	public void testPutObjectAcl() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucketCannedAcl(client);
@@ -182,6 +189,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 오브젝트 ACL을 조회할 수 있는지 확인
 	 */
 	public void testGetObjectAcl() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucketCannedAcl(client);
@@ -201,6 +209,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 오브젝트 태그를 설정할 수 있는지 확인
 	 */
 	public void testPutObjectTagging() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -227,6 +236,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 오브젝트 태그를 조회할 수 있는지 확인
 	 */
 	public void testGetObjectTagging() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -249,6 +259,7 @@ public class Backend extends TestBase {
 	 * Backend 헤더를 사용하여 오브젝트 태그를 삭제할 수 있는지 확인
 	 */
 	public void testDeleteObjectTagging() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -273,6 +284,7 @@ public class Backend extends TestBase {
 	 * [Versioning] PutObject가 정상 동작하는지 확인
 	 */
 	public void testPutObjectVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -296,6 +308,7 @@ public class Backend extends TestBase {
 	 * [Versioning] PutObject 버전 정보 추가시 정상 동작 확인
 	 */
 	public void testPutObjectVersioningWithVersionId() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -331,6 +344,7 @@ public class Backend extends TestBase {
 	 * [Versioning] GetObject가 정상 동작하는지 확인
 	 */
 	public void testGetObjectVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -354,6 +368,7 @@ public class Backend extends TestBase {
 	 * [Versioning] DeleteObject가 정상 동작하는지 확인
 	 */
 	public void testDeleteObjectVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -389,6 +404,7 @@ public class Backend extends TestBase {
 	 * [Versioning] DeleteObjects가 정상 동작하는지 확인
 	 */
 	public void testDeleteObjectsVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -454,6 +470,7 @@ public class Backend extends TestBase {
 	 * [Versioning] HeadObject가 정상 동작하는지 확인
 	 */
 	public void testHeadObjectVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -478,6 +495,7 @@ public class Backend extends TestBase {
 	 * [Versioning] CopyObject가 정상 동작하는지 확인
 	 */
 	public void testCopyObjectVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var sourceBucket = createBucket(client);
@@ -526,6 +544,7 @@ public class Backend extends TestBase {
 	 * [Versioning] MultipartUpload가 정상 동작하는지 확인
 	 */
 	public void testMultipartUploadVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -553,6 +572,7 @@ public class Backend extends TestBase {
 	 * [Versioning] PutObjectAcl가 정상 동작하는지 확인
 	 */
 	public void testPutObjectAclVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucketCannedAcl(client);
@@ -580,6 +600,7 @@ public class Backend extends TestBase {
 	 * [Versioning] GetObjectAcl가 정상 동작하는지 확인
 	 */
 	public void testGetObjectAclVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucketCannedAcl(client);
@@ -602,6 +623,7 @@ public class Backend extends TestBase {
 	 * [Versioning] PutObjectTagging가 정상 동작하는지 확인
 	 */
 	public void testPutObjectTaggingVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -631,6 +653,7 @@ public class Backend extends TestBase {
 	 * [Versioning] GetObjectTagging가 정상 동작하는지 확인
 	 */
 	public void testGetObjectTaggingVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -656,6 +679,7 @@ public class Backend extends TestBase {
 	 * [Versioning] DeleteObjectTagging가 정상 동작하는지 확인
 	 */
 	public void testDeleteObjectTaggingVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -683,6 +707,7 @@ public class Backend extends TestBase {
 	 * [Versioning] PutObjectRetention가 정상 동작하는지 확인
 	 */
 	public void testPutObjectRetentionVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = getNewBucketName();
@@ -713,6 +738,7 @@ public class Backend extends TestBase {
 	 * [Versioning] GetObjectRetention가 정상 동작하는지 확인
 	 */
 	public void testGetObjectRetentionVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = getNewBucketName();
@@ -738,6 +764,7 @@ public class Backend extends TestBase {
 	 * [Versioning] PutObjectRetention 후 GetObjectRetention으로 조회가 정상 동작하는지 확인
 	 */
 	public void testPutAndGetObjectRetentionVersioning() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = getNewBucketName();
@@ -775,6 +802,7 @@ public class Backend extends TestBase {
 	 * PutObject 복제가 정상 동작하는지 확인
 	 */
 	public void testPutObjectReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var sourceBucketName = createBucket(client);
@@ -804,6 +832,7 @@ public class Backend extends TestBase {
 	 * PutObject 태그가 복제되는지 확인
 	 */
 	public void testPutObjectWithTaggingReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var sourceBucketName = createBucket(client);
@@ -838,6 +867,7 @@ public class Backend extends TestBase {
 	 * PutObject 헤더와 메타데이터가 복제되는지 확인
 	 */
 	public void testPutObjectWithMetadataReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var sourceBucketName = createBucket(client);
@@ -871,6 +901,7 @@ public class Backend extends TestBase {
 	 * CopyObject 복제가 정상 동작하는지 확인
 	 */
 	public void testCopyObjectReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucket = createBucket(client);
@@ -908,6 +939,7 @@ public class Backend extends TestBase {
 	 * CopyObject 태그가 복제되는지 확인
 	 */
 	public void testCopyObjectWithTaggingReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucket = createBucket(client);
@@ -950,6 +982,7 @@ public class Backend extends TestBase {
 	 * CopyObject 헤더와 메타데이터가 복제되는지 확인
 	 */
 	public void testCopyObjectWithMetadataReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucket = createBucket(client);
@@ -991,6 +1024,7 @@ public class Backend extends TestBase {
 	 * CopyObject 메타데이터가 Replace되었을 경우 복제되는지 확인
 	 */
 	public void testCopyObjectMetadataReplaceReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucket = createBucket(client);
@@ -1036,6 +1070,7 @@ public class Backend extends TestBase {
 	 * MultipartUpload 복제가 정상 동작하는지 확인
 	 */
 	public void testMultipartUploadReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -1069,6 +1104,7 @@ public class Backend extends TestBase {
 	 * MultipartUpload 태그가 복제되는지 확인
 	 */
 	public void testMultipartUploadWithTaggingReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -1118,6 +1154,7 @@ public class Backend extends TestBase {
 	 * MultipartUpload 헤더와 메타데이터가 복제되는지 확인
 	 */
 	public void testMultipartUploadWithMetadataReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -1158,6 +1195,7 @@ public class Backend extends TestBase {
 	 * PutObjectAcl 복제가 정상 동작하는지 확인
 	 */
 	public void testPutObjectAclReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucketCannedAcl(client);
@@ -1197,6 +1235,7 @@ public class Backend extends TestBase {
 	 * putObjectTagging 복제가 정상 동작하는지 확인
 	 */
 	public void testPutObjectTaggingReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -1236,6 +1275,7 @@ public class Backend extends TestBase {
 	 * deleteObject 복제가 정상 동작하는지 확인
 	 */
 	public void testDeleteObjectReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
@@ -1276,6 +1316,7 @@ public class Backend extends TestBase {
 	 * deleteObjectTagging 복제가 정상 동작하는지 확인
 	 */
 	public void testDeleteObjectTaggingReplication() {
+		assumeFalse(config.isAWS());
 		var client = getClient();
 		var backendClient = getBackendClient();
 		var bucketName = createBucket(client);
