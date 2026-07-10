@@ -27,6 +27,7 @@ class Taggings {
 
 	/**
 	 * 테스트 정리 작업 수행
+	 * 
 	 * @param testInfo 테스트 정보
 	 */
 	@AfterEach
@@ -62,7 +63,7 @@ class Taggings {
 	@Tag("Check")
 	void testGetObjHeadTagging() {
 		test.testGetObjHeadTagging();
-		// testV2.testGetObjHeadTagging();
+		testV2.testGetObjHeadTagging();
 	}
 
 	/**
@@ -147,6 +148,7 @@ class Taggings {
 
 	/**
 	 * 로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
+	 * 
 	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
 	 */
 	@Test

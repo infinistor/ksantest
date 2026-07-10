@@ -24,7 +24,6 @@ import org.example.Data.MainData;
 import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
 import org.example.auth.AWS2SignerBase;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -88,7 +87,6 @@ public class Taggings extends TestBase {
 		tagCompare(inputTagSet.tagSet(), response.tagSet());
 	}
 
-	@Disabled("Java JDK V2에서는 HeadObject로 태그정보를 확인할 수 없음")
 	@Test
 	@Tag("Check")
 	public void testGetObjHeadTagging() {
