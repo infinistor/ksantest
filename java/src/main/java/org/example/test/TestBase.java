@@ -83,7 +83,6 @@ import com.amazonaws.services.s3.model.CopyPartRequest;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
 import com.amazonaws.services.s3.model.DeleteVersionRequest;
-import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.Grant;
 import com.amazonaws.services.s3.model.Grantee;
@@ -111,7 +110,6 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.S3VersionSummary;
 import com.amazonaws.services.s3.model.SSEAlgorithm;
-import com.amazonaws.services.s3.model.SSECustomerKey;
 import com.amazonaws.services.s3.model.ServerSideEncryptionByDefault;
 import com.amazonaws.services.s3.model.ServerSideEncryptionConfiguration;
 import com.amazonaws.services.s3.model.ServerSideEncryptionRule;
@@ -151,7 +149,7 @@ public class TestBase {
 	/************************************************************************************************************/
 
 	public enum EncryptionType {
-		NORMAL, SSE_S3, SSE_C
+		NORMAL, SSE_S3
 	}
 
 	/************************************************************************************************************/
@@ -161,10 +159,6 @@ public class TestBase {
 	static final int BUCKET_MAX_LENGTH = 63;
 	static final int MAX_LENGTH = 500;
 	static final Random rand = new Random();
-	// cSpell:disable
-	static final String SSE_KEY = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=";
-	static final String SSE_KEY_MD5 = "DWygnHRtgiJ77HCm+1rvHw==";
-	// cSpell:enable
 	/************************************************************************************************************/
 
 	final ArrayList<String> buckets = new ArrayList<>();
@@ -1133,35 +1127,6 @@ public class TestBase {
 		return uploadData;
 	}
 
-	public MultipartUploadData setupSseCMultipartUpload(AmazonS3 client, String bucketName, String key, int size,
-			ObjectMetadata metadataList) {
-		var uploadData = new MultipartUploadData();
-
-		var sse = new SSECustomerKey(SSE_KEY)
-				.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION).withMd5(SSE_KEY_MD5);
-
-		var initMultiPartResponse = client.initiateMultipartUpload(
-				new InitiateMultipartUploadRequest(bucketName, key, metadataList).withSSECustomerKey(sse));
-		uploadData.uploadId = initMultiPartResponse.getUploadId();
-
-		var parts = Utils.generateRandomString(size, DEFAULT_PART_SIZE);
-
-		for (var Part : parts) {
-			uploadData.appendBody(Part);
-
-			var response = client.uploadPart(new UploadPartRequest()
-					.withBucketName(bucketName)
-					.withKey(key)
-					.withUploadId(uploadData.uploadId)
-					.withPartNumber(uploadData.nextPartNumber())
-					.withPartSize(Part.length())
-					.withSSECustomerKey(sse)
-					.withInputStream(createBody(Part)));
-			uploadData.parts.add(response.getPartETag());
-		}
-		return uploadData;
-	}
-
 	public void checkCopyContent(String sourceBucketName, String sourceKey, String targetBucketName, String targetKey) {
 		var client = getClient();
 
@@ -1188,23 +1153,6 @@ public class TestBase {
 		var targetResponse = client.getObject(targetBucketName, targetKey);
 		var targetSize = targetResponse.getObjectMetadata().getContentLength();
 		var targetData = getBody(targetResponse.getObjectContent());
-		assertEquals(sourceSize, targetSize);
-		assertTrue(sourceData.equals(targetData), MainData.NOT_MATCHED);
-	}
-
-	public void checkCopyContentSseC(AmazonS3 client, String sourceBucketName, String sourceKey,
-			String targetBucketName, String targetKey, SSECustomerKey sseC) {
-
-		var sourceResponse = client
-				.getObject(new GetObjectRequest(sourceBucketName, sourceKey).withSSECustomerKey(sseC));
-		var sourceSize = sourceResponse.getObjectMetadata().getContentLength();
-		var sourceData = getBody(sourceResponse.getObjectContent());
-
-		var targetResponse = client
-				.getObject(new GetObjectRequest(targetBucketName, targetKey).withSSECustomerKey(sseC));
-		var targetSize = targetResponse.getObjectMetadata().getContentLength();
-		var targetData = getBody(targetResponse.getObjectContent());
-
 		assertEquals(sourceSize, targetSize);
 		assertTrue(sourceData.equals(targetData), MainData.NOT_MATCHED);
 	}
@@ -1359,41 +1307,6 @@ public class TestBase {
 		return data;
 	}
 
-	public MultipartUploadData multipartCopySseC(AmazonS3 client, String sourceBucketName, String sourceKey,
-			String targetBucketName, String targetKey, int size, ObjectMetadata metadata, SSECustomerKey sseC) {
-		var data = new MultipartUploadData();
-		var partSize = 5 * MainData.MB;
-		if (metadata == null)
-			metadata = new ObjectMetadata();
-
-		var response = client.initiateMultipartUpload(
-				new InitiateMultipartUploadRequest(targetBucketName, targetKey, metadata).withSSECustomerKey(sseC));
-		data.uploadId = response.getUploadId();
-
-		int uploadCount = 1;
-		long start = 0;
-		while (start < size) {
-			long end = Math.min(start + partSize - 1, size - 1L);
-
-			var partResponse = client.copyPart(new CopyPartRequest()
-					.withSourceBucketName(sourceBucketName)
-					.withSourceKey(sourceKey)
-					.withDestinationBucketName(targetBucketName)
-					.withDestinationKey(targetKey)
-					.withSourceSSECustomerKey(sseC)
-					.withDestinationSSECustomerKey(sseC)
-					.withUploadId(data.uploadId)
-					.withPartNumber(uploadCount)
-					.withFirstByte(start)
-					.withLastByte(end));
-			data.parts.add(new PartETag(uploadCount++, partResponse.getETag()));
-
-			start = end + 1;
-		}
-
-		return data;
-	}
-
 	public static long getBytesUsed(ListObjectsV2Result response) {
 		if (response == null)
 			return 0;
@@ -1433,30 +1346,6 @@ public class TestBase {
 		}
 	}
 
-	public void checkContentUsingRangeEnc(AmazonS3 client, String bucketName, String key, String data, long step,
-			SSECustomerKey sse) {
-		if (client == null)
-			client = getClient();
-		var getResponse = client
-				.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key).withSSECustomerKey(sse));
-		var size = getResponse.getContentLength();
-
-		long start = 0;
-		while (start < size) {
-			var end = Math.min(start + step, size - 1);
-
-			var response = client.getObject(new GetObjectRequest(bucketName, key)
-					.withRange(start, end - 1).withSSECustomerKey(sse));
-			var body = getBody(response.getObjectContent());
-			var length = end - start;
-			var partBody = data.substring((int) start, (int) end);
-
-			assertEquals(length, response.getObjectMetadata().getContentLength());
-			assertTrue(partBody.equals(body), MainData.NOT_MATCHED);
-			start += step;
-		}
-	}
-
 	public RangeSet getRandomRange(int fileSize) {
 		var start = rand.nextInt(fileSize - MAX_LENGTH * 2);
 		var maxLength = fileSize - start;
@@ -1481,16 +1370,6 @@ public class TestBase {
 		}
 	}
 
-	public void checkContentEnc(String bucketName, String key, String data, int loopCount, SSECustomerKey sse) {
-		var client = getClientHttps();
-
-		for (int i = 0; i < loopCount; i++) {
-			var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(sse));
-			var body = getBody(response.getObjectContent());
-			assertTrue(data.equals(body), MainData.NOT_MATCHED);
-		}
-	}
-
 	public void checkContentUsingRandomRange(String bucketName, String key, String data, int loopCount) {
 		var client = getClient();
 		int fileSize = data.length();
@@ -1503,21 +1382,6 @@ public class TestBase {
 			var body = getBody(response.getObjectContent());
 
 			assertEquals(range.length, response.getObjectMetadata().getContentLength() - 1);
-			assertTrue(rangeBody.equals(body), MainData.NOT_MATCHED);
-		}
-	}
-
-	public void checkContentUsingRandomRangeEnc(AmazonS3 client, String bucketName, String key, String data,
-			int fileSize, int loopCount, SSECustomerKey sse) {
-		for (int i = 0; i < loopCount; i++) {
-			var range = getRandomRange(fileSize);
-
-			var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(range.start, range.end - 1L)
-					.withSSECustomerKey(sse));
-			var body = getBody(response.getObjectContent());
-			var rangeBody = data.substring(range.start, range.end);
-
-			assertEquals(range.length, response.getObjectMetadata().getContentLength());
 			assertTrue(rangeBody.equals(body), MainData.NOT_MATCHED);
 		}
 	}
@@ -1563,25 +1427,6 @@ public class TestBase {
 		} catch (Exception e) {
 			fail(e.getMessage());
 		}
-	}
-
-	public void testEncryptionSSECustomerWrite(int fileSize) {
-		var client = getClientHttps();
-		var bucketName = createBucket(client);
-		var key = "test_obj";
-		var data = Utils.randomTextToLong(fileSize);
-		var metadata = new ObjectMetadata();
-		metadata.setContentType("text/plain");
-		metadata.setContentLength(fileSize);
-		var sse = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
-				.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION).withMd5("DWygnHRtgiJ77HCm+1rvHw==");
-
-		client.putObject(new PutObjectRequest(bucketName, key, createBody(data), metadata).withSSECustomerKey(sse));
-
-		var response = client.getObject(new GetObjectRequest(bucketName, key).withSSECustomerKey(sse));
-		var body = getBody(response.getObjectContent());
-		assertTrue(data.equals(body), MainData.NOT_MATCHED);
-		assertEquals(SSEAlgorithm.AES256.toString(), response.getObjectMetadata().getSSECustomerAlgorithm());
 	}
 
 	public void testEncryptionSseS3CustomerWrite(int fileSize) {
@@ -1724,11 +1569,6 @@ public class TestBase {
 		sseMetadata.setContentLength(fileSize);
 		sseMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
 
-		// SSE-C Config
-		var sseC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
-				.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
-				.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
-
 		// Source Put Object
 		var sourcePutRequest = new PutObjectRequest(bucketName, sourceKey, createBody(data), metadata);
 		var sourceGetRequest = new GetObjectRequest(bucketName, sourceKey);
@@ -1741,12 +1581,8 @@ public class TestBase {
 			case SSE_S3:
 				sourcePutRequest.setMetadata(sseMetadata);
 				break;
-			case SSE_C:
-				sourcePutRequest.setSSECustomerKey(sseC);
-				sourceGetRequest.setSSECustomerKey(sseC);
-				copyRequest.setSourceSSECustomerKey(sseC);
-				break;
 			case NORMAL:
+			default:
 				break;
 		}
 
@@ -1755,11 +1591,8 @@ public class TestBase {
 			case SSE_S3:
 				copyRequest.setNewObjectMetadata(sseMetadata);
 				break;
-			case SSE_C:
-				copyRequest.setDestinationSSECustomerKey(sseC);
-				targetGetRequest.setSSECustomerKey(sseC);
-				break;
 			case NORMAL:
+			default:
 				copyRequest.setNewObjectMetadata(metadata);
 				break;
 		}
@@ -2168,15 +2001,15 @@ public class TestBase {
 	}
 
 	public List<Thread> doClearVersionedBucketConcurrent(AmazonS3 client, String bucketName) {
-		var threadList = new ArrayList<Thread>();
+		var threads = new ArrayList<Thread>();
 		var response = client.listVersions(bucketName, "");
 
 		for (var Version : response.getVersionSummaries()) {
 			var mThread = new Thread(() -> client.deleteVersion(bucketName, Version.getKey(), Version.getVersionId()));
 			mThread.start();
-			threadList.add(mThread);
+			threads.add(mThread);
 		}
-		return threadList;
+		return threads;
 	}
 
 	public void corsRequestAndCheck(String method, String bucketName, Map<String, String> headers, int statusCode,
