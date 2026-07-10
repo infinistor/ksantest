@@ -149,6 +149,30 @@ public class ACL extends TestBase {
 
 	@Test
 	@Tag("Access")
+	public void testPrivateBucketBucketOwnerReadObjectUploadAltUser() {
+		var mainKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserMain";
+		var altKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserAlt";
+		var publicKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserPublic";
+
+		var bucketName = setupAclObjectsByAlt(BucketCannedACL.PUBLIC_READ_WRITE,
+				ObjectCannedACL.BUCKET_OWNER_READ, mainKey, altKey, publicKey);
+
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE));
+
+		succeedGetObject(altClient, bucketName, mainKey, mainKey);
+		succeedGetObject(client, bucketName, altKey, altKey);
+		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+
+		failedPutObject(altClient, bucketName, mainKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		succeedPutObject(client, bucketName, altKey, altKey);
+		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("Access")
 	public void testPrivateBucketBucketOwnerFullControlObject() {
 		var mainKey = "testPrivateBucketBucketOwnerFullControlObjectMain";
 		var altKey = "testPrivateBucketBucketOwnerFullControlObjectAlt";

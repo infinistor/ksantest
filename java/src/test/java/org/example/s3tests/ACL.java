@@ -80,6 +80,16 @@ class ACL {
 	}
 
 	/**
+	 * [Bucket = private, Object = bucket-owner-read] Alt 사용자가 업로드한 오브젝트에 접근 가능한지 확인하는 테스트
+	 */
+	@Test
+	@Tag("Access")
+	void testPrivateBucketBucketOwnerReadObjectUploadAltUser() {
+		test.testPrivateBucketBucketOwnerReadObjectUploadAltUser();
+		testV2.testPrivateBucketBucketOwnerReadObjectUploadAltUser();
+	}
+
+	/**
 	 * [Bucket = private, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
 	 */
 	@Test

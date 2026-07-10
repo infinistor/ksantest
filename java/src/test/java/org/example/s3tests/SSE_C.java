@@ -187,4 +187,13 @@ class SSE_C {
 	void testSseCEncryptionMultipartCopyPartUpload() {
 		testV2.testSseCEncryptionMultipartCopyPartUpload();
 	}
+
+	/**
+	 * 멀티파트 오브젝트를 여러 번 복사하여 정상적으로 동작하는지 확인
+	 */
+	@Test
+	@Tag("Multipart")
+	void testSseCEncryptionMultipartCopyMany() {
+		testV2.testSseCEncryptionMultipartCopyMany();
+	}
 }

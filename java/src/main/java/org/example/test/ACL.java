@@ -152,19 +152,21 @@ public class ACL extends TestBase {
 		var altKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserAlt";
 		var publicKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserPublic";
 
-		var bucketName = setupAclObjects(CannedAccessControlList.Private, CannedAccessControlList.BucketOwnerRead,
+		var bucketName = setupAclObjectsByAlt(CannedAccessControlList.PublicReadWrite,
+				CannedAccessControlList.BucketOwnerRead,
 				mainKey, altKey, publicKey);
 
 		var client = getClient();
 		var altClient = getAltClient();
 		var publicClient = getPublicClient();
+		client.setBucketAcl(bucketName, CannedAccessControlList.Private);
 
 		succeedGetObject(altClient, bucketName, mainKey, mainKey);
-		failedGetObject(client, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		succeedGetObject(client, bucketName, altKey, altKey);
 		failedGetObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
 
-		succeedPutObject(altClient, bucketName, mainKey, mainKey);
-		failedPutObject(client, bucketName, altKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		failedPutObject(altClient, bucketName, mainKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		succeedPutObject(client, bucketName, altKey, altKey);
 		failedPutObject(publicClient, bucketName, publicKey, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
 	}
 
