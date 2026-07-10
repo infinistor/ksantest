@@ -19,10 +19,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * SSE-C 암호화 기능을 테스트하는 클래스
+ * SDK V1은 SSE-C 차단 해제(BlockedEncryptionTypes)를 지원하지 않아 V2만 테스트한다.
  */
 class SSE_C {
 
-	org.example.test.SSE_C test = new org.example.test.SSE_C();
 	org.example.testV2.SSE_C testV2 = new org.example.testV2.SSE_C();
 
 	/**
@@ -31,7 +31,6 @@ class SSE_C {
 	 */
 	@AfterEach
 	void clear(TestInfo testInfo) {
-		test.clear(testInfo);
 		testV2.clear(testInfo);
 	}
 
@@ -41,7 +40,6 @@ class SSE_C {
 	@Test
 	@Tag("PutGet")
 	void testEncryptedTransfer1b() {
-		test.testEncryptedTransfer1b();
 		testV2.testEncryptedTransfer1b();
 	}
 
@@ -51,7 +49,6 @@ class SSE_C {
 	@Test
 	@Tag("PutGet")
 	void testEncryptedTransfer1kb() {
-		test.testEncryptedTransfer1kb();
 		testV2.testEncryptedTransfer1kb();
 	}
 
@@ -61,7 +58,6 @@ class SSE_C {
 	@Test
 	@Tag("PutGet")
 	void testEncryptedTransfer1MB() {
-		test.testEncryptedTransfer1MB();
 		testV2.testEncryptedTransfer1MB();
 	}
 
@@ -71,7 +67,6 @@ class SSE_C {
 	@Test
 	@Tag("PutGet")
 	void testEncryptedTransfer13b() {
-		test.testEncryptedTransfer13b();
 		testV2.testEncryptedTransfer13b();
 	}
 
@@ -81,7 +76,6 @@ class SSE_C {
 	@Test
 	@Tag("Metadata")
 	void testEncryptionSseCMethodHead() {
-		test.testEncryptionSseCMethodHead();
 		testV2.testEncryptionSseCMethodHead();
 	}
 
@@ -91,7 +85,6 @@ class SSE_C {
 	@Test
 	@Tag("ERROR")
 	void testEncryptionSseCPresent() {
-		test.testEncryptionSseCPresent();
 		testV2.testEncryptionSseCPresent();
 	}
 
@@ -101,7 +94,6 @@ class SSE_C {
 	@Test
 	@Tag("ERROR")
 	void testEncryptionSseCOtherKey() {
-		test.testEncryptionSseCOtherKey();
 		testV2.testEncryptionSseCOtherKey();
 	}
 
@@ -111,7 +103,6 @@ class SSE_C {
 	@Test
 	@Tag("ERROR")
 	void testEncryptionSseCInvalidMd5() {
-		test.testEncryptionSseCInvalidMd5();
 		testV2.testEncryptionSseCInvalidMd5();
 	}
 
@@ -121,7 +112,6 @@ class SSE_C {
 	@Test
 	@Tag("ERROR")
 	void testEncryptionSseCNoMd5() {
-		test.testEncryptionSseCNoMd5();
 		testV2.testEncryptionSseCNoMd5();
 	}
 
@@ -131,7 +121,6 @@ class SSE_C {
 	@Test
 	@Tag("ERROR")
 	void testEncryptionSseCNoKey() {
-		test.testEncryptionSseCNoKey();
 		testV2.testEncryptionSseCNoKey();
 	}
 
@@ -150,7 +139,6 @@ class SSE_C {
 	@Test
 	@Tag("Multipart")
 	void testEncryptionSseCMultipartUpload() {
-		test.testEncryptionSseCMultipartUpload();
 		testV2.testEncryptionSseCMultipartUpload();
 	}
 
@@ -160,7 +148,6 @@ class SSE_C {
 	@Test
 	@Tag("Multipart")
 	void testEncryptionSseCMultipartBadDownload() {
-		test.testEncryptionSseCMultipartBadDownload();
 		testV2.testEncryptionSseCMultipartBadDownload();
 	}
 
@@ -171,7 +158,6 @@ class SSE_C {
 	@Test
 	@Tag("Post")
 	void testEncryptionSseCPostObjectAuthenticatedRequest() throws MalformedURLException {
-		test.testEncryptionSseCPostObjectAuthenticatedRequest();
 		testV2.testEncryptionSseCPostObjectAuthenticatedRequest();
 	}
 
@@ -181,7 +167,6 @@ class SSE_C {
 	@Test
 	@Tag("Get")
 	void testEncryptionSseCGetObjectMany() {
-		test.testEncryptionSseCGetObjectMany();
 		testV2.testEncryptionSseCGetObjectMany();
 	}
 
@@ -191,7 +176,6 @@ class SSE_C {
 	@Test
 	@Tag("Get")
 	void testEncryptionSseCRangeObjectMany() {
-		test.testEncryptionSseCRangeObjectMany();
 		testV2.testEncryptionSseCRangeObjectMany();
 	}
 
@@ -201,7 +185,6 @@ class SSE_C {
 	@Test
 	@Tag("Multipart")
 	void testSseCEncryptionMultipartCopyPartUpload() {
-		test.testSseCEncryptionMultipartCopyPartUpload();
 		testV2.testSseCEncryptionMultipartCopyPartUpload();
 	}
 }

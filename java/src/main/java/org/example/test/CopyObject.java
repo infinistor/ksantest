@@ -18,7 +18,6 @@ import java.util.List;
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -36,7 +35,6 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.ObjectTagging;
 import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.SSECustomerKey;
 
 @Execution(ExecutionMode.CONCURRENT)
 public class CopyObject extends TestBase {
@@ -657,10 +655,6 @@ public class CopyObject extends TestBase {
 		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size1);
 		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size2);
 		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size3);
-
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size1);
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size2);
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size3);
 	}
 
 	@Test
@@ -678,31 +672,6 @@ public class CopyObject extends TestBase {
 		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size1);
 		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size2);
 		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size3);
-
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size3);
-	}
-
-	@Test
-	@Tag("encryption")
-	public void testCopyToSseCSource() {
-		var prefix = "testCopyToSseCSource";
-		var size1 = 1024;
-		var size2 = 256 * 1024;
-		var size3 = 1024 * 1024;
-
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size3);
-
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size3);
-
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size3);
 	}
 
 	@Test
@@ -812,34 +781,6 @@ public class CopyObject extends TestBase {
 		// 버전이 2개인지 확인
 		var versionResponse = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
 		assertEquals(2, versionResponse.getVersionSummaries().size());
-	}
-
-	@Disabled("SDK v1에서는 알고리즘을 누락해도 기본값이 적용되어 에러가 발생하지 않음")
-	@Test
-	@Tag("ERROR")
-	public void testCopyRevokeSseAlgorithm() {
-		var client = getClientHttps();
-		var bucketName = createBucket(client);
-		var sourceKey = "testCopyRevokeSseAlgorithmSource";
-		var targetKey = "testCopyRevokeSseAlgorithmTarget";
-		var data = Utils.randomTextToLong(1024);
-		var metadata = new ObjectMetadata();
-
-		var putSseC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
-				.withAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION)
-				.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
-		var copySseC = new SSECustomerKey("pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=")
-				.withMd5("DWygnHRtgiJ77HCm+1rvHw==");
-
-		client.putObject(
-				new PutObjectRequest(bucketName, sourceKey, createBody(data), metadata).withSSECustomerKey(putSseC));
-
-		client.copyObject(
-				new CopyObjectRequest(bucketName, sourceKey, bucketName, targetKey).withSourceSSECustomerKey(copySseC));
-
-		var response = client.getObject(bucketName, targetKey);
-		var body = getBody(response.getObjectContent());
-		assertEquals(data, body);
 	}
 
 	@Test

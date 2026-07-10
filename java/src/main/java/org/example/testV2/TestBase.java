@@ -994,6 +994,41 @@ public class TestBase {
 		assertEquals(status, readStatus);
 	}
 
+	/**
+	 * 2026년 4월부터 AWS S3는 신규 버킷에서 SSE-C 업로드를 기본 차단하므로,
+	 * SSE-C 테스트용 버킷은 생성 직후 이 함수로 차단을 해제해야 한다.
+	 */
+	public void unblockSseC(String bucketName) {
+		if (!config.isAWS())
+			return;
+
+		var client = getClient();
+
+		client.putBucketEncryption(p -> p.bucket(bucketName)
+				.serverSideEncryptionConfiguration(c -> c.rules(r -> r
+						.applyServerSideEncryptionByDefault(d -> d.sseAlgorithm(ServerSideEncryption.AES256))
+						.blockedEncryptionTypes(b -> b.encryptionTypeWithStrings("NONE")))));
+
+		for (int i = 0; i < 5; i++) {
+			try {
+				var response = client.getBucketEncryption(g -> g.bucket(bucketName));
+				var blocked = false;
+				for (var rule : response.serverSideEncryptionConfiguration().rules()) {
+					if (rule.blockedEncryptionTypes() != null
+							&& rule.blockedEncryptionTypes().encryptionTypeAsStrings().contains("SSE-C"))
+						blocked = true;
+				}
+				if (!blocked)
+					return;
+			} catch (Exception e) {
+				// 설정 반영 전이면 재시도
+			}
+			delay(1000);
+		}
+
+		fail("SSE-C unblock failed : " + bucketName);
+	}
+
 	public void checkObjContent(S3Client client, String bucketName, String key, String versionId, String content) {
 		var response = client
 				.getObject(g -> g.bucket(bucketName).key(key).versionId(versionId));
@@ -1816,6 +1851,7 @@ public class TestBase {
 	public void testEncryptionSSECustomerWrite(int fileSize) {
 		var client = getClientHttps(false);
 		var bucketName = createBucket(client);
+		unblockSseC(bucketName);
 		var key = "test";
 		var data = Utils.randomTextToLong(fileSize);
 
@@ -1851,10 +1887,12 @@ public class TestBase {
 		var bucketName = createBucket(client);
 		var data = Utils.randomTextToLong(fileSize);
 
+		// AWS는 BlockedEncryptionTypes를 응답에 포함하므로 생성 옵션에도 명시하여 비교
 		var sseS3Config = ServerSideEncryptionConfiguration.builder()
 				.rules(s -> s.applyServerSideEncryptionByDefault(d -> d
 						.sseAlgorithm(ServerSideEncryption.AES256))
-						.bucketKeyEnabled(false))
+						.bucketKeyEnabled(false)
+						.blockedEncryptionTypes(b -> b.encryptionTypeWithStrings("NONE")))
 				.build();
 
 		client.putBucketEncryption(p -> p.bucket(bucketName).serverSideEncryptionConfiguration(sseS3Config));
@@ -1890,10 +1928,12 @@ public class TestBase {
 		var data = Utils.randomTextToLong(fileSize);
 
 		// SSE-S3 Config
+		// AWS는 BlockedEncryptionTypes를 응답에 포함하므로 생성 옵션에도 명시하여 비교
 		var sseS3Config = ServerSideEncryptionConfiguration.builder()
 				.rules(s -> s.applyServerSideEncryptionByDefault(d -> d
 						.sseAlgorithm(ServerSideEncryption.AES256))
-						.bucketKeyEnabled(false))
+						.bucketKeyEnabled(false)
+						.blockedEncryptionTypes(b -> b.encryptionTypeWithStrings("NONE")))
 				.build();
 
 		// Source Bucket Encryption
@@ -1957,6 +1997,8 @@ public class TestBase {
 		var targetKey = prefix + "Target";
 		var client = getClientHttps(true);
 		var bucketName = createBucket(client);
+		if (source == EncryptionType.SSE_C || target == EncryptionType.SSE_C)
+			unblockSseC(bucketName);
 		var data = Utils.randomTextToLong(size);
 
 		// Source Put Object
