@@ -1895,7 +1895,6 @@ public class Post extends TestBase {
 		assertEquals(HttpStatus.SC_OK, result.statusCode, result.getErrorCode());
 		assertEquals(size, result.GetContent().length());
 		assertEquals(content, result.GetContent());
-		assertTrue(content.equals(result.GetContent()), MainData.NOT_MATCHED);
 	}
 
 	@Test
