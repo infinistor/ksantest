@@ -100,7 +100,7 @@ public class Taggings extends TestBase {
 		client.putObjectTagging(p -> p.bucket(bucketName).key(key).tagging(inputTagSet));
 
 		var response = client.headObject(g -> g.bucket(bucketName).key(key));
-		assertEquals(count, response.metadata().get("x-amz-tag-count"));
+		assertEquals(count, response.tagCount());
 	}
 
 	@Test
