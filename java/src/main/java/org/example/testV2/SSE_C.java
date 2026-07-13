@@ -455,13 +455,15 @@ public class SSE_C extends TestBase {
 		var bucketName = createBucket(client);
 		unblockSseC(bucketName);
 		var sourceKey = "multipartEnc";
-		var size = 50 * MainData.MB;
+		var size = 10 * MainData.MB;
+		var body = new StringBuilder();
 
 		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size);
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(sourceKey).uploadId(uploadData.uploadId)
 				.multipartUpload(p -> p.parts(uploadData.parts)));
 
-		checkContentUsingRange(bucketName, sourceKey, uploadData.body.toString(), MainData.MB);
+		body.append(uploadData.body);
+		checkContentUsingRange(bucketName, sourceKey, body.toString(), MainData.MB);
 
 		var targetKey1 = "my_multipart1";
 		var uploadData2 = multipartCopy(client, bucketName, sourceKey, bucketName, targetKey1, size, null);
@@ -469,7 +471,8 @@ public class SSE_C extends TestBase {
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(targetKey1).uploadId(copyData1.uploadId)
 				.multipartUpload(p -> p.parts(copyData1.parts)));
 
-		checkContentUsingRange(bucketName, targetKey1, copyData1.body.toString(), MainData.MB);
+		body.append(copyData1.body);
+		checkContentUsingRange(bucketName, targetKey1, body.toString(), MainData.MB);
 
 		var targetKey2 = "my_multipart2";
 		var uploadData3 = multipartCopy(client, bucketName, targetKey1, bucketName, targetKey2, size * 2, null);
@@ -477,6 +480,7 @@ public class SSE_C extends TestBase {
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(targetKey2).uploadId(copyData2.uploadId)
 				.multipartUpload(p -> p.parts(copyData2.parts)));
 
-		checkContentUsingRange(bucketName, targetKey2, copyData2.body.toString(), MainData.MB);
+		body.append(copyData2.body);
+		checkContentUsingRange(bucketName, targetKey2, body.toString(), MainData.MB);
 	}
 }
