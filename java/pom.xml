@@ -10,7 +10,7 @@
 	<properties>
 		<aws.java.sdk.version>2.47.0</aws.java.sdk.version>
 		<org.springframework-version>5.1.14.RELEASE</org.springframework-version>
-		<org.apache.httpcomponents-version>5.3.1</org.apache.httpcomponents-version>
+		<org.apache.httpcomponents-version>5.6.1</org.apache.httpcomponents-version>
 		<project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>utf-8</project.reporting.outputEncoding>
 		<surefireReportsDirectory>./target/results</surefireReportsDirectory>
