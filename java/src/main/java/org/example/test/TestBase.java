@@ -185,9 +185,9 @@ public class TestBase {
 			s3Config = new ClientConfiguration().withProtocol(Protocol.HTTP).withSignerOverride(signatureVersion);
 		}
 		s3Config.setSignerOverride(signatureVersion);
-		s3Config.setMaxErrorRetry(1);
-		s3Config.setConnectionTimeout(60000);
-		s3Config.setSocketTimeout(60000);
+		s3Config.setMaxErrorRetry(0);
+		s3Config.setConnectionTimeout(300000);
+		s3Config.setSocketTimeout(300000);
 
 		var clientBuilder = AmazonS3ClientBuilder.standard();
 
@@ -221,9 +221,9 @@ public class TestBase {
 				config.mainUser.secretKey));
 		var s3Config = new ClientConfiguration()
 				.withProtocol(Protocol.HTTP)
-				.withMaxErrorRetry(1)
-				.withConnectionTimeout(60000)
-				.withSocketTimeout(60000);
+				.withMaxErrorRetry(0)
+				.withConnectionTimeout(300000)
+				.withSocketTimeout(300000);
 
 		return AmazonS3ClientBuilder.standard()
 				.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(address, ""))

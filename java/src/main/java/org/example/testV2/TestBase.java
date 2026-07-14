@@ -174,8 +174,8 @@ public class TestBase {
 			RequestChecksumCalculation request, ResponseChecksumValidation response) {
 		String address = "";
 		var httpClient = ApacheHttpClient.builder()
-				.connectionTimeout(Duration.ofSeconds(10))
-				.socketTimeout(Duration.ofSeconds(10));
+				.connectionTimeout(Duration.ofSeconds(300))
+				.socketTimeout(Duration.ofSeconds(300));
 		if (isSecure) {
 			try {
 				SSLContextBuilder sslContextBuilder = SSLContextBuilder.create();
@@ -221,9 +221,11 @@ public class TestBase {
 				.responseChecksumValidation(response)
 				.endpointOverride(URI.create(address));
 
+		ClientOverrideConfiguration.Builder configBuilder = ClientOverrideConfiguration.builder()
+				.retryStrategy(r -> r.maxAttempts(1));
+
 		// Add X-Auth-Token header if configured
 		if (user != null && StringUtils.isNotBlank(user.xAuthToken)) {
-			ClientOverrideConfiguration.Builder configBuilder = ClientOverrideConfiguration.builder();
 			ExecutionInterceptor authTokenInterceptor = new ExecutionInterceptor() {
 				@Override
 				public SdkHttpRequest modifyHttpRequest(Context.ModifyHttpRequest context,
@@ -234,9 +236,9 @@ public class TestBase {
 				}
 			};
 			configBuilder.addExecutionInterceptor(authTokenInterceptor);
-			clientBuilder.overrideConfiguration(configBuilder.build());
 		}
 
+		clientBuilder.overrideConfiguration(configBuilder.build());
 		return clientBuilder.build();
 	}
 
@@ -245,13 +247,18 @@ public class TestBase {
 		var credential = StaticCredentialsProvider.create(AwsBasicCredentials.create(config.mainUser.accessKey,
 				config.mainUser.secretKey));
 		var httpClient = ApacheHttpClient.builder()
-				.connectionTimeout(Duration.ofSeconds(10))
-				.socketTimeout(Duration.ofSeconds(10));
+				.connectionTimeout(Duration.ofSeconds(300))
+				.socketTimeout(Duration.ofSeconds(300));
 		var s3Config = S3Configuration.builder().pathStyleAccessEnabled(true).build();
 		return S3Client.builder()
 				.region(Region.AP_NORTHEAST_2)
 				.credentialsProvider(credential).httpClientBuilder(httpClient)
-				.serviceConfiguration(s3Config).endpointOverride(URI.create(url)).build();
+				.serviceConfiguration(s3Config)
+				.endpointOverride(URI.create(url))
+				.overrideConfiguration(ClientOverrideConfiguration.builder()
+						.retryStrategy(r -> r.maxAttempts(1))
+						.build())
+				.build();
 	}
 
 	public S3Client getClient() {
@@ -287,9 +294,9 @@ public class TestBase {
 	private S3AsyncClient createAsyncClient(boolean isSecure, UserData user, boolean useChunkEncoding,
 			RequestChecksumCalculation request, ResponseChecksumValidation response) {
 		String address = "";
-		var httpClient = NettyNioAsyncHttpClient.builder().writeTimeout(Duration.ofSeconds(30))
-				.readTimeout(Duration.ofSeconds(30))
-				.connectionTimeout(Duration.ofSeconds(30));
+		var httpClient = NettyNioAsyncHttpClient.builder().writeTimeout(Duration.ofSeconds(300))
+				.readTimeout(Duration.ofSeconds(300))
+				.connectionTimeout(Duration.ofSeconds(300));
 
 		if (isSecure) {
 			if (config.url.isEmpty())
@@ -328,9 +335,11 @@ public class TestBase {
 				.responseChecksumValidation(response)
 				.endpointOverride(URI.create(address));
 
+		ClientOverrideConfiguration.Builder configBuilder = ClientOverrideConfiguration.builder()
+				.retryStrategy(r -> r.maxAttempts(1));
+
 		// Add X-Auth-Token header if configured
 		if (user != null && StringUtils.isNotBlank(user.xAuthToken)) {
-			ClientOverrideConfiguration.Builder configBuilder = ClientOverrideConfiguration.builder();
 			final String finalAuthToken = user.xAuthToken;
 			ExecutionInterceptor authTokenInterceptor = new ExecutionInterceptor() {
 				@Override
@@ -342,9 +351,9 @@ public class TestBase {
 				}
 			};
 			configBuilder.addExecutionInterceptor(authTokenInterceptor);
-			clientBuilder.overrideConfiguration(configBuilder.build());
 		}
 
+		clientBuilder.overrideConfiguration(configBuilder.build());
 		return clientBuilder.build();
 	}
 
