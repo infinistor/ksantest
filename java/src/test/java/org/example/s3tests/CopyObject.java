@@ -291,6 +291,26 @@ class CopyObject {
 	}
 
 	/**
+	 * copy-source-if-match와 copy-source-if-none-match에 동일한 ETag를 지정하면 412가 반환되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testCopyObjectIfMatchAndIfNoneMatch() {
+		testV2.testCopyObjectIfMatchAndIfNoneMatch();
+	}
+
+	/**
+	 * copy-source-if-match와 copy-source-if-none-match: * 를 함께 지정하면 412가 반환되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testCopyObjectIfMatchAndIfNoneMatchAny() {
+		testV2.testCopyObjectIfMatchAndIfNoneMatchAny();
+	}
+
+	/**
 	 * 대상 오브젝트와 일치하는 If-Match 조건으로 덮어쓰기 복사 성공 확인
 	 */
 	@Test
@@ -324,6 +344,36 @@ class CopyObject {
 	@Tag("IfNoneMatch")
 	void testCopyObjectDestinationIfNoneMatchFailed() {
 		testV2.testCopyObjectDestinationIfNoneMatchFailed();
+	}
+
+	/**
+	 * 대상에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testCopyObjectDestinationIfMatchAndIfNoneMatch() {
+		testV2.testCopyObjectDestinationIfMatchAndIfNoneMatch();
+	}
+
+	/**
+	 * 대상에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testCopyObjectDestinationIfMatchAndIfNoneMatchAny() {
+		testV2.testCopyObjectDestinationIfMatchAndIfNoneMatchAny();
+	}
+
+	/**
+	 * 소스 If-Match와 대상 If-None-Match: * 를 함께 사용해 복사 성공 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testCopyObjectSourceIfMatchWithDestinationIfNoneMatch() {
+		testV2.testCopyObjectSourceIfMatchWithDestinationIfNoneMatch();
 	}
 
 	/**

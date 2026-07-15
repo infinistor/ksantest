@@ -375,6 +375,14 @@ class PutObject {
 	}
 
 	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
+	void testPutObjectIfMatchAndIfNoneMatch() {
+		testV2.testPutObjectIfMatchAndIfNoneMatch();
+	}
+
+	@Test
 	@Tag("KeyLength")
 	// 최대 길이(1024자)의 오브젝트 키로 업로드 성공 확인
 	void testPutObjectKeyMaxLength() {

@@ -445,4 +445,24 @@ class Multipart {
 	void testCompleteMultipartUploadIfNoneMatchFailed() {
 		testV2.testCompleteMultipartUploadIfNoneMatchFailed();
 	}
+
+	/**
+	 * If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testCompleteMultipartUploadIfMatchAndIfNoneMatch() {
+		testV2.testCompleteMultipartUploadIfMatchAndIfNoneMatch();
+	}
+
+	/**
+	 * If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testCompleteMultipartUploadIfMatchAndIfNoneMatchAny() {
+		testV2.testCompleteMultipartUploadIfMatchAndIfNoneMatchAny();
+	}
 }

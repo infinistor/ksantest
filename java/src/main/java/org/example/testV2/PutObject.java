@@ -766,6 +766,28 @@ public class PutObject extends TestBase {
 	}
 
 	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
+	public void testPutObjectIfMatchAndIfNoneMatch() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testPutObjectIfMatchAndIfNoneMatch";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("old")).eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).ifMatch(eTag).ifNoneMatch("*"),
+						RequestBody.fromString("new")));
+		assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, e.statusCode());
+		assertEquals(MainData.NOT_IMPLEMENTED, e.awsErrorDetails().errorCode());
+
+		// 덮어쓰기 되지 않았는지 확인
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("old", getBody(response));
+	}
+
+	@Test
 	@Tag("KeyLength")
 	public void testPutObjectKeyMaxLength() {
 		var client = getClient();

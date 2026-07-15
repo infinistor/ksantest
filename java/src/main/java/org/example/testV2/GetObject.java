@@ -229,6 +229,40 @@ public class GetObject extends TestBase {
 
 	@Test
 	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// If-Match와 If-None-Match에 동일한 ETag를 지정하면 304가 반환되는지 확인
+	public void testGetObjectIfMatchAndIfNoneMatch() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectIfMatchAndIfNoneMatch";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).ifMatch(eTag).ifNoneMatch(eTag)));
+		assertEquals(HttpStatus.SC_NOT_MODIFIED, e.statusCode());
+		assertNull(e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// If-Match와 If-None-Match: * 를 함께 지정하면 304가 반환되는지 확인
+	public void testGetObjectIfMatchAndIfNoneMatchAny() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testGetObjectIfMatchAndIfNoneMatchAny";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).ifMatch(eTag).ifNoneMatch("*")));
+		assertEquals(HttpStatus.SC_NOT_MODIFIED, e.statusCode());
+		assertNull(e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("IfMatch")
 	// HeadObject에서 일치하는 If-Match 조건으로 성공 확인
 	public void testHeadObjectIfMatchGood() {
 		var client = getClient();

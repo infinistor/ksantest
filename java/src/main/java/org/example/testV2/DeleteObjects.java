@@ -463,6 +463,50 @@ public class DeleteObjects extends TestBase {
 
 	@Test
 	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
+	public void testDeleteObjectIfMatchAndIfNoneMatch() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testDeleteObjectIfMatchAndIfNoneMatch";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.deleteObject(d -> d.bucket(bucketName).key(key).ifMatch(eTag)
+						.overrideConfiguration(o -> o.putHeader("If-None-Match", eTag))));
+		assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, e.statusCode());
+		assertEquals(MainData.NOT_IMPLEMENTED, e.awsErrorDetails().errorCode());
+
+		// 삭제되지 않았는지 확인
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(1, listResponse.contents().size());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
+	public void testDeleteObjectIfMatchAndIfNoneMatchAny() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testDeleteObjectIfMatchAndIfNoneMatchAny";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.deleteObject(d -> d.bucket(bucketName).key(key).ifMatch(eTag)
+						.overrideConfiguration(o -> o.putHeader("If-None-Match", "*"))));
+		assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, e.statusCode());
+		assertEquals(MainData.NOT_IMPLEMENTED, e.awsErrorDetails().errorCode());
+
+		// 삭제되지 않았는지 확인
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(1, listResponse.contents().size());
+	}
+
+	@Test
+	@Tag("IfMatch")
 	// 모든 오브젝트의 ETag 조건이 일치하는 DeleteObjects 성공 확인
 	public void testDeleteObjectsIfMatchGood() {
 		var client = getClient();

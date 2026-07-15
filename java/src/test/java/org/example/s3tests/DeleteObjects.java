@@ -160,6 +160,26 @@ class DeleteObjects {
 	}
 
 	/**
+	 * If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testDeleteObjectIfMatchAndIfNoneMatch() {
+		testV2.testDeleteObjectIfMatchAndIfNoneMatch();
+	}
+
+	/**
+	 * If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testDeleteObjectIfMatchAndIfNoneMatchAny() {
+		testV2.testDeleteObjectIfMatchAndIfNoneMatchAny();
+	}
+
+	/**
 	 * 모든 오브젝트의 ETag 조건이 일치하는 DeleteObjects 성공 확인
 	 */
 	@Test

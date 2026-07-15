@@ -641,8 +641,8 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("If Match")
-	// copy-source-if-match(일치)와 copy-source-if-unmodified-since(불일치)를 함께 사용할 경우 ETag 조건이
-	// 우선되어 복사에 성공하는지 확인
+	// copy-source-if-match(일치)와 copy-source-if-unmodified-since(불일치)를 함께 사용할 경우
+	// ETag 조건이 우선되어 복사에 성공하는지 확인
 	public void testCopyObjectIfMatchWithIfUnmodifiedSince() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -664,8 +664,8 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("If Match")
-	// copy-source-if-none-match(불일치)와 copy-source-if-modified-since(일치)를 함께 사용할 경우 ETag 조건이
-	// 우선되어 412가 반환되는지 확인
+	// copy-source-if-none-match(불일치)와 copy-source-if-modified-since(일치)를 함께 사용할 경우
+	// ETag 조건이 우선되어 412가 반환되는지 확인
 	public void testCopyObjectIfNoneMatchWithIfModifiedSince() {
 		var client = getClient();
 		var bucketName = createBucket(client);
@@ -683,6 +683,46 @@ public class CopyObject extends TestBase {
 						.copySourceIfNoneMatch(eTag).copySourceIfModifiedSince(days.toInstant())
 						.destinationBucket(bucketName).destinationKey(target)));
 
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// copy-source-if-match와 copy-source-if-none-match에 동일한 ETag를 지정하면 412가 반환되는지 확인
+	public void testCopyObjectIfMatchAndIfNoneMatch() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfMatchAndIfNoneMatchSource";
+		var target = "testCopyObjectIfMatchAndIfNoneMatchTarget";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.copySourceIfMatch(eTag).copySourceIfNoneMatch(eTag)
+						.destinationBucket(bucketName).destinationKey(target)));
+		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
+		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// copy-source-if-match와 copy-source-if-none-match: * 를 함께 지정하면 412가 반환되는지 확인
+	public void testCopyObjectIfMatchAndIfNoneMatchAny() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectIfMatchAndIfNoneMatchAnySource";
+		var target = "testCopyObjectIfMatchAndIfNoneMatchAnyTarget";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.copySourceIfMatch(eTag).copySourceIfNoneMatch("*")
+						.destinationBucket(bucketName).destinationKey(target)));
 		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
 		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
 	}
@@ -770,6 +810,76 @@ public class CopyObject extends TestBase {
 		// 덮어쓰기 되지 않았는지 확인
 		var response = client.getObject(g -> g.bucket(bucketName).key(target));
 		assertEquals("old", getBody(response));
+	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// 대상에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
+	public void testCopyObjectDestinationIfMatchAndIfNoneMatch() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectDestinationIfMatchAndIfNoneMatchSource";
+		var target = "testCopyObjectDestinationIfMatchAndIfNoneMatchTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var targetETag = client.putObject(p -> p.bucket(bucketName).key(target), RequestBody.fromString("old"))
+				.eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.destinationBucket(bucketName).destinationKey(target)
+						.ifMatch(targetETag).ifNoneMatch(targetETag)));
+		assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, e.statusCode());
+		assertEquals(MainData.NOT_IMPLEMENTED, e.awsErrorDetails().errorCode());
+
+		// 덮어쓰기 되지 않았는지 확인
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals("old", getBody(response));
+	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// 대상에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
+	public void testCopyObjectDestinationIfMatchAndIfNoneMatchAny() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectDestinationIfMatchAndIfNoneMatchAnySource";
+		var target = "testCopyObjectDestinationIfMatchAndIfNoneMatchAnyTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var targetETag = client.putObject(p -> p.bucket(bucketName).key(target), RequestBody.fromString("old"))
+				.eTag();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.destinationBucket(bucketName).destinationKey(target)
+						.ifMatch(targetETag).ifNoneMatch("*")));
+		assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, e.statusCode());
+		assertEquals(MainData.NOT_IMPLEMENTED, e.awsErrorDetails().errorCode());
+
+		// 덮어쓰기 되지 않았는지 확인
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals("old", getBody(response));
+	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// 소스 If-Match와 대상 If-None-Match: * 를 함께 사용해 복사 성공 확인
+	public void testCopyObjectSourceIfMatchWithDestinationIfNoneMatch() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testCopyObjectSourceIfMatchWithDestinationIfNoneMatchSource";
+		var target = "testCopyObjectSourceIfMatchWithDestinationIfNoneMatchTarget";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source).copySourceIfMatch(eTag)
+				.destinationBucket(bucketName).destinationKey(target).ifNoneMatch("*"));
+		var response = client.getObject(g -> g.bucket(bucketName).key(target));
+		assertEquals(source, getBody(response));
 	}
 
 	@Test

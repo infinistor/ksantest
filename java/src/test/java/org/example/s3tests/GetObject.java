@@ -142,6 +142,26 @@ class GetObject {
 	}
 
 	/**
+	 * If-Match와 If-None-Match에 동일한 ETag를 지정하면 304가 반환되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testGetObjectIfMatchAndIfNoneMatch() {
+		testV2.testGetObjectIfMatchAndIfNoneMatch();
+	}
+
+	/**
+	 * If-Match와 If-None-Match: * 를 함께 지정하면 304가 반환되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testGetObjectIfMatchAndIfNoneMatchAny() {
+		testV2.testGetObjectIfMatchAndIfNoneMatchAny();
+	}
+
+	/**
 	 * HeadObject에서 일치하는 If-Match 조건으로 성공 확인
 	 */
 	@Test
