@@ -11,6 +11,7 @@
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -801,61 +802,65 @@ public class Versioning extends TestBase {
 
 		// 버저닝 중단
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
-		
+
 		// copyObject - 버저닝 중단 상태에서 기존 버전 복사
 		copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey)
 				.destinationBucket(bucketName).destinationKey(targetKey));
 		var targetVersion4 = copyResponse.versionId();
 		assertTrue(targetVersion4 == null || "null".equals(targetVersion4)); // 버저닝 중단 상태에서는 versionId가 null 또는 "null"
 		expectedVersions.add("null");
-		
+
 		// 복제가 정상적인지 확인 - source의 최신 버전(content2)이 복사되어야 함
 		getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
 		body = getBody(getResponse);
 		assertEquals(content, body);
-		
+
 		// listVersions로 버전 목록 확인 - source(1), target(3+null)
 		listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(5, listResponse.versions().size());
 		assertEquals(expectedVersions.size(), listResponse.versions().size());
 		for (var version : listResponse.versions()) {
 			var versionId = version.versionId() == null ? "null" : version.versionId();
-			assertTrue(expectedVersions.contains(versionId), 
+			assertTrue(expectedVersions.contains(versionId),
 					"Version " + versionId + " should be in expected list");
 		}
-		
+
 		// copyObject(overwrite) - 버저닝 중단 상태에서 다시 덮어쓰기
 		copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey)
 				.destinationBucket(bucketName).destinationKey(targetKey));
 		var targetVersion5 = copyResponse.versionId();
 		assertTrue(targetVersion5 == null || "null".equals(targetVersion5)); // 버저닝 중단 상태에서는 versionId가 null 또는 "null"
 		// null 버전은 덮어쓰기되므로 expectedVersions에 추가하지 않음
-		
+
 		// 복제가 정상적인지 확인 - 여전히 content2이어야 함
 		getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
 		body = getBody(getResponse);
 		assertEquals(content, body);
-		
+
 		// listVersions로 버전 목록이 일치하는지 확인 - null 버전은 덮어써지므로 개수 유지
 		listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
 		assertEquals(5, listResponse.versions().size());
 		assertEquals(expectedVersions.size(), listResponse.versions().size());
 		for (var version : listResponse.versions()) {
 			var versionId = version.versionId() == null ? "null" : version.versionId();
-			assertTrue(expectedVersions.contains(versionId), 
+			assertTrue(expectedVersions.contains(versionId),
 					"Version " + versionId + " should be in expected list");
 		}
 	}
 
 	@Test
 	@Tag("Object")
-	public void testVersioningUnversionedObjHeadGet() {
+	public void testVersioningUnversionedAllVersionId() {
 		var client = getClient();
 		var bucketName = createBucket(client);
-		var key = "testVersioningUnversionedObjHeadGet";
+		var key = "testVersioningUnversionedAllVersionId";
+		var multipartKey = key + "-multipart";
+		var copyKey = key + "-copy";
 		var content = "testContent";
+		var size = 5 * MainData.MB;
 
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+		assertNull(putResponse.versionId());
 
 		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
 		assertNull(headResponse.versionId());
@@ -863,6 +868,291 @@ public class Versioning extends TestBase {
 		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
 		assertNull(getResponse.response().versionId());
 		assertEquals(content, getBody(getResponse));
+
+		var uploadData = setupMultipartUpload(client, bucketName, multipartKey, size);
+		var compResponse = client.completeMultipartUpload(c -> c.bucket(bucketName).key(multipartKey)
+				.uploadId(uploadData.uploadId).multipartUpload(p -> p.parts(uploadData.parts)));
+		assertNull(compResponse.versionId());
+
+		var copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(copyKey));
+		assertNull(copyResponse.versionId());
+
+		var listObjects = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(3, listObjects.contents().size());
+
+		var listVersions = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(3, listVersions.versions().size());
+		for (var version : listVersions.versions())
+			assertEquals("null", version.versionId());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testVersioningEnabledAllVersionId() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningEnabledAllVersionId";
+		var multipartKey = key + "-multipart";
+		var copyKey = key + "-copy";
+		var content = "testContent";
+		var size = 5 * MainData.MB;
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+		var versionId = putResponse.versionId();
+		assertNotNull(versionId);
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(versionId, headResponse.versionId());
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(versionId, getResponse.response().versionId());
+		assertEquals(content, getBody(getResponse));
+
+		var uploadData = setupMultipartUpload(client, bucketName, multipartKey, size);
+		var compResponse = client.completeMultipartUpload(c -> c.bucket(bucketName).key(multipartKey)
+				.uploadId(uploadData.uploadId).multipartUpload(p -> p.parts(uploadData.parts)));
+		var multipartVersionId = compResponse.versionId();
+		assertNotNull(multipartVersionId);
+
+		var copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(copyKey));
+		var copyVersionId = copyResponse.versionId();
+		assertNotNull(copyVersionId);
+
+		var listObjects = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(3, listObjects.contents().size());
+
+		var listVersions = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(3, listVersions.versions().size());
+		var versionIds = listVersions.versions().stream().map(v -> v.versionId()).toList();
+		assertTrue(versionIds.contains(versionId));
+		assertTrue(versionIds.contains(multipartVersionId));
+		assertTrue(versionIds.contains(copyVersionId));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testVersioningSuspendedAllVersionId() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningSuspendedAllVersionId";
+		var multipartKey = key + "-multipart";
+		var copyKey = key + "-copy";
+		var content = "testContent";
+		var size = 5 * MainData.MB;
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
+
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+		assertNull(putResponse.versionId());
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals("null", headResponse.versionId());
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("null", getResponse.response().versionId());
+		assertEquals(content, getBody(getResponse));
+
+		var uploadData = setupMultipartUpload(client, bucketName, multipartKey, size);
+		var compResponse = client.completeMultipartUpload(c -> c.bucket(bucketName).key(multipartKey)
+				.uploadId(uploadData.uploadId).multipartUpload(p -> p.parts(uploadData.parts)));
+		assertNull(compResponse.versionId());
+
+		var copyResponse = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(copyKey));
+		assertTrue(copyResponse.versionId() == null || "null".equals(copyResponse.versionId()));
+
+		var listObjects = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(3, listObjects.contents().size());
+
+		var listVersions = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(3, listVersions.versions().size());
+		for (var version : listVersions.versions())
+			assertEquals("null", version.versionId());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testVersioningListVersionsOffEnabledSuspended() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningListVersionsOffEnabledSuspended";
+		var contentOff = "content-off";
+		var contentEnabled = "content-enabled";
+		var contentSuspended = "content-suspended";
+
+		// 1. OFF: put
+		var offResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(contentOff));
+		assertNull(offResponse.versionId());
+
+		// 2. ENABLED: put (새 versionId 추가 → null + versionId)
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		var enabledResponse = client.putObject(p -> p.bucket(bucketName).key(key),
+				RequestBody.fromString(contentEnabled));
+		var enabledVersionId = enabledResponse.versionId();
+		assertNotNull(enabledVersionId);
+
+		// 3. SUSPENDED: put (기존 null 버전을 덮어씀 → 여전히 2개)
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
+		var suspendedResponse = client.putObject(p -> p.bucket(bucketName).key(key),
+				RequestBody.fromString(contentSuspended));
+		assertNull(suspendedResponse.versionId());
+
+		var listObjects = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(1, listObjects.contents().size());
+		assertEquals(key, listObjects.contents().get(0).key());
+
+		var listVersions = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(2, listVersions.versions().size());
+
+		var versionIds = listVersions.versions().stream().map(v -> v.versionId()).toList();
+		assertTrue(versionIds.contains(enabledVersionId));
+		assertTrue(versionIds.contains("null") || versionIds.contains(null));
+
+		// current는 suspended put으로 덮어쓴 null 버전
+		var latest = listVersions.versions().stream().filter(v -> Boolean.TRUE.equals(v.isLatest())).findFirst()
+				.orElseThrow();
+		assertEquals("null", latest.versionId() == null ? "null" : latest.versionId());
+		assertEquals(contentSuspended.length(), latest.size());
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(contentSuspended, getBody(getResponse));
+
+		// ENABLED 때 만든 versionId로 Get하면 해당 내용이 반환되어야 함
+		var getByVersion = client.getObject(g -> g.bucket(bucketName).key(key).versionId(enabledVersionId));
+		assertEquals(contentEnabled, getBody(getByVersion));
+		assertEquals(enabledVersionId, getByVersion.response().versionId());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testVersioningListVersionsOffEnabledSuspendedDifferentKeys() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var keyOff = "testVersioningListVersionsOff";
+		var keyEnabled = "testVersioningListVersionsEnabled";
+		var keySuspended = "testVersioningListVersionsSuspended";
+		var contentOff = "content-off";
+		var contentEnabled = "content-enabled";
+		var contentSuspended = "content-suspended";
+
+		// 1. OFF: put (key별 null 버전)
+		var offResponse = client.putObject(p -> p.bucket(bucketName).key(keyOff), RequestBody.fromString(contentOff));
+		assertNull(offResponse.versionId());
+
+		// 2. ENABLED: put (다른 key → versionId)
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		var enabledResponse = client.putObject(p -> p.bucket(bucketName).key(keyEnabled),
+				RequestBody.fromString(contentEnabled));
+		var enabledVersionId = enabledResponse.versionId();
+		assertNotNull(enabledVersionId);
+
+		// 3. SUSPENDED: put (또 다른 key → null 버전)
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
+		var suspendedResponse = client.putObject(p -> p.bucket(bucketName).key(keySuspended),
+				RequestBody.fromString(contentSuspended));
+		assertNull(suspendedResponse.versionId());
+
+		var listObjects = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(3, listObjects.contents().size());
+
+		var listVersions = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(3, listVersions.versions().size());
+
+		var versionByKey = listVersions.versions().stream()
+				.collect(java.util.stream.Collectors.toMap(v -> v.key(), v -> v.versionId()));
+		assertEquals("null", versionByKey.get(keyOff) == null ? "null" : versionByKey.get(keyOff));
+		assertEquals(enabledVersionId, versionByKey.get(keyEnabled));
+		assertEquals("null", versionByKey.get(keySuspended) == null ? "null" : versionByKey.get(keySuspended));
+
+		var nullVersionCount = listVersions.versions().stream()
+				.filter(v -> v.versionId() == null || "null".equals(v.versionId()))
+				.count();
+		assertEquals(2, nullVersionCount);
+
+		// key별 Head/Get versionId 확인
+		var offHeadVersionId = client.headObject(h -> h.bucket(bucketName).key(keyOff)).versionId();
+		assertTrue(offHeadVersionId == null || "null".equals(offHeadVersionId));
+		assertEquals(contentOff, getBody(client.getObject(g -> g.bucket(bucketName).key(keyOff))));
+
+		assertEquals(enabledVersionId, client.headObject(h -> h.bucket(bucketName).key(keyEnabled)).versionId());
+		assertEquals(contentEnabled, getBody(client.getObject(g -> g.bucket(bucketName).key(keyEnabled))));
+
+		assertEquals("null", client.headObject(h -> h.bucket(bucketName).key(keySuspended)).versionId());
+		assertEquals(contentSuspended, getBody(client.getObject(g -> g.bucket(bucketName).key(keySuspended))));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testVersioningDeleteNullVersionAfterSuspend() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningDeleteNullVersionAfterSuspend";
+		var contentEnabled = "content-enabled";
+		var contentSuspended = "content-suspended";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content-off"));
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		var enabledVersionId = client
+				.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(contentEnabled)).versionId();
+		assertNotNull(enabledVersionId);
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(contentSuspended));
+		assertEquals(contentSuspended, getBody(client.getObject(g -> g.bucket(bucketName).key(key))));
+
+		// null 버전 삭제 후 current는 ENABLED 버전이 되어야 함
+		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId("null"));
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(contentEnabled, getBody(getResponse));
+		assertEquals(enabledVersionId, getResponse.response().versionId());
+
+		var listVersions = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(1, listVersions.versions().size());
+		assertEquals(enabledVersionId, listVersions.versions().get(0).versionId());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testVersioningListVersionsMultipleEnabledThenSuspended() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningListVersionsMultipleEnabledThenSuspended";
+		var enabledVersionIds = new ArrayList<String>();
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content-off"));
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		for (int i = 1; i <= 3; i++) {
+			var index = i;
+			var versionId = client
+					.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content-enabled-" + index))
+					.versionId();
+			assertNotNull(versionId);
+			enabledVersionIds.add(versionId);
+		}
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content-suspended"));
+
+		// ENABLED 3개 + null 1개
+		var listVersions = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(4, listVersions.versions().size());
+
+		var versionIds = listVersions.versions().stream().map(v -> v.versionId()).toList();
+		for (var enabledVersionId : enabledVersionIds)
+			assertTrue(versionIds.contains(enabledVersionId));
+		assertTrue(versionIds.contains("null") || versionIds.contains(null));
+
+		var latest = listVersions.versions().stream().filter(v -> Boolean.TRUE.equals(v.isLatest())).findFirst()
+				.orElseThrow();
+		assertEquals("null", latest.versionId() == null ? "null" : latest.versionId());
+		assertEquals("content-suspended", getBody(client.getObject(g -> g.bucket(bucketName).key(key))));
 	}
 
 	@Test

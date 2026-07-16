@@ -277,13 +277,73 @@ class Versioning {
 	}
 
 	/**
-	 * 버저닝 설정이 없는 버킷에 오브젝트를 업로드하고 Head/Get 시 버전 정보가 null인지 확인
+	 * 버저닝 미설정 버킷에서 Put/Head/Get/Multipart/Copy/List의 versionId가 비어있는지 확인
 	 */
 	@Test
 	@Tag("Object")
-	void testVersioningUnversionedObjHeadGet() {
-		test.testVersioningUnversionedObjHeadGet();
-		testV2.testVersioningUnversionedObjHeadGet();
+	void testVersioningUnversionedAllVersionId() {
+		test.testVersioningUnversionedAllVersionId();
+		testV2.testVersioningUnversionedAllVersionId();
+	}
+
+	/**
+	 * 버저닝 ENABLED 상태에서 Put/Head/Get/Multipart/Copy/List의 versionId가 존재하고 일치하는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testVersioningEnabledAllVersionId() {
+		test.testVersioningEnabledAllVersionId();
+		testV2.testVersioningEnabledAllVersionId();
+	}
+
+	/**
+	 * 버저닝 SUSPENDED 상태에서 Put/Head/Get/Multipart/Copy/List의 versionId가 "null"인지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testVersioningSuspendedAllVersionId() {
+		test.testVersioningSuspendedAllVersionId();
+		testV2.testVersioningSuspendedAllVersionId();
+	}
+
+	/**
+	 * OFF→ENABLED→SUSPENDED 순으로 같은 key에 put 후 listVersions가 null+versionId 2개인지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testVersioningListVersionsOffEnabledSuspended() {
+		test.testVersioningListVersionsOffEnabledSuspended();
+		testV2.testVersioningListVersionsOffEnabledSuspended();
+	}
+
+	/**
+	 * OFF→ENABLED→SUSPENDED 순으로 서로 다른 key에 put 후 listVersions가 3개(null 2개+versionId 1개)인지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testVersioningListVersionsOffEnabledSuspendedDifferentKeys() {
+		test.testVersioningListVersionsOffEnabledSuspendedDifferentKeys();
+		testV2.testVersioningListVersionsOffEnabledSuspendedDifferentKeys();
+	}
+
+	/**
+	 * OFF→ENABLED→SUSPENDED 후 null 버전 삭제 시 current가 ENABLED 버전으로 바뀌는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testVersioningDeleteNullVersionAfterSuspend() {
+		test.testVersioningDeleteNullVersionAfterSuspend();
+		testV2.testVersioningDeleteNullVersionAfterSuspend();
+	}
+
+	/**
+	 * ENABLED에서 여러 번 put 후 SUSPENDED put 시 listVersions가 versionId N개+null 1개인지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testVersioningListVersionsMultipleEnabledThenSuspended() {
+		test.testVersioningListVersionsMultipleEnabledThenSuspended();
+		testV2.testVersioningListVersionsMultipleEnabledThenSuspended();
 	}
 
 	/**
