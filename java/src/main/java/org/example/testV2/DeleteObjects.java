@@ -556,4 +556,50 @@ public class DeleteObjects extends TestBase {
 		assertEquals(1, listResponse.contents().size());
 		assertEquals(badKey, listResponse.contents().get(0).key());
 	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// DeleteObjects 요청에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
+	public void testDeleteObjectsIfMatchAndIfNoneMatch() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testDeleteObjectsIfMatchAndIfNoneMatch";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).eTag();
+		var objectList = List.of(ObjectIdentifier.builder().key(key).build());
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList))
+						.overrideConfiguration(o -> o.putHeader("If-Match", eTag).putHeader("If-None-Match", eTag))));
+		assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, e.statusCode());
+		assertEquals(MainData.NOT_IMPLEMENTED, e.awsErrorDetails().errorCode());
+
+		// 삭제되지 않았는지 확인
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(1, listResponse.contents().size());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// DeleteObjects 요청에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
+	public void testDeleteObjectsIfMatchAndIfNoneMatchAny() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testDeleteObjectsIfMatchAndIfNoneMatchAny";
+
+		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).eTag();
+		var objectList = List.of(ObjectIdentifier.builder().key(key).build());
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(objectList))
+						.overrideConfiguration(o -> o.putHeader("If-Match", eTag).putHeader("If-None-Match", "*"))));
+		assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, e.statusCode());
+		assertEquals(MainData.NOT_IMPLEMENTED, e.awsErrorDetails().errorCode());
+
+		// 삭제되지 않았는지 확인
+		var listResponse = client.listObjects(l -> l.bucket(bucketName));
+		assertEquals(1, listResponse.contents().size());
+	}
 }

@@ -196,4 +196,24 @@ class DeleteObjects {
 	void testDeleteObjectsIfMatchMixed() {
 		testV2.testDeleteObjectsIfMatchMixed();
 	}
+
+	/**
+	 * If-Match와 If-None-Match를 함께 지정하면 DeleteObjects가 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testDeleteObjectsIfMatchAndIfNoneMatch() {
+		testV2.testDeleteObjectsIfMatchAndIfNoneMatch();
+	}
+
+	/**
+	 * If-Match와 If-None-Match: * 를 함께 지정하면 DeleteObjects가 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testDeleteObjectsIfMatchAndIfNoneMatchAny() {
+		testV2.testDeleteObjectsIfMatchAndIfNoneMatchAny();
+	}
 }
