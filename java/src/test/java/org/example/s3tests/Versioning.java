@@ -277,6 +277,16 @@ class Versioning {
 	}
 
 	/**
+	 * 버저닝 설정이 없는 버킷에 오브젝트를 업로드하고 Head/Get 시 버전 정보가 null인지 확인
+	 */
+	@Test
+	@Tag("Object")
+	void testVersioningUnversionedObjHeadGet() {
+		test.testVersioningUnversionedObjHeadGet();
+		testV2.testVersioningUnversionedObjHeadGet();
+	}
+
+	/**
 	 * Current가 DeleteMarker인 오브젝트를 HeadObject 요청 시 올바르게 동작하는지 확인
 	 */
 	@Test

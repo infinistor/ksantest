@@ -11,6 +11,7 @@
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -844,6 +845,24 @@ public class Versioning extends TestBase {
 			assertTrue(expectedVersions.contains(versionId), 
 					"Version " + versionId + " should be in expected list");
 		}
+	}
+
+	@Test
+	@Tag("Object")
+	public void testVersioningUnversionedObjHeadGet() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningUnversionedObjHeadGet";
+		var content = "testContent";
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertNull(headResponse.versionId());
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertNull(getResponse.response().versionId());
+		assertEquals(content, getBody(getResponse));
 	}
 
 	@Test

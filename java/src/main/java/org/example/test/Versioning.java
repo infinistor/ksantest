@@ -884,6 +884,26 @@ public class Versioning extends TestBase {
 	}
 
 	@Test
+	@Tag("Object")
+	public void testVersioningUnversionedObjHeadGet() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var key = "testVersioningUnversionedObjHeadGet";
+		var content = "testContent";
+
+		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
+
+		client.putObject(bucketName, key, content);
+
+		var headResponse = client.getObjectMetadata(bucketName, key);
+		assertNull(headResponse.getVersionId());
+
+		var getResponse = client.getObject(bucketName, key);
+		assertNull(getResponse.getObjectMetadata().getVersionId());
+		assertEquals(content, getBody(getResponse.getObjectContent()));
+	}
+
+	@Test
 	@Tag("HeadObject")
 	public void testVersioningHeadObjectDeleteMarker() {
 		var client = getClient();
