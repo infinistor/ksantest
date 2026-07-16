@@ -1020,6 +1020,54 @@ public class Multipart extends TestBase {
 	}
 
 	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// UploadPartCopy 요청에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
+	public void testUploadPartCopyIfMatchAndIfNoneMatch() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfMatchAndIfNoneMatchSource";
+		var target = "testUploadPartCopyIfMatchAndIfNoneMatchTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1)
+						.overrideConfiguration(o -> o.putHeader("If-Match", "ABC").putHeader("If-None-Match", "DEF"))));
+
+		assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, e.statusCode());
+		assertEquals(MainData.NOT_IMPLEMENTED, e.awsErrorDetails().errorCode());
+
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(target).uploadId(uploadId));
+	}
+
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	// UploadPartCopy 요청에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
+	public void testUploadPartCopyIfMatchAndIfNoneMatchAny() {
+		var client = getClient();
+		var bucketName = createBucket(client);
+		var source = "testUploadPartCopyIfMatchAndIfNoneMatchAnySource";
+		var target = "testUploadPartCopyIfMatchAndIfNoneMatchAnyTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
+						.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1)
+						.overrideConfiguration(o -> o.putHeader("If-Match", "ABC").putHeader("If-None-Match", "*"))));
+
+		assertEquals(HttpStatus.SC_NOT_IMPLEMENTED, e.statusCode());
+		assertEquals(MainData.NOT_IMPLEMENTED, e.awsErrorDetails().errorCode());
+
+		client.abortMultipartUpload(a -> a.bucket(bucketName).key(target).uploadId(uploadId));
+	}
+
+	@Test
 	@Tag("If Match")
 	// 소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 UploadPartCopy 성공 확인
 	public void testUploadPartCopyIfModifiedSinceGood() {

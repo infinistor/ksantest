@@ -411,6 +411,26 @@ class Multipart {
 	}
 
 	/**
+	 * If-Match와 If-None-Match를 함께 지정하면 UploadPartCopy가 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testUploadPartCopyIfMatchAndIfNoneMatch() {
+		testV2.testUploadPartCopyIfMatchAndIfNoneMatch();
+	}
+
+	/**
+	 * If-Match와 If-None-Match: * 를 함께 지정하면 UploadPartCopy가 501로 거부되는지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	@Tag("IfNoneMatch")
+	void testUploadPartCopyIfMatchAndIfNoneMatchAny() {
+		testV2.testUploadPartCopyIfMatchAndIfNoneMatchAny();
+	}
+
+	/**
 	 * 대상 오브젝트와 일치하는 If-Match 조건으로 CompleteMultipartUpload 덮어쓰기 성공 확인
 	 */
 	@Test
