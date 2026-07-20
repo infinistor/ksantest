@@ -40,14 +40,14 @@ def merge_results(xml_files: List[str]) -> None:
         try:
             tree = ET.parse(file_name)
             test_suite = tree.getroot()
-            
+
             # 필수 속성이 없을 경우 기본값 0 사용
             tests += int(test_suite.attrib.get("tests", 0))
             errors += int(test_suite.attrib.get("errors", 0))
             skipped += int(test_suite.attrib.get("skipped", 0))
             failures += int(test_suite.attrib.get("failures", 0))
             time += float(test_suite.attrib.get("time", 0.0))
-            
+
             # properties 요소 제거
             for case in test_suite:
                 for prop in case.findall("properties"):
@@ -63,18 +63,18 @@ def merge_results(xml_files: List[str]) -> None:
     new_root.attrib["skipped"] = str(skipped)
     new_root.attrib["failures"] = str(failures)
     new_root.attrib["time"] = str(time)
-    
+
     for case in cases:
         new_root.append(case)
 
     tree = ET.ElementTree(new_root)
-    
+
     # UTF-8로 인코딩하여 출력
-    xml_content = ET.tostring(new_root, encoding='utf-8', xml_declaration=True)
-    if hasattr(sys.stdout, 'buffer'):
+    xml_content = ET.tostring(new_root, encoding="utf-8", xml_declaration=True)
+    if hasattr(sys.stdout, "buffer"):
         sys.stdout.buffer.write(xml_content)
     else:
-        sys.stdout.write(xml_content.decode('utf-8'))
+        sys.stdout.write(xml_content.decode("utf-8"))
 
 
 def usage():
