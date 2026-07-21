@@ -9,6 +9,7 @@ import pytest
 
 from s3tests.auth.aws2_signer import get_base64_encoded_sha1_hash
 from s3tests.data import main_data as md
+from s3tests.data.form_file import FormFile
 from s3tests.test_base import S3TestBase
 from s3tests.utils import net_utils, utils
 
@@ -274,14 +275,9 @@ class TestTaggings(S3TestBase):
             "x-ignore-foo": "bar",
             "Content-Type": content_type,
         }
+        file_data = FormFile(key, content_type, "bar")
 
-        result = net_utils.post_upload(
-            self.create_url(bucket_name),
-            payload,
-            key,
-            content_type,
-            "bar",
-        )
+        result = net_utils.post_upload(self.create_url(bucket_name), payload, file_data)
         assert result.status_code == 204, result.get_error_code()
 
         response = client.get_object(Bucket=bucket_name, Key=key)
