@@ -4,7 +4,8 @@
     Run all S3 tests and generate HTML report (Python 3.12).
 
 .PARAMETER Config
-    INI config name or path. Extension .ini is optional (e.g. awstests → awstests.ini).
+    INI config base name (without .ini). Always resolved as <name>.ini under this script directory.
+    Default: config → config.ini
 
 .PARAMETER NoOpen
     Do not open Result_python.html after generation.
@@ -12,12 +13,12 @@
 .EXAMPLE
     .\start.ps1
     .\start.ps1 awstests
-    .\start.ps1 awstests.ini
+    .\start.ps1 11.151
 #>
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [string]$Config = "config.ini",
+    [string]$Config = "config",
 
     [switch]$NoOpen
 )
@@ -56,14 +57,12 @@ or ensure 'py -3.12' works on PATH.
 
 function Resolve-ConfigPath {
     param([string]$Name)
-    $configName = $Name
-    if (-not [IO.Path]::IsPathRooted($configName) -and -not [IO.Path]::HasExtension($configName)) {
-        $configName = "$configName.ini"
+    # Always append .ini — do not use HasExtension (e.g. "11.151" looks like it has one).
+    $baseName = $Name
+    if ($baseName.EndsWith(".ini", [StringComparison]::OrdinalIgnoreCase)) {
+        $baseName = $baseName.Substring(0, $baseName.Length - 4)
     }
-    if ([IO.Path]::IsPathRooted($configName)) {
-        return $configName
-    }
-    return (Join-Path $PSScriptRoot $configName)
+    return (Join-Path $PSScriptRoot "$baseName.ini")
 }
 
 $configPath = Resolve-ConfigPath -Name $Config
