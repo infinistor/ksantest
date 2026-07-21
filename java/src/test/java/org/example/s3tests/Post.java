@@ -438,7 +438,7 @@ class Post {
 	}
 
 	/**
-	 * [SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
+	 * [AWS SDK V1 전용][SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
 	 */
 	@Test
 	@Tag("PresignedURL")

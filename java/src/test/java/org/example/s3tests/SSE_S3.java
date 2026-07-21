@@ -174,7 +174,7 @@ class SSE_S3 {
 	}
 
 	/**
-	 * [버킷에 SSE-S3 설정, SignatureVersion4] 업로드, 다운로드 성공 확인
+	 * [AWS SDK V1 전용][버킷에 SSE-S3 설정, SignatureVersion4] 업로드, 다운로드 성공 확인
 	 */
 	@Test
 	@Tag("PutGet")
@@ -193,7 +193,7 @@ class SSE_S3 {
 	}
 
 	/**
-	 * [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true, DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
+	 * [AWS SDK V1 전용][버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true, DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	 */
 	@Test
 	@Tag("PutGet")
@@ -212,7 +212,7 @@ class SSE_S3 {
 	}
 
 	/**
-	 * [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false, DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
+	 * [AWS SDK V1 전용][버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false, DisablePayloadSigning = true] 업로드, 다운로드 성공 확인
 	 */
 	@Test
 	@Tag("PutGet")

@@ -195,42 +195,42 @@ class PutObject {
 
 	@Test
 	@Tag("SpecialCharacters")
-	// [SignatureVersion2] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인
+	// [AWS SDK V1 전용][SignatureVersion2] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인
 	void testPutEmptyObjectSignatureVersion_2() {
 		test.testPutEmptyObjectSignatureV2();
 	}
 
 	@Test
 	@Tag("SpecialCharacters")
-	// [SignatureVersion4] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인
+	// [AWS SDK V1 전용][SignatureVersion4] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인
 	void testPutEmptyObjectSignatureVersion_4() {
 		test.testPutEmptyObjectSignatureV4();
 	}
 
 	@Test
 	@Tag("SpecialCharacters")
-	// [SignatureVersion2] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	// [AWS SDK V1 전용][SignatureVersion2] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	void testPutObjectSignatureVersion_2() {
 		test.testPutObjectSignatureV2();
 	}
 
 	@Test
 	@Tag("SpecialCharacters")
-	// [SignatureVersion4] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	// [AWS SDK V1 전용][SignatureVersion4] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	void testPutObjectSignatureVersion_4() {
 		test.testPutObjectSignatureV4();
 	}
 
 	@Test
 	@Tag("Encoding")
-	// [SignatureVersion4, UseChunkEncoding = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	// [AWS SDK V1 전용][SignatureVersion4, UseChunkEncoding = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	void testPutObjectUseChunkEncoding() {
 		test.testPutObjectUseChunkEncoding();
 	}
 
 	@Test
 	@Tag("Encoding")
-	// [SignatureVersion4, UseChunkEncoding = true, DisablePayloadSigning =
+	// [AWS SDK V1 전용][SignatureVersion4, UseChunkEncoding = true, DisablePayloadSigning =
 	// true] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	void testPutObjectUseChunkEncodingAndDisablePayloadSigning() {
 		test.testPutObjectUseChunkEncodingAndDisablePayloadSigning();
@@ -238,14 +238,14 @@ class PutObject {
 
 	@Test
 	@Tag("Encoding")
-	// [SignatureVersion4, UseChunkEncoding = false] 특수문자를 포함한 오브젝트 업로드 성공 확인
+	// [AWS SDK V1 전용][SignatureVersion4, UseChunkEncoding = false] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	void testPutObjectNotChunkEncoding() {
 		test.testPutObjectNotChunkEncoding();
 	}
 
 	@Test
 	@Tag("Encoding")
-	// [SignatureVersion4, UseChunkEncoding = false, DisablePayloadSigning =
+	// [AWS SDK V1 전용][SignatureVersion4, UseChunkEncoding = false, DisablePayloadSigning =
 	// true] 특수문자를 포함한 오브젝트 업로드 성공 확인
 	void testPutObjectNotChunkEncodingAndDisablePayloadSigning() {
 		test.testPutObjectNotChunkEncodingAndDisablePayloadSigning();
