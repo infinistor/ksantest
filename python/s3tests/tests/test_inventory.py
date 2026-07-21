@@ -177,6 +177,24 @@ class TestInventory(S3TestBase):
         assert len(response.get("InventoryConfigurationList", [])) == 1
 
     @pytest.mark.tag("Error")
+    def test_put_bucket_inventory_target_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client)
+        target_bucket_name = self.get_new_bucket_name()
+        inventory_id = "my-inventory"
+        self.assert_client_error(
+            lambda: client.put_bucket_inventory_configuration(
+                Bucket=bucket_name,
+                Id=inventory_id,
+                InventoryConfiguration=self._inventory_config(
+                    inventory_id, target_bucket_name
+                ),
+            ),
+            404,
+            md.NO_SUCH_BUCKET,
+        )
+
+    @pytest.mark.tag("Error")
     def test_put_bucket_inventory_invalid_format(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client)

@@ -32,6 +32,37 @@ class TestVersioning(S3TestBase):
         self.do_test_create_remove_versions(client, bucket_name, key, num_versions, 4, -1)
 
     @pytest.mark.tag("Object")
+    def test_versioning_obj_create_read_remove_head(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        key = "obj"
+        num_versions = 5
+        version_ids: list[str] = []
+        contents: list[str] = []
+        self.create_multiple_versions_track(
+            client, bucket_name, key, num_versions, version_ids, contents, True
+        )
+
+        removed_version_id = version_ids.pop(0)
+        contents.pop(0)
+        num_versions -= 1
+
+        client.delete_object(Bucket=bucket_name, Key=key, VersionId=removed_version_id)
+
+        get_response = client.get_object(Bucket=bucket_name, Key=key)
+        assert self.get_body(get_response) == contents[-1]
+
+        delete_response = client.delete_object(Bucket=bucket_name, Key=key)
+        delete_marker_version_id = delete_response["VersionId"]
+        version_ids.append(delete_marker_version_id)
+
+        list_response = client.list_object_versions(Bucket=bucket_name)
+        assert len(list_response.get("Versions", [])) == num_versions
+        assert len(list_response.get("DeleteMarkers", [])) == 1
+        assert list_response["DeleteMarkers"][0]["VersionId"] == delete_marker_version_id
+
+    @pytest.mark.tag("Object")
     def test_versioning_obj_plain_null_version_removal(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client)
