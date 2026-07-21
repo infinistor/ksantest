@@ -423,4 +423,14 @@ class ListObjectsVersions {
 		testV2.testVersioningBucketListFilteringAll();
 	}
 
+	/**
+	 * 버전 목록이 VersionId 기준으로 올바르게 정렬되어 반환되는지 확인
+	 */
+	@Test
+	@Tag("Object")
+	void testVersioningObjListMarker() {
+		test.testVersioningObjListMarker();
+		testV2.testVersioningObjListMarker();
+	}
+
 }
