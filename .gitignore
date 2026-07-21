@@ -2,3 +2,9 @@
 *.suo
 *.vs
 suwon*
+python-legacy/
+python-new/
+.vscode/
+.pytest_cache/
+.agents/
+ksantest.code-workspace

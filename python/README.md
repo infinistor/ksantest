@@ -1,58 +1,112 @@
-# S3 compatibility test for Python
+# S3 compatibility test for Python (python-new)
 
-- 이 테스트는 [ceph/s3-tests](https://github.com/ceph/s3-tests)를 복제하여 작성한 프로그램입니다.
-- 아마존에서 제공하는 S3 Api를 사용하여 S3 호환 프로그램에 대한 기능점검 프로그램입니다.
-- 별도의 유틸을 이용하여 보기 쉽게 결과물을 출력하는 기능을 포함하고 있습니다.
-
-## 원본에서 변경점
-
-* 함수에서 클래스로 변경
-* AWS S3에서 지원하지 않는 기능 테스트 삭제 및 주석처리
+Java `testV2` 코드를 기준으로 포팅한 S3 호환성 테스트 스위트입니다.
 
 ## 구동환경
 
-*  python : 3.4.3
-*  OS : Centos 7.5
-*  python-virtualenv
+- **Python 3.12.12** (`.python-version` 참고)
+- boto3, pytest (버전은 `requirements.txt`에 고정)
 
-## 테스트 환경 구성
+## 환경 구성
 
-### Centos7에 virtualenv 설치
-
-``` bash
-# pip 설치
-sudo yum install epel-release
-yum -y update
-yum -y install python-pip
-# virtualenv 설치
-sudo pip install virtualenv
-# python module 설치
-./bootstrap
-# virtualenv 환경 설정
-mkdir virtualenv
-virtualenv virtualenv
-source ./virtualenv/bin/activate
+```powershell
+cd python-new
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
 
-## 테스트 
+Linux:
 
-``` bash
-S3TEST_CONF=sample.conf \
-./virtualenv/bin/nosetests \
--v --with-xunit --xunit-file=../xunit-to-html-master/Result_file.xml \
---nologcapture -a '!fails_on_aws' --with-id --id-file=mylist \
---failure-detail s3tests_boto3.functional.test_s3 || true
+```bash
+cd python-new
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-## 테스트 결과 레포트
+## 설정 파일
 
-``` bash
-cd ..xunit-to-html-master
-java -jar saxon9he.jar -o:Result_java.html -s:Result_java.xml -xsl:xunit_to_html.xsl
+Java와 동일한 INI 형식을 사용합니다.
+
+우선순위:
+
+1. `S3TESTS_INI` 환경변수
+2. `config.ini` (현재 디렉터리)
+
+표준 섹션: `[S3]`, `[Fixtures]`, `[Main User]`, `[Alt User]`, `[Backend User]`
+
+## 테스트 실행
+
+```powershell
+$env:S3TESTS_INI="config.ini"
+pytest -v s3tests/tests
 ```
 
-테스트 결과 레포트는 [링크](https://github.com/Zir0-93/xunit-to-html)를 사용하여 작성했습니다.
+단일 모듈:
 
-테스트 결과는 **./xunit-to-html-master/Result_java.html**로 확인 가능합니다.
+```powershell
+pytest -v s3tests/tests/test_put_object.py
+```
 
-![kjw_s3tests_0001](xunit-to-html-master/kjw_s3tests_0001.PNG "kjw_s3tests_0001.PNG")
+태그 필터:
+
+```powershell
+pytest -v -m "tag('PUT')" s3tests/tests
+```
+
+## HTML 리포트
+
+Java와 동일한 xunit-to-html 파이프라인을 사용합니다.
+
+```powershell
+.\start.ps1
+.\start.ps1 -Config config.ini
+.\start.bat config.ini
+```
+
+또는 수동:
+
+```powershell
+$env:S3TESTS_INI="config.ini"
+pytest -v --junitxml=results/junit.xml s3tests/tests
+copy results\junit.xml ..\xunit-to-html\Result_python.xml
+cd ..\xunit-to-html
+java -jar saxon9he.jar -o:Result_python.html -s:Result_python.xml -xsl:xunit_to_html.xsl
+```
+
+**사전 준비**: `xunit-to-html/saxon9he.jar` 필요 ([xunit-to-html](https://github.com/Zir0-93/xunit-to-html))
+
+## 프로젝트 구조
+
+```
+python-new/
+├── s3tests/
+│   ├── config.py          # S3Config (INI)
+│   ├── test_base.py       # S3TestBase (Java TestBase)
+│   ├── data/              # 상수, UserData 등
+│   ├── utils/             # Utils, CheckSum, NetUtils
+│   ├── auth/              # SigV2/V4 (Post, CSE)
+│   ├── ksan/              # KsanClient
+│   └── tests/             # 38개 pytest 모듈 (~1100 테스트)
+├── config.ini
+├── requirements.txt
+├── pytest.ini
+├── start.bat / start.sh
+└── MIGRATION.md
+```
+
+## 전환 절차 (python-new → python)
+
+`python-legacy/`로 기존 코드 백업이 완료되었습니다. IDE에서 `python-new` 폴더를 닫은 뒤:
+
+```powershell
+Rename-Item python-new python
+```
+
+## Java 결과와 비교
+
+동일한 `config.ini`로 Java와 Python 테스트를 각각 실행한 뒤 HTML 리포트를 비교합니다.
+
+- Java: `java/start.bat` → `xunit-to-html/Result_java.html`
+- Python: `python-new/start.bat` → `xunit-to-html/Result_python.html`

@@ -1,0 +1,15 @@
+[project]
+name = "s3tests-python"
+version = "0.1.0"
+description = "S3 compatibility tests ported from Java testV2"
+requires-python = ">=3.12,<3.13"
+readme = "README.md"
+
+[tool.pytest.ini_options]
+testpaths = ["s3tests/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+addopts = "-v --tb=short"
+markers = [
+    "tag(name): Java @Tag equivalent",
+]
