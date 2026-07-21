@@ -37,7 +37,8 @@ echo "Config : ${S3TESTS_INI}"
 "${PYTHON}" -c 'import sys; print("Version:", sys.version)'
 
 set +e
-"${PYTHON}" -m pytest -v --junitxml=results/junit.xml s3tests/tests
+echo "=== Running pytest (parallel) ==="
+"${PYTHON}" -m pytest -v -n auto --junitxml=results/junit.xml s3tests/tests
 PYTEST_EXIT=$?
 set -e
 

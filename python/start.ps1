@@ -95,8 +95,8 @@ Write-Host "Python : $python"
 Write-Host "Config : $configPath"
 & $python -c "import sys; print(f'Version: {sys.version}')"
 
-Write-Host "`n=== Running pytest ===" -ForegroundColor Cyan
-& $python -m pytest -v "--junitxml=$JunitXml" s3tests\tests
+Write-Host "`n=== Running pytest (parallel) ===" -ForegroundColor Cyan
+& $python -m pytest -v -n auto "--junitxml=$JunitXml" s3tests\tests
 $pytestExit = $LASTEXITCODE
 
 if (-not (Test-Path $JunitXml)) {
