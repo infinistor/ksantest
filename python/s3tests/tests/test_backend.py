@@ -30,203 +30,193 @@ class TestBackend(S3TestBase):
 
         client.meta.events.register("before-sign.s3.CopyObject", _inject)
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("PUT")
-    def test_put_object(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
-        key = "testPutObject"
-        content = "test content"
+    # @pytest.mark.tag("PUT")
+    # def test_put_object(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     bucket_name = self.create_bucket(client)
+    #     key = "testPutObject"
+    #     content = "test content"
 
-        response = backend_client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    #     response = backend_client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+    #     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        get_response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(get_response) == content
+    #     get_response = client.get_object(Bucket=bucket_name, Key=key)
+    #     assert self.get_body(get_response) == content
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("GET")
-    def test_get_object(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
-        key = "testGetObject"
-        content = "test content"
+    # @pytest.mark.tag("GET")
+    # def test_get_object(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     bucket_name = self.create_bucket(client)
+    #     key = "testGetObject"
+    #     content = "test content"
 
-        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+    #     client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
 
-        response = backend_client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(response) == content
+    #     response = backend_client.get_object(Bucket=bucket_name, Key=key)
+    #     assert self.get_body(response) == content
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("DELETE")
-    def test_delete_object(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
-        key = "testDeleteObject"
-        content = "test content"
+    # @pytest.mark.tag("DELETE")
+    # def test_delete_object(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     bucket_name = self.create_bucket(client)
+    #     key = "testDeleteObject"
+    #     content = "test content"
 
-        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+    #     client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
 
-        response = backend_client.delete_object(Bucket=bucket_name, Key=key)
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+    #     response = backend_client.delete_object(Bucket=bucket_name, Key=key)
+    #     assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
 
-        list_response = client.list_objects_v2(Bucket=bucket_name)
-        assert len(list_response.get("Contents", [])) == 0
+    #     list_response = client.list_objects_v2(Bucket=bucket_name)
+    #     assert len(list_response.get("Contents", [])) == 0
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("COPY")
-    def test_copy_object(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        source_bucket = self.create_bucket(client)
-        target_bucket = self.create_bucket(client)
-        source_key = "sourceKey"
-        target_key = "targetKey"
-        content = "test content"
+    # @pytest.mark.tag("COPY")
+    # def test_copy_object(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     source_bucket = self.create_bucket(client)
+    #     target_bucket = self.create_bucket(client)
+    #     source_key = "sourceKey"
+    #     target_key = "targetKey"
+    #     content = "test content"
 
-        client.put_object(Bucket=source_bucket, Key=source_key, Body=content.encode("utf-8"))
+    #     client.put_object(Bucket=source_bucket, Key=source_key, Body=content.encode("utf-8"))
 
-        response = backend_client.copy_object(
-            CopySource={"Bucket": source_bucket, "Key": source_key},
-            Bucket=target_bucket,
-            Key=target_key,
-        )
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    #     response = backend_client.copy_object(
+    #         CopySource={"Bucket": source_bucket, "Key": source_key},
+    #         Bucket=target_bucket,
+    #         Key=target_key,
+    #     )
+    #     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        get_response = client.get_object(Bucket=target_bucket, Key=target_key)
-        assert self.get_body(get_response) == content
+    #     get_response = client.get_object(Bucket=target_bucket, Key=target_key)
+    #     assert self.get_body(get_response) == content
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("MULTIPART")
-    def test_multipart_upload(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
-        key = "testMultipartUpload"
-        size = 10 * md.MB
+    # @pytest.mark.tag("MULTIPART")
+    # def test_multipart_upload(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     bucket_name = self.create_bucket(client)
+    #     key = "testMultipartUpload"
+    #     size = 10 * md.MB
 
-        upload_data = self.setup_multipart_upload(backend_client, bucket_name, key, size, DEFAULT_PART_SIZE)
-        complete_response = backend_client.complete_multipart_upload(
-            Bucket=bucket_name,
-            Key=key,
-            UploadId=upload_data.upload_id,
-            MultipartUpload=upload_data.completed_multipart_upload(),
-        )
-        version_id = complete_response["VersionId"]
+    #     upload_data = self.setup_multipart_upload(backend_client, bucket_name, key, size, DEFAULT_PART_SIZE)
+    #     complete_response = backend_client.complete_multipart_upload(
+    #         Bucket=bucket_name,
+    #         Key=key,
+    #         UploadId=upload_data.upload_id,
+    #         MultipartUpload=upload_data.completed_multipart_upload(),
+    #     )
+    #     version_id = complete_response["VersionId"]
 
-        response = client.head_object(Bucket=bucket_name, Key=key, VersionId=version_id)
-        assert response["ContentLength"] == size
+    #     response = client.head_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+    #     assert response["ContentLength"] == size
 
-        self.check_content_using_range(bucket_name, key, upload_data.get_body(), md.MB)
+    #     self.check_content_using_range(bucket_name, key, upload_data.get_body(), md.MB)
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("ACL")
-    def test_put_object_acl(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket_canned_acl(client)
-        key = "testPutObjectAcl"
-        content = "test content"
+    # @pytest.mark.tag("ACL")
+    # def test_put_object_acl(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     bucket_name = self.create_bucket_canned_acl(client)
+    #     key = "testPutObjectAcl"
+    #     content = "test content"
 
-        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+    #     client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
 
-        response = backend_client.put_object_acl(Bucket=bucket_name, Key=key, ACL="public-read")
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    #     response = backend_client.put_object_acl(Bucket=bucket_name, Key=key, ACL="public-read")
+    #     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        acl_response = client.get_object_acl(Bucket=bucket_name, Key=key)
-        assert len(acl_response["Grants"]) == 2
+    #     acl_response = client.get_object_acl(Bucket=bucket_name, Key=key)
+    #     assert len(acl_response["Grants"]) == 2
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("ACL")
-    def test_get_object_acl(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket_canned_acl(client)
-        key = "testGetObjectAcl"
-        content = "test content"
+    # @pytest.mark.tag("ACL")
+    # def test_get_object_acl(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     bucket_name = self.create_bucket_canned_acl(client)
+    #     key = "testGetObjectAcl"
+    #     content = "test content"
 
-        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"), ACL="public-read")
+    #     client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"), ACL="public-read")
 
-        response = backend_client.get_object_acl(Bucket=bucket_name, Key=key)
-        assert len(response["Grants"]) == 2
+    #     response = backend_client.get_object_acl(Bucket=bucket_name, Key=key)
+    #     assert len(response["Grants"]) == 2
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("TAGGING")
-    def test_put_object_tagging(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
-        key = "testPutObjectTagging"
-        content = "test content"
-        tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
+    # @pytest.mark.tag("TAGGING")
+    # def test_put_object_tagging(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     bucket_name = self.create_bucket(client)
+    #     key = "testPutObjectTagging"
+    #     content = "test content"
+    #     tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
 
-        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+    #     client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
 
-        response = backend_client.put_object_tagging(Bucket=bucket_name, Key=key, Tagging=tagging)
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    #     response = backend_client.put_object_tagging(Bucket=bucket_name, Key=key, Tagging=tagging)
+    #     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        get_response = client.get_object_tagging(Bucket=bucket_name, Key=key)
-        assert len(get_response["TagSet"]) == 1
-        assert get_response["TagSet"][0]["Key"] == "testKey"
-        assert get_response["TagSet"][0]["Value"] == "testValue"
+    #     get_response = client.get_object_tagging(Bucket=bucket_name, Key=key)
+    #     assert len(get_response["TagSet"]) == 1
+    #     assert get_response["TagSet"][0]["Key"] == "testKey"
+    #     assert get_response["TagSet"][0]["Value"] == "testValue"
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("TAGGING")
-    def test_get_object_tagging(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
-        key = "testGetObjectTagging"
-        content = "test content"
-        tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
+    # @pytest.mark.tag("TAGGING")
+    # def test_get_object_tagging(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     bucket_name = self.create_bucket(client)
+    #     key = "testGetObjectTagging"
+    #     content = "test content"
+    #     tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
 
-        client.put_object(
-            Bucket=bucket_name,
-            Key=key,
-            Body=content.encode("utf-8"),
-            Tagging="testKey=testValue",
-        )
+    #     client.put_object(
+    #         Bucket=bucket_name,
+    #         Key=key,
+    #         Body=content.encode("utf-8"),
+    #         Tagging="testKey=testValue",
+    #     )
 
-        response = backend_client.get_object_tagging(Bucket=bucket_name, Key=key)
-        assert len(response["TagSet"]) == 1
-        assert response["TagSet"][0]["Key"] == "testKey"
-        assert response["TagSet"][0]["Value"] == "testValue"
+    #     response = backend_client.get_object_tagging(Bucket=bucket_name, Key=key)
+    #     assert len(response["TagSet"]) == 1
+    #     assert response["TagSet"][0]["Key"] == "testKey"
+    #     assert response["TagSet"][0]["Value"] == "testValue"
 
-    @pytest.mark.skip(reason="Java s3tests wrapper commented out")
-    @pytest.mark.tag("TAGGING")
-    def test_delete_object_tagging(self):
-        self.skip_if_aws()
-        client = self.get_client()
-        backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
-        key = "testDeleteObjectTagging"
-        content = "test content"
-        tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
+    # @pytest.mark.tag("TAGGING")
+    # def test_delete_object_tagging(self):
+    #     self.skip_if_aws()
+    #     client = self.get_client()
+    #     backend_client = self.get_backend_client()
+    #     bucket_name = self.create_bucket(client)
+    #     key = "testDeleteObjectTagging"
+    #     content = "test content"
+    #     tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
 
-        client.put_object(
-            Bucket=bucket_name,
-            Key=key,
-            Body=content.encode("utf-8"),
-            Tagging="testKey=testValue",
-        )
+    #     client.put_object(
+    #         Bucket=bucket_name,
+    #         Key=key,
+    #         Body=content.encode("utf-8"),
+    #         Tagging="testKey=testValue",
+    #     )
 
-        response = backend_client.delete_object_tagging(Bucket=bucket_name, Key=key)
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+    #     response = backend_client.delete_object_tagging(Bucket=bucket_name, Key=key)
+    #     assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
 
-        get_response = client.get_object_tagging(Bucket=bucket_name, Key=key)
-        assert len(get_response["TagSet"]) == 0
+    #     get_response = client.get_object_tagging(Bucket=bucket_name, Key=key)
+    #     assert len(get_response["TagSet"]) == 0
 
     @pytest.mark.tag("PUT")
     def test_put_object_versioning(self):
