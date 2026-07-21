@@ -435,3 +435,29 @@ class TestLifeCycle(S3TestBase):
             400,
             md.INVALID_ARGUMENT,
         )
+
+    @pytest.mark.tag("metadata")
+    def test_lifecycle_set_expiration(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client)
+        rules = [
+            {
+                "ID": "rule1",
+                "Expiration": {"Days": 1},
+                "Filter": {"Prefix": "test1/"},
+                "Status": "Enabled",
+            }
+        ]
+        client.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name, LifecycleConfiguration={"Rules": rules}
+        )
+        key = "test1/a"
+        content = "test"
+        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+
+        head_response = client.head_object(Bucket=bucket_name, Key=key)
+        expired_time = self.get_expired_date_instant(head_response["LastModified"], 1)
+        assert head_response["Expires"] == expired_time
+
+        get_response = client.get_object(Bucket=bucket_name, Key=key)
+        assert get_response["Expires"] == expired_time
