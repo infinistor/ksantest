@@ -20,6 +20,7 @@ suwon*
 bundang*
 allinone*
 *.ini
-*.ps1
 .editorconfig
 .prettierrc
+upload.ps1
+build.ps1
