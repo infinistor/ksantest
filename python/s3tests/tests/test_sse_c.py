@@ -140,17 +140,26 @@ class TestSseC(S3TestBase):
         size = 100
         data = utils.random_text_to_long(size)
 
-        self.assert_client_error(
-            lambda: client.put_object(
-                Bucket=bucket_name,
-                Key=key,
-                Body=data.encode("utf-8"),
-                SSECustomerAlgorithm=SSE_CUSTOMER_ALGORITHM,
-                SSECustomerKey=SSE_KEY,
-            ),
-            400,
-            md.INVALID_ARGUMENT,
-        )
+        def _strip_ssec_md5(request, **kwargs):
+            for header in list(request.headers.keys()):
+                if header.lower() == "x-amz-server-side-encryption-customer-key-md5":
+                    del request.headers[header]
+
+        client.meta.events.register("before-sign.s3.PutObject", _strip_ssec_md5)
+        try:
+            self.assert_client_error(
+                lambda: client.put_object(
+                    Bucket=bucket_name,
+                    Key=key,
+                    Body=data.encode("utf-8"),
+                    SSECustomerAlgorithm=SSE_CUSTOMER_ALGORITHM,
+                    SSECustomerKey=SSE_KEY,
+                ),
+                400,
+                md.INVALID_ARGUMENT,
+            )
+        finally:
+            client.meta.events.unregister("before-sign.s3.PutObject", _strip_ssec_md5)
 
     @pytest.mark.tag("ERROR")
     def test_encryption_sse_c_no_key(self):
