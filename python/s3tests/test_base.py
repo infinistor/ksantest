@@ -1468,28 +1468,40 @@ class S3TestBase:
     ) -> None:
         response = client.get_object(Bucket=source_bucket_name, Key=source_key, VersionId=version_id)
         body = response["Body"].read()
-        metadata = response.get("Metadata", {})
-        extra_args: Dict[str, Any] = {
-            "Metadata": metadata,
-            "ContentType": response.get("ContentType"),
+        put_args: Dict[str, Any] = {
+            "Bucket": target_bucket_name,
+            "Key": target_key,
+            "Body": body,
+            "Metadata": response.get("Metadata") or {},
         }
-        client.put_object(
-            Bucket=target_bucket_name,
-            Key=target_key,
-            Body=body,
-            **extra_args,
-            **{
-                "Metadata": metadata,
-            },
-        )
-        extra_headers = {
-            bh.IFS_VERSION_ID: version_id,
-            bh.KSAN_VERSION_ID: version_id,
-        }
-        client.meta.events.register(
-            "before-sign.s3.PutObject",
-            lambda request, **kwargs: [request.headers.__setitem__(k, v) for k, v in extra_headers.items()],
-        )
+        content_type = response.get("ContentType")
+        if content_type:
+            # UTF-8 sign 에러를 배제하기 위해 소문자로 변경 (Java와 동일)
+            put_args["ContentType"] = content_type.replace("UTF-8", "utf-8")
+
+        # GetObject는 태그 값을 주지 않음. PutObject+Tagging+version 헤더 조합은
+        # KSAN에서 GetObjectTagging 500을 유발하므로, put 이후 PutObjectTagging으로 복제.
+        tag_set = client.get_object_tagging(
+            Bucket=source_bucket_name, Key=source_key, VersionId=version_id
+        ).get("TagSet") or []
+
+        def _inject(request, **kwargs):
+            request.headers[bh.IFS_VERSION_ID] = version_id
+            request.headers[bh.KSAN_VERSION_ID] = version_id
+
+        client.meta.events.register("before-sign.s3.PutObject", _inject)
+        try:
+            client.put_object(**put_args)
+        finally:
+            client.meta.events.unregister("before-sign.s3.PutObject", _inject)
+
+        if tag_set:
+            client.put_object_tagging(
+                Bucket=target_bucket_name,
+                Key=target_key,
+                VersionId=version_id,
+                Tagging={"TagSet": tag_set},
+            )
 
     @staticmethod
     def backend_copy_object(
@@ -1522,12 +1534,22 @@ class S3TestBase:
         version_id: str,
     ) -> None:
         metadata = client.head_object(Bucket=source_bucket_name, Key=source_key, VersionId=version_id)
-        init = client.create_multipart_upload(
-            Bucket=target_bucket_name,
-            Key=target_key,
-            Metadata=metadata.get("Metadata", {}),
-            ContentType=metadata.get("ContentType"),
-        )
+        init_args: Dict[str, Any] = {
+            "Bucket": target_bucket_name,
+            "Key": target_key,
+            "Metadata": metadata.get("Metadata") or {},
+        }
+        content_type = metadata.get("ContentType")
+        if content_type:
+            init_args["ContentType"] = content_type.replace("UTF-8", "utf-8")
+
+        # CreateMultipartUpload+Tagging + Complete 시 version 헤더 조합은
+        # KSAN에서 GetObjectTagging 500을 유발하므로, complete 이후 PutObjectTagging으로 복제.
+        tag_set = client.get_object_tagging(
+            Bucket=source_bucket_name, Key=source_key, VersionId=version_id
+        ).get("TagSet") or []
+
+        init = client.create_multipart_upload(**init_args)
         upload_id = init["UploadId"]
         part_size = 5 * md.MB
         size = metadata["ContentLength"]
@@ -1553,12 +1575,30 @@ class S3TestBase:
             parts.append({"ETag": part["ETag"], "PartNumber": part_number})
             part_number += 1
             index = end + 1
-        client.complete_multipart_upload(
-            Bucket=target_bucket_name,
-            Key=target_key,
-            UploadId=upload_id,
-            MultipartUpload={"Parts": parts},
-        )
+
+        # Java: CompleteMultipartUpload 시 version 헤더 주입
+        def _inject(request, **kwargs):
+            request.headers[bh.IFS_VERSION_ID] = version_id
+            request.headers[bh.KSAN_VERSION_ID] = version_id
+
+        client.meta.events.register("before-sign.s3.CompleteMultipartUpload", _inject)
+        try:
+            client.complete_multipart_upload(
+                Bucket=target_bucket_name,
+                Key=target_key,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": parts},
+            )
+        finally:
+            client.meta.events.unregister("before-sign.s3.CompleteMultipartUpload", _inject)
+
+        if tag_set:
+            client.put_object_tagging(
+                Bucket=target_bucket_name,
+                Key=target_key,
+                VersionId=version_id,
+                Tagging={"TagSet": tag_set},
+            )
 
     @staticmethod
     def backend_put_object_acl(
@@ -1574,7 +1614,10 @@ class S3TestBase:
             Bucket=target_bucket_name,
             Key=target_key,
             VersionId=version_id,
-            AccessControlPolicy=acl,
+            AccessControlPolicy={
+                "Owner": acl["Owner"],
+                "Grants": acl.get("Grants") or [],
+            },
         )
 
     @staticmethod
