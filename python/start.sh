@@ -11,13 +11,22 @@ resolve_python312() {
       echo .venv/bin/python
       return 0
     fi
-    echo ".venv exists but is Python ${ver} (need 3.12); trying python3.12" >&2
+    echo ".venv exists but is Python ${ver} (need 3.12); falling back to system Python" >&2
   fi
   if command -v python3.12 >/dev/null 2>&1; then
     command -v python3.12
     return 0
   fi
-  echo "Python 3.12 not found. Create a venv: python3.12 -m venv .venv" >&2
+  # Rocky Linux 10.1: system python3 is 3.12
+  if command -v python3 >/dev/null 2>&1; then
+    local ver
+    ver="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+    if [[ "${ver}" == "3.12" ]]; then
+      command -v python3
+      return 0
+    fi
+  fi
+  echo "Python 3.12 not found. Run ./setup.sh first (or: python3 -m venv .venv)." >&2
   return 1
 }
 

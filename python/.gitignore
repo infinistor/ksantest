@@ -20,9 +20,6 @@ suwon*
 bundang*
 allinone*
 *.ini
-*.ps1
-!start.ps1
-!start-function.ps1
 .editorconfig
 .prettierrc
 results/
