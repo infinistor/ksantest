@@ -1,69 +1,119 @@
 # S3 compatibility test for Java
 
-이 테스트는 아마존에서 제공하는 S3 Api를 사용하여 S3 호환 프로그램에 대한 기능점검 프로그램입니다.
-
-별도의 유틸을 이용하여 보기 쉽게 결과물을 출력하는 기능을 포함하고 있습니다.
+아마존 S3 API를 사용해 S3 호환 구현의 기능을 점검하는 테스트입니다.
+[xunit-to-html](https://github.com/Zir0-93/xunit-to-html)로 HTML 리포트를 생성합니다.
 
 ## 구동환경
 
-*  Java : 17 이상
-*  maven : 3.9.5 이상
+- **Java 21** 이상 (`pom.xml` `release` 참고)
+- **Maven 3.9.5** 이상
+- HTML 리포트용: Python 3 (`scripts/merge_junit_results.py`), `xunit-to-html/saxon9he.jar`
+
+## 환경 구성 (Windows)
+
+Windows에서 `start.ps1` / `build.ps1` 실행이 막히면, PowerShell을 한 번 열어 실행 정책을 설정합니다.
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+## 설정 파일
+
+우선순위:
+
+1. Maven: `-Ds3tests.ini=<파일>` / JAR: `-f` / `--config`
+2. 기본값: `S3Config.STR_FILENAME` (소스에 정의)
+
+표준 섹션: `[S3]`, `[Fixtures]`, `[Main User]`, `[Alt User]`, `[Backend User]`
+
+스크립트 기본값은 `config.ini`입니다.
 
 ## How to Build
 
-- 빌드하기 위해서 테스트 과정을 생략하는 옵션을 추가해야 합니다.
+테스트는 건너뛰고 패키징만 할 때:
 
-``` shell
+```powershell
 mvn clean package -DskipTests
 ```
 
-## 테스트 방법
+또는:
 
-### mvn으로 테스트할 경우
-#### Window
+```powershell
+.\build.ps1
+```
 
-``` bat
-@REM 설정파일 경로
-SET S3TESTS_INI=sample.ini
-call mvn clean
-call mvn test surefire-report:report
-.\junit-merger.exe target/results > xunit-to-html-master\Result_java.xml
-cd xunit-to-html-master
+## 테스트 실행
+
+### 스크립트 (권장)
+
+```powershell
+cd java
+.\start.ps1
+.\start.ps1 -Config config.ini
+.\start.ps1 config -NoOpen
+```
+
+Linux:
+
+```bash
+cd java
+./start.sh
+./start.sh config
+```
+
+리포트: `../xunit-to-html/Result_java.html`
+
+### mvn으로 직접 실행
+
+#### Windows
+
+```powershell
+cd java
+mvn clean
+mvn test surefire-report:report "-Ds3tests.ini=config.ini"
+python ..\scripts\merge_junit_results.py .\target\results\*.xml > ..\xunit-to-html\Result_java.xml
+cd ..\xunit-to-html
 java -jar saxon9he.jar -o:Result_java.html -s:Result_java.xml -xsl:xunit_to_html.xsl
-start Result_java.html
 ```
 
 #### Linux
 
-``` bash
-#설정파일 경로
-export S3TESTS_INI=sample.ini
+```bash
+cd java
 mvn clean
-mvn test surefire-report:report
+mvn test surefire-report:report "-Ds3tests.ini=config.ini"
 python ../scripts/merge_junit_results.py ./target/results/*.xml > ../xunit-to-html/Result_java.xml
 cd ../xunit-to-html
 java -jar saxon9he.jar -o:Result_java.html -s:Result_java.xml -xsl:xunit_to_html.xsl
 ```
 
-### 빌드한 경우
+### 빌드한 JAR로 실행
 
-- 빌드한 프로그램으로 테스트 할 경우 레포트는 생성할 수 없습니다.
-- 테스트 결과가 콘솔창에 출력됩니다.
+리포트는 생성되지 않고, 결과가 콘솔에 출력됩니다.
 
-#### Windows
-``` shell
-SET S3TESTS_INI=sample.ini
-java -jar s3tests-java
+```powershell
+java -jar target\s3tests_java-1.0.0-jar-with-dependencies.jar -f config.ini
 ```
 
-#### Linux
-``` shell
-export S3TESTS_INI=sample.ini
-./s3tests-java
+```bash
+java -jar target/s3tests_java-1.0.0-jar-with-dependencies.jar -f config.ini
+```
+
+클래스/메서드 지정 예:
+
+```powershell
+java -jar target\s3tests_java-1.0.0-jar-with-dependencies.jar -f config.ini -c PutObject -m testPutObject
 ```
 
 ## 테스트 결과 레포트
 
-- 테스트 결과 레포트는 [링크](https://github.com/Zir0-93/xunit-to-html)를 사용하여 작성했습니다.
-- 테스트 결과는 **../xunit-to-html-master/Result_java.html**로 확인 가능합니다.
-- 테스트 결과 예제 : [kjw_s3tests_0001](xunit-to-html-master/kjw_s3tests_0001.PNG "kjw_s3tests_0001.PNG")
+- 도구: [xunit-to-html](https://github.com/Zir0-93/xunit-to-html)
+- 결과 파일: `../xunit-to-html/Result_java.html`
+- **사전 준비**: `xunit-to-html/saxon9he.jar` 필요
+
+## Python 결과와 비교
+
+동일한 `config.ini`로 Java와 Python 테스트를 각각 실행한 뒤 HTML 리포트를 비교합니다.
+
+- Java: `java/start.ps1` → `xunit-to-html/Result_java.html`
+- Python: `python/start.ps1` → `xunit-to-html/Result_python.html`
