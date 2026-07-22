@@ -107,9 +107,17 @@ java -jar target\s3tests_java-1.0.0-jar-with-dependencies.jar -f config.ini -c P
 
 ## 테스트 결과 레포트
 
-- 도구: [xunit-to-html](https://github.com/Zir0-93/xunit-to-html)
+- 도구: [xunit-to-html](https://github.com/Zir0-93/xunit-to-html) (저장소 루트의 Git submodule)
 - 결과 파일: `../xunit-to-html/Result_java.html`
-- **사전 준비**: `xunit-to-html/saxon9he.jar` 필요
+- **사전 준비**
+  - submodule 초기화: 일반 `git pull`만으로는 `xunit-to-html` 내용이 받아지지 않습니다.
+
+    ```powershell
+    git submodule update --init --recursive
+    ```
+
+    pull 때 함께 받으려면 `git pull --recurse-submodules`, 또는 pull 후 위 명령을 다시 실행합니다.
+  - `xunit-to-html/saxon9he.jar` 필요
 
 ## Python 결과와 비교
 

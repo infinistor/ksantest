@@ -197,7 +197,16 @@ cd ..\xunit-to-html
 java -jar saxon9he.jar -o:Result_python.html -s:Result_python.xml -xsl:xunit_to_html.xsl
 ```
 
-**사전 준비**: `xunit-to-html/saxon9he.jar` 필요 ([xunit-to-html](https://github.com/Zir0-93/xunit-to-html))
+**사전 준비**
+
+- [xunit-to-html](https://github.com/Zir0-93/xunit-to-html)은 저장소 루트의 Git submodule입니다. 일반 `git pull`만으로는 내용이 받아지지 않습니다.
+
+  ```powershell
+  git submodule update --init --recursive
+  ```
+
+  pull 때 함께 받으려면 `git pull --recurse-submodules`, 또는 pull 후 위 명령을 다시 실행합니다.
+- `xunit-to-html/saxon9he.jar` 필요
 
 ## 프로젝트 구조
 
