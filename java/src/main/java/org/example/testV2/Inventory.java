@@ -43,7 +43,7 @@ public class Inventory extends TestBase {
 	@Tag("List")
 	public void testListBucketInventory() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var response = client.listBucketInventoryConfigurations(l -> l.bucket(bucketName));
 		assertTrue(response.inventoryConfigurationList().isEmpty());
@@ -53,8 +53,8 @@ public class Inventory extends TestBase {
 	@Tag("Put")
 	public void testPutBucketInventory() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
+		var targetBucketName = createBucket(client, 2);
 		var inventoryId = "my-inventory-v2";
 
 		client.putBucketInventoryConfiguration(
@@ -70,8 +70,8 @@ public class Inventory extends TestBase {
 	@Tag("Check")
 	public void testCheckBucketInventory() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
+		var targetBucketName = createBucket(client, 3);
 		var inventoryId = "my-inventory";
 
 		client.putBucketInventoryConfiguration(p -> p
@@ -94,8 +94,8 @@ public class Inventory extends TestBase {
 	@Tag("Get")
 	public void testGetBucketInventory() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
+		var targetBucketName = createBucket(client, 4);
 		var inventoryId = "my-inventory";
 
 		client.putBucketInventoryConfiguration(p -> p
@@ -116,8 +116,8 @@ public class Inventory extends TestBase {
 	@Tag("Delete")
 	public void testDeleteBucketInventory() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
+		var targetBucketName = createBucket(client, 5);
 		var inventoryId = "my-inventory";
 
 		client.putBucketInventoryConfiguration(p -> p
@@ -140,7 +140,7 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testGetBucketInventoryNotExist() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 		var inventoryId = "my-inventory";
 
 		var e = assertThrows(AwsServiceException.class,
@@ -156,7 +156,7 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testDeleteBucketInventoryNotExist() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 		var inventoryId = "my-inventory";
 
 		var e = assertThrows(AwsServiceException.class,
@@ -170,8 +170,8 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testPutBucketInventoryNotExist() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
-		var targetBucketName = createBucket(client);
+		var bucketName = getNewBucketName(8);
+		var targetBucketName = createBucket(client, 8);
 		var inventoryId = "my-inventory";
 
 		var inventory = InventoryConfiguration.builder()
@@ -194,8 +194,8 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testPutBucketInventoryIdNotExist() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
+		var targetBucketName = createBucket(client, 9);
 		var inventoryId = "";
 
 		var inventory = InventoryConfiguration.builder()
@@ -219,8 +219,8 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testPutBucketInventoryIdDuplicate() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
+		var targetBucketName = createBucket(client, 10);
 		var inventoryId = "my-inventory";
 
 		var inventory = InventoryConfiguration.builder()
@@ -257,8 +257,8 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testPutBucketInventoryTargetNotExist() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = getNewBucketName();
+		var bucketName = createBucket(client, 11);
+		var targetBucketName = getNewBucketName(11);
 		var inventoryId = "my-inventory";
 
 		var inventory = InventoryConfiguration.builder()
@@ -282,8 +282,8 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testPutBucketInventoryInvalidFormat() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
+		var targetBucketName = createBucket(client, 12);
 		var inventoryId = "my-inventory";
 
 		var inventory = InventoryConfiguration.builder()
@@ -307,8 +307,8 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testPutBucketInventoryInvalidFrequency() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
+		var targetBucketName = createBucket(client, 13);
 		var inventoryId = "my-inventory";
 
 		var inventory = InventoryConfiguration.builder()
@@ -332,8 +332,8 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testPutBucketInventoryInvalidCase() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
+		var targetBucketName = createBucket(client, 14);
 		var inventoryId = "my-inventory";
 
 		var inventory = InventoryConfiguration.builder()
@@ -357,8 +357,8 @@ public class Inventory extends TestBase {
 	@Tag("Put")
 	public void testPutBucketInventoryPrefix() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
+		var targetBucketName = createBucket(client, 15);
 		var inventoryId = "my-inventory";
 
 		var inventoryPrefix = "a/";
@@ -389,8 +389,8 @@ public class Inventory extends TestBase {
 	@Tag("Put")
 	public void testPutBucketInventoryOptional() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
+		var targetBucketName = createBucket(client, 16);
 		var inventoryId = "my-inventory";
 
 		var inventoryPrefix = "a/";
@@ -426,8 +426,8 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testPutBucketInventoryInvalidOptional() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 17);
+		var targetBucketName = createBucket(client, 17);
 		var inventoryId = "my-inventory";
 
 		var inventoryPrefix = "a/";

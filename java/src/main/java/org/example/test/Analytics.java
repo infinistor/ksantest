@@ -40,8 +40,8 @@ public class Analytics extends TestBase {
 	@Tag("Put")
 	public void testPutBucketAnalytics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
+		var targetBucketName = createBucket(client, 1);
 
 		client.setBucketAnalyticsConfiguration(bucketName, new AnalyticsConfiguration().withId("test")
 				.withStorageClassAnalysis(new StorageClassAnalysis()
@@ -56,8 +56,8 @@ public class Analytics extends TestBase {
 	@Tag("Get")
 	public void testGetBucketAnalytics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
+		var targetBucketName = createBucket(client, 2);
 
 		client.setBucketAnalyticsConfiguration(bucketName, new AnalyticsConfiguration().withId("test")
 				.withStorageClassAnalysis(new StorageClassAnalysis()
@@ -81,8 +81,8 @@ public class Analytics extends TestBase {
 	@Tag("Put")
 	public void testAddBucketAnalytics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
+		var targetBucketName = createBucket(client, 3);
 
 		client.setBucketAnalyticsConfiguration(bucketName, new AnalyticsConfiguration().withId("test")
 				.withStorageClassAnalysis(new StorageClassAnalysis()
@@ -109,8 +109,8 @@ public class Analytics extends TestBase {
 	@Tag("List")
 	public void testListBucketAnalytics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
+		var targetBucketName = createBucket(client, 4);
 
 		client.setBucketAnalyticsConfiguration(bucketName, new AnalyticsConfiguration().withId("test")
 				.withStorageClassAnalysis(new StorageClassAnalysis()
@@ -134,8 +134,8 @@ public class Analytics extends TestBase {
 	@Tag("Delete")
 	public void testDeleteBucketAnalytics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
+		var targetBucketName = createBucket(client, 5);
 
 		client.setBucketAnalyticsConfiguration(bucketName, new AnalyticsConfiguration().withId("test")
 				.withStorageClassAnalysis(new StorageClassAnalysis()
@@ -155,8 +155,8 @@ public class Analytics extends TestBase {
 	@Tag("Error")
 	public void testPutBucketAnalyticsInvalid() {
 		var client = getClient();
-		var bucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
+		var targetBucketName = createBucket(client, 6);
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketAnalyticsConfiguration(bucketName, new AnalyticsConfiguration().withId("test")

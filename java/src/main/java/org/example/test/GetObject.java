@@ -48,7 +48,7 @@ public class GetObject extends TestBase {
 	@Tag("ERROR")
 	public void testObjectReadNotExist() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, "bar"));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
@@ -60,7 +60,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfMatchGood() {
 		var key = "foo";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 
 		var putResponse = client.putObject(bucketName, key, "bar");
 		var eTag = putResponse.getETag();
@@ -74,7 +74,7 @@ public class GetObject extends TestBase {
 	@Tag("IfMatch")
 	public void testGetObjectIfMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 		var key = "foo";
 
 		client.putObject(bucketName, key, "bar");
@@ -87,7 +87,7 @@ public class GetObject extends TestBase {
 	@Tag("IfNoneMatch")
 	public void testGetObjectIfNoneMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 		var key = "foo";
 
 		var putResponse = client.putObject(bucketName, key, "bar");
@@ -101,7 +101,7 @@ public class GetObject extends TestBase {
 	@Tag("IfNoneMatch")
 	public void testGetObjectIfNoneMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 		var key = "foo";
 
 		client.putObject(bucketName, key, "bar");
@@ -117,7 +117,7 @@ public class GetObject extends TestBase {
 	@Tag("IfModifiedSince")
 	public void testGetObjectIfModifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 		var key = "foo";
 
 		client.putObject(bucketName, key, "bar");
@@ -134,7 +134,7 @@ public class GetObject extends TestBase {
 	@Tag("IfModifiedSince")
 	public void testGetObjectIfModifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 		var key = "foo";
 
 		client.putObject(bucketName, key, "bar");
@@ -156,7 +156,7 @@ public class GetObject extends TestBase {
 	@Tag("IfUnmodifiedSince")
 	public void testGetObjectIfUnmodifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 8);
 		var key = "foo";
 
 		client.putObject(bucketName, key, "bar");
@@ -173,7 +173,7 @@ public class GetObject extends TestBase {
 	@Tag("IfUnmodifiedSince")
 	public void testGetObjectIfUnmodifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 		var key = "foo";
 
 		client.putObject(bucketName, key, "bar");
@@ -193,7 +193,7 @@ public class GetObject extends TestBase {
 		var content = "contentData";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 
 		client.putObject(bucketName, key, content);
 		var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(4, 7));
@@ -210,7 +210,7 @@ public class GetObject extends TestBase {
 		var content = Utils.randomTextToLong(8 * MainData.MB);
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 
 		client.putObject(bucketName, key, content);
 		var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(3145728, 5242880));
@@ -228,7 +228,7 @@ public class GetObject extends TestBase {
 		var content = "contentData";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 
 		client.putObject(bucketName, key, content);
 		var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(4));
@@ -245,7 +245,7 @@ public class GetObject extends TestBase {
 		var content = "contentData";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
 
 		client.putObject(bucketName, key, content);
 		var e = assertThrows(AmazonServiceException.class,
@@ -261,7 +261,7 @@ public class GetObject extends TestBase {
 		var content = "";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 
 		client.putObject(bucketName, key, content);
 		var e = assertThrows(AmazonServiceException.class,
@@ -274,7 +274,7 @@ public class GetObject extends TestBase {
 	@Tag("Get")
 	public void testGetObjectMany() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 		var key = "foo";
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
@@ -286,7 +286,7 @@ public class GetObject extends TestBase {
 	@Tag("Get")
 	public void testRangeObjectMany() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
 		var key = "foo";
 		var fileSize = 1024 * 1024 * 15;
 		var data = Utils.randomTextToLong(fileSize);
@@ -300,7 +300,7 @@ public class GetObject extends TestBase {
 	public void testObjectResponseHeaders() {
 		var key = "testObjectResponseHeaders";
 		var client = getClient();
-		var bucketName = createObjects(client, key);
+		var bucketName = createObjects(client, 17, key);
 
 		var date = new Date();
 		SimpleDateFormat rfc822format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss 'GMT'", Locale.ENGLISH);
@@ -327,7 +327,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIgnore() {
 		var key = "testObjectIgnore";
 		var client = getClient();
-		var bucketName = createObjects(client, key);
+		var bucketName = createObjects(client, 18, key);
 
 		var response = client.getObject(new GetObjectRequest(bucketName, key));
 		assertEquals(key.length(), response.getObjectMetadata().getContentLength());
@@ -337,7 +337,7 @@ public class GetObject extends TestBase {
 	@Tag("ERROR")
 	public void testGetObjectAfterDelete() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 19);
 		var key = "testGetObjectAfterDelete";
 		var body = "testContent";
 
@@ -363,7 +363,7 @@ public class GetObject extends TestBase {
 	@Tag("ERROR")
 	public void testGetObjectAfterDeleteVersioning() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 20);
 		var key = "testGetObjectAfterDeleteVersioning";
 		var body = "testContent";
 
@@ -394,7 +394,7 @@ public class GetObject extends TestBase {
 	@Tag("Versioning")
 	public void testGetObjectDeleteMarker() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 21);
 		var key = "testGetObjectDeleteMarker";
 		var body = "testContent";
 

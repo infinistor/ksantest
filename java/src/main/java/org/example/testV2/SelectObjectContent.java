@@ -66,7 +66,7 @@ public class SelectObjectContent extends TestBase {
 		var client = getClient();
 		var asyncClient = getAsyncClient(true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 		var key = "data.csv";
 		// CSV: 헤더 + 2행
 		var csvContent = "name,age,city\nAlice,30,Seoul\nBob,25,Busan";
@@ -112,7 +112,7 @@ public class SelectObjectContent extends TestBase {
 		var client = getClient();
 		var asyncClient = getAsyncClient(true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		var key = "data.csv";
 		var csvContent = "name,age,city\nAlice,30,Seoul\nBob,25,Busan\nCharlie,30,Incheon";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(csvContent));
@@ -157,7 +157,7 @@ public class SelectObjectContent extends TestBase {
 		var client = getClient();
 		var asyncClient = getAsyncClient(true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 		var key = "data.csv";
 		var csvContent = "id,value\n1,a\n2,b\n3,c";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(csvContent));
@@ -201,7 +201,7 @@ public class SelectObjectContent extends TestBase {
 		var client = getClient();
 		var asyncClient = getAsyncClient(true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 		var key = "data.json";
 		// JSON Lines 형식 (한 줄에 한 JSON)
 		var jsonContent = "{\"name\":\"Alice\",\"age\":30}\n{\"name\":\"Bob\",\"age\":25}";
@@ -290,7 +290,7 @@ public class SelectObjectContent extends TestBase {
 		var client = getClient();
 		var asyncClient = getAsyncClient(true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 		var key = "non-existent-key.csv";
 
 		var inputSerialization = InputSerialization.builder()
@@ -335,7 +335,7 @@ public class SelectObjectContent extends TestBase {
 		var client = getClient();
 		var asyncClient = getAsyncClient(true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 		var key = "empty.csv";
 		var csvContent = "col1,col2\n";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(csvContent));

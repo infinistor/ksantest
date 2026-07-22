@@ -34,7 +34,7 @@ public class Payment extends TestBase {
 	@Tag("Put")
 	public void testPutBucketRequestPayment() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		client.setRequestPaymentConfiguration(new SetRequestPaymentConfigurationRequest(bucketName,
 				new RequestPaymentConfiguration(Payer.Requester)));
@@ -44,7 +44,7 @@ public class Payment extends TestBase {
 	@Tag("Get")
 	public void testGetBucketRequestPayment() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 
 		var result = client.isRequesterPaysEnabled(bucketName);
 		assertEquals(false, result);
@@ -54,7 +54,7 @@ public class Payment extends TestBase {
 	@Tag("Get")
 	public void testSetGetBucketRequestPayment() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 
 		client.setRequestPaymentConfiguration(new SetRequestPaymentConfigurationRequest(bucketName,
 				new RequestPaymentConfiguration(Payer.Requester)));

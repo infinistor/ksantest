@@ -44,7 +44,7 @@ public class Logging extends TestBase {
 	@Tag("Put/Get")
 	public void testLoggingGet() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var response = client.getBucketLoggingConfiguration(bucketName);
 		assertNull(response.getLogFilePrefix());
@@ -55,8 +55,8 @@ public class Logging extends TestBase {
 	@Tag("Put/Get")
 	public void testLoggingSet() {
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 2);
+		var targetBucketName = createBucket(client, 2);
 
 		var request = new SetBucketLoggingConfigurationRequest(sourceBucketName,
 				new BucketLoggingConfiguration(targetBucketName, ""));
@@ -67,8 +67,8 @@ public class Logging extends TestBase {
 	@Tag("Put/Get")
 	public void testLoggingSetGet() {
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 3);
+		var targetBucketName = createBucket(client, 3);
 
 		var request = new SetBucketLoggingConfigurationRequest(sourceBucketName,
 				new BucketLoggingConfiguration(targetBucketName, ""));
@@ -84,8 +84,8 @@ public class Logging extends TestBase {
 	public void testLoggingPrefix() {
 		var prefix = "logs/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 4);
+		var targetBucketName = createBucket(client, 4);
 
 		var request = new SetBucketLoggingConfigurationRequest(sourceBucketName,
 				new BucketLoggingConfiguration(targetBucketName, prefix));
@@ -101,8 +101,8 @@ public class Logging extends TestBase {
 	public void testLoggingVersioning() {
 		var prefix = "logs/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 5);
+		var targetBucketName = createBucket(client, 5);
 
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -120,8 +120,8 @@ public class Logging extends TestBase {
 	public void testLoggingEncryption() {
 		var prefix = "logs/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 6);
+		var targetBucketName = createBucket(client, 6);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
 				.withRules(new ServerSideEncryptionRule()
@@ -143,8 +143,8 @@ public class Logging extends TestBase {
 	@Test
 	@Tag("Error")
 	public void testLoggingBucketNotFound() {
-		var sourceBucketName = getNewBucketNameOnly();
-		var targetBucketName = getNewBucketNameOnly();
+		var sourceBucketName = getNewBucketNameOnly(7);
+		var targetBucketName = getNewBucketNameOnly(7);
 		var prefix = "logs/";
 		var client = getClient();
 
@@ -161,8 +161,8 @@ public class Logging extends TestBase {
 	public void testLoggingTargetBucketNotFound() {
 		var prefix = "logs/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = getNewBucketNameOnly();
+		var sourceBucketName = createBucket(client, 8);
+		var targetBucketName = getNewBucketNameOnly(8);
 
 		var request = new SetBucketLoggingConfigurationRequest(sourceBucketName,
 				new BucketLoggingConfiguration(targetBucketName, prefix));

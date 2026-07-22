@@ -56,7 +56,7 @@ public class CopyObject extends TestBase {
 		var source = "testObjectCopyZeroSizeSource";
 		var target = "testObjectCopyZeroSizeTarget";
 		var client = getClient();
-		var bucketName = createObjects(client, source);
+		var bucketName = createObjects(client, 1, source);
 
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.empty());
 
@@ -72,7 +72,7 @@ public class CopyObject extends TestBase {
 	@Tag("Check")
 	public void testObjectCopySameBucket() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		var source = "testObjectCopySameBucketSource";
 		var target = "testObjectCopySameBucketTarget";
 
@@ -89,7 +89,7 @@ public class CopyObject extends TestBase {
 	@Tag("ContentType")
 	public void testObjectCopyVerifyContentType() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 		var source = "testObjectCopyVerifyContentTypeSource";
 		var target = "testObjectCopyVerifyContentTypeTarget";
 		var contentType = "text/bla";
@@ -108,7 +108,7 @@ public class CopyObject extends TestBase {
 	@Tag("Overwrite")
 	public void testObjectCopyToItself() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 		var source = "testObjectCopyToItself";
 
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.empty());
@@ -123,7 +123,7 @@ public class CopyObject extends TestBase {
 	@Tag("Overwrite")
 	public void testObjectCopyToItselfWithMetadata() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 		var source = "testObjectCopyToItselfWithMetadata";
 
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
@@ -145,8 +145,8 @@ public class CopyObject extends TestBase {
 	@Tag("Check")
 	public void testObjectCopyDiffBucket() {
 		var client = getClient();
-		var sourceBucket = createBucket(client);
-		var targetBucket = createBucket(client);
+		var sourceBucket = createBucket(client, 6);
+		var targetBucket = createBucket(client, 6);
 		var source = "testObjectCopyDiffBucketSource";
 		var target = "testObjectCopyDiffBucketTarget";
 
@@ -164,8 +164,8 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyNotOwnedBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
-		var sourceBucket = createBucket(client);
-		var targetBucket = createBucket(altClient);
+		var sourceBucket = createBucket(client, 7);
+		var targetBucket = createBucket(altClient, 7);
 		var source = "testObjectCopyNotOwnedBucketSource";
 		var target = "testObjectCopyNotOwnedBucketTarget";
 
@@ -184,7 +184,7 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyNotOwnedObjectBucket() {
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 8);
 		var source = "testObjectCopyNotOwnedObjectBucketSource";
 		var target = "testObjectCopyNotOwnedObjectBucketTarget";
 
@@ -206,7 +206,7 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyCannedAcl() {
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 9);
 		var source = "testObjectCopyCannedAclSource";
 		var target = "testObjectCopyCannedAclTarget";
 
@@ -236,7 +236,7 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyRetainingMetadata() {
 		var client = getClient();
 		for (var size : new int[] { 3, 1024 * 1024 }) {
-			var bucketName = createBucket(client);
+			var bucketName = createBucket(client, 10);
 			var contentType = "audio/ogg";
 
 			var source = "testObjectCopyRetainingMetadataSource";
@@ -263,7 +263,7 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyReplacingMetadata() {
 		var client = getClient();
 		for (var size : new int[] { 3, 1024 * 1024 }) {
-			var bucketName = createBucket(client);
+			var bucketName = createBucket(client, 11);
 			var contentType = "audio/ogg";
 
 			var source = "testObjectCopyReplacingMetadataSource";
@@ -300,7 +300,7 @@ public class CopyObject extends TestBase {
 	@Tag("ERROR")
 	public void testObjectCopyBucketNotFound() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.copyObject(
 						c -> c.sourceBucket(bucketName + "-fake").sourceKey("testObjectCopyBucketNotFoundSource")
@@ -313,7 +313,7 @@ public class CopyObject extends TestBase {
 	@Tag("ERROR")
 	public void testObjectCopyKeyNotFound() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("testObjectCopyKeyNotFoundSource")
@@ -326,7 +326,7 @@ public class CopyObject extends TestBase {
 	@Tag("Version")
 	public void testObjectCopyVersioningBucket() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 		var size = 1 * 5;
 		var data = Utils.randomTextToLong(size);
 		var source = "testObjectCopyVersionedBucketSource";
@@ -358,7 +358,7 @@ public class CopyObject extends TestBase {
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
 
-		var targetBucket = createBucket(client);
+		var targetBucket = createBucket(client, 14);
 		checkConfigureVersioningRetry(targetBucket, BucketVersioningStatus.ENABLED);
 		var target3 = "testObjectCopyVersionedBucketTarget3";
 
@@ -369,7 +369,7 @@ public class CopyObject extends TestBase {
 		assertEquals(data, getBody(response));
 		assertEquals(size, response.response().contentLength());
 
-		var bucketName3 = createBucket(client);
+		var bucketName3 = createBucket(client, 14);
 		checkConfigureVersioningRetry(bucketName3, BucketVersioningStatus.ENABLED);
 		var target4 = "testObjectCopyVersionedBucketTarget4";
 		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source).sourceVersionId(sourceVid)
@@ -391,7 +391,7 @@ public class CopyObject extends TestBase {
 	@Tag("Version")
 	public void testObjectCopyVersioningUrlEncoding() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var source = "testObjectCopyVersionedUrlEncoding?Source";
 
@@ -411,7 +411,7 @@ public class CopyObject extends TestBase {
 	@Tag("Multipart")
 	public void testObjectCopyVersioningMultipartUpload() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var size = 50 * MainData.MB;
 		var source = "testObjectCopyVersioningMultipartUploadSource";
@@ -446,7 +446,7 @@ public class CopyObject extends TestBase {
 		assertEquals(sourceMetadata, response.metadata());
 		checkContentUsingRange(bucketName, target2, uploads.getBody(), MainData.MB);
 
-		var targetBucket = createBucket(client);
+		var targetBucket = createBucket(client, 16);
 		checkConfigureVersioningRetry(targetBucket, BucketVersioningStatus.ENABLED);
 
 		var target3 = "testObjectCopyVersioningMultipartUploadTarget3";
@@ -457,7 +457,7 @@ public class CopyObject extends TestBase {
 		assertEquals(sourceMetadata, response.metadata());
 		checkContentUsingRange(targetBucket, target3, uploads.getBody(), MainData.MB);
 
-		var bucketName3 = createBucket(client);
+		var bucketName3 = createBucket(client, 16);
 		checkConfigureVersioningRetry(bucketName3, BucketVersioningStatus.ENABLED);
 
 		var target4 = "testObjectCopyVersioningMultipartUploadTarget4";
@@ -481,7 +481,7 @@ public class CopyObject extends TestBase {
 	@Tag("If Match")
 	public void testCopyObjectIfMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 17);
 		var source = "testCopyObjectIfMatchGoodSource";
 		var target = "testCopyObjectIfMatchGoodTarget";
 
@@ -498,7 +498,7 @@ public class CopyObject extends TestBase {
 	@Tag("If Match")
 	public void testCopyObjectIfMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 18);
 		var source = "testCopyObjectIfMatchFailedSource";
 		var target = "testCopyObjectIfMatchFailedTarget";
 
@@ -517,7 +517,7 @@ public class CopyObject extends TestBase {
 	// 소스 오브젝트와 일치하지 않는 copy-source-if-none-match 조건으로 복사 성공 확인
 	public void testCopyObjectIfNoneMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 19);
 		var source = "testCopyObjectIfNoneMatchGoodSource";
 		var target = "testCopyObjectIfNoneMatchGoodTarget";
 
@@ -534,7 +534,7 @@ public class CopyObject extends TestBase {
 	// 소스 오브젝트와 일치하는 copy-source-if-none-match 조건으로 복사 시 412 실패 확인
 	public void testCopyObjectIfNoneMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 20);
 		var source = "testCopyObjectIfNoneMatchFailedSource";
 		var target = "testCopyObjectIfNoneMatchFailedTarget";
 
@@ -553,7 +553,7 @@ public class CopyObject extends TestBase {
 	// 소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 복사 성공 확인
 	public void testCopyObjectIfModifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 21);
 		var source = "testCopyObjectIfModifiedSinceGoodSource";
 		var target = "testCopyObjectIfModifiedSinceGoodTarget";
 
@@ -574,7 +574,7 @@ public class CopyObject extends TestBase {
 	// 소스 오브젝트 업로드 이후 시간의 copy-source-if-modified-since 조건으로 복사 시 412 실패 확인
 	public void testCopyObjectIfModifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 22);
 		var source = "testCopyObjectIfModifiedSinceFailedSource";
 		var target = "testCopyObjectIfModifiedSinceFailedTarget";
 
@@ -600,7 +600,7 @@ public class CopyObject extends TestBase {
 	// 소스 오브젝트 업로드 이후 시간의 copy-source-if-unmodified-since 조건으로 복사 성공 확인
 	public void testCopyObjectIfUnmodifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 23);
 		var source = "testCopyObjectIfUnmodifiedSinceGoodSource";
 		var target = "testCopyObjectIfUnmodifiedSinceGoodTarget";
 
@@ -621,7 +621,7 @@ public class CopyObject extends TestBase {
 	// 소스 오브젝트 업로드 이전 시간의 copy-source-if-unmodified-since 조건으로 복사 시 412 실패 확인
 	public void testCopyObjectIfUnmodifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 24);
 		var source = "testCopyObjectIfUnmodifiedSinceFailedSource";
 		var target = "testCopyObjectIfUnmodifiedSinceFailedTarget";
 
@@ -645,7 +645,7 @@ public class CopyObject extends TestBase {
 	// ETag 조건이 우선되어 복사에 성공하는지 확인
 	public void testCopyObjectIfMatchWithIfUnmodifiedSince() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 25);
 		var source = "testCopyObjectIfMatchWithIfUnmodifiedSinceSource";
 		var target = "testCopyObjectIfMatchWithIfUnmodifiedSinceTarget";
 
@@ -668,7 +668,7 @@ public class CopyObject extends TestBase {
 	// ETag 조건이 우선되어 412가 반환되는지 확인
 	public void testCopyObjectIfNoneMatchWithIfModifiedSince() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 26);
 		var source = "testCopyObjectIfNoneMatchWithIfModifiedSinceSource";
 		var target = "testCopyObjectIfNoneMatchWithIfModifiedSinceTarget";
 
@@ -693,7 +693,7 @@ public class CopyObject extends TestBase {
 	// copy-source-if-match와 copy-source-if-none-match에 동일한 ETag를 지정하면 412가 반환되는지 확인
 	public void testCopyObjectIfMatchAndIfNoneMatch() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 27);
 		var source = "testCopyObjectIfMatchAndIfNoneMatchSource";
 		var target = "testCopyObjectIfMatchAndIfNoneMatchTarget";
 
@@ -713,7 +713,7 @@ public class CopyObject extends TestBase {
 	// copy-source-if-match와 copy-source-if-none-match: * 를 함께 지정하면 412가 반환되는지 확인
 	public void testCopyObjectIfMatchAndIfNoneMatchAny() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 28);
 		var source = "testCopyObjectIfMatchAndIfNoneMatchAnySource";
 		var target = "testCopyObjectIfMatchAndIfNoneMatchAnyTarget";
 
@@ -732,7 +732,7 @@ public class CopyObject extends TestBase {
 	// 대상 오브젝트와 일치하는 If-Match 조건으로 덮어쓰기 복사 성공 확인
 	public void testCopyObjectDestinationIfMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 29);
 		var source = "testCopyObjectDestinationIfMatchGoodSource";
 		var target = "testCopyObjectDestinationIfMatchGoodTarget";
 
@@ -751,7 +751,7 @@ public class CopyObject extends TestBase {
 	// 대상 오브젝트와 일치하지 않는 If-Match 조건으로 덮어쓰기 복사 시 412 실패 확인
 	public void testCopyObjectDestinationIfMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 30);
 		var source = "testCopyObjectDestinationIfMatchFailedSource";
 		var target = "testCopyObjectDestinationIfMatchFailedTarget";
 
@@ -776,7 +776,7 @@ public class CopyObject extends TestBase {
 	// 존재하지 않는 대상 키에 If-None-Match: * 조건으로 복사 성공 확인
 	public void testCopyObjectDestinationIfNoneMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 31);
 		var source = "testCopyObjectDestinationIfNoneMatchGoodSource";
 		var target = "testCopyObjectDestinationIfNoneMatchGoodTarget";
 
@@ -793,7 +793,7 @@ public class CopyObject extends TestBase {
 	// 이미 존재하는 대상 키에 If-None-Match: * 조건으로 복사 시 412 실패 확인
 	public void testCopyObjectDestinationIfNoneMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 32);
 		var source = "testCopyObjectDestinationIfNoneMatchFailedSource";
 		var target = "testCopyObjectDestinationIfNoneMatchFailedTarget";
 
@@ -818,7 +818,7 @@ public class CopyObject extends TestBase {
 	// 대상에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
 	public void testCopyObjectDestinationIfMatchAndIfNoneMatch() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 33);
 		var source = "testCopyObjectDestinationIfMatchAndIfNoneMatchSource";
 		var target = "testCopyObjectDestinationIfMatchAndIfNoneMatchTarget";
 
@@ -844,7 +844,7 @@ public class CopyObject extends TestBase {
 	// 대상에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
 	public void testCopyObjectDestinationIfMatchAndIfNoneMatchAny() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 34);
 		var source = "testCopyObjectDestinationIfMatchAndIfNoneMatchAnySource";
 		var target = "testCopyObjectDestinationIfMatchAndIfNoneMatchAnyTarget";
 
@@ -870,7 +870,7 @@ public class CopyObject extends TestBase {
 	// 소스 If-Match와 대상 If-None-Match: * 를 함께 사용해 복사 성공 확인
 	public void testCopyObjectSourceIfMatchWithDestinationIfNoneMatch() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 35);
 		var source = "testCopyObjectSourceIfMatchWithDestinationIfNoneMatchSource";
 		var target = "testCopyObjectSourceIfMatchWithDestinationIfNoneMatchTarget";
 
@@ -886,144 +886,144 @@ public class CopyObject extends TestBase {
 	@Tag("encryption")
 	public void testCopyNorSrcToNorBucketAndObj() {
 		var prefix = "testCopyNorSrcToNorBucketAndObj";
-		testObjectCopy(prefix, false, false, false, false, 1024);
-		testObjectCopy(prefix, false, false, false, false, 256 * 1024);
-		testObjectCopy(prefix, false, false, false, false, 1024 * 1024);
+		testObjectCopy(36, prefix, false, false, false, false, 1024);
+		testObjectCopy(36, prefix, false, false, false, false, 256 * 1024);
+		testObjectCopy(36, prefix, false, false, false, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyNorSrcToNorBucketEncryptionObj() {
 		var prefix = "testCopyNorSrcToNorBucketEncryptionObj";
-		testObjectCopy(prefix, false, false, false, true, 1024);
-		testObjectCopy(prefix, false, false, false, true, 256 * 1024);
-		testObjectCopy(prefix, false, false, false, true, 1024 * 1024);
+		testObjectCopy(37, prefix, false, false, false, true, 1024);
+		testObjectCopy(37, prefix, false, false, false, true, 256 * 1024);
+		testObjectCopy(37, prefix, false, false, false, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyNorSrcToEncryptionBucketNorObj() {
 		var prefix = "testCopyNorSrcToEncryptionBucketNorObj";
-		testObjectCopy(prefix, false, false, true, false, 1024);
-		testObjectCopy(prefix, false, false, true, false, 256 * 1024);
-		testObjectCopy(prefix, false, false, true, false, 1024 * 1024);
+		testObjectCopy(38, prefix, false, false, true, false, 1024);
+		testObjectCopy(38, prefix, false, false, true, false, 256 * 1024);
+		testObjectCopy(38, prefix, false, false, true, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyNorSrcToEncryptionBucketAndObj() {
 		var prefix = "testCopyNorSrcToEncryptionBucketAndObj";
-		testObjectCopy(prefix, false, false, true, true, 1024);
-		testObjectCopy(prefix, false, false, true, true, 256 * 1024);
-		testObjectCopy(prefix, false, false, true, true, 1024 * 1024);
+		testObjectCopy(39, prefix, false, false, true, true, 1024);
+		testObjectCopy(39, prefix, false, false, true, true, 256 * 1024);
+		testObjectCopy(39, prefix, false, false, true, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionSrcToNorBucketAndObj() {
 		var prefix = "testCopyEncryptionSrcToNorBucketAndObj";
-		testObjectCopy(prefix, true, false, false, false, 1024);
-		testObjectCopy(prefix, true, false, false, false, 256 * 1024);
-		testObjectCopy(prefix, true, false, false, false, 1024 * 1024);
+		testObjectCopy(40, prefix, true, false, false, false, 1024);
+		testObjectCopy(40, prefix, true, false, false, false, 256 * 1024);
+		testObjectCopy(40, prefix, true, false, false, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionSrcToNorBucketEncryptionObj() {
 		var prefix = "testCopyEncryptionSrcToNorBucketEncryptionObj";
-		testObjectCopy(prefix, true, false, false, true, 1024);
-		testObjectCopy(prefix, true, false, false, true, 256 * 1024);
-		testObjectCopy(prefix, true, false, false, true, 1024 * 1024);
+		testObjectCopy(41, prefix, true, false, false, true, 1024);
+		testObjectCopy(41, prefix, true, false, false, true, 256 * 1024);
+		testObjectCopy(41, prefix, true, false, false, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionSrcToEncryptionBucketNorObj() {
 		var prefix = "testCopyEncryptionSrcToEncryptionBucketNorObj";
-		testObjectCopy(prefix, true, false, true, false, 1024);
-		testObjectCopy(prefix, true, false, true, false, 256 * 1024);
-		testObjectCopy(prefix, true, false, true, false, 1024 * 1024);
+		testObjectCopy(42, prefix, true, false, true, false, 1024);
+		testObjectCopy(42, prefix, true, false, true, false, 256 * 1024);
+		testObjectCopy(42, prefix, true, false, true, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionSrcToEncryptionBucketAndObj() {
 		var prefix = "testCopyEncryptionSrcToEncryptionBucketAndObj";
-		testObjectCopy(prefix, true, false, true, true, 1024);
-		testObjectCopy(prefix, true, false, true, true, 256 * 1024);
-		testObjectCopy(prefix, true, false, true, true, 1024 * 1024);
+		testObjectCopy(43, prefix, true, false, true, true, 1024);
+		testObjectCopy(43, prefix, true, false, true, true, 256 * 1024);
+		testObjectCopy(43, prefix, true, false, true, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketNorObjToNorBucketAndObj() {
 		var prefix = "testCopyEncryptionBucketNorObjToNorBucketAndObj";
-		testObjectCopy(prefix, false, true, false, false, 1024);
-		testObjectCopy(prefix, false, true, false, false, 256 * 1024);
-		testObjectCopy(prefix, false, true, false, false, 1024 * 1024);
+		testObjectCopy(44, prefix, false, true, false, false, 1024);
+		testObjectCopy(44, prefix, false, true, false, false, 256 * 1024);
+		testObjectCopy(44, prefix, false, true, false, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketNorObjToNorBucketEncryptionObj() {
 		var prefix = "testCopyEncryptionBucketNorObjToNorBucketEncryptionObj";
-		testObjectCopy(prefix, false, true, false, true, 1024);
-		testObjectCopy(prefix, false, true, false, true, 256 * 1024);
-		testObjectCopy(prefix, false, true, false, true, 1024 * 1024);
+		testObjectCopy(45, prefix, false, true, false, true, 1024);
+		testObjectCopy(45, prefix, false, true, false, true, 256 * 1024);
+		testObjectCopy(45, prefix, false, true, false, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketNorObjToEncryptionBucketNorObj() {
 		var prefix = "testCopyEncryptionBucketNorObjToEncryptionBucketNorObj";
-		testObjectCopy(prefix, false, true, true, false, 1024);
-		testObjectCopy(prefix, false, true, true, false, 256 * 1024);
-		testObjectCopy(prefix, false, true, true, false, 1024 * 1024);
+		testObjectCopy(46, prefix, false, true, true, false, 1024);
+		testObjectCopy(46, prefix, false, true, true, false, 256 * 1024);
+		testObjectCopy(46, prefix, false, true, true, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketNorObjToEncryptionBucketAndObj() {
 		var prefix = "testCopyEncryptionBucketNorObjToEncryptionBucketAndObj";
-		testObjectCopy(prefix, false, true, true, true, 1024);
-		testObjectCopy(prefix, false, true, true, true, 256 * 1024);
-		testObjectCopy(prefix, false, true, true, true, 1024 * 1024);
+		testObjectCopy(47, prefix, false, true, true, true, 1024);
+		testObjectCopy(47, prefix, false, true, true, true, 256 * 1024);
+		testObjectCopy(47, prefix, false, true, true, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketAndObjToNorBucketAndObj() {
 		var prefix = "testCopyEncryptionBucketAndObjToNorBucketAndObj";
-		testObjectCopy(prefix, true, true, false, false, 1024);
-		testObjectCopy(prefix, true, true, false, false, 256 * 1024);
-		testObjectCopy(prefix, true, true, false, false, 1024 * 1024);
+		testObjectCopy(48, prefix, true, true, false, false, 1024);
+		testObjectCopy(48, prefix, true, true, false, false, 256 * 1024);
+		testObjectCopy(48, prefix, true, true, false, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketAndObjToNorBucketEncryptionObj() {
 		var prefix = "testCopyEncryptionBucketAndObjToNorBucketEncryptionObj";
-		testObjectCopy(prefix, true, true, false, true, 1024);
-		testObjectCopy(prefix, true, true, false, true, 256 * 1024);
-		testObjectCopy(prefix, true, true, false, true, 1024 * 1024);
+		testObjectCopy(49, prefix, true, true, false, true, 1024);
+		testObjectCopy(49, prefix, true, true, false, true, 256 * 1024);
+		testObjectCopy(49, prefix, true, true, false, true, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketAndObjToEncryptionBucketNorObj() {
 		var prefix = "testCopyEncryptionBucketAndObjToEncryptionBucketNorObj";
-		testObjectCopy(prefix, true, true, true, false, 1024);
-		testObjectCopy(prefix, true, true, true, false, 256 * 1024);
-		testObjectCopy(prefix, true, true, true, false, 1024 * 1024);
+		testObjectCopy(50, prefix, true, true, true, false, 1024);
+		testObjectCopy(50, prefix, true, true, true, false, 256 * 1024);
+		testObjectCopy(50, prefix, true, true, true, false, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("encryption")
 	public void testCopyEncryptionBucketAndObjToEncryptionBucketAndObj() {
 		var prefix = "testCopyEncryptionBucketAndObjToEncryptionBucketAndObj";
-		testObjectCopy(prefix, true, true, true, true, 1024);
-		testObjectCopy(prefix, true, true, true, true, 256 * 1024);
-		testObjectCopy(prefix, true, true, true, true, 1024 * 1024);
+		testObjectCopy(51, prefix, true, true, true, true, 1024);
+		testObjectCopy(51, prefix, true, true, true, true, 256 * 1024);
+		testObjectCopy(51, prefix, true, true, true, true, 1024 * 1024);
 	}
 
 	@Test
@@ -1034,17 +1034,17 @@ public class CopyObject extends TestBase {
 		var size2 = 256 * 1024;
 		var size3 = 1024 * 1024;
 
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, size1);
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, size2);
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, size3);
+		testObjectCopy(52, prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, size1);
+		testObjectCopy(52, prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, size2);
+		testObjectCopy(52, prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, size3);
 
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size1);
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size2);
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size3);
+		testObjectCopy(52, prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size1);
+		testObjectCopy(52, prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size2);
+		testObjectCopy(52, prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, size3);
 
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size1);
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size2);
-		testObjectCopy(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size3);
+		testObjectCopy(52, prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size1);
+		testObjectCopy(52, prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size2);
+		testObjectCopy(52, prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, size3);
 	}
 
 	@Test
@@ -1055,17 +1055,17 @@ public class CopyObject extends TestBase {
 		var size2 = 256 * 1024;
 		var size3 = 1024 * 1024;
 
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, size3);
+		testObjectCopy(53, prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, size1);
+		testObjectCopy(53, prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, size2);
+		testObjectCopy(53, prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, size3);
 
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size3);
+		testObjectCopy(53, prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size1);
+		testObjectCopy(53, prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size2);
+		testObjectCopy(53, prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, size3);
 
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size3);
+		testObjectCopy(53, prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size1);
+		testObjectCopy(53, prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size2);
+		testObjectCopy(53, prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, size3);
 	}
 
 	@Test
@@ -1076,24 +1076,24 @@ public class CopyObject extends TestBase {
 		var size2 = 256 * 1024;
 		var size3 = 1024 * 1024;
 
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size3);
+		testObjectCopy(54, prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size1);
+		testObjectCopy(54, prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size2);
+		testObjectCopy(54, prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, size3);
 
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size3);
+		testObjectCopy(54, prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size1);
+		testObjectCopy(54, prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size2);
+		testObjectCopy(54, prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, size3);
 
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size1);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size2);
-		testObjectCopy(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size3);
+		testObjectCopy(54, prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size1);
+		testObjectCopy(54, prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size2);
+		testObjectCopy(54, prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, size3);
 	}
 
 	@Test
 	@Tag("ERROR")
 	public void testCopyToDeletedObject() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 55);
 		var source = "testCopyToDeletedObjectSource";
 		var target = "testCopyToDeletedObjectTarget";
 
@@ -1111,7 +1111,7 @@ public class CopyObject extends TestBase {
 	@Tag("ERROR")
 	public void testCopyToDeleteMarkerObject() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 56);
 		var source = "testCopyToDeleteMarkerObjectSource";
 		var target = "testCopyToDeleteMarkerObjectTarget";
 
@@ -1131,7 +1131,7 @@ public class CopyObject extends TestBase {
 	@Tag("Overwrite")
 	public void testObjectVersioningCopyToItselfWithMetadata() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 57);
 		var source = "testObjectVersioningCopyToItselfWithMetadataSource";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
@@ -1158,7 +1158,7 @@ public class CopyObject extends TestBase {
 	@Tag("Overwrite")
 	public void testObjectCopyToItselfWithMetadataOverwrite() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 58);
 		var source = "testObjectCopyToItselfWithMetadataOverwriteSource";
 		var metadata = new HashMap<String, String>();
 		metadata.put("foo", "bar");
@@ -1180,7 +1180,7 @@ public class CopyObject extends TestBase {
 	@Tag("Overwrite")
 	public void testObjectVersioningCopyToItselfWithMetadataOverwrite() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 59);
 		var source = "testObjectVersioningCopyToItselfWithMetadataOverwriteSource";
 		var metadata = new HashMap<String, String>();
 		metadata.put("foo", "bar");
@@ -1208,7 +1208,7 @@ public class CopyObject extends TestBase {
 	@Tag("ERROR")
 	public void testCopyRevokeSseAlgorithm() {
 		var client = getClientHttps(true);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 60);
 		unblockSseC(bucketName);
 		var sourceKey = "testCopyRevokeSseAlgorithmSource";
 		var targetKey = "testCopyRevokeSseAlgorithmTarget";
@@ -1235,7 +1235,7 @@ public class CopyObject extends TestBase {
 				ResponseChecksumValidation responseOption) {
 		}
 
-		var bucketName = createBucket();
+		var bucketName = createBucket(61);
 
 		var configs = List.of(
 				new TestConfig(RequestChecksumCalculation.WHEN_REQUIRED,
@@ -1293,7 +1293,7 @@ public class CopyObject extends TestBase {
 	@Tag("metadata")
 	public void testCopyObjectMetadataAndTags() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 62);
 		var sourceKey = "testCopyObjectMetadataAndTagsSource";
 		var targetKey = "testCopyObjectMetadataAndTagsTarget";
 

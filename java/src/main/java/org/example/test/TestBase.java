@@ -284,8 +284,12 @@ public class TestBase {
 		return new ByteArrayInputStream(body.getBytes());
 	}
 
-	public String getNewBucketName() {
-		var bucketName = Utils.getNewBucketName(getPrefix());
+	public String getSuiteId() {
+		return Utils.toSuiteId(getClass().getSimpleName());
+	}
+
+	public String getNewBucketName(int testId) {
+		var bucketName = Utils.getNewBucketName(getPrefix(), getSuiteId(), testId);
 		buckets.add(bucketName);
 		return bucketName;
 	}
@@ -294,26 +298,30 @@ public class TestBase {
 		return "v1-" + config.bucketPrefix;
 	}
 
-	public String getNewBucketNameOnly() {
-		return Utils.getNewBucketName(getPrefix());
+	public String getNewBucketNameOnly(int testId) {
+		return Utils.getNewBucketName(getPrefix(), getSuiteId(), testId);
 	}
 
-	public String getNewBucketNameOnly(int length) {
-		var bucketName = Utils.getNewBucketName(getPrefix());
+	/** 버킷명 길이 검증 테스트용 — suite/testId 없이 prefix+랜덤으로 정확 길이를 맞춘다. */
+	public String getBucketNameOfLength(int length) {
+		var prefix = getPrefix();
+		String bucketName;
+		if (prefix.length() >= length)
+			bucketName = prefix.substring(0, length);
+		else
+			bucketName = prefix + Utils.randomText(length - prefix.length());
 		if (bucketName.length() > length)
 			bucketName = bucketName.substring(0, length);
-		else if (bucketName.length() < length)
-			bucketName = bucketName + Utils.randomText(length - bucketName.length());
 		return bucketName;
 	}
 
-	public String createBucket() {
+	public String createBucket(int testId) {
 		var client = getClient();
-		return createBucket(client);
+		return createBucket(client, testId);
 	}
 
-	public String createBucket(AmazonS3 client) {
-		var bucketName = getNewBucketName();
+	public String createBucket(AmazonS3 client, int testId) {
+		var bucketName = getNewBucketName(testId);
 		client.createBucket(bucketName);
 		if (config.isOldSystem()) {
 			var oldClient = getOldClient();
@@ -322,14 +330,14 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createBucket(AmazonS3 client, ObjectOwnership ownership) {
-		var bucketName = getNewBucketName();
+	public String createBucket(AmazonS3 client, int testId, ObjectOwnership ownership) {
+		var bucketName = getNewBucketName(testId);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectOwnership(ownership));
 		return bucketName;
 	}
 
-	public String createBucket(AmazonS3 client, ObjectOwnership ownership, CannedAccessControlList acl) {
-		var bucketName = createBucket(client, ownership);
+	public String createBucket(AmazonS3 client, int testId, ObjectOwnership ownership, CannedAccessControlList acl) {
+		var bucketName = createBucket(client, testId, ownership);
 		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
 				.withPublicAccessBlockConfiguration(new PublicAccessBlockConfiguration().withBlockPublicAcls(false)
 						.withIgnorePublicAcls(false).withBlockPublicPolicy(false).withRestrictPublicBuckets(false)));
@@ -338,8 +346,12 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String createBucketCannedAcl(AmazonS3 client) {
-		return createBucket(client, ObjectOwnership.ObjectWriter, null);
+	public String createBucketCannedAcl(AmazonS3 client, int testId) {
+		return createBucket(client, testId, ObjectOwnership.ObjectWriter, null);
+	}
+
+	public String createBucketCannedAcl(AmazonS3 client, int testId, CannedAccessControlList acl) {
+		return createBucket(client, testId, ObjectOwnership.ObjectWriter, acl);
 	}
 
 	public static void createObjects(AmazonS3 client, String bucketName, List<String> keys) {
@@ -351,20 +363,20 @@ public class TestBase {
 		}
 	}
 
-	public String createObjects(AmazonS3 client, String... keys) {
-		var bucketName = createBucket(client);
+	public String createObjects(AmazonS3 client, int testId, String... keys) {
+		var bucketName = createBucket(client, testId);
 		createObjects(client, bucketName, List.of(keys));
 		return bucketName;
 	}
 
-	public String createObjects(AmazonS3 client, List<String> keys) {
-		var bucketName = createBucket(client);
+	public String createObjects(AmazonS3 client, int testId, List<String> keys) {
+		var bucketName = createBucket(client, testId);
 		createObjects(client, bucketName, keys);
 		return bucketName;
 	}
 
-	public String createObjects(List<String> keys) {
-		return createObjects(getClient(), keys);
+	public String createObjects(int testId, List<String> keys) {
+		return createObjects(getClient(), testId, keys);
 	}
 
 	public static AccessControlList createAcl(Owner owner, Grantee grantee, Permission... permissions) {
@@ -388,8 +400,8 @@ public class TestBase {
 		return createAcl(config.mainUser.toOwner(), config.altUser.toGrantee(), permissions);
 	}
 
-	public String createKeyWithRandomContent(AmazonS3 client, String key, int size) {
-		var bucketName = createBucket(client);
+	public String createKeyWithRandomContent(AmazonS3 client, int testId, String key, int size) {
+		var bucketName = createBucket(client, testId);
 		if (client == null)
 			client = getClient();
 		if (size < 1)
@@ -489,21 +501,21 @@ public class TestBase {
 		return tagSets;
 	}
 
-	public String setupAclBucket(ObjectOwnership ownership, CannedAccessControlList acl, List<String> keys) {
+	public String setupAclBucket(int testId, ObjectOwnership ownership, CannedAccessControlList acl, List<String> keys) {
 		var client = getClient();
-		var bucketName = createBucket(client, ownership, acl);
+		var bucketName = createBucket(client, testId, ownership, acl);
 		createObjects(client, bucketName, keys);
 		return bucketName;
 	}
 
-	public String setupAclBucket(CannedAccessControlList acl, List<String> keys) {
-		return setupAclBucket(ObjectOwnership.ObjectWriter, acl, keys);
+	public String setupAclBucket(int testId, CannedAccessControlList acl, List<String> keys) {
+		return setupAclBucket(testId, ObjectOwnership.ObjectWriter, acl, keys);
 	}
 
-	public String setupAclObjects(ObjectOwnership ownership, CannedAccessControlList bucketAcl,
+	public String setupAclObjects(int testId, ObjectOwnership ownership, CannedAccessControlList bucketAcl,
 			CannedAccessControlList objectAcl, String... keys) {
 		var client = getClient();
-		var bucketName = createBucket(client, ownership, bucketAcl);
+		var bucketName = createBucket(client, testId, ownership, bucketAcl);
 		for (var key : keys)
 			client.putObject(
 					new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
@@ -512,15 +524,15 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String setupAclObjects(CannedAccessControlList bucketAcl, CannedAccessControlList objectAcl,
+	public String setupAclObjects(int testId, CannedAccessControlList bucketAcl, CannedAccessControlList objectAcl,
 			String... keys) {
-		return setupAclObjects(ObjectOwnership.ObjectWriter, bucketAcl, objectAcl, keys);
+		return setupAclObjects(testId, ObjectOwnership.ObjectWriter, bucketAcl, objectAcl, keys);
 	}
 
-	public String setupAclObjectsByAlt(ObjectOwnership ownership, CannedAccessControlList bucketAcl,
+	public String setupAclObjectsByAlt(int testId, ObjectOwnership ownership, CannedAccessControlList bucketAcl,
 			CannedAccessControlList objectAcl, String... keys) {
 		var altClient = getAltClient();
-		var bucketName = createBucket(getClient(), ownership, bucketAcl);
+		var bucketName = createBucket(getClient(), testId, ownership, bucketAcl);
 		for (var key : keys)
 			altClient.putObject(
 					new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
@@ -529,9 +541,9 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String setupAclObjectsByAlt(CannedAccessControlList bucketAcl, CannedAccessControlList objectAcl,
+	public String setupAclObjectsByAlt(int testId, CannedAccessControlList bucketAcl, CannedAccessControlList objectAcl,
 			String... keys) {
-		return setupAclObjectsByAlt(ObjectOwnership.ObjectWriter, bucketAcl, objectAcl, keys);
+		return setupAclObjectsByAlt(testId, ObjectOwnership.ObjectWriter, bucketAcl, objectAcl, keys);
 	}
 
 	public BucketLifecycleConfiguration setupLifecycleExpiration(AmazonS3 client, String bucketName, String ruleId,
@@ -551,9 +563,9 @@ public class TestBase {
 		return client.getBucketLifecycleConfiguration(bucketName);
 	}
 
-	public String setupMetadata(String meta, String bucketName) {
+	public String setupMetadata(int testId, String meta, String bucketName) {
 		if (StringUtils.isBlank(bucketName))
-			bucketName = createBucket();
+			bucketName = createBucket(testId);
 
 		var client = getClient();
 		var key = "foo";
@@ -569,9 +581,9 @@ public class TestBase {
 		return response.getUserMetaDataOf(metadataKey);
 	}
 
-	public String setupBucketPermission(Permission permission) {
+	public String setupBucketPermission(int testId, Permission permission) {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, testId);
 
 		var acl = createAltAcl(permission);
 		client.setBucketAcl(bucketName, acl);
@@ -579,9 +591,10 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public String setupObjectPermission(String key, Permission permission) {
+	public String setupObjectPermission(int testId, String key, Permission permission) {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, CannedAccessControlList.PublicReadWrite);
+		var bucketName = createBucket(client, testId, ObjectOwnership.ObjectWriter,
+				CannedAccessControlList.PublicReadWrite);
 
 		client.putObject(bucketName, key, key);
 
@@ -909,13 +922,13 @@ public class TestBase {
 	}
 
 	public void testBucketCreateNamingGoodLong(int length) {
-		var bucketName = getNewBucketNameOnly(length);
+		var bucketName = getBucketNameOfLength(length);
 		buckets.add(bucketName);
 		getClient().createBucket(bucketName);
 	}
 
 	public void testBucketCreateNamingBadLong(int length) {
-		var bucketName = getNewBucketNameOnly(length);
+		var bucketName = getBucketNameOfLength(length);
 		checkBadBucketName(bucketName);
 	}
 
@@ -1386,9 +1399,9 @@ public class TestBase {
 		}
 	}
 
-	public AmazonServiceException setGetMetadataUnreadable(String metadata, String bucket) {
+	public AmazonServiceException setGetMetadataUnreadable(int testId, String metadata, String bucket) {
 		if (StringUtils.isBlank(bucket))
-			bucket = createBucket();
+			bucket = createBucket(testId);
 		var bucketName = bucket;
 		var client = getClient();
 		var key = "foo";
@@ -1404,9 +1417,9 @@ public class TestBase {
 		return statusCode.equals(HttpStatus.SC_BAD_REQUEST) || statusCode.equals(HttpStatus.SC_FORBIDDEN);
 	}
 
-	public void testEncryptionCSEWrite(String key, int fileSize) {
+	public void testEncryptionCSEWrite(int testId, String key, int fileSize) {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, testId);
 		var aesKey = Utils.randomTextToLong(32);
 		var data = Utils.randomTextToLong(fileSize);
 
@@ -1429,9 +1442,9 @@ public class TestBase {
 		}
 	}
 
-	public void testEncryptionSseS3CustomerWrite(int fileSize) {
+	public void testEncryptionSseS3CustomerWrite(int testId, int fileSize) {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, testId);
 		var key = "test_obj";
 		var data = Utils.randomTextToLong(fileSize);
 
@@ -1448,9 +1461,9 @@ public class TestBase {
 		assertEquals(SSEAlgorithm.AES256.toString(), response.getObjectMetadata().getSSEAlgorithm());
 	}
 
-	public void testEncryptionSseS3Copy(int fileSize) {
+	public void testEncryptionSseS3Copy(int testId, int fileSize) {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, testId);
 		var data = Utils.randomTextToLong(fileSize);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -1481,14 +1494,14 @@ public class TestBase {
 		assertTrue(sourceBody.equals(targetBody), MainData.NOT_MATCHED);
 	}
 
-	public void testObjectCopy(String prefix, boolean sourceObjectEncryption, boolean sourceBucketEncryption,
+	public void testObjectCopy(int testId, String prefix, boolean sourceObjectEncryption, boolean sourceBucketEncryption,
 			boolean targetBucketEncryption, boolean targetObjectEncryption, int fileSize) {
 		var sourceKey = prefix + "Source";
 		var targetKey = prefix + "Target";
 		var data = Utils.randomTextToLong(fileSize);
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, testId);
+		var targetBucketName = createBucket(client, testId);
 
 		// SSE-S3 Config
 		var metadata = new ObjectMetadata();
@@ -1552,11 +1565,11 @@ public class TestBase {
 		assertTrue(sourceBody.equals(targetBody), MainData.NOT_MATCHED);
 	}
 
-	public void testObjectCopy(String prefix, EncryptionType source, EncryptionType target, int fileSize) {
+	public void testObjectCopy(int testId, String prefix, EncryptionType source, EncryptionType target, int fileSize) {
 		var sourceKey = prefix + "Source";
 		var targetKey = prefix + "Target";
 		var client = getClientHttps();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, testId);
 		var data = Utils.randomTextToLong(fileSize);
 
 		var metadata = new ObjectMetadata();
@@ -1686,9 +1699,9 @@ public class TestBase {
 		}
 	}
 
-	public void checkBucketAcl(Permission permission) {
+	public void checkBucketAcl(int testId, Permission permission) {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, testId);
 
 		var acl = createAltAcl(permission);
 		client.setBucketAcl(bucketName, acl);
@@ -1697,9 +1710,9 @@ public class TestBase {
 		checkAcl(acl, response);
 	}
 
-	public void checkObjectAcl(Permission permission) {
+	public void checkObjectAcl(int testId, Permission permission) {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, testId);
 		var key = "testObjectPermission" + permission;
 
 		client.putObject(bucketName, key, key);

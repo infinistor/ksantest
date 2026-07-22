@@ -39,7 +39,7 @@ public class Logging extends TestBase {
 	@Tag("Put/Get")
 	public void testLoggingGet() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var response = client.getBucketLogging(g -> g.bucket(bucketName));
 		assertNull(response.loggingEnabled());
@@ -49,8 +49,8 @@ public class Logging extends TestBase {
 	@Tag("Put/Get")
 	public void testLoggingSet() {
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 2);
+		var targetBucketName = createBucket(client, 2);
 
 		client.putBucketLogging(p -> p.bucket(sourceBucketName)
 				.bucketLoggingStatus(c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(""))));
@@ -60,8 +60,8 @@ public class Logging extends TestBase {
 	@Tag("Put/Get")
 	public void testLoggingSetGet() {
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 3);
+		var targetBucketName = createBucket(client, 3);
 
 		client.putBucketLogging(p -> p.bucket(sourceBucketName)
 				.bucketLoggingStatus(c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(""))));
@@ -76,8 +76,8 @@ public class Logging extends TestBase {
 	public void testLoggingPrefix() {
 		var prefix = "logs/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 4);
+		var targetBucketName = createBucket(client, 4);
 
 		client.putBucketLogging(p -> p.bucket(sourceBucketName).bucketLoggingStatus(
 				c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(prefix))));
@@ -92,8 +92,8 @@ public class Logging extends TestBase {
 	public void testLoggingVersioning() {
 		var prefix = "logs/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 5);
+		var targetBucketName = createBucket(client, 5);
 
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
 
@@ -110,8 +110,8 @@ public class Logging extends TestBase {
 	public void testLoggingEncryption() {
 		var prefix = "logs/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 6);
+		var targetBucketName = createBucket(client, 6);
 
 		client.putBucketEncryption(p -> p.bucket(sourceBucketName)
 				.serverSideEncryptionConfiguration(s -> s.rules(ServerSideEncryptionRule.builder()
@@ -129,8 +129,8 @@ public class Logging extends TestBase {
 	@Test
 	@Tag("Error")
 	public void testLoggingBucketNotFound() {
-		var sourceBucketName = getNewBucketNameOnly();
-		var targetBucketName = getNewBucketNameOnly();
+		var sourceBucketName = getNewBucketNameOnly(7);
+		var targetBucketName = getNewBucketNameOnly(7);
 		var prefix = "logs/";
 		var client = getClient();
 
@@ -146,8 +146,8 @@ public class Logging extends TestBase {
 	public void testLoggingTargetBucketNotFound() {
 		var prefix = "logs/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = getNewBucketNameOnly();
+		var sourceBucketName = createBucket(client, 8);
+		var targetBucketName = getNewBucketNameOnly(8);
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putBucketLogging(p -> p.bucket(sourceBucketName).bucketLoggingStatus(
 			c -> c.loggingEnabled(l -> l.targetBucket(targetBucketName).targetPrefix(prefix)))));

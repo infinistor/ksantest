@@ -1,5 +1,7 @@
 package org.example.Utility;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -9,12 +11,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Random;
 import java.util.Base64.Encoder;
 import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 
@@ -136,9 +136,59 @@ public class Utils {
 		return formatter.format(secondsBefore);
 	}
 
-	public static String getNewBucketName(String prefix) {
-		String bucketName = prefix + Utils.randomText(BUCKET_MAX_LENGTH);
-		return bucketName.substring(0, BUCKET_MAX_LENGTH - 1);
+	/**
+	 * 버킷명 길이/형식 검증용. suite/testId 없이 prefix+랜덤만 사용한다.
+	 */
+	public static String randomBucketName(String prefix) {
+		if (prefix == null)
+			prefix = "";
+		final int maxLen = BUCKET_MAX_LENGTH - 1;
+		String bucketName = prefix + randomText(BUCKET_MAX_LENGTH);
+		return bucketName.substring(0, Math.min(maxLen, bucketName.length()));
+	}
+
+	/**
+	 * 추적 가능한 버킷명: {@code {prefix}{suite}-{testId}-{random}}
+	 * <p>
+	 * 예: {@code v2-java-putobject-3-k3m9x2ab...}<br>
+	 * {@code testId}는 테스트 코드에 명시한 번호이며, 추가/순서 변경에도 기존 번호는 유지한다.
+	 */
+	public static String getNewBucketName(String prefix, String suite, int testId) {
+		if (prefix == null)
+			prefix = "";
+		if (suite == null || suite.isEmpty())
+			suite = "x";
+		suite = suite.toLowerCase().replaceAll("[^a-z0-9]", "");
+		if (suite.isEmpty())
+			suite = "x";
+
+		final int maxLen = BUCKET_MAX_LENGTH - 1;
+		final int minRandom = 6;
+		String idxPart = Integer.toString(testId);
+
+		int reserved = prefix.length() + 1 + idxPart.length() + 1 + minRandom;
+		int suiteMax = maxLen - reserved;
+		if (suiteMax < 1)
+			return randomBucketName(prefix);
+		if (suite.length() > suiteMax)
+			suite = suite.substring(0, suiteMax);
+
+		String head = prefix + suite + "-" + idxPart + "-";
+		int randomLen = maxLen - head.length();
+		String bucketName = head + randomText(Math.max(randomLen, 0));
+		if (bucketName.length() > maxLen)
+			bucketName = bucketName.substring(0, maxLen);
+		return bucketName;
+	}
+
+	/** 클래스 FQCN 또는 simple name → 버킷용 suite 약어. */
+	public static String toSuiteId(String className) {
+		if (className == null || className.isEmpty())
+			return "x";
+		int dot = className.lastIndexOf('.');
+		String simple = (dot >= 0 ? className.substring(dot + 1) : className).toLowerCase()
+				.replaceAll("[^a-z0-9]", "");
+		return simple.isEmpty() ? "x" : simple;
 	}
 
 	public static String makeArnResource(String path) {

@@ -56,7 +56,7 @@ public class Post extends TestBase {
 		var contentType = "text/plain";
 
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client, BucketCannedACL.PUBLIC_READ_WRITE);
+		var bucketName = createBucketCannedAcl(client, 1, BucketCannedACL.PUBLIC_READ_WRITE);
 
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
@@ -79,7 +79,7 @@ public class Post extends TestBase {
 		var contentType = "text/plain";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -164,7 +164,7 @@ public class Post extends TestBase {
 		var contentType = "text/plain";
 
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client, BucketCannedACL.PUBLIC_READ_WRITE);
+		var bucketName = createBucketCannedAcl(client, 3, BucketCannedACL.PUBLIC_READ_WRITE);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -221,7 +221,7 @@ public class Post extends TestBase {
 		var contentType = "text/plain";
 
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client, BucketCannedACL.PUBLIC_READ_WRITE);
+		var bucketName = createBucketCannedAcl(client, 4, BucketCannedACL.PUBLIC_READ_WRITE);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -281,7 +281,7 @@ public class Post extends TestBase {
 		var contentType = "text/plain";
 
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client, BucketCannedACL.PUBLIC_READ_WRITE);
+		var bucketName = createBucketCannedAcl(client, 5, BucketCannedACL.PUBLIC_READ_WRITE);
 
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
@@ -305,7 +305,7 @@ public class Post extends TestBase {
 		var contentType = "text/plain";
 
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client, BucketCannedACL.PUBLIC_READ_WRITE);
+		var bucketName = createBucketCannedAcl(client, 6, BucketCannedACL.PUBLIC_READ_WRITE);
 
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
@@ -332,7 +332,7 @@ public class Post extends TestBase {
 		var data = Utils.randomTextToLong(size);
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -397,7 +397,7 @@ public class Post extends TestBase {
 		var key = "foo.txt";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 8);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -458,7 +458,7 @@ public class Post extends TestBase {
 	@Tag("Upload")
 	public void testPostObjectIgnoredHeader() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(9);
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -518,7 +518,7 @@ public class Post extends TestBase {
 	@Tag("Upload")
 	public void testPostObjectCaseInsensitiveConditionFields() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(10);
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -581,7 +581,7 @@ public class Post extends TestBase {
 		var contentType = "text/plain";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -646,7 +646,7 @@ public class Post extends TestBase {
 		var contentType = "text/plain";
 
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client, BucketCannedACL.PUBLIC_READ_WRITE);
+		var bucketName = createBucketCannedAcl(client, 12, BucketCannedACL.PUBLIC_READ_WRITE);
 
 		var redirectURL = createURL(bucketName);
 
@@ -716,7 +716,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectInvalidSignature() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(13);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -775,7 +775,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectInvalidAccessKey() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(14);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -835,7 +835,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectInvalidDateFormat() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(15);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -895,7 +895,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectNoKeySpecified() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(16);
 
 		var contentType = "text/plain";
 
@@ -947,7 +947,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectMissingSignature() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(17);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1005,7 +1005,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectMissingPolicyCondition() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(18);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1065,7 +1065,7 @@ public class Post extends TestBase {
 		var contentType = "text/plain";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 19);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
@@ -1132,7 +1132,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectRequestMissingPolicySpecifiedField() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(20);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1198,7 +1198,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectConditionIsCaseSensitive() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(21);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1258,7 +1258,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectExpiresIsCaseSensitive() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(22);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1318,7 +1318,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectExpiredPolicy() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(23);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1378,7 +1378,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectInvalidRequestFieldValue() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(24);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1444,7 +1444,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectMissingExpiresCondition() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(25);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1501,7 +1501,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectMissingConditionsList() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(26);
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -1529,7 +1529,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectUploadSizeLimitExceeded() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(27);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1589,7 +1589,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectMissingContentLengthArgument() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(28);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1648,7 +1648,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectInvalidContentLengthArgument() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(29);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1708,7 +1708,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectUploadSizeBelowMinimum() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(30);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1768,7 +1768,7 @@ public class Post extends TestBase {
 	@Tag("ERROR")
 	public void testPostObjectEmptyConditions() throws MalformedURLException {
 		assumeFalse(config.isAWS());
-		var bucketName = createBucket();
+		var bucketName = createBucket(31);
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -1798,7 +1798,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("PresignedURL")
 	public void testPresignedUrlPutGet() {
-		var bucketName = createBucket();
+		var bucketName = createBucket(32);
 		var client = getS3Presigner();
 		var key = "foo";
 
@@ -1817,7 +1817,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("signV4")
 	public void testPutObjectV4() throws MalformedURLException {
-		var bucketName = createBucket();
+		var bucketName = createBucket(33);
 		var key = "foo";
 		var endPoint = createURL(bucketName, key);
 		var size = 100;
@@ -1844,7 +1844,7 @@ public class Post extends TestBase {
 	@Test
 	@Tag("signV4")
 	public void testPutObjectChunkedV4() throws MalformedURLException {
-		var bucketName = createBucket();
+		var bucketName = createBucket(34);
 		var key = "foo";
 		var endPoint = createURL(bucketName, key);
 		var size = 100;
@@ -1876,7 +1876,7 @@ public class Post extends TestBase {
 		var httpMethod = "GET";
 		var size = 100;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 35);
 		var endPoint = createURL(bucketName, key);
 		var content = Utils.randomTextToLong(size);
 
@@ -1900,8 +1900,8 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectWrongBucket() throws MalformedURLException {
-		var bucketName = getNewBucketName();
-		var badBucketName = getNewBucketName();
+		var bucketName = getNewBucketName(36);
+		var badBucketName = getNewBucketName(36);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";

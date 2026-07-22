@@ -49,7 +49,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Check")
 	public void testBucketListVersionsMany() {
 		var client = getClient();
-		var bucketName = createObjects(client, "foo", "bar", "baz");
+		var bucketName = createObjects(client, 1, "foo", "bar", "baz");
 
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withMaxResults(2));
 		assertLinesMatch(List.of("bar", "baz"), getKeys2(response.getVersionSummaries()));
@@ -68,7 +68,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	public void testBucketListVersionsDelimiterBasic() {
 		var client = getClient();
-		var bucketName = createObjects(client, "foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf");
+		var bucketName = createObjects(client, 2, "foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf");
 
 		String delimiter = "/";
 
@@ -87,7 +87,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Encoding")
 	public void testBucketListVersionsEncodingBasic() {
 		var client = getClient();
-		var bucketName = createObjects(client, "foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b");
+		var bucketName = createObjects(client, 3, "foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b");
 
 		String delimiter = "/";
 
@@ -105,7 +105,7 @@ public class ListObjectsVersions extends TestBase {
 	@Test
 	@Tag("Filtering")
 	public void testBucketListVersionsDelimiterPrefix() {
-		var bucketName = createObjects(List.of("asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla"));
+		var bucketName = createObjects(4, List.of("asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla"));
 
 		String delimiter = "/";
 		String marker = "";
@@ -135,7 +135,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Filtering")
 	public void testBucketListVersionsDelimiterPrefixEndsWithDelimiter() {
 		var client = getClient();
-		var bucketName = createObjects(client, "asdf/");
+		var bucketName = createObjects(client, 5, "asdf/");
 
 		validateListObject(bucketName, "asdf/", "/", "", 1000, false,
 				List.of("asdf/"), new ArrayList<>(), null);
@@ -146,7 +146,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	public void testBucketListVersionsDelimiterAlt() {
 		var client = getClient();
-		var bucketName = createObjects(client, "bar", "baz", "cab", "foo");
+		var bucketName = createObjects(client, 6, "bar", "baz", "cab", "foo");
 
 		String delimiter = "a";
 
@@ -168,7 +168,7 @@ public class ListObjectsVersions extends TestBase {
 	@Test
 	@Tag("Filtering")
 	public void testBucketListVersionsDelimiterPrefixUnderscore() {
-		var bucketName = createObjects(List.of("Obj1_", "Under1/bar", "Under1/baz/xyzzy", "Under2/thud", "Under2/bla"));
+		var bucketName = createObjects(7, List.of("Obj1_", "Under1/bar", "Under1/baz/xyzzy", "Under2/thud", "Under2/bla"));
 
 		String delimiter = "/";
 		String marker = "";
@@ -201,7 +201,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	public void testBucketListVersionsDelimiterPercentage() {
 		var client = getClient();
-		var bucketName = createObjects(client, "b%ar", "b%az", "c%ab", "foo");
+		var bucketName = createObjects(client, 8, "b%ar", "b%az", "c%ab", "foo");
 
 		String delimiter = "%";
 
@@ -224,7 +224,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	public void testBucketListVersionsDelimiterWhitespace() {
 		var client = getClient();
-		var bucketName = createObjects(client, "b ar", "b az", "c ab", "foo");
+		var bucketName = createObjects(client, 9, "b ar", "b az", "c ab", "foo");
 
 		String delimiter = " ";
 
@@ -247,7 +247,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Delimiter")
 	public void testBucketListVersionsDelimiterDot() {
 		var client = getClient();
-		var bucketName = createObjects(client, "b.ar", "b.az", "c.ab", "foo");
+		var bucketName = createObjects(client, 10, "b.ar", "b.az", "c.ab", "foo");
 
 		String delimiter = ".";
 
@@ -271,7 +271,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsDelimiterUnreadable() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 11, keyNames);
 
 		String delimiter = "\n";
 
@@ -292,7 +292,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsDelimiterEmpty() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 12, keyNames);
 
 		String delimiter = "";
 
@@ -313,7 +313,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsDelimiterNone() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 13, keyNames);
 
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
 
@@ -331,7 +331,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsDelimiterNotExist() {
 		var keyNames = List.of("bar", "baz", "cab", "foo");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 14, keyNames);
 
 		String delimiter = "/";
 
@@ -356,7 +356,7 @@ public class ListObjectsVersions extends TestBase {
 		var keyNames2 = List.of("1999", "1999#", "1999+", "2000");
 		keyNames.addAll(keyNames2);
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 15, keyNames);
 
 		String delimiter = "/";
 
@@ -377,7 +377,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("prefix")
 	public void testBucketListVersionsPrefixBasic() {
 		var client = getClient();
-		var bucketName = createObjects(client, "foo/bar", "foo/baz", "quux");
+		var bucketName = createObjects(client, 16, "foo/bar", "foo/baz", "quux");
 
 		String prefix = "foo/";
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -395,7 +395,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("prefix")
 	public void testBucketListVersionsPrefixAlt() {
 		var client = getClient();
-		var bucketName = createObjects(client, "bar", "baz", "foo");
+		var bucketName = createObjects(client, 17, "bar", "baz", "foo");
 
 		String prefix = "ba";
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -414,7 +414,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixEmpty() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 18, keyNames);
 
 		String prefix = "";
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -432,7 +432,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixNone() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 19, keyNames);
 
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
 
@@ -449,7 +449,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixNotExist() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 20, keyNames);
 
 		String prefix = "d";
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -467,7 +467,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixUnreadable() {
 		var keyNames = List.of("foo/bar", "foo/baz", "quux");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 21, keyNames);
 
 		String prefix = "\n";
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withPrefix(prefix));
@@ -485,7 +485,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixDelimiterBasic() {
 		var keyNames = List.of("foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 22, keyNames);
 
 		String prefix = "foo/";
 		String delimiter = "/";
@@ -508,7 +508,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsPrefixDelimiterAlt() {
 		var keyNames = List.of("bar", "bazar", "cab", "foo");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 23, keyNames);
 
 		String delimiter = "a";
 		String prefix = "ba";
@@ -531,7 +531,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	public void testBucketListVersionsPrefixDelimiterPrefixNotExist() {
 		var client = getClient();
-		var bucketName = createObjects(client, "b/a/r", "b/a/c", "b/a/g", "g");
+		var bucketName = createObjects(client, 24, "b/a/r", "b/a/c", "b/a/g", "g");
 
 		var response = client
 				.listVersions(new ListVersionsRequest().withBucketName(bucketName).withDelimiter("d").withPrefix("/"));
@@ -547,7 +547,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	public void testBucketListVersionsPrefixDelimiterDelimiterNotExist() {
 		var client = getClient();
-		var bucketName = createObjects(client, "b/a/c", "b/a/g", "b/a/r", "g");
+		var bucketName = createObjects(client, 25, "b/a/c", "b/a/g", "b/a/r", "g");
 
 		var response = client
 				.listVersions(new ListVersionsRequest().withBucketName(bucketName).withDelimiter("z").withPrefix("b"));
@@ -564,7 +564,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("PrefixAndDelimiter")
 	public void testBucketListVersionsPrefixDelimiterPrefixDelimiterNotExist() {
 		var client = getClient();
-		var bucketName = createObjects(client, "b/a/r", "b/a/c", "b/a/g", "g");
+		var bucketName = createObjects(client, 26, "b/a/r", "b/a/c", "b/a/g", "g");
 
 		var response = client
 				.listVersions(new ListVersionsRequest().withBucketName(bucketName).withDelimiter("z").withPrefix("y"));
@@ -581,7 +581,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMaxKeysOne() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 27, keyNames);
 
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withMaxResults(1));
 
@@ -603,7 +603,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMaxKeysZero() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 28, keyNames);
 
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withMaxResults(0));
 
@@ -617,7 +617,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMaxKeysNone() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 29, keyNames);
 
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
 
@@ -632,7 +632,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerNone() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 30, keyNames);
 
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withKeyMarker(""));
 
@@ -644,7 +644,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerEmpty() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 31, keyNames);
 
 		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withKeyMarker(""));
 
@@ -659,7 +659,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerUnreadable() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 32, keyNames);
 
 		var marker = "\n";
 
@@ -676,7 +676,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerNotInList() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 33, keyNames);
 
 		var marker = "blah";
 
@@ -693,7 +693,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsMarkerAfterList() {
 		var keyNames = List.of("bar", "baz", "foo", "quxx");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 34, keyNames);
 
 		var marker = "zzz";
 
@@ -710,7 +710,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testBucketListVersionsReturnData() {
 		var keys = List.of("bar", "baz", "foo");
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 35);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		createObjects(client, bucketName, keys);
 
@@ -747,7 +747,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("ACL")
 	public void testBucketListVersionsObjectsAnonymous() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 36);
 		client.setBucketAcl(new SetBucketAclRequest(bucketName, CannedAccessControlList.PublicRead));
 
 		var unauthenticatedClient = getPublicClient();
@@ -757,7 +757,7 @@ public class ListObjectsVersions extends TestBase {
 	@Test
 	@Tag("ACL")
 	public void testBucketListVersionsObjectsAnonymousFail() {
-		var bucketName = createBucket();
+		var bucketName = createBucket(37);
 		var unauthenticatedClient = getPublicClient();
 
 		var e = assertThrows(AmazonServiceException.class,
@@ -770,7 +770,7 @@ public class ListObjectsVersions extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testBucketListVersionsNotExist() {
-		var bucketName = getNewBucketNameOnly();
+		var bucketName = getNewBucketNameOnly(38);
 		var client = getClient();
 
 		var e = assertThrows(AmazonServiceException.class,
@@ -786,7 +786,7 @@ public class ListObjectsVersions extends TestBase {
 	public void testVersioningBucketListFilteringAll() {
 		var keyNames = List.of("test1/f1", "test2/f2", "test3", "test4/f3", "testF4");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 39, keyNames);
 
 		var marker = "test3";
 		var delimiter = "/";
@@ -817,7 +817,7 @@ public class ListObjectsVersions extends TestBase {
 	@Tag("Object")
 	public void testVersioningObjListMarker() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 40);
 		var keyName = "testVersioningObjListMarker";
 		var objects = new ArrayList<String>();
 

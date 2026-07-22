@@ -50,7 +50,7 @@ public class Taggings extends TestBase {
 	@Tag("Check")
 	public void testSetTagging() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var tagConfig = Tagging.builder()
 				.tagSet(t -> t.key("Hello").value("World").build())
@@ -77,7 +77,7 @@ public class Taggings extends TestBase {
 	public void testGetObjTagging() {
 		var key = "obj";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createKeyWithRandomContent(client, 2, key, 0);
 
 		var inputTagSet = Tagging.builder().tagSet(makeSimpleTagSet(2)).build();
 
@@ -92,7 +92,7 @@ public class Taggings extends TestBase {
 	public void testGetObjHeadTagging() {
 		var key = "obj";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createKeyWithRandomContent(client, 3, key, 0);
 		var count = 2;
 
 		var inputTagSet = Tagging.builder().tagSet(makeSimpleTagSet(count)).build();
@@ -108,7 +108,7 @@ public class Taggings extends TestBase {
 	public void testPutMaxTags() {
 		var key = "obj";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createKeyWithRandomContent(client, 4, key, 0);
 
 		var inputTagSet = Tagging.builder().tagSet(makeSimpleTagSet(10)).build();
 
@@ -123,7 +123,7 @@ public class Taggings extends TestBase {
 	public void testPutExcessTags() {
 		var key = "test put max tags";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createKeyWithRandomContent(client, 5, key, 0);
 
 		var inputTagSet = Tagging.builder().tagSet(makeSimpleTagSet(11)).build();
 
@@ -141,7 +141,7 @@ public class Taggings extends TestBase {
 	public void testPutMaxSizeTags() {
 		var key = "test put max key size";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createKeyWithRandomContent(client, 6, key, 0);
 
 		var inputTagSet = Tagging.builder().tagSet(makeDetailTagSet(10, 128, 256)).build();
 		client.putObjectTagging(p -> p.bucket(bucketName).key(key).tagging(inputTagSet));
@@ -155,7 +155,7 @@ public class Taggings extends TestBase {
 	public void testPutExcessKeyTags() {
 		var key = "test put excess key tags";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createKeyWithRandomContent(client, 7, key, 0);
 
 		var inputTagSet = Tagging.builder().tagSet(makeDetailTagSet(10, 129, 256)).build();
 
@@ -173,7 +173,7 @@ public class Taggings extends TestBase {
 	public void testPutExcessValTags() {
 		var key = "test put excess value tags";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createKeyWithRandomContent(client, 8, key, 0);
 
 		var inputTagSet = Tagging.builder().tagSet(makeDetailTagSet(10, 128, 259)).build();
 
@@ -191,7 +191,7 @@ public class Taggings extends TestBase {
 	public void testPutModifyTags() {
 		var key = "test put modify tags";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createKeyWithRandomContent(client, 9, key, 0);
 
 		var inputTagSet = Tagging.builder().tagSet(makeSimpleTagSet(2)).build();
 
@@ -213,7 +213,7 @@ public class Taggings extends TestBase {
 	public void testPutDeleteTags() {
 		var key = "test delete tags";
 		var client = getClient();
-		var bucketName = createKeyWithRandomContent(client, key, 0);
+		var bucketName = createKeyWithRandomContent(client, 10, key, 0);
 
 		var inputTagSet = Tagging.builder().tagSet(makeSimpleTagSet(2)).build();
 
@@ -232,7 +232,7 @@ public class Taggings extends TestBase {
 	@Tag("PutObject")
 	public void testPutObjWithTags() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 		var key = "test tag obj1";
 		var data = Utils.randomTextToLong(100);
 
@@ -258,7 +258,7 @@ public class Taggings extends TestBase {
 	public void testPostObjectTagsAuthenticatedRequest() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 		var contentType = "text/plain";
 		var key = "foo.txt";
 
@@ -336,7 +336,7 @@ public class Taggings extends TestBase {
 	public void testGetObjNonTagging() {
 		var key = "obj";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
 
 		client.putObject(p -> p.bucket(bucketName).key(key).tagging(Tagging.builder().build()),
 				RequestBody.fromString(""));

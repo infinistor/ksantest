@@ -35,7 +35,7 @@ public class DeleteBucket extends TestBase {
 	@Tag("ERROR")
 	public void testBucketDeleteNotExist() {
 		var client = getClient();
-		var bucketName = getNewBucketNameOnly();
+		var bucketName = getNewBucketNameOnly(1);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
@@ -47,7 +47,7 @@ public class DeleteBucket extends TestBase {
 	@Tag("ERROR")
 	public void testBucketDeleteNonempty() {
 		var client = getClient();
-		var bucketName = createObjects(client, "foo");
+		var bucketName = createObjects(client, 2, "foo");
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
 
@@ -59,7 +59,7 @@ public class DeleteBucket extends TestBase {
 	@Tag("ERROR")
 	public void testBucketCreateDelete() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 
 		client.deleteBucket(bucketName);
 

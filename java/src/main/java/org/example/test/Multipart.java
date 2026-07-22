@@ -50,7 +50,7 @@ public class Multipart extends TestBase {
 	@Tag("ERROR")
 	public void testMultipartUploadEmpty() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 		var key = "testMultipartUploadEmpty";
 		var size = 0;
 
@@ -67,7 +67,7 @@ public class Multipart extends TestBase {
 	@Tag("Check")
 	public void testMultipartUploadSmall() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		var key = "testMultipartUploadSmall";
 		var size = 1;
 
@@ -84,8 +84,8 @@ public class Multipart extends TestBase {
 	public void testMultipartCopySmall() {
 		var sourceKey = "foo";
 		var client = getClient();
-		var sourceBucketName = createKeyWithRandomContent(client, sourceKey, 0);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createKeyWithRandomContent(client, 3, sourceKey, 0);
+		var targetBucketName = createBucket(client, 3);
 		var targetKey = "testMultipartCopySmall";
 		var size = 10;
 
@@ -104,7 +104,7 @@ public class Multipart extends TestBase {
 	public void testMultipartCopyInvalidRange() {
 		var sourceKey = "source";
 		var client = getClient();
-		var sourceBucketName = createKeyWithRandomContent(client, sourceKey, 5);
+		var sourceBucketName = createKeyWithRandomContent(client, 4, sourceKey, 5);
 
 		var targetKey = "testMultipartCopyInvalidRange";
 		var response = client
@@ -127,8 +127,8 @@ public class Multipart extends TestBase {
 	public void testMultipartCopyWithoutRange() {
 		var sourceKey = "source";
 		var client = getClient();
-		var sourceBucketName = createKeyWithRandomContent(client, sourceKey, 10);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createKeyWithRandomContent(client, 5, sourceKey, 10);
+		var targetBucketName = createBucket(client, 5);
 		var targetKey = "testMultipartCopyWithoutRange";
 
 		var initResponse = client
@@ -155,8 +155,8 @@ public class Multipart extends TestBase {
 		var keyNames = List.of(" ", "_", "__", "?versionId");
 		var targetKey = "testMultipartCopySpecialNames";
 		var size = 10 * MainData.MB;
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 6);
+		var targetBucketName = createBucket(client, 6);
 
 		for (var sourceKey : keyNames) {
 			createKeyWithRandomContent(client, sourceKey, size, sourceBucketName);
@@ -182,7 +182,7 @@ public class Multipart extends TestBase {
 		metadata.addUserMetadata("x-amz-meta-foo", "bar");
 		metadata.setContentType(contentType);
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 		client.completeMultipartUpload(
@@ -210,8 +210,8 @@ public class Multipart extends TestBase {
 	@Tag("Copy")
 	public void testMultipartCopyVersioned() {
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 8);
+		var targetBucketName = createBucket(client, 8);
 
 		var targetKey = "testMultipartCopyVersioned";
 		checkVersioning(sourceBucketName, BucketVersioningConfiguration.OFF);
@@ -244,7 +244,7 @@ public class Multipart extends TestBase {
 	@Test
 	@Tag("Duplicate")
 	public void testMultipartUploadResendPart() {
-		var bucketName = createBucket();
+		var bucketName = createBucket(9);
 		var key = "testMultipartUploadResendPart";
 		var size = 50 * MainData.MB;
 
@@ -260,7 +260,7 @@ public class Multipart extends TestBase {
 	@Tag("Put")
 	public void testMultipartUploadMultipleSizes() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 		var key = "testMultipartUploadMultipleSizes";
 
 		var size = 5 * MainData.MB;
@@ -301,8 +301,8 @@ public class Multipart extends TestBase {
 		var sourceKey = "source";
 		var targetKey = "testMultipartCopyMultipleSizes";
 		var client = getClient();
-		var sourceBucketName = createKeyWithRandomContent(client, sourceKey, 12 * MainData.MB);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createKeyWithRandomContent(client, 11, sourceKey, 12 * MainData.MB);
+		var targetBucketName = createBucket(client, 11);
 
 		var size = 5 * MainData.MB;
 		var uploadData = multipartCopy(client, sourceBucketName, sourceKey, targetBucketName, targetKey, size,
@@ -353,7 +353,7 @@ public class Multipart extends TestBase {
 	@Tag("ERROR")
 	public void testMultipartUploadSizeTooSmall() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 		var key = "testMultipartUploadSizeTooSmall";
 
 		var size = 1 * MainData.MB;
@@ -369,7 +369,7 @@ public class Multipart extends TestBase {
 	@Test
 	@Tag("Check")
 	public void testMultipartUploadContents() {
-		var bucketName = createBucket();
+		var bucketName = createBucket(13);
 		doTestMultipartUploadContents(bucketName, "testMultipartUploadContents", 3);
 	}
 
@@ -377,7 +377,7 @@ public class Multipart extends TestBase {
 	@Tag("OverWrite")
 	public void testMultipartUploadOverwriteExistingObject() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 		var key = "testMultipartUploadOverwriteExistingObject";
 		var content = Utils.randomTextToLong(5 * MainData.MB);
 		var partCount = 2;
@@ -412,7 +412,7 @@ public class Multipart extends TestBase {
 		var key = "testAbortMultipartUpload";
 		var size = 10 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size);
 		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
@@ -430,7 +430,7 @@ public class Multipart extends TestBase {
 	public void testAbortMultipartUploadNotFound() {
 		var key = "testAbortMultipartUploadNotFound";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
 
 		client.putObject(bucketName, key, "");
 
@@ -447,7 +447,7 @@ public class Multipart extends TestBase {
 		var key = "testListMultipartUpload";
 		var key2 = "testListMultipartUpload2";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 17);
 
 		var uploadData1 = setupMultipartUpload(client, bucketName, key, 5 * MainData.MB);
 		var uploadData2 = setupMultipartUpload(client, bucketName, key, 6 * MainData.MB);
@@ -478,7 +478,7 @@ public class Multipart extends TestBase {
 		var key = "testMultipartUploadMissingPart";
 		var body = "test";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 18);
 
 		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
 		var uploadId = initResponse.getUploadId();
@@ -503,7 +503,7 @@ public class Multipart extends TestBase {
 	public void testMultipartUploadIncorrectEtag() {
 		var key = "testMultipartUploadIncorrectEtag";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 19);
 
 		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
 		var uploadId = initResponse.getUploadId();
@@ -528,7 +528,7 @@ public class Multipart extends TestBase {
 	public void testAtomicMultipartUploadWrite() {
 		var key = "testAtomicMultipartUploadWrite";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 20);
 
 		client.putObject(bucketName, key, "bar");
 
@@ -558,7 +558,7 @@ public class Multipart extends TestBase {
 		metadata.setContentType(contentType);
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 21);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 
@@ -574,7 +574,7 @@ public class Multipart extends TestBase {
 		var key = "testAbortMultipartUploadList";
 		var size = 10 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 22);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size);
 		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadData.uploadId));
@@ -590,7 +590,7 @@ public class Multipart extends TestBase {
 		var sourceKey = "testMultipartCopyMany";
 		var size = 10 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 23);
 		var body = new StringBuilder();
 
 		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size);
@@ -626,7 +626,7 @@ public class Multipart extends TestBase {
 		var key = "testMultipartListParts";
 		var size = 50 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 24);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size, 1 * MainData.MB);
 
@@ -654,7 +654,7 @@ public class Multipart extends TestBase {
 	@Tag("Cancel")
 	public void testMultipartUploadAbortDuringUpload() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 25);
 		var key = "testMultipartUploadAbortDuringUpload";
 		var partBody = Utils.randomTextToLong(5 * MainData.MB);
 

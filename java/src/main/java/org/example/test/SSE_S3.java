@@ -50,32 +50,32 @@ public class SSE_S3 extends TestBase {
 	@Test
 	@Tag("PutGet")
 	public void testSseS3EncryptedTransfer1b() {
-		testEncryptionSseS3CustomerWrite(1);
+		testEncryptionSseS3CustomerWrite(1, 1);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testSseS3EncryptedTransfer1kb() {
-		testEncryptionSseS3CustomerWrite(1024);
+		testEncryptionSseS3CustomerWrite(2, 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testSseS3EncryptedTransfer1MB() {
-		testEncryptionSseS3CustomerWrite(1024 * 1024);
+		testEncryptionSseS3CustomerWrite(3, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testSseS3EncryptedTransfer13b() {
-		testEncryptionSseS3CustomerWrite(13);
+		testEncryptionSseS3CustomerWrite(4, 13);
 	}
 
 	@Test
 	@Tag("Metadata")
 	public void testSseS3EncryptionMethodHead() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 		var key = "obj";
 		var data = Utils.randomTextToLong(1000);
 		var metadata = new ObjectMetadata();
@@ -94,7 +94,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("Multipart")
 	public void testSseS3EncryptionMultipartUpload() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 		var key = "multipartEnc";
 		var size = 50 * MainData.MB;
 		var contentType = "text/plain";
@@ -140,7 +140,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("encryption")
 	public void testGetBucketEncryption() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 
 		if (config.isAWS()) {
 			// 2023년 1월부터 AWS는 모든 버킷에 SSE-S3 기본 암호화를 적용하므로 기본 설정이 반환됨
@@ -160,7 +160,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("encryption")
 	public void testPutBucketEncryption() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 8);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
 				.withRules(new ServerSideEncryptionRule()
@@ -176,7 +176,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("encryption")
 	public void testDeleteBucketEncryption() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
 				.withRules(new ServerSideEncryptionRule()
@@ -210,7 +210,7 @@ public class SSE_S3 extends TestBase {
 	public void testPutBucketEncryptionAndObjectSetCheck() {
 		var keys = List.of("for/bar", "test/");
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
 				.withRules(new ServerSideEncryptionRule()
@@ -235,26 +235,26 @@ public class SSE_S3 extends TestBase {
 	@Test
 	@Tag("CopyObject")
 	public void testCopyObjectEncryption1kb() {
-		testEncryptionSseS3Copy(1024);
+		testEncryptionSseS3Copy(11, 1024);
 	}
 
 	@Test
 	@Tag("CopyObject")
 	public void testCopyObjectEncryption256kb() {
-		testEncryptionSseS3Copy(256 * 1024);
+		testEncryptionSseS3Copy(12, 256 * 1024);
 	}
 
 	@Test
 	@Tag("CopyObject")
 	public void testCopyObjectEncryption1mb() {
-		testEncryptionSseS3Copy(1024 * 1024);
+		testEncryptionSseS3Copy(13, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testSseS3BucketPutGet() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -282,7 +282,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("PutGet")
 	public void testSseS3BucketPutGetV4() {
 		var client = getClientV4(true, true);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -310,7 +310,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("PutGet")
 	public void testSseS3BucketPutGetUseChunkEncoding() {
 		var client = getClientHttpsV4(true, false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -338,7 +338,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("PutGet")
 	public void testSseS3BucketPutGetUseChunkEncodingAndDisablePayloadSigning() {
 		var client = getClientHttpsV4(true, true);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 17);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -366,7 +366,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("PutGet")
 	public void testSseS3BucketPutGetNotChunkEncoding() {
 		var client = getClientHttpsV4(false, false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 18);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -394,7 +394,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("PutGet")
 	public void testSseS3BucketPutGetNotChunkEncodingAndDisablePayloadSigning() {
 		var client = getClientHttpsV4(false, true);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 19);
 		var data = Utils.randomTextToLong(1000);
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -422,7 +422,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("PresignedURL")
 	public void testSseS3BucketPresignedUrlPutGet() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 20);
 		var key = "foo";
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -451,7 +451,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("PresignedURL")
 	public void testSseS3BucketPresignedUrlPutGetV4() {
 		var client = getClientV4(true, true);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 21);
 		var key = "foo";
 
 		var sseS3Config = new ServerSideEncryptionConfiguration()
@@ -479,7 +479,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("Get")
 	public void testSseS3GetObjectMany() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 22);
 		var key = "foo";
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
@@ -500,7 +500,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("Get")
 	public void testSseS3RangeObjectMany() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 23);
 		var key = "foo";
 		var size = 15 * 1024 * 1024;
 		var data = Utils.randomTextToLong(size);
@@ -522,7 +522,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("Multipart")
 	public void testSseS3EncryptionMultipartCopyPartUpload() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 24);
 		var sourceKey = "multipartEnc";
 		var size = 50 * MainData.MB;
 		var contentType = "text/plain";
@@ -560,7 +560,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("Multipart")
 	public void testSseS3EncryptionMultipartCopyMany() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 25);
 		var sourceKey = "multipartEnc";
 		var size = 10 * MainData.MB;
 		var contentType = "text/plain";
@@ -599,7 +599,7 @@ public class SSE_S3 extends TestBase {
 	@Tag("Retroactive")
 	public void testSseS3NotRetroactive() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 26);
 		var data = Utils.randomTextToLong(1000);
 
 		var putKey = "put";

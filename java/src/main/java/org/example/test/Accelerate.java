@@ -41,7 +41,7 @@ public class Accelerate extends TestBase {
 	@Tag("Put")
 	public void testPutBucketAccelerate() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
 				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Enabled)));
@@ -51,7 +51,7 @@ public class Accelerate extends TestBase {
 	@Tag("Get")
 	public void testGetBucketAccelerate() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
 				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Enabled)));
@@ -64,7 +64,7 @@ public class Accelerate extends TestBase {
 	@Tag("Change")
 	public void testChangeBucketAccelerate() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 
 		client.setBucketAccelerateConfiguration(new SetBucketAccelerateConfigurationRequest(bucketName, null)
 				.withAccelerateConfiguration(new BucketAccelerateConfiguration(BucketAccelerateStatus.Enabled)));
@@ -83,7 +83,7 @@ public class Accelerate extends TestBase {
 	@Tag("Error")
 	public void testPutBucketAccelerateInvalid() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client

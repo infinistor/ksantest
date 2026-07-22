@@ -67,7 +67,7 @@ public class Lock extends TestBase {
 	@Tag("Put")
 	public void testCreatedBucketEnableObjectLock() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
 				new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED)));
@@ -81,7 +81,7 @@ public class Lock extends TestBase {
 	@Tag("Check")
 	public void testObjectLockPutObjLock() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(2);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
@@ -98,7 +98,7 @@ public class Lock extends TestBase {
 	@Tag("ERROR")
 	public void testObjectLockPutObjLockInvalidBucket() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(3);
 		client.createBucket(bucketName);
 
 		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
@@ -115,7 +115,7 @@ public class Lock extends TestBase {
 	@Tag("ERROR")
 	public void testObjectLockPutObjLockWithDaysAndYears() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(4);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
@@ -131,7 +131,7 @@ public class Lock extends TestBase {
 	@Tag("ERROR")
 	public void testObjectLockPutObjLockInvalidDays() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(5);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
@@ -148,7 +148,7 @@ public class Lock extends TestBase {
 	@Tag("ERROR")
 	public void testObjectLockPutObjLockInvalidYears() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(6);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
@@ -165,7 +165,7 @@ public class Lock extends TestBase {
 	@Tag("ERROR")
 	public void testObjectLockPutObjLockInvalidMode() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(7);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED).withRule(
@@ -181,7 +181,7 @@ public class Lock extends TestBase {
 	@Tag("ERROR")
 	public void testObjectLockPutObjLockInvalidStatus() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(8);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var conf = new ObjectLockConfiguration().withObjectLockEnabled("Disabled")
@@ -198,7 +198,7 @@ public class Lock extends TestBase {
 	@Tag("Version")
 	public void testObjectLockSuspendVersioning() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(9);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var e = assertThrows(AmazonServiceException.class,
@@ -212,7 +212,7 @@ public class Lock extends TestBase {
 	@Tag("Check")
 	public void testObjectLockGetObjLock() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(10);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var conf = new ObjectLockConfiguration().withObjectLockEnabled(ObjectLockEnabled.ENABLED)
@@ -231,7 +231,7 @@ public class Lock extends TestBase {
 	@Tag("Check")
 	public void testObjectLockPutObject() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(11);
 		var key = "testObjectLockPutObject";
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
@@ -267,8 +267,8 @@ public class Lock extends TestBase {
 	@Tag("Check")
 	public void testObjectLockCopyObject() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
-		var bucketName2 = getNewBucketName();
+		var bucketName = getNewBucketName(12);
+		var bucketName2 = getNewBucketName(12);
 		var key = "testObjectLockCopyObject-lock";
 		var keyCopy = key + "-copy";
 		var key2 = "testObjectLockCopyObject";
@@ -336,7 +336,7 @@ public class Lock extends TestBase {
 	public void testObjectLockMultipart() {
 
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(13);
 		var key = "testObjectLockMultipart";
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
@@ -370,7 +370,7 @@ public class Lock extends TestBase {
 	@Tag("ERROR")
 	public void testObjectLockMD5() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(14);
 		var key = "testObjectLockMD5";
 		var content = Utils.randomTextToLong(1 * MainData.MB);
 
@@ -403,7 +403,7 @@ public class Lock extends TestBase {
 	@Tag("ERROR")
 	public void testObjectLockGetObjLockInvalidBucket() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(15);
 		client.createBucket(bucketName);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client
@@ -417,7 +417,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutObjRetention() {
 		var key = "testObjectLockPutObjRetention";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(16);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -439,7 +439,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutObjRetentionInvalidBucket() {
 		var key = "testObjectLockPutObjRetentionInvalidBucket";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 17);
 
 		client.putObject(bucketName, key, key);
 
@@ -458,7 +458,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutObjRetentionInvalidMode() {
 		var key = "testObjectLockPutObjRetentionInvalidMode";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(18);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -478,7 +478,7 @@ public class Lock extends TestBase {
 	public void testObjectLockGetObjRetention() {
 		var key = "testObjectLockGetObjRetention";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(19);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -502,7 +502,7 @@ public class Lock extends TestBase {
 	public void testObjectLockGetObjRetentionInvalidBucket() {
 		var key = "testObjectLockGetObjRetentionInvalidBucket";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 20);
 
 		client.putObject(bucketName, key, key);
 
@@ -517,7 +517,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutObjRetentionVersionid() {
 		var key = "testObjectLockPutObjRetentionVersionid";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(21);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -542,7 +542,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutObjRetentionOverrideDefaultRetention() {
 		var key = "testObjectLockPutObjRetentionOverrideDefaultRetention";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(22);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -584,7 +584,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutObjRetentionIncreasePeriod() {
 		var key = "testObjectLockPutObjRetentionIncreasePeriod";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(23);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -615,7 +615,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutObjRetentionShortenPeriod() {
 		var key = "testObjectLockPutObjRetentionShortenPeriod";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(24);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -646,7 +646,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutObjRetentionShortenPeriodBypass() {
 		var key = "testObjectLockPutObjRetentionShortenPeriodBypass";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(25);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -677,7 +677,7 @@ public class Lock extends TestBase {
 	public void testObjectLockDeleteObjectWithRetention() {
 		var key = "testObjectLockDeleteObjectWithRetention";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(26);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -702,7 +702,7 @@ public class Lock extends TestBase {
 	public void testObjectLockDeleteObjectWithRetentionBypass() {
 		var key = "testObjectLockDeleteObjectWithRetentionBypass";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(27);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -721,7 +721,7 @@ public class Lock extends TestBase {
 	@Tag("Retention")
 	public void testObjectLockDeleteObjectsWithRetentionBypass() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(28);
 		var keyVersions = new ArrayList<KeyVersion>();
 
 		var retention = new ObjectLockRetention().withMode(ObjectLockRetentionMode.GOVERNANCE)
@@ -750,7 +750,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutLegalHold() {
 		var key = "testObjectLockPutLegalHold";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(29);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -771,7 +771,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutLegalHoldInvalidBucket() {
 		var key = "testObjectLockPutLegalHoldInvalidBucket";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 30);
 
 		client.putObject(bucketName, key, key);
 
@@ -787,7 +787,7 @@ public class Lock extends TestBase {
 	public void testObjectLockPutLegalHoldInvalidStatus() {
 		var key = "testObjectLockPutLegalHoldInvalidStatus";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(31);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -805,7 +805,7 @@ public class Lock extends TestBase {
 	public void testObjectLockGetLegalHold() {
 		var key = "testObjectLockGetLegalHold";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(32);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -832,7 +832,7 @@ public class Lock extends TestBase {
 	public void testObjectLockGetLegalHoldInvalidBucket() {
 		var key = "testObjectLockGetLegalHoldInvalidBucket";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 33);
 
 		client.putObject(bucketName, key, key);
 
@@ -846,7 +846,7 @@ public class Lock extends TestBase {
 	@Tag("LegalHold")
 	public void testObjectLockDeleteObjectWithLegalHoldOn() {
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(34);
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
 		var key = "testObjectLockDeleteObjectWithLegalHoldOn";
@@ -872,7 +872,7 @@ public class Lock extends TestBase {
 	public void testObjectLockDeleteObjectWithLegalHoldOff() {
 		var key = "testObjectLockDeleteObjectWithLegalHoldOff";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(35);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -890,7 +890,7 @@ public class Lock extends TestBase {
 	public void testObjectLockGetObjMetadata() {
 		var key = "testObjectLockGetObjMetadata";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(36);
 
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 

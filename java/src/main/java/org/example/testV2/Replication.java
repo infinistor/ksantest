@@ -41,8 +41,8 @@ public class Replication extends TestBase {
 	public void testReplicationSet() {
 		var prefix = "test/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 1);
+		var targetBucketName = createBucket(client, 1);
 
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
 		checkConfigureVersioningRetry(targetBucketName, BucketVersioningStatus.ENABLED);
@@ -72,8 +72,8 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	public void testReplicationInvalidSourceBucketName() {
 		var client = getClient();
-		var sourceBucketName = getNewBucketNameOnly();
-		var targetBucketName = getNewBucketNameOnly();
+		var sourceBucketName = getNewBucketNameOnly(2);
+		var targetBucketName = getNewBucketNameOnly(2);
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
@@ -92,8 +92,8 @@ public class Replication extends TestBase {
 	@Tag("ERROR")
 	public void testReplicationInvalidSourceBucketVersioning() {
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 3);
+		var targetBucketName = createBucket(client, 3);
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
@@ -114,8 +114,8 @@ public class Replication extends TestBase {
 	public void testReplicationInvalidTargetBucketName() {
 		var prefix = "test/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = getNewBucketNameOnly();
+		var sourceBucketName = createBucket(client, 4);
+		var targetBucketName = getNewBucketNameOnly(4);
 
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
 
@@ -140,8 +140,8 @@ public class Replication extends TestBase {
 	public void testReplicationInvalidTargetBucketVersioning() {
 		var prefix = "test/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 5);
+		var targetBucketName = createBucket(client, 5);
 
 		checkConfigureVersioningRetry(
 				sourceBucketName,
@@ -168,8 +168,8 @@ public class Replication extends TestBase {
 	public void testReplicationBucketVersioningSuspend() {
 		var prefix = "test/";
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 6);
+		var targetBucketName = createBucket(client, 6);
 
 		// 원본, 대상 버킷 버저닝 설정
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);

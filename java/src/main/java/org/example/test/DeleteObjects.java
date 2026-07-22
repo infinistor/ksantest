@@ -41,7 +41,7 @@ public class DeleteObjects extends TestBase {
 	public void testMultiObjectDelete() {
 		var keyNames = List.of("testMultiObjectDelete0", "testMultiObjectDelete1", "testMultiObjectDelete2");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 1, keyNames);
 
 		var listResponse = client.listObjects(bucketName);
 		assertEquals(keyNames.size(), listResponse.getObjectSummaries().size());
@@ -66,7 +66,7 @@ public class DeleteObjects extends TestBase {
 	public void testMultiObjectV2Delete() {
 		var keyNames = List.of("testMultiObjectV2Delete0", "testMultiObjectV2Delete1", "testMultiObjectV2Delete2");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 2, keyNames);
 
 		var listResponse = client.listObjectsV2(bucketName);
 		assertEquals(keyNames.size(), listResponse.getObjectSummaries().size());
@@ -90,7 +90,7 @@ public class DeleteObjects extends TestBase {
 	@Tag("Versioning")
 	public void testMultiObjectDeleteVersions() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 		var keyNames = List.of("testMultiObjectDeleteVersions0", "testMultiObjectDeleteVersions1",
 				"testMultiObjectDeleteVersions2");
 
@@ -122,7 +122,7 @@ public class DeleteObjects extends TestBase {
 		var keyNames = List.of("testMultiObjectDeleteQuiet0", "testMultiObjectDeleteQuiet1",
 				"testMultiObjectDeleteQuiet2");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 4, keyNames);
 
 		var listResponse = client.listObjects(bucketName);
 		assertEquals(keyNames.size(), listResponse.getObjectSummaries().size());
@@ -143,7 +143,7 @@ public class DeleteObjects extends TestBase {
 		var keyNames = List.of("a/b/", "a/b/c/d/testDirectoryDelete1", "a/b/c/d/testDirectoryDelete2", "1/2/",
 				"1/2/3/4/testDirectoryDelete1", "q/w/e/r/testDirectoryDelete");
 		var client = getClient();
-		var bucketName = createObjects(client, keyNames);
+		var bucketName = createObjects(client, 5, keyNames);
 
 		var listResponse = client.listObjects(bucketName);
 		assertEquals(keyNames.size(), listResponse.getObjectSummaries().size());
@@ -169,7 +169,7 @@ public class DeleteObjects extends TestBase {
 		var keyNames = List.of("a/", "a/testDirectoryDeleteVersions1", "a/testDirectoryDeleteVersions2", "b/",
 				"b/testDirectoryDeleteVersions1");
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		for (var Key : keyNames)
@@ -203,7 +203,7 @@ public class DeleteObjects extends TestBase {
 	@Tag("DeleteObjects")
 	public void testDeleteObjects() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 		var keyCount = 100;
 		var keyNames = new ArrayList<String>();
 
@@ -239,7 +239,7 @@ public class DeleteObjects extends TestBase {
 	@Tag("versioning")
 	public void testDeleteObjectsWithVersioning() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 8);
 		var prefix = "testDeleteObjectsWithVersioning";
 		var keyNames = List.of(
 				prefix + "-0",
@@ -319,7 +319,7 @@ public class DeleteObjects extends TestBase {
 	@Tag("versioning")
 	public void testDeleteObjectsWithVersioningDeleteMarker() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 		var key = "testDeleteObjectsWithVersioningDeleteMarker";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
@@ -339,7 +339,7 @@ public class DeleteObjects extends TestBase {
 	@Tag("versioning")
 	public void testVersioningMultiObjectDeleteWithMarker() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 		var keyNames = List.of(
 				"testVersioningMultiObjectDeleteWithMarker-0",
 				"testVersioningMultiObjectDeleteWithMarker-1",
@@ -365,7 +365,7 @@ public class DeleteObjects extends TestBase {
 	@Tag("versioning")
 	public void testVersioningMultiObjectDeleteWithMarkerCreate() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 		var key = "testVersioningMultiObjectDeleteWithMarkerCreate";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
@@ -385,7 +385,7 @@ public class DeleteObjects extends TestBase {
 	@Tag("versioning")
 	public void testVersioningMultiObjectDeleteWithMarkerCreateObjects() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 		var key = "testVersioningMultiObjectDeleteWithMarkerCreateObjects";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);

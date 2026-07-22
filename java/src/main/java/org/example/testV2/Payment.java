@@ -32,7 +32,7 @@ public class Payment extends TestBase {
 	@Tag("Put")
 	public void testPutBucketRequestPayment() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		client.putBucketRequestPayment(
 				p -> p.bucket(bucketName).requestPaymentConfiguration(r -> r.payer(Payer.REQUESTER)));
@@ -42,7 +42,7 @@ public class Payment extends TestBase {
 	@Tag("Get")
 	public void testGetBucketRequestPayment() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 
 		var result = client.getBucketRequestPayment(p -> p.bucket(bucketName));
 		assertEquals(Payer.BUCKET_OWNER, result.payer());
@@ -52,7 +52,7 @@ public class Payment extends TestBase {
 	@Tag("Get")
 	public void testSetGetBucketRequestPayment() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 
 		client.putBucketRequestPayment(p -> p.bucket(bucketName).requestPaymentConfiguration(r -> r.payer(Payer.REQUESTER)));
 		var result = client.getBucketRequestPayment(p -> p.bucket(bucketName));

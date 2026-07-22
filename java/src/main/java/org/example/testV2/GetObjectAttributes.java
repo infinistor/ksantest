@@ -56,7 +56,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("Basic")
 	public void testGetObjectAttributesBasic() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 		var key = "testGetObjectAttributesBasic";
 
 		// 객체 생성
@@ -84,7 +84,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("SpecificAttributes")
 	public void testGetObjectAttributesSpecificAttributes() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		var key = "testGetObjectAttributesSpecificAttributes";
 
 		// 객체 생성
@@ -120,7 +120,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("Multipart")
 	public void testGetObjectAttributesMultipart() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 		var key = "testGetObjectAttributesMultipart";
 		var size = 10 * MainData.MB;
 
@@ -157,7 +157,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("Checksum")
 	public void testGetObjectAttributesWithChecksum() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 		var key = "testGetObjectAttributesWithChecksum";
 		var checksumAlgorithm = ChecksumAlgorithm.SHA256;
 
@@ -188,7 +188,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("ERROR")
 	public void testGetObjectAttributesNonExistentObject() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 		var key = "testGetObjectAttributesNonExistentObject";
 
 		// 존재하지 않는 객체에 대한 요청
@@ -230,7 +230,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("ERROR")
 	public void testGetObjectAttributesNoAttributes() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 		var key = "testGetObjectAttributesNoAttributes";
 
 		// 객체 생성
@@ -253,7 +253,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("Versioning")
 	public void testGetObjectAttributesWithVersionId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 8);
 		var key = "testGetObjectAttributesWithVersionId";
 
 		// 버킷에 버전 관리 활성화
@@ -301,7 +301,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("ERROR")
 	public void testGetObjectAttributesInvalidVersionId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 		var key = "testGetObjectAttributesInvalidVersionId";
 
 		// 객체 생성
@@ -326,7 +326,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("LargeMultipart")
 	public void testGetObjectAttributesLargeMultipart() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 		var key = "testGetObjectAttributesLargeMultipart";
 		var size = 100 * MainData.MB; // 100MB
 		var partSize = 5 * MainData.MB; // 5MB 파트 크기
@@ -380,7 +380,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("Metadata")
 	public void testGetObjectAttributesWithMetadata() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 		var key = "testGetObjectAttributesWithMetadata";
 
 		// 메타데이터 설정
@@ -419,7 +419,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("Encryption")
 	public void testGetObjectAttributesWithSSES3() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 		var key = "testGetObjectAttributesWithSSES3";
 
 		// SSE-S3 암호화와 함께 객체 생성
@@ -456,7 +456,7 @@ public class GetObjectAttributes extends TestBase {
 		var client = getClient();
 		var asyncClient = getAsyncClient(true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
 		var key = "testGetObjectAttributesAsync";
 
 		// 동기 클라이언트로 객체 생성
@@ -484,7 +484,7 @@ public class GetObjectAttributes extends TestBase {
 	public void testGetObjectAttributesAsyncError() {
 		var asyncClient = getAsyncClient(true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
-		var bucketName = getNewBucketNameOnly();
+		var bucketName = getNewBucketNameOnly(14);
 		var key = "testGetObjectAttributesAsyncError";
 
 		// 존재하지 않는 버킷에 대한 비동기 요청
@@ -508,7 +508,7 @@ public class GetObjectAttributes extends TestBase {
 	@Tag("AllAttributes")
 	public void testGetObjectAttributesAllAttributes() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 		var key = "testGetObjectAttributesAllAttributes";
 		var size = 10 * MainData.MB;
 		var checksumType = ChecksumType.FULL_OBJECT;

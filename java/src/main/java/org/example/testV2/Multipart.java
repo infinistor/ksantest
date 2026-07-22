@@ -55,7 +55,7 @@ public class Multipart extends TestBase {
 	@Tag("ERROR")
 	public void testMultipartUploadEmpty() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 		var key = "testMultipartUploadEmpty";
 		var size = 0;
 
@@ -74,7 +74,7 @@ public class Multipart extends TestBase {
 	@Tag("Check")
 	public void testMultipartUploadSmall() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		var key = "testMultipartUploadSmall";
 		var size = 1;
 
@@ -94,8 +94,8 @@ public class Multipart extends TestBase {
 		var size = 1;
 
 		var client = getClient();
-		var sourceBucketName = createKeyWithRandomContent(client, sourceKey, 0);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createKeyWithRandomContent(client, 3, sourceKey, 0);
+		var targetBucketName = createBucket(client, 3);
 
 		var uploadData = multipartCopy(sourceBucketName, sourceKey, targetBucketName, targetKey, size, client, 0, null);
 		client.completeMultipartUpload(c -> c.bucket(targetBucketName).key(targetKey).uploadId(uploadData.uploadId)
@@ -111,7 +111,7 @@ public class Multipart extends TestBase {
 	public void testMultipartCopyInvalidRange() {
 		var client = getClient();
 		var sourceKey = "source";
-		var bucketName = createKeyWithRandomContent(client, sourceKey, 5);
+		var bucketName = createKeyWithRandomContent(client, 4, sourceKey, 5);
 
 		var targetKey = "testMultipartCopyInvalidRange";
 		var response = client.createMultipartUpload(c -> c.bucket(bucketName).key(targetKey));
@@ -134,8 +134,8 @@ public class Multipart extends TestBase {
 	public void testMultipartCopyWithoutRange() {
 		var client = getClient();
 		var sourceKey = "source";
-		var sourceBucketName = createKeyWithRandomContent(client, sourceKey, 10);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createKeyWithRandomContent(client, 5, sourceKey, 10);
+		var targetBucketName = createBucket(client, 5);
 		var targetKey = "testMultipartCopyWithoutRange";
 
 		var initResponse = client
@@ -161,8 +161,8 @@ public class Multipart extends TestBase {
 		var targetKey = "testMultipartCopySpecialNames";
 		var size = 10 * MainData.MB;
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 6);
+		var targetBucketName = createBucket(client, 6);
 
 		for (var sourceKey : sourceKeys) {
 			createKeyWithRandomContent(client, sourceKey, size, sourceBucketName);
@@ -186,7 +186,7 @@ public class Multipart extends TestBase {
 		var metadata = new HashMap<String, String>();
 		metadata.put("foo", "bar");
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
@@ -216,8 +216,8 @@ public class Multipart extends TestBase {
 		var sourceKey = "foo";
 		var size = 15 * MainData.MB;
 		var client = getClient();
-		var sourceBucketName = createBucket(client);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createBucket(client, 8);
+		var targetBucketName = createBucket(client, 8);
 
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
 
@@ -249,7 +249,7 @@ public class Multipart extends TestBase {
 		var key = "testMultipartUploadResendPart";
 		var size = 50 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 
 		checkUploadMultipartResend(bucketName, key, size, List.of(0));
 		checkUploadMultipartResend(bucketName, key, size, List.of(1));
@@ -264,7 +264,7 @@ public class Multipart extends TestBase {
 	public void testMultipartUploadMultipleSizes() {
 		var key = "testMultipartUploadMultipleSizes";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 
 		var sizeList = List.of(5 * MainData.MB, 5 * MainData.MB + 100 * MainData.KB,
 				5 * MainData.MB + 600 * MainData.KB, 10 * MainData.MB, 10 * MainData.MB + 100 * MainData.KB,
@@ -284,8 +284,8 @@ public class Multipart extends TestBase {
 		var sourceKey = "source";
 		var targetKey = "testMultipartCopyMultipleSizes";
 		var client = getClient();
-		var sourceBucketName = createKeyWithRandomContent(client, sourceKey, 12 * MainData.MB);
-		var targetBucketName = createBucket(client);
+		var sourceBucketName = createKeyWithRandomContent(client, 11, sourceKey, 12 * MainData.MB);
+		var targetBucketName = createBucket(client, 11);
 
 		var sizeList = List.of(5 * MainData.MB, 5 * MainData.MB + 100 * MainData.KB,
 				5 * MainData.MB + 600 * MainData.KB, 10 * MainData.MB, 10 * MainData.MB + 100 * MainData.KB,
@@ -307,7 +307,7 @@ public class Multipart extends TestBase {
 	public void testMultipartUploadSizeTooSmall() {
 		var key = "testMultipartUploadSizeTooSmall";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 		var content = Utils.randomTextToLong(10 * MainData.KB);
 
 		var initResponse = client.createMultipartUpload(c -> c.bucket(bucketName).key(key));
@@ -334,7 +334,7 @@ public class Multipart extends TestBase {
 	@Test
 	@Tag("Check")
 	public void testMultipartUploadContents() {
-		var bucketName = createBucket();
+		var bucketName = createBucket(13);
 		doTestMultipartUploadContents(bucketName, "testMultipartUploadContents", 3);
 
 	}
@@ -345,7 +345,7 @@ public class Multipart extends TestBase {
 		var key = "testMultipartUploadOverwriteExistingObject";
 		var partCount = 2;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 		var content = Utils.randomTextToLong(5 * MainData.MB);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
@@ -378,7 +378,7 @@ public class Multipart extends TestBase {
 		var key = "testAbortMultipartUpload";
 		var size = 10 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size);
 		client.abortMultipartUpload(a -> a.bucket(bucketName).key(key).uploadId(uploadData.uploadId));
@@ -396,7 +396,7 @@ public class Multipart extends TestBase {
 	public void testAbortMultipartUploadNotFound() {
 		var key = "testAbortMultipartUploadNotFound";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.empty());
 
 		var e = assertThrows(AwsServiceException.class,
@@ -412,7 +412,7 @@ public class Multipart extends TestBase {
 		var key = "testListMultipartUpload";
 		var key2 = "testListMultipartUpload2";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 17);
 
 		var uploadData1 = setupMultipartUpload(client, bucketName, key, 5 * MainData.MB);
 		var uploadData2 = setupMultipartUpload(client, bucketName, key, 6 * MainData.MB);
@@ -442,7 +442,7 @@ public class Multipart extends TestBase {
 		var key = "testMultipartUploadMissingPart";
 		var body = "test";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 18);
 
 		var initResponse = client.createMultipartUpload(c -> c.bucket(bucketName).key(key));
 		var uploadId = initResponse.uploadId();
@@ -466,7 +466,7 @@ public class Multipart extends TestBase {
 	public void testMultipartUploadIncorrectEtag() {
 		var key = "testMultipartUploadIncorrectEtag";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 19);
 
 		var initResponse = client.createMultipartUpload(c -> c.bucket(bucketName).key(key));
 		var uploadId = initResponse.uploadId();
@@ -491,7 +491,7 @@ public class Multipart extends TestBase {
 	@Tag("Overwrite")
 	public void testAtomicMultipartUploadWrite() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 20);
 		var key = "testAtomicMultipartUploadWrite";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
@@ -516,7 +516,7 @@ public class Multipart extends TestBase {
 		var key = "testMultipartUploadList";
 		var size = 50 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 21);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size);
 
@@ -533,7 +533,7 @@ public class Multipart extends TestBase {
 		var key = "testAbortMultipartUploadList";
 		var size = 10 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 22);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size);
 		client.abortMultipartUpload(a -> a.bucket(bucketName).key(key).uploadId(uploadData.uploadId));
@@ -549,7 +549,7 @@ public class Multipart extends TestBase {
 		var sourceKey = "testMultipartCopyMany";
 		var size = 10 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 23);
 		var body = new StringBuilder();
 
 		var uploadData = setupMultipartUpload(client, bucketName, sourceKey, size);
@@ -583,7 +583,7 @@ public class Multipart extends TestBase {
 		var key = "testMultipartListParts";
 		var size = 50 * MainData.MB;
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 24);
 
 		var uploadData = setupMultipartUpload(client, bucketName, key, size, 1 * MainData.MB);
 
@@ -615,7 +615,7 @@ public class Multipart extends TestBase {
 				List<ChecksumAlgorithm> checksums) {
 		}
 
-		var bucketName = createBucket();
+		var bucketName = createBucket(25);
 
 		// FULL_OBJECT와 COMPOSITE 타입의 체크섬 알고리즘 정의
 		var fullObjectChecksums = CheckSum.FULL_OBJECT_ALGORITHMS;
@@ -675,7 +675,7 @@ public class Multipart extends TestBase {
 				List<ChecksumAlgorithm> checksums) {
 		}
 
-		var bucketName = createBucket();
+		var bucketName = createBucket(26);
 
 		// FULL_OBJECT와 COMPOSITE 타입의 체크섬 알고리즘 정의
 		var fullObjectChecksums = CheckSum.FULL_OBJECT_ALGORITHMS;
@@ -735,7 +735,7 @@ public class Multipart extends TestBase {
 				List<ChecksumAlgorithm> checksums) {
 		}
 
-		var bucketName = createBucket();
+		var bucketName = createBucket(27);
 
 		// FULL_OBJECT 타입에서 지원되지 않는 체크섬 알고리즘 (CRC 계열 이외 전체)
 		var unsupportedFullObjectChecksums = List.of(
@@ -813,7 +813,7 @@ public class Multipart extends TestBase {
 				List<ChecksumAlgorithm> checksums) {
 		}
 
-		var bucketName = createBucket();
+		var bucketName = createBucket(28);
 
 		// FULL_OBJECT와 COMPOSITE 타입의 체크섬 알고리즘 정의
 		var fullObjectChecksums = CheckSum.FULL_OBJECT_ALGORITHMS;
@@ -869,7 +869,7 @@ public class Multipart extends TestBase {
 	@Tag("checksum")
 	public void testcreateMultipartUploadEmptyChecksumAlgorithm() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 29);
 		var key = "testcreateMultipartUploadEmptyChecksumAlgorithm";
 		var checksumType = ChecksumType.FULL_OBJECT;
 
@@ -886,7 +886,7 @@ public class Multipart extends TestBase {
 	@Tag("checksum")
 	public void testcreateMultipartUploadEmptyChecksumType() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 30);
 		var key = "testcreateMultipartUploadEmptyChecksumType";
 		var size = 10 * MainData.MB;
 		var partSize = 5 * MainData.MB;
@@ -930,7 +930,7 @@ public class Multipart extends TestBase {
 	// 소스 오브젝트와 일치하는 copy-source-if-match 조건으로 UploadPartCopy 성공 확인
 	public void testUploadPartCopyIfMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 31);
 		var source = "testUploadPartCopyIfMatchGoodSource";
 		var target = "testUploadPartCopyIfMatchGoodTarget";
 
@@ -954,7 +954,7 @@ public class Multipart extends TestBase {
 	// 소스 오브젝트와 일치하지 않는 copy-source-if-match 조건으로 UploadPartCopy 시 412 실패 확인
 	public void testUploadPartCopyIfMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 32);
 		var source = "testUploadPartCopyIfMatchFailedSource";
 		var target = "testUploadPartCopyIfMatchFailedTarget";
 
@@ -977,7 +977,7 @@ public class Multipart extends TestBase {
 	// 소스 오브젝트와 일치하지 않는 copy-source-if-none-match 조건으로 UploadPartCopy 성공 확인
 	public void testUploadPartCopyIfNoneMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 33);
 		var source = "testUploadPartCopyIfNoneMatchGoodSource";
 		var target = "testUploadPartCopyIfNoneMatchGoodTarget";
 
@@ -1001,7 +1001,7 @@ public class Multipart extends TestBase {
 	// 소스 오브젝트와 일치하는 copy-source-if-none-match 조건으로 UploadPartCopy 시 412 실패 확인
 	public void testUploadPartCopyIfNoneMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 34);
 		var source = "testUploadPartCopyIfNoneMatchFailedSource";
 		var target = "testUploadPartCopyIfNoneMatchFailedTarget";
 
@@ -1025,7 +1025,7 @@ public class Multipart extends TestBase {
 	// UploadPartCopy 요청에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
 	public void testUploadPartCopyIfMatchAndIfNoneMatch() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 35);
 		var source = "testUploadPartCopyIfMatchAndIfNoneMatchSource";
 		var target = "testUploadPartCopyIfMatchAndIfNoneMatchTarget";
 
@@ -1049,7 +1049,7 @@ public class Multipart extends TestBase {
 	// UploadPartCopy 요청에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
 	public void testUploadPartCopyIfMatchAndIfNoneMatchAny() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 36);
 		var source = "testUploadPartCopyIfMatchAndIfNoneMatchAnySource";
 		var target = "testUploadPartCopyIfMatchAndIfNoneMatchAnyTarget";
 
@@ -1072,7 +1072,7 @@ public class Multipart extends TestBase {
 	// 소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 UploadPartCopy 성공 확인
 	public void testUploadPartCopyIfModifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 37);
 		var source = "testUploadPartCopyIfModifiedSinceGoodSource";
 		var target = "testUploadPartCopyIfModifiedSinceGoodTarget";
 
@@ -1099,7 +1099,7 @@ public class Multipart extends TestBase {
 	// 소스 오브젝트 업로드 이후 시간의 copy-source-if-modified-since 조건으로 UploadPartCopy 시 412 실패 확인
 	public void testUploadPartCopyIfModifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 38);
 		var source = "testUploadPartCopyIfModifiedSinceFailedSource";
 		var target = "testUploadPartCopyIfModifiedSinceFailedTarget";
 
@@ -1128,7 +1128,7 @@ public class Multipart extends TestBase {
 	// 소스 오브젝트 업로드 이후 시간의 copy-source-if-unmodified-since 조건으로 UploadPartCopy 성공 확인
 	public void testUploadPartCopyIfUnmodifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 39);
 		var source = "testUploadPartCopyIfUnmodifiedSinceGoodSource";
 		var target = "testUploadPartCopyIfUnmodifiedSinceGoodTarget";
 
@@ -1155,7 +1155,7 @@ public class Multipart extends TestBase {
 	// 소스 오브젝트 업로드 이전 시간의 copy-source-if-unmodified-since 조건으로 UploadPartCopy 시 412 실패 확인
 	public void testUploadPartCopyIfUnmodifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 40);
 		var source = "testUploadPartCopyIfUnmodifiedSinceFailedSource";
 		var target = "testUploadPartCopyIfUnmodifiedSinceFailedTarget";
 
@@ -1181,7 +1181,7 @@ public class Multipart extends TestBase {
 	// 대상 오브젝트와 일치하는 If-Match 조건으로 CompleteMultipartUpload 덮어쓰기 성공 확인
 	public void testCompleteMultipartUploadIfMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 41);
 		var key = "testCompleteMultipartUploadIfMatchGood";
 		var size = 5 * MainData.MB;
 
@@ -1200,7 +1200,7 @@ public class Multipart extends TestBase {
 	// 대상 오브젝트와 일치하지 않는 If-Match 조건으로 CompleteMultipartUpload 시 412 실패 확인
 	public void testCompleteMultipartUploadIfMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 42);
 		var key = "testCompleteMultipartUploadIfMatchFailed";
 		var size = 5 * MainData.MB;
 
@@ -1228,7 +1228,7 @@ public class Multipart extends TestBase {
 	// 존재하지 않는 키에 If-None-Match: * 조건으로 CompleteMultipartUpload 성공 확인
 	public void testCompleteMultipartUploadIfNoneMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 43);
 		var key = "testCompleteMultipartUploadIfNoneMatchGood";
 		var size = 5 * MainData.MB;
 
@@ -1245,7 +1245,7 @@ public class Multipart extends TestBase {
 	// 이미 존재하는 키에 If-None-Match: * 조건으로 CompleteMultipartUpload 시 412 실패 확인
 	public void testCompleteMultipartUploadIfNoneMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 44);
 		var key = "testCompleteMultipartUploadIfNoneMatchFailed";
 		var size = 5 * MainData.MB;
 
@@ -1274,7 +1274,7 @@ public class Multipart extends TestBase {
 	// If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
 	public void testCompleteMultipartUploadIfMatchAndIfNoneMatch() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 45);
 		var key = "testCompleteMultipartUploadIfMatchAndIfNoneMatch";
 		var size = 5 * MainData.MB;
 
@@ -1300,7 +1300,7 @@ public class Multipart extends TestBase {
 	// If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
 	public void testCompleteMultipartUploadIfMatchAndIfNoneMatchAny() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 46);
 		var key = "testCompleteMultipartUploadIfMatchAndIfNoneMatchAny";
 		var size = 5 * MainData.MB;
 
@@ -1324,7 +1324,7 @@ public class Multipart extends TestBase {
 	@Tag("Cancel")
 	public void testMultipartUploadAbortDuringUpload() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 47);
 		var key = "testMultipartUploadAbortDuringUpload";
 		var partBody = Utils.randomTextToLong(5 * MainData.MB);
 

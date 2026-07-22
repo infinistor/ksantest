@@ -37,7 +37,7 @@ public class Notification extends TestBase {
 	@Tag("Get")
 	public void testNotificationGetEmpty() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var result = client.getBucketNotificationConfiguration(g -> g.bucket(bucketName));
 
@@ -53,7 +53,7 @@ public class Notification extends TestBase {
 		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
 		assumeFalse(config.isAWS());
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		var roleId = "my-lambda";
 		var mainUserId = config.mainUser.id;
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
@@ -74,7 +74,7 @@ public class Notification extends TestBase {
 		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
 		assumeFalse(config.isAWS());
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 		var roleId = "my-lambda";
 		var mainUserId = config.mainUser.id;
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
@@ -100,7 +100,7 @@ public class Notification extends TestBase {
 		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
 		assumeFalse(config.isAWS());
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 		var roleId = "my-lambda";
 		var mainUserId = config.mainUser.id;
 		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";

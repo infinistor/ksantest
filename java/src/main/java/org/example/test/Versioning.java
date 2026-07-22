@@ -54,7 +54,7 @@ public class Versioning extends TestBase {
 	@Test
 	@Tag("Check")
 	public void testVersioningBucketCreateSuspend() {
-		var bucketName = createBucket();
+		var bucketName = createBucket(1);
 		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
@@ -67,7 +67,7 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	public void testVersioningObjCreateReadRemove() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
 				new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED)));
 		var key = "obj";
@@ -82,7 +82,7 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	public void testVersioningObjCreateReadRemoveHead() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 
 		client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
 				new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED)));
@@ -122,7 +122,7 @@ public class Versioning extends TestBase {
 		var key = "foo";
 		var content = "foo data";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 
 		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
 
@@ -145,7 +145,7 @@ public class Versioning extends TestBase {
 		var key = "foo";
 		var content = "foo zzz";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 
 		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
 
@@ -181,7 +181,7 @@ public class Versioning extends TestBase {
 		var key = "foo";
 		var content = "foo zzz";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 
 		checkVersioning(bucketName, BucketVersioningConfiguration.OFF);
 
@@ -210,7 +210,7 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	public void testVersioningObjSuspendVersions() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		var key = "obj";
@@ -247,7 +247,7 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	public void testVersioningObjCreateVersionsRemoveAll() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 8);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -269,7 +269,7 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	public void testVersioningObjCreateVersionsRemoveSpecialNames() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -293,7 +293,7 @@ public class Versioning extends TestBase {
 	@Tag("Multipart")
 	public void testVersioningObjCreateOverwriteMultipart() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -323,7 +323,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	public void testVersioningObjListMarker() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -378,7 +378,7 @@ public class Versioning extends TestBase {
 	@Tag("Copy")
 	public void testVersioningCopyObjVersion() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -398,7 +398,7 @@ public class Versioning extends TestBase {
 			assertEquals(contents.get(i), content);
 		}
 
-		var anotherBucketName = createBucket(client);
+		var anotherBucketName = createBucket(client, 12);
 
 		for (int i = 0; i < numVersions; i++) {
 			var newKeyName = String.format("key_%s", i);
@@ -421,7 +421,7 @@ public class Versioning extends TestBase {
 	@Tag("Delete")
 	public void testVersioningMultiObjectDelete() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -453,7 +453,7 @@ public class Versioning extends TestBase {
 	@Tag("DeleteMarker")
 	public void testVersioningMultiObjectDeleteWithMarker() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -498,7 +498,7 @@ public class Versioning extends TestBase {
 	@Tag("DeleteMarker")
 	public void testVersioningMultiObjectDeleteWithMarkerCreate() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -517,7 +517,7 @@ public class Versioning extends TestBase {
 	@Tag("ACL")
 	public void testVersionedObjectAcl() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -547,7 +547,7 @@ public class Versioning extends TestBase {
 	@Tag("ACL")
 	public void testVersionedObjectAclNoVersionSpecified() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 17);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -575,7 +575,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	public void testVersionedConcurrentObjectCreateAndRemove() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 18);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
@@ -619,7 +619,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	public void testVersioningBucketAtomicUploadReturnVersionId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 19);
 		var key = "bar";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
@@ -631,12 +631,12 @@ public class Versioning extends TestBase {
 		for (var version : versions)
 			assertEquals(versionId, version.getVersionId());
 
-		bucketName = createBucket(client);
+		bucketName = createBucket(client, 19);
 		key = "baz";
 		putResponse = client.putObject(bucketName, key, "");
 		assertNull(putResponse.getVersionId());
 
-		bucketName = createBucket(client);
+		bucketName = createBucket(client, 19);
 		key = "baz";
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.SUSPENDED);
 		putResponse = client.putObject(bucketName, key, "");
@@ -650,7 +650,7 @@ public class Versioning extends TestBase {
 		var size = 50 * MainData.MB;
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 20);
 		var key = "bar";
 		var metadata = new ObjectMetadata();
 		metadata.addUserMetadata("foo", "baz");
@@ -669,7 +669,7 @@ public class Versioning extends TestBase {
 		for (var version : versions)
 			assertEquals(versionId, version.getVersionId());
 
-		bucketName = createBucket(client);
+		bucketName = createBucket(client, 20);
 		key = "baz";
 
 		uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
@@ -677,7 +677,7 @@ public class Versioning extends TestBase {
 				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 		assertNull(compResponse.getVersionId());
 
-		bucketName = createBucket(client);
+		bucketName = createBucket(client, 20);
 		key = "foo";
 
 		uploadData = setupMultipartUpload(client, bucketName, key, size, metadata);
@@ -691,7 +691,7 @@ public class Versioning extends TestBase {
 	@Tag("metadata")
 	public void testVersioningGetObjectHead() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 21);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
 		var key = "foo";
@@ -713,7 +713,7 @@ public class Versioning extends TestBase {
 	@Tag("Delete")
 	public void testVersioningLatest() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 22);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 
 		var key = "foo";
@@ -739,7 +739,7 @@ public class Versioning extends TestBase {
 	@Tag("ERROR")
 	public void testVersioningInvalidVersionId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 23);
 		var key = "testVersioningInvalidVersionId";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
@@ -757,7 +757,7 @@ public class Versioning extends TestBase {
 	@Tag("Copy")
 	public void testVersioningCopyObject() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 24);
 		var sourceKey = "source";
 		var targetKey = "target";
 		var content = "content-version1";
@@ -888,7 +888,7 @@ public class Versioning extends TestBase {
 	@Tag("Object")
 	public void testVersioningUnversionedAllVersionId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 25);
 		var key = "testVersioningUnversionedAllVersionId";
 		var multipartKey = key + "-multipart";
 		var copyKey = key + "-copy";
@@ -929,7 +929,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	public void testVersioningEnabledAllVersionId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 26);
 		var key = "testVersioningEnabledAllVersionId";
 		var multipartKey = key + "-multipart";
 		var copyKey = key + "-copy";
@@ -975,7 +975,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	public void testVersioningSuspendedAllVersionId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 27);
 		var key = "testVersioningSuspendedAllVersionId";
 		var multipartKey = key + "-multipart";
 		var copyKey = key + "-copy";
@@ -1016,7 +1016,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	public void testVersioningListVersionsOffEnabledSuspended() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 28);
 		var key = "testVersioningListVersionsOffEnabledSuspended";
 		var contentOff = "content-off";
 		var contentEnabled = "content-enabled";
@@ -1067,7 +1067,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	public void testVersioningListVersionsOffEnabledSuspendedDifferentKeys() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 29);
 		var keyOff = "testVersioningListVersionsOff";
 		var keyEnabled = "testVersioningListVersionsEnabled";
 		var keySuspended = "testVersioningListVersionsSuspended";
@@ -1124,7 +1124,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	public void testVersioningDeleteNullVersionAfterSuspend() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 30);
 		var key = "testVersioningDeleteNullVersionAfterSuspend";
 		var contentEnabled = "content-enabled";
 		var contentSuspended = "content-suspended";
@@ -1155,7 +1155,7 @@ public class Versioning extends TestBase {
 	@Tag("Check")
 	public void testVersioningListVersionsMultipleEnabledThenSuspended() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 31);
 		var key = "testVersioningListVersionsMultipleEnabledThenSuspended";
 		var enabledVersionIds = new ArrayList<String>();
 
@@ -1189,7 +1189,7 @@ public class Versioning extends TestBase {
 	@Tag("HeadObject")
 	public void testVersioningHeadObjectDeleteMarker() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 32);
 		var key = "testVersioningHeadObjectDeleteMarker";
 		var content = "testContent";
 

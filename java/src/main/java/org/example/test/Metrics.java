@@ -46,7 +46,7 @@ public class Metrics extends TestBase {
 	@Tag("List")
 	public void testMetrics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var response = client.listBucketMetricsConfigurations(
 				new ListBucketMetricsConfigurationsRequest().withBucketName(bucketName));
@@ -57,7 +57,7 @@ public class Metrics extends TestBase {
 	@Tag("Put")
 	public void testPutMetrics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		var metrics = new MetricsConfiguration().withId("metrics-id");
 
 		client.setBucketMetricsConfiguration(bucketName, metrics);
@@ -67,7 +67,7 @@ public class Metrics extends TestBase {
 	@Tag("Check")
 	public void testCheckMetrics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 		var metrics = new MetricsConfiguration().withId("metrics-id");
 
 		client.setBucketMetricsConfiguration(bucketName, metrics);
@@ -80,7 +80,7 @@ public class Metrics extends TestBase {
 	@Tag("Get")
 	public void testGetMetrics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 		var metricId = "metrics-id";
 		var metrics = new MetricsConfiguration().withId(metricId);
 
@@ -93,7 +93,7 @@ public class Metrics extends TestBase {
 	@Tag("Delete")
 	public void testDeleteMetrics() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 		var metricId = "metrics-id";
 		var metrics = new MetricsConfiguration().withId(metricId);
 
@@ -105,7 +105,7 @@ public class Metrics extends TestBase {
 	@Tag("Error")
 	public void testGetMetricsNotExist() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.getBucketMetricsConfiguration(bucketName, "metrics-id"));
@@ -117,7 +117,7 @@ public class Metrics extends TestBase {
 	@Tag("Error")
 	public void testDeleteMetricsNotExist() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.deleteBucketMetricsConfiguration(bucketName, "metrics-id"));
@@ -129,7 +129,7 @@ public class Metrics extends TestBase {
 	@Tag("Error")
 	public void testPutMetricsNotExist() {
 		var client = getClient();
-		var bucketName = getNewBucketNameOnly();
+		var bucketName = getNewBucketNameOnly(8);
 		var metrics = new MetricsConfiguration().withId("metrics-id");
 
 		var e = assertThrows(AmazonServiceException.class,
@@ -142,7 +142,7 @@ public class Metrics extends TestBase {
 	@Tag("Error")
 	public void testPutMetricsEmptyId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 		var metrics = new MetricsConfiguration().withId("");
 
 		var e = assertThrows(AmazonServiceException.class,
@@ -155,7 +155,7 @@ public class Metrics extends TestBase {
 	@Tag("Error")
 	public void testPutMetricsNoId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 		var metrics = new MetricsConfiguration();
 
 		assertThrows(IllegalArgumentException.class, () -> client.setBucketMetricsConfiguration(bucketName, metrics));
@@ -165,7 +165,7 @@ public class Metrics extends TestBase {
 	@Tag("Overwrite")
 	public void testPutMetricsDuplicateId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 		var metricId = "metrics-id";
 		var metrics1 = new MetricsConfiguration().withId(metricId)
 				.withFilter(new MetricsFilter(new MetricsPrefixPredicate("test1")));
@@ -187,7 +187,7 @@ public class Metrics extends TestBase {
 	@Tag("Filtering")
 	public void testMetricsPrefix() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 		var prefix = "test";
 		var metrics = new MetricsConfiguration().withId("metrics-id")
 				.withFilter(new MetricsFilter(new MetricsPrefixPredicate(prefix)));
@@ -202,7 +202,7 @@ public class Metrics extends TestBase {
 	@Tag("Filtering")
 	public void testMetricsTag() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
 		var tag = new com.amazonaws.services.s3.model.Tag("key", "value");
 		var metrics = new MetricsConfiguration().withId("metrics-id")
 				.withFilter(new MetricsFilter(new MetricsTagPredicate(tag)));
@@ -220,7 +220,7 @@ public class Metrics extends TestBase {
 	@Tag("Filtering")
 	public void testMetricsFilter() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 		var prefix = "test";
 		var filters = new ArrayList<MetricsFilterPredicate>();
 		var tag = new com.amazonaws.services.s3.model.Tag("key", "value");

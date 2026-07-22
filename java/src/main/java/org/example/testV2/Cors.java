@@ -43,7 +43,7 @@ public class Cors extends TestBase {
 	@Tag("Check")
 	public void testSetCors() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var allowedMethods = List.of("GET", "PUT");
 		var allowedOrigins = List.of("*.get", "*.put");
@@ -78,7 +78,7 @@ public class Cors extends TestBase {
 	@Tag("Post")
 	public void testCorsOriginResponse() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 2);
 		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
 
 		var corsConfig = CORSConfiguration.builder();
@@ -233,7 +233,7 @@ public class Cors extends TestBase {
 	@Tag("Post")
 	public void testCorsOriginWildcard() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 3);
 		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
 
 		var corsConfig = CORSConfiguration.builder();
@@ -260,7 +260,7 @@ public class Cors extends TestBase {
 	@Tag("Post")
 	public void testCorsHeaderOption() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 4);
 		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
 
 		var corsConfig = CORSConfiguration.builder();

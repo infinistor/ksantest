@@ -36,7 +36,7 @@ public class Ownership extends TestBase {
 	@Tag("Get")
 	public void testGetBucketOwnership() {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
+		var bucketName = createBucket(client, 1, ObjectOwnership.BucketOwnerEnforced);
 
 		client.getBucketOwnershipControls(new GetBucketOwnershipControlsRequest().withBucketName(bucketName));
 	}
@@ -45,7 +45,7 @@ public class Ownership extends TestBase {
 	@Tag("Put")
 	public void testCreateBucketWithOwnership() {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
+		var bucketName = createBucket(client, 2, ObjectOwnership.BucketOwnerEnforced);
 
 		var response = client
 				.getBucketOwnershipControls(new GetBucketOwnershipControlsRequest().withBucketName(bucketName));
@@ -57,7 +57,7 @@ public class Ownership extends TestBase {
 	@Tag("Put")
 	public void testChangeBucketOwnership() {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
+		var bucketName = createBucket(client, 3, ObjectOwnership.BucketOwnerEnforced);
 
 		var response = client
 				.getBucketOwnershipControls(new GetBucketOwnershipControlsRequest().withBucketName(bucketName));
@@ -77,7 +77,7 @@ public class Ownership extends TestBase {
 	@Tag("Error")
 	public void testBucketOwnershipDenyACL() {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
+		var bucketName = createBucket(client, 4, ObjectOwnership.BucketOwnerEnforced);
 
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.setBucketAcl(bucketName, CannedAccessControlList.AuthenticatedRead));
@@ -89,7 +89,7 @@ public class Ownership extends TestBase {
 	@Tag("Error")
 	public void testBucketOwnershipDenyObjectACL() {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.BucketOwnerEnforced);
+		var bucketName = createBucket(client, 5, ObjectOwnership.BucketOwnerEnforced);
 		var key = "testBucketOwnershipDenyObjectACL";
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata()));
@@ -104,7 +104,7 @@ public class Ownership extends TestBase {
 	@Tag("Check")
 	public void testObjectOwnershipDenyChange() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 6);
 		var key = "testObjectOwnershipDenyChange";
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
@@ -123,7 +123,7 @@ public class Ownership extends TestBase {
 	@Tag("Error")
 	public void testObjectOwnershipDenyACL() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 7);
 		var key = "testObjectOwnershipDenyACL";
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())

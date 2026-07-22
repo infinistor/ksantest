@@ -52,25 +52,25 @@ public class SSE_C extends TestBase {
 	@Test
 	@Tag("PutGet")
 	public void testEncryptedTransfer1b() {
-		testEncryptionSSECustomerWrite(1);
+		testEncryptionSSECustomerWrite(1, 1);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testEncryptedTransfer1kb() {
-		testEncryptionSSECustomerWrite(1024);
+		testEncryptionSSECustomerWrite(2, 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testEncryptedTransfer1MB() {
-		testEncryptionSSECustomerWrite(1024 * 1024);
+		testEncryptionSSECustomerWrite(3, 1024 * 1024);
 	}
 
 	@Test
 	@Tag("PutGet")
 	public void testEncryptedTransfer13b() {
-		testEncryptionSSECustomerWrite(13);
+		testEncryptionSSECustomerWrite(4, 13);
 	}
 
 	@Test
@@ -79,7 +79,7 @@ public class SSE_C extends TestBase {
 		var key = "obj";
 		var size = 1000;
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 		unblockSseC(bucketName);
 		var data = Utils.randomTextToLong(size);
 
@@ -100,7 +100,7 @@ public class SSE_C extends TestBase {
 	@Tag("ERROR")
 	public void testEncryptionSseCPresent() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 		unblockSseC(bucketName);
 		var key = "obj";
 		var size = 1000;
@@ -120,7 +120,7 @@ public class SSE_C extends TestBase {
 	@Tag("ERROR")
 	public void testEncryptionSseCOtherKey() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 		unblockSseC(bucketName);
 		var key = "obj";
 		var size = 100;
@@ -146,7 +146,7 @@ public class SSE_C extends TestBase {
 	@Tag("ERROR")
 	public void testEncryptionSseCInvalidMd5() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 8);
 		unblockSseC(bucketName);
 		var key = "obj";
 		var size = 100;
@@ -166,7 +166,7 @@ public class SSE_C extends TestBase {
 	@Tag("ERROR")
 	public void testEncryptionSseCNoMd5() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 		unblockSseC(bucketName);
 		var key = "obj";
 		var size = 100;
@@ -182,7 +182,7 @@ public class SSE_C extends TestBase {
 	@Tag("ERROR")
 	public void testEncryptionSseCNoKey() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 		unblockSseC(bucketName);
 		var key = "obj";
 		var size = 100;
@@ -199,7 +199,7 @@ public class SSE_C extends TestBase {
 	@Tag("ERROR")
 	public void testEncryptionKeyNoSseC() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 		unblockSseC(bucketName);
 		var key = "obj";
 		var size = 100;
@@ -215,7 +215,7 @@ public class SSE_C extends TestBase {
 	@Tag("Multipart")
 	public void testEncryptionSseCMultipartUpload() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 		unblockSseC(bucketName);
 		var key = "multipartEnc";
 		var size = 50 * MainData.MB;
@@ -249,7 +249,7 @@ public class SSE_C extends TestBase {
 	@Tag("Multipart")
 	public void testEncryptionSseCMultipartBadDownload() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
 		unblockSseC(bucketName);
 		var key = "multipartEnc";
 		var size = 50 * MainData.MB;
@@ -288,7 +288,7 @@ public class SSE_C extends TestBase {
 	public void testEncryptionSseCPostObjectAuthenticatedRequest() throws MalformedURLException {
 		assumeFalse(config.isAWS());
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -375,7 +375,7 @@ public class SSE_C extends TestBase {
 	@Tag("Get")
 	public void testEncryptionSseCGetObjectMany() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 		unblockSseC(bucketName);
 		var key = "obj";
 		var size = 15 * 1024 * 1024;
@@ -394,7 +394,7 @@ public class SSE_C extends TestBase {
 	@Tag("Get")
 	public void testEncryptionSseCRangeObjectMany() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
 		unblockSseC(bucketName);
 		var key = "obj";
 		var size = 15 * 1024 * 1024;
@@ -419,7 +419,7 @@ public class SSE_C extends TestBase {
 	@Tag("Multipart")
 	public void testSseCEncryptionMultipartCopyPartUpload() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 17);
 		unblockSseC(bucketName);
 		var sourceKey = "multipartEnc";
 		var size = 50 * MainData.MB;
@@ -452,7 +452,7 @@ public class SSE_C extends TestBase {
 	@Tag("Multipart")
 	public void testSseCEncryptionMultipartCopyMany() {
 		var client = getClientHttps(false);
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 18);
 		unblockSseC(bucketName);
 		var sourceKey = "multipartEnc";
 		var size = 10 * MainData.MB;

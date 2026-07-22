@@ -38,7 +38,7 @@ public class PutBucket extends TestBase {
 	@Tag("PUT")
 	public void testBucketListEmpty() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var response = client.listObjects(bucketName);
 
@@ -48,7 +48,7 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingBadStartsNonAlpha() {
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(2);
 		checkBadBucketName("_" + bucketName);
 		deleteBucketList(bucketName);
 	}
@@ -110,7 +110,7 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingDnsLong() {
-		checkGoodBucketName(Utils.getNewBucketName(""));
+		checkGoodBucketName(Utils.randomBucketName(""));
 	}
 
 	@Test
@@ -140,7 +140,7 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("Duplicate")
 	public void testBucketCreateExists() {
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(17);
 		var client = getClient();
 
 		client.createBucket(bucketName);
@@ -154,7 +154,7 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("Duplicate")
 	public void testBucketCreateExistsNonowner() {
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(18);
 		var client = getClient();
 		var altClient = getAltClient();
 
@@ -169,25 +169,25 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsAlpha() {
-		checkGoodBucketName(Utils.getNewBucketName("a"));
+		checkGoodBucketName(Utils.randomBucketName("a"));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsDigit() {
-		checkGoodBucketName(Utils.getNewBucketName("1"));
+		checkGoodBucketName(Utils.randomBucketName("1"));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsPeriod() {
-		checkGoodBucketName(Utils.getNewBucketName("a."));
+		checkGoodBucketName(Utils.randomBucketName("a."));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsHyphen() {
-		checkGoodBucketName(Utils.getNewBucketName("a-"));
+		checkGoodBucketName(Utils.randomBucketName("a-"));
 	}
 
 	@Test
@@ -195,7 +195,7 @@ public class PutBucket extends TestBase {
 	public void testBucketRecreateNotOverriding() {
 		var keys = List.of("my_key1", "my_key2");
 		var client = getClient();
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 23, keys);
 
 		var objects = getObjectList(bucketName, null);
 		assertEquals(keys, objects);
@@ -210,7 +210,7 @@ public class PutBucket extends TestBase {
 	@Tag("location")
 	public void testGetBucketLocation() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 24);
 		client.getBucketLocation(bucketName);
 	}
 }

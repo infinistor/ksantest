@@ -37,7 +37,7 @@ public class Website extends TestBase
 	public void testWebsiteGetBuckets()
 	{
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var response = client.getBucketWebsiteConfiguration(bucketName);
 		assertNull(response);
@@ -48,7 +48,7 @@ public class Website extends TestBase
 	public void testWebsitePutBuckets()
 	{
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 
 		var webConfig = new BucketWebsiteConfiguration();
 		webConfig.setErrorDocument("HttpStatus.SC_BAD_REQUEST");
@@ -65,7 +65,7 @@ public class Website extends TestBase
 	public void testWebsiteDeleteBuckets()
 	{
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 
 		var webConfig = new BucketWebsiteConfiguration();
 		webConfig.setErrorDocument("HttpStatus.SC_BAD_REQUEST");

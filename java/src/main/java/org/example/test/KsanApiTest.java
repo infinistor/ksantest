@@ -28,7 +28,7 @@ public class KsanApiTest extends TestBase {
 	@Tag("Get")
 	public void testGetBucketEnabledTaggingIndex() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 	}
 
@@ -36,7 +36,7 @@ public class KsanApiTest extends TestBase {
 	@Tag("Put")
 	public void testPutBucketEnabledTaggingIndex() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 
 	}
 }

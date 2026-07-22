@@ -50,7 +50,7 @@ public class Policy extends TestBase {
 	@Tag("Check")
 	public void testBucketPolicy() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 1);
 		var key = "asdf";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
 
@@ -90,7 +90,7 @@ public class Policy extends TestBase {
 	@Tag("Check")
 	public void testBucketV2Policy() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 2);
 		var key = "asdf";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
 
@@ -129,7 +129,7 @@ public class Policy extends TestBase {
 	@Tag("Priority")
 	public void testBucketPolicyAcl() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 3);
 		var key = "asdf";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
 
@@ -175,7 +175,7 @@ public class Policy extends TestBase {
 	public void testBucketV2PolicyAcl() {
 
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 4);
 		var key = "asdf";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
 
@@ -221,7 +221,7 @@ public class Policy extends TestBase {
 	public void testGetTagsAclPublic() {
 		var key = "acl";
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 5);
 		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, key));
@@ -243,7 +243,7 @@ public class Policy extends TestBase {
 	public void testPutTagsAclPublic() {
 		var key = "acl";
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 6);
 		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, key));
@@ -264,7 +264,7 @@ public class Policy extends TestBase {
 	public void testDeleteTagsObjPublic() {
 		var key = "acl";
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 7);
 		createKeyWithRandomContent(client, key, 0, bucketName);
 
 		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, key));
@@ -289,7 +289,7 @@ public class Policy extends TestBase {
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 8);
 		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
@@ -332,7 +332,7 @@ public class Policy extends TestBase {
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 9);
 		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
@@ -378,7 +378,7 @@ public class Policy extends TestBase {
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 10);
 		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
@@ -427,8 +427,8 @@ public class Policy extends TestBase {
 		var privateFoo = "private/foo";
 		var client = getClient();
 		var altClient = getAltClient();
-		var sourceBucketName = createBucketCannedAcl(client);
-		var targetBucketName = createBucketCannedAcl(client);
+		var sourceBucketName = createBucketCannedAcl(client, 11);
+		var targetBucketName = createBucketCannedAcl(client, 11);
 
 		createObjects(client, sourceBucketName, List.of(publicFoo, publicBar, privateFoo));
 
@@ -472,14 +472,14 @@ public class Policy extends TestBase {
 		var publicFoo = "public/foo";
 		var publicBar = "public/bar";
 		var client = getClient();
-		var sourceBucketName = createBucketCannedAcl(client);
+		var sourceBucketName = createBucketCannedAcl(client, 12);
 		createObjects(client, sourceBucketName, List.of(publicFoo, publicBar));
 
 		var sourceResource = Utils.makeArnResource(String.format("%s/%s", sourceBucketName, "*"));
 		var policyDocument = makeJsonPolicy("s3:GetObject", sourceResource, null, null);
 		client.putBucketPolicy(p -> p.bucket(sourceBucketName).policy(policyDocument.toString()));
 
-		var targetBucketName = createBucketCannedAcl(client);
+		var targetBucketName = createBucketCannedAcl(client, 12);
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:x-amz-metadata-directive", "COPY");
@@ -516,7 +516,7 @@ public class Policy extends TestBase {
 	public void testBucketPolicyPutObjAcl() {
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 13);
 
 		var conditional = new JsonObject();
 		conditional.addProperty("s3:x-amz-acl", "public*");
@@ -544,8 +544,8 @@ public class Policy extends TestBase {
 	@Tag("GrantOptions")
 	public void testBucketPolicyPutObjGrant() {
 		var client = getClient();
-		var bucketName1 = createBucketCannedAcl(client);
-		var bucketName2 = createBucketCannedAcl(client);
+		var bucketName1 = createBucketCannedAcl(client, 14);
+		var bucketName2 = createBucketCannedAcl(client, 14);
 
 		var mainUserId = config.mainUser.id;
 		var altUserId = config.altUser.id;
@@ -592,7 +592,7 @@ public class Policy extends TestBase {
 		var privateTag = "privateTag";
 		var invalidTag = "invalidTag";
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 15);
 		createObjects(client, bucketName, List.of(publicTag, privateTag, invalidTag));
 
 		var conditional = new JsonObject();
@@ -636,7 +636,7 @@ public class Policy extends TestBase {
 	@Tag("Status")
 	public void testBucketPolicyStatusWithAllUser() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 16);
 
 		assertThrows(AwsServiceException.class,
 				() -> client.getBucketPolicyStatus(g -> g.bucket(bucketName)));
@@ -675,7 +675,7 @@ public class Policy extends TestBase {
 	@Tag("Status")
 	public void testBucketPolicyStatusWithSpecificUserAccess() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 17);
 
 		assertThrows(AwsServiceException.class,
 				() -> client.getBucketPolicyStatus(g -> g.bucket(bucketName)));
@@ -714,7 +714,7 @@ public class Policy extends TestBase {
 	@Tag("Status")
 	public void testBucketPolicyStatusWithWideIPRange() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 18);
 
 		// 너무 넓은 IP 범위를 가진 정책 (public으로 간주)
 		var policyDocument = new JsonObject();
@@ -747,7 +747,7 @@ public class Policy extends TestBase {
 	@Tag("Status")
 	public void testBucketPolicyStatusWithIPRange() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 19);
 
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
@@ -783,7 +783,7 @@ public class Policy extends TestBase {
 	@Tag("Status")
 	public void testBucketPolicyStatusWithTimeCondition() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 20);
 
 		var resource = Utils.makeArnResource(String.format("%s/*", bucketName));
 
@@ -827,7 +827,7 @@ public class Policy extends TestBase {
 	@Tag("Status")
 	public void testBucketPolicyStatusWithTagCondition() {
 		var client = getClient();
-		var bucketName = createBucketCannedAcl(client);
+		var bucketName = createBucketCannedAcl(client, 21);
 
 		var resource = Utils.makeArnResource(String.format("%s/*", bucketName));
 

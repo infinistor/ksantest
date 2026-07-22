@@ -44,7 +44,7 @@ public class GetObject extends TestBase {
 	@Tag("ERROR")
 	public void testObjectReadNotExist() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.getObject(g -> g.bucket(bucketName).key("foo")));
@@ -56,7 +56,7 @@ public class GetObject extends TestBase {
 	@Tag("IfMatch")
 	public void testGetObjectIfMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		var key = "foo";
 
 		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -71,7 +71,7 @@ public class GetObject extends TestBase {
 	@Tag("IfMatch")
 	public void testGetObjectIfMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -86,7 +86,7 @@ public class GetObject extends TestBase {
 	@Tag("IfNoneMatch")
 	public void testGetObjectIfNoneMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 		var key = "foo";
 
 		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -103,7 +103,7 @@ public class GetObject extends TestBase {
 	@Tag("IfNoneMatch")
 	public void testGetObjectIfNoneMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -118,7 +118,7 @@ public class GetObject extends TestBase {
 	@Tag("IfModifiedSince")
 	public void testGetObjectIfModifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -135,7 +135,7 @@ public class GetObject extends TestBase {
 	@Tag("IfModifiedSince")
 	public void testGetObjectIfModifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -157,7 +157,7 @@ public class GetObject extends TestBase {
 	@Tag("ifUnmodifiedSince")
 	public void testGetObjectIfUnmodifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 8);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -176,7 +176,7 @@ public class GetObject extends TestBase {
 	@Tag("ifUnmodifiedSince")
 	public void testGetObjectIfUnmodifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 		var key = "foo";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -194,7 +194,7 @@ public class GetObject extends TestBase {
 	// If-Match(일치)와 If-Unmodified-Since(불일치)를 함께 사용할 경우 ETag 조건이 우선되어 성공하는지 확인
 	public void testGetObjectIfMatchWithIfUnmodifiedSince() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 10);
 		var key = "testGetObjectIfMatchWithIfUnmodifiedSince";
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
@@ -213,7 +213,7 @@ public class GetObject extends TestBase {
 	// If-None-Match(불일치)와 If-Modified-Since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 304가 반환되는지 확인
 	public void testGetObjectIfNoneMatchWithIfModifiedSince() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 		var key = "testGetObjectIfNoneMatchWithIfModifiedSince";
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
@@ -233,7 +233,7 @@ public class GetObject extends TestBase {
 	// If-Match와 If-None-Match에 동일한 ETag를 지정하면 304가 반환되는지 확인
 	public void testGetObjectIfMatchAndIfNoneMatch() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 		var key = "testGetObjectIfMatchAndIfNoneMatch";
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
@@ -250,7 +250,7 @@ public class GetObject extends TestBase {
 	// If-Match와 If-None-Match: * 를 함께 지정하면 304가 반환되는지 확인
 	public void testGetObjectIfMatchAndIfNoneMatchAny() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
 		var key = "testGetObjectIfMatchAndIfNoneMatchAny";
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
@@ -266,7 +266,7 @@ public class GetObject extends TestBase {
 	// HeadObject에서 일치하는 If-Match 조건으로 성공 확인
 	public void testHeadObjectIfMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 		var key = "testHeadObjectIfMatchGood";
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
@@ -280,7 +280,7 @@ public class GetObject extends TestBase {
 	// HeadObject에서 일치하지 않는 If-Match 조건으로 412 실패 확인
 	public void testHeadObjectIfMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 		var key = "testHeadObjectIfMatchFailed";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -296,7 +296,7 @@ public class GetObject extends TestBase {
 	// HeadObject에서 일치하는 If-None-Match 조건으로 304 반환 확인
 	public void testHeadObjectIfNoneMatchGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
 		var key = "testHeadObjectIfNoneMatchGood";
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
@@ -311,7 +311,7 @@ public class GetObject extends TestBase {
 	// HeadObject에서 일치하지 않는 If-None-Match 조건으로 성공 확인
 	public void testHeadObjectIfNoneMatchFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 17);
 		var key = "testHeadObjectIfNoneMatchFailed";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -326,7 +326,7 @@ public class GetObject extends TestBase {
 	// HeadObject에서 오브젝트 업로드 이전 시간의 If-Modified-Since 조건으로 성공 확인
 	public void testHeadObjectIfModifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 18);
 		var key = "testHeadObjectIfModifiedSinceGood";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -342,7 +342,7 @@ public class GetObject extends TestBase {
 	// HeadObject에서 오브젝트 업로드 이후 시간의 If-Modified-Since 조건으로 304 반환 확인
 	public void testHeadObjectIfModifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 19);
 		var key = "testHeadObjectIfModifiedSinceFailed";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -362,7 +362,7 @@ public class GetObject extends TestBase {
 	// HeadObject에서 오브젝트 업로드 이전 시간의 If-Unmodified-Since 조건으로 412 실패 확인
 	public void testHeadObjectIfUnmodifiedSinceGood() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 20);
 		var key = "testHeadObjectIfUnmodifiedSinceGood";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -380,7 +380,7 @@ public class GetObject extends TestBase {
 	// HeadObject에서 오브젝트 업로드 이후 시간의 If-Unmodified-Since 조건으로 성공 확인
 	public void testHeadObjectIfUnmodifiedSinceFailed() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 21);
 		var key = "testHeadObjectIfUnmodifiedSinceFailed";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
@@ -399,7 +399,7 @@ public class GetObject extends TestBase {
 		var content = "contentData";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 22);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=4-7"));
@@ -416,7 +416,7 @@ public class GetObject extends TestBase {
 		var content = Utils.randomTextToLong(8 * MainData.MB);
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 23);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=3145728-5242880"));
@@ -434,7 +434,7 @@ public class GetObject extends TestBase {
 		var content = "contentData";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 24);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=4-"));
@@ -451,7 +451,7 @@ public class GetObject extends TestBase {
 		var content = "contentData";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 25);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=-7"));
@@ -468,7 +468,7 @@ public class GetObject extends TestBase {
 		var content = "contentData";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 26);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var e = assertThrows(AwsServiceException.class,
@@ -484,7 +484,7 @@ public class GetObject extends TestBase {
 		var content = "";
 
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 27);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 		var e = assertThrows(AwsServiceException.class,
@@ -497,7 +497,7 @@ public class GetObject extends TestBase {
 	@Tag("Get")
 	public void testGetObjectMany() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 28);
 		var key = "foo";
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
@@ -509,7 +509,7 @@ public class GetObject extends TestBase {
 	@Tag("Get")
 	public void testRangeObjectMany() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 29);
 		var key = "foo";
 		var fileSize = 1024 * 1024 * 15;
 		var data = Utils.randomTextToLong(fileSize);
@@ -523,7 +523,7 @@ public class GetObject extends TestBase {
 	public void testObjectResponseHeaders() {
 		var key = "testObjectResponseHeaders";
 		var client = getClient();
-		var bucketName = createObjects(client, key);
+		var bucketName = createObjects(client, 30, key);
 
 		var response = client.getObject(
 				g -> g
@@ -548,7 +548,7 @@ public class GetObject extends TestBase {
 	@Tag("Range")
 	public void testMultipartObjectRange() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 31);
 		var key = "testMultipartObjectRange";
 
 		var multipartUploadData = multipartUpload(client, bucketName, key, 5 * MainData.MB, 5 * MainData.MB);
@@ -563,7 +563,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIgnore() {
 		var key = "testObjectIgnore";
 		var client = getClient();
-		var bucketName = createObjects(client, key);
+		var bucketName = createObjects(client, 32, key);
 
 		var response = client.getObject(g -> g.bucket(bucketName).key(key));
 		assertEquals(key.length(), response.response().contentLength());
@@ -573,7 +573,7 @@ public class GetObject extends TestBase {
 	@Tag("ERROR")
 	public void testGetObjectAfterDelete() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 33);
 		var key = "testGetObjectAfterDelete";
 		var body = "testContent";
 
@@ -600,7 +600,7 @@ public class GetObject extends TestBase {
 	@Tag("ERROR")
 	public void testGetObjectAfterDeleteVersioning() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 34);
 		var key = "testGetObjectAfterDeleteVersioning";
 		var body = "testContent";
 
@@ -632,7 +632,7 @@ public class GetObject extends TestBase {
 	@Tag("Versioning")
 	public void testGetObjectDeleteMarker() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 35);
 		var key = "testGetObjectDeleteMarker";
 		var body = "testContent";
 

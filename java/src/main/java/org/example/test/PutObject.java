@@ -51,8 +51,8 @@ public class PutObject extends TestBase {
 	@Tag("PUT")
 	public void testBucketListDistinct() {
 		var client = getClient();
-		var bucketName1 = createBucket(client);
-		var bucketName2 = createBucket(client);
+		var bucketName1 = createBucket(client, 1);
+		var bucketName2 = createBucket(client, 1);
 
 		client.putObject(bucketName1, "asdf", "str");
 
@@ -65,7 +65,7 @@ public class PutObject extends TestBase {
 	public void testObjectWriteToNonExistBucket() {
 		var key = "foo";
 		var client = getClient();
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(2);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
@@ -76,7 +76,7 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectHeadZeroBytes() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 
 		var key = "foo";
 		client.putObject(bucketName, key, "");
@@ -89,7 +89,7 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectWriteCheckEtag() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 
 		var response = client.putObject(bucketName, "foo", "bar");
 		assertEquals("37b51d194a7513e45b56f6524f2d51f2", response.getETag());
@@ -99,7 +99,7 @@ public class PutObject extends TestBase {
 	@Tag("cacheControl")
 	public void testObjectWriteCacheControl() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 
 		var key = "foo";
 		var body = "bar";
@@ -123,7 +123,7 @@ public class PutObject extends TestBase {
 	@Tag("Expires")
 	public void testObjectWriteExpires() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 
 		var key = "foo";
 		var body = "bar";
@@ -143,7 +143,7 @@ public class PutObject extends TestBase {
 	@Tag("Update")
 	public void testObjectWriteReadUpdateReadDelete() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 
 		var key = "foo";
 		var body = "bar";
@@ -168,27 +168,27 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectSetGetMetadataNoneToGood() {
 		var value = "my";
-		var got = setupMetadata(value, null);
+		var got = setupMetadata(8, value, null);
 		assertEquals(value, got);
 	}
 
 	@Test
 	@Tag("metadata")
 	public void testObjectSetGetMetadataNoneToEmpty() {
-		var got = setupMetadata("", null);
+		var got = setupMetadata(9, "", null);
 		assertEquals("", got);
 	}
 
 	@Test
 	@Tag("metadata")
 	public void testObjectSetGetMetadataOverwriteToEmpty() {
-		var bucketName = createBucket();
+		var bucketName = createBucket(10);
 
 		var myMeta = "old_meta";
-		var got = setupMetadata(myMeta, bucketName);
+		var got = setupMetadata(10, myMeta, bucketName);
 		assertEquals(myMeta, got);
 
-		got = setupMetadata("", bucketName);
+		got = setupMetadata(10, "", bucketName);
 		assertEquals("", got);
 	}
 
@@ -197,7 +197,7 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectSetGetNonUtf8Metadata() {
 		var metadata = "\nmy_meta";
-		var e = setGetMetadataUnreadable(metadata, null);
+		var e = setGetMetadataUnreadable(11, metadata, null);
 		assertTrue(errorCheck(e.getStatusCode()));
 	}
 
@@ -206,7 +206,7 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectSetGetMetadataEmptyToUnreadablePrefix() {
 		var metadata = "\nw";
-		var e = setGetMetadataUnreadable(metadata, null);
+		var e = setGetMetadataUnreadable(12, metadata, null);
 		assertTrue(errorCheck(e.getStatusCode()));
 	}
 
@@ -215,7 +215,7 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectSetGetMetadataEmptyToUnreadableSuffix() {
 		var metadata = "h\n";
-		var e = setGetMetadataUnreadable(metadata, null);
+		var e = setGetMetadataUnreadable(13, metadata, null);
 		assertTrue(errorCheck(e.getStatusCode()));
 	}
 
@@ -223,7 +223,7 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectMetadataReplacedOnPut() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 		var key = "foo";
 		var body = "bar";
 
@@ -244,7 +244,7 @@ public class PutObject extends TestBase {
 	@Tag("Encoding")
 	public void testObjectWriteFile() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 		var key = "foo";
 		var dataStr = "bar";
 		var data = new String(dataStr.getBytes(), StandardCharsets.US_ASCII);
@@ -262,7 +262,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "-", "_", ".", "'", "(" + ")", "&", "$", "@", "=", ";", "/", ":", "+", "  ", ",", "?",
 				"{" + "}", "^", "%", "`", "[" + "]", "<" + ">", "~", "#", "|");
 		var client = getClient();
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 16, keys);
 		var objects = getObjectList(bucketName, null);
 
 		for (var key : keys) {
@@ -281,7 +281,7 @@ public class PutObject extends TestBase {
 	public void testBucketListSpecialPrefix() {
 		var keys = List.of("Bla/1", "Bla/2", "Bla/3", "Bla/4", "abcd");
 
-		var bucketName = createObjects(keys);
+		var bucketName = createObjects(17, keys);
 
 		var objects = getObjectList(bucketName, null);
 		assertEquals(5, objects.size());
@@ -293,7 +293,7 @@ public class PutObject extends TestBase {
 	@Test
 	@Tag("Lock")
 	public void testObjectLockUploadingObj() {
-		var bucketName = getNewBucketName();
+		var bucketName = getNewBucketName(18);
 		var client = getClient();
 		client.createBucket(new CreateBucketRequest(bucketName).withObjectLockEnabledForBucket(true));
 
@@ -328,7 +328,7 @@ public class PutObject extends TestBase {
 	public void testObjectInfixSpace() {
 		var keys = List.of("a a/", "b b/f1", "c/f 2", "d d/f 3");
 		var client = getClient();
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 19, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -341,7 +341,7 @@ public class PutObject extends TestBase {
 	public void testObjectSuffixSpace() {
 		var keys = List.of("a /", "b /f1", "c/f2 ", "d /f3 ");
 		var client = getClient();
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 20, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -355,7 +355,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)",
 				"*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV2();
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 21, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -369,7 +369,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(true, true);
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 22, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -383,7 +383,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV2();
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 23, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -397,7 +397,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(true, true);
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 24, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -411,7 +411,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(true, true);
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 25, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -425,7 +425,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientHttpsV4(true, true);
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 26, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -439,7 +439,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(false, true);
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 27, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -453,7 +453,7 @@ public class PutObject extends TestBase {
 		var keys = List.of("!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
 				")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]");
 		var client = getClientV4(false, true);
-		var bucketName = createObjects(client, keys);
+		var bucketName = createObjects(client, 28, keys);
 
 		var response = client.listObjects(bucketName);
 		var getKeys = getKeys(response.getObjectSummaries());
@@ -467,7 +467,7 @@ public class PutObject extends TestBase {
 		var key = "aaa";
 		var directoryName = "aaa/";
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 29);
 
 		client.putObject(bucketName, key, key);
 		client.putObject(bucketName, directoryName, "");
@@ -476,7 +476,7 @@ public class PutObject extends TestBase {
 		var keys = getKeys(response.getObjectSummaries());
 		assertEquals(2, keys.size());
 
-		var bucketName2 = createBucket(client);
+		var bucketName2 = createBucket(client, 29);
 
 		client.putObject(bucketName2, directoryName, "");
 		client.putObject(bucketName2, key, key);
@@ -485,7 +485,7 @@ public class PutObject extends TestBase {
 		keys = getKeys(response.getObjectSummaries());
 		assertEquals(2, keys.size());
 
-		var bucketName3 = createBucket(client);
+		var bucketName3 = createBucket(client, 29);
 		var newKey = "aaa/bbb/ccc";
 
 		client.putObject(bucketName3, key, key);
@@ -500,7 +500,7 @@ public class PutObject extends TestBase {
 	@Tag("Overwrite")
 	public void testObjectOverwrite() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 30);
 		var key = "temp";
 		var content1 = Utils.randomTextToLong(10 * MainData.KB);
 		var content2 = Utils.randomTextToLong(1 * MainData.MB);
@@ -519,7 +519,7 @@ public class PutObject extends TestBase {
 	@Tag("PUT")
 	public void testObjectEmoji() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 31);
 		var key = "test❤🍕🍔🚗";
 
 		client.putObject(bucketName, "asdf", key);
@@ -532,7 +532,7 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectSetGetMetadataUtf8() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 32);
 		var key = "foo";
 		var metadataKey1 = "x-amz-meta-meta1";
 		var metadataKey2 = "x-amz-meta-meta2";
@@ -555,7 +555,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeyMaxLength() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 33);
 		var key = Utils.randomObjectName(MainData.MAX_KEY_LENGTH);
 		var body = "test-max-length";
 
@@ -570,7 +570,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeyMinLength() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 34);
 		var key = "a";
 		var body = "test-min-length";
 
@@ -585,7 +585,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeyTooLong() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 35);
 		var key = Utils.randomObjectName(MainData.MAX_KEY_LENGTH + 1);
 		var body = "test-too-long";
 
@@ -598,7 +598,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeySpecialCharactersAtStart() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 36);
 		var specialChars = List.of("!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{",
 				"}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`");
 
@@ -621,7 +621,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeySpecialCharactersAtEnd() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 37);
 		var specialChars = List.of("!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{",
 				"}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`");
 
@@ -644,7 +644,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeyUnicodeCharacters() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 38);
 		var unicodeChars = List.of("한", "中", "日", "а", "α", "ع", "т", "ф");
 
 		for (var unicodeChar : unicodeChars) {
@@ -669,7 +669,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeyUnicodeCharactersTooLong() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 39);
 		var unicodeChars = List.of("한", "中", "日", "а", "α", "ع", "т", "ф");
 
 		for (var unicodeChar : unicodeChars) {
@@ -692,7 +692,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeyWithLeadingAndTrailingSpaces() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 40);
 		var testCases = List.of(
 				1, // " " + 1022자 + " " = 1024자
 				2, // " " + 1020자 + " " = 1024자
@@ -720,7 +720,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeyWithConsecutiveSlashes() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 41);
 		var keys = List.of(
 				"folder//double-slash",
 				"folder///triple-slash",
@@ -743,7 +743,7 @@ public class PutObject extends TestBase {
 	@Tag("KeyLength")
 	public void testPutObjectKeyBoundaryLengths() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 42);
 		var testCases = List.of(
 				MainData.MAX_KEY_LENGTH - 1, // 1023
 				MainData.MAX_KEY_LENGTH, // 1024

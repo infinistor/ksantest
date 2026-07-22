@@ -52,7 +52,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Check")
 	public void testLifecycleSet() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
@@ -70,7 +70,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Get")
 	public void testLifecycleGet() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpirationInDays(31)
 				.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("test1/")))
@@ -90,7 +90,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Check")
 	public void testLifecycleGetNoId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withExpirationInDays(31)
@@ -120,7 +120,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Version")
 	public void testLifecycleExpirationVersioningEnabled() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 		var key = "test1/a";
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		createMultipleVersions(client, bucketName, key, 1, true);
@@ -146,7 +146,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Check")
 	public void testLifecycleIdTooLong() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 5);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId(Utils.randomTextToLong(256)).withExpirationInDays(2)
@@ -164,7 +164,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Duplicate")
 	public void testLifecycleSameId() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 6);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
@@ -185,7 +185,7 @@ public class LifeCycle extends TestBase {
 	@Tag("ERROR")
 	public void testLifecycleInvalidStatus() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 7);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpirationInDays(2)
@@ -203,7 +203,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Date")
 	public void testLifecycleSetDate() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 8);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1")
@@ -220,7 +220,7 @@ public class LifeCycle extends TestBase {
 	@Tag("ERROR")
 	public void testLifecycleSetInvalidDate() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 9);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1")
@@ -239,7 +239,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Version")
 	public void testLifecycleSetNoncurrent() {
 		var client = getClient();
-		var bucketName = createObjects(client, "past/foo", "future/bar");
+		var bucketName = createObjects(client, 10, "past/foo", "future/bar");
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1")
@@ -259,7 +259,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Version")
 	public void testLifecycleNoncurrentExpiration() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 11);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		createMultipleVersions(client, bucketName, "test1/a", 3, true);
@@ -284,7 +284,7 @@ public class LifeCycle extends TestBase {
 	@Tag("DeleteMarker")
 	public void testLifecycleSetDeleteMarker() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 12);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpiredObjectDeleteMarker(true)
@@ -300,7 +300,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Filter")
 	public void testLifecycleSetFilter() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 13);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpiredObjectDeleteMarker(true)
@@ -316,7 +316,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Filter")
 	public void testLifecycleSetEmptyFilter() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 14);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpiredObjectDeleteMarker(true)
@@ -332,7 +332,7 @@ public class LifeCycle extends TestBase {
 	@Tag("DeleteMarker")
 	public void testLifecycleDeleteMarkerExpiration() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 15);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
 		createMultipleVersions(client, bucketName, "test1/a", 1, true);
@@ -360,7 +360,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Multipart")
 	public void testLifecycleSetMultipart() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 16);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1")
@@ -380,7 +380,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Multipart")
 	public void testLifecycleMultipartExpiration() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 17);
 
 		var keyNames = List.of("test1/a", "test2/b");
 
@@ -415,7 +415,7 @@ public class LifeCycle extends TestBase {
 	@Tag("Delete")
 	public void testLifecycleDelete() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 18);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpirationInDays(1)
@@ -435,7 +435,7 @@ public class LifeCycle extends TestBase {
 	@Tag("ERROR")
 	public void testLifecycleSetExpirationZero() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 19);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpirationInDays(0)
@@ -453,7 +453,7 @@ public class LifeCycle extends TestBase {
 	@Tag("metadata")
 	public void testLifecycleSetExpiration() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 20);
 
 		var rules = new ArrayList<Rule>();
 		rules.add(new Rule().withId("rule1").withExpirationInDays(1)

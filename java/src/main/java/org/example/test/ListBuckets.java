@@ -44,7 +44,7 @@ public class ListBuckets extends TestBase {
 		var client = getClient();
 		var bucketNames = new ArrayList<String>();
 		for (int i = 0; i < 5; i++) {
-			var bucketName = getNewBucketName();
+			var bucketName = getNewBucketName(1);
 			client.createBucket(bucketName);
 			bucketNames.add(bucketName);
 		}
@@ -86,7 +86,7 @@ public class ListBuckets extends TestBase {
 	@Tag("Metadata")
 	public void testHeadBucket() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 4);
 
 		var response = client.headBucket(new HeadBucketRequest(bucketName));
 		assertNotNull(response);
@@ -97,11 +97,11 @@ public class ListBuckets extends TestBase {
 	public void testListBucketsPrefix() {
 		var client = getClient();
 		var prefix = "1111-my-test";
-		var bucketName = Utils.getNewBucketName(prefix);
+		var bucketName = Utils.randomBucketName(prefix);
 		client.createBucket(bucketName);
 
 		for (int i = 0; i < 5; i++) {
-			createBucket(client);
+			createBucket(client, 5);
 		}
 
 		var response = client.listBuckets(new ListBucketsPaginatedRequest().withPrefix(prefix));
@@ -116,7 +116,7 @@ public class ListBuckets extends TestBase {
 	public void testListBucketsMaxBuckets() {
 		var client = getClient();
 		for (int i = 0; i < 5; i++) {
-			createBucket(client);
+			createBucket(client, 6);
 		}
 
 		// 전체 버킷 리스트를 먼저 가져옴
@@ -136,7 +136,7 @@ public class ListBuckets extends TestBase {
 	public void testListBucketsContinuationToken() {
 		var client = getClient();
 		for (int i = 0; i < 5; i++) {
-			createBucket(client);
+			createBucket(client, 7);
 		}
 
 		// 전체 버킷 리스트를 먼저 가져옴

@@ -37,7 +37,7 @@ public class Website extends TestBase {
 	@Tag("Check")
 	public void testWebsiteGetBuckets() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 1);
 
 		var e = assertThrows(AwsServiceException.class, () -> client.getBucketWebsite(g -> g.bucket(bucketName)));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
@@ -48,7 +48,7 @@ public class Website extends TestBase {
 	@Tag("Check")
 	public void testWebsitePutBuckets() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 2);
 
 		var webConfig = WebsiteConfiguration.builder()
 				.errorDocument(d -> d.key("HttpStatus.SC_BAD_REQUEST"))
@@ -66,7 +66,7 @@ public class Website extends TestBase {
 	@Tag("Delete")
 	public void testWebsiteDeleteBuckets() {
 		var client = getClient();
-		var bucketName = createBucket(client);
+		var bucketName = createBucket(client, 3);
 
 		var webConfig = WebsiteConfiguration.builder()
 				.errorDocument(d -> d.key("HttpStatus.SC_BAD_REQUEST"))

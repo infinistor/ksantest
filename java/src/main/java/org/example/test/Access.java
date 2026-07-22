@@ -44,7 +44,7 @@ public class Access extends TestBase {
 	@Tag("Denied")
 	public void testBlockPublicAclAndPolicy() {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter);
+		var bucketName = createBucket(client, 1, ObjectOwnership.ObjectWriter);
 
 		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(true).withIgnorePublicAcls(false)
 				.withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
@@ -78,7 +78,7 @@ public class Access extends TestBase {
 	public void testBlockPublicAcls() {
 		var key = "testBlockPublicAcls";
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter);
+		var bucketName = createBucket(client, 2, ObjectOwnership.ObjectWriter);
 
 		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(true).withIgnorePublicAcls(false)
 				.withBlockPublicPolicy(false).withRestrictPublicBuckets(false);
@@ -112,7 +112,7 @@ public class Access extends TestBase {
 	@Tag("Denied")
 	public void testBlockPublicPolicy() {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter);
+		var bucketName = createBucket(client, 3, ObjectOwnership.ObjectWriter);
 
 		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(false).withIgnorePublicAcls(false)
 				.withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
@@ -131,7 +131,7 @@ public class Access extends TestBase {
 	@Tag("Check")
 	public void testDeletePublicBlock() {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter);
+		var bucketName = createBucket(client, 4, ObjectOwnership.ObjectWriter);
 
 		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(true)
 				.withIgnorePublicAcls(true).withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
@@ -162,7 +162,7 @@ public class Access extends TestBase {
 		var key = "testIgnorePublicAcls";
 		var client = getClient();
 		var altClient = getAltClient();
-		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter, null);
+		var bucketName = createBucket(client, 5, ObjectOwnership.ObjectWriter, null);
 
 		client.putObject(new PutObjectRequest(bucketName, key, createBody(key), new ObjectMetadata())
 				.withCannedAcl(CannedAccessControlList.PublicRead));
@@ -189,7 +189,7 @@ public class Access extends TestBase {
 	@Tag("Check")
 	public void testPutPublicBlock() {
 		var client = getClient();
-		var bucketName = createBucket(client, ObjectOwnership.ObjectWriter);
+		var bucketName = createBucket(client, 6, ObjectOwnership.ObjectWriter);
 
 		var accessConf = new PublicAccessBlockConfiguration().withBlockPublicAcls(true)
 				.withIgnorePublicAcls(true).withBlockPublicPolicy(true).withRestrictPublicBuckets(false);
