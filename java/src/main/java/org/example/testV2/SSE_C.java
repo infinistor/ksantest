@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 
@@ -33,6 +34,7 @@ import com.google.gson.JsonObject;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
 
 public class SSE_C extends TestBase {
 	static final String SSE_KEY = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=";
@@ -482,5 +484,92 @@ public class SSE_C extends TestBase {
 
 		body.append(copyData2.body);
 		checkContentUsingRange(bucketName, targetKey2, body.toString(), MainData.MB);
+	}
+
+	@Test
+	@Tag("OverWrite")
+	public void testEncryptionSseCMultipartUploadOverwriteExistingObject() {
+		var key = "testEncryptionSseCMultipartUploadOverwriteExistingObject";
+		var partCount = 2;
+		var client = getClientHttps(false);
+		var bucketName = createBucket(client, 19);
+		unblockSseC(bucketName);
+		var content = Utils.randomTextToLong(5 * MainData.MB);
+
+		client.putObject(p -> p.bucket(bucketName).key(key)
+				.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+				.sseCustomerKey(SSE_KEY)
+				.sseCustomerKeyMD5(SSE_KEY_MD5),
+				RequestBody.fromString(content));
+
+		var initResponse = client.createMultipartUpload(c -> c.bucket(bucketName).key(key)
+				.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+				.sseCustomerKey(SSE_KEY)
+				.sseCustomerKeyMD5(SSE_KEY_MD5));
+		var uploadId = initResponse.uploadId();
+		var parts = new ArrayList<CompletedPart>();
+		var totalContent = new StringBuilder();
+
+		for (int i = 0; i < partCount; i++) {
+			var partNumber = i + 1;
+			var partResponse = client.uploadPart(u -> u.bucket(bucketName).key(key).uploadId(uploadId)
+					.partNumber(partNumber)
+					.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+					.sseCustomerKey(SSE_KEY)
+					.sseCustomerKeyMD5(SSE_KEY_MD5),
+					RequestBody.fromString(content));
+			parts.add(CompletedPart.builder().partNumber(partNumber).eTag(partResponse.eTag()).build());
+			totalContent.append(content);
+		}
+
+		client.completeMultipartUpload(
+				c -> c.bucket(bucketName).key(key).uploadId(uploadId).multipartUpload(p -> p.parts(parts)));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key)
+				.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+				.sseCustomerKey(SSE_KEY)
+				.sseCustomerKeyMD5(SSE_KEY_MD5));
+		var body = getBody(response);
+		assertTrue(totalContent.toString().equals(body), MainData.NOT_MATCHED);
+		assertEquals(SSE_ALGORITHM, response.response().sseCustomerAlgorithm());
+	}
+
+	@Test
+	@Tag("OverWrite")
+	public void testEncryptionSseCPutObjectOverwriteMultipartUpload() {
+		var key = "testEncryptionSseCPutObjectOverwriteMultipartUpload";
+		var multipartSize = 10 * MainData.MB;
+		var client = getClientHttps(false);
+		var bucketName = createBucket(client, 20);
+		unblockSseC(bucketName);
+		var content = Utils.randomTextToLong(1 * MainData.MB);
+
+		var uploadData = setupSseCMultipartUpload(client, bucketName, key, multipartSize, null);
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
+				.multipartUpload(p -> p.parts(uploadData.parts)));
+
+		client.putObject(p -> p.bucket(bucketName).key(key)
+				.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+				.sseCustomerKey(SSE_KEY)
+				.sseCustomerKeyMD5(SSE_KEY_MD5),
+				RequestBody.fromString(content));
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key)
+				.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+				.sseCustomerKey(SSE_KEY)
+				.sseCustomerKeyMD5(SSE_KEY_MD5));
+		assertEquals(content.length(), headResponse.contentLength());
+		assertEquals(SSE_ALGORITHM, headResponse.sseCustomerAlgorithm());
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key)
+				.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+				.sseCustomerKey(SSE_KEY)
+				.sseCustomerKeyMD5(SSE_KEY_MD5));
+		var body = getBody(response);
+		assertEquals(content.length(), body.length());
+		assertTrue(content.equals(body), MainData.NOT_MATCHED);
+		assertEquals(SSE_ALGORITHM, response.response().sseCustomerAlgorithm());
+
+		checkContentUsingRangeEnc(client, bucketName, key, content, MainData.KB);
 	}
 }

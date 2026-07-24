@@ -289,4 +289,24 @@ class SSE_S3 {
 		test.testSseS3NotRetroactive();
 		testV2.testSseS3NotRetroactive();
 	}
+
+	/**
+	 * SSE-S3로 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
+	 */
+	@Test
+	@Tag("OverWrite")
+	void testSseS3MultipartUploadOverwriteExistingObject() {
+		test.testSseS3MultipartUploadOverwriteExistingObject();
+		testV2.testSseS3MultipartUploadOverwriteExistingObject();
+	}
+
+	/**
+	 * SSE-S3 멀티파트로 업로드된 오브젝트를 putObject로 덮어쓴 뒤 파일이 정상인지 확인
+	 */
+	@Test
+	@Tag("OverWrite")
+	void testSseS3PutObjectOverwriteMultipartUpload() {
+		test.testSseS3PutObjectOverwriteMultipartUpload();
+		testV2.testSseS3PutObjectOverwriteMultipartUpload();
+	}
 }

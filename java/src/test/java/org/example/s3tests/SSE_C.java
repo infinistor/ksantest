@@ -196,4 +196,22 @@ class SSE_C {
 	void testSseCEncryptionMultipartCopyMany() {
 		testV2.testSseCEncryptionMultipartCopyMany();
 	}
+
+	/**
+	 * SSE-C로 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
+	 */
+	@Test
+	@Tag("OverWrite")
+	void testEncryptionSseCMultipartUploadOverwriteExistingObject() {
+		testV2.testEncryptionSseCMultipartUploadOverwriteExistingObject();
+	}
+
+	/**
+	 * SSE-C 멀티파트로 업로드된 오브젝트를 putObject로 덮어쓴 뒤 파일이 정상인지 확인
+	 */
+	@Test
+	@Tag("OverWrite")
+	void testEncryptionSseCPutObjectOverwriteMultipartUpload() {
+		testV2.testEncryptionSseCPutObjectOverwriteMultipartUpload();
+	}
 }

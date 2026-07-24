@@ -596,6 +596,83 @@ public class SSE_S3 extends TestBase {
 	}
 
 	@Test
+	@Tag("OverWrite")
+	public void testSseS3MultipartUploadOverwriteExistingObject() {
+		var key = "testSseS3MultipartUploadOverwriteExistingObject";
+		var partCount = 2;
+		var client = getClient();
+		var bucketName = createBucket(client, 27);
+		var content = Utils.randomTextToLong(5 * MainData.MB);
+
+		var sseS3Config = new ServerSideEncryptionConfiguration()
+				.withRules(new ServerSideEncryptionRule()
+						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+								.withSSEAlgorithm(SSEAlgorithm.AES256))
+						.withBucketKeyEnabled(false));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName)
+				.withServerSideEncryptionConfiguration(sseS3Config));
+
+		client.putObject(bucketName, key, content);
+
+		var initResponse = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		var uploadId = initResponse.getUploadId();
+		var parts = new ArrayList<PartETag>();
+		var totalContent = new StringBuilder();
+
+		for (int i = 0; i < partCount; i++) {
+			var partNumber = i + 1;
+			var partResponse = client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+					.withUploadId(uploadId).withInputStream(createBody(content)).withPartNumber(partNumber)
+					.withPartSize(content.length()));
+			parts.add(new PartETag(partNumber, partResponse.getETag()));
+			totalContent.append(content);
+		}
+
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId, parts));
+
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertTrue(totalContent.toString().equals(body), MainData.NOT_MATCHED);
+		assertEquals("AES256", response.getObjectMetadata().getSSEAlgorithm());
+	}
+
+	@Test
+	@Tag("OverWrite")
+	public void testSseS3PutObjectOverwriteMultipartUpload() {
+		var key = "testSseS3PutObjectOverwriteMultipartUpload";
+		var multipartSize = 10 * MainData.MB;
+		var client = getClient();
+		var bucketName = createBucket(client, 28);
+		var content = Utils.randomTextToLong(1 * MainData.MB);
+
+		var sseS3Config = new ServerSideEncryptionConfiguration()
+				.withRules(new ServerSideEncryptionRule()
+						.withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+								.withSSEAlgorithm(SSEAlgorithm.AES256))
+						.withBucketKeyEnabled(false));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName)
+				.withServerSideEncryptionConfiguration(sseS3Config));
+
+		var uploadData = setupMultipartUpload(client, bucketName, key, multipartSize);
+		client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
+
+		client.putObject(bucketName, key, content);
+
+		var headResponse = client.getObjectMetadata(bucketName, key);
+		assertEquals(content.length(), headResponse.getContentLength());
+		assertEquals("AES256", headResponse.getSSEAlgorithm());
+
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals(content.length(), body.length());
+		assertTrue(content.equals(body), MainData.NOT_MATCHED);
+		assertEquals("AES256", response.getObjectMetadata().getSSEAlgorithm());
+
+		checkContentUsingRange(bucketName, key, content, MainData.KB);
+	}
+
+	@Test
 	@Tag("Retroactive")
 	public void testSseS3NotRetroactive() {
 		var client = getClient();

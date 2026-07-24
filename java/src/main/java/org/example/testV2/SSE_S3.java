@@ -539,4 +539,75 @@ public class SSE_S3 extends TestBase {
 
 		checkContentUsingRange(bucketName, multiKey2, uploadData2.body.toString(), MainData.MB);
 	}
+
+	@Test
+	@Tag("OverWrite")
+	public void testSseS3MultipartUploadOverwriteExistingObject() {
+		var key = "testSseS3MultipartUploadOverwriteExistingObject";
+		var partCount = 2;
+		var client = getClient();
+		var bucketName = createBucket(client, 24);
+		var content = Utils.randomTextToLong(5 * MainData.MB);
+
+		client.putBucketEncryption(p -> p.bucket(bucketName).serverSideEncryptionConfiguration(
+				s -> s.rules(r -> r
+						.applyServerSideEncryptionByDefault(d -> d.sseAlgorithm(ServerSideEncryption.AES256))
+						.build())));
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+
+		var initResponse = client.createMultipartUpload(c -> c.bucket(bucketName).key(key));
+		var uploadId = initResponse.uploadId();
+		var parts = new ArrayList<CompletedPart>();
+		var totalContent = new StringBuilder();
+
+		for (int i = 0; i < partCount; i++) {
+			var partNumber = i + 1;
+			var partResponse = client.uploadPart(u -> u.bucket(bucketName).key(key).uploadId(uploadId)
+					.partNumber(partNumber), RequestBody.fromString(content));
+			parts.add(CompletedPart.builder().partNumber(partNumber).eTag(partResponse.eTag()).build());
+			totalContent.append(content);
+		}
+
+		client.completeMultipartUpload(
+				c -> c.bucket(bucketName).key(key).uploadId(uploadId).multipartUpload(p -> p.parts(parts)));
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
+		assertTrue(totalContent.toString().equals(body), MainData.NOT_MATCHED);
+		assertEquals(SSE_ALGORITHM, response.response().serverSideEncryptionAsString());
+	}
+
+	@Test
+	@Tag("OverWrite")
+	public void testSseS3PutObjectOverwriteMultipartUpload() {
+		var key = "testSseS3PutObjectOverwriteMultipartUpload";
+		var multipartSize = 10 * MainData.MB;
+		var client = getClient();
+		var bucketName = createBucket(client, 25);
+		var content = Utils.randomTextToLong(1 * MainData.MB);
+
+		client.putBucketEncryption(p -> p.bucket(bucketName).serverSideEncryptionConfiguration(
+				s -> s.rules(r -> r
+						.applyServerSideEncryptionByDefault(d -> d.sseAlgorithm(ServerSideEncryption.AES256))
+						.build())));
+
+		var uploadData = setupMultipartUpload(client, bucketName, key, multipartSize);
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
+				.multipartUpload(p -> p.parts(uploadData.parts)));
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(content.length(), headResponse.contentLength());
+		assertEquals(SSE_ALGORITHM, headResponse.serverSideEncryptionAsString());
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
+		assertEquals(content.length(), body.length());
+		assertTrue(content.equals(body), MainData.NOT_MATCHED);
+		assertEquals(SSE_ALGORITHM, response.response().serverSideEncryptionAsString());
+
+		checkContentUsingRange(bucketName, key, content, MainData.KB);
+	}
 }
