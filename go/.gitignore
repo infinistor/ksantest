@@ -1,0 +1,6 @@
+/Result_go.html
+/test-results.json
+/.gocache/
+/.gomodcache/
+/*.ini
+!/config.ini
