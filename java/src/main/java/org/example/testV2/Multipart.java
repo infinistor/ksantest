@@ -206,7 +206,6 @@ public class Multipart extends TestBase {
 		checkContentUsingRange(bucketName, key, body, MainData.MB);
 		checkContentUsingRange(bucketName, key, body, 10L * MainData.MB);
 		checkContentUsingRandomRange(bucketName, key, body, 100);
-
 	}
 
 	@Test
@@ -370,6 +369,32 @@ public class Multipart extends TestBase {
 		var body = getBody(response);
 		assertTrue(totalContent.toString().equals(body), MainData.NOT_MATCHED);
 
+	}
+
+	@Test
+	@Tag("OverWrite")
+	public void testPutObjectOverwriteMultipartUpload() {
+		var key = "testPutObjectOverwriteMultipartUpload";
+		var multipartSize = 10 * MainData.MB;
+		var client = getClient();
+		var bucketName = createBucket(client, 48);
+		var content = Utils.randomTextToLong(1 * MainData.MB);
+
+		var uploadData = setupMultipartUpload(client, bucketName, key, multipartSize);
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
+				.multipartUpload(p -> p.parts(uploadData.parts)));
+
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(content.length(), headResponse.contentLength());
+
+		var response = client.getObject(g -> g.bucket(bucketName).key(key));
+		var body = getBody(response);
+		assertEquals(content.length(), body.length());
+		assertTrue(content.equals(body), MainData.NOT_MATCHED);
+
+		checkContentUsingRange(bucketName, key, content, MainData.KB);
 	}
 
 	@Test

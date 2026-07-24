@@ -175,6 +175,16 @@ class Multipart {
 	}
 
 	/**
+	 * 멀티파트로 업로드된 오브젝트를 putObject로 덮어쓴 뒤 파일이 정상인지 확인
+	 */
+	@Test
+	@Tag("OverWrite")
+	void testPutObjectOverwriteMultipartUpload() {
+		test.testPutObjectOverwriteMultipartUpload();
+		testV2.testPutObjectOverwriteMultipartUpload();
+	}
+
+	/**
 	 * 멀티파트 업로드하는 도중 중단 성공 확인
 	 */
 	@Test

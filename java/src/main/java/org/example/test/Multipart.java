@@ -407,6 +407,32 @@ public class Multipart extends TestBase {
 	}
 
 	@Test
+	@Tag("OverWrite")
+	public void testPutObjectOverwriteMultipartUpload() {
+		var key = "testPutObjectOverwriteMultipartUpload";
+		var multipartSize = 10 * MainData.MB;
+		var client = getClient();
+		var bucketName = createBucket(client, 26);
+		var content = Utils.randomTextToLong(1 * MainData.MB);
+
+		var uploadData = setupMultipartUpload(client, bucketName, key, multipartSize);
+		client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
+
+		client.putObject(bucketName, key, content);
+
+		var headResponse = client.getObjectMetadata(bucketName, key);
+		assertEquals(content.length(), headResponse.getContentLength());
+
+		var response = client.getObject(bucketName, key);
+		var body = getBody(response.getObjectContent());
+		assertEquals(content.length(), body.length());
+		assertTrue(content.equals(body), MainData.NOT_MATCHED);
+
+		checkContentUsingRange(bucketName, key, content, MainData.KB);
+	}
+
+	@Test
 	@Tag("Cancel")
 	public void testAbortMultipartUpload() {
 		var key = "testAbortMultipartUpload";
