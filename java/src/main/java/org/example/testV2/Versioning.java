@@ -308,6 +308,67 @@ public class Versioning extends TestBase {
 	}
 
 	@Test
+	@Tag("Multipart")
+	public void testVersioningObjMixPutAndMultipart() {
+		var client = getClient();
+		var bucketName = createBucket(client, 33);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		var key = "testVersioningObjMixPutAndMultipart";
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+
+		// putObject 1KB
+		var content1kb = Utils.randomTextToLong(1 * MainData.KB);
+		var put1kb = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content1kb));
+		assertNotNull(put1kb.versionId());
+		versionIds.add(put1kb.versionId());
+		contents.add(content1kb);
+
+		// MultipartUpload 50MB
+		var upload50mb = setupMultipartUpload(client, bucketName, key, 50 * MainData.MB);
+		var comp50mb = client.completeMultipartUpload(c -> c.bucket(bucketName).key(key)
+				.uploadId(upload50mb.uploadId).multipartUpload(p -> p.parts(upload50mb.parts)));
+		assertNotNull(comp50mb.versionId());
+		versionIds.add(comp50mb.versionId());
+		contents.add(upload50mb.getBody());
+
+		// putObject 1MB
+		var content1mb = Utils.randomTextToLong(1 * MainData.MB);
+		var put1mb = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content1mb));
+		assertNotNull(put1mb.versionId());
+		versionIds.add(put1mb.versionId());
+		contents.add(content1mb);
+
+		// MultipartUpload 10MB
+		var upload10mb = setupMultipartUpload(client, bucketName, key, 10 * MainData.MB);
+		var comp10mb = client.completeMultipartUpload(c -> c.bucket(bucketName).key(key)
+				.uploadId(upload10mb.uploadId).multipartUpload(p -> p.parts(upload10mb.parts)));
+		assertNotNull(comp10mb.versionId());
+		versionIds.add(comp10mb.versionId());
+		contents.add(upload10mb.getBody());
+
+		// listObjectVersions: 최신 버전부터 반환
+		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(4, listResponse.versions().size());
+		var expectedNewestFirst = versionIds.reversed();
+		for (int i = 0; i < expectedNewestFirst.size(); i++) {
+			var version = listResponse.versions().get(i);
+			assertEquals(key, version.key());
+			assertEquals(expectedNewestFirst.get(i), version.versionId());
+			assertEquals(contents.get(contents.size() - 1 - i).length(), version.size());
+		}
+
+		// 업로드 순서대로 versionId 지정 GetObject 후 내용 검증
+		for (int i = 0; i < versionIds.size(); i++) {
+			var index = i;
+			var getResponse = client.getObject(g -> g.bucket(bucketName).key(key).versionId(versionIds.get(index)));
+			var body = getBody(getResponse);
+			assertTrue(contents.get(index).equals(body), MainData.NOT_MATCHED);
+		}
+	}
+
+	@Test
 	@Tag("Check")
 	public void testVersioningObjListMarker() {
 		var client = getClient();
@@ -586,7 +647,6 @@ public class Versioning extends TestBase {
 			try {
 				mTask.join();
 			} catch (InterruptedException e) {
-				e.printStackTrace();
 				Thread.currentThread().interrupt();
 			}
 		}
@@ -596,7 +656,6 @@ public class Versioning extends TestBase {
 			try {
 				mTask.join();
 			} catch (InterruptedException e) {
-				e.printStackTrace();
 				Thread.currentThread().interrupt();
 			}
 		}

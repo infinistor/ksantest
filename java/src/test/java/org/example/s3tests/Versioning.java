@@ -137,6 +137,16 @@ class Versioning {
 	}
 
 	/**
+	 * 버저닝 버킷에서 PutObject와 MultipartUpload를 섞어 업로드한 뒤 버전별 조회가 올바른지 확인
+	 */
+	@Test
+	@Tag("Multipart")
+	void testVersioningObjMixPutAndMultipart() {
+		test.testVersioningObjMixPutAndMultipart();
+		testV2.testVersioningObjMixPutAndMultipart();
+	}
+
+	/**
 	 * 오브젝트의 해당 버전 정보가 올바른지 확인
 	 */
 	@Test

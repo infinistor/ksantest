@@ -207,6 +207,70 @@ class TestVersioning(S3TestBase):
         response = client.list_object_versions(Bucket=bucket_name)
         assert len(response.get("Versions", [])) == 0
 
+    @pytest.mark.tag("Multipart")
+    def test_versioning_obj_mix_put_and_multipart(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 33)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+
+        key = "testVersioningObjMixPutAndMultipart"
+        version_ids: list[str] = []
+        contents: list[str] = []
+
+        # putObject 1KB
+        content_1kb = utils.random_text_to_long(1 * md.KB)
+        put_1kb = client.put_object(Bucket=bucket_name, Key=key, Body=content_1kb.encode("utf-8"))
+        assert put_1kb["VersionId"] is not None
+        version_ids.append(put_1kb["VersionId"])
+        contents.append(content_1kb)
+
+        # MultipartUpload 50MB
+        upload_50mb = self.setup_multipart_upload(client, bucket_name, key, 50 * md.MB)
+        comp_50mb = client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=key,
+            UploadId=upload_50mb.upload_id,
+            MultipartUpload=upload_50mb.completed_multipart_upload(),
+        )
+        assert comp_50mb["VersionId"] is not None
+        version_ids.append(comp_50mb["VersionId"])
+        contents.append(upload_50mb.get_body())
+
+        # putObject 1MB
+        content_1mb = utils.random_text_to_long(1 * md.MB)
+        put_1mb = client.put_object(Bucket=bucket_name, Key=key, Body=content_1mb.encode("utf-8"))
+        assert put_1mb["VersionId"] is not None
+        version_ids.append(put_1mb["VersionId"])
+        contents.append(content_1mb)
+
+        # MultipartUpload 10MB
+        upload_10mb = self.setup_multipart_upload(client, bucket_name, key, 10 * md.MB)
+        comp_10mb = client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=key,
+            UploadId=upload_10mb.upload_id,
+            MultipartUpload=upload_10mb.completed_multipart_upload(),
+        )
+        assert comp_10mb["VersionId"] is not None
+        version_ids.append(comp_10mb["VersionId"])
+        contents.append(upload_10mb.get_body())
+
+        # listObjectVersions: 최신 버전부터 반환
+        list_response = client.list_object_versions(Bucket=bucket_name)
+        versions = list_response.get("Versions", [])
+        assert len(versions) == 4
+        expected_newest_first = list(reversed(version_ids))
+        for i, version in enumerate(versions):
+            assert version["Key"] == key
+            assert version["VersionId"] == expected_newest_first[i]
+            assert version["Size"] == len(contents[len(contents) - 1 - i])
+
+        # 업로드 순서대로 versionId 지정 GetObject 후 내용 검증
+        for i, version_id in enumerate(version_ids):
+            get_response = client.get_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+            body = self.get_body(get_response)
+            assert body == contents[i], md.NOT_MATCHED
+
     @pytest.mark.tag("Check")
     def test_versioning_obj_list_marker(self):
         client = self.get_client()
