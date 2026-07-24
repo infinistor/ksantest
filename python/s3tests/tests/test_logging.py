@@ -13,15 +13,15 @@ class TestLogging(S3TestBase):
     @pytest.mark.tag("Put/Get")
     def test_logging_get(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 1)
         response = client.get_bucket_logging(Bucket=bucket_name)
         assert response.get("LoggingEnabled") is None
 
     @pytest.mark.tag("Put/Get")
     def test_logging_set(self):
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 2)
+        target_bucket_name = self.create_bucket(client, 2)
         client.put_bucket_logging(
             Bucket=source_bucket_name,
             BucketLoggingStatus={"LoggingEnabled": {"TargetBucket": target_bucket_name, "TargetPrefix": ""}},
@@ -30,8 +30,8 @@ class TestLogging(S3TestBase):
     @pytest.mark.tag("Put/Get")
     def test_logging_set_get(self):
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 3)
+        target_bucket_name = self.create_bucket(client, 3)
         client.put_bucket_logging(
             Bucket=source_bucket_name,
             BucketLoggingStatus={"LoggingEnabled": {"TargetBucket": target_bucket_name, "TargetPrefix": ""}},
@@ -44,8 +44,8 @@ class TestLogging(S3TestBase):
     def test_logging_prefix(self):
         prefix = "logs/"
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 4)
+        target_bucket_name = self.create_bucket(client, 4)
         client.put_bucket_logging(
             Bucket=source_bucket_name,
             BucketLoggingStatus={"LoggingEnabled": {"TargetBucket": target_bucket_name, "TargetPrefix": prefix}},
@@ -58,8 +58,8 @@ class TestLogging(S3TestBase):
     def test_logging_versioning(self):
         prefix = "logs/"
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 5)
+        target_bucket_name = self.create_bucket(client, 5)
         self.check_configure_versioning_retry(source_bucket_name, "Enabled")
         client.put_bucket_logging(
             Bucket=source_bucket_name,
@@ -73,8 +73,8 @@ class TestLogging(S3TestBase):
     def test_logging_encryption(self):
         prefix = "logs/"
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 6)
+        target_bucket_name = self.create_bucket(client, 6)
         client.put_bucket_encryption(
             Bucket=source_bucket_name,
             ServerSideEncryptionConfiguration={
@@ -91,8 +91,8 @@ class TestLogging(S3TestBase):
 
     @pytest.mark.tag("Error")
     def test_logging_bucket_not_found(self):
-        source_bucket_name = self.get_new_bucket_name_only()
-        target_bucket_name = self.get_new_bucket_name_only()
+        source_bucket_name = self.get_new_bucket_name_only(7)
+        target_bucket_name = self.get_new_bucket_name_only(7)
         prefix = "logs/"
         client = self.get_client()
         with pytest.raises(ClientError) as exc_info:
@@ -107,8 +107,8 @@ class TestLogging(S3TestBase):
     def test_logging_target_bucket_not_found(self):
         prefix = "logs/"
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.get_new_bucket_name_only()
+        source_bucket_name = self.create_bucket(client, 8)
+        target_bucket_name = self.get_new_bucket_name_only(8)
         with pytest.raises(ClientError) as exc_info:
             client.put_bucket_logging(
                 Bucket=source_bucket_name,

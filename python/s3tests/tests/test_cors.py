@@ -9,8 +9,8 @@
 
 
 # class TestCors(S3TestBase):
-#     def _create_public_cors_bucket(self, client):
-#         bucket_name = self.create_bucket_canned_acl(client)
+#     def _create_public_cors_bucket(self, client, test_id: int):
+#         bucket_name = self.create_bucket_canned_acl(client, test_id)
 #         client.put_bucket_acl(Bucket=bucket_name, ACL="public-read")
 #         return bucket_name
 
@@ -24,7 +24,7 @@
 #     @pytest.mark.tag("Check")
 #     def test_set_cors(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 1)
 
 #         allowed_methods = ["GET", "PUT"]
 #         allowed_origins = ["*.get", "*.put"]
@@ -56,10 +56,11 @@
 #             md.NO_SUCH_CORS_CONFIGURATION,
 #         )
 
+#     @pytest.mark.skip(reason="Java @Disabled")
 #     @pytest.mark.tag("Post")
 #     def test_cors_origin_response(self):
 #         client = self.get_client()
-#         bucket_name = self._create_public_cors_bucket(client)
+#         bucket_name = self._create_public_cors_bucket(client, 2)
 #         cors_config = {
 #             "CORSRules": [
 #                 {"AllowedMethods": ["GET"], "AllowedOrigins": ["*suffix"]},
@@ -117,10 +118,11 @@
 #                 key,
 #             )
 
+#     @pytest.mark.skip(reason="Java @Disabled")
 #     @pytest.mark.tag("Post")
 #     def test_cors_origin_wildcard(self):
 #         client = self.get_client()
-#         bucket_name = self._create_public_cors_bucket(client)
+#         bucket_name = self._create_public_cors_bucket(client, 3)
 #         cors_config = {"CORSRules": [{"AllowedMethods": ["GET"], "AllowedOrigins": ["*"]}]}
 
 #         self._assert_no_cors_configuration(client, bucket_name)
@@ -131,10 +133,11 @@
 #             "GET", bucket_name, {"Origin": "example.origin"}, 200, "*", "GET"
 #         )
 
+#     @pytest.mark.skip(reason="Java @Disabled")
 #     @pytest.mark.tag("Post")
 #     def test_cors_header_option(self):
 #         client = self.get_client()
-#         bucket_name = self._create_public_cors_bucket(client)
+#         bucket_name = self._create_public_cors_bucket(client, 4)
 #         cors_config = {
 #             "CORSRules": [
 #                 {

@@ -16,24 +16,24 @@ _COPY_SIZES = (1024, 256 * 1024, 1024 * 1024)
 class TestSseS3(S3TestBase):
     @pytest.mark.tag("PutGet")
     def test_sse_s3_encrypted_transfer_1b(self):
-        self.encryption_sse_s3_write(1)
+        self.encryption_sse_s3_write(1, 1)
 
     @pytest.mark.tag("PutGet")
     def test_sse_s3_encrypted_transfer_1kb(self):
-        self.encryption_sse_s3_write(1024)
+        self.encryption_sse_s3_write(2, 1024)
 
     @pytest.mark.tag("PutGet")
     def test_sse_s3_encrypted_transfer_1mb(self):
-        self.encryption_sse_s3_write(1024 * 1024)
+        self.encryption_sse_s3_write(3, 1024 * 1024)
 
     @pytest.mark.tag("PutGet")
     def test_sse_s3_encrypted_transfer_13b(self):
-        self.encryption_sse_s3_write(13)
+        self.encryption_sse_s3_write(4, 13)
 
     @pytest.mark.tag("Metadata")
     def test_sse_s3_encryption_method_head(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 5)
         key = "obj"
         data = utils.random_text_to_long(1000)
         metadata = {"foo": "bar"}
@@ -53,7 +53,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("Multipart")
     def test_sse_s3_encryption_multipart_upload(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 6)
         key = "multipartEnc"
         size = 50 * md.MB
         content_type = "text/plain"
@@ -108,7 +108,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("encryption")
     def test_get_bucket_encryption(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 7)
 
         if self.config.is_aws():
             response = client.get_bucket_encryption(Bucket=bucket_name)
@@ -123,7 +123,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("encryption")
     def test_put_bucket_encryption(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 8)
 
         client.put_bucket_encryption(
             Bucket=bucket_name,
@@ -139,7 +139,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("encryption")
     def test_delete_bucket_encryption(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 9)
 
         client.put_bucket_encryption(
             Bucket=bucket_name,
@@ -171,7 +171,7 @@ class TestSseS3(S3TestBase):
     def test_put_bucket_encryption_and_object_set_check(self):
         keys = ["for/bar", "test/"]
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 10)
 
         client.put_bucket_encryption(
             Bucket=bucket_name,
@@ -196,20 +196,20 @@ class TestSseS3(S3TestBase):
 
     @pytest.mark.tag("CopyObject")
     def test_copy_object_encryption_1kb(self):
-        self.encryption_sse_s3_copy(1024)
+        self.encryption_sse_s3_copy(11, 1024)
 
     @pytest.mark.tag("CopyObject")
     def test_copy_object_encryption_256kb(self):
-        self.encryption_sse_s3_copy(256 * 1024)
+        self.encryption_sse_s3_copy(12, 256 * 1024)
 
     @pytest.mark.tag("CopyObject")
     def test_copy_object_encryption_1mb(self):
-        self.encryption_sse_s3_copy(1024 * 1024)
+        self.encryption_sse_s3_copy(13, 1024 * 1024)
 
     @pytest.mark.tag("PutGet")
     def test_sse_s3_bucket_put_get(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 14)
         data = utils.random_text_to_long(1000)
 
         client.put_bucket_encryption(
@@ -238,7 +238,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("PutGet")
     def test_sse_s3_bucket_put_get_use_chunk_encoding(self):
         client = self.get_client_https(True)
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 15)
         data = utils.random_text_to_long(1000)
 
         client.put_bucket_encryption(
@@ -267,7 +267,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("PutGet")
     def test_sse_s3_bucket_put_get_not_chunk_encoding(self):
         client = self.get_client_https(False)
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 16)
         data = utils.random_text_to_long(1000)
 
         client.put_bucket_encryption(
@@ -296,7 +296,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("PresignedURL")
     def test_sse_s3_bucket_presigned_url_put_get(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 17)
         key = "foo"
 
         client.put_bucket_encryption(
@@ -323,7 +323,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("PresignedURL")
     def test_sse_s3_bucket_presigned_url_put_get_v4(self):
         client = self.get_client(True)
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 18)
         key = "foo"
 
         client.put_bucket_encryption(
@@ -350,7 +350,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("Get")
     def test_sse_s3_get_object_many(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 19)
         key = "foo"
         data = utils.random_text_to_long(15 * md.MB)
 
@@ -371,7 +371,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("Get")
     def test_sse_s3_range_object_many(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 20)
         key = "foo"
         size = 15 * 1024 * 1024
         data = utils.random_text_to_long(size)
@@ -393,7 +393,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("Multipart")
     def test_sse_s3_encryption_multipart_copy_part_upload(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 21)
         source_key = "multipartEnc"
         size = 50 * md.MB
         metadata = {"foo": "bar"}
@@ -432,7 +432,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("Multipart")
     def test_sse_s3_encryption_multipart_copy_many(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 22)
         source_key = "multipartEnc"
         size = 10 * md.MB
         body = ""
@@ -481,7 +481,7 @@ class TestSseS3(S3TestBase):
     @pytest.mark.tag("Retroactive")
     def test_sse_s3_not_retroactive(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 23)
         data = utils.random_text_to_long(1000)
 
         put_key = "put"
@@ -565,3 +565,94 @@ class TestSseS3(S3TestBase):
         assert get_response["ServerSideEncryption"] == SSE_ALGORITHM
 
         self.check_content_using_range(bucket_name, multi_key2, upload_data2.body, md.MB)
+
+    @pytest.mark.tag("OverWrite")
+    def test_sse_s3_multipart_upload_overwrite_existing_object(self):
+        key = "testSseS3MultipartUploadOverwriteExistingObject"
+        part_count = 2
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 24)
+        content = utils.random_text_to_long(5 * md.MB)
+
+        client.put_bucket_encryption(
+            Bucket=bucket_name,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": SSE_ALGORITHM},
+                    }
+                ]
+            },
+        )
+
+        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+
+        init_response = client.create_multipart_upload(Bucket=bucket_name, Key=key)
+        upload_id = init_response["UploadId"]
+        parts: list = []
+        total_content = ""
+
+        for i in range(part_count):
+            part_number = i + 1
+            part_response = client.upload_part(
+                Bucket=bucket_name,
+                Key=key,
+                UploadId=upload_id,
+                PartNumber=part_number,
+                Body=content.encode("utf-8"),
+            )
+            parts.append({"PartNumber": part_number, "ETag": part_response["ETag"]})
+            total_content += content
+
+        client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=key,
+            UploadId=upload_id,
+            MultipartUpload={"Parts": parts},
+        )
+
+        response = client.get_object(Bucket=bucket_name, Key=key)
+        body = self.get_body(response)
+        assert body == total_content, md.NOT_MATCHED
+        assert response["ServerSideEncryption"] == SSE_ALGORITHM
+
+    @pytest.mark.tag("OverWrite")
+    def test_sse_s3_put_object_overwrite_multipart_upload(self):
+        key = "testSseS3PutObjectOverwriteMultipartUpload"
+        multipart_size = 10 * md.MB
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 25)
+        content = utils.random_text_to_long(1 * md.MB)
+
+        client.put_bucket_encryption(
+            Bucket=bucket_name,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": SSE_ALGORITHM},
+                    }
+                ]
+            },
+        )
+
+        upload_data = self.setup_multipart_upload(client, bucket_name, key, multipart_size)
+        client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=key,
+            UploadId=upload_data.upload_id,
+            MultipartUpload=upload_data.completed_multipart_upload(),
+        )
+
+        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+
+        head_response = client.head_object(Bucket=bucket_name, Key=key)
+        assert head_response["ContentLength"] == len(content)
+        assert head_response["ServerSideEncryption"] == SSE_ALGORITHM
+
+        response = client.get_object(Bucket=bucket_name, Key=key)
+        body = self.get_body(response)
+        assert len(body) == len(content)
+        assert body == content, md.NOT_MATCHED
+        assert response["ServerSideEncryption"] == SSE_ALGORITHM
+
+        self.check_content_using_range(bucket_name, key, content, md.KB)

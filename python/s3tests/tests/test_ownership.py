@@ -13,20 +13,20 @@ class TestOwnership(S3TestBase):
     @pytest.mark.tag("Get")
     def test_get_bucket_ownership(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="BucketOwnerEnforced")
+        bucket_name = self.create_bucket(client, 1, object_ownership="BucketOwnerEnforced")
         client.get_bucket_ownership_controls(Bucket=bucket_name)
 
     @pytest.mark.tag("Put")
     def test_create_bucket_with_ownership(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="BucketOwnerEnforced")
+        bucket_name = self.create_bucket(client, 2, object_ownership="BucketOwnerEnforced")
         response = client.get_bucket_ownership_controls(Bucket=bucket_name)
         assert response["OwnershipControls"]["Rules"][0]["ObjectOwnership"] == "BucketOwnerEnforced"
 
     @pytest.mark.tag("Put")
     def test_change_bucket_ownership(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="BucketOwnerEnforced")
+        bucket_name = self.create_bucket(client, 3, object_ownership="BucketOwnerEnforced")
         response = client.get_bucket_ownership_controls(Bucket=bucket_name)
         assert response["OwnershipControls"]["Rules"][0]["ObjectOwnership"] == "BucketOwnerEnforced"
         client.put_bucket_ownership_controls(
@@ -39,7 +39,7 @@ class TestOwnership(S3TestBase):
     @pytest.mark.tag("Error")
     def test_bucket_ownership_deny_acl(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="BucketOwnerEnforced")
+        bucket_name = self.create_bucket(client, 4, object_ownership="BucketOwnerEnforced")
         response = client.get_bucket_ownership_controls(Bucket=bucket_name)
         assert response["OwnershipControls"]["Rules"][0]["ObjectOwnership"] == "BucketOwnerEnforced"
         with pytest.raises(ClientError) as exc_info:
@@ -50,7 +50,7 @@ class TestOwnership(S3TestBase):
     @pytest.mark.tag("Error")
     def test_bucket_ownership_deny_object_acl(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="BucketOwnerEnforced")
+        bucket_name = self.create_bucket(client, 5, object_ownership="BucketOwnerEnforced")
         key = "testBucketOwnershipDenyObjectACL"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         with pytest.raises(ClientError) as exc_info:
@@ -61,7 +61,7 @@ class TestOwnership(S3TestBase):
     @pytest.mark.tag("Check")
     def test_object_ownership_deny_change(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 6)
         key = "testObjectOwnershipDenyChange"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), ACL="public-read")
         public_client = self.get_public_client()
@@ -75,7 +75,7 @@ class TestOwnership(S3TestBase):
     @pytest.mark.tag("Error")
     def test_object_ownership_deny_acl(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 7)
         key = "testObjectOwnershipDenyACL"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), ACL="public-read")
         client.put_bucket_ownership_controls(

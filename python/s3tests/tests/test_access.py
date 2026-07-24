@@ -13,7 +13,7 @@ class TestAccess(S3TestBase):
     @pytest.mark.tag("Denied")
     def test_block_public_acl_and_policy(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="ObjectWriter")
+        bucket_name = self.create_bucket(client, 1, object_ownership="ObjectWriter")
 
         access_conf = {
             "BlockPublicAcls": True,
@@ -42,7 +42,7 @@ class TestAccess(S3TestBase):
     def test_block_public_acls(self):
         key = "testBlockPublicAcls"
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="ObjectWriter")
+        bucket_name = self.create_bucket(client, 2, object_ownership="ObjectWriter")
 
         access_conf = {
             "BlockPublicAcls": True,
@@ -73,7 +73,7 @@ class TestAccess(S3TestBase):
     @pytest.mark.tag("Denied")
     def test_block_public_policy(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="ObjectWriter")
+        bucket_name = self.create_bucket(client, 3, object_ownership="ObjectWriter")
 
         access_conf = {
             "BlockPublicAcls": False,
@@ -97,7 +97,7 @@ class TestAccess(S3TestBase):
     @pytest.mark.tag("Check")
     def test_delete_public_block(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="ObjectWriter")
+        bucket_name = self.create_bucket(client, 4, object_ownership="ObjectWriter")
 
         access_conf = {
             "BlockPublicAcls": True,
@@ -130,7 +130,7 @@ class TestAccess(S3TestBase):
         key = "testIgnorePublicAcls"
         client = self.get_client()
         alt_client = self.get_alt_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 5)
 
         client.put_object(
             Bucket=bucket_name,
@@ -167,7 +167,7 @@ class TestAccess(S3TestBase):
     @pytest.mark.tag("Check")
     def test_put_public_block(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership="ObjectWriter")
+        bucket_name = self.create_bucket(client, 6, object_ownership="ObjectWriter")
 
         access_conf = {
             "BlockPublicAcls": True,

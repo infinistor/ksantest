@@ -11,9 +11,9 @@ class TestKsanApi(S3TestBase):
     @pytest.mark.tag("Get")
     def test_get_bucket_enabled_tagging_index(self):
         client = self.get_client()
-        self.create_bucket(client)
+        self.create_bucket(client, 1)
 
     @pytest.mark.tag("Put")
     def test_put_bucket_enabled_tagging_index(self):
         client = self.get_client()
-        self.create_bucket(client)
+        self.create_bucket(client, 2)

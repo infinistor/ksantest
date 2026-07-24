@@ -18,8 +18,8 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("PUT")
     def test_bucket_list_distinct(self):
         client = self.get_client()
-        bucket_name1 = self.create_bucket(client)
-        bucket_name2 = self.create_bucket(client)
+        bucket_name1 = self.create_bucket(client, 1)
+        bucket_name2 = self.create_bucket(client, 1)
         client.put_object(Bucket=bucket_name1, Key="foo", Body=b"bar")
         response = client.list_objects(Bucket=bucket_name2)
         assert len(response.get("Contents", [])) == 0
@@ -28,7 +28,7 @@ class TestPutObject(S3TestBase):
     def test_object_write_to_non_exist_bucket(self):
         key = "foo"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.get_new_bucket_name(2)
         with pytest.raises(ClientError) as exc_info:
             client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
@@ -37,7 +37,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_head_zero_bytes(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         key = "foo"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"")
         response = client.head_object(Bucket=bucket_name, Key=key)
@@ -46,14 +46,14 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_write_check_etag(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 4)
         response = client.put_object(Bucket=bucket_name, Key="foo", Body=b"bar")
         assert response["ETag"].replace('"', "") == "37b51d194a7513e45b56f6524f2d51f2"
 
     @pytest.mark.tag("cacheControl")
     def test_object_write_cache_control(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 5)
         key = "foo"
         body = "bar"
         cache_control = "public, max-age=14HttpStatus.SC_BAD_REQUEST"
@@ -75,7 +75,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("Expires")
     def test_object_write_expires(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 6)
         key = "foo"
         body = "bar"
         expires = self.get_time_to_add_seconds(6000)
@@ -93,7 +93,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("Update")
     def test_object_write_read_update_read_delete(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 7)
         key = "foo"
         body = "bar"
         client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
@@ -108,7 +108,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_set_get_metadata_none_to_good(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 8)
         key = "foo"
         metadata = {"meta1": "my"}
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
@@ -118,7 +118,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_set_get_metadata_none_to_empty(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 9)
         key = "foo"
         metadata = {"meta1": ""}
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
@@ -128,7 +128,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_set_get_metadata_overwrite_to_empty(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 10)
         key = "foo"
         metadata = {"meta1": "my"}
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
@@ -143,7 +143,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_set_get_non_utf8_metadata(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 11)
         key = "foo"
         metadata = {"meta1": "\nmy_meta"}
         with pytest.raises(ClientError) as exc_info:
@@ -154,7 +154,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_set_get_metadata_empty_to_unreadable_prefix(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 12)
         key = "foo"
         metadata = {"meta1": "\nasdf"}
         with pytest.raises(ClientError) as exc_info:
@@ -165,7 +165,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_set_get_metadata_empty_to_unreadable_suffix(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 13)
         key = "foo"
         metadata = {"meta1": "asdf\n"}
         with pytest.raises(ClientError) as exc_info:
@@ -175,7 +175,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_metadata_replaced_on_put(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 14)
         key = "foo"
         body = "bar"
         metadata = {"meta1": "bar"}
@@ -193,7 +193,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("Encoding")
     def test_object_write_file(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 15)
         key = "foo"
         data_str = "bar"
         data = data_str.encode("us-ascii").decode("us-ascii")
@@ -232,7 +232,7 @@ class TestPutObject(S3TestBase):
             "|",
         ]
         client = self.get_client()
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 16, keys)
         objects = self.get_object_list(client, bucket_name, None)
         for key in keys:
             assert key in objects
@@ -247,7 +247,7 @@ class TestPutObject(S3TestBase):
     def test_bucket_list_special_prefix(self):
         keys = ["Bla/1", "Bla/2", "Bla/3", "Bla/4", "abcd"]
         client = self.get_client()
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 17, keys)
         objects = self.get_object_list(client, bucket_name, None)
         assert len(objects) == 5
         objects = self.get_object_list(client, bucket_name, "Bla/")
@@ -255,9 +255,8 @@ class TestPutObject(S3TestBase):
 
     @pytest.mark.tag("Lock")
     def test_object_lock_uploading_obj(self):
-        bucket_name = self.get_new_bucket_name()
         client = self.get_client()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 18)
         key = "testObjectLockUploadingObjV2"
         content_md5 = utils.get_md5(key)
         put_response = client.put_object(
@@ -291,7 +290,7 @@ class TestPutObject(S3TestBase):
     def test_object_infix_space(self):
         keys = ["a a/", "b b/f1", "c/f 2", "d d/f 3"]
         client = self.get_client()
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 19, keys)
         response = client.list_objects(Bucket=bucket_name)
         assert self.get_keys(response.get("Contents")) == keys
 
@@ -299,7 +298,7 @@ class TestPutObject(S3TestBase):
     def test_object_suffix_space(self):
         keys = ["a /", "b /f1", "c/f2 ", "d /f3 "]
         client = self.get_client()
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 20, keys)
         response = client.list_objects(Bucket=bucket_name)
         assert self.get_keys(response.get("Contents")) == keys
 
@@ -335,7 +334,7 @@ class TestPutObject(S3TestBase):
             "]/]",
         ]
         client = self.get_client(True)
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 21, keys)
         response = client.list_objects(Bucket=bucket_name)
         assert self.get_keys(response.get("Contents")) == keys
 
@@ -371,7 +370,7 @@ class TestPutObject(S3TestBase):
             "]/]",
         ]
         client = self.get_client(True)
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 22, keys)
         response = client.list_objects(Bucket=bucket_name)
         assert self.get_keys(response.get("Contents")) == keys
 
@@ -407,7 +406,7 @@ class TestPutObject(S3TestBase):
             "]/]",
         ]
         client = self.get_client(True)
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 23, keys)
         response = client.list_objects(Bucket=bucket_name)
         assert self.get_keys(response.get("Contents")) == keys
 
@@ -443,7 +442,7 @@ class TestPutObject(S3TestBase):
             "]/]",
         ]
         client = self.get_client(False)
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 24, keys)
         response = client.list_objects(Bucket=bucket_name)
         assert self.get_keys(response.get("Contents")) == keys
 
@@ -479,7 +478,7 @@ class TestPutObject(S3TestBase):
             "]/]",
         ]
         client = self.get_client(False)
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 25, keys)
         response = client.list_objects(Bucket=bucket_name)
         assert self.get_keys(response.get("Contents")) == keys
 
@@ -488,21 +487,21 @@ class TestPutObject(S3TestBase):
         key = "aaa"
         directory_name = "aaa/"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 26)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         client.put_object(Bucket=bucket_name, Key=directory_name, Body=b"")
         response = client.list_objects(Bucket=bucket_name)
         keys = self.get_keys(response.get("Contents"))
         assert len(keys) == 2
 
-        bucket_name2 = self.create_bucket(client)
+        bucket_name2 = self.create_bucket(client, 26)
         client.put_object(Bucket=bucket_name2, Key=directory_name, Body=b"")
         client.put_object(Bucket=bucket_name2, Key=key, Body=key.encode("utf-8"))
         response = client.list_objects(Bucket=bucket_name2)
         keys = self.get_keys(response.get("Contents"))
         assert len(keys) == 2
 
-        bucket_name3 = self.create_bucket(client)
+        bucket_name3 = self.create_bucket(client, 26)
         new_key = "aaa/bbb/ccc"
         client.put_object(Bucket=bucket_name3, Key=key, Body=key.encode("utf-8"))
         client.put_object(Bucket=bucket_name3, Key=new_key, Body=new_key.encode("utf-8"))
@@ -513,7 +512,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("Overwrite")
     def test_object_overwrite(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 27)
         key = "temp"
         content1 = utils.random_text_to_long(10 * md.KB)
         content2 = utils.random_text_to_long(1 * md.MB)
@@ -527,7 +526,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("PUT")
     def test_object_emoji(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 28)
         key = "test❤🍕🍔🚗"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         response = client.list_objects(Bucket=bucket_name)
@@ -536,7 +535,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_object_set_get_metadata_utf8(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 29)
         key = "foo"
         metadata_key1 = "meta1"
         metadata_key2 = "meta2"
@@ -566,7 +565,7 @@ class TestPutObject(S3TestBase):
 
     @pytest.mark.tag("checksum")
     def test_put_object_checksum_use_chunk_encoding(self):
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(30)
         configs = [
             ("when_required", "when_required"),
             ("when_required", "when_supported"),
@@ -593,7 +592,7 @@ class TestPutObject(S3TestBase):
 
     @pytest.mark.tag("checksum")
     def test_put_object_checksum(self):
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(31)
         configs = [
             ("when_required", "when_required"),
             ("when_required", "when_supported"),
@@ -621,7 +620,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("checksum")
     def test_put_object_checksum_with_value(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 32)
         for algorithm in checksum.ALL_ALGORITHMS:
             key = f"precomputed/{algorithm}"
             params = {
@@ -636,7 +635,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("checksum-failure")
     def test_put_object_checksum_failure(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 33)
         for algorithm in checksum.ALL_ALGORITHMS:
             key = f"wrong-checksum/{algorithm}"
             wrong_value = checksum.calculate_checksum(algorithm, f"{key}-wrong")
@@ -654,7 +653,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("IfMatch")
     def test_put_object_if_match_good(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 34)
         key = "testPutObjectIfMatchGood"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"old")["ETag"]
         client.put_object(Bucket=bucket_name, Key=key, Body=b"new", IfMatch=etag)
@@ -664,7 +663,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("IfMatch")
     def test_put_object_if_match_failed(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 35)
         key = "testPutObjectIfMatchFailed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"old")
         with pytest.raises(ClientError) as exc_info:
@@ -682,7 +681,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_put_object_if_none_match_good(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 36)
         key = "testPutObjectIfNoneMatchGood"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar", IfNoneMatch="*")
         response = client.get_object(Bucket=bucket_name, Key=key)
@@ -691,7 +690,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_put_object_if_none_match_failed(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 37)
         key = "testPutObjectIfNoneMatchFailed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"old")
         with pytest.raises(ClientError) as exc_info:
@@ -705,7 +704,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_put_object_if_match_and_if_none_match(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 38)
         key = "testPutObjectIfMatchAndIfNoneMatch"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"old")["ETag"]
         with pytest.raises(ClientError) as exc_info:
@@ -724,7 +723,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_max_length(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 39)
         key = utils.random_object_name(md.MAX_KEY_LENGTH)
         body = "test-max-length"
         response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
@@ -735,7 +734,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_min_length(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 40)
         key = "a"
         body = "test-min-length"
         response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
@@ -746,7 +745,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_too_long(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 41)
         key = utils.random_object_name(md.MAX_KEY_LENGTH + 1)
         body = "test-too-long"
         with pytest.raises(ClientError) as exc_info:
@@ -757,7 +756,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_special_characters_at_start(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 42)
         special_chars = [
             "!",
             "@",
@@ -805,7 +804,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_special_characters_at_end(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 43)
         special_chars = [
             "!",
             "@",
@@ -853,7 +852,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_unicode_characters(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 44)
         unicode_chars = ["한", "中", "日", "а", "α", "ع", "т", "ф"]
         for unicode_char in unicode_chars:
             single_char_bytes = len(unicode_char.encode("utf-8"))
@@ -869,7 +868,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_unicode_characters_too_long(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 45)
         unicode_chars = ["한", "中", "日", "а", "α", "ع", "т", "ф"]
         for unicode_char in unicode_chars:
             single_char_bytes = len(unicode_char.encode("utf-8"))
@@ -885,7 +884,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_with_leading_and_trailing_spaces(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 46)
         test_cases = [1, 2, 3, 5]
         for space_count in test_cases:
             spaces = " " * space_count
@@ -902,7 +901,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_with_consecutive_slashes(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 47)
         keys = [
             "folder//double-slash",
             "folder///triple-slash",
@@ -920,7 +919,7 @@ class TestPutObject(S3TestBase):
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_boundary_lengths(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 48)
         test_cases = [md.MAX_KEY_LENGTH - 1, md.MAX_KEY_LENGTH, 500, 100, 50]
         for length in test_cases:
             key = utils.random_object_name(length)

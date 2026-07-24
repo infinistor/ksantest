@@ -33,7 +33,7 @@
 #     @pytest.mark.tag("Select")
 #     def test_select_object_content_csv_basic(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 1)
 #         key = "data.csv"
 #         csv_content = "name,age,city\nAlice,30,Seoul\nBob,25,Busan"
 #         client.put_object(Bucket=bucket_name, Key=key, Body=csv_content.encode("utf-8"))
@@ -54,7 +54,7 @@
 #     @pytest.mark.tag("Select")
 #     def test_select_object_content_csv_with_where(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 2)
 #         key = "data.csv"
 #         csv_content = "name,age,city\nAlice,30,Seoul\nBob,25,Busan\nCharlie,30,Incheon"
 #         client.put_object(Bucket=bucket_name, Key=key, Body=csv_content.encode("utf-8"))
@@ -75,7 +75,7 @@
 #     @pytest.mark.tag("Select")
 #     def test_select_object_content_csv_limit(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 3)
 #         key = "data.csv"
 #         csv_content = "id,value\n1,a\n2,b\n3,c"
 #         client.put_object(Bucket=bucket_name, Key=key, Body=csv_content.encode("utf-8"))
@@ -95,7 +95,7 @@
 #     @pytest.mark.tag("Select")
 #     def test_select_object_content_json_basic(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 4)
 #         key = "data.json"
 #         json_content = '{"name":"Alice","age":30}\n{"name":"Bob","age":25}'
 #         client.put_object(Bucket=bucket_name, Key=key, Body=json_content.encode("utf-8"))
@@ -135,7 +135,7 @@
 #     @pytest.mark.tag("ERROR")
 #     def test_select_object_content_non_existent_object(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 6)
 #         key = "non-existent-key.csv"
 
 #         self.assert_client_error(
@@ -155,7 +155,7 @@
 #     @pytest.mark.tag("Select")
 #     def test_select_object_content_csv_empty_rows(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 7)
 #         key = "empty.csv"
 #         csv_content = "col1,col2\n"
 #         client.put_object(Bucket=bucket_name, Key=key, Body=csv_content.encode("utf-8"))

@@ -39,15 +39,15 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("List")
     def test_list_bucket_inventory(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 1)
         response = client.list_bucket_inventory_configurations(Bucket=bucket_name)
         assert not response.get("InventoryConfigurationList")
 
     @pytest.mark.tag("Put")
     def test_put_bucket_inventory(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 2)
+        target_bucket_name = self.create_bucket(client, 2)
         inventory_id = "my-inventory-v2"
         client.put_bucket_inventory_configuration(
             Bucket=bucket_name,
@@ -58,8 +58,8 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Check")
     def test_check_bucket_inventory(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
+        target_bucket_name = self.create_bucket(client, 3)
         inventory_id = "my-inventory"
         client.put_bucket_inventory_configuration(
             Bucket=bucket_name,
@@ -72,26 +72,22 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Get")
     def test_get_bucket_inventory(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 4)
+        target_bucket_name = self.create_bucket(client, 4)
         inventory_id = "my-inventory"
         client.put_bucket_inventory_configuration(
             Bucket=bucket_name,
             Id=inventory_id,
-            InventoryConfiguration=self._inventory_config(
-                inventory_id, target_bucket_name, prefix="a/"
-            ),
+            InventoryConfiguration=self._inventory_config(inventory_id, target_bucket_name, prefix="a/"),
         )
-        response = client.get_bucket_inventory_configuration(
-            Bucket=bucket_name, Id=inventory_id
-        )
+        response = client.get_bucket_inventory_configuration(Bucket=bucket_name, Id=inventory_id)
         assert response["InventoryConfiguration"]["Id"] == inventory_id
 
     @pytest.mark.tag("Delete")
     def test_delete_bucket_inventory(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 5)
+        target_bucket_name = self.create_bucket(client, 5)
         inventory_id = "my-inventory"
         client.put_bucket_inventory_configuration(
             Bucket=bucket_name,
@@ -105,12 +101,10 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Error")
     def test_get_bucket_inventory_not_exist(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 6)
         inventory_id = "my-inventory"
         self.assert_client_error(
-            lambda: client.get_bucket_inventory_configuration(
-                Bucket=bucket_name, Id=inventory_id
-            ),
+            lambda: client.get_bucket_inventory_configuration(Bucket=bucket_name, Id=inventory_id),
             404,
             md.NO_SUCH_CONFIGURATION,
         )
@@ -118,12 +112,10 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Error")
     def test_delete_bucket_inventory_not_exist(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 7)
         inventory_id = "my-inventory"
         self.assert_client_error(
-            lambda: client.delete_bucket_inventory_configuration(
-                Bucket=bucket_name, Id=inventory_id
-            ),
+            lambda: client.delete_bucket_inventory_configuration(Bucket=bucket_name, Id=inventory_id),
             404,
             md.NO_SUCH_CONFIGURATION,
         )
@@ -131,8 +123,8 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Error")
     def test_put_bucket_inventory_not_exist(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.get_new_bucket_name(8)
+        target_bucket_name = self.create_bucket(client, 8)
         inventory_id = "my-inventory"
         self.assert_client_error(
             lambda: client.put_bucket_inventory_configuration(
@@ -147,8 +139,8 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Error")
     def test_put_bucket_inventory_id_not_exist(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 9)
+        target_bucket_name = self.create_bucket(client, 9)
         inventory_id = ""
         self.assert_client_error(
             lambda: client.put_bucket_inventory_configuration(
@@ -163,32 +155,26 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Error")
     def test_put_bucket_inventory_id_duplicate(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 10)
+        target_bucket_name = self.create_bucket(client, 10)
         inventory_id = "my-inventory"
         config = self._inventory_config(inventory_id, target_bucket_name)
-        client.put_bucket_inventory_configuration(
-            Bucket=bucket_name, Id=inventory_id, InventoryConfiguration=config
-        )
-        client.put_bucket_inventory_configuration(
-            Bucket=bucket_name, Id=inventory_id, InventoryConfiguration=config
-        )
+        client.put_bucket_inventory_configuration(Bucket=bucket_name, Id=inventory_id, InventoryConfiguration=config)
+        client.put_bucket_inventory_configuration(Bucket=bucket_name, Id=inventory_id, InventoryConfiguration=config)
         response = client.list_bucket_inventory_configurations(Bucket=bucket_name)
         assert len(response.get("InventoryConfigurationList", [])) == 1
 
     @pytest.mark.tag("Error")
     def test_put_bucket_inventory_target_not_exist(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.get_new_bucket_name()
+        bucket_name = self.create_bucket(client, 11)
+        target_bucket_name = self.get_new_bucket_name(11)
         inventory_id = "my-inventory"
         self.assert_client_error(
             lambda: client.put_bucket_inventory_configuration(
                 Bucket=bucket_name,
                 Id=inventory_id,
-                InventoryConfiguration=self._inventory_config(
-                    inventory_id, target_bucket_name
-                ),
+                InventoryConfiguration=self._inventory_config(inventory_id, target_bucket_name),
             ),
             404,
             md.NO_SUCH_BUCKET,
@@ -197,16 +183,14 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Error")
     def test_put_bucket_inventory_invalid_format(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 12)
+        target_bucket_name = self.create_bucket(client, 12)
         inventory_id = "my-inventory"
         self.assert_client_error(
             lambda: client.put_bucket_inventory_configuration(
                 Bucket=bucket_name,
                 Id=inventory_id,
-                InventoryConfiguration=self._inventory_config(
-                    inventory_id, target_bucket_name, output_format="JSON"
-                ),
+                InventoryConfiguration=self._inventory_config(inventory_id, target_bucket_name, output_format="JSON"),
             ),
             400,
             md.MALFORMED_XML,
@@ -215,16 +199,14 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Error")
     def test_put_bucket_inventory_invalid_frequency(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 13)
+        target_bucket_name = self.create_bucket(client, 13)
         inventory_id = "my-inventory"
         self.assert_client_error(
             lambda: client.put_bucket_inventory_configuration(
                 Bucket=bucket_name,
                 Id=inventory_id,
-                InventoryConfiguration=self._inventory_config(
-                    inventory_id, target_bucket_name, frequency="Hourly"
-                ),
+                InventoryConfiguration=self._inventory_config(inventory_id, target_bucket_name, frequency="Hourly"),
             ),
             400,
             md.MALFORMED_XML,
@@ -233,16 +215,14 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Error")
     def test_put_bucket_inventory_invalid_case(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 14)
+        target_bucket_name = self.create_bucket(client, 14)
         inventory_id = "my-inventory"
         self.assert_client_error(
             lambda: client.put_bucket_inventory_configuration(
                 Bucket=bucket_name,
                 Id=inventory_id,
-                InventoryConfiguration=self._inventory_config(
-                    inventory_id, target_bucket_name, included_object_versions="CUrrENT"
-                ),
+                InventoryConfiguration=self._inventory_config(inventory_id, target_bucket_name, included_object_versions="CUrrENT"),
             ),
             400,
             md.MALFORMED_XML,
@@ -251,31 +231,24 @@ class TestInventory(S3TestBase):
     @pytest.mark.tag("Put")
     def test_put_bucket_inventory_prefix(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 15)
+        target_bucket_name = self.create_bucket(client, 15)
         inventory_id = "my-inventory"
         inventory_prefix = "a/"
         client.put_bucket_inventory_configuration(
             Bucket=bucket_name,
             Id=inventory_id,
-            InventoryConfiguration=self._inventory_config(
-                inventory_id, target_bucket_name, prefix=inventory_prefix
-            ),
+            InventoryConfiguration=self._inventory_config(inventory_id, target_bucket_name, prefix=inventory_prefix),
         )
-        result = client.get_bucket_inventory_configuration(
-            Bucket=bucket_name, Id=inventory_id
-        )
+        result = client.get_bucket_inventory_configuration(Bucket=bucket_name, Id=inventory_id)
         assert result["InventoryConfiguration"]["Id"] == inventory_id
-        assert (
-            result["InventoryConfiguration"]["Destination"]["S3BucketDestination"]["Prefix"]
-            == inventory_prefix
-        )
+        assert result["InventoryConfiguration"]["Destination"]["S3BucketDestination"]["Prefix"] == inventory_prefix
 
     @pytest.mark.tag("Put")
     def test_put_bucket_inventory_optional(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 16)
+        target_bucket_name = self.create_bucket(client, 16)
         inventory_id = "my-inventory"
         inventory_prefix = "a/"
         optional_fields = ["Size", "LastModifiedDate"]
@@ -289,21 +262,16 @@ class TestInventory(S3TestBase):
                 optional_fields=optional_fields,
             ),
         )
-        result = client.get_bucket_inventory_configuration(
-            Bucket=bucket_name, Id=inventory_id
-        )
+        result = client.get_bucket_inventory_configuration(Bucket=bucket_name, Id=inventory_id)
         assert result["InventoryConfiguration"]["Id"] == inventory_id
-        assert (
-            result["InventoryConfiguration"]["Destination"]["S3BucketDestination"]["Prefix"]
-            == inventory_prefix
-        )
+        assert result["InventoryConfiguration"]["Destination"]["S3BucketDestination"]["Prefix"] == inventory_prefix
         assert result["InventoryConfiguration"]["OptionalFields"] == optional_fields
 
     @pytest.mark.tag("Error")
     def test_put_bucket_inventory_invalid_optional(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 17)
+        target_bucket_name = self.create_bucket(client, 17)
         inventory_id = "my-inventory"
         self.assert_client_error(
             lambda: client.put_bucket_inventory_configuration(

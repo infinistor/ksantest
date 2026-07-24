@@ -18,7 +18,7 @@ class TestTaggings(S3TestBase):
     @pytest.mark.tag("Check")
     def test_set_tagging(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 1)
 
         tag_config = {"TagSet": [{"Key": "Hello", "Value": "World"}]}
 
@@ -45,7 +45,7 @@ class TestTaggings(S3TestBase):
     def test_get_obj_tagging(self):
         key = "obj"
         client = self.get_client()
-        bucket_name = self.create_key_with_random_content(client, key, 0)
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=2)
         input_tag_set = self.make_simple_tag_set(2)
 
         client.put_object_tagging(
@@ -61,7 +61,7 @@ class TestTaggings(S3TestBase):
     def test_get_obj_head_tagging(self):
         key = "obj"
         client = self.get_client()
-        bucket_name = self.create_key_with_random_content(client, key, 0)
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=3)
         count = 2
         input_tag_set = self.make_simple_tag_set(count)
 
@@ -78,7 +78,7 @@ class TestTaggings(S3TestBase):
     def test_put_max_tags(self):
         key = "obj"
         client = self.get_client()
-        bucket_name = self.create_key_with_random_content(client, key, 0)
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=4)
         input_tag_set = self.make_simple_tag_set(10)
 
         client.put_object_tagging(
@@ -94,7 +94,7 @@ class TestTaggings(S3TestBase):
     def test_put_excess_tags(self):
         key = "test put max tags"
         client = self.get_client()
-        bucket_name = self.create_key_with_random_content(client, key, 0)
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=5)
         input_tag_set = self.make_simple_tag_set(11)
 
         self.assert_client_error(
@@ -114,7 +114,7 @@ class TestTaggings(S3TestBase):
     def test_put_max_size_tags(self):
         key = "test put max key size"
         client = self.get_client()
-        bucket_name = self.create_key_with_random_content(client, key, 0)
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=6)
         input_tag_set = self.make_detail_tag_set(10, 128, 256)
 
         client.put_object_tagging(
@@ -130,7 +130,7 @@ class TestTaggings(S3TestBase):
     def test_put_excess_key_tags(self):
         key = "test put excess key tags"
         client = self.get_client()
-        bucket_name = self.create_key_with_random_content(client, key, 0)
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=7)
         input_tag_set = self.make_detail_tag_set(10, 129, 256)
 
         self.assert_client_error(
@@ -150,7 +150,7 @@ class TestTaggings(S3TestBase):
     def test_put_excess_val_tags(self):
         key = "test put excess value tags"
         client = self.get_client()
-        bucket_name = self.create_key_with_random_content(client, key, 0)
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=8)
         input_tag_set = self.make_detail_tag_set(10, 128, 259)
 
         self.assert_client_error(
@@ -170,7 +170,7 @@ class TestTaggings(S3TestBase):
     def test_put_modify_tags(self):
         key = "test put modify tags"
         client = self.get_client()
-        bucket_name = self.create_key_with_random_content(client, key, 0)
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=9)
         input_tag_set = self.make_simple_tag_set(2)
 
         client.put_object_tagging(
@@ -196,7 +196,7 @@ class TestTaggings(S3TestBase):
     def test_put_delete_tags(self):
         key = "test delete tags"
         client = self.get_client()
-        bucket_name = self.create_key_with_random_content(client, key, 0)
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=10)
         input_tag_set = self.make_simple_tag_set(2)
 
         client.put_object_tagging(
@@ -216,7 +216,7 @@ class TestTaggings(S3TestBase):
     @pytest.mark.tag("PutObject")
     def test_put_obj_with_tags(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 11)
         key = "test tag obj1"
         data = utils.random_text_to_long(100)
 
@@ -241,7 +241,7 @@ class TestTaggings(S3TestBase):
             pytest.skip("Post object tagging test is disabled on AWS")
 
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 12)
         content_type = "text/plain"
         key = "foo.txt"
 
@@ -290,7 +290,7 @@ class TestTaggings(S3TestBase):
     def test_get_obj_non_tagging(self):
         key = "obj"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 13)
 
         client.put_object(
             Bucket=bucket_name,

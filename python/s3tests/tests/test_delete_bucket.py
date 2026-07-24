@@ -12,7 +12,7 @@ from s3tests.test_base import S3TestBase
 class TestDeleteBucket(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_bucket_delete_not_exist(self):
-        bucket_name = self.get_new_bucket_name_only()
+        bucket_name = self.get_new_bucket_name_only(1)
         client = self.get_client()
         with pytest.raises(ClientError) as exc_info:
             client.delete_bucket(Bucket=bucket_name)
@@ -22,7 +22,7 @@ class TestDeleteBucket(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_bucket_delete_nonempty(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "foo")
+        bucket_name = self.create_objects(client, 2, "foo")
         with pytest.raises(ClientError) as exc_info:
             client.delete_bucket(Bucket=bucket_name)
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 409
@@ -31,7 +31,7 @@ class TestDeleteBucket(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_bucket_create_delete(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         client.delete_bucket(Bucket=bucket_name)
         with pytest.raises(ClientError) as exc_info:
             client.delete_bucket(Bucket=bucket_name)

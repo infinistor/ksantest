@@ -35,7 +35,7 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     bucket_name = self.create_bucket(client)
+    #     bucket_name = self.create_bucket(client, 1)
     #     key = "testPutObject"
     #     content = "test content"
 
@@ -50,7 +50,7 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     bucket_name = self.create_bucket(client)
+    #     bucket_name = self.create_bucket(client, 2)
     #     key = "testGetObject"
     #     content = "test content"
 
@@ -64,7 +64,7 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     bucket_name = self.create_bucket(client)
+    #     bucket_name = self.create_bucket(client, 3)
     #     key = "testDeleteObject"
     #     content = "test content"
 
@@ -81,8 +81,8 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     source_bucket = self.create_bucket(client)
-    #     target_bucket = self.create_bucket(client)
+    #     source_bucket = self.create_bucket(client, 4)
+    #     target_bucket = self.create_bucket(client, 4)
     #     source_key = "sourceKey"
     #     target_key = "targetKey"
     #     content = "test content"
@@ -104,7 +104,7 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     bucket_name = self.create_bucket(client)
+    #     bucket_name = self.create_bucket(client, 5)
     #     key = "testMultipartUpload"
     #     size = 10 * md.MB
 
@@ -127,7 +127,7 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     bucket_name = self.create_bucket_canned_acl(client)
+    #     bucket_name = self.create_bucket_canned_acl(client, 6)
     #     key = "testPutObjectAcl"
     #     content = "test content"
 
@@ -144,7 +144,7 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     bucket_name = self.create_bucket_canned_acl(client)
+    #     bucket_name = self.create_bucket_canned_acl(client, 7)
     #     key = "testGetObjectAcl"
     #     content = "test content"
 
@@ -158,7 +158,7 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     bucket_name = self.create_bucket(client)
+    #     bucket_name = self.create_bucket(client, 8)
     #     key = "testPutObjectTagging"
     #     content = "test content"
     #     tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
@@ -178,7 +178,7 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     bucket_name = self.create_bucket(client)
+    #     bucket_name = self.create_bucket(client, 9)
     #     key = "testGetObjectTagging"
     #     content = "test content"
     #     tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
@@ -200,7 +200,7 @@ class TestBackend(S3TestBase):
     #     self.skip_if_aws()
     #     client = self.get_client()
     #     backend_client = self.get_backend_client()
-    #     bucket_name = self.create_bucket(client)
+    #     bucket_name = self.create_bucket(client, 10)
     #     key = "testDeleteObjectTagging"
     #     content = "test content"
     #     tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
@@ -223,7 +223,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 11)
         key = "testPutObjectVersioning"
         content = "test content"
 
@@ -240,7 +240,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 12)
         key = "testPutObjectVersioningWithVersionIdSource"
         key2 = "testPutObjectVersioningWithVersionIdTarget"
         content = "test content"
@@ -264,7 +264,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 13)
         key = "testGetObjectVersioning"
         content = "test content"
 
@@ -281,7 +281,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 14)
         key = "testDeleteObjectVersioning"
         content = "test content"
 
@@ -312,7 +312,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 15)
         method_name = "testDeleteObjectsVersioning"
         key_names = [f"{method_name}-{i}" for i in range(5)]
         content = "test content"
@@ -354,7 +354,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 16)
         key = "testHeadObjectVersioning"
         content = "test content"
 
@@ -373,8 +373,8 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        source_bucket = self.create_bucket(client)
-        target_bucket = self.create_bucket(client)
+        source_bucket = self.create_bucket(client, 17)
+        target_bucket = self.create_bucket(client, 17)
         source_key = "sourceKey"
         source_key2 = "sourceKey2"
         target_key = "targetKey"
@@ -409,7 +409,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 18)
         key = "testMultipartUploadVersioning"
         size = 10 * md.MB
 
@@ -434,7 +434,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 19)
         key = "testPutObjectAclVersioning"
         content = "test content"
 
@@ -459,7 +459,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 20)
         key = "testGetObjectAclVersioning"
         content = "test content"
 
@@ -475,7 +475,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 21)
         key = "testPutObjectTaggingVersioning"
         content = "test content"
         tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
@@ -497,10 +497,9 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 22)
         key = "testGetObjectTaggingVersioning"
         content = "test content"
-        tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
 
         self.check_configure_versioning_retry(bucket_name, "Enabled")
 
@@ -521,7 +520,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 23)
         key = "testDeleteObjectTaggingVersioning"
         content = "test content"
 
@@ -545,11 +544,10 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.create_bucket_object_lock(client, 24)
         key = "testPutObjectRetentionVersioning"
         content = "test content"
 
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
 
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
@@ -575,11 +573,10 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.create_bucket_object_lock(client, 25)
         key = "testGetObjectRetentionVersioning"
         content = "test content"
 
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
 
         client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
@@ -592,11 +589,10 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.create_bucket_object_lock(client, 26)
         key = "testPutAndGetObjectRetentionVersioning"
         content = "test content"
 
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
 
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
@@ -627,8 +623,8 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 27)
+        target_bucket_name = self.create_bucket(client, 27)
         key = "testBackendReplication"
         content = "test content"
 
@@ -649,8 +645,8 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 28)
+        target_bucket_name = self.create_bucket(client, 28)
         key = "testBackendReplicationTagging"
         content = "test content"
         tagging = {"TagSet": [{"Key": "testKey", "Value": "testValue"}]}
@@ -680,8 +676,8 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 29)
+        target_bucket_name = self.create_bucket(client, 29)
         key = "testBackendReplicationMetadata"
         content = "test content"
         metadata = {"testKey": "testValue"}
@@ -709,7 +705,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket = self.create_bucket(client)
+        bucket = self.create_bucket(client, 30)
         source_key = "sourceKey"
         source_key2 = "sourceKey2"
         target_key = "targetKey"
@@ -738,7 +734,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket = self.create_bucket(client)
+        bucket = self.create_bucket(client, 31)
         source_key = "sourceKey"
         source_key2 = "sourceKey2"
         target_key = "targetKey"
@@ -776,7 +772,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket = self.create_bucket(client)
+        bucket = self.create_bucket(client, 32)
         source_key = "sourceKey"
         source_key2 = "sourceKey2"
         target_key = "targetKey"
@@ -812,7 +808,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket = self.create_bucket(client)
+        bucket = self.create_bucket(client, 33)
         source_key = "sourceKey"
         source_key2 = "sourceKey2"
         target_key = "targetKey"
@@ -851,7 +847,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 34)
         source_key = "testMultipartUploadReplicationSource"
         target_key = "testMultipartUploadReplicationTarget"
         size = 10 * md.MB
@@ -867,9 +863,7 @@ class TestBackend(S3TestBase):
         )
         version_id = complete_response["VersionId"]
 
-        self.backend_multipart_upload(
-            backend_client, bucket_name, source_key, bucket_name, target_key, version_id
-        )
+        self.backend_multipart_upload(backend_client, bucket_name, source_key, bucket_name, target_key, version_id)
 
         get_response = client.head_object(Bucket=bucket_name, Key=target_key, VersionId=version_id)
         assert get_response["ContentLength"] == size
@@ -882,7 +876,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 35)
         source_key = "testMultipartUploadTaggingReplicationSource"
         target_key = "testMultipartUploadTaggingReplicationTarget"
         size = 10 * md.MB
@@ -897,9 +891,7 @@ class TestBackend(S3TestBase):
             Tagging="testKey=testValue",
         )
         init_upload_data.upload_id = create_response["UploadId"]
-        upload_data = self.multipart_upload(
-            client, bucket_name, source_key, size, DEFAULT_PART_SIZE, init_upload_data
-        )
+        upload_data = self.multipart_upload(client, bucket_name, source_key, size, DEFAULT_PART_SIZE, init_upload_data)
 
         complete_response = client.complete_multipart_upload(
             Bucket=bucket_name,
@@ -912,9 +904,7 @@ class TestBackend(S3TestBase):
         tag_response = client.get_object_tagging(Bucket=bucket_name, Key=source_key)
         self.tag_compare(tagging["TagSet"], tag_response["TagSet"])
 
-        self.backend_multipart_upload(
-            backend_client, bucket_name, source_key, bucket_name, target_key, version_id
-        )
+        self.backend_multipart_upload(backend_client, bucket_name, source_key, bucket_name, target_key, version_id)
 
         get_response = client.head_object(Bucket=bucket_name, Key=target_key, VersionId=version_id)
         assert get_response["ContentLength"] == size
@@ -930,7 +920,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 36)
         source_key = "testMultipartUploadMetadataReplicationSource"
         target_key = "testMultipartUploadMetadataReplicationTarget"
         size = 10 * md.MB
@@ -938,9 +928,7 @@ class TestBackend(S3TestBase):
 
         self.check_configure_versioning_retry(bucket_name, "Enabled")
 
-        upload_data = self.setup_multipart_upload(
-            client, bucket_name, source_key, size, DEFAULT_PART_SIZE, metadata=metadata
-        )
+        upload_data = self.setup_multipart_upload(client, bucket_name, source_key, size, DEFAULT_PART_SIZE, metadata=metadata)
         complete_response = client.complete_multipart_upload(
             Bucket=bucket_name,
             Key=source_key,
@@ -952,9 +940,7 @@ class TestBackend(S3TestBase):
         metadata_response = client.head_object(Bucket=bucket_name, Key=source_key)
         assert metadata_response.get("Metadata", {}) == metadata
 
-        self.backend_multipart_upload(
-            backend_client, bucket_name, source_key, bucket_name, target_key, version_id
-        )
+        self.backend_multipart_upload(backend_client, bucket_name, source_key, bucket_name, target_key, version_id)
 
         get_response = client.head_object(Bucket=bucket_name, Key=target_key, VersionId=version_id)
         assert get_response["ContentLength"] == size
@@ -968,7 +954,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 37)
         source_key = "testPutObjectAclReplicationSource"
         target_key = "testPutObjectAclReplicationTarget"
         content = "test content"
@@ -981,9 +967,7 @@ class TestBackend(S3TestBase):
         client.put_object_acl(Bucket=bucket_name, Key=source_key, ACL="public-read")
 
         self.backend_put_object(backend_client, bucket_name, source_key, bucket_name, target_key, version_id)
-        self.backend_put_object_acl(
-            backend_client, bucket_name, source_key, bucket_name, target_key, version_id
-        )
+        self.backend_put_object_acl(backend_client, bucket_name, source_key, bucket_name, target_key, version_id)
 
         get_response = client.get_object(Bucket=bucket_name, Key=target_key)
         assert self.get_body(get_response) == content
@@ -998,7 +982,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 38)
         source_key = "testPutObjectTaggingReplicationSource"
         target_key = "testPutObjectTaggingReplicationTarget"
         content = "test content"
@@ -1015,9 +999,7 @@ class TestBackend(S3TestBase):
         version_id = put_response["VersionId"]
 
         self.backend_put_object(backend_client, bucket_name, source_key, bucket_name, target_key, version_id)
-        self.backend_put_object_tagging(
-            backend_client, bucket_name, source_key, bucket_name, target_key, version_id
-        )
+        self.backend_put_object_tagging(backend_client, bucket_name, source_key, bucket_name, target_key, version_id)
 
         get_response = client.get_object(Bucket=bucket_name, Key=target_key)
         assert self.get_body(get_response) == content
@@ -1031,7 +1013,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 39)
         source_key = "testDeleteObjectReplicationSource"
         target_key = "testDeleteObjectReplicationTarget"
         content = "test content"
@@ -1063,7 +1045,7 @@ class TestBackend(S3TestBase):
         self.skip_if_aws()
         client = self.get_client()
         backend_client = self.get_backend_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 40)
         source_key = "testDeleteObjectTaggingReplicationSource"
         target_key = "testDeleteObjectTaggingReplicationTarget"
         content = "test content"
@@ -1078,9 +1060,7 @@ class TestBackend(S3TestBase):
 
         client.put_object_tagging(Bucket=bucket_name, Key=source_key, Tagging=tagging)
 
-        self.backend_put_object_tagging(
-            backend_client, bucket_name, source_key, bucket_name, target_key, version_id
-        )
+        self.backend_put_object_tagging(backend_client, bucket_name, source_key, bucket_name, target_key, version_id)
 
         tag_response = client.get_object_tagging(Bucket=bucket_name, Key=target_key)
         self.tag_compare(tagging["TagSet"], tag_response["TagSet"])

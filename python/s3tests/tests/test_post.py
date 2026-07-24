@@ -53,9 +53,7 @@ class TestPost(S3TestBase):
         date_stamp = amz_date[:8]
         region = self._region_name()
         credential = f"{self.config.main_user.access_key}/{date_stamp}/{region}/s3/aws4_request"
-        signature = get_post_policy_signature(
-            self.config.main_user.secret_key, date_stamp, region, policy
-        )
+        signature = get_post_policy_signature(self.config.main_user.secret_key, date_stamp, region, policy)
         payload["policy"] = policy
         payload["x-amz-algorithm"] = "AWS4-HMAC-SHA256"
         payload["x-amz-credential"] = credential
@@ -96,9 +94,7 @@ class TestPost(S3TestBase):
         date_stamp = amz_date[:8]
         region = self._region_name()
         credential = f"{self.config.main_user.access_key}/{date_stamp}/{region}/s3/aws4_request"
-        conditions = self._build_sigv2_conditions(
-            bucket_name, content_type, key_prefix, min_size, max_size, extra_conditions
-        )
+        conditions = self._build_sigv2_conditions(bucket_name, content_type, key_prefix, min_size, max_size, extra_conditions)
         conditions.extend(
             [
                 {"x-amz-algorithm": "AWS4-HMAC-SHA256"},
@@ -113,7 +109,7 @@ class TestPost(S3TestBase):
         key = "foo.txt"
         content_type = "text/plain"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, "public-read-write")
+        bucket_name = self.create_bucket_canned_acl(client, 1, "public-read-write")
 
         file_data = FormFile(key, content_type, "bar")
         payload = {
@@ -132,7 +128,7 @@ class TestPost(S3TestBase):
         key = "foo.txt"
         content_type = "text/plain"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 2)
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
@@ -156,7 +152,7 @@ class TestPost(S3TestBase):
         key = "foo.txt"
         content_type = "text/plain"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, "public-read-write")
+        bucket_name = self.create_bucket_canned_acl(client, 3, "public-read-write")
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
@@ -181,7 +177,7 @@ class TestPost(S3TestBase):
         key = "foo.txt"
         content_type = "text/plain"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, "public-read-write")
+        bucket_name = self.create_bucket_canned_acl(client, 4, "public-read-write")
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
@@ -205,7 +201,7 @@ class TestPost(S3TestBase):
         key = "foo.txt"
         content_type = "text/plain"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, "public-read-write")
+        bucket_name = self.create_bucket_canned_acl(client, 5, "public-read-write")
 
         file_data = FormFile(key, content_type, "bar")
         payload = {
@@ -225,7 +221,7 @@ class TestPost(S3TestBase):
         key = "foo.txt"
         content_type = "text/plain"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, "public-read-write")
+        bucket_name = self.create_bucket_canned_acl(client, 6, "public-read-write")
 
         file_data = FormFile(key, content_type, "bar")
         payload = {
@@ -248,13 +244,11 @@ class TestPost(S3TestBase):
         size = 5 * 1024 * 1024
         data = utils.random_text_to_long(size)
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 7)
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, min_size=0, max_size=size
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, min_size=0, max_size=size),
         }
         file_data = FormFile(key, content_type, data)
         payload = {"key": key, "acl": "private", "Content-Type": content_type}
@@ -270,7 +264,7 @@ class TestPost(S3TestBase):
         content_type = "text/plain"
         key = "foo.txt"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 8)
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
@@ -287,7 +281,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("Upload")
     def test_post_object_ignored_header(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(9)
         content_type = "text/plain"
         key = "foo.txt"
 
@@ -308,7 +302,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("Upload")
     def test_post_object_case_insensitive_condition_fields(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(10)
         content_type = "text/plain"
         key = "foo.txt"
 
@@ -341,7 +335,7 @@ class TestPost(S3TestBase):
         key = "\\$foo.txt"
         content_type = "text/plain"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 11)
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
@@ -363,7 +357,7 @@ class TestPost(S3TestBase):
         key = "foo.txt"
         content_type = "text/plain"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, "public-read-write")
+        bucket_name = self.create_bucket_canned_acl(client, 12, "public-read-write")
         redirect_url = self.create_url(bucket_name)
 
         policy_document = {
@@ -386,21 +380,19 @@ class TestPost(S3TestBase):
 
         response = client.get_object(Bucket=bucket_name, Key=key)
         etag = response["ETag"].replace('"', "")
-        expected_url = f'{redirect_url}?bucket={bucket_name}&key={key}&etag=%22{etag}%22'
+        expected_url = f"{redirect_url}?bucket={bucket_name}&key={key}&etag=%22{etag}%22"
         assert result.url == expected_url
 
     @pytest.mark.tag("ERROR")
     def test_post_object_invalid_signature(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(13)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo"
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo"),
         }
         policy = self._encode_policy(policy_document)
         signature = self._sigv2_signature(policy)
@@ -419,15 +411,13 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_invalid_access_key(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(14)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo"
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo"),
         }
         policy = self._encode_policy(policy_document)
         file_data = FormFile(key, content_type, "bar")
@@ -445,15 +435,13 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_invalid_date_format(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(15)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100).replace("T", " "),
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo"
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo"),
         }
         file_data = FormFile(key, content_type, "bar")
         payload = {"key": key, "acl": "private", "Content-Type": content_type}
@@ -463,7 +451,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_no_key_specified(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(16)
         content_type = "text/plain"
 
         policy_document = {
@@ -483,15 +471,13 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_missing_signature(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(17)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo"
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo"),
         }
         policy = self._encode_policy(policy_document)
         file_data = FormFile(key, content_type, "bar")
@@ -508,7 +494,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_missing_policy_condition(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(18)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
@@ -532,7 +518,7 @@ class TestPost(S3TestBase):
         key = "foo.txt"
         content_type = "text/plain"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 19)
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
@@ -558,7 +544,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_request_missing_policy_specified_field(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(20)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
@@ -579,15 +565,13 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_condition_is_case_sensitive(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(21)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
-            "CONDITIONS": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo"
-            ),
+            "CONDITIONS": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo"),
         }
         file_data = FormFile(key, content_type, "bar")
         payload = {"key": key, "acl": "private", "Content-Type": content_type}
@@ -597,15 +581,13 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_expires_is_case_sensitive(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(22)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
             "EXPIRATION": self.get_time_to_add_minutes(100),
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo"
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo"),
         }
         file_data = FormFile(key, content_type, "bar")
         payload = {"key": key, "acl": "private", "Content-Type": content_type}
@@ -615,15 +597,13 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_expired_policy(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(23)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(-100),
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo"
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo"),
         }
         file_data = FormFile(key, content_type, "bar")
         payload = {"key": key, "acl": "private", "Content-Type": content_type}
@@ -633,7 +613,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_invalid_request_field_value(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(24)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
@@ -659,14 +639,12 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_missing_expires_condition(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(25)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo"
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo"),
         }
         file_data = FormFile(key, content_type, "bar")
         payload = {"key": key, "acl": "private", "Content-Type": content_type}
@@ -676,7 +654,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_missing_conditions_list(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(26)
         content_type = "text/plain"
         key = "foo.txt"
 
@@ -689,15 +667,13 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_upload_size_limit_exceeded(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(27)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo", min_size=0, max_size=0
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo", min_size=0, max_size=0),
         }
         file_data = FormFile(key, content_type, "bar")
         payload = {"key": key, "acl": "private", "Content-Type": content_type}
@@ -707,7 +683,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_missing_content_length_argument(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(28)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
@@ -729,7 +705,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_invalid_content_length_argument(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(29)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
@@ -751,15 +727,13 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_upload_size_below_minimum(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(30)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
-            "conditions": self._build_sigv2_conditions(
-                bucket_name, content_type, key_prefix="\\$foo", min_size=512, max_size=1024
-            ),
+            "conditions": self._build_sigv2_conditions(bucket_name, content_type, key_prefix="\\$foo", min_size=512, max_size=1024),
         }
         file_data = FormFile(key, content_type, "bar")
         payload = {"key": key, "acl": "private", "Content-Type": content_type}
@@ -769,7 +743,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_post_object_empty_conditions(self):
         self.skip_if_aws()
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(31)
         content_type = "text/plain"
         key = "foo.txt"
 
@@ -784,7 +758,7 @@ class TestPost(S3TestBase):
 
     @pytest.mark.tag("PresignedURL")
     def test_presigned_url_put_get(self):
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(32)
         key = "foo"
 
         put_url = self.generate_presigned_put_url(bucket_name, key)
@@ -795,7 +769,7 @@ class TestPost(S3TestBase):
 
     @pytest.mark.tag("signV4")
     def test_put_object_v4(self):
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(33)
         key = "foo"
         content = utils.random_text_to_long(100)
         result = self.put_object_v4(bucket_name, key, content)
@@ -803,7 +777,7 @@ class TestPost(S3TestBase):
 
     @pytest.mark.tag("signV4")
     def test_put_object_chunked_v4(self):
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(34)
         key = "foo"
         content = utils.random_text_to_long(100)
         result = self.put_object_chunked_v4(bucket_name, key, content)
@@ -814,7 +788,7 @@ class TestPost(S3TestBase):
         key = "foo"
         size = 100
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 35)
         content = utils.random_text_to_long(size)
         client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
 
@@ -825,8 +799,8 @@ class TestPost(S3TestBase):
 
     @pytest.mark.tag("ERROR")
     def test_post_object_wrong_bucket(self):
-        bucket_name = self.get_new_bucket_name()
-        bad_bucket_name = self.get_new_bucket_name()
+        bucket_name = self.get_new_bucket_name(36)
+        bad_bucket_name = self.get_new_bucket_name(36)
         content_type = "text/plain"
         key = "\\$foo.txt"
 
@@ -847,7 +821,5 @@ class TestPost(S3TestBase):
             "acl": "private",
             "Content-Type": content_type,
         }
-        result = self._post_sigv4(
-            bucket_name, policy_document, payload, file_data, url_bucket=bad_bucket_name
-        )
+        result = self._post_sigv4(bucket_name, policy_document, payload, file_data, url_bucket=bad_bucket_name)
         assert result.status_code == 404, result.get_error_code()

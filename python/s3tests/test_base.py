@@ -205,18 +205,39 @@ class S3TestBase:
     def get_prefix(self) -> str:
         return f"v2-{self.config.bucket_prefix}"
 
-    def get_new_bucket_name(self) -> str:
-        bucket_name = utils.get_new_bucket_name(self.get_prefix())
+    def get_suite_id(self) -> str:
+        """Match Java getSuiteId: class simple name → suite (strip leading Test)."""
+        name = self.__class__.__name__
+        if name.startswith("Test") and len(name) > 4:
+            name = name[4:]
+        return utils.to_suite_id(name)
+
+    def _next_auto_test_id(self) -> int:
+        self._auto_test_id = getattr(self, "_auto_test_id", 0) + 1
+        return self._auto_test_id
+
+    def get_new_bucket_name(self, test_id: Optional[int] = None) -> str:
+        if test_id is None:
+            test_id = self._next_auto_test_id()
+        bucket_name = utils.get_new_bucket_name(self.get_prefix(), self.get_suite_id(), test_id)
         self._buckets.append(bucket_name)
         return bucket_name
 
-    def get_new_bucket_name_only(self, length: Optional[int] = None) -> str:
-        bucket_name = utils.get_new_bucket_name(self.get_prefix())
-        if length is not None:
-            if len(bucket_name) > length:
-                bucket_name = bucket_name[:length]
-            elif len(bucket_name) < length:
-                bucket_name += utils.random_text(length - len(bucket_name))
+    def get_new_bucket_name_only(self, test_id: Optional[int] = None) -> str:
+        """Like Java getNewBucketNameOnly — suite/testId name without registering."""
+        if test_id is None:
+            test_id = self._next_auto_test_id()
+        return utils.get_new_bucket_name(self.get_prefix(), self.get_suite_id(), test_id)
+
+    def get_bucket_name_of_length(self, length: int) -> str:
+        """Length-validation helper — prefix + random only (no suite/testId)."""
+        prefix = self.get_prefix()
+        if len(prefix) >= length:
+            bucket_name = prefix[:length]
+        else:
+            bucket_name = prefix + utils.random_text(length - len(prefix))
+        if len(bucket_name) > length:
+            bucket_name = bucket_name[:length]
         return bucket_name
 
     _ACL_UNSET = object()
@@ -224,18 +245,26 @@ class S3TestBase:
     def create_bucket(
         self,
         client: Optional[Any] = None,
+        test_id: Optional[int] = None,
         object_ownership: Optional[str] = None,
         acl: Any = _ACL_UNSET,
     ) -> str:
         """Match Java createBucket overloads.
 
-        - createBucket(client)
-        - createBucket(client, ownership)
-        - createBucket(client, ownership, acl): disable BPA, then putBucketAcl
+        - createBucket(testId)
+        - createBucket(client, testId)
+        - createBucket(client, testId, ownership)
+        - createBucket(client, testId, ownership, acl): disable BPA, then putBucketAcl
           (acl may be None; BPA is still disabled — used by createBucketCannedAcl)
+
+        ``test_id`` may be omitted; an auto-increment id is used so the name format
+        remains ``{prefix}{suite}-{id}-{random}``.
         """
+        if isinstance(client, int):
+            test_id = client
+            client = None
         client = client or self.get_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.get_new_bucket_name(test_id)
         params: Dict[str, Any] = {"Bucket": bucket_name}
         if object_ownership:
             params["ObjectOwnership"] = object_ownership
@@ -264,10 +293,25 @@ class S3TestBase:
             },
         )
 
-    def create_bucket_canned_acl(self, client: Optional[Any] = None, acl: Optional[str] = None) -> str:
+    def create_bucket_canned_acl(
+        self,
+        client: Optional[Any] = None,
+        test_id: Optional[int] = None,
+        acl: Optional[str] = None,
+    ) -> str:
         """Java createBucketCannedAcl: ObjectWriter + BPA disabled (+ optional ACL)."""
+        if isinstance(client, int):
+            test_id = client
+            client = None
+        # Legacy call form: create_bucket_canned_acl(client, "public-read")
+        if isinstance(test_id, str):
+            acl = test_id
+            test_id = None
         return self.create_bucket(
-            client or self.get_client(), object_ownership="ObjectWriter", acl=acl
+            client or self.get_client(),
+            test_id,
+            object_ownership="ObjectWriter",
+            acl=acl,
         )
 
     def _apply_location_constraint(self, params: Dict[str, Any]) -> None:
@@ -287,12 +331,21 @@ class S3TestBase:
     def create_objects(self, client: Any, *args: Any) -> Optional[str]:
         """Java-compatible createObjects overloads.
 
-        create_objects(client, key1, key2, ...) -> bucket_name
+        create_objects(client, test_id, key1, key2, ...) -> bucket_name
+        create_objects(client, test_id, [keys]) -> bucket_name
+        create_objects(client, key1, key2, ...) -> bucket_name  (auto test_id)
         create_objects(client, [keys]) -> bucket_name
         create_objects(client, bucket_name, [keys]) -> None
         """
         if not args:
             raise TypeError("create_objects requires keys or (bucket_name, keys)")
+
+        test_id: Optional[int] = None
+        if isinstance(args[0], int):
+            test_id = args[0]
+            args = args[1:]
+            if not args:
+                raise TypeError("create_objects requires keys after test_id")
 
         if len(args) == 2 and isinstance(args[0], str) and isinstance(args[1], (list, tuple)):
             bucket_name = args[0]
@@ -305,28 +358,44 @@ class S3TestBase:
         else:
             keys = [str(k) for k in args]
 
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, test_id)
         self._put_object_keys(client, bucket_name, keys)
         return bucket_name
 
     def create_objects_keys(self, *args: Any) -> str:
-        """Java createObjects(List) / createObjects(client, List)."""
+        """Java createObjects(List) / createObjects(client, testId, List)."""
+        test_id: Optional[int] = None
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             client = self.get_client()
             keys = list(args[0])
         elif len(args) == 2 and isinstance(args[1], (list, tuple)):
             client = args[0]
             keys = list(args[1])
+        elif (
+            len(args) == 3
+            and isinstance(args[1], int)
+            and isinstance(args[2], (list, tuple))
+        ):
+            client = args[0]
+            test_id = args[1]
+            keys = list(args[2])
         else:
-            raise TypeError("create_objects_keys expects ([keys]) or (client, [keys])")
-        bucket_name = self.create_bucket(client)
+            raise TypeError(
+                "create_objects_keys expects ([keys]), (client, [keys]), "
+                "or (client, test_id, [keys])"
+            )
+        bucket_name = self.create_bucket(client, test_id)
         self._put_object_keys(client, bucket_name, keys)
         return bucket_name
 
     def create_objects_list(
-        self, client: Any, keys: Sequence[str], bucket_name: Optional[str] = None
+        self,
+        client: Any,
+        keys: Sequence[str],
+        bucket_name: Optional[str] = None,
+        test_id: Optional[int] = None,
     ) -> str:
-        bucket_name = bucket_name or self.create_bucket(client)
+        bucket_name = bucket_name or self.create_bucket(client, test_id)
         self._put_object_keys(client, bucket_name, list(keys))
         return bucket_name
 
@@ -337,13 +406,18 @@ class S3TestBase:
             client.put_object(Bucket=bucket_name, Key=key, Body=body)
 
     def create_key_with_random_content(
-        self, client: Any, key: str, size: int, bucket_name: Optional[str] = None
+        self,
+        client: Any,
+        key: str,
+        size: int,
+        bucket_name: Optional[str] = None,
+        test_id: Optional[int] = None,
     ) -> str:
         if size < 1:
             size = 7 * md.MB
         data = utils.random_text_to_long(size)
         if bucket_name is None:
-            bucket_name = self.create_bucket(client)
+            bucket_name = self.create_bucket(client, test_id)
         client.put_object(Bucket=bucket_name, Key=key, Body=data.encode("utf-8"))
         return bucket_name
 
@@ -604,9 +678,12 @@ class S3TestBase:
         acl: str,
         keys: Sequence[str],
         object_ownership: str = "ObjectWriter",
+        test_id: Optional[int] = None,
     ) -> str:
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership=object_ownership, acl=acl)
+        bucket_name = self.create_bucket(
+            client, test_id, object_ownership=object_ownership, acl=acl
+        )
         self.create_objects_list(client, keys, bucket_name)
         return bucket_name
 
@@ -616,9 +693,12 @@ class S3TestBase:
         object_acl: str,
         *keys: str,
         object_ownership: str = "ObjectWriter",
+        test_id: Optional[int] = None,
     ) -> str:
         client = self.get_client()
-        bucket_name = self.create_bucket(client, object_ownership=object_ownership, acl=bucket_acl)
+        bucket_name = self.create_bucket(
+            client, test_id, object_ownership=object_ownership, acl=bucket_acl
+        )
         for key in keys:
             client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), ACL=object_acl)
         return bucket_name
@@ -629,10 +709,11 @@ class S3TestBase:
         object_acl: str,
         *keys: str,
         object_ownership: str = "ObjectWriter",
+        test_id: Optional[int] = None,
     ) -> str:
         alt_client = self.get_alt_client()
         bucket_name = self.create_bucket(
-            self.get_client(), object_ownership=object_ownership, acl=bucket_acl
+            self.get_client(), test_id, object_ownership=object_ownership, acl=bucket_acl
         )
         for key in keys:
             alt_client.put_object(
@@ -646,9 +727,10 @@ class S3TestBase:
         bucket_acl: str,
         object_acl: str,
         *keys: str,
+        test_id: Optional[int] = None,
     ) -> str:
         return self.setup_acl_objects_by_alt(
-            bucket_acl, object_acl, *keys, object_ownership=object_ownership
+            bucket_acl, object_acl, *keys, object_ownership=object_ownership, test_id=test_id
         )
 
     def setup_acl_objects_with_ownership(
@@ -657,9 +739,10 @@ class S3TestBase:
         bucket_acl: str,
         object_acl: str,
         *keys: str,
+        test_id: Optional[int] = None,
     ) -> str:
         return self.setup_acl_objects(
-            bucket_acl, object_acl, *keys, object_ownership=object_ownership
+            bucket_acl, object_acl, *keys, object_ownership=object_ownership, test_id=test_id
         )
 
     def add_bucket_user_grant(self, bucket_name: str, grant: Dict[str, Any]) -> Dict[str, Any]:
@@ -680,17 +763,19 @@ class S3TestBase:
             )
         return {"Owner": policy["Owner"], "Grants": grants}
 
-    def setup_bucket_permission(self, permission: str) -> str:
+    def setup_bucket_permission(self, permission: str, test_id: Optional[int] = None) -> str:
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, test_id)
         acl = self.create_alt_acl(permission)
         client.put_bucket_acl(Bucket=bucket_name, AccessControlPolicy=acl)
         return bucket_name
 
-    def setup_object_permission(self, key: str, permission: str) -> str:
+    def setup_object_permission(
+        self, key: str, permission: str, test_id: Optional[int] = None
+    ) -> str:
         client = self.get_client()
         bucket_name = self.create_bucket(
-            client, object_ownership="ObjectWriter", acl="public-read-write"
+            client, test_id, object_ownership="ObjectWriter", acl="public-read-write"
         )
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         acl = self.create_alt_acl(permission)
@@ -727,17 +812,17 @@ class S3TestBase:
             assert exp_g.get("Type") == act_g.get("Type")
             assert exp_g.get("URI") == act_g.get("URI")
 
-    def check_bucket_acl(self, permission: str) -> None:
+    def check_bucket_acl(self, permission: str, test_id: Optional[int] = None) -> None:
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, test_id)
         acl = self.create_alt_acl(permission)
         client.put_bucket_acl(Bucket=bucket_name, AccessControlPolicy=acl)
         response = client.get_bucket_acl(Bucket=bucket_name)
         self.check_acl(acl, response)
 
-    def check_object_acl(self, permission: str) -> None:
+    def check_object_acl(self, permission: str, test_id: Optional[int] = None) -> None:
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, test_id)
         key = f"testObjectPermission{permission}"
         acl = self.create_acl(
             self.config.main_user.to_owner(),
@@ -1301,9 +1386,9 @@ class S3TestBase:
             length = 1
         return start, length
 
-    def encryption_cse_write(self, key: str, file_size: int) -> None:
+    def encryption_cse_write(self, key: str, file_size: int, test_id: Optional[int] = None) -> None:
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, test_id)
         aes_key = utils.random_text_to_long(32)
         data = utils.random_text_to_long(file_size)
         encoding_data = aes256.encrypt(data, aes_key)
@@ -1662,8 +1747,8 @@ class S3TestBase:
         if self.config.is_aws():
             pytest.skip("Test not supported on AWS")
 
-    def create_bucket_object_lock(self, client: Any) -> str:
-        bucket_name = self.get_new_bucket_name()
+    def create_bucket_object_lock(self, client: Any, test_id: Optional[int] = None) -> str:
+        bucket_name = self.get_new_bucket_name(test_id)
         self._do_create_bucket(client, bucket_name, ObjectLockEnabledForBucket=True)
         if self.config.is_old_system():
             self._do_create_bucket(self.get_old_client(), bucket_name)
@@ -2183,9 +2268,9 @@ class S3TestBase:
             )
             assert self.get_body(response) == data[start:end], md.NOT_MATCHED
 
-    def encryption_sse_customer_write(self, file_size: int) -> None:
+    def encryption_sse_customer_write(self, file_size: int, test_id: Optional[int] = None) -> None:
         client = self.get_client_https(False)
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, test_id)
         self.unblock_sse_c(bucket_name)
         key = "test"
         data = utils.random_text_to_long(file_size)
@@ -2194,18 +2279,18 @@ class S3TestBase:
         assert self.get_body(response) == data, md.NOT_MATCHED
         assert response["SSECustomerKeyMD5"] == SSE_KEY_MD5
 
-    def encryption_sse_s3_write(self, file_size: int) -> None:
+    def encryption_sse_s3_write(self, file_size: int, test_id: Optional[int] = None) -> None:
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, test_id)
         data = utils.random_text_to_long(file_size)
         client.put_object(Bucket=bucket_name, Key="test", Body=data.encode("utf-8"), ServerSideEncryption="AES256")
         response = client.get_object(Bucket=bucket_name, Key="test")
         assert self.get_body(response) == data, md.NOT_MATCHED
         assert response.get("ServerSideEncryption") == "AES256"
 
-    def encryption_sse_s3_copy(self, file_size: int) -> None:
+    def encryption_sse_s3_copy(self, file_size: int, test_id: Optional[int] = None) -> None:
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, test_id)
         client.put_bucket_encryption(
             Bucket=bucket_name,
             ServerSideEncryptionConfiguration={
@@ -2233,12 +2318,13 @@ class S3TestBase:
         target_bucket_encryption: bool,
         target_object_encryption: bool,
         file_size: int,
+        test_id: Optional[int] = None,
     ) -> None:
         source_key = prefix + "Source"
         target_key = prefix + "Target"
         client = self.get_client()
-        source_bucket = self.create_bucket(client)
-        target_bucket = self.create_bucket(client)
+        source_bucket = self.create_bucket(client, test_id)
+        target_bucket = self.create_bucket(client, test_id)
         data = utils.random_text_to_long(file_size)
         sse_config = {
             "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}, "BucketKeyEnabled": False}]
@@ -2272,11 +2358,18 @@ class S3TestBase:
             assert target_response.get("ServerSideEncryption") is None
         assert self.get_body(target_response) == source_body, md.NOT_MATCHED
 
-    def object_copy_encryption_type(self, prefix: str, source: EncryptionType, target: EncryptionType, size: int) -> None:
+    def object_copy_encryption_type(
+        self,
+        prefix: str,
+        source: EncryptionType,
+        target: EncryptionType,
+        size: int,
+        test_id: Optional[int] = None,
+    ) -> None:
         source_key = prefix + "Source"
         target_key = prefix + "Target"
         client = self.get_client_https(True)
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, test_id)
         if source == EncryptionType.SSE_C or target == EncryptionType.SSE_C:
             self.unblock_sse_c(bucket_name)
         data = utils.random_text_to_long(size)
@@ -2386,20 +2479,26 @@ class S3TestBase:
         with pytest.raises((ParamValidationError, ClientError, ValueError)):
             self.get_client().create_bucket(Bucket=bucket_name)
 
-    def check_good_bucket_name(self, name: str, prefix: Optional[str]) -> None:
-        if not prefix:
-            prefix = self.get_prefix()
-        bucket_name = f"{prefix}{name}"
+    _PREFIX_DEFAULT = object()
+
+    def check_good_bucket_name(self, name: str, prefix: Any = _PREFIX_DEFAULT) -> None:
+        """Full bucket name (1-arg), or (name, prefix) like Java testV2 (None → get_prefix)."""
+        if prefix is self._PREFIX_DEFAULT:
+            bucket_name = name
+        else:
+            if not prefix:
+                prefix = self.get_prefix()
+            bucket_name = f"{prefix}{name}"
         self._buckets.append(bucket_name)
         self._do_create_bucket(self.get_client(), bucket_name)
 
     def bucket_create_naming_good_long(self, length: int) -> None:
-        bucket_name = self.get_new_bucket_name_only(length)
+        bucket_name = self.get_bucket_name_of_length(length)
         self._buckets.append(bucket_name)
         self._do_create_bucket(self.get_client(), bucket_name)
 
     def bucket_create_naming_bad_long(self, length: int) -> None:
-        bucket_name = self.get_new_bucket_name_only(length)
+        bucket_name = self.get_bucket_name_of_length(length)
         self.check_bad_bucket_name(bucket_name)
 
     def complete_multipart_upload_data(

@@ -11,7 +11,7 @@ class TestNotification(S3TestBase):
     @pytest.mark.tag("Get")
     def test_notification_get_empty(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 1)
         result = client.get_bucket_notification_configuration(Bucket=bucket_name)
         assert len(result.get("LambdaFunctionConfigurations", [])) == 0
         assert len(result.get("QueueConfigurations", [])) == 0
@@ -21,7 +21,7 @@ class TestNotification(S3TestBase):
     def test_notification_put(self):
         self.skip_if_aws()
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 2)
         role_id = "my-lambda"
         function_arn = f"aws:lambda::{self.config.main_user.id}:function:my-function"
         s3_events = ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"]
@@ -43,7 +43,7 @@ class TestNotification(S3TestBase):
     def test_notification_get(self):
         self.skip_if_aws()
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         role_id = "my-lambda"
         function_arn = f"aws:lambda::{self.config.main_user.id}:function:my-function"
         s3_events = ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"]
@@ -68,7 +68,7 @@ class TestNotification(S3TestBase):
     def test_notification_delete(self):
         self.skip_if_aws()
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 4)
         role_id = "my-lambda"
         function_arn = f"aws:lambda::{self.config.main_user.id}:function:my-function"
         s3_events = ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"]

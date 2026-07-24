@@ -13,7 +13,7 @@ class TestWebsite(S3TestBase):
     @pytest.mark.tag("Check")
     def test_website_get_buckets(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 1)
         with pytest.raises(ClientError) as exc_info:
             client.get_bucket_website(Bucket=bucket_name)
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
@@ -22,7 +22,7 @@ class TestWebsite(S3TestBase):
     @pytest.mark.tag("Check")
     def test_website_put_buckets(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 2)
         web_config = {
             "ErrorDocument": {"Key": "HttpStatus.SC_BAD_REQUEST"},
             "IndexDocument": {"Suffix": "a"},
@@ -35,7 +35,7 @@ class TestWebsite(S3TestBase):
     @pytest.mark.tag("Delete")
     def test_website_delete_buckets(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         web_config = {
             "ErrorDocument": {"Key": "HttpStatus.SC_BAD_REQUEST"},
             "IndexDocument": {"Suffix": "a"},

@@ -13,7 +13,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("Basic")
     def test_get_object_attributes_basic(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 1)
         key = "testGetObjectAttributesBasic"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
@@ -31,7 +31,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("SpecificAttributes")
     def test_get_object_attributes_specific_attributes(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 2)
         key = "testGetObjectAttributesSpecificAttributes"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
@@ -57,7 +57,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("Multipart")
     def test_get_object_attributes_multipart(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         key = "testGetObjectAttributesMultipart"
         size = 10 * md.MB
 
@@ -85,7 +85,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("Checksum")
     def test_get_object_attributes_with_checksum(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 4)
         key = "testGetObjectAttributesWithChecksum"
 
         client.put_object(
@@ -106,7 +106,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_get_object_attributes_non_existent_object(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 5)
         key = "testGetObjectAttributesNonExistentObject"
 
         self.assert_client_error(
@@ -140,7 +140,7 @@ class TestGetObjectAttributes(S3TestBase):
         from botocore.exceptions import ClientError, ParamValidationError
 
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 7)
         key = "testGetObjectAttributesNoAttributes"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
@@ -156,7 +156,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("Versioning")
     def test_get_object_attributes_with_version_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 8)
         key = "testGetObjectAttributesWithVersionId"
 
         self.check_configure_versioning_retry(bucket_name, "Enabled")
@@ -191,7 +191,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_get_object_attributes_invalid_version_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 9)
         key = "testGetObjectAttributesInvalidVersionId"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
@@ -210,7 +210,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("LargeMultipart")
     def test_get_object_attributes_large_multipart(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 10)
         key = "testGetObjectAttributesLargeMultipart"
         size = 100 * md.MB
         part_size = 5 * md.MB
@@ -250,7 +250,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("Metadata")
     def test_get_object_attributes_with_metadata(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 11)
         key = "testGetObjectAttributesWithMetadata"
         metadata = {
             "custom-key1": "custom-value1",
@@ -278,7 +278,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("Encryption")
     def test_get_object_attributes_with_sse_s3(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 12)
         key = "testGetObjectAttributesWithSSES3"
 
         client.put_object(
@@ -302,7 +302,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("Async")
     def test_get_object_attributes_async(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 13)
         key = "testGetObjectAttributesAsync"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
@@ -319,7 +319,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_get_object_attributes_async_error(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name_only()
+        bucket_name = self.get_new_bucket_name_only(14)
         key = "testGetObjectAttributesAsyncError"
 
         self.assert_client_error(
@@ -335,7 +335,7 @@ class TestGetObjectAttributes(S3TestBase):
     @pytest.mark.tag("AllAttributes")
     def test_get_object_attributes_all_attributes(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 15)
         key = "testGetObjectAttributesAllAttributes"
         size = 10 * md.MB
         checksum_type = "FULL_OBJECT"

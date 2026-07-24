@@ -16,7 +16,7 @@ class TestListBuckets(S3TestBase):
         client = self.get_client()
         bucket_names = []
         for _ in range(5):
-            bucket_names.append(self.create_bucket(client))
+            bucket_names.append(self.create_bucket(client, 1))
 
         response = client.list_buckets()
         bucket_list = self.get_bucket_list(response)
@@ -46,7 +46,7 @@ class TestListBuckets(S3TestBase):
     @pytest.mark.tag("Metadata")
     def test_head_bucket(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 4)
         response = client.head_bucket(Bucket=bucket_name)
         assert response is not None
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -55,11 +55,11 @@ class TestListBuckets(S3TestBase):
     def test_list_buckets_prefix(self):
         client = self.get_client()
         prefix = "1111-my-test"
-        bucket_name = utils.get_new_bucket_name(prefix)
+        bucket_name = utils.get_new_bucket_name(prefix, self.get_suite_id(), 5)
         client.create_bucket(Bucket=bucket_name)
 
         for _ in range(5):
-            self.create_bucket(client)
+            self.create_bucket(client, 5)
 
         response = client.list_buckets(Prefix=prefix)
         bucket_list = self.get_bucket_list(response)
@@ -72,7 +72,7 @@ class TestListBuckets(S3TestBase):
     def test_list_buckets_max_buckets(self):
         client = self.get_client()
         for _ in range(5):
-            self.create_bucket(client)
+            self.create_bucket(client, 6)
 
         full_response = client.list_buckets(Prefix=self.get_prefix())
         full_bucket_list = self.get_bucket_list(full_response)
@@ -87,7 +87,7 @@ class TestListBuckets(S3TestBase):
     def test_list_buckets_continuation_token(self):
         client = self.get_client()
         for _ in range(5):
-            self.create_bucket(client)
+            self.create_bucket(client, 7)
 
         full_response = client.list_buckets(Prefix=self.get_prefix())
         full_bucket_list = self.get_bucket_list(full_response)

@@ -13,14 +13,14 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("List")
     def test_metrics(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 1)
         response = client.list_bucket_metrics_configurations(Bucket=bucket_name)
         assert len(response.get("MetricsConfigurationList", [])) == 0
 
     @pytest.mark.tag("Put")
     def test_put_metrics(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 2)
         client.put_bucket_metrics_configuration(
             Bucket=bucket_name,
             Id="metrics-id",
@@ -30,7 +30,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Check")
     def test_check_metrics(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         client.put_bucket_metrics_configuration(
             Bucket=bucket_name,
             Id="metrics-id",
@@ -42,7 +42,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Get")
     def test_get_metrics(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 4)
         metric_id = "metrics-id"
         client.put_bucket_metrics_configuration(
             Bucket=bucket_name,
@@ -55,7 +55,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Delete")
     def test_delete_metrics(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 5)
         metric_id = "metrics-id"
         client.put_bucket_metrics_configuration(
             Bucket=bucket_name,
@@ -67,7 +67,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Error")
     def test_get_metrics_not_exist(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 6)
         with pytest.raises(ClientError) as exc_info:
             client.get_bucket_metrics_configuration(Bucket=bucket_name, Id="metrics-id")
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
@@ -76,7 +76,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Error")
     def test_delete_metrics_not_exist(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 7)
         with pytest.raises(ClientError) as exc_info:
             client.delete_bucket_metrics_configuration(Bucket=bucket_name, Id="metrics-id")
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
@@ -85,7 +85,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Error")
     def test_put_metrics_not_exist(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name_only()
+        bucket_name = self.get_new_bucket_name_only(8)
         with pytest.raises(ClientError) as exc_info:
             client.put_bucket_metrics_configuration(
                 Bucket=bucket_name,
@@ -98,7 +98,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Error")
     def test_put_metrics_empty_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 9)
         with pytest.raises(ClientError) as exc_info:
             client.put_bucket_metrics_configuration(
                 Bucket=bucket_name,
@@ -111,7 +111,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Error")
     def test_put_metrics_no_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 10)
         # botocore rejects missing Id client-side; Java SDK may raise similarly.
         with pytest.raises((ClientError, ParamValidationError)):
             client.put_bucket_metrics_configuration(Bucket=bucket_name)
@@ -119,7 +119,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Overwrite")
     def test_put_metrics_duplicate_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 11)
         metric_id = "metrics-id"
         client.put_bucket_metrics_configuration(
             Bucket=bucket_name,
@@ -139,7 +139,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Filtering")
     def test_metrics_prefix(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 12)
         metric_id = "metrics-id"
         prefix = "test"
         client.put_bucket_metrics_configuration(
@@ -153,7 +153,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Filtering")
     def test_metrics_tag(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 13)
         metric_id = "metrics-id"
         tag = {"Key": "key", "Value": "value"}
         client.put_bucket_metrics_configuration(
@@ -168,7 +168,7 @@ class TestMetrics(S3TestBase):
     @pytest.mark.tag("Filtering")
     def test_metrics_filter(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 14)
         metric_id = "metrics-id"
         prefix = "test"
         tag = {"Key": "key", "Value": "value"}

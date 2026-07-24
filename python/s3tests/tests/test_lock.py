@@ -19,8 +19,11 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("Put")
     def test_created_bucket_enable_object_lock(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
-        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        bucket_name = self.create_bucket(client, 1)
+        client.put_bucket_versioning(
+            Bucket=bucket_name,
+            VersioningConfiguration={"Status": "Enabled"},
+        )
         client.put_object_lock_configuration(
             Bucket=bucket_name,
             ObjectLockConfiguration={"ObjectLockEnabled": "Enabled"},
@@ -29,8 +32,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("Check")
     def test_object_lock_put_obj_lock(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 2)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -47,7 +49,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_lock_put_obj_lock_invalid_bucket(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -65,8 +67,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_lock_put_obj_lock_with_days_and_years(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 4)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -85,8 +86,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_lock_put_obj_lock_invalid_days(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 5)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -104,8 +104,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_lock_put_obj_lock_invalid_years(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 6)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -123,8 +122,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_lock_put_obj_lock_invalid_mode(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 7)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -142,8 +140,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_lock_put_obj_lock_invalid_status(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 8)
         conf = {
             "ObjectLockEnabled": "Disabled",
             "Rule": {
@@ -161,8 +158,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("Version")
     def test_object_lock_suspend_versioning(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 9)
         with pytest.raises(ClientError) as exc_info:
             client.put_bucket_versioning(
                 Bucket=bucket_name,
@@ -174,8 +170,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("Check")
     def test_object_lock_get_obj_lock(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 10)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -192,9 +187,8 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("Check")
     def test_object_lock_put_object(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.create_bucket_object_lock(client, 11)
         key = "testObjectLockPutObject"
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -228,14 +222,12 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("Check")
     def test_object_lock_copy_object(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        bucket_name2 = self.get_new_bucket_name()
+        bucket_name = self.create_bucket_object_lock(client, 12)
+        bucket_name2 = self.create_bucket_object_lock(client, 12)
         key = "testObjectLockCopyObject-lock"
         key_copy = key + "-copy"
         key2 = "testObjectLockCopyObject"
         key2_copy = key2 + "-copy"
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
-        client.create_bucket(Bucket=bucket_name2, ObjectLockEnabledForBucket=True)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -311,9 +303,8 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("Check")
     def test_object_lock_multipart(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.create_bucket_object_lock(client, 13)
         key = "testObjectLockMultipart"
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -348,10 +339,9 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_lock_md5(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.create_bucket_object_lock(client, 14)
         key = "testObjectLockMD5"
         content = utils.random_text_to_long(1 * md.MB)
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -383,7 +373,7 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_lock_get_obj_lock_invalid_bucket(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.get_new_bucket_name(15)
         client.create_bucket(Bucket=bucket_name)
         with pytest.raises(ClientError) as exc_info:
             client.get_object_lock_configuration(Bucket=bucket_name)
@@ -394,8 +384,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_obj_retention(self):
         key = "testObjectLockPutObjRetention"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 16)
         response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         version_id = response["VersionId"]
         client.put_object_retention(
@@ -414,7 +403,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_obj_retention_invalid_bucket(self):
         key = "testObjectLockPutObjRetentionInvalidBucket"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 17)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         retention = {"Mode": "GOVERNANCE", "RetainUntilDate": RETENTION_DATE}
         with pytest.raises(ClientError) as exc_info:
@@ -426,8 +415,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_obj_retention_invalid_mode(self):
         key = "testObjectLockPutObjRetentionInvalidMode"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 18)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         retention = {"Mode": "invalid", "RetainUntilDate": RETENTION_DATE}
         with pytest.raises(ClientError) as exc_info:
@@ -439,8 +427,7 @@ class TestLock(S3TestBase):
     def test_object_lock_get_obj_retention(self):
         key = "testObjectLockGetObjRetention"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 19)
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         version_id = put_response["VersionId"]
         retention = {"Mode": "GOVERNANCE", "RetainUntilDate": RETENTION_DATE}
@@ -458,7 +445,7 @@ class TestLock(S3TestBase):
     def test_object_lock_get_obj_retention_invalid_bucket(self):
         key = "testObjectLockGetObjRetentionInvalidBucket"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 20)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         with pytest.raises(ClientError) as exc_info:
             client.get_object_retention(Bucket=bucket_name, Key=key)
@@ -469,8 +456,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_obj_retention_versionid(self):
         key = "testObjectLockPutObjRetentionVersionid"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 21)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         version_id = put_response["VersionId"]
@@ -489,8 +475,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_obj_retention_override_default_retention(self):
         key = "testObjectLockPutObjRetentionOverrideDefaultRetention"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 22)
         conf = {
             "ObjectLockEnabled": "Enabled",
             "Rule": {
@@ -524,8 +509,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_obj_retention_increase_period(self):
         key = "testObjectLockPutObjRetentionIncreasePeriod"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 23)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         version_id = put_response["VersionId"]
@@ -546,8 +530,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_obj_retention_shorten_period(self):
         key = "testObjectLockPutObjRetentionShortenPeriod"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 24)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         version_id = put_response["VersionId"]
@@ -569,8 +552,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_obj_retention_shorten_period_bypass(self):
         key = "testObjectLockPutObjRetentionShortenPeriodBypass"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 25)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         version_id = put_response["VersionId"]
@@ -596,8 +578,7 @@ class TestLock(S3TestBase):
     def test_object_lock_delete_object_with_retention(self):
         key = "testObjectLockDeleteObjectWithRetention"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 26)
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         version_id = put_response["VersionId"]
         retention = {"Mode": "GOVERNANCE", "RetainUntilDate": RETENTION_DATE}
@@ -617,8 +598,7 @@ class TestLock(S3TestBase):
     def test_object_lock_delete_object_with_retention_bypass(self):
         key = "testObjectLockDeleteObjectWithRetentionBypass"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 27)
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         version_id = put_response["VersionId"]
         retention = {"Mode": "GOVERNANCE", "RetainUntilDate": RETENTION_DATE}
@@ -633,9 +613,8 @@ class TestLock(S3TestBase):
     @pytest.mark.tag("Retention")
     def test_object_lock_delete_objects_with_retention_bypass(self):
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.create_bucket_object_lock(client, 28)
         key_versions: list[dict[str, str]] = []
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
         for i in range(10):
             key = f"testObjectLockDeleteObjectsWithRetentionBypass-{i:03d}"
             put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
@@ -658,8 +637,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_legal_hold(self):
         key = "testObjectLockPutLegalHold"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 29)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         client.put_object_legal_hold(
             Bucket=bucket_name,
@@ -676,7 +654,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_legal_hold_invalid_bucket(self):
         key = "testObjectLockPutLegalHoldInvalidBucket"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 30)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         with pytest.raises(ClientError) as exc_info:
             client.put_object_legal_hold(
@@ -691,8 +669,7 @@ class TestLock(S3TestBase):
     def test_object_lock_put_legal_hold_invalid_status(self):
         key = "testObjectLockPutLegalHoldInvalidStatus"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 31)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         with pytest.raises(ClientError) as exc_info:
             client.put_object_legal_hold(
@@ -707,8 +684,7 @@ class TestLock(S3TestBase):
     def test_object_lock_get_legal_hold(self):
         key = "testObjectLockGetLegalHold"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 32)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         client.put_object_legal_hold(
             Bucket=bucket_name,
@@ -729,7 +705,7 @@ class TestLock(S3TestBase):
     def test_object_lock_get_legal_hold_invalid_bucket(self):
         key = "testObjectLockGetLegalHoldInvalidBucket"
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 33)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         with pytest.raises(ClientError) as exc_info:
             client.get_object_legal_hold(Bucket=bucket_name, Key=key)
@@ -740,8 +716,7 @@ class TestLock(S3TestBase):
     def test_object_lock_delete_object_with_legal_hold_on(self):
         key = "testObjectLockDeleteObjectWithLegalHoldOn"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 34)
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         client.put_object_legal_hold(
             Bucket=bucket_name,
@@ -762,8 +737,7 @@ class TestLock(S3TestBase):
     def test_object_lock_delete_object_with_legal_hold_off(self):
         key = "testObjectLockDeleteObjectWithLegalHoldOff"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 35)
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         client.put_object_legal_hold(
             Bucket=bucket_name,
@@ -776,8 +750,7 @@ class TestLock(S3TestBase):
     def test_object_lock_get_obj_metadata(self):
         key = "testObjectLockGetObjMetadata"
         client = self.get_client()
-        bucket_name = self.get_new_bucket_name()
-        client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+        bucket_name = self.create_bucket_object_lock(client, 36)
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         client.put_object_legal_hold(
             Bucket=bucket_name,

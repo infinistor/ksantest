@@ -30,6 +30,7 @@ class TestCopyObject(S3TestBase):
         source_bucket_encryption: bool,
         target_bucket_encryption: bool,
         target_object_encryption: bool,
+        test_id: int | None = None,
     ) -> None:
         for size in _COPY_SIZES:
             self.object_copy(
@@ -39,13 +40,18 @@ class TestCopyObject(S3TestBase):
                 target_bucket_encryption,
                 target_object_encryption,
                 size,
+                test_id=test_id,
             )
 
     def _run_object_copy_encryption_type_matrix(
-        self, prefix: str, source: EncryptionType, target: EncryptionType
+        self,
+        prefix: str,
+        source: EncryptionType,
+        target: EncryptionType,
+        test_id: int | None = None,
     ) -> None:
         for size in _COPY_SIZES:
-            self.object_copy_encryption_type(prefix, source, target, size)
+            self.object_copy_encryption_type(prefix, source, target, size, test_id=test_id)
 
     @staticmethod
     def _checksum_compare_copy(algorithm: str, content: str, response: dict) -> None:
@@ -59,7 +65,7 @@ class TestCopyObject(S3TestBase):
         source = "testObjectCopyZeroSizeSource"
         target = "testObjectCopyZeroSizeTarget"
         client = self.get_client()
-        bucket_name = self.create_objects(client, source)
+        bucket_name = self.create_objects(client, 1, source)
 
         client.put_object(Bucket=bucket_name, Key=source, Body=b"")
 
@@ -75,7 +81,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Check")
     def test_object_copy_same_bucket(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 2)
         source = "testObjectCopySameBucketSource"
         target = "testObjectCopySameBucketTarget"
 
@@ -93,7 +99,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("ContentType")
     def test_object_copy_verify_content_type(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         source = "testObjectCopyVerifyContentTypeSource"
         target = "testObjectCopyVerifyContentTypeTarget"
         content_type = "text/bla"
@@ -117,7 +123,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Overwrite")
     def test_object_copy_to_itself(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 4)
         source = "testObjectCopyToItself"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=b"")
@@ -135,7 +141,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Overwrite")
     def test_object_copy_to_itself_with_metadata(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 5)
         source = "testObjectCopyToItselfWithMetadata"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))
@@ -155,8 +161,8 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Check")
     def test_object_copy_diff_bucket(self):
         client = self.get_client()
-        source_bucket = self.create_bucket(client)
-        target_bucket = self.create_bucket(client)
+        source_bucket = self.create_bucket(client, 6)
+        target_bucket = self.create_bucket(client, 6)
         source = "testObjectCopyDiffBucketSource"
         target = "testObjectCopyDiffBucketTarget"
 
@@ -175,8 +181,8 @@ class TestCopyObject(S3TestBase):
     def test_object_copy_not_owned_bucket(self):
         client = self.get_client()
         alt_client = self.get_alt_client()
-        source_bucket = self.create_bucket(client)
-        target_bucket = self.create_bucket(alt_client)
+        source_bucket = self.create_bucket(client, 7)
+        target_bucket = self.create_bucket(alt_client, 7)
         source = "testObjectCopyNotOwnedBucketSource"
         target = "testObjectCopyNotOwnedBucketTarget"
 
@@ -198,7 +204,7 @@ class TestCopyObject(S3TestBase):
     def test_object_copy_not_owned_object_bucket(self):
         client = self.get_client()
         alt_client = self.get_alt_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 8)
         source = "testObjectCopyNotOwnedObjectBucketSource"
         target = "testObjectCopyNotOwnedObjectBucketTarget"
 
@@ -220,7 +226,7 @@ class TestCopyObject(S3TestBase):
     def test_object_copy_canned_acl(self):
         client = self.get_client()
         alt_client = self.get_alt_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 9)
         source = "testObjectCopyCannedAclSource"
         target = "testObjectCopyCannedAclTarget"
 
@@ -252,7 +258,7 @@ class TestCopyObject(S3TestBase):
     def test_object_copy_retaining_metadata(self):
         client = self.get_client()
         for size in (3, 1024 * 1024):
-            bucket_name = self.create_bucket(client)
+            bucket_name = self.create_bucket(client, 10)
             content_type = "audio/ogg"
             source = "testObjectCopyRetainingMetadataSource"
             target = "testObjectCopyRetainingMetadataTarget"
@@ -280,7 +286,7 @@ class TestCopyObject(S3TestBase):
     def test_object_copy_replacing_metadata(self):
         client = self.get_client()
         for size in (3, 1024 * 1024):
-            bucket_name = self.create_bucket(client)
+            bucket_name = self.create_bucket(client, 11)
             content_type = "audio/ogg"
             source = "testObjectCopyReplacingMetadataSource"
             target = "testObjectCopyReplacingMetadataTarget"
@@ -316,7 +322,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_copy_bucket_not_found(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 12)
 
         self.assert_client_error(
             lambda: client.copy_object(
@@ -334,7 +340,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_object_copy_key_not_found(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 13)
 
         self.assert_client_error(
             lambda: client.copy_object(
@@ -349,7 +355,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Version")
     def test_object_copy_versioning_bucket(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 14)
         size = 5
         data = utils.random_text_to_long(size)
         source = "testObjectCopyVersionedBucketSource"
@@ -381,7 +387,7 @@ class TestCopyObject(S3TestBase):
         assert self.get_body(response) == data
         assert response["ContentLength"] == size
 
-        target_bucket = self.create_bucket(client)
+        target_bucket = self.create_bucket(client, 14)
         self.check_configure_versioning_retry(target_bucket, "Enabled")
         target3 = "testObjectCopyVersionedBucketTarget3"
 
@@ -394,7 +400,7 @@ class TestCopyObject(S3TestBase):
         assert self.get_body(response) == data
         assert response["ContentLength"] == size
 
-        bucket_name3 = self.create_bucket(client)
+        bucket_name3 = self.create_bucket(client, 14)
         self.check_configure_versioning_retry(bucket_name3, "Enabled")
         target4 = "testObjectCopyVersionedBucketTarget4"
         client.copy_object(
@@ -419,7 +425,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Version")
     def test_object_copy_versioning_url_encoding(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 15)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         source = "testObjectCopyVersionedUrlEncoding?Source"
 
@@ -440,7 +446,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Multipart")
     def test_object_copy_versioning_multipart_upload(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 16)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         size = 50 * md.MB
         source = "testObjectCopyVersioningMultipartUploadSource"
@@ -482,7 +488,7 @@ class TestCopyObject(S3TestBase):
         assert head_response["Metadata"] == source_metadata
         self.check_content_using_range(bucket_name, target2, uploads.get_body(), md.MB)
 
-        target_bucket = self.create_bucket(client)
+        target_bucket = self.create_bucket(client, 16)
         self.check_configure_versioning_retry(target_bucket, "Enabled")
         target3 = "testObjectCopyVersioningMultipartUploadTarget3"
         client.copy_object(
@@ -495,7 +501,7 @@ class TestCopyObject(S3TestBase):
         assert head_response["Metadata"] == source_metadata
         self.check_content_using_range(target_bucket, target3, uploads.get_body(), md.MB)
 
-        bucket_name3 = self.create_bucket(client)
+        bucket_name3 = self.create_bucket(client, 16)
         self.check_configure_versioning_retry(bucket_name3, "Enabled")
         target4 = "testObjectCopyVersioningMultipartUploadTarget4"
         client.copy_object(
@@ -522,7 +528,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_match_good(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 17)
         source = "testCopyObjectIfMatchGoodSource"
         target = "testCopyObjectIfMatchGoodTarget"
 
@@ -540,7 +546,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_match_failed(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 18)
         source = "testCopyObjectIfMatchFailedSource"
         target = "testCopyObjectIfMatchFailedTarget"
 
@@ -560,7 +566,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_none_match_good(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 19)
         source = "testCopyObjectIfNoneMatchGoodSource"
         target = "testCopyObjectIfNoneMatchGoodTarget"
 
@@ -578,7 +584,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_none_match_failed(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 20)
         source = "testCopyObjectIfNoneMatchFailedSource"
         target = "testCopyObjectIfNoneMatchFailedTarget"
 
@@ -598,7 +604,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_modified_since_good(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 21)
         source = "testCopyObjectIfModifiedSinceGoodSource"
         target = "testCopyObjectIfModifiedSinceGoodTarget"
 
@@ -616,7 +622,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_modified_since_failed(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 22)
         source = "testCopyObjectIfModifiedSinceFailedSource"
         target = "testCopyObjectIfModifiedSinceFailedTarget"
 
@@ -640,7 +646,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_unmodified_since_good(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 23)
         source = "testCopyObjectIfUnmodifiedSinceGoodSource"
         target = "testCopyObjectIfUnmodifiedSinceGoodTarget"
 
@@ -658,7 +664,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_unmodified_since_failed(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 24)
         source = "testCopyObjectIfUnmodifiedSinceFailedSource"
         target = "testCopyObjectIfUnmodifiedSinceFailedTarget"
 
@@ -678,7 +684,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_match_with_if_unmodified_since(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 25)
         source = "testCopyObjectIfMatchWithIfUnmodifiedSinceSource"
         target = "testCopyObjectIfMatchWithIfUnmodifiedSinceTarget"
 
@@ -697,7 +703,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("If Match")
     def test_copy_object_if_none_match_with_if_modified_since(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 26)
         source = "testCopyObjectIfNoneMatchWithIfModifiedSinceSource"
         target = "testCopyObjectIfNoneMatchWithIfModifiedSinceTarget"
 
@@ -719,7 +725,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_copy_object_if_match_and_if_none_match(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 27)
         source = "testCopyObjectIfMatchAndIfNoneMatchSource"
         target = "testCopyObjectIfMatchAndIfNoneMatchTarget"
 
@@ -741,7 +747,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_copy_object_if_match_and_if_none_match_any(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 28)
         source = "testCopyObjectIfMatchAndIfNoneMatchAnySource"
         target = "testCopyObjectIfMatchAndIfNoneMatchAnyTarget"
 
@@ -762,7 +768,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("IfMatch")
     def test_copy_object_destination_if_match_good(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 29)
         source = "testCopyObjectDestinationIfMatchGoodSource"
         target = "testCopyObjectDestinationIfMatchGoodTarget"
 
@@ -781,7 +787,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("IfMatch")
     def test_copy_object_destination_if_match_failed(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 30)
         source = "testCopyObjectDestinationIfMatchFailedSource"
         target = "testCopyObjectDestinationIfMatchFailedTarget"
 
@@ -805,7 +811,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_copy_object_destination_if_none_match_good(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 31)
         source = "testCopyObjectDestinationIfNoneMatchGoodSource"
         target = "testCopyObjectDestinationIfNoneMatchGoodTarget"
 
@@ -823,7 +829,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_copy_object_destination_if_none_match_failed(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 32)
         source = "testCopyObjectDestinationIfNoneMatchFailedSource"
         target = "testCopyObjectDestinationIfNoneMatchFailedTarget"
 
@@ -848,7 +854,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_copy_object_destination_if_match_and_if_none_match(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 33)
         source = "testCopyObjectDestinationIfMatchAndIfNoneMatchSource"
         target = "testCopyObjectDestinationIfMatchAndIfNoneMatchTarget"
 
@@ -874,7 +880,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_copy_object_destination_if_match_and_if_none_match_any(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 34)
         source = "testCopyObjectDestinationIfMatchAndIfNoneMatchAnySource"
         target = "testCopyObjectDestinationIfMatchAndIfNoneMatchAnyTarget"
 
@@ -900,7 +906,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("IfNoneMatch")
     def test_copy_object_source_if_match_with_destination_if_none_match(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 35)
         source = "testCopyObjectSourceIfMatchWithDestinationIfNoneMatchSource"
         target = "testCopyObjectSourceIfMatchWithDestinationIfNoneMatchTarget"
 
@@ -918,105 +924,105 @@ class TestCopyObject(S3TestBase):
 
     @pytest.mark.tag("encryption")
     def test_copy_nor_src_to_nor_bucket_and_obj(self):
-        self._run_object_copy_matrix("testCopyNorSrcToNorBucketAndObj", False, False, False, False)
+        self._run_object_copy_matrix("testCopyNorSrcToNorBucketAndObj", False, False, False, False, test_id=36)
 
     @pytest.mark.tag("encryption")
     def test_copy_nor_src_to_nor_bucket_encryption_obj(self):
-        self._run_object_copy_matrix("testCopyNorSrcToNorBucketEncryptionObj", False, False, False, True)
+        self._run_object_copy_matrix("testCopyNorSrcToNorBucketEncryptionObj", False, False, False, True, test_id=37)
 
     @pytest.mark.tag("encryption")
     def test_copy_nor_src_to_encryption_bucket_nor_obj(self):
-        self._run_object_copy_matrix("testCopyNorSrcToEncryptionBucketNorObj", False, False, True, False)
+        self._run_object_copy_matrix("testCopyNorSrcToEncryptionBucketNorObj", False, False, True, False, test_id=38)
 
     @pytest.mark.tag("encryption")
     def test_copy_nor_src_to_encryption_bucket_and_obj(self):
-        self._run_object_copy_matrix("testCopyNorSrcToEncryptionBucketAndObj", False, False, True, True)
+        self._run_object_copy_matrix("testCopyNorSrcToEncryptionBucketAndObj", False, False, True, True, test_id=39)
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_src_to_nor_bucket_and_obj(self):
-        self._run_object_copy_matrix("testCopyEncryptionSrcToNorBucketAndObj", True, False, False, False)
+        self._run_object_copy_matrix("testCopyEncryptionSrcToNorBucketAndObj", True, False, False, False, test_id=40)
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_src_to_nor_bucket_encryption_obj(self):
-        self._run_object_copy_matrix("testCopyEncryptionSrcToNorBucketEncryptionObj", True, False, False, True)
+        self._run_object_copy_matrix("testCopyEncryptionSrcToNorBucketEncryptionObj", True, False, False, True, test_id=41)
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_src_to_encryption_bucket_nor_obj(self):
-        self._run_object_copy_matrix("testCopyEncryptionSrcToEncryptionBucketNorObj", True, False, True, False)
+        self._run_object_copy_matrix("testCopyEncryptionSrcToEncryptionBucketNorObj", True, False, True, False, test_id=42)
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_src_to_encryption_bucket_and_obj(self):
-        self._run_object_copy_matrix("testCopyEncryptionSrcToEncryptionBucketAndObj", True, False, True, True)
+        self._run_object_copy_matrix("testCopyEncryptionSrcToEncryptionBucketAndObj", True, False, True, True, test_id=43)
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_bucket_nor_obj_to_nor_bucket_and_obj(self):
-        self._run_object_copy_matrix("testCopyEncryptionBucketNorObjToNorBucketAndObj", False, True, False, False)
+        self._run_object_copy_matrix("testCopyEncryptionBucketNorObjToNorBucketAndObj", False, True, False, False, test_id=44)
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_bucket_nor_obj_to_nor_bucket_encryption_obj(self):
         self._run_object_copy_matrix(
-            "testCopyEncryptionBucketNorObjToNorBucketEncryptionObj", False, True, False, True
+            "testCopyEncryptionBucketNorObjToNorBucketEncryptionObj", False, True, False, True, test_id=45
         )
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_bucket_nor_obj_to_encryption_bucket_nor_obj(self):
         self._run_object_copy_matrix(
-            "testCopyEncryptionBucketNorObjToEncryptionBucketNorObj", False, True, True, False
+            "testCopyEncryptionBucketNorObjToEncryptionBucketNorObj", False, True, True, False, test_id=46
         )
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_bucket_nor_obj_to_encryption_bucket_and_obj(self):
         self._run_object_copy_matrix(
-            "testCopyEncryptionBucketNorObjToEncryptionBucketAndObj", False, True, True, True
+            "testCopyEncryptionBucketNorObjToEncryptionBucketAndObj", False, True, True, True, test_id=47
         )
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_bucket_and_obj_to_nor_bucket_and_obj(self):
-        self._run_object_copy_matrix("testCopyEncryptionBucketAndObjToNorBucketAndObj", True, True, False, False)
+        self._run_object_copy_matrix("testCopyEncryptionBucketAndObjToNorBucketAndObj", True, True, False, False, test_id=48)
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_bucket_and_obj_to_nor_bucket_encryption_obj(self):
         self._run_object_copy_matrix(
-            "testCopyEncryptionBucketAndObjToNorBucketEncryptionObj", True, True, False, True
+            "testCopyEncryptionBucketAndObjToNorBucketEncryptionObj", True, True, False, True, test_id=49
         )
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_bucket_and_obj_to_encryption_bucket_nor_obj(self):
         self._run_object_copy_matrix(
-            "testCopyEncryptionBucketAndObjToEncryptionBucketNorObj", True, True, True, False
+            "testCopyEncryptionBucketAndObjToEncryptionBucketNorObj", True, True, True, False, test_id=50
         )
 
     @pytest.mark.tag("encryption")
     def test_copy_encryption_bucket_and_obj_to_encryption_bucket_and_obj(self):
         self._run_object_copy_matrix(
-            "testCopyEncryptionBucketAndObjToEncryptionBucketAndObj", True, True, True, True
+            "testCopyEncryptionBucketAndObjToEncryptionBucketAndObj", True, True, True, True, test_id=51
         )
 
     @pytest.mark.tag("encryption")
     def test_copy_to_normal_source(self):
         prefix = "testCopyToNormalSource"
-        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.NORMAL, EncryptionType.NORMAL)
-        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3)
-        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C)
+        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.NORMAL, EncryptionType.NORMAL, test_id=52)
+        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.NORMAL, EncryptionType.SSE_S3, test_id=52)
+        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.NORMAL, EncryptionType.SSE_C, test_id=52)
 
     @pytest.mark.tag("encryption")
     def test_copy_to_sse_s3_source(self):
         prefix = "testCopyToSseS3Source"
-        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL)
-        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3)
-        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C)
+        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_S3, EncryptionType.NORMAL, test_id=53)
+        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_S3, test_id=53)
+        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_S3, EncryptionType.SSE_C, test_id=53)
 
     @pytest.mark.tag("encryption")
     def test_copy_to_sse_c_source(self):
         prefix = "testCopyToSseCSource"
-        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL)
-        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3)
-        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C)
+        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_C, EncryptionType.NORMAL, test_id=54)
+        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_C, EncryptionType.SSE_S3, test_id=54)
+        self._run_object_copy_encryption_type_matrix(prefix, EncryptionType.SSE_C, EncryptionType.SSE_C, test_id=54)
 
     @pytest.mark.tag("ERROR")
     def test_copy_to_deleted_object(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 55)
         source = "testCopyToDeletedObjectSource"
         target = "testCopyToDeletedObjectTarget"
 
@@ -1036,7 +1042,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_copy_to_delete_marker_object(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 56)
         source = "testCopyToDeleteMarkerObjectSource"
         target = "testCopyToDeleteMarkerObjectTarget"
 
@@ -1058,7 +1064,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Overwrite")
     def test_object_versioning_copy_to_itself_with_metadata(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 57)
         source = "testObjectVersioningCopyToItselfWithMetadataSource"
 
         self.check_configure_versioning_retry(bucket_name, "Enabled")
@@ -1082,7 +1088,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Overwrite")
     def test_object_copy_to_itself_with_metadata_overwrite(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 58)
         source = "testObjectCopyToItselfWithMetadataOverwriteSource"
         metadata = {"foo": "bar"}
 
@@ -1109,7 +1115,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("Overwrite")
     def test_object_versioning_copy_to_itself_with_metadata_overwrite(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 59)
         source = "testObjectVersioningCopyToItselfWithMetadataOverwriteSource"
         metadata = {"foo": "bar"}
 
@@ -1141,7 +1147,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_copy_revoke_sse_algorithm(self):
         client = self.get_client_https(True)
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 60)
         self.unblock_sse_c(bucket_name)
         source_key = "testCopyRevokeSseAlgorithmSource"
         target_key = "testCopyRevokeSseAlgorithmTarget"
@@ -1166,7 +1172,7 @@ class TestCopyObject(S3TestBase):
 
     @pytest.mark.tag("checksum")
     def test_copy_object_checksum_use_chunk_encoding(self):
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(61)
 
         for request_option, response_option in _CHECKSUM_CONFIGS:
             client = self.get_client_with_checksum(True, request_option, response_option)
@@ -1222,7 +1228,7 @@ class TestCopyObject(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_copy_object_metadata_and_tags(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 62)
         source_key = "testCopyObjectMetadataAndTagsSource"
         target_key = "testCopyObjectMetadataAndTagsTarget"
 

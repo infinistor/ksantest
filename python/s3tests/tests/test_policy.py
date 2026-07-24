@@ -17,7 +17,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Check")
     def test_bucket_policy(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 1)
         key = "asdf"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
@@ -47,7 +47,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Check")
     def test_bucket_v2_policy(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 2)
         key = "asdf"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
@@ -77,7 +77,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Priority")
     def test_bucket_policy_acl(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 3)
         key = "asdf"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
@@ -112,7 +112,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Priority")
     def test_bucket_v2_policy_acl(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 4)
         key = "asdf"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
@@ -148,7 +148,7 @@ class TestPolicy(S3TestBase):
     def test_get_tags_acl_public(self):
         key = "acl"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 5)
         self.create_key_with_random_content(client, key, 0, bucket_name)
 
         resource = utils.make_arn_resource(f"{bucket_name}/{key}")
@@ -170,7 +170,7 @@ class TestPolicy(S3TestBase):
     def test_put_tags_acl_public(self):
         key = "acl"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 6)
         self.create_key_with_random_content(client, key, 0, bucket_name)
 
         resource = utils.make_arn_resource(f"{bucket_name}/{key}")
@@ -192,7 +192,7 @@ class TestPolicy(S3TestBase):
     def test_delete_tags_obj_public(self):
         key = "acl"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 7)
         self.create_key_with_random_content(client, key, 0, bucket_name)
 
         resource = utils.make_arn_resource(f"{bucket_name}/{key}")
@@ -218,12 +218,10 @@ class TestPolicy(S3TestBase):
         private_tag = "privateTag"
         invalid_tag = "invalidTag"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 8)
         self.create_objects(client, bucket_name, [public_tag, private_tag, invalid_tag])
 
-        tag_conditional = {
-            "StringEquals": {"s3:ExistingObjectTag/security": "public"}
-        }
+        tag_conditional = {"StringEquals": {"s3:ExistingObjectTag/security": "public"}}
         resource = utils.make_arn_resource(f"{bucket_name}/*")
         policy_document = self.make_json_policy("s3:GetObject", resource, None, tag_conditional)
         client.put_bucket_policy(Bucket=bucket_name, Policy=policy_document)
@@ -269,12 +267,10 @@ class TestPolicy(S3TestBase):
         private_tag = "privateTag"
         invalid_tag = "invalidTag"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 9)
         self.create_objects(client, bucket_name, [public_tag, private_tag, invalid_tag])
 
-        tag_conditional = {
-            "StringEquals": {"s3:ExistingObjectTag/security": "public"}
-        }
+        tag_conditional = {"StringEquals": {"s3:ExistingObjectTag/security": "public"}}
         resource = utils.make_arn_resource(f"{bucket_name}/*")
         policy_document = self.make_json_policy("s3:GetObjectTagging", resource, None, tag_conditional)
         client.put_bucket_policy(Bucket=bucket_name, Policy=policy_document)
@@ -325,12 +321,10 @@ class TestPolicy(S3TestBase):
         private_tag = "privateTag"
         invalid_tag = "invalidTag"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 10)
         self.create_objects(client, bucket_name, [public_tag, private_tag, invalid_tag])
 
-        tag_conditional = {
-            "StringEquals": {"s3:ExistingObjectTag/security": "public"}
-        }
+        tag_conditional = {"StringEquals": {"s3:ExistingObjectTag/security": "public"}}
         resource = utils.make_arn_resource(f"{bucket_name}/*")
         policy_document = self.make_json_policy("s3:PutObjectTagging", resource, None, tag_conditional)
         client.put_bucket_policy(Bucket=bucket_name, Policy=policy_document)
@@ -399,18 +393,15 @@ class TestPolicy(S3TestBase):
         private_foo = "private/foo"
         client = self.get_client()
         alt_client = self.get_alt_client()
-        source_bucket_name = self.create_bucket_canned_acl(client)
-        target_bucket_name = self.create_bucket_canned_acl(client)
-
+        source_bucket_name = self.create_bucket_canned_acl(client, 11)
+        target_bucket_name = self.create_bucket_canned_acl(client, 11)
         self.create_objects(client, source_bucket_name, [public_foo, public_bar, private_foo])
 
         source_resource = utils.make_arn_resource(f"{source_bucket_name}/*")
         policy_document = self.make_json_policy("s3:GetObject", source_resource)
         client.put_bucket_policy(Bucket=source_bucket_name, Policy=policy_document)
 
-        tag_conditional = {
-            "StringLike": {"s3:x-amz-copy-source": f"{source_bucket_name}/public/*"}
-        }
+        tag_conditional = {"StringLike": {"s3:x-amz-copy-source": f"{source_bucket_name}/public/*"}}
         resource = utils.make_arn_resource(f"{target_bucket_name}/*")
         policy_document2 = self.make_json_policy("s3:PutObject", resource, None, tag_conditional)
         client.put_bucket_policy(Bucket=target_bucket_name, Policy=policy_document2)
@@ -445,14 +436,14 @@ class TestPolicy(S3TestBase):
         public_foo = "public/foo"
         public_bar = "public/bar"
         client = self.get_client()
-        source_bucket_name = self.create_bucket_canned_acl(client)
+        source_bucket_name = self.create_bucket_canned_acl(client, 12)
         self.create_objects(client, source_bucket_name, [public_foo, public_bar])
 
         source_resource = utils.make_arn_resource(f"{source_bucket_name}/*")
         policy_document = self.make_json_policy("s3:GetObject", source_resource)
         client.put_bucket_policy(Bucket=source_bucket_name, Policy=policy_document)
 
-        target_bucket_name = self.create_bucket_canned_acl(client)
+        target_bucket_name = self.create_bucket_canned_acl(client, 12)
         s3_conditional = {"StringEquals": {"s3:x-amz-metadata-directive": "COPY"}}
         resource = utils.make_arn_resource(f"{target_bucket_name}/*")
         policy_document2 = self.make_json_policy("s3:PutObject", resource, None, s3_conditional)
@@ -488,7 +479,7 @@ class TestPolicy(S3TestBase):
     def test_bucket_policy_put_obj_acl(self):
         client = self.get_client()
         alt_client = self.get_alt_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 13)
 
         tag_conditional = {"StringLike": {"s3:x-amz-acl": "public*"}}
         resource = utils.make_arn_resource(f"{bucket_name}/*")
@@ -521,8 +512,8 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("GrantOptions")
     def test_bucket_policy_put_obj_grant(self):
         client = self.get_client()
-        bucket_name1 = self.create_bucket_canned_acl(client)
-        bucket_name2 = self.create_bucket_canned_acl(client)
+        bucket_name1 = self.create_bucket_canned_acl(client, 14)
+        bucket_name2 = self.create_bucket_canned_acl(client, 14)
 
         main_user_id = self.config.main_user.id
         alt_user_id = self.config.alt_user.id
@@ -563,12 +554,10 @@ class TestPolicy(S3TestBase):
         private_tag = "privateTag"
         invalid_tag = "invalidTag"
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 15)
         self.create_objects(client, bucket_name, [public_tag, private_tag, invalid_tag])
 
-        tag_conditional = {
-            "StringEquals": {"s3:ExistingObjectTag/security": "public"}
-        }
+        tag_conditional = {"StringEquals": {"s3:ExistingObjectTag/security": "public"}}
         resource = utils.make_arn_resource(f"{bucket_name}/*")
         policy_document = self.make_json_policy("s3:GetObjectAcl", resource, None, tag_conditional)
         client.put_bucket_policy(Bucket=bucket_name, Policy=policy_document)
@@ -616,7 +605,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Status")
     def test_bucket_policy_status_with_all_user(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 16)
 
         with pytest.raises(ClientError):
             client.get_bucket_policy_status(Bucket=bucket_name)
@@ -643,7 +632,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Status")
     def test_bucket_policy_status_with_specific_user_access(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 17)
 
         with pytest.raises(ClientError):
             client.get_bucket_policy_status(Bucket=bucket_name)
@@ -670,7 +659,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Status")
     def test_bucket_policy_status_with_wide_ip_range(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 18)
 
         policy_document = {
             md.POLICY_VERSION: md.POLICY_VERSION_DATE,
@@ -680,9 +669,7 @@ class TestPolicy(S3TestBase):
                     md.POLICY_PRINCIPAL: {"AWS": "*"},
                     md.POLICY_ACTION: "s3:GetObject",
                     md.POLICY_RESOURCE: utils.make_arn_resource(f"{bucket_name}/*"),
-                    md.POLICY_CONDITION: {
-                        "IpAddress": {"aws:SourceIp": "0.0.0.0/1"}
-                    },
+                    md.POLICY_CONDITION: {"IpAddress": {"aws:SourceIp": "0.0.0.0/1"}},
                 }
             ],
         }
@@ -695,7 +682,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Status")
     def test_bucket_policy_status_with_ip_range(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 19)
 
         policy_document = {
             md.POLICY_VERSION: md.POLICY_VERSION_DATE,
@@ -705,9 +692,7 @@ class TestPolicy(S3TestBase):
                     md.POLICY_PRINCIPAL: {"AWS": "*"},
                     md.POLICY_ACTION: "s3:GetObject",
                     md.POLICY_RESOURCE: [utils.make_arn_resource(f"{bucket_name}/*")],
-                    md.POLICY_CONDITION: {
-                        "IpAddress": {"aws:SourceIp": "192.168.1.0/24"}
-                    },
+                    md.POLICY_CONDITION: {"IpAddress": {"aws:SourceIp": "192.168.1.0/24"}},
                 }
             ],
         }
@@ -720,7 +705,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Status")
     def test_bucket_policy_status_with_time_condition(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 20)
         resource = utils.make_arn_resource(f"{bucket_name}/*")
 
         now = datetime.now(timezone.utc)
@@ -751,7 +736,7 @@ class TestPolicy(S3TestBase):
     @pytest.mark.tag("Status")
     def test_bucket_policy_status_with_tag_condition(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 21)
         resource = utils.make_arn_resource(f"{bucket_name}/*")
 
         policy_document = {
@@ -762,9 +747,7 @@ class TestPolicy(S3TestBase):
                     md.POLICY_PRINCIPAL: {"AWS": "*"},
                     md.POLICY_ACTION: "s3:GetObject",
                     md.POLICY_RESOURCE: resource,
-                    md.POLICY_CONDITION: {
-                        "StringEquals": {"s3:ExistingObjectTag/access": "restricted"}
-                    },
+                    md.POLICY_CONDITION: {"StringEquals": {"s3:ExistingObjectTag/access": "restricted"}},
                 }
             ],
         }

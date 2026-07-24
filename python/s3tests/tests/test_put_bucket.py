@@ -14,14 +14,15 @@ class TestPutBucket(S3TestBase):
     @pytest.mark.tag("PUT")
     def test_bucket_list_empty(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 1)
         response = client.list_objects(Bucket=bucket_name)
         assert len(response.get("Contents", [])) == 0
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_bad_starts_non_alpha(self):
-        bucket_name = self.get_new_bucket_name_only()
+        bucket_name = self.get_new_bucket_name(2)
         self.check_bad_bucket_name(f"_{bucket_name}")
+        self.delete_bucket_list(bucket_name)
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_bad_short_one(self):
@@ -61,10 +62,7 @@ class TestPutBucket(S3TestBase):
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_dns_long(self):
-        prefix = self.get_prefix()
-        add_length = 63 - len(prefix)
-        prefix = utils.random_text(add_length)
-        self.check_good_bucket_name(prefix, None)
+        self.check_good_bucket_name(utils.random_bucket_name(""))
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_dns_dash_at_end(self):
@@ -84,7 +82,7 @@ class TestPutBucket(S3TestBase):
 
     @pytest.mark.tag("Duplicate")
     def test_bucket_create_exists(self):
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.get_new_bucket_name(17)
         client = self.get_client()
         self._do_create_bucket(client, bucket_name)
         with pytest.raises(ClientError) as exc_info:
@@ -94,7 +92,7 @@ class TestPutBucket(S3TestBase):
 
     @pytest.mark.tag("Duplicate")
     def test_bucket_create_exists_nonowner(self):
-        bucket_name = self.get_new_bucket_name()
+        bucket_name = self.get_new_bucket_name(18)
         client = self.get_client()
         alt_client = self.get_alt_client()
         self._do_create_bucket(client, bucket_name)
@@ -105,25 +103,25 @@ class TestPutBucket(S3TestBase):
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_good_starts_alpha(self):
-        self.check_good_bucket_name("foo", f"a{self.get_prefix()}")
+        self.check_good_bucket_name(utils.random_bucket_name("a"))
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_good_starts_digit(self):
-        self.check_good_bucket_name("foo", f"0{self.get_prefix()}")
+        self.check_good_bucket_name(utils.random_bucket_name("1"))
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_good_contains_period(self):
-        self.check_good_bucket_name("aaa.111", None)
+        self.check_good_bucket_name(utils.random_bucket_name("a."))
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_good_contains_hyphen(self):
-        self.check_good_bucket_name("aaa-111", None)
+        self.check_good_bucket_name(utils.random_bucket_name("a-"))
 
     @pytest.mark.tag("Duplicate")
     def test_bucket_recreate_not_overriding(self):
         keys = ["my_key1", "my_key2"]
         client = self.get_client()
-        bucket_name = self.create_objects_keys(client, keys)
+        bucket_name = self.create_objects_keys(client, 23, keys)
         objects = self.get_object_list(client, bucket_name, None)
         assert objects == keys
 
@@ -136,5 +134,5 @@ class TestPutBucket(S3TestBase):
     @pytest.mark.tag("location")
     def test_get_bucket_location(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 24)
         client.get_bucket_location(Bucket=bucket_name)

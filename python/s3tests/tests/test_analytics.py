@@ -34,8 +34,8 @@
 #     @pytest.mark.tag("Put")
 #     def test_put_bucket_analytics(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
-#         target_bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 1)
+#         target_bucket_name = self.create_bucket(client, 1)
 #         client.put_bucket_analytics_configuration(
 #             Bucket=bucket_name,
 #             Id="test",
@@ -45,8 +45,8 @@
 #     @pytest.mark.tag("Get")
 #     def test_get_bucket_analytics(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
-#         target_bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 2)
+#         target_bucket_name = self.create_bucket(client, 2)
 #         client.put_bucket_analytics_configuration(
 #             Bucket=bucket_name,
 #             Id="test",
@@ -64,8 +64,8 @@
 #     @pytest.mark.tag("Put")
 #     def test_add_bucket_analytics(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
-#         target_bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 3)
+#         target_bucket_name = self.create_bucket(client, 3)
 #         client.put_bucket_analytics_configuration(
 #             Bucket=bucket_name,
 #             Id="test",
@@ -84,8 +84,8 @@
 #     @pytest.mark.tag("List")
 #     def test_list_bucket_analytics(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
-#         target_bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 4)
+#         target_bucket_name = self.create_bucket(client, 4)
 #         client.put_bucket_analytics_configuration(
 #             Bucket=bucket_name,
 #             Id="test",
@@ -104,8 +104,8 @@
 #     @pytest.mark.tag("Delete")
 #     def test_delete_bucket_analytics(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
-#         target_bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 5)
+#         target_bucket_name = self.create_bucket(client, 5)
 #         client.put_bucket_analytics_configuration(
 #             Bucket=bucket_name,
 #             Id="test",
@@ -121,8 +121,8 @@
 #     @pytest.mark.tag("Error")
 #     def test_put_bucket_analytics_invalid(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
-#         target_bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 6)
+#         target_bucket_name = self.create_bucket(client, 6)
 #         self.assert_client_error(
 #             lambda: client.put_bucket_analytics_configuration(
 #                 Bucket=bucket_name,

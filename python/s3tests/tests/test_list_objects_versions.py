@@ -12,7 +12,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("Check")
     def test_bucket_list_versions_many(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "foo", "bar", "baz")
+        bucket_name = self.create_objects(client, 1, "foo", "bar", "baz")
 
         response = client.list_object_versions(Bucket=bucket_name, MaxKeys=2)
         assert self.get_keys2(response.get("Versions")) == ["bar", "baz"]
@@ -29,7 +29,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("Delimiter")
     def test_bucket_list_versions_delimiter_basic(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf")
+        bucket_name = self.create_objects(client, 2, "foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf")
         delimiter = "/"
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter=delimiter)
@@ -43,7 +43,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_encoding_basic(self):
         client = self.get_client()
         bucket_name = self.create_objects(
-            client, "foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"
+            client, 3, "foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"
         )
         delimiter = "/"
 
@@ -59,8 +59,9 @@ class TestListObjectsVersions(S3TestBase):
 
     @pytest.mark.tag("Filtering")
     def test_bucket_list_versions_delimiter_prefix(self):
+        client = self.get_client()
         bucket_name = self.create_objects_keys(
-            ["asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla"]
+            client, 4, ["asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla"]
         )
         delimiter = "/"
         prefix = ""
@@ -96,7 +97,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("Filtering")
     def test_bucket_list_versions_delimiter_prefix_ends_with_delimiter(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "asdf/")
+        bucket_name = self.create_objects(client, 5, "asdf/")
         self.validate_list_object(
             bucket_name, "asdf/", "/", "", 1000, False, ["asdf/"], [], None
         )
@@ -104,7 +105,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("Delimiter")
     def test_bucket_list_versions_delimiter_alt(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "bar", "baz", "cab", "foo")
+        bucket_name = self.create_objects(client, 6, "bar", "baz", "cab", "foo")
         delimiter = "a"
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter=delimiter)
@@ -116,8 +117,9 @@ class TestListObjectsVersions(S3TestBase):
 
     @pytest.mark.tag("Filtering")
     def test_bucket_list_versions_delimiter_prefix_underscore(self):
+        client = self.get_client()
         bucket_name = self.create_objects_keys(
-            ["Obj1_", "Under1/bar", "Under1/baz/xyzzy", "Under2/thud", "Under2/bla"]
+            client, 7, ["Obj1_", "Under1/bar", "Under1/baz/xyzzy", "Under2/thud", "Under2/bla"]
         )
         delimiter = "/"
         prefix = ""
@@ -153,7 +155,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("Delimiter")
     def test_bucket_list_versions_delimiter_percentage(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "b%ar", "b%az", "c%ab", "foo")
+        bucket_name = self.create_objects(client, 8, "b%ar", "b%az", "c%ab", "foo")
         delimiter = "%"
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter=delimiter)
@@ -166,7 +168,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("Delimiter")
     def test_bucket_list_versions_delimiter_whitespace(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "b ar", "b az", "c ab", "foo")
+        bucket_name = self.create_objects(client, 9, "b ar", "b az", "c ab", "foo")
         delimiter = " "
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter=delimiter)
@@ -179,7 +181,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("Delimiter")
     def test_bucket_list_versions_delimiter_dot(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "b.ar", "b.az", "c.ab", "foo")
+        bucket_name = self.create_objects(client, 10, "b.ar", "b.az", "c.ab", "foo")
         delimiter = "."
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter=delimiter)
@@ -193,7 +195,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_delimiter_unreadable(self):
         client = self.get_client()
         key_names = ["bar", "baz", "cab", "foo"]
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 11, *key_names)
         delimiter = "\n"
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter=delimiter)
@@ -205,7 +207,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_delimiter_empty(self):
         client = self.get_client()
         key_names = ["bar", "baz", "cab", "foo"]
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 12, *key_names)
         delimiter = ""
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter=delimiter)
@@ -217,7 +219,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_delimiter_none(self):
         client = self.get_client()
         key_names = ["bar", "baz", "cab", "foo"]
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 13, *key_names)
 
         response = client.list_object_versions(Bucket=bucket_name)
         assert response.get("Delimiter") is None
@@ -228,7 +230,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_delimiter_not_exist(self):
         key_names = ["bar", "baz", "cab", "foo"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 14, *key_names)
         delimiter = "/"
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter=delimiter)
@@ -242,7 +244,7 @@ class TestListObjectsVersions(S3TestBase):
         key_names2 = ["1999", "1999#", "1999+", "2000"]
         key_names.extend(key_names2)
         client = self.get_client()
-        bucket_name = self.create_objects_list(client, key_names)
+        bucket_name = self.create_objects(client, 15, key_names)
         delimiter = "/"
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter=delimiter)
@@ -253,7 +255,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("prefix")
     def test_bucket_list_versions_prefix_basic(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "foo/bar", "foo/baz", "quux")
+        bucket_name = self.create_objects(client, 16, "foo/bar", "foo/baz", "quux")
         prefix = "foo/"
 
         response = client.list_object_versions(Bucket=bucket_name, Prefix=prefix)
@@ -264,7 +266,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("prefix")
     def test_bucket_list_versions_prefix_alt(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "bar", "baz", "foo")
+        bucket_name = self.create_objects(client, 17, "bar", "baz", "foo")
         prefix = "ba"
 
         response = client.list_object_versions(Bucket=bucket_name, Prefix=prefix)
@@ -276,7 +278,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_prefix_empty(self):
         key_names = ["foo/bar", "foo/baz", "quux"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 18, *key_names)
         prefix = ""
 
         response = client.list_object_versions(Bucket=bucket_name, Prefix=prefix)
@@ -288,7 +290,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_prefix_none(self):
         key_names = ["foo/bar", "foo/baz", "quux"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 19, *key_names)
 
         response = client.list_object_versions(Bucket=bucket_name)
         assert response.get("Prefix", "") == ""
@@ -299,7 +301,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_prefix_not_exist(self):
         key_names = ["foo/bar", "foo/baz", "quux"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 20, *key_names)
         prefix = "d"
 
         response = client.list_object_versions(Bucket=bucket_name, Prefix=prefix)
@@ -311,7 +313,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_prefix_unreadable(self):
         key_names = ["foo/bar", "foo/baz", "quux"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 21, *key_names)
         prefix = "\n"
 
         response = client.list_object_versions(Bucket=bucket_name, Prefix=prefix)
@@ -322,7 +324,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("PrefixAndDelimiter")
     def test_bucket_list_versions_prefix_delimiter_basic(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf")
+        bucket_name = self.create_objects(client, 22, "foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf")
         prefix = "foo/"
         delimiter = "/"
 
@@ -337,7 +339,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("PrefixAndDelimiter")
     def test_bucket_list_versions_prefix_delimiter_alt(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "bar", "bazar", "cab", "foo")
+        bucket_name = self.create_objects(client, 23, "bar", "bazar", "cab", "foo")
         delimiter = "a"
         prefix = "ba"
 
@@ -352,7 +354,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("PrefixAndDelimiter")
     def test_bucket_list_versions_prefix_delimiter_prefix_not_exist(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "b/a/r", "b/a/c", "b/a/g", "g")
+        bucket_name = self.create_objects(client, 24, "b/a/r", "b/a/c", "b/a/g", "g")
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter="d", Prefix="/")
         assert self.get_keys2(response.get("Versions")) == []
@@ -361,7 +363,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("PrefixAndDelimiter")
     def test_bucket_list_versions_prefix_delimiter_delimiter_not_exist(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "b/a/c", "b/a/g", "b/a/r", "g")
+        bucket_name = self.create_objects(client, 25, "b/a/c", "b/a/g", "b/a/r", "g")
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter="z", Prefix="b")
         assert self.get_keys2(response.get("Versions")) == ["b/a/c", "b/a/g", "b/a/r"]
@@ -370,7 +372,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("PrefixAndDelimiter")
     def test_bucket_list_versions_prefix_delimiter_prefix_delimiter_not_exist(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "b/a/r", "b/a/c", "b/a/g", "g")
+        bucket_name = self.create_objects(client, 26, "b/a/r", "b/a/c", "b/a/g", "g")
 
         response = client.list_object_versions(Bucket=bucket_name, Delimiter="z", Prefix="y")
         assert self.get_keys2(response.get("Versions")) == []
@@ -380,7 +382,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_max_keys_one(self):
         key_names = ["bar", "baz", "foo", "quxx"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 27, *key_names)
 
         response = client.list_object_versions(Bucket=bucket_name, MaxKeys=1)
         assert response["IsTruncated"] is True
@@ -394,7 +396,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_max_keys_zero(self):
         key_names = ["bar", "baz", "foo", "quxx"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 28, *key_names)
 
         response = client.list_object_versions(Bucket=bucket_name, MaxKeys=0)
         assert response["IsTruncated"] is False
@@ -404,7 +406,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_max_keys_none(self):
         key_names = ["bar", "baz", "foo", "quxx"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 29, *key_names)
 
         response = client.list_object_versions(Bucket=bucket_name)
         assert response["IsTruncated"] is False
@@ -415,7 +417,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_marker_none(self):
         key_names = ["bar", "baz", "foo", "quxx"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 30, *key_names)
 
         response = client.list_object_versions(Bucket=bucket_name, KeyMarker="")
         assert response.get("NextKeyMarker") is None
@@ -424,7 +426,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_marker_empty(self):
         key_names = ["bar", "baz", "foo", "quxx"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 31, *key_names)
 
         response = client.list_object_versions(Bucket=bucket_name, KeyMarker="")
         assert response.get("NextKeyMarker") is None
@@ -435,7 +437,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_marker_unreadable(self):
         key_names = ["bar", "baz", "foo", "quxx"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 32, *key_names)
         marker = "\n"
 
         response = client.list_object_versions(Bucket=bucket_name, KeyMarker=marker)
@@ -447,7 +449,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_marker_not_in_list(self):
         key_names = ["bar", "baz", "foo", "quxx"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 33, *key_names)
         marker = "blah"
 
         response = client.list_object_versions(Bucket=bucket_name, KeyMarker=marker)
@@ -458,7 +460,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_marker_after_list(self):
         key_names = ["bar", "baz", "foo", "quxx"]
         client = self.get_client()
-        bucket_name = self.create_objects(client, *key_names)
+        bucket_name = self.create_objects(client, 34, *key_names)
         marker = "zzz"
 
         response = client.list_object_versions(Bucket=bucket_name, KeyMarker=marker)
@@ -470,7 +472,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_bucket_list_versions_return_data(self):
         keys = ["bar", "baz", "foo"]
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 35)
 
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         self.create_objects_list(client, keys, bucket_name)
@@ -506,13 +508,13 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("ACL")
     def test_bucket_list_versions_objects_anonymous(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, "public-read")
+        bucket_name = self.create_bucket_canned_acl(client, 36, "public-read")
         public_client = self.get_public_client()
         public_client.list_object_versions(Bucket=bucket_name)
 
     @pytest.mark.tag("ACL")
     def test_bucket_list_versions_objects_anonymous_fail(self):
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(37)
         public_client = self.get_public_client()
         self.assert_client_error(
             lambda: public_client.list_object_versions(Bucket=bucket_name),
@@ -522,7 +524,7 @@ class TestListObjectsVersions(S3TestBase):
 
     @pytest.mark.tag("ERROR")
     def test_bucket_list_versions_not_exist(self):
-        bucket_name = self.get_new_bucket_name_only()
+        bucket_name = self.get_new_bucket_name_only(38)
         client = self.get_client()
         self.assert_client_error(
             lambda: client.list_object_versions(Bucket=bucket_name),
@@ -534,7 +536,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_versioning_bucket_list_filtering_all(self):
         key_names = ["test1/f1", "test2/f2", "test3", "test4/f3", "testF4"]
         client = self.get_client()
-        bucket_name = self.create_objects_list(client, key_names)
+        bucket_name = self.create_objects(client, 39, key_names)
 
         marker = "test3"
         delimiter = "/"
@@ -563,7 +565,7 @@ class TestListObjectsVersions(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_obj_list_marker(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 40)
         key_name = "testVersioningObjListMarker"
         objects = []
 

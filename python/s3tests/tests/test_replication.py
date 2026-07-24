@@ -27,8 +27,8 @@ class TestReplication(S3TestBase):
     def test_replication_set(self):
         prefix = "test/"
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 1)
+        target_bucket_name = self.create_bucket(client, 1)
         self.check_configure_versioning_retry(source_bucket_name, "Enabled")
         self.check_configure_versioning_retry(target_bucket_name, "Enabled")
 
@@ -41,7 +41,6 @@ class TestReplication(S3TestBase):
         self.replication_config_compare(config, get_config["ReplicationConfiguration"])
 
         client.delete_bucket_replication(Bucket=source_bucket_name)
-        # Java only asserts HTTP 404; AWS returns ReplicationConfigurationNotFoundError.
         with pytest.raises(ClientError) as exc_info:
             client.get_bucket_replication(Bucket=source_bucket_name)
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
@@ -49,8 +48,8 @@ class TestReplication(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_replication_invalid_source_bucket_name(self):
         client = self.get_client()
-        source_bucket_name = self.get_new_bucket_name_only()
-        target_bucket_name = self.get_new_bucket_name_only()
+        source_bucket_name = self.get_new_bucket_name_only(2)
+        target_bucket_name = self.get_new_bucket_name_only(2)
         target_bucket_arn = f"arn:aws:s3:::{target_bucket_name}"
         config = self._replication_config(target_bucket_arn)
         self.assert_client_error(
@@ -64,8 +63,8 @@ class TestReplication(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_replication_invalid_source_bucket_versioning(self):
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 3)
+        target_bucket_name = self.create_bucket(client, 3)
         target_bucket_arn = f"arn:aws:s3:::{target_bucket_name}"
         config = self._replication_config(target_bucket_arn)
         self.assert_client_error(
@@ -80,8 +79,8 @@ class TestReplication(S3TestBase):
     def test_replication_invalid_target_bucket_name(self):
         prefix = "test/"
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.get_new_bucket_name_only()
+        source_bucket_name = self.create_bucket(client, 4)
+        target_bucket_name = self.get_new_bucket_name_only(4)
         self.check_configure_versioning_retry(source_bucket_name, "Enabled")
 
         target_bucket_arn = f"arn:aws:s3:::{target_bucket_name}"
@@ -98,8 +97,8 @@ class TestReplication(S3TestBase):
     def test_replication_invalid_target_bucket_versioning(self):
         prefix = "test/"
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 5)
+        target_bucket_name = self.create_bucket(client, 5)
         self.check_configure_versioning_retry(source_bucket_name, "Enabled")
 
         target_bucket_arn = f"arn:aws:s3:::{target_bucket_name}"
@@ -116,8 +115,8 @@ class TestReplication(S3TestBase):
     def test_replication_bucket_versioning_suspend(self):
         prefix = "test/"
         client = self.get_client()
-        source_bucket_name = self.create_bucket(client)
-        target_bucket_name = self.create_bucket(client)
+        source_bucket_name = self.create_bucket(client, 6)
+        target_bucket_name = self.create_bucket(client, 6)
         self.check_configure_versioning_retry(source_bucket_name, "Enabled")
         self.check_configure_versioning_retry(target_bucket_name, "Enabled")
 

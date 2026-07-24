@@ -13,7 +13,7 @@
 #     @pytest.mark.tag("Put")
 #     def test_put_bucket_accelerate(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 1)
 #         client.put_bucket_accelerate_configuration(
 #             Bucket=bucket_name,
 #             AccelerateConfiguration={"Status": "Enabled"},
@@ -22,7 +22,7 @@
 #     @pytest.mark.tag("Get")
 #     def test_get_bucket_accelerate(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 2)
 #         client.put_bucket_accelerate_configuration(
 #             Bucket=bucket_name,
 #             AccelerateConfiguration={"Status": "Enabled"},
@@ -33,7 +33,7 @@
 #     @pytest.mark.tag("Change")
 #     def test_change_bucket_accelerate(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 3)
 #         client.put_bucket_accelerate_configuration(
 #             Bucket=bucket_name,
 #             AccelerateConfiguration={"Status": "Enabled"},
@@ -50,7 +50,7 @@
 #     @pytest.mark.tag("Error")
 #     def test_put_bucket_accelerate_invalid(self):
 #         client = self.get_client()
-#         bucket_name = self.create_bucket(client)
+#         bucket_name = self.create_bucket(client, 4)
 #         with pytest.raises(ClientError) as exc_info:
 #             client.put_bucket_accelerate_configuration(
 #                 Bucket=bucket_name,

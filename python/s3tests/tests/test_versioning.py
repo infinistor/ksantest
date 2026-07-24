@@ -15,7 +15,7 @@ from s3tests.utils import utils
 class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioning_bucket_create_suspend(self):
-        bucket_name = self.create_bucket()
+        bucket_name = self.create_bucket(1)
         self.check_configure_versioning_retry(bucket_name, "Suspended")
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         self.check_configure_versioning_retry(bucket_name, "Enabled")
@@ -24,7 +24,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_obj_create_read_remove(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 2)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "obj"
         num_versions = 5
@@ -34,7 +34,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_obj_create_read_remove_head(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "obj"
         num_versions = 5
@@ -65,7 +65,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_obj_plain_null_version_removal(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 4)
         key = "foo"
         content = "foo data"
         client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
@@ -81,7 +81,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_obj_plain_null_version_overwrite(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 5)
         key = "foo"
         content = "foo zzz"
         client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
@@ -105,7 +105,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_obj_plain_null_version_overwrite_suspended(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 6)
         key = "foo"
         content = "foo zzz"
         client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
@@ -126,7 +126,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_obj_suspend_versions(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 7)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "obj"
         num_versions = 5
@@ -158,7 +158,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_obj_create_versions_remove_all(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 8)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "obj"
         num_versions = 10
@@ -173,7 +173,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_obj_create_versions_remove_special_names(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 9)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         keys = ["_", ":", " "]
         num_versions = 10
@@ -189,7 +189,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Multipart")
     def test_versioning_obj_create_overwrite_multipart(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 10)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "obj"
         num_versions = 3
@@ -210,7 +210,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioning_obj_list_marker(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 11)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key1 = "obj"
         key2 = "obj-1"
@@ -248,7 +248,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Copy")
     def test_versioning_copy_obj_version(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 12)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "obj"
         num_versions = 3
@@ -264,7 +264,7 @@ class TestVersioning(S3TestBase):
             )
             get_response = client.get_object(Bucket=bucket_name, Key=new_key_name)
             assert self.get_body(get_response) == contents[i]
-        another_bucket_name = self.create_bucket(client)
+        another_bucket_name = self.create_bucket(client, 12)
         for i in range(num_versions):
             new_key_name = f"key_{i}"
             client.copy_object(
@@ -286,7 +286,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Delete")
     def test_versioning_multi_object_delete(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 13)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "key"
         num_versions = 2
@@ -307,7 +307,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("DeleteMarker")
     def test_versioning_multi_object_delete_with_marker(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 14)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "key"
         num_versions = 2
@@ -339,7 +339,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("DeleteMarker")
     def test_versioning_multi_object_delete_with_marker_create(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 15)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "key"
         client.delete_object(Bucket=bucket_name, Key=key)
@@ -351,7 +351,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("ACL")
     def test_versioned_object_acl(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 16)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "xyz"
         num_versions = 3
@@ -373,7 +373,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("ACL")
     def test_versioned_object_acl_no_version_specified(self):
         client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client)
+        bucket_name = self.create_bucket_canned_acl(client, 17)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "xyz"
         num_versions = 3
@@ -391,7 +391,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioned_concurrent_object_create_and_remove(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 18)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "my_obj"
         num_versions = 3
@@ -410,7 +410,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioning_bucket_atomic_upload_return_version_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 19)
         key = "bar"
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         put_response = client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
@@ -423,7 +423,7 @@ class TestVersioning(S3TestBase):
     def test_versioning_bucket_multipart_upload_return_version_id(self):
         size = 50 * md.MB
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 20)
         key = "bar"
         metadata = {"foo": "baz"}
         self.check_configure_versioning_retry(bucket_name, "Enabled")
@@ -442,7 +442,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_versioning_get_object_head(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 21)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "foo"
         versions: list[str] = []
@@ -460,7 +460,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Delete")
     def test_versioning_latest(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 22)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         key = "foo"
         versions: list[str] = []
@@ -482,7 +482,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_versioning_invalid_version_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 23)
         key = "testVersioningInvalidVersionId"
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
@@ -498,7 +498,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Copy")
     def test_versioning_copy_object(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 24)
         source_key = "source"
         target_key = "target"
         content = "content-version1"
@@ -592,7 +592,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Object")
     def test_versioning_unversioned_all_version_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 25)
         key = "testVersioningUnversionedAllVersionId"
         multipart_key = key + "-multipart"
         copy_key = key + "-copy"
@@ -629,7 +629,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioning_enabled_all_version_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 26)
         key = "testVersioningEnabledAllVersionId"
         multipart_key = key + "-multipart"
         copy_key = key + "-copy"
@@ -672,7 +672,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioning_suspended_all_version_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 27)
         key = "testVersioningSuspendedAllVersionId"
         multipart_key = key + "-multipart"
         copy_key = key + "-copy"
@@ -711,7 +711,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioning_list_versions_off_enabled_suspended(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 28)
         key = "testVersioningListVersionsOffEnabledSuspended"
         content_off = "content-off"
         content_enabled = "content-enabled"
@@ -752,7 +752,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioning_list_versions_off_enabled_suspended_different_keys(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 29)
         key_off = "testVersioningListVersionsOff"
         key_enabled = "testVersioningListVersionsEnabled"
         key_suspended = "testVersioningListVersionsSuspended"
@@ -799,7 +799,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioning_delete_null_version_after_suspend(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 30)
         key = "testVersioningDeleteNullVersionAfterSuspend"
         content_enabled = "content-enabled"
         content_suspended = "content-suspended"
@@ -823,7 +823,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("Check")
     def test_versioning_list_versions_multiple_enabled_then_suspended(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 31)
         key = "testVersioningListVersionsMultipleEnabledThenSuspended"
         enabled_version_ids: list[str] = []
         client.put_object(Bucket=bucket_name, Key=key, Body=b"content-off")
@@ -851,7 +851,7 @@ class TestVersioning(S3TestBase):
     @pytest.mark.tag("HeadObject")
     def test_versioning_head_object_delete_marker(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 32)
         key = "testVersioningHeadObjectDeleteMarker"
         content = "testContent"
         self.check_configure_versioning_retry(bucket_name, "Enabled")

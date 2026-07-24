@@ -15,7 +15,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Check")
     def test_lifecycle_set(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 1)
         rules = [
             {
                 "ID": "rule1",
@@ -35,7 +35,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Get")
     def test_lifecycle_get(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 2)
         rules = [
             {
                 "ID": "rule1",
@@ -57,7 +57,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Check")
     def test_lifecycle_get_no_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 3)
         rules = [
             {
                 "Expiration": {"Days": 31},
@@ -83,7 +83,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Version")
     def test_lifecycle_expiration_versioning_enabled(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 4)
         key = "test1/a"
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         self.create_multiple_versions(client, bucket_name, key, 1, True)
@@ -106,7 +106,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Check")
     def test_lifecycle_id_too_long(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 5)
         rules = [
             {
                 "ID": utils.random_text_to_long(256),
@@ -124,7 +124,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Duplicate")
     def test_lifecycle_same_id(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 6)
         rules = [
             {
                 "ID": "rule1",
@@ -148,7 +148,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_lifecycle_invalid_status(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 7)
         rules = [
             {
                 "ID": "rule1",
@@ -166,7 +166,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Date")
     def test_lifecycle_set_date(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 8)
         expiration_date = datetime(2099, 11, 10, tzinfo=timezone.utc)
         rules = [
             {
@@ -181,7 +181,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_lifecycle_set_invalid_date(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 9)
         # Java Calendar without setTimeZone uses JVM default tz, not UTC midnight.
         if datetime.now().astimezone().utcoffset().total_seconds() == 0:
             expiration_date = datetime(2099, 11, 10, 12, 0, 0, tzinfo=timezone.utc)
@@ -204,7 +204,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Version")
     def test_lifecycle_set_noncurrent(self):
         client = self.get_client()
-        bucket_name = self.create_objects(client, "past/foo", "future/bar")
+        bucket_name = self.create_objects(client, 10, "past/foo", "future/bar")
         rules = [
             {
                 "ID": "rule1",
@@ -224,7 +224,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Version")
     def test_lifecycle_noncurrent_expiration(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 11)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         self.create_multiple_versions(client, bucket_name, "test1/a", 3, True)
         self.create_multiple_versions(client, bucket_name, "test2/abc", 3, False)
@@ -246,7 +246,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("DeleteMarker")
     def test_lifecycle_set_delete_marker(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 12)
         rules = [
             {
                 "ID": "rule1",
@@ -260,7 +260,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Filter")
     def test_lifecycle_set_filter(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 13)
         rules = [
             {
                 "ID": "rule1",
@@ -274,7 +274,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Filter")
     def test_lifecycle_set_empty_filter(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 14)
         rules = [
             {
                 "ID": "rule1",
@@ -288,7 +288,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("DeleteMarker")
     def test_lifecycle_delete_marker_expiration(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 15)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         self.create_multiple_versions(client, bucket_name, "test1/a", 1, True)
         self.create_multiple_versions(client, bucket_name, "test2/abc", 1, False)
@@ -313,7 +313,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Multipart")
     def test_lifecycle_set_multipart(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 16)
         rules = [
             {
                 "ID": "rule1",
@@ -333,7 +333,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Multipart")
     def test_lifecycle_multipart_expiration(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 17)
         key_names = ["test1/a", "test2/b"]
         upload_ids = []
         for key in key_names:
@@ -360,7 +360,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("Delete")
     def test_lifecycle_delete(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 18)
         rules = [
             {
                 "ID": "rule1",
@@ -381,7 +381,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_lifecycle_set_expiration_zero(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 19)
         rules = [
             {
                 "ID": "rule1",
@@ -400,7 +400,7 @@ class TestLifeCycle(S3TestBase):
     @pytest.mark.tag("metadata")
     def test_lifecycle_set_expiration(self):
         client = self.get_client()
-        bucket_name = self.create_bucket(client)
+        bucket_name = self.create_bucket(client, 20)
         rules = [
             {
                 "ID": "rule1",
