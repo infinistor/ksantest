@@ -163,6 +163,10 @@ func testInventoryDuplicateID(t *testing.T) {
 
 func testInventoryMissingTarget(t *testing.T) {
 	s := newSuite(t)
+	// AWS does not validate that the inventory destination bucket exists.
+	if s.cfg.Endpoint() == "" {
+		t.Skip("AWS does not validate inventory destination bucket existence")
+	}
 	source := s.bucket(t)
 	target := "missing-" + uniqueBucketSuffix(t)
 	_, err := putInventoryError(s, source, "my-inventory", standardInventory("my-inventory", target))
