@@ -130,9 +130,11 @@ func testConditionalGet(t *testing.T, name string) {
 	case "test_get_object_if_modified_since_good":
 		input.IfModifiedSince = &past
 	case "test_get_object_if_modified_since_failed":
+		// RFC 7232: If-Modified-Since later than server time is ignored, so wait past LastModified+1s.
 		head := headObject(t, s.client, bucket, key)
 		after := head.LastModified.Add(time.Second)
 		input.IfModifiedSince = &after
+		time.Sleep(time.Second)
 		status = 304
 	case "test_get_object_if_unmodified_since_good":
 		input.IfUnmodifiedSince = &past
@@ -194,9 +196,11 @@ func testConditionalHead(t *testing.T, name string) {
 	case "test_head_object_if_modified_since_good":
 		input.IfModifiedSince = &past
 	case "test_head_object_if_modified_since_failed":
+		// RFC 7232: If-Modified-Since later than server time is ignored, so wait past LastModified+1s.
 		head := headObject(t, s.client, bucket, key)
 		after := head.LastModified.Add(time.Second)
 		input.IfModifiedSince = &after
+		time.Sleep(time.Second)
 		status = 304
 	case "test_head_object_if_unmodified_since_good":
 		input.IfUnmodifiedSince = &past
