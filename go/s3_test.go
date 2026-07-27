@@ -71,7 +71,11 @@ func applyCompatibleS3Options(o *s3.Options) {
 	ensureDisableDoubleEncoding(o)
 	fixGetObjectAttributesWireFormat(o)
 	lowercaseMetadataHeaders(o)
-	preserveOrCollapseAdjacentSlashes(o)
+	// Adjacent-slash collapse is only for KSAN SigV4 compatibility. On AWS it
+	// breaks object keys like "/" (path becomes CreateBucket-shaped).
+	if o.BaseEndpoint != nil && aws.ToString(o.BaseEndpoint) != "" {
+		preserveOrCollapseAdjacentSlashes(o)
+	}
 }
 
 // preserveOrCollapseAdjacentSlashes rewrites request paths that contain "//".
