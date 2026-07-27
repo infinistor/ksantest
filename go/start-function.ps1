@@ -63,5 +63,9 @@ Write-Host "Method : $TestMethod"
 Write-Host "Target : $testName"
 & go version
 
-& go test -v -count=1 -run "^$testName$" .
+# go test -run splits the regexp on '/'. Anchor EACH segment so
+# ^TestGetObject does not also match TestGetObjectAttributes*.
+$runPattern = ($testName -split '/' | ForEach-Object { "^$_$" }) -join '/'
+Write-Host "Filter : $runPattern"
+& go test -v -count=1 -run $runPattern .
 exit $LASTEXITCODE
