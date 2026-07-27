@@ -151,7 +151,10 @@ func TestCopyObject(t *testing.T) {
 }
 
 func copySource(bucket, key, version string) *string {
-	value := bucket + "/" + key
+	// Path-escape the key so characters like "?" are not parsed as query markers.
+	// Keep literal "/" inside keys (S3 allows slash-containing object names).
+	encKey := strings.ReplaceAll(url.PathEscape(key), "%2F", "/")
+	value := url.PathEscape(bucket) + "/" + encKey
 	if version != "" {
 		value += "?versionId=" + url.QueryEscape(version)
 	}
@@ -350,7 +353,11 @@ func testCopyConditions(t *testing.T, name string) {
 	case "test_copy_object_if_modified_since_good":
 		input.CopySourceIfModifiedSince = &past
 	case "test_copy_object_if_modified_since_failed":
-		input.CopySourceIfModifiedSince = &future
+		// RFC 7232: If-Modified-Since later than server time is ignored, so use LastModified+1s and wait.
+		head := headObject(t, s.client, b, source)
+		after := head.LastModified.Add(time.Second)
+		input.CopySourceIfModifiedSince = &after
+		time.Sleep(time.Second)
 		status = 412
 	case "test_copy_object_if_unmodified_since_good":
 		input.CopySourceIfUnmodifiedSince = &future
@@ -414,9 +421,9 @@ func testCopyEncryption(t *testing.T, name string) {
 		if strings.Contains(name, "sse_c") {
 			sourceMode = "sse-c"
 		}
+		// One test case (like Java/Python/dotnet): run all target modes inline, no nested t.Run.
 		for _, targetMode := range []string{"normal", "sse-s3", "sse-c"} {
-			targetMode := targetMode
-			t.Run(targetMode, func(t *testing.T) { copyEncryptionModes(t, s, sourceMode, targetMode, false, false) })
+			copyEncryptionModes(t, s, sourceMode, targetMode, false, false)
 		}
 		return
 	}
@@ -437,6 +444,12 @@ func testCopyEncryption(t *testing.T, name string) {
 func copyEncryptionModes(t *testing.T, s *suite, sourceMode, targetMode string, sourceBucketDefault, targetBucketDefault bool) {
 	t.Helper()
 	sourceBucket, targetBucket := s.bucket(t), s.bucket(t)
+	if sourceMode == "sse-c" {
+		unblockSseC(t, s, sourceBucket)
+	}
+	if targetMode == "sse-c" {
+		unblockSseC(t, s, targetBucket)
+	}
 	source, target := "source", "target"
 	body := []byte("encrypted copy")
 	if sourceBucketDefault {
@@ -549,7 +562,7 @@ func testCopyMetadataTags(t *testing.T) {
 
 func testCopyRevokedSSEC(t *testing.T) {
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := ssecBucket(t, s)
 	_, err := s.client.PutObject(context.Background(), sseCPutInput(b, "source", []byte("body")))
 	if err != nil {
 		t.Fatal(err)
