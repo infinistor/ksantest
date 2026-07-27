@@ -70,7 +70,7 @@ func TestAccess(t *testing.T) {
 			if s.cfg.Alt.AccessKey == "" || s.cfg.Alt.SecretKey == "" {
 				t.Skip("configure Alt User credentials in config.ini")
 			}
-			bucket := s.bucket(t)
+			bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
 			key := "testIgnorePublicAcls"
 			_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
 			if err != nil {
