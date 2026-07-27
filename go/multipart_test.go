@@ -46,7 +46,7 @@ func TestMultipart(t *testing.T) {
 		// 내용물을 채운 멀티파트 업로드 성공 확인
 		{"test_multipart_upload_contents", func(t *testing.T) { testMultipartUploadCase(t, "test_multipart_upload_contents") }},
 		// 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
-		{"test_multipart_upload_overwrite_existing_object", func(t *testing.T) { testMultipartUploadCase(t, "test_multipart_upload_overwrite_existing_object") }},
+		{"test_multipart_upload_overwrite_existing_object", testMultipartUploadOverwriteExistingObject},
 		// 멀티파트 업로드한 오브젝트를 PutObject로 덮어쓰기 성공 확인
 		{"test_put_object_overwrite_multipart_upload", testPutObjectOverwriteMultipartUpload},
 		// 멀티파트 업로드하는 도중 중단 성공 확인
@@ -60,7 +60,7 @@ func TestMultipart(t *testing.T) {
 		// 잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인
 		{"test_multipart_upload_incorrect_etag", func(t *testing.T) { testMultipartCompletionErrors(t, "test_multipart_upload_incorrect_etag") }},
 		// 버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인
-		{"test_atomic_multipart_upload_write", func(t *testing.T) { testMultipartUploadCase(t, "test_atomic_multipart_upload_write") }},
+		{"test_atomic_multipart_upload_write", testAtomicMultipartUploadWrite},
 		// 멀티파트 업로드 목록 확인
 		{"test_multipart_upload_list", func(t *testing.T) { testMultipartLifecycle(t, "test_multipart_upload_list") }},
 		// 멀티파트 업로드하는 도중 중단 성공 확인
@@ -180,9 +180,6 @@ func testMultipartUploadCase(t *testing.T, name string) {
 		assertHTTPError(t, err, 400)
 		return
 	}
-	if name == "test_atomic_multipart_upload_write" {
-		put(t, f.s, f.bucket, f.key, "old", nil)
-	}
 	sizes := []int{5 * 1024 * 1024}
 	if name == "test_multipart_upload_small" {
 		sizes = []int{1024}
@@ -206,11 +203,56 @@ func testMultipartUploadCase(t *testing.T, name string) {
 	}
 	completeMultipartParts(t, f, parts)
 	assertObjectBytes(t, f.s.client, f.bucket, f.key, want)
-	if name == "test_multipart_upload_overwrite_existing_object" || name == "test_atomic_multipart_upload_write" {
-		if string(want) == "old" {
-			t.Fatal("multipart did not replace object")
-		}
+}
+
+// Put first, then multipart-complete overwrite (Java/Python order). MPU-before-Put
+// leaves the Put object in place on AWS when Complete races with conditional writes.
+func testMultipartUploadOverwriteExistingObject(t *testing.T) {
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	key := "testMultipartUploadOverwriteExistingObject"
+	partBody := bytes.Repeat([]byte("a"), 5*1024*1024)
+	put(t, s, bucket, key, string(partBody), nil)
+
+	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		_, _ = s.client.AbortMultipartUpload(context.Background(), &s3.AbortMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId})
+	})
+
+	parts := make([]types.CompletedPart, 0, 2)
+	var want []byte
+	for number := int32(1); number <= 2; number++ {
+		out, err := s.client.UploadPart(context.Background(), &s3.UploadPartInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId, PartNumber: aws.Int32(number), Body: bytes.NewReader(partBody)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		parts = append(parts, types.CompletedPart{ETag: out.ETag, PartNumber: aws.Int32(number)})
+		want = append(want, partBody...)
+	}
+	if _, err := s.client.CompleteMultipartUpload(context.Background(), &s3.CompleteMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts}}); err != nil {
+		t.Fatal(err)
+	}
+	assertObjectBytes(t, s.client, bucket, key, want)
+}
+
+// Incomplete MPU must not replace an existing object (Java/Python semantics).
+func testAtomicMultipartUploadWrite(t *testing.T) {
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	key := "testAtomicMultipartUploadWrite"
+	put(t, s, bucket, key, "bar", nil)
+	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertObjectBytes(t, s.client, bucket, key, []byte("bar"))
+	if _, err := s.client.AbortMultipartUpload(context.Background(), &s3.AbortMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId}); err != nil {
+		t.Fatal(err)
+	}
+	assertObjectBytes(t, s.client, bucket, key, []byte("bar"))
 }
 
 func testMultipartCopyCase(t *testing.T, name string) {
@@ -330,7 +372,11 @@ func testMultipartCopyCondition(t *testing.T, name string) {
 	case "test_upload_part_copy_if_modified_since_good":
 		input.CopySourceIfModifiedSince = &past
 	case "test_upload_part_copy_if_modified_since_failed":
-		input.CopySourceIfModifiedSince = &future
+		// RFC 7232: If-Modified-Since later than server time is ignored, so use LastModified+1s and wait.
+		head := headObject(t, s.client, b, source)
+		after := head.LastModified.Add(time.Second)
+		input.CopySourceIfModifiedSince = &after
+		time.Sleep(time.Second)
 		status = 412
 	case "test_upload_part_copy_if_unmodified_since_good":
 		input.CopySourceIfUnmodifiedSince = &future
@@ -347,32 +393,47 @@ func testMultipartCopyCondition(t *testing.T, name string) {
 }
 
 func testMultipartCompleteCondition(t *testing.T, name string) {
-	f := newMultipartFixture(t, name)
-	existing := put(t, f.s, f.bucket, f.key, "old", nil)
-	part := uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("n"), 5*1024*1024))
-	input := &s3.CompleteMultipartUploadInput{Bucket: aws.String(f.bucket), Key: aws.String(f.key), UploadId: f.created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: []types.CompletedPart{{ETag: part.ETag, PartNumber: aws.Int32(1)}}}}
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	key := name
+	var existingETag *string
+	// IfNoneMatch good: key must not exist before Complete. Other cases need an existing object first.
+	if name != "test_complete_multipart_upload_if_none_match_good" {
+		existing := put(t, s, bucket, key, "old", nil)
+		existingETag = existing.ETag
+	}
+	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = s.client.AbortMultipartUpload(context.Background(), &s3.AbortMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId})
+	})
+	part, err := s.client.UploadPart(context.Background(), &s3.UploadPartInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId, PartNumber: aws.Int32(1), Body: bytes.NewReader(bytes.Repeat([]byte("n"), 5*1024*1024))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := &s3.CompleteMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: []types.CompletedPart{{ETag: part.ETag, PartNumber: aws.Int32(1)}}}}
 	status := 0
 	switch name {
 	case "test_complete_multipart_upload_if_match_good":
-		input.IfMatch = existing.ETag
+		input.IfMatch = existingETag
 	case "test_complete_multipart_upload_if_match_failed":
 		input.IfMatch = aws.String("bad")
 		status = 412
 	case "test_complete_multipart_upload_if_none_match_good":
-		input.Key = aws.String(f.key + "-new")
-		status = 0
 		input.IfNoneMatch = aws.String("*")
 	case "test_complete_multipart_upload_if_none_match_failed":
 		input.IfNoneMatch = aws.String("*")
 		status = 412
 	case "test_complete_multipart_upload_if_match_and_if_none_match":
-		input.IfMatch, input.IfNoneMatch = existing.ETag, existing.ETag
+		input.IfMatch, input.IfNoneMatch = existingETag, existingETag
 		status = 501
 	case "test_complete_multipart_upload_if_match_and_if_none_match_any":
-		input.IfMatch, input.IfNoneMatch = existing.ETag, aws.String("*")
+		input.IfMatch, input.IfNoneMatch = existingETag, aws.String("*")
 		status = 501
 	}
-	_, err := f.s.client.CompleteMultipartUpload(context.Background(), input)
+	_, err = s.client.CompleteMultipartUpload(context.Background(), input)
 	if status != 0 {
 		assertHTTPError(t, err, status)
 	} else if err != nil {
