@@ -331,7 +331,7 @@ func (s *suite) bucket(t *testing.T) string {
 }
 
 func newBucketName(prefix string) string {
-	return randomBucketName("v2-" + prefix)
+	return randomBucketName(prefix)
 }
 
 func randomBucketName(prefix string) string {
@@ -389,8 +389,8 @@ func TestNewBucketName(t *testing.T) {
 	if len(name) != 62 {
 		t.Fatalf("bucket length = %d, want 62: %q", len(name), name)
 	}
-	if !strings.HasPrefix(name, "v2-go-") {
-		t.Fatalf("bucket prefix = %q, want v2-go-", name)
+	if !strings.HasPrefix(name, "go-") {
+		t.Fatalf("bucket prefix = %q, want go-", name)
 	}
 	for i, r := range name {
 		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '-' {

@@ -203,7 +203,7 @@ class S3TestBase:
 
     # region bucket helpers
     def get_prefix(self) -> str:
-        return f"v2-{self.config.bucket_prefix}"
+        return self.config.bucket_prefix
 
     def get_suite_id(self) -> str:
         """Match Java getSuiteId: class simple name → suite (strip leading Test)."""

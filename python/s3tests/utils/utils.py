@@ -73,7 +73,7 @@ def random_bucket_name(prefix: str = "") -> str:
 def get_new_bucket_name(prefix: str, suite: str = "", test_id: int = 0) -> str:
     """Traceable bucket name: ``{prefix}{suite}-{testId}-{random}``.
 
-    Example: ``v2-java-putobject-3-k3m9x2ab...``
+    Example: ``java-putobject-3-k3m9x2ab...``
     ``test_id`` is an explicit number in the test code; keep existing numbers
     stable when adding or reordering tests.
     """
