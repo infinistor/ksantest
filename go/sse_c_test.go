@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
+	"crypto/md5"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +21,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go/middleware"
@@ -84,6 +89,84 @@ func TestSSEC(t *testing.T) {
 	}
 }
 
+// ssecBucket creates a bucket with SSE-C unblocked (AWS BlockedEncryptionTypes=NONE).
+func ssecBucket(t *testing.T, s *suite) string {
+	t.Helper()
+	bucket := s.bucket(t)
+	unblockSseC(t, s, bucket)
+	return bucket
+}
+
+// unblockSseC mirrors Java/Python: AWS new buckets block SSE-C by default since 2026-04.
+// aws-sdk-go-v2 v1.90.2 lacks BlockedEncryptionTypes, so use a signed raw PutBucketEncryption.
+func unblockSseC(t *testing.T, s *suite, bucket string) {
+	t.Helper()
+	if s.cfg.Endpoint() != "" {
+		return
+	}
+	body := []byte(`<?xml version="1.0" encoding="UTF-8"?>` +
+		`<ServerSideEncryptionConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">` +
+		`<Rule>` +
+		`<ApplyServerSideEncryptionByDefault><SSEAlgorithm>AES256</SSEAlgorithm></ApplyServerSideEncryptionByDefault>` +
+		`<BlockedEncryptionTypes><EncryptionType>NONE</EncryptionType></BlockedEncryptionTypes>` +
+		`</Rule></ServerSideEncryptionConfiguration>`)
+
+	region := s.cfg.Region
+	if region == "" {
+		region = "us-east-1"
+	}
+	host := bucket + ".s3." + region + ".amazonaws.com"
+	if region == "us-east-1" {
+		host = bucket + ".s3.amazonaws.com"
+	}
+	req, err := http.NewRequest(http.MethodPut, "https://"+host+"/?encryption", bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("unblock SSE-C request: %v", err)
+	}
+	payloadHash := hex.EncodeToString(sha256Sum(body))
+	md5sum := md5.Sum(body)
+	req.Header.Set("Content-Type", "application/xml")
+	req.Header.Set("Content-MD5", base64.StdEncoding.EncodeToString(md5sum[:]))
+	req.Header.Set("Content-Length", fmt.Sprintf("%d", len(body)))
+	req.Header.Set("X-Amz-Content-Sha256", payloadHash)
+	req.ContentLength = int64(len(body))
+
+	credVal, err := credentials.NewStaticCredentialsProvider(s.cfg.Main.AccessKey, s.cfg.Main.SecretKey, "").Retrieve(context.Background())
+	if err != nil {
+		t.Fatalf("unblock SSE-C credentials: %v", err)
+	}
+	if err := v4.NewSigner().SignHTTP(context.Background(), credVal, req, payloadHash, "s3", region, time.Now().UTC()); err != nil {
+		t.Fatalf("unblock SSE-C sign: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("unblock SSE-C PutBucketEncryption: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		msg, _ := io.ReadAll(resp.Body)
+		t.Fatalf("unblock SSE-C PutBucketEncryption: status=%d body=%s", resp.StatusCode, msg)
+	}
+
+	for i := 0; i < 5; i++ {
+		_, putErr := s.client.PutObject(context.Background(), sseCPutInput(bucket, ".ssec-unblock-probe", []byte("x")))
+		if putErr == nil {
+			_, _ = s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(".ssec-unblock-probe")})
+			return
+		}
+		if !strings.Contains(putErr.Error(), "Customer provided keys") && !strings.Contains(putErr.Error(), "SSE-C") {
+			return
+		}
+		time.Sleep(time.Second)
+	}
+	t.Fatalf("SSE-C unblock failed: %s", bucket)
+}
+
+func sha256Sum(body []byte) []byte {
+	sum := sha256.Sum256(body)
+	return sum[:]
+}
+
 func sseCPutInput(bucket, key string, body []byte) *s3.PutObjectInput {
 	return &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(body), SSECustomerAlgorithm: aws.String(sseCAlgorithm), SSECustomerKey: aws.String(sseCKey), SSECustomerKeyMD5: aws.String(sseCKeyMD5)}
 }
@@ -95,7 +178,7 @@ func sseCGetInput(bucket, key string) *s3.GetObjectInput {
 func testSSECWrite(t *testing.T, size int) {
 	t.Helper()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	body := deterministicBody(size)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "test", body)); err != nil {
 		t.Fatal(err)
@@ -105,7 +188,7 @@ func testSSECWrite(t *testing.T, size int) {
 
 func testSSECHead(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "obj", deterministicBody(1000))); err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +214,7 @@ func testSSECOtherKey(t *testing.T) {
 
 func testSSECInvalidMD5(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	input := sseCPutInput(bucket, "obj", deterministicBody(100))
 	input.SSECustomerKeyMD5 = aws.String("AAAAAAAAAAAAAAAAAAAAAA==")
 	_, err := s.client.PutObject(context.Background(), input)
@@ -140,7 +223,7 @@ func testSSECInvalidMD5(t *testing.T) {
 
 func testSSECNoMD5(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	input := sseCPutInput(bucket, "obj", deterministicBody(100))
 	input.SSECustomerKeyMD5 = nil
 	_, err := s.client.PutObject(context.Background(), input, func(options *s3.Options) {
@@ -159,14 +242,14 @@ func testSSECNoMD5(t *testing.T) {
 
 func testSSECNoKey(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj"), Body: bytes.NewReader(deterministicBody(100)), SSECustomerKeyMD5: aws.String(sseCKeyMD5)})
 	assertHTTPError(t, err, 400)
 }
 
 func testSSECNoAlgorithm(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj"), Body: bytes.NewReader(deterministicBody(100)), SSECustomerKey: aws.String(sseCKey), SSECustomerKeyMD5: aws.String(sseCKeyMD5)})
 	assertHTTPError(t, err, 400)
 }
@@ -174,7 +257,7 @@ func testSSECNoAlgorithm(t *testing.T) {
 func newSSECObject(t *testing.T, size int) (*suite, string) {
 	t.Helper()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "obj", deterministicBody(size))); err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +266,7 @@ func newSSECObject(t *testing.T, size int) (*suite, string) {
 
 func testSSECMultipart(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	body := deterministicBody(50 * 1024 * 1024)
 	completeSSECMultipart(t, s.client, bucket, "multipartEnc", body, map[string]string{"foo": "bar"})
 	headSSEC(t, s.client, bucket, "multipartEnc", map[string]string{"foo": "bar"})
@@ -192,7 +275,7 @@ func testSSECMultipart(t *testing.T) {
 
 func testSSECMultipartBadDownload(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	body := deterministicBody(50 * 1024 * 1024)
 	completeSSECMultipart(t, s.client, bucket, "multipartEnc", body, map[string]string{"foo": "bar"})
 	headSSEC(t, s.client, bucket, "multipartEnc", map[string]string{"foo": "bar"})
@@ -266,7 +349,7 @@ func testSSECRangeMany(t *testing.T) {
 
 func testSSECMultipartCopy(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	body := deterministicBody(50 * 1024 * 1024)
 	completeSSECMultipart(t, s.client, bucket, "multipartEnc", body, nil)
 	copySSECMultipart(t, s.client, bucket, "multipartEnc", "multipartEncCopy", len(body))
@@ -275,7 +358,7 @@ func testSSECMultipartCopy(t *testing.T) {
 
 func testSSECMultipartCopyMany(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	body := deterministicBody(10 * 1024 * 1024)
 	completeMultipart(t, s.client, bucket, "multipartEnc", body, false, nil)
 	copyThenUpload(t, s.client, bucket, "multipartEnc", "my_multipart1", len(body), body)
@@ -288,7 +371,7 @@ func testSSECMultipartCopyMany(t *testing.T) {
 
 func testSSECMultipartUploadOverwriteExistingObject(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	key := "test_encryption_sse_c_multipart_upload_overwrite_existing_object"
 	partBody := deterministicBody(5 * 1024 * 1024)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, key, partBody)); err != nil {
@@ -316,7 +399,7 @@ func testSSECMultipartUploadOverwriteExistingObject(t *testing.T) {
 
 func testSSECPutObjectOverwriteMultipartUpload(t *testing.T) {
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := ssecBucket(t, s)
 	key := "test_encryption_sse_c_put_object_overwrite_multipart_upload"
 	completeSSECMultipart(t, s.client, bucket, key, deterministicBody(10*1024*1024), nil)
 	content := deterministicBody(1 * 1024 * 1024)
