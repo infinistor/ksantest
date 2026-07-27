@@ -443,6 +443,7 @@ func testListAnonymous(t *testing.T, name string) {
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	if name == "test_bucket_list_objects_anonymous" {
+		bucket = ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
 		_, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicRead})
 		if err != nil {
 			t.Fatal(err)

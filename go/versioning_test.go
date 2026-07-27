@@ -419,7 +419,7 @@ func testVersioningMultiDelete(t *testing.T, name string) {
 
 func testVersioningACL(t *testing.T, name string) {
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
 	enableVersioning(t, s, b)
 	first := put(t, s, b, "key", "one", nil)
 	second := put(t, s, b, "key", "two", nil)

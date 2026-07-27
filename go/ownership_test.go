@@ -57,7 +57,7 @@ func TestOwnership(t *testing.T) {
 		// ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경해도 접근 가능한지 확인
 		{"test_object_ownership_deny_change", func(t *testing.T) {
 			s := newSuite(t)
-			bucket := s.bucket(t)
+			bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
 			key := "testObjectOwnershipDenyChange"
 			_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
 			if err != nil {
@@ -71,7 +71,7 @@ func TestOwnership(t *testing.T) {
 		// ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경할경우 ACL 설정이 실패하는지 확인
 		{"test_object_ownership_deny_acl", func(t *testing.T) {
 			s := newSuite(t)
-			bucket := s.bucket(t)
+			bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
 			key := "testObjectOwnershipDenyACL"
 			_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
 			if err != nil {

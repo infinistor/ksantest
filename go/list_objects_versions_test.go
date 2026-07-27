@@ -359,7 +359,8 @@ func testVersionsReturnData(t *testing.T) {
 func testVersionsAnonymous(t *testing.T, name string) {
 	s := newSuite(t)
 	b := s.bucket(t)
-	if strings.HasSuffix(name, "anonymous") {
+	if name == "test_bucket_list_versions_objects_anonymous" {
+		b = ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
 		_, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(b), ACL: types.BucketCannedACLPublicRead})
 		if err != nil {
 			t.Fatal(err)

@@ -82,7 +82,8 @@ func TestPolicy(t *testing.T) {
 func testPolicyCopySource(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
-	source, target := s.bucket(t), s.bucket(t)
+	source := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	target := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
 	keys := []string{"public/foo", "public/bar", "private/foo"}
 	for _, key := range keys {
 		put(t, s, source, key, key, nil)
@@ -107,7 +108,8 @@ func testPolicyCopySource(t *testing.T) {
 func testPolicyCopySourceMetadata(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
-	source, target := s.bucket(t), s.bucket(t)
+	source := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	target := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
 	for _, key := range []string{"public/foo", "public/bar"} {
 		put(t, s, source, key, key, nil)
 	}
