@@ -169,25 +169,25 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsAlpha() {
-		checkGoodBucketName(Utils.randomBucketName("a"));
+		checkGoodBucketName("foo", "a" + getPrefix());
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsDigit() {
-		checkGoodBucketName(Utils.randomBucketName("1"));
+		checkGoodBucketName("foo", "0" + getPrefix());
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsPeriod() {
-		checkGoodBucketName(Utils.randomBucketName("a."));
+		checkGoodBucketName("aaa.111", null);
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsHyphen() {
-		checkGoodBucketName(Utils.randomBucketName("a-"));
+		checkGoodBucketName("aaa-111", null);
 	}
 
 	@Test

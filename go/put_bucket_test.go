@@ -141,38 +141,22 @@ func TestPutBucket(t *testing.T) {
 		// 생성할 버킷의 이름이 알파벳으로 시작할 경우 생성되는지 확인
 		{"test_bucket_create_naming_good_starts_alpha", func(t *testing.T) {
 			s := newSuite(t)
-			bucket := "a" + uniqueBucketSuffix(t)
-			if len(bucket) > 63 {
-				bucket = bucket[:63]
-			}
-			createAndCleanupBucket(t, s, bucket)
+			createAndCleanupBucket(t, s, "a"+s.cfg.BucketPrefix+"foo")
 		}},
 		// 생성할 버킷의 이름이 숫자로 시작할 경우 생성되는지 확인
 		{"test_bucket_create_naming_good_starts_digit", func(t *testing.T) {
 			s := newSuite(t)
-			bucket := "0" + uniqueBucketSuffix(t)
-			if len(bucket) > 63 {
-				bucket = bucket[:63]
-			}
-			createAndCleanupBucket(t, s, bucket)
+			createAndCleanupBucket(t, s, "0"+s.cfg.BucketPrefix+"foo")
 		}},
 		// 생성할 버킷의 이름 중간에 [.]이 포함된 이름일 경우 생성되는지 확인
 		{"test_bucket_create_naming_good_contains_period", func(t *testing.T) {
 			s := newSuite(t)
-			bucket := "aaa.111-" + uniqueBucketSuffix(t)
-			if len(bucket) > 63 {
-				bucket = bucket[:63]
-			}
-			createAndCleanupBucket(t, s, bucket)
+			createAndCleanupBucket(t, s, s.cfg.BucketPrefix+"aaa.111")
 		}},
 		// 생성할 버킷의 이름 중간에 [-]이 포함된 이름일 경우 생성되는지 확인
 		{"test_bucket_create_naming_good_contains_hyphen", func(t *testing.T) {
 			s := newSuite(t)
-			bucket := "aaa-111-" + uniqueBucketSuffix(t)
-			if len(bucket) > 63 {
-				bucket = bucket[:63]
-			}
-			createAndCleanupBucket(t, s, bucket)
+			createAndCleanupBucket(t, s, s.cfg.BucketPrefix+"aaa-111")
 		}},
 		// 버킷 중복 생성시 실패 확인
 		{"test_bucket_create_exists", func(t *testing.T) {

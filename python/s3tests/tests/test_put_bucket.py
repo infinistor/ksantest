@@ -103,19 +103,19 @@ class TestPutBucket(S3TestBase):
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_good_starts_alpha(self):
-        self.check_good_bucket_name(utils.random_bucket_name("a"))
+        self.check_good_bucket_name("foo", "a" + self.get_prefix())
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_good_starts_digit(self):
-        self.check_good_bucket_name(utils.random_bucket_name("1"))
+        self.check_good_bucket_name("foo", "0" + self.get_prefix())
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_good_contains_period(self):
-        self.check_good_bucket_name(utils.random_bucket_name("a."))
+        self.check_good_bucket_name("aaa.111", None)
 
     @pytest.mark.tag("CreationRules")
     def test_bucket_create_naming_good_contains_hyphen(self):
-        self.check_good_bucket_name(utils.random_bucket_name("a-"))
+        self.check_good_bucket_name("aaa-111", None)
 
     @pytest.mark.tag("Duplicate")
     def test_bucket_recreate_not_overriding(self):

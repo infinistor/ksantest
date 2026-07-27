@@ -862,6 +862,17 @@ public class TestBase {
 		client.createBucket(bucketName);
 	}
 
+	public void checkGoodBucketName(String name, String prefix) {
+		if (StringUtils.isBlank(prefix))
+			prefix = getPrefix();
+
+		var bucketName = String.format("%s%s", prefix, name);
+		buckets.add(bucketName);
+
+		var client = getClient();
+		client.createBucket(bucketName);
+	}
+
 	public void checkConfigureVersioningRetry(String bucketName, String status) {
 		var client = getClient();
 
