@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
@@ -8,6 +8,7 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using Amazon.S3;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -62,7 +63,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter")]
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 폴더 구분자[/]로 필터링 되는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_basic()
+		public void TestBucketListV2DelimiterBasic()
 		{
 			var bucketName = SetupObjects(["foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf"]);
 			var client = GetClient();
@@ -84,7 +85,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 인코딩이 올바르게 동작하는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		[Trait(MainData.Different, MainData.True)]
-		public void test_bucket_listv2_encoding_basic()
+		public void TestBucketListV2EncodingBasic()
 		{
 			var bucketName = SetupObjects(["foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"]);
 			var client = GetClient();
@@ -105,7 +106,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter and Prefix")]
 		[Trait(MainData.Explanation, "조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인(ListObjcetsv2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_prefix()
+		public void TestBucketListV2DelimiterPrefix()
 		{
 			var bucketName = SetupObjects(["asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla"]);
 
@@ -133,7 +134,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter and Prefix")]
 		[Trait(MainData.Explanation, "비어있는 폴더의 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_prefix_ends_with_delimiter()
+		public void TestBucketListV2DelimiterPrefixEndsWithDelimiter()
 		{
 			var bucketName = SetupObjects(["asdf/"], body: "");
 			ValidateListObjcetV2(bucketName, "asdf/", "/", null, 1000, false, ["asdf/"], EmptyList, true);
@@ -144,7 +145,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter")]
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 문자 구분자[a]로 필터링 되는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_alt()
+		public void TestBucketListV2DelimiterAlt()
 		{
 			var bucketName = SetupObjects(["bar", "baz", "cab", "foo"]);
 			var client = GetClient();
@@ -167,7 +168,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter and Prefix")]
 		[Trait(MainData.Explanation, "[폴더명 앞에 _가 포함되어 있는 환경] 조건에 맞는 오브젝트 목록을 가져올 수 있는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_prefix_underscore()
+		public void TestBucketListV2DelimiterPrefixUnderscore()
 		{
 			var bucketName = SetupObjects(["_obj1_", "_under1/bar", "_under1/baz/xyzzy", "_under2/thud", "_under2/bla"]);
 
@@ -195,7 +196,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter")]
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 특수문자 구분자[%]로 필터링 되는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_percentage()
+		public void TestBucketListV2DelimiterPercentage()
 		{
 			var bucketName = SetupObjects(["b%ar", "b%az", "c%ab", "foo"]);
 			var client = GetClient();
@@ -219,7 +220,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 공백문자 구분자[ ]로 필터링 되는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		[Trait(MainData.Different, MainData.True)]//s3 라이브러리에서 Delimiter가 공백일경우 string.Empty 반환
-		public void test_bucket_listv2_delimiter_whitespace()
+		public void TestBucketListV2DelimiterWhitespace()
 		{
 			var bucketName = SetupObjects(["b ar", "b az", "c ab", "foo"]);
 			var client = GetClient();
@@ -227,7 +228,7 @@ namespace s3tests.Test
 			string Delimiter = " ";
 
 			var Response = client.ListObjectsV2(bucketName, delimiter: Delimiter);
-			Assert.Empty(Response.Delimiter);
+			Assert.Equal(Delimiter, Response.Delimiter);
 
 			var Keys = GetKeys(Response);
 			Assert.Equal(["foo"], Keys);
@@ -242,7 +243,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter")]
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 구분자[.]로 필터링 되는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_dot()
+		public void TestBucketListV2DelimiterDot()
 		{
 			var bucketName = SetupObjects(["b.ar", "b.az", "c.ab", "foo"]);
 			var client = GetClient();
@@ -266,7 +267,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 읽을수 없는 구분자[\\n]로 필터링 되는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		[Trait(MainData.Different, MainData.True)]//s3 라이브러리에서 Delimiter가 \x0a일경우 string.Empty 반환
-		public void test_bucket_listv2_delimiter_unreadable()
+		public void TestBucketListV2DelimiterUnreadable()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
@@ -275,7 +276,7 @@ namespace s3tests.Test
 			string Delimiter = "\x0a";
 
 			var Response = client.ListObjectsV2(bucketName, delimiter: Delimiter);
-			Assert.Empty(Response.Delimiter);
+			Assert.Equal(Delimiter, Response.Delimiter);
 
 			var Keys = GetKeys(Response);
 			var Prefixes = Response.CommonPrefixes;
@@ -289,7 +290,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter")]
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 구분자가 빈문자일때 필터링 되는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_empty()
+		public void TestBucketListV2DelimiterEmpty()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
@@ -312,7 +313,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter")]
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 구분자를 입력하지 않아도 문제없는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_none()
+		public void TestBucketListV2DelimiterNone()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
@@ -333,7 +334,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Fetchowner")]
 		[Trait(MainData.Explanation, "[권한정보를 가져오도록 설정] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_fetchowner_notempty()
+		public void TestBucketListV2FetchOwnerNotEmpty()
 		{
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
@@ -350,7 +351,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Fetchowner")]
 		[Trait(MainData.Explanation, "[default = 권한정보를 가져오지 않음] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_fetchowner_defaultempty()
+		public void TestBucketListV2FetchOwnerDefaultEmpty()
 		{
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
@@ -367,7 +368,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Fetchowner")]
 		[Trait(MainData.Explanation, "[권한정보를 가져오지 않도록 설정] 오브젝트 목록을 가져올때 권한정보를를 올바르게 가져오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_fetchowner_empty()
+		public void TestBucketListV2FetchOwnerEmpty()
 		{
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
@@ -384,7 +385,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delimiter")]
 		[Trait(MainData.Explanation, "[폴더가 존재하지 않는 환경] 오브젝트 목록을 가져올때 폴더 구분자[/]로 필터링 되는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_delimiter_not_exist()
+		public void TestBucketListV2DelimiterNotExist()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
@@ -407,7 +408,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Prefix")]
 		[Trait(MainData.Explanation, "[접두어에 '/'가 포함] 오브젝트 목록을 가져올때 선택한 폴더 목록만 가져오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_basic()
+		public void TestBucketListV2PrefixBasic()
 		{
 			var bucketName = SetupObjects(["foo/bar", "foo/baz", "quux"]);
 			var client = GetClient();
@@ -427,7 +428,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Prefix")]
 		[Trait(MainData.Explanation, "접두어가 [/]가 아닌 경우 구분기호와 접두사 논리를 수행할 수 있는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_alt()
+		public void TestBucketListV2PrefixAlt()
 		{
 			var bucketName = SetupObjects(["bar", "baz", "foo"]);
 			var client = GetClient();
@@ -447,7 +448,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Prefix")]
 		[Trait(MainData.Explanation, "접두어를 빈문자로 입력할 경우 모든 오브젝트 목록을 받아오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_empty()
+		public void TestBucketListV2PrefixEmpty()
 		{
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
@@ -468,7 +469,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Prefix")]
 		[Trait(MainData.Explanation, "접두어를 입력하지 않을 경우 모든 오브젝트 목록을 받아오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_none()
+		public void TestBucketListV2PrefixNone()
 		{
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
@@ -488,7 +489,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Prefix")]
 		[Trait(MainData.Explanation, "[접두어와 일치하는 오브젝트가 없는 경우] 접두어를 입력할 경우 빈 오브젝트 목록을 받아오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_not_exist()
+		public void TestBucketListV2PrefixNotExist()
 		{
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
@@ -510,7 +511,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "읽을수 없는 접두어를 입력할 경우 빈 오브젝트 목록을 받아오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		[Trait(MainData.Different, MainData.True)]//s3 라이브러리에서 Delimiter가 \x0a일경우 string.Empty 반환
-		public void test_bucket_listv2_prefix_unreadable()
+		public void TestBucketListV2PrefixUnreadable()
 		{
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
@@ -518,7 +519,7 @@ namespace s3tests.Test
 
 			string Prefix = "\x0a";
 			var Response = client.ListObjectsV2(bucketName, prefix: Prefix);
-			Assert.Empty(Response.Prefix);
+			Assert.Equal(Prefix, Response.Prefix);
 
 			var Keys = GetKeys(Response);
 			var Prefixes = Response.CommonPrefixes;
@@ -531,7 +532,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Prefix and Delimiter")]
 		[Trait(MainData.Explanation, "접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_delimiter_basic()
+		public void TestBucketListV2PrefixDelimiterBasic()
 		{
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf" };
 			var bucketName = SetupObjects(KeyNames);
@@ -554,7 +555,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Prefix and Delimiter")]
 		[Trait(MainData.Explanation, "[구분자가 '/' 아닐 경우] 접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_delimiter_alt()
+		public void TestBucketListV2PrefixDelimiterAlt()
 		{
 			var KeyNames = new List<string>() { "bar", "bazar", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
@@ -579,7 +580,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[입력한 접두어와 일치하는 오브젝트가 없을 경우]" +
 									 " 접두어와 구분자를 입력할 경우 오브젝트 목록이 비어있는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_delimiter_prefix_not_exist()
+		public void TestBucketListV2PrefixDelimiterPrefixNotExist()
 		{
 			var bucketName = SetupObjects(["b/a/r", "b/a/c", "b/a/g", "g"]);
 			var client = GetClient();
@@ -598,7 +599,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[구분자가 '/'가 아닐 경우]" +
 									 "접두어와 구분자를 입력할 경우 오브젝트 목록을 올바르게 받아오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_delimiter_delimiter_not_exist()
+		public void TestBucketListV2PrefixDelimiterDelimiterNotExist()
 		{
 			var bucketName = SetupObjects(["b/a/c", "b/a/g", "b/a/r", "g"]);
 			var client = GetClient();
@@ -617,7 +618,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[구분자가 '/'가 아니며, 접두어와 일치하는 오브젝트가 존재하지 않는 경우]" +
 									 "접두어와 구분자를 입력할 경우 오브젝트 목록이 비어있는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_prefix_delimiter_prefix_delimiter_not_exist()
+		public void TestBucketListV2PrefixDelimiterPrefixDelimiterNotExist()
 		{
 			var bucketName = SetupObjects(["b/a/r", "b/a/c", "b/a/g", "g"]);
 			var client = GetClient();
@@ -635,7 +636,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "maxKeys")]
 		[Trait(MainData.Explanation, "오브젝트 목록의 최대갯수를 1로 지정하고 불러올때 올바르게 가져오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_maxkeys_one()
+		public void TestBucketListV2MaxKeysOne()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
@@ -659,7 +660,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "maxKeys")]
 		[Trait(MainData.Explanation, "오브젝트 목록의 최대갯수를 0으로 지정하고 불러올때 목록이 비어있는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_maxkeys_zero()
+		public void TestBucketListV2MaxKeysZero()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
@@ -677,7 +678,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "maxKeys")]
 		[Trait(MainData.Explanation, "[default = 1000] 오브젝트 목록의 최대갯수를 지정하지않고 불러올때 올바르게 가져오는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_maxkeys_none()
+		public void TestBucketListV2MaxKeysNone()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
@@ -695,7 +696,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Continuationtoken")]
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 다음 토큰값을 올바르게 가져오는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_continuationtoken()
+		public void TestBucketListV2ContinuationToken()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
@@ -717,7 +718,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Continuationtoken and startAfter")]
 		[Trait(MainData.Explanation, "오브젝트 목록을 가져올때 Startafter와 토큰이 재대로 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_both_continuationtoken_startafter()
+		public void TestBucketListV2BothContinuationTokenStartAfter()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
@@ -743,7 +744,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "startAfter")]
 		[Trait(MainData.Explanation, "StartAfter에 읽을수 없는 값[\\n]을 설정한 경우 오브젝트 목록을 올바르게 가져오는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_startafter_unreadable()
+		public void TestBucketListV2StartAfterUnreadable()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
@@ -752,7 +753,7 @@ namespace s3tests.Test
 			var startAfter = "\x0a";
 
 			var Response = client.ListObjectsV2(bucketName, startAfter: startAfter);
-			Assert.Empty(Response.StartAfter);
+			Assert.Equal(startAfter, Response.StartAfter);
 			Assert.False(Response.IsTruncated);
 			var Keys = GetKeys(Response);
 			Assert.Equal(KeyNames, Keys);
@@ -764,7 +765,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[StartAfter와 일치하는 오브젝트가 존재하지 않지만 해당 마커보다 정렬순서가 낮은 오브젝트는 존재하는 환경] " +
 			"마커를 설정하고 오브젝트 목록을 불러올때 재대로 가져오는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_startafter_not_in_list()
+		public void TestBucketListV2StartAfterNotInList()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
@@ -784,7 +785,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[StartAfter와 일치하는 오브젝트도 정렬순서가 같은 오브젝트도 존재하지 않는 환경]" +
 									 "StartAfter를 설정하고 오브젝트 목록을 불러올때 재대로 가져오는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_startafter_after_list()
+		public void TestBucketListV2StartAfterAfterList()
 		{
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
@@ -804,11 +805,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ACL")]
 		[Trait(MainData.Explanation, "권한없는 사용자가 공용읽기설정된 버킷의 오브젝트 목록을 읽을수 있는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_listv2_objects_anonymous()
+		public void TestBucketListV2ObjectsAnonymous()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			client.PutBucketACL(bucketName, acl: Amazon.S3.S3CannedACL.PublicRead);
+			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicRead);
 
 			var UnauthenticatedClient = GetUnauthenticatedClient();
 			UnauthenticatedClient.ListObjectsV2(bucketName);
@@ -819,7 +819,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ACL")]
 		[Trait(MainData.Explanation, "권한없는 사용자가 버킷의 오브젝트 목록을 읽지 못하는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_listv2_objects_anonymous_fail()
+		public void TestBucketListV2ObjectsAnonymousFail()
 		{
 			var bucketName = GetNewBucket();
 
@@ -835,7 +835,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "존재하지 않는 버킷 내 오브젝트들을 가져오려 했을 경우 실패 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucketv2_notexist()
+		public void TestBucketV2NotExist()
 		{
 			var bucketName = GetNewBucketName(false);
 			var client = GetClient();
@@ -843,6 +843,61 @@ namespace s3tests.Test
 			var e = Assert.Throws<AggregateException>(() => client.ListObjectsV2(bucketName));
 			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
 			Assert.Equal(MainData.NO_SUCH_BUCKET, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsV2")]
+		[Trait(MainData.Minor, "Filtering")]
+		[Trait(MainData.Explanation, "구분자와 최대목록갯수를 설정하고 토큰을 이용해 오브젝트 목록을 필터링하여 가져오는지 확인(ListObjectsV2)")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListV2FilteringAll()
+		{
+			var KeyNames = new List<string>() { "test1/f1", "test2/f2", "test3", "test4/f3", "testF4" };
+			var bucketName = SetupObjects(KeyNames);
+			var client = GetClient();
+
+			var delimiter = "/";
+			var maxKeys = 3;
+
+			var Response = client.ListObjectsV2(bucketName, delimiter: delimiter, maxKeys: maxKeys);
+			Assert.Equal(delimiter, Response.Delimiter);
+			Assert.Equal(maxKeys, Response.MaxKeys);
+			Assert.True(Response.IsTruncated);
+			Assert.Equal(maxKeys, Response.KeyCount);
+
+			var token = Response.NextContinuationToken;
+
+			var Keys = GetKeys(Response);
+			var Prefixes = Response.CommonPrefixes;
+			Assert.Equal(["test3"], Keys);
+			Assert.Equal(["test1/", "test2/"], Prefixes);
+
+			Response = client.ListObjectsV2(bucketName, delimiter: delimiter, maxKeys: maxKeys, continuationToken: token);
+			Assert.Equal(delimiter, Response.Delimiter);
+			Assert.Equal(maxKeys, Response.MaxKeys);
+			Assert.False(Response.IsTruncated);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsV2")]
+		[Trait(MainData.Minor, "Versioning")]
+		[Trait(MainData.Explanation, "버저닝이 설정된 버킷에서 오브젝트 목록 조회시 현재 버전만 반환되는지 확인(ListObjectsV2)")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListV2Versioning()
+		{
+			var KeyNames = new List<string>() { "aaa", "bbb", "ccc" };
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			foreach (var key in KeyNames)
+				for (int i = 0; i < 3; i++)
+					client.PutObject(bucketName, key, body: key + i);
+
+			var Response = client.ListObjectsV2(bucketName);
+			Assert.Equal(3, Response.S3Objects.Count);
+			Assert.Equal(["aaa", "bbb", "ccc"], GetKeys(Response));
 		}
 	}
 }

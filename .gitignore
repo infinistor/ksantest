@@ -8,3 +8,4 @@ python-new/
 .pytest_cache/
 .agents/
 ksantest.code-workspace
+*.ini

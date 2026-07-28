@@ -14,8 +14,11 @@ namespace s3tests
 	{
 		public string DisplayName { set; get; }
 		public string UserId { set; get; }
+		public string Email { set; get; }
 		public string AccessKey { set; get; }
 		public string SecretKey { set; get; }
+		public string Kms { set; get; }
+		public string XAuthToken { set; get; }
 
 		public UserData()
 		{
@@ -26,8 +29,11 @@ namespace s3tests
 		{
 			DisplayName = string.Empty;
 			UserId = string.Empty;
+			Email = string.Empty;
 			AccessKey = string.Empty;
 			SecretKey = string.Empty;
+			Kms = string.Empty;
+			XAuthToken = string.Empty;
 		}
 	}
 }

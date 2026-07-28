@@ -62,45 +62,13 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "Access")]
 		[Trait(MainData.Minor, "Denied")]
-		[Trait(MainData.Explanation, "버킷의 접근권한 블록을 설정한뒤 acl로 버킷의 권한정보를 덮어씌우기 실패 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestBlockPublicPutBucketAcls()
-		{
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-
-			PublicAccessBlockConfiguration access = new()
-			{
-				BlockPublicAcls = true,
-				IgnorePublicAcls = false,
-				BlockPublicPolicy = true,
-				RestrictPublicBuckets = false
-			};
-			client.PutPublicAccessBlock(bucketName, access);
-
-			var response = client.GetPublicAccessBlock(bucketName);
-			Assert.Equal(access.BlockPublicAcls, response.PublicAccessBlockConfiguration.BlockPublicAcls);
-			Assert.Equal(access.BlockPublicPolicy, response.PublicAccessBlockConfiguration.BlockPublicPolicy);
-
-			var e = Assert.Throws<AggregateException>(() => client.PutBucketACL(bucketName, acl: S3CannedACL.PublicRead));
-			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
-
-			e = Assert.Throws<AggregateException>(() => client.PutBucketACL(bucketName, acl: S3CannedACL.PublicReadWrite));
-			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
-
-			e = Assert.Throws<AggregateException>(() => client.PutBucketACL(bucketName, acl: S3CannedACL.AuthenticatedRead));
-			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Access")]
-		[Trait(MainData.Minor, "Denied")]
 		[Trait(MainData.Explanation, "버킷의 접근권한 블록에서 acl권한 설정금지로 설정한뒤 오브젝트에 acl정보를 추가한뒤 업로드 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestBlockPublicObjectCannedAcls()
+		public void TestBlockPublicAcls()
 		{
+			var key = "testBlockPublicAcls";
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucket(client, ObjectOwnership.ObjectWriter);
 
 			PublicAccessBlockConfiguration access = new()
 			{
@@ -114,14 +82,14 @@ namespace s3tests.Test
 			var response = client.GetPublicAccessBlock(bucketName);
 			Assert.Equal(access.BlockPublicAcls, response.PublicAccessBlockConfiguration.BlockPublicAcls);
 
-			var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, "foo1", body: "", acl: S3CannedACL.PublicRead));
-			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+			S3CannedACL[] publicAcls = [S3CannedACL.PublicRead, S3CannedACL.PublicReadWrite, S3CannedACL.AuthenticatedRead];
 
-			e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, "foo2", body: "", acl: S3CannedACL.PublicReadWrite));
-			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
-
-			e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, "foo3", body: "", acl: S3CannedACL.AuthenticatedRead));
-			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+			foreach (var acl in publicAcls)
+			{
+				var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: key, acl: acl));
+				Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+				Assert.Equal(MainData.ACCESS_DENIED, GetErrorCode(e));
+			}
 		}
 
 		[Fact]
@@ -157,7 +125,7 @@ namespace s3tests.Test
 		public void TestIgnorePublicAcls()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 			var altClient = GetAltClient();
 
 			client.PutBucketACL(bucketName, acl: S3CannedACL.PublicRead);

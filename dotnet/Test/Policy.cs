@@ -31,7 +31,7 @@ namespace s3tests.Test
 		public void TestBucketPolicy()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 			var Key = "asdf";
 			client.PutObject(bucketName, Key, body: Key);
 
@@ -67,10 +67,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Check")]
 		[Trait(MainData.Explanation, "버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucketv2_policy()
+		public void TestBucketV2Policy()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 			var Key = "asdf";
 			client.PutObject(bucketName, Key, body: Key);
 
@@ -106,10 +106,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Priority")]
 		[Trait(MainData.Explanation, "버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_policy_acl()
+		public void TestBucketPolicyAcl()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 			var Key = "asdf";
 			client.PutObject(bucketName, Key, body: Key);
 
@@ -146,11 +146,11 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Priority")]
 		[Trait(MainData.Explanation, "버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인(ListObjectsV2)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucketv2_policy_acl()
+		public void TestBucketV2PolicyAcl()
 		{
 
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 			var Key = "asdf";
 			client.PutObject(bucketName, Key, body: Key);
 
@@ -187,11 +187,11 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Taggings")]
 		[Trait(MainData.Explanation, "정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_get_tags_acl_public()
+		public void TestGetTagsAclPublic()
 		{
 			var Key = "testgettagsacl";
-			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
+			var bucketName = SetupKeyWithRandomContent(Key, bucketName: GetNewBucketCannedAcl(client), client: client);
 
 			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, Key));
 			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:GetObjectTagging", Resource);
@@ -213,11 +213,11 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Tagging")]
 		[Trait(MainData.Explanation, "정책설정으로 오브젝트의 태그 입력을 public-read로 설정했을때 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_put_tags_acl_public()
+		public void TestPutTagsAclPublic()
 		{
 			var Key = "testputtagsacl";
-			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
+			var bucketName = SetupKeyWithRandomContent(Key, bucketName: GetNewBucketCannedAcl(client), client: client);
 
 			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, Key));
 			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:PutObjectTagging", Resource);
@@ -238,11 +238,11 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Tagging")]
 		[Trait(MainData.Explanation, "정책설정으로 오브젝트의 태그 삭제를 public-read로 설정했을때 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_delete_tags_obj_public()
+		public void TestDeleteTagsObjPublic()
 		{
 			var Key = "testdeltagsacl";
-			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
+			var bucketName = SetupKeyWithRandomContent(Key, bucketName: GetNewBucketCannedAcl(client), client: client);
 
 			var Resource = S3Utils.MakeArnResource(string.Format("{0}/{1}", bucketName, Key));
 			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:DeleteObjectTagging", Resource);
@@ -267,13 +267,13 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용]" +
 									 "조건부 정책설정시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_policy_get_obj_existing_tag()
+		public void TestBucketPolicyGetObjExistingTag()
 		{
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
-			var bucketName = SetupObjects([publictag, privatetag, invalidtag]);
 			var client = GetClient();
+			var bucketName = SetupObjects([publictag, privatetag, invalidtag], GetNewBucketCannedAcl(client));
 
 			var TagConditional = new JObject() {
 				{ "StringEquals",
@@ -336,13 +336,13 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 " +
 									 "모든유저에게 GetObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_policy_get_obj_tagging_existing_tag()
+		public void TestBucketPolicyGetObjTaggingExistingTag()
 		{
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
-			var bucketName = SetupObjects([publictag, privatetag, invalidtag]);
 			var client = GetClient();
+			var bucketName = SetupObjects([publictag, privatetag, invalidtag], GetNewBucketCannedAcl(client));
 
 			var TagConditional = new JObject() {
 				{ "StringEquals",
@@ -408,13 +408,13 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 " +
 									 "모든유저에게 PutObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_policy_put_obj_tagging_existing_tag()
+		public void TestBucketPolicyPutObjTaggingExistingTag()
 		{
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
-			var bucketName = SetupObjects([publictag, privatetag, invalidtag]);
 			var client = GetClient();
+			var bucketName = SetupObjects([publictag, privatetag, invalidtag], GetNewBucketCannedAcl(client));
 
 			var TagConditional = new JObject() {
 				{ "StringEquals",
@@ -507,19 +507,19 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용]" +
 									 "조건부 정책설정시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_policy_put_obj_copy_source()
+		public void TestBucketPolicyPutObjCopySource()
 		{
 			var public_foo = "public/foo";
 			var public_bar = "public/bar";
 			var private_foo = "private/foo";
-			var SrcbucketName = SetupObjects([public_foo, public_bar, private_foo]);
 			var client = GetClient();
+			var SrcbucketName = SetupObjects([public_foo, public_bar, private_foo], GetNewBucketCannedAcl(client));
 
 			var SrcResource = S3Utils.MakeArnResource(string.Format("{0}/{1}", SrcbucketName, "*"));
 			var SrcPolicyDocument = S3Utils.MakeJsonPolicy("s3:GetObject", SrcResource);
 			client.PutBucketPolicy(SrcbucketName, SrcPolicyDocument.ToString());
 
-			var DestbucketName = GetNewBucket();
+			var DestbucketName = GetNewBucketCannedAcl(client);
 
 			var TagConditional = new JObject() {
 				{ "StringLike",
@@ -556,18 +556,18 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[오브젝트의 메타데이터값이'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게 PutObject허용] " +
 									 "조건부 정책설정시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_policy_put_obj_copy_source_meta()
+		public void TestBucketPolicyPutObjCopySourceMeta()
 		{
 			var public_foo = "public/foo";
 			var public_bar = "public/bar";
-			var SrcbucketName = SetupObjects([public_foo, public_bar]);
 			var client = GetClient();
+			var SrcbucketName = SetupObjects([public_foo, public_bar], GetNewBucketCannedAcl(client));
 
 			var SrcResource = S3Utils.MakeArnResource(string.Format("{0}/{1}", SrcbucketName, "*"));
 			var PolicyDocument = S3Utils.MakeJsonPolicy("s3:GetObject", SrcResource);
 			client.PutBucketPolicy(SrcbucketName, PolicyDocument.ToString());
 
-			var DestbucketName = GetNewBucket();
+			var DestbucketName = GetNewBucketCannedAcl(client);
 
 			var S3Conditional = new JObject() {
 				{ "StringEquals",
@@ -604,10 +604,10 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] " +
 									 "조건부 정책설정시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_policy_put_obj_acl()
+		public void TestBucketPolicyPutObjAcl()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 
 			var Conditional = new JObject() {
 				{ "StringLike",
@@ -642,11 +642,11 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] " +
 									 "조건부 정책설정시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_policy_put_obj_grant()
+		public void TestBucketPolicyPutObjGrant()
 		{
-			var bucketName = GetNewBucket();
-			var bucketName2 = GetNewBucket();
 			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			var bucketName2 = GetNewBucketCannedAcl(client);
 
 			var MainUserId = Config.MainUser.UserId;
 			var AltUserId = Config.AltUser.UserId;
@@ -698,13 +698,13 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용]" +
 									 "조건부 정책설정시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_policy_get_obj_acl_existing_tag()
+		public void TestBucketPolicyGetObjAclExistingTag()
 		{
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
-			var bucketName = SetupObjects([publictag, privatetag, invalidtag]);
 			var client = GetClient();
+			var bucketName = SetupObjects([publictag, privatetag, invalidtag], GetNewBucketCannedAcl(client));
 
 			var TagConditional = new JObject() {
 				{ "StringEquals",
@@ -770,10 +770,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Status")]
 		[Trait(MainData.Explanation, "[모든 사용자가 버킷에 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_get_publicpolicy_acl_bucket_policy_status()
+		public void TestBucketPolicyStatusWithAllUser()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 
 			Assert.Throws<AggregateException>(() => client.GetBucketPolicyStatus(bucketName));
 
@@ -802,12 +802,12 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "Policy")]
 		[Trait(MainData.Minor, "Status")]
-		[Trait(MainData.Explanation, "[특정 ip로 접근했을때만 public-read권한을 가지는 정책] 버킷의 정책상태가 올바르게 변경되는지 확인")]
+		[Trait(MainData.Explanation, "[특정 사용자(CanonicalUser)에게만 접근을 허용하는 정책] 버킷의 정책상태가 public이 아님을 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestGetNonpublicpolicyAclBucketPolicyStatus()
+		public void TestBucketPolicyStatusWithSpecificUserAccess()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 
 			Assert.Throws<AggregateException>(() => client.GetBucketPolicyStatus(bucketName));
 
@@ -816,14 +816,13 @@ namespace s3tests.Test
 
 			var PolicyDocument = new JObject()
 			{
-				{MainData.PolicyVersion, MainData.PolicyVersionDate },
+				{ MainData.PolicyVersion, MainData.PolicyVersionDate },
 				{ MainData.PolicyStatement, new JArray()
 				{
 					 new JObject(){ { MainData.PolicyEffect, MainData.PolicyEffectAllow },
-									{ MainData.PolicyPrincipal, new JObject() { { "AWS", "*" } } },
+									{ MainData.PolicyPrincipal, new JObject() { { "CanonicalUser", Config.MainUser.UserId } } },
 									{ MainData.PolicyAction, "s3:ListBucket" },
 									{ MainData.PolicyResource, new JArray() { Resource1, Resource2 } },
-									{ MainData.PolicyCondition, new JObject() { { "IpAddress", new JObject() { { "aws:SourceIp", "10.0.0.0/32" } } } } }
 					 },
 					}
 				},
@@ -832,6 +831,136 @@ namespace s3tests.Test
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 			var Response = client.GetBucketPolicyStatus(bucketName);
 			Assert.False(Response.PolicyStatus.IsPublic);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "Status")]
+		[Trait(MainData.Explanation, "[매우 넓은 IP 범위(0.0.0.0/1)를 허용하는 정책] 버킷의 정책상태가 public임을 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketPolicyStatusWithWideIPRange()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+
+			var PolicyDocument = new JObject()
+			{
+				{ MainData.PolicyVersion, MainData.PolicyVersionDate },
+				{ MainData.PolicyStatement, new JArray()
+				{
+					 new JObject(){ { MainData.PolicyEffect, MainData.PolicyEffectAllow },
+									{ MainData.PolicyPrincipal, new JObject() { { "AWS", "*" } } },
+									{ MainData.PolicyAction, "s3:GetObject" },
+									{ MainData.PolicyResource, S3Utils.MakeArnResource(string.Format("{0}/*", bucketName)) },
+									{ MainData.PolicyCondition, new JObject() { { "IpAddress", new JObject() { { "aws:SourceIp", "0.0.0.0/1" } } } } },
+					 },
+					}
+				},
+			};
+
+			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
+			var Response = client.GetBucketPolicyStatus(bucketName);
+			Assert.True(Response.PolicyStatus.IsPublic);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "Status")]
+		[Trait(MainData.Explanation, "[특정 IP 범위(192.168.1.0/24)만 허용하는 정책] 버킷의 정책상태가 public이 아님을 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketPolicyStatusWithIPRange()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+
+			var PolicyDocument = new JObject()
+			{
+				{ MainData.PolicyVersion, MainData.PolicyVersionDate },
+				{ MainData.PolicyStatement, new JArray()
+				{
+					 new JObject(){ { MainData.PolicyEffect, MainData.PolicyEffectAllow },
+									{ MainData.PolicyPrincipal, new JObject() { { "AWS", "*" } } },
+									{ MainData.PolicyAction, "s3:GetObject" },
+									{ MainData.PolicyResource, new JArray() { S3Utils.MakeArnResource(string.Format("{0}/*", bucketName)) } },
+									{ MainData.PolicyCondition, new JObject() { { "IpAddress", new JObject() { { "aws:SourceIp", "192.168.1.0/24" } } } } },
+					 },
+					}
+				},
+			};
+
+			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
+			var Response = client.GetBucketPolicyStatus(bucketName);
+			Assert.False(Response.PolicyStatus.IsPublic);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "Status")]
+		[Trait(MainData.Explanation, "[특정 시간대에만 접근을 허용하는 정책] 버킷의 정책상태가 public임을 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketPolicyStatusWithTimeCondition()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/*", bucketName));
+
+			var StartTime = DateTime.UtcNow.AddMinutes(10).ToString("yyyy-MM-ddTHH:mm:ssZ");
+			var EndTime = DateTime.UtcNow.AddMinutes(10).AddSeconds(1).ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+			var PolicyDocument = new JObject()
+			{
+				{ MainData.PolicyVersion, MainData.PolicyVersionDate },
+				{ MainData.PolicyStatement, new JArray()
+				{
+					 new JObject(){ { MainData.PolicyEffect, MainData.PolicyEffectAllow },
+									{ MainData.PolicyPrincipal, new JObject() { { "AWS", "*" } } },
+									{ MainData.PolicyAction, "s3:GetObject" },
+									{ MainData.PolicyResource, Resource },
+									{ MainData.PolicyCondition, new JObject() {
+										{ "DateGreaterThan", new JObject() { { "aws:CurrentTime", StartTime } } },
+										{ "DateLessThan", new JObject() { { "aws:CurrentTime", EndTime } } },
+									} },
+					 },
+					}
+				},
+			};
+
+			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
+			var Response = client.GetBucketPolicyStatus(bucketName);
+			Assert.True(Response.PolicyStatus.IsPublic);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "Status")]
+		[Trait(MainData.Explanation, "[오브젝트 태그 조건이 있는 정책] 버킷의 정책상태가 public임을 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketPolicyStatusWithTagCondition()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+
+			var Resource = S3Utils.MakeArnResource(string.Format("{0}/*", bucketName));
+
+			var PolicyDocument = new JObject()
+			{
+				{ MainData.PolicyVersion, MainData.PolicyVersionDate },
+				{ MainData.PolicyStatement, new JArray()
+				{
+					 new JObject(){ { MainData.PolicyEffect, MainData.PolicyEffectAllow },
+									{ MainData.PolicyPrincipal, new JObject() { { "AWS", "*" } } },
+									{ MainData.PolicyAction, "s3:GetObject" },
+									{ MainData.PolicyResource, Resource },
+									{ MainData.PolicyCondition, new JObject() { { "StringEquals", new JObject() { { "s3:ExistingObjectTag/access", "restricted" } } } } },
+					 },
+					}
+				},
+			};
+
+			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
+			var Response = client.GetBucketPolicyStatus(bucketName);
+			Assert.True(Response.PolicyStatus.IsPublic);
 		}
 	}
 }

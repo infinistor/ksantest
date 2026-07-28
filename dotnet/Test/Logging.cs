@@ -74,7 +74,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Put/Get")]
 		[Trait(MainData.Explanation, "버킷의 로깅에 Prefix가 설정되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_logging_prefix()
+		public void TestLoggingPrefix()
 		{
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();
@@ -93,7 +93,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Versioning")]
 		[Trait(MainData.Explanation, "버저닝 설정된 버킷의 로깅이 설정되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_logging_versioning()
+		public void TestLoggingVersioning()
 		{
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();
@@ -114,7 +114,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Encryption")]
 		[Trait(MainData.Explanation, "SSE-s3설정된 버킷의 로깅이 설정되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_logging_encryption()
+		public void TestLoggingEncryption()
 		{
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();

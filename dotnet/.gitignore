@@ -1,9 +1,9 @@
 .vscode/
 bin/
 obj/
-*.bat
+*.ini
 s3tests_*
-awstests.ini
+!sample.ini
 *.sh
 suwon*
 TestResults/

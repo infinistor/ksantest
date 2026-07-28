@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
@@ -21,17 +21,24 @@ using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 using System.Net.Http;
+using Newtonsoft.Json.Linq;
 using s3tests.Utils;
 
 namespace s3tests.Test
 {
 	public abstract class TestBase : IDisposable
 	{
+		/// <summary>
+		/// AWS SDK for .NET v4는 요청/설정 객체의 컬렉션 프로퍼티를 null로 두기 때문에
+		/// `config.Rules.Add(...)` 같은 v3 스타일 코드가 NullReferenceException으로 죽는다.
+		/// 어셈블리 로드 시점에 v3 동작(자동 초기화)으로 되돌린다.
+		/// </summary>
+		[System.Runtime.CompilerServices.ModuleInitializer]
+		internal static void InitializeAwsSdk() => Amazon.AWSConfigs.InitializeCollections = true;
+
 
 		#region Define
 		private const int RANDOM_PREFIX_TEXT_LENGTH = 30;
-		private const int RANDOM_SUFFIX_TEXT_LENGTH = 5;
-		private const int BUCKET_MAX_LENGTH = 63;
 		private const string STR_RANDOM = "{random}";
 		#endregion
 
@@ -70,14 +77,26 @@ namespace s3tests.Test
 		}
 		public void Clear() => BucketClear();
 
+		/// <summary>
+		/// AWS 환경이면 테스트를 스킵한다. (JUnit Assumptions.assumeFalse(config.isAWS())에 대응)
+		/// [SkippableFact]/[SkippableTheory]와 함께 사용해야 한다.
+		/// </summary>
+		protected void SkipIfAws(string reason = "AWS does not support this feature")
+			=> Skip.If(Config.S3.IsAWS, reason);
+
 		#region Get client
 		public S3Client GetClient() => new(Config.S3, Config.IsSecure, Config.MainUser, Output);
 		public S3Client GetClientV4() => new(Config.S3, Config.IsSecure, Config.MainUser, Output);
 		public S3Client GetClientHttps() => new(Config.S3, true, Config.MainUser, Output);
 		public S3Client GetClientHttpsV4(RequestChecksumCalculation? requestChecksumCalculation = null,
 		ResponseChecksumValidation? responseChecksumValidation = null) => new(Config.S3, true, Config.MainUser, Output, requestChecksumCalculation, responseChecksumValidation);
+
+		public S3Client GetClient(RequestChecksumCalculation? requestChecksumCalculation,
+			ResponseChecksumValidation? responseChecksumValidation, bool useHttps = false)
+			=> new(Config.S3, useHttps || Config.IsSecure, Config.MainUser, Output, requestChecksumCalculation, responseChecksumValidation);
 		public S3Client GetAltClient() => new(Config.S3, Config.IsSecure, Config.AltUser, Output);
 		public S3Client GetUnauthenticatedClient() => new(Config.S3, Config.IsSecure, null, Output);
+		public S3Client GetPublicClient() => GetUnauthenticatedClient();
 		public S3Client GetBadAuthClient(string accessKey = null, string secretKey = null)
 		{
 			accessKey ??= "aaaaaaaaaaaaaaa";
@@ -85,28 +104,45 @@ namespace s3tests.Test
 			var user = new UserData() { AccessKey = accessKey, SecretKey = secretKey };
 			return new S3Client(Config.S3, Config.IsSecure, user);
 		}
+
+		/// <summary>백엔드 전용 클라이언트. 모든 요청에 백엔드 헤더를 주입한다.</summary>
+		public S3Client GetBackendClient() => new(Config.S3, Config.IsSecure, Config.BackendUser ?? Config.MainUser, Output,
+			// Java getBackendClient는 표준 클라이언트와 달리 WHEN_SUPPORTED를 쓴다.
+			RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_SUPPORTED,
+			clientHeaders: [
+				new(BackendHeaders.IFS_ADMIN, BackendHeaders.HEADER_DATA),
+				new(BackendHeaders.IFS_BACKEND, BackendHeaders.HEADER_DATA),
+				new(BackendHeaders.KSAN_BACKEND, BackendHeaders.HEADER_DATA),
+				new(BackendHeaders.HEADER_USER_AGENT, BackendHeaders.HEADER_USER_AGENT_VALUE),
+				new(BackendHeaders.HEADER_REPLICATION, BackendHeaders.HEADER_DATA),
+			]);
 		#endregion
 
 		#region Create Data
 
 		public string GetPrefix() => Config.BucketPrefix.Replace(STR_RANDOM, S3Utils.RandomText(RANDOM_PREFIX_TEXT_LENGTH));
-		public string GetNewBucketName(bool create = true)
+
+		/// <summary>테스트 클래스명을 suite id로 사용한다. (Java getSuiteId)</summary>
+		public string GetSuiteId() => S3Utils.ToSuiteId(GetType().Name);
+
+		/// <summary>테스트 인스턴스 내에서 생성한 버킷 순번. Java의 testId 자리에 들어간다.</summary>
+		private int BucketIndex;
+
+		/// <summary>prefix + suite + "-" + 순번 + "-" + 랜덤문자로 62자를 채운 버킷명. (Java getNewBucketName)</summary>
+		public string GetNewBucketName(bool create = true) => GetNewBucketName(++BucketIndex, create);
+
+		/// <summary>testId를 직접 지정하는 형태. (Java getNewBucketName(testId))</summary>
+		public string GetNewBucketName(int testId, bool create = true)
 		{
-			string bucketName = GetPrefix() + S3Utils.RandomText(RANDOM_SUFFIX_TEXT_LENGTH);
-			if (bucketName.Length > BUCKET_MAX_LENGTH) bucketName = bucketName.Substring(0, BUCKET_MAX_LENGTH - 1);
+			var bucketName = S3Utils.MakeBucketName(GetPrefix(), GetSuiteId(), testId);
 			if (create) BucketList.Add(bucketName);
-			return bucketName;
-		}
-		public string GetNewBucketName(int length)
-		{
-			string bucketName = GetPrefix() + S3Utils.RandomText(BUCKET_MAX_LENGTH);
-			bucketName = bucketName[..length];
-			BucketList.Add(bucketName);
 			return bucketName;
 		}
 
 		public string GetURL(string bucketName) => $"{MainData.HTTP}{GetHost(bucketName)}";
 		public string GetURL(string bucketName, string key) => $"{MainData.HTTP}{GetHost(bucketName)}/{key}";
+		/// <summary>SSE-C처럼 TLS가 필수인 요청에 쓴다.</summary>
+		public string GetSecureURL(string bucketName) => $"{MainData.HTTPS}{GetHost(bucketName)}";
 		public string GetHost(string bucketName)
 			=> Config.S3.IsAWS ? $"{bucketName}.s3-{Config.S3.RegionName}.amazonaws.com" : $"{Config.S3.Address}:{Config.S3.Port}/{bucketName}";
 
@@ -135,31 +171,106 @@ namespace s3tests.Test
 			return client.SendAsync(request).GetAwaiter().GetResult();
 		}
 
-		public MyResult PostUpload(string bucketName, Dictionary<string, object> parameters)
+		/// <summary>SigV4로 서명된 POST 정책. testV2 Post 테스트와 동일한 방식.</summary>
+		public sealed class PostPolicyV4
+		{
+			public const string Algorithm = "AWS4-HMAC-SHA256";
+			public string Policy { get; init; }
+			public string Signature { get; init; }
+			public string Credential { get; init; }
+			public string AmzDate { get; init; }
+
+			/// <summary>POST 폼에 필요한 인증 필드를 채워 넣는다.</summary>
+			public void Apply(Dictionary<string, object> payload)
+			{
+				payload["policy"] = Policy;
+				payload["x-amz-algorithm"] = Algorithm;
+				payload["x-amz-credential"] = Credential;
+				payload["x-amz-date"] = AmzDate;
+				payload["x-amz-signature"] = Signature;
+			}
+		}
+
+		/// <summary>
+		/// 정책에 x-amz-algorithm/credential/date 조건을 덧붙인 뒤 SigV4로 서명한다.
+		/// (AWS 신규 리전은 SigV2 POST를 지원하지 않아 testV2도 SigV4를 쓴다.)
+		/// </summary>
+		public PostPolicyV4 SignPostPolicy(JObject policyDocument, UserData user = null)
+		{
+			user ??= Config.MainUser;
+
+			var amzDate = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
+			var dateStamp = amzDate[..8];
+			var region = string.IsNullOrWhiteSpace(Config.S3.RegionName) ? "us-east-1" : Config.S3.RegionName;
+			var credential = $"{user.AccessKey}/{dateStamp}/{region}/s3/aws4_request";
+
+			if (policyDocument["conditions"] is JArray conditions)
+			{
+				conditions.Add(new JObject() { { "x-amz-algorithm", PostPolicyV4.Algorithm } });
+				conditions.Add(new JObject() { { "x-amz-credential", credential } });
+				conditions.Add(new JObject() { { "x-amz-date", amzDate } });
+			}
+
+			var policy = Convert.ToBase64String(Encoding.UTF8.GetBytes(policyDocument.ToString()));
+
+			return new PostPolicyV4()
+			{
+				Policy = policy,
+				Signature = S3Utils.GetPostPolicySignature(user.SecretKey, dateStamp, region, policy),
+				Credential = credential,
+				AmzDate = amzDate,
+			};
+		}
+
+		/// <summary>
+		/// multipart 파트를 직접 구성한다. .NET 기본 동작은 name을 따옴표 없이 쓰고
+		/// Content-Type을 Content-Disposition보다 먼저 내보내는데, S3 서버가 둘 다 파싱하지 못해 400을 반환한다.
+		/// </summary>
+		private static StringContent FormPart(string body, string name, string fileName = null, string contentType = null)
+		{
+			var content = new StringContent(body);
+			content.Headers.Remove("Content-Type");
+
+			var disposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
+			{
+				Name = $"\"{name}\"",
+			};
+			if (fileName != null) disposition.FileName = $"\"{fileName}\"";
+			content.Headers.ContentDisposition = disposition;
+
+			if (contentType != null) content.Headers.TryAddWithoutValidation("Content-Type", contentType);
+			return content;
+		}
+
+		/// <param name="secure">SSE-C 등 TLS가 필수인 요청은 true. AWS는 평문 연결의 SSE-C 요청을 400으로 거부한다.</param>
+		public MyResult PostUpload(string bucketName, Dictionary<string, object> parameters, bool secure = false)
 		{
 			//https://spirit32.tistory.com/21
 			string boundary = DateTime.Now.Ticks.ToString("x");
 			using var client = new HttpClient();
 			using var formData = new MultipartFormDataContent(boundary);
-			var url = GetURL(bucketName);
+			var url = secure ? GetSecureURL(bucketName) : GetURL(bucketName);
+
+			// .NET은 Content-Type에 boundary="..." 처럼 따옴표를 붙이는데 S3 서버가 이를 파싱하지 못해 400을 반환한다.
+			var boundaryParameter = formData.Headers.ContentType.Parameters.First(o => o.Name == "boundary");
+			boundaryParameter.Value = boundary;
 
 			if (Config.S3.IsAWS)
 				client.DefaultRequestHeaders.Host = GetHost(bucketName);
 
 			if (parameters != null && parameters.Count > 0)
 			{
+				// S3 POST 규약상 file 필드는 항상 마지막이어야 한다.
 				foreach (var pair in parameters)
 				{
-					if (pair.Value is FormFile file)
-					{
-						var fileContent = new StringContent(file.Body);
-						fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
-						formData.Add(fileContent, pair.Key, file.Name);
-					}
-					else
-					{
-						formData.Add(new StringContent(pair.Value.ToString()), pair.Key);
-					}
+					if (pair.Value is FormFile) continue;
+					formData.Add(FormPart(pair.Value.ToString(), pair.Key));
+				}
+
+				foreach (var pair in parameters)
+				{
+					if (pair.Value is not FormFile file) continue;
+					formData.Add(FormPart(file.Body, pair.Key, file.Name, file.ContentType));
 				}
 			}
 
@@ -175,11 +286,16 @@ namespace s3tests.Test
 					}
 				}
 
+				// 실패 응답의 본문에 실제 원인이 들어있다.
+				var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
 				return new MyResult()
 				{
 					URL = response.RequestMessage.RequestUri.AbsoluteUri,
 					StatusCode = response.StatusCode,
-					Headers = webHeaders
+					Headers = webHeaders,
+					ErrorCode = S3Utils.GetXmlValue(body, "Code"),
+					Message = S3Utils.GetXmlValue(body, "Message"),
 				};
 			}
 			catch (HttpRequestException e)
@@ -323,22 +439,156 @@ namespace s3tests.Test
 
 			return response.NextContinuationToken;
 		}
-		public void CheckBucketACLGrantCanRead(string bucketName) => GetAltClient().ListObjects(bucketName);
-		public void CheckBucketACLGrantCantRead(string bucketName) => Assert.Throws<AggregateException>(() => GetAltClient().ListObjects(bucketName));
-		public void CheckBucketACLGrantCanReadACP(string bucketName) => GetAltClient().GetBucketACL(bucketName);
-		public void CheckBucketACLGrantCantReadACP(string bucketName) => Assert.Throws<AggregateException>(() => GetAltClient().GetBucketACL(bucketName));
-		public void CheckBucketACLGrantCanWrite(string bucketName) => GetAltClient().PutObject(bucketName, "foo-write", body: "bar");
-		public void CheckBucketACLGrantCantWrite(string bucketName) => Assert.Throws<AggregateException>(() => GetAltClient().PutObject(bucketName, "foo-write", body: "bar"));
-		public void CheckBucketACLGrantCanWriteACP(string bucketName) => GetAltClient().PutBucketACL(bucketName, acl: S3CannedACL.PublicRead);
-		public void CheckBucketACLGrantCantWriteACP(string bucketName) => Assert.Throws<AggregateException>(() => GetAltClient().PutBucketACL(bucketName, acl: S3CannedACL.PublicRead));
+
+		public string ValidateListObjectVersions(string bucketName, string prefix, string delimiter, string keyMarker,
+						int maxKeys, bool isTruncated, List<string> checkKeys, List<string> checkPrefixes, string nextKeyMarker)
+		{
+			var client = GetClient();
+			var response = client.ListVersions(bucketName, delimiter: delimiter, keyMarker: keyMarker,
+												maxKeys: maxKeys, prefix: prefix);
+
+			Assert.Equal(isTruncated, response.IsTruncated);
+			Assert.Equal(nextKeyMarker, response.NextKeyMarker);
+
+			List<string> keys = GetKeys(response);
+			List<string> prefixes = response.CommonPrefixes ?? [];
+
+			Assert.Equal(checkKeys.Count, keys.Count);
+			Assert.Equal(checkPrefixes.Count, prefixes.Count);
+			Assert.Equal(checkKeys, keys);
+			Assert.Equal(checkPrefixes, prefixes);
+
+			return response.NextKeyMarker;
+		}
+
+		public static void SucceedGetObject(S3Client client, string bucketName, string key, string content)
+		{
+			var response = client.GetObject(bucketName, key);
+			Assert.Equal(content, S3Utils.GetBody(response));
+		}
+
+		public static void FailedGetObject(S3Client client, string bucketName, string key, HttpStatusCode statusCode, string errorCode)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.GetObject(bucketName, key));
+			Assert.Equal(statusCode, GetStatus(e));
+			Assert.Equal(errorCode, GetErrorCode(e));
+		}
+
+		public static void SucceedPutObject(S3Client client, string bucketName, string key, string content)
+			=> client.PutObject(bucketName, key, body: content);
+
+		public static void FailedPutObject(S3Client client, string bucketName, string key, HttpStatusCode statusCode, string errorCode)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: key));
+			Assert.Equal(statusCode, GetStatus(e));
+			Assert.Equal(errorCode, GetErrorCode(e));
+		}
+
+		public static void SucceedListObjects(S3Client client, string bucketName, List<string> keys)
+		{
+			var response = client.ListObjects(bucketName);
+			Assert.Equal(keys, GetKeys(response));
+		}
+
+		public static void FailedListObjects(S3Client client, string bucketName, HttpStatusCode statusCode, string errorCode)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.ListObjects(bucketName));
+			Assert.Equal(statusCode, GetStatus(e));
+			Assert.Equal(errorCode, GetErrorCode(e));
+		}
+
+		public static void CheckBucketAclAllowRead(S3Client client, string bucketName) => client.HeadBucket(bucketName);
+
+		public static void CheckBucketAclDenyRead(S3Client client, string bucketName)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.HeadBucket(bucketName));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+		}
+
+		public static void CheckBucketAclAllowReadACP(S3Client client, string bucketName) => client.GetBucketACL(bucketName);
+
+		public static void CheckBucketAclDenyReadACP(S3Client client, string bucketName)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.GetBucketACL(bucketName));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+		}
+
+		public static void CheckBucketAclAllowWrite(S3Client client, string bucketName)
+		{
+			var key = "checkBucketAclAllowWrite";
+			client.PutObject(bucketName, key, body: key);
+			client.DeleteObject(bucketName, key);
+		}
+
+		public static void CheckBucketAclDenyWrite(S3Client client, string bucketName)
+		{
+			var key = "checkBucketAclDenyWrite";
+			var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: key));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+		}
+
+		public static void CheckBucketAclAllowWriteACP(S3Client client, string bucketName)
+			=> client.PutBucketACL(bucketName, acl: S3CannedACL.PublicReadWrite);
+
+		public static void CheckBucketAclDenyWriteACP(S3Client client, string bucketName)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.PutBucketACL(bucketName, acl: S3CannedACL.PublicRead));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+		}
+
+		public static void CheckObjectAclAllowRead(S3Client client, string bucketName, string key)
+		{
+			var response = client.GetObject(bucketName, key);
+			S3Utils.GetBody(response);
+		}
+
+		public static void CheckObjectAclDenyRead(S3Client client, string bucketName, string key)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.GetObject(bucketName, key));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+		}
+
+		public static void CheckObjectAclAllowReadACP(S3Client client, string bucketName, string key)
+			=> client.GetObjectACL(bucketName, key);
+
+		public static void CheckObjectAclDenyReadACP(S3Client client, string bucketName, string key)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.GetObjectACL(bucketName, key));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+		}
+
+		public static void CheckObjectAclAllowWrite(S3Client client, string bucketName, string key)
+			=> client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = [new Tag() { Key = "foo", Value = "bar" }] });
+
+		public static void CheckObjectAclDenyWrite(S3Client client, string bucketName, string key)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: key));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+		}
+
+		public static void CheckObjectAclAllowWriteACP(S3Client client, string bucketName, string key)
+			=> client.PutObjectACL(bucketName, key, acl: S3CannedACL.PublicReadWrite);
+
+		public static void CheckObjectAclDenyWriteACP(S3Client client, string bucketName, string key)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.PutObjectACL(bucketName, key, acl: S3CannedACL.PublicRead));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+		}
 
 		public void CheckBadBucketName(string bucketName)
 		{
 			var client = GetClient();
 
-			var e = Assert.Throws<AggregateException>(() => client.PutBucket(bucketName));
-			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
-			Assert.Equal(MainData.INVALID_BUCKET_NAME, GetErrorCode(e));
+			// Java SDK v2는 클라이언트에서 버킷명을 검증해 IllegalArgumentException을 던지지만
+			// .NET SDK는 검증하지 않고 서버로 보낸다. 서버가 돌려주는 오류 코드는 구현마다 달라
+			// (InvalidBucketName / BucketAlreadyExists 등) 실패 여부만 확인한다.
+			Assert.ThrowsAny<Exception>(() =>
+			{
+				// Java SDK가 클라이언트에서 막는 길이 규칙(3~63자)을 여기서 대신 검증한다.
+				if (bucketName.Length < 3 || bucketName.Length > 63)
+					throw new ArgumentException($"Invalid bucket name length: {bucketName.Length}");
+				client.PutBucket(bucketName);
+			});
 		}
 		public void CheckGoodBucketName(string name, string prefix = null)
 		{
@@ -367,42 +617,6 @@ namespace s3tests.Test
 				Assert.Equal(expected[i].Grantee.Type, actual[i].Grantee.Type);
 				Assert.Equal(expected[i].Grantee.URI, actual[i].Grantee.URI);
 			}
-		}
-		public void CheckObjectACL(S3Permission permission)
-		{
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			var key = "foo";
-
-			client.PutObject(bucketName, key);
-			var response = client.GetObjectACL(bucketName, key);
-
-			var policy = response.AccessControlList;
-			policy.Grants[0].Permission = permission;
-
-			client.PutObjectACL(bucketName, key, accessControlPolicy: policy);
-
-			response = client.GetObjectACL(bucketName, key);
-			var grants = response.AccessControlList.Grants;
-
-			var mainUserId = Config.MainUser.UserId;
-			var mainDispalyName = Config.MainUser.DisplayName;
-
-			CheckGrants(
-			[
-				new()
-				{
-					 Permission = permission,
-					 Grantee = new S3Grantee()
-					 {
-						 CanonicalUser = mainUserId,
-						 DisplayName = mainDispalyName,
-						 URI = null,
-						 EmailAddress = null,
-					 }
-				}
-			],
-			grants);
 		}
 
 		public static void CheckCopyContent(S3Client client,
@@ -605,6 +819,13 @@ namespace s3tests.Test
 			CheckGrants(expected.Grants, actual.Grants);
 		}
 
+		public static void S3EventCompare(List<EventType> expected, List<EventType> actual)
+		{
+			Assert.Equal(expected.Count, actual.Count);
+			for (int i = 0; i < expected.Count; i++)
+				Assert.Equal(expected[i], actual[i]);
+		}
+
 		public static void PartsETagCompare(List<PartETag> expected, List<PartDetail> actual)
 		{
 			S3Utils.PartsETagCompare(expected, actual);
@@ -638,6 +859,18 @@ namespace s3tests.Test
 			}
 			return null;
 		}
+		public static List<string> GetKeys(ListVersionsResponse response)
+		{
+			if (response?.Versions != null)
+			{
+				List<string> temp = [];
+
+				foreach (var version in response.Versions) temp.Add(version.Key);
+
+				return temp;
+			}
+			return [];
+		}
 		public static string GetBody(GetObjectResponse response)
 		{
 			string body = string.Empty;
@@ -665,6 +898,45 @@ namespace s3tests.Test
 			return keyVersions;
 		}
 
+		/// <summary>
+		/// AWS SDK for .NET v4는 일부 오퍼레이션에서 4xx를 예외로 던지지 않고
+		/// HttpStatusCode만 채운 응답 객체를 돌려준다(Java SDK v2는 항상 예외). 양쪽 모두를 받아 검증한다.
+		/// </summary>
+		public static void CheckErrorResponse<T>(HttpStatusCode expected, Func<T> call, string errorCode = null)
+			where T : Amazon.Runtime.AmazonWebServiceResponse
+		{
+			try
+			{
+				var response = call();
+				Assert.Equal(expected, response.HttpStatusCode);
+			}
+			catch (AggregateException e)
+			{
+				Assert.Equal(expected, GetStatus(e));
+				if (errorCode != null) Assert.Equal(errorCode, GetErrorCode(e));
+			}
+		}
+
+		/// <summary>S3의 url 인코딩 응답을 디코딩한다(공백은 +로 인코딩된다).</summary>
+		public static string UrlDecode(string value) => Uri.UnescapeDataString(value.Replace("+", " "));
+
+		/// <summary>
+		/// 잘못된 요청이 거부되는지 확인한다.
+		/// .NET SDK v4는 일부 필수 필드를 클라이언트 측에서 먼저 막아 요청이 서버에 도달하지 않는다.
+		/// 이때 AmazonS3Exception.StatusCode는 0이므로 서버 응답(4xx)과 클라이언트 거부를 모두 통과로 본다.
+		/// </summary>
+		public static void CheckRejected<T>(HttpStatusCode expected, Func<T> call, string errorCode = null)
+		{
+			var e = Assert.Throws<AggregateException>(() => call());
+			var status = GetStatus(e);
+
+			// 클라이언트 측 검증에서 걸린 경우(StatusCode 미설정)
+			if (status == 0) return;
+
+			Assert.Equal(expected, status);
+			if (errorCode != null) Assert.Equal(errorCode, GetErrorCode(e));
+		}
+
 		public static HttpStatusCode GetStatus(AggregateException e) => (e.InnerException is AmazonS3Exception e2) ? e2.StatusCode : HttpStatusCode.OK;
 
 		public static string GetErrorCode(AggregateException e) => (e.InnerException is AmazonS3Exception e2) ? e2.ErrorCode : null;
@@ -689,6 +961,28 @@ namespace s3tests.Test
 				metaDataList.Add(new KeyValuePair<string, string>(key, response[key]));
 
 			return metaDataList;
+		}
+
+		/// <summary>메타데이터 키에서 x-amz-meta- 접두사를 제거한다. .NET SDK는 접두사를 유지하고 java SDK v2는 제거한다.</summary>
+		public static string NormalizeMetaKey(string key)
+			=> key.StartsWith("x-amz-meta-", StringComparison.OrdinalIgnoreCase) ? key["x-amz-meta-".Length..] : key;
+
+		/// <summary>
+		/// 메타데이터를 순서와 무관하게 비교한다.
+		/// S3는 메타데이터 순서를 보장하지 않으므로 리스트 비교(Assert.Equal)를 쓰면 안 된다.
+		/// </summary>
+		public static void CheckMetaData(List<KeyValuePair<string, string>> expected, MetadataCollection actual)
+		{
+			var actualMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+			foreach (var key in actual.Keys) actualMap[NormalizeMetaKey(key)] = actual[key];
+
+			Assert.Equal(expected.Count, actualMap.Count);
+			foreach (var item in expected)
+			{
+				var key = NormalizeMetaKey(item.Key);
+				Assert.True(actualMap.ContainsKey(key), $"metadata key not found: {key}");
+				Assert.Equal(item.Value, actualMap[key]);
+			}
 		}
 		public List<KeyValuePair<string, string>> GetACLHeader(string userId = null, string[] perms = null)
 		{
@@ -782,14 +1076,10 @@ namespace s3tests.Test
 		}
 		public static List<S3Grant> GrantsSort(List<S3Grant> data)
 		{
-			var newList = new List<S3Grant>();
-
-			var sortMap = new SortedDictionary<string, S3Grant>();
-
-			foreach (var grant in data) sortMap.Add($"{grant.Grantee.CanonicalUser}{grant.Permission}", grant);
-
-			foreach (var item in sortMap) newList.Add(item.Value);
-
+			// 같은 (사용자, 권한) 조합이 중복될 수 있으므로 Dictionary가 아니라 리스트를 정렬한다.
+			var newList = new List<S3Grant>(data);
+			newList.Sort((x, y) => string.CompareOrdinal(
+				$"{x.Grantee.CanonicalUser}{x.Permission}", $"{y.Grantee.CanonicalUser}{y.Permission}"));
 			return newList;
 		}
 
@@ -825,6 +1115,91 @@ namespace s3tests.Test
 		{
 			var bucketName = GetNewBucketName();
 			client.PutBucket(bucketName);
+			return bucketName;
+		}
+		public string GetNewBucket(S3Client client, ObjectOwnership ownership)
+		{
+			var bucketName = GetNewBucketName();
+			client.PutBucket(bucketName, objectOwnership: ownership);
+			return bucketName;
+		}
+		public string GetNewBucketCannedAcl(S3Client client)
+		{
+			var bucketName = GetNewBucket(client, ObjectOwnership.ObjectWriter);
+			client.PutPublicAccessBlock(bucketName, new PublicAccessBlockConfiguration()
+			{
+				BlockPublicAcls = false,
+				IgnorePublicAcls = false,
+				BlockPublicPolicy = false,
+				RestrictPublicBuckets = false
+			});
+			return bucketName;
+		}
+
+		/// <summary>
+		/// ACL을 지정해 버킷을 만든다. AWS 신규 버킷 기본값(BucketOwnerEnforced + PublicAccessBlock)에서는
+		/// ACL 자체가 거부되므로 ObjectWriter로 만들고 차단 설정을 함께 해제한다.
+		/// (java testV2 createBucketCannedAcl(client, testId, acl)과 동일)
+		/// </summary>
+		public string GetNewBucketCannedAcl(S3Client client, S3CannedACL acl)
+			=> CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, acl);
+
+		/// <summary>
+		/// AWS는 2026-04부터 신규 버킷에서 SSE-C 업로드를 기본 차단한다.
+		/// BlockedEncryptionTypes를 NONE으로 덮어써서 해제한다. (java testV2 unblockSseC와 동일)
+		/// </summary>
+		public void UnblockSseC(string bucketName)
+		{
+			if (!Config.S3.IsAWS) return;
+
+			var client = GetClient();
+			client.PutBucketEncryption(bucketName, new ServerSideEncryptionConfiguration()
+			{
+				ServerSideEncryptionRules =
+				[
+					new()
+					{
+						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
+						{
+							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
+						},
+						BlockedEncryptionTypes = new BlockedEncryptionTypes()
+						{
+							EncryptionType = [Amazon.S3.EncryptionType.NONE]
+						}
+					}
+				]
+			});
+
+			// 설정 반영에 지연이 있어 SSE-C 차단이 사라질 때까지 확인한다.
+			for (int i = 0; i < 5; i++)
+			{
+				try
+				{
+					var response = client.GetBucketEncryption(bucketName);
+					var blocked = false;
+					foreach (var rule in response.ServerSideEncryptionConfiguration.ServerSideEncryptionRules)
+					{
+						if (rule.BlockedEncryptionTypes?.EncryptionType != null &&
+							rule.BlockedEncryptionTypes.EncryptionType.Contains(Amazon.S3.EncryptionType.SSEC))
+							blocked = true;
+					}
+					if (!blocked) return;
+				}
+				catch (Exception)
+				{
+					// 설정 반영 전이면 재시도
+				}
+				Delay(1000);
+			}
+
+			Assert.Fail($"SSE-C unblock failed : {bucketName}");
+		}
+
+		public string GetNewBucket(S3Client client, ObjectOwnership ownership, S3CannedACL acl)
+		{
+			var bucketName = GetNewBucket(client, ownership);
+			client.PutBucketACL(bucketName, acl: acl);
 			return bucketName;
 		}
 
@@ -870,7 +1245,8 @@ namespace s3tests.Test
 		public string SetupObjectsV4(List<string> keyList, string bucketName = null, string body = null,
 										bool? useChunkEncoding = null, bool? disablePayloadSigning = null)
 		{
-			var client = GetClientV4();
+			// SDK v4는 DisablePayloadSigning 사용 시 HTTPS를 강제한다.
+			var client = disablePayloadSigning == true ? GetClientHttpsV4() : GetClientV4();
 			if (bucketName == null)
 			{
 				bucketName = GetNewBucketName();
@@ -900,30 +1276,105 @@ namespace s3tests.Test
 			return bucketName;
 		}
 
-		public string SetupBucketObjectACL(S3CannedACL bucketACL, S3CannedACL objectACL, string key)
+
+		public string CreateBucketWithAcl(S3Client client, ObjectOwnership ownership, S3CannedACL acl = null)
 		{
-			var bucketName = GetNewBucketName();
-			var client = GetClient();
-			client.PutBucket(bucketName, acl: bucketACL);
-			client.PutObject(bucketName, key: key, acl: objectACL);
+			var bucketName = GetNewBucket(client, ownership);
+			client.PutPublicAccessBlock(bucketName, new PublicAccessBlockConfiguration()
+			{
+				BlockPublicAcls = false,
+				IgnorePublicAcls = false,
+				BlockPublicPolicy = false,
+				RestrictPublicBuckets = false
+			});
+			if (acl != null) client.PutBucketACL(bucketName, acl: acl);
 			return bucketName;
 		}
-		public string SetupBucketAndObjectsACL(out string key1, out string key2, out string newKey, S3CannedACL bucketACL, S3CannedACL objectACL)
+
+		public string SetupAclBucket(ObjectOwnership ownership, S3CannedACL acl, List<string> keys)
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-
-			key1 = "foo";
-			key2 = "bar";
-			newKey = "new";
-
-			client.PutBucketACL(bucketName, acl: bucketACL);
-			client.PutObject(bucketName, key1, body: key1);
-			client.PutObjectACL(bucketName, key1, acl: objectACL);
-			client.PutObject(bucketName, key2, body: key2);
-
+			var bucketName = CreateBucketWithAcl(client, ownership, acl);
+			SetupObjects(keys, bucketName);
 			return bucketName;
 		}
+
+		public string SetupAclBucket(S3CannedACL acl, List<string> keys)
+			=> SetupAclBucket(ObjectOwnership.ObjectWriter, acl, keys);
+
+		public string SetupAclObjects(S3CannedACL bucketAcl, S3CannedACL objectAcl, params string[] keys)
+			=> SetupAclObjects(ObjectOwnership.ObjectWriter, bucketAcl, objectAcl, keys);
+
+		public string SetupAclObjects(ObjectOwnership ownership, S3CannedACL bucketAcl, S3CannedACL objectAcl, params string[] keys)
+		{
+			var client = GetClient();
+			var bucketName = CreateBucketWithAcl(client, ownership, bucketAcl);
+			foreach (var key in keys)
+				client.PutObject(bucketName, key, body: key, acl: objectAcl);
+			return bucketName;
+		}
+
+		public string SetupAclObjectsByAlt(S3CannedACL bucketAcl, S3CannedACL objectAcl, params string[] keys)
+			=> SetupAclObjectsByAlt(ObjectOwnership.ObjectWriter, bucketAcl, objectAcl, keys);
+
+		public string SetupAclObjectsByAlt(ObjectOwnership ownership, S3CannedACL bucketAcl, S3CannedACL objectAcl, params string[] keys)
+		{
+			var altClient = GetAltClient();
+			var bucketName = CreateBucketWithAcl(GetClient(), ownership, bucketAcl);
+			foreach (var key in keys)
+				altClient.PutObject(bucketName, key, body: key, acl: objectAcl);
+			return bucketName;
+		}
+
+		public S3AccessControlList CreateAltAcl(params S3Permission[] permissions)
+		{
+			var mainUserId = Config.MainUser.UserId;
+			var mainDisplayName = Config.MainUser.DisplayName;
+			var altUserId = Config.AltUser.UserId;
+
+			var grants = new List<S3Grant>()
+			{
+				new()
+				{
+					Permission = S3Permission.FULL_CONTROL,
+					Grantee = new S3Grantee() { CanonicalUser = mainUserId, DisplayName = mainDisplayName }
+				}
+			};
+			foreach (var permission in permissions)
+				grants.Add(new S3Grant() { Permission = permission, Grantee = new S3Grantee() { CanonicalUser = altUserId } });
+
+			return new S3AccessControlList()
+			{
+				Owner = new Owner() { Id = mainUserId, DisplayName = mainDisplayName },
+				Grants = grants
+			};
+		}
+
+		public string SetupBucketPermission(S3Permission permission)
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			client.PutBucketACL(bucketName, accessControlPolicy: CreateAltAcl(permission));
+			return bucketName;
+		}
+
+		public string SetupObjectPermission(string key, S3Permission permission)
+		{
+			var client = GetClient();
+			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
+			client.PutObject(bucketName, key, body: key);
+			client.PutObjectACL(bucketName, key, accessControlPolicy: CreateAltAcl(permission));
+			return bucketName;
+		}
+
+		public MultipartUploadData MultipartUpload(S3Client client, string bucketName, string key, int size, int partSize)
+		{
+			var uploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size, partSize: partSize);
+			client.CompleteMultipartUpload(bucketName, key, uploadData.UploadId, uploadData.Parts);
+			return uploadData;
+		}
+
+		public static void Delay(int milliseconds) => Thread.Sleep(milliseconds);
 
 		public static MultipartUploadData SetupMultipartCopy(S3Client client, string srcBucketName, string srcKey, string destBucketName, string destKey, int size,
 			int partSize = 5 * MainData.MB, string versionId = null, SSECustomerKey srcCustomerKey = null, SSECustomerKey destCustomerKey = null, ServerSideEncryptionMethod SSE_S3 = null)
@@ -996,56 +1447,6 @@ namespace s3tests.Test
 			return myGrants;
 		}
 
-		public string SetupBucketACLGrantUserid(S3Permission permission)
-		{
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-
-			var mainUserId = Config.MainUser.UserId;
-			var mainDispalyName = Config.MainUser.DisplayName;
-
-			var altUserId = Config.AltUser.UserId;
-			var altDispalyName = Config.AltUser.DisplayName;
-
-			var grant = new S3Grant() { Permission = permission, Grantee = new S3Grantee() { CanonicalUser = altUserId } };
-
-			var grants = AddBucketUserGrant(bucketName, grant);
-
-			client.PutBucketACL(bucketName, accessControlPolicy: grants);
-
-			var response = client.GetBucketACL(bucketName);
-
-			var getGrants = response.AccessControlList.Grants;
-
-			CheckGrants(
-			[
-				new()
-				{
-					 Permission = S3Permission.FULL_CONTROL,
-					 Grantee = new S3Grantee()
-					 {
-						 CanonicalUser = mainUserId,
-						 DisplayName = mainDispalyName,
-						 URI = null,
-						 EmailAddress = null,
-					 }
-				},
-				new()
-				{
-					 Permission = permission,
-					 Grantee = new S3Grantee()
-					 {
-						 CanonicalUser = altUserId,
-						 DisplayName = altDispalyName,
-						 URI = null,
-						 EmailAddress = null,
-					 }
-				},
-			],
-			getGrants);
-
-			return bucketName;
-		}
 
 		public static void SetupMultipleVersions(S3Client client, string bucketName, string key, int numVersions, ref List<string> versionIds, ref List<string> contents, bool checkVersion = true)
 		{
@@ -1162,23 +1563,6 @@ namespace s3tests.Test
 
 		#region Test
 
-		public static void TestACL(string bucketName, string key, S3Client client, bool pass)
-		{
-			if (pass)
-			{
-				var response = client.GetObject(bucketName, key);
-				Assert.Equal(key, response.Key);
-			}
-			else
-			{
-				var e = Assert.Throws<AggregateException>(() => client.GetObject(bucketName, key));
-				var statusCode = GetStatus(e);
-				var errorCode = GetErrorCode(e);
-
-				Assert.Equal(HttpStatusCode.Forbidden, statusCode);
-				Assert.Equal(MainData.ACCESS_DENIED, errorCode);
-			}
-		}
 
 		public AmazonS3Exception TestMetadataUnreadable(string metadata, string bucketName = null)
 		{
@@ -1210,6 +1594,15 @@ namespace s3tests.Test
 			var client = GetClient();
 			var response = client.PutBucket(bucketName);
 			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+		}
+
+		public void TestBucketCreateNamingBadLong(int length)
+		{
+			var bucketName = GetPrefix();
+			if (bucketName.Length < length) bucketName += S3Utils.RandomText(length - bucketName.Length);
+			else bucketName = bucketName.Substring(0, length - 1);
+
+			CheckBadBucketName(bucketName);
 		}
 
 		public static void TestCreateRemoveVersions(S3Client client, string bucketName, string key, int numversions, int removeStartIdx, int idxInc)
@@ -1251,6 +1644,7 @@ namespace s3tests.Test
 		public void TestEncryptionSSECustomerWrite(int fileSize)
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var client = GetClientHttps();
 			var key = "testobj";
 			var data = new string('A', fileSize);
@@ -1336,7 +1730,9 @@ namespace s3tests.Test
 			////Source Object Check
 			var sourceResponse = client.GetObject(sourceBucketName, sourceKey);
 			var sourceBody = S3Utils.GetBody(sourceResponse);
-			if (sourceObjectEncryption) Assert.Equal(ServerSideEncryptionMethod.AES256, sourceResponse.ServerSideEncryptionMethod);
+			// AWS는 2023-01부터 모든 오브젝트에 SSE-S3를 기본 적용하므로 암호화를 지정하지 않아도 AES256이 붙는다.
+			if (sourceObjectEncryption || Config.S3.IsAWS)
+				Assert.Equal(ServerSideEncryptionMethod.AES256, sourceResponse.ServerSideEncryptionMethod);
 			else Assert.Null(sourceResponse.ServerSideEncryptionMethod);
 			Assert.Equal(data, sourceBody);
 
@@ -1379,7 +1775,7 @@ namespace s3tests.Test
 			//Dest Object Check
 			var destResponse = client.GetObject(destBucketName, destKey);
 			var destBody = S3Utils.GetBody(destResponse);
-			if (destBucketEncryption || destObjectEncryption)
+			if (destBucketEncryption || destObjectEncryption || Config.S3.IsAWS)
 				Assert.Equal(ServerSideEncryptionMethod.AES256, destResponse.ServerSideEncryptionMethod);
 			else Assert.Null(destResponse.ServerSideEncryptionMethod);
 			Assert.Equal(sourceBody, destBody);
@@ -1390,6 +1786,7 @@ namespace s3tests.Test
 			var sourceKey = "SourceKey";
 			var targetKey = "TargetKey";
 			var bucketName = GetNewBucket();
+			if (source == EncryptionType.SSE_C || target == EncryptionType.SSE_C) UnblockSseC(bucketName);
 			var client = GetClientHttps();
 			var content = S3Utils.RandomTextToLong(fileSize);
 
@@ -1422,11 +1819,12 @@ namespace s3tests.Test
 			var sourceResponse = client.GetObject(bucketName, sourceKey, sseCustomerKey: source == EncryptionType.SSE_C ? sseC : null);
 			Assert.Equal(content, S3Utils.GetBody(sourceResponse));
 
-			var targetResponse = client.GetObject(bucketName, targetKey, sseCustomerKey: sseC);
+			// SSE-C가 아닌 대상에 SSE-C 키를 붙이면 AWS가 거부한다("encryption parameters are not applicable").
+			var targetResponse = client.GetObject(bucketName, targetKey, sseCustomerKey: target == EncryptionType.SSE_C ? sseC : null);
 			Assert.Equal(content, S3Utils.GetBody(targetResponse));
 		}
 
-		public string TestMultipartUploadContents(string bucketName, string key, int numParts)
+		public string DoTestMultipartUploadContents(string bucketName, string key, int numParts)
 		{
 			var payload = S3Utils.RandomTextToLong(5 * MainData.MB);
 			var client = GetClient();
@@ -1460,6 +1858,156 @@ namespace s3tests.Test
 
 		#endregion
 
+		#region Backend Utils
+
+		/// <summary>백엔드 복제시 요청에 다시 실을 수 없는 전송 계층 헤더.</summary>
+		private static readonly HashSet<string> BackendSkipHeaders = new(StringComparer.OrdinalIgnoreCase)
+		{
+			"content-length", "connection", "keep-alive", "transfer-encoding", "date", "server", "host",
+		};
+
+		/// <summary>응답 헤더를 다음 요청에 그대로 전달하기 위해 복사한다. 메타데이터(x-amz-meta-*)는 별도로 복사하므로 제외.</summary>
+		private static List<KeyValuePair<string, string>> CopyBackendHeaders(HeadersCollection headers)
+		{
+			var headerList = new List<KeyValuePair<string, string>>();
+			if (headers == null) return headerList;
+
+			foreach (var key in headers.Keys)
+			{
+				if (BackendSkipHeaders.Contains(key)) continue;
+				if (key.StartsWith("x-amz-meta-", StringComparison.OrdinalIgnoreCase)) continue;
+
+				var value = headers[key] ?? string.Empty;
+				// UTF-8 서명 에러를 배제하기 위해 소문자로 변경
+				if (key.Equals("content-type", StringComparison.OrdinalIgnoreCase)) value = value.Replace("UTF-8", "utf-8");
+				headerList.Add(new(key, value));
+			}
+			return headerList;
+		}
+
+		private static List<KeyValuePair<string, string>> CopyBackendMetadata(MetadataCollection metadata)
+		{
+			var metadataList = new List<KeyValuePair<string, string>>();
+			if (metadata == null) return metadataList;
+
+			foreach (var key in metadata.Keys) metadataList.Add(new(key, metadata[key]));
+			return metadataList;
+		}
+
+		/// <summary>Backend 클라이언트로 다운로드하여 바로 PutObject로 업로드</summary>
+		public static void BackendPutObject(S3Client client, string sourceBucketName, string sourceKey,
+			string targetBucketName, string targetKey, string versionId)
+		{
+			// Backend 클라이언트로 다운로드
+			var response = client.GetObject(sourceBucketName, sourceKey, versionId: versionId);
+			var body = GetBody(response);
+
+			// 헤더 복사 후 버전 정보 추가
+			var headerList = CopyBackendHeaders(response.Headers);
+			headerList.Add(new(BackendHeaders.IFS_VERSION_ID, versionId));
+			headerList.Add(new(BackendHeaders.KSAN_VERSION_ID, versionId));
+
+			// Backend 클라이언트로 업로드
+			client.PutObject(targetBucketName, targetKey, body: body,
+				metadataList: CopyBackendMetadata(response.Metadata), headerList: headerList);
+		}
+
+		/// <summary>Backend 클라이언트로 복사</summary>
+		public static void BackendCopyObject(S3Client client, string sourceBucketName, string sourceKey,
+			string targetBucketName, string targetKey, string sourceVersionId, string targetVersionId)
+		{
+			client.CopyObject(sourceBucketName, sourceKey, targetBucketName, targetKey, versionId: sourceVersionId,
+				headerList: [
+					new(BackendHeaders.IFS_VERSION_ID, targetVersionId),
+					new(BackendHeaders.KSAN_VERSION_ID, targetVersionId),
+				]);
+		}
+
+		/// <summary>Backend 클라이언트로 멀티파트 업로드</summary>
+		public static void BackendMultipartUpload(S3Client client, string sourceBucketName, string sourceKey,
+			string targetBucketName, string targetKey, string versionId)
+		{
+			long partsSize = 5 * MainData.MB;
+
+			// 메타 정보 가져오기
+			var metadata = client.GetObjectMetadata(sourceBucketName, sourceKey, versionId: versionId);
+
+			// Multipart 등록
+			var initResponse = client.InitiateMultipartUpload(targetBucketName, targetKey,
+				metadataList: CopyBackendMetadata(metadata.Metadata), headerList: CopyBackendHeaders(metadata.Headers));
+			var uploadId = initResponse.UploadId;
+
+			// 오브젝트의 사이즈 확인
+			var size = metadata.ContentLength;
+
+			// 업로드 시작
+			var parts = new List<PartETag>();
+			long index = 0;
+
+			while (index < size)
+			{
+				var start = index;
+				var partNumber = parts.Count + 1;
+				var end = Math.Min(start + partsSize, size) - 1;
+
+				// 업로드할 내용 가져오기
+				var s3Object = client.GetObject(sourceBucketName, sourceKey, versionId: versionId,
+					range: new ByteRange(start, end));
+				var body = GetBody(s3Object);
+
+				// 업로드 파츠
+				var partResponse = client.UploadPart(targetBucketName, targetKey, uploadId, body, partNumber);
+				parts.Add(new PartETag(partNumber, partResponse.ETag));
+
+				index += end - start + 1;
+			}
+
+			// 업로드 완료 요청(버전 정보 포함)
+			client.CompleteMultipartUpload(targetBucketName, targetKey, uploadId, parts,
+				headerList: [
+					new(BackendHeaders.IFS_VERSION_ID, versionId),
+					new(BackendHeaders.KSAN_VERSION_ID, versionId),
+				]);
+		}
+
+		/// <summary>Backend 클라이언트로 ACL 설정</summary>
+		public static void BackendPutObjectAcl(S3Client client, string sourceBucketName, string sourceKey,
+			string targetBucketName, string targetKey, string versionId)
+		{
+			// ACL 정보 가져오기
+			var acl = client.GetObjectACL(sourceBucketName, sourceKey, versionId: versionId);
+
+			// ACL 설정
+			client.PutObjectACL(targetBucketName, targetKey, accessControlPolicy: acl.AccessControlList, versionId: versionId);
+		}
+
+		/// <summary>Backend 클라이언트로 태그 설정</summary>
+		public static void BackendPutObjectTagging(S3Client client, string sourceBucketName, string sourceKey,
+			string targetBucketName, string targetKey, string versionId)
+		{
+			// 태그 정보 가져오기
+			var tagging = client.GetObjectTagging(sourceBucketName, sourceKey, versionId: versionId);
+
+			// 태그 설정
+			client.PutObjectTagging(targetBucketName, targetKey, new Tagging() { TagSet = tagging.Tagging }, versionId: versionId);
+		}
+
+		/// <summary>Backend 클라이언트로 삭제(삭제 마커의 버전 정보를 지정한다)</summary>
+		public static void BackendDeleteObject(S3Client client, string bucketName, string key, string versionId)
+		{
+			client.PutObject(bucketName, key, body: string.Empty,
+				headerList: [
+					new(BackendHeaders.DELETE_MARKER_VERSION_ID, versionId),
+					new(BackendHeaders.KSAN_DELETE_MARKER_VERSION_ID, versionId),
+				]);
+		}
+
+		/// <summary>Backend 클라이언트로 태그 삭제</summary>
+		public static void BackendDeleteObjectTagging(S3Client client, string bucketName, string key, string versionId)
+			=> client.DeleteObjectTagging(bucketName, key, versionId: versionId);
+
+		#endregion
+
 		#region Bucket Clear
 		public void BucketClear()
 		{
@@ -1487,6 +2035,86 @@ namespace s3tests.Test
 				}
 			}
 		}
+		#endregion
+
+		#region Checksum helpers
+
+		public static void ChecksumCompare(ChecksumAlgorithm algorithm, string content, PutObjectResponse response)
+		{
+			var expected = CheckSum.CalculateChecksum(algorithm, content);
+			Assert.Equal(expected, CheckSum.GetChecksum(response, algorithm));
+			Assert.Equal(ChecksumType.FULL_OBJECT, response.ChecksumType);
+		}
+
+		public static void ChecksumCompare(ChecksumAlgorithm algorithm, string content, CopyObjectResponse response)
+		{
+			var expected = CheckSum.CalculateChecksum(algorithm, content);
+			Assert.Equal(expected, CheckSum.GetChecksum(response, algorithm));
+		}
+
+		public static void ChecksumCompare(ChecksumAlgorithm algorithm, string content, UploadPartResponse response)
+		{
+			var expected = CheckSum.CalculateChecksum(algorithm, content);
+			Assert.Equal(expected, CheckSum.GetChecksum(response, algorithm));
+		}
+
+		public static void ChecksumCompare(ChecksumAlgorithm algorithm, MultipartUploadData uploadData,
+			CompleteMultipartUploadResponse response)
+		{
+			var contents = uploadData.Parts.Select(p => CheckSum.GetChecksum(p, algorithm)).ToList();
+			string expected = response.ChecksumType == ChecksumType.COMPOSITE
+				? CheckSum.CalculateChecksumByBase64(algorithm, contents)
+				: CheckSum.CombineChecksumByBase64(algorithm, uploadData.PartSize, contents);
+			Assert.Equal(expected, CheckSum.GetChecksum(response, algorithm));
+		}
+
+		public static void ChecksumCompare(ChecksumAlgorithm algorithm, string content, GetObjectAttributesResponse response)
+		{
+			var expected = CheckSum.CalculateChecksum(algorithm, content);
+			Assert.Equal(expected, CheckSum.GetChecksum(response, algorithm));
+		}
+
+		public MultipartUploadData MultipartUploadChecksum(S3Client client, string bucketName, string key,
+			ChecksumType checksumType, ChecksumAlgorithm checksum)
+		{
+			const int size = 10 * MainData.MB;
+			const int partSize = 5 * MainData.MB;
+			var uploadData = new MultipartUploadData { PartSize = partSize };
+
+			var createResponse = client.InitiateMultipartUpload(bucketName, key,
+				checksumAlgorithm: checksum, checksumType: checksumType);
+			uploadData.UploadId = createResponse.UploadId;
+
+			var parts = MakePartBodies(size, partSize);
+			foreach (var part in parts)
+			{
+				uploadData.AppendBody(part);
+				var partResponse = client.UploadPart(bucketName, key, uploadData.UploadId, part,
+					uploadData.NextPartNumber, checksumAlgorithm: checksum);
+				ChecksumCompare(checksum, part, partResponse);
+				uploadData.AddPart(checksum, partResponse);
+			}
+
+			var completeResponse = client.CompleteMultipartUpload(bucketName, key, uploadData.UploadId,
+				uploadData.Parts, checksumType: checksumType);
+			Assert.Equal(checksumType, completeResponse.ChecksumType);
+			ChecksumCompare(checksum, uploadData, completeResponse);
+			return uploadData;
+		}
+
+		private static List<string> MakePartBodies(int size, int partSize)
+		{
+			var list = new List<string>();
+			int remain = size;
+			while (remain > 0)
+			{
+				int now = remain > partSize ? partSize : remain;
+				list.Add(S3Utils.RandomTextToLong(now));
+				remain -= now;
+			}
+			return list;
+		}
+
 		#endregion
 	}
 }

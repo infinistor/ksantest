@@ -10,7 +10,6 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
-using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -22,1398 +21,617 @@ namespace s3tests.Test
 	{
 		public Grants(Xunit.Abstractions.ITestOutputHelper output) => Output = output;
 
+		private const string AllUsers = "http://acs.amazonaws.com/groups/global/AllUsers";
+		private const string AuthenticatedUsers = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers";
+
+		private S3Grant MainGrant(S3Permission permission) => new()
+		{
+			Permission = permission,
+			Grantee = new S3Grantee() { CanonicalUser = Config.MainUser.UserId, DisplayName = Config.MainUser.DisplayName }
+		};
+
+		private S3Grant AltGrant(S3Permission permission) => new()
+		{
+			Permission = permission,
+			Grantee = new S3Grantee() { CanonicalUser = Config.AltUser.UserId, DisplayName = Config.AltUser.DisplayName }
+		};
+
+		/// <summary>메인 유저의 FULL_CONTROL 권한과 AllUsers 그룹의 권한으로 구성된 acl 목록을 생성한다.</summary>
+		private List<S3Grant> PublicAcl(params S3Permission[] permissions)
+		{
+			var grants = new List<S3Grant>() { MainGrant(S3Permission.FULL_CONTROL) };
+			foreach (var permission in permissions)
+				grants.Add(new S3Grant() { Permission = permission, Grantee = new S3Grantee() { URI = AllUsers } });
+			return grants;
+		}
+
+		/// <summary>메인 유저의 FULL_CONTROL 권한과 AuthenticatedUsers 그룹의 권한으로 구성된 acl 목록을 생성한다.</summary>
+		private List<S3Grant> AuthenticatedAcl(params S3Permission[] permissions)
+		{
+			var grants = new List<S3Grant>() { MainGrant(S3Permission.FULL_CONTROL) };
+			foreach (var permission in permissions)
+				grants.Add(new S3Grant() { Permission = permission, Grantee = new S3Grantee() { URI = AuthenticatedUsers } });
+			return grants;
+		}
+
+		/// <summary>버킷에 서브유저 권한을 설정한 뒤 응답 acl이 올바른지 확인한다.</summary>
+		private void CheckBucketPermission(S3Permission permission)
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			var acl = CreateAltAcl(permission);
+
+			client.PutBucketACL(bucketName, accessControlPolicy: acl);
+
+			var response = client.GetBucketACL(bucketName);
+			CheckGrants(acl.Grants, response.AccessControlList.Grants);
+		}
+
+		/// <summary>오브젝트에 메인유저 권한을 설정한 뒤 응답 acl이 올바른지 확인한다.</summary>
+		private void CheckObjectPermission(S3Permission permission)
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			var key = "testObjectPermission" + permission;
+
+			var acl = new S3AccessControlList()
+			{
+				Owner = new Owner() { Id = Config.MainUser.UserId, DisplayName = Config.MainUser.DisplayName },
+				Grants = [MainGrant(S3Permission.FULL_CONTROL), MainGrant(permission)]
+			};
+
+			client.PutObject(bucketName, key, body: key);
+			client.PutObjectACL(bucketName, key, accessControlPolicy: acl);
+
+			var response = client.GetObjectACL(bucketName, key);
+			CheckGrants(acl.Grants, response.AccessControlList.Grants);
+		}
+
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Bucket")]
-		[Trait(MainData.Explanation, "[bucket_acl : default] " +
-									 "권한을 설정하지 않고 생성한 버킷의 default acl정보가 올바른지 확인")]
+		[Trait(MainData.Explanation, "권한을 설정하지 않고 생성한 버킷의 기본 acl 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclDefault()
 		{
-			var bucketName = GetNewBucket();
-
 			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
 			var response = client.GetBucketACL(bucketName);
-
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
-
-			if (!Config.S3.IsAWS) Assert.Equal(displayName, response.AccessControlList.Owner.DisplayName);
-			Assert.Equal(userId, response.AccessControlList.Owner.Id);
-
-			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				}
-			],
-			GetGrants);
+			CheckGrants(PublicAcl(), response.AccessControlList.Grants);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Bucket")]
-		[Trait(MainData.Explanation, "[bucket_acl : public-read] " +
-									 "권한을 public-read로 생성한 버킷의 acl정보가 올바른지 확인")]
+		[Trait(MainData.Explanation, "public-read로 생성한 버킷을 private로 변경할 경우 올바르게 적용되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_canned_during_create()
+		public void TestBucketAclChanged()
 		{
-			var bucketName = GetNewBucketName();
-
 			var client = GetClient();
-			client.PutBucket(bucketName, acl: S3CannedACL.PublicRead);
+			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicRead);
+
 			var response = client.GetBucketACL(bucketName);
-
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
-
-			var getGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
-					}
-				},
-			],
-			getGrants);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Bucket")]
-		[Trait(MainData.Explanation, "[bucket_acl : public-read => bucket_acl : private] " +
-									 "권한을 public-read로 생성한 버킷을 private로 변경할경우 올바르게 적용되는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_canned()
-		{
-			var bucketName = GetNewBucketName();
-
-			var client = GetClient();
-			client.PutBucket(bucketName, acl: S3CannedACL.PublicRead);
-			var response = client.GetBucketACL(bucketName);
-
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
-
-			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
-					}
-				},
-			],
-			GetGrants);
+			CheckGrants(PublicAcl(S3Permission.READ), response.AccessControlList.Grants);
 
 			client.PutBucketACL(bucketName, acl: S3CannedACL.Private);
+
 			response = client.GetBucketACL(bucketName);
-			GetGrants = response.AccessControlList.Grants;
-
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				}
-			],
-			GetGrants);
+			CheckGrants(PublicAcl(), response.AccessControlList.Grants);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Bucket")]
-		[Trait(MainData.Explanation, "[bucket_acl : public-read-write] " +
-									 "권한을 public-read-write로 생성한 버킷의 acl정보가 올바른지 확인")]
+		[Trait(MainData.Explanation, "private로 생성한 버킷의 acl 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_canned_publicreadwrite()
+		public void TestBucketAclPrivate()
 		{
-			var bucketName = GetNewBucketName();
-
 			var client = GetClient();
-			client.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
+			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.Private);
+
 			var response = client.GetBucketACL(bucketName);
-
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
-
-			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.WRITE,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
-					}
-				},
-			],
-			GetGrants);
+			CheckGrants(PublicAcl(), response.AccessControlList.Grants);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Bucket")]
-		[Trait(MainData.Explanation, "[bucket_acl : authenticated-read] " +
-									 "권한을 authenticated-read로 생성한 버킷의 acl정보가 올바른지 확인")]
+		[Trait(MainData.Explanation, "public-read로 생성한 버킷의 acl 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_canned_authenticatedread()
+		public void TestBucketAclPublicRead()
 		{
-			var bucketName = GetNewBucketName();
-
 			var client = GetClient();
-			client.PutBucket(bucketName, acl: S3CannedACL.AuthenticatedRead);
+			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicRead);
+
 			var response = client.GetBucketACL(bucketName);
+			CheckGrants(PublicAcl(S3Permission.READ), response.AccessControlList.Grants);
+		}
 
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Bucket")]
+		[Trait(MainData.Explanation, "public-read-write로 생성한 버킷의 acl 정보가 올바른지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketAclPublicRW()
+		{
+			var client = GetClient();
+			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
 
-			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
-					}
-				},
-			],
-			GetGrants);
+			var response = client.GetBucketACL(bucketName);
+			CheckGrants(PublicAcl(S3Permission.READ, S3Permission.WRITE), response.AccessControlList.Grants);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Bucket")]
+		[Trait(MainData.Explanation, "authenticated-read로 생성한 버킷의 acl 정보가 올바른지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketAclAuthenticatedRead()
+		{
+			var client = GetClient();
+			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.AuthenticatedRead);
+
+			var response = client.GetBucketACL(bucketName);
+			CheckGrants(AuthenticatedAcl(S3Permission.READ), response.AccessControlList.Grants);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Object")]
-		[Trait(MainData.Explanation, "[object_acl : default] " +
-									 "권한을 설정하지 않고 생성한 오브젝트의 default acl정보가 올바른지 확인")]
+		[Trait(MainData.Explanation, "권한을 설정하지 않고 생성한 오브젝트의 기본 acl 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_default()
+		public void TestObjectAclDefault()
 		{
+			var key = "testObjectAclDefault";
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
-			var key = "foo";
-			client.PutObject(bucketName, key, body: "bar");
+			client.PutObject(bucketName, key, body: key);
+
 			var response = client.GetObjectACL(bucketName, key);
-
-
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
-
-			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				}
-			],
-			GetGrants);
+			CheckGrants(PublicAcl(), response.AccessControlList.Grants);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Object")]
-		[Trait(MainData.Explanation, "[object_acl : public-read] " +
-									 "권한을 public-read로 생성한 오브젝트의 acl정보가 올바른지 확인")]
+		[Trait(MainData.Explanation, "public-read로 생성한 오브젝트를 private로 변경할 경우 올바르게 적용되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_canned_during_create()
+		public void TestObjectAclChange()
 		{
+			var key = "testObjectAclChange";
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			var key = "foo";
-			client.PutObject(bucketName, key, body: "bar", acl: S3CannedACL.PublicRead);
+			client.PutObject(bucketName, key, body: key, acl: S3CannedACL.PublicRead);
+
 			var response = client.GetObjectACL(bucketName, key);
-
-
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
-
-			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
-					}
-				},
-			],
-			GetGrants);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Object")]
-		[Trait(MainData.Explanation, "[object_acl : public-read => object_acl : private] " +
-									 "권한을 public-read로 생성한 오브젝트를 private로 변경할경우 올바르게 적용되는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_canned()
-		{
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-
-			var key = "foo";
-			client.PutObject(bucketName, key, body: "bar", acl: S3CannedACL.PublicRead);
-			var response = client.GetObjectACL(bucketName, key);
-
-
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
-
-			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
-					}
-				},
-			],
-			GetGrants);
+			CheckGrants(PublicAcl(S3Permission.READ), response.AccessControlList.Grants);
 
 			client.PutObjectACL(bucketName, key, acl: S3CannedACL.Private);
+
 			response = client.GetObjectACL(bucketName, key);
-
-			GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				},
-			],
-			GetGrants);
+			CheckGrants(PublicAcl(), response.AccessControlList.Grants);
 		}
-
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Object")]
-		[Trait(MainData.Explanation, "[object_acl : public-read-write] " +
-									 "권한을 public-read-write로 생성한 오브젝트의 acl정보가 올바른지 확인")]
+		[Trait(MainData.Explanation, "private로 생성한 오브젝트의 acl 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_canned_publicreadwrite()
+		public void TestObjectAclPrivate()
 		{
+			var key = "testObjectAclPrivate";
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			var key = "foo";
-			client.PutObject(bucketName, key, body: "bar", acl: S3CannedACL.PublicReadWrite);
+			client.PutObject(bucketName, key, body: key, acl: S3CannedACL.Private);
+
 			var response = client.GetObjectACL(bucketName, key);
-
-
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
-
-			var GetGrants = response.AccessControlList.Grants;
-
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.WRITE,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AllUsers",
-					}
-				},
-			],
-			GetGrants);
+			CheckGrants(PublicAcl(), response.AccessControlList.Grants);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Object")]
-		[Trait(MainData.Explanation, "[object_acl : public-read-write] " +
-									 "권한을 public-read-write로 생성한 오브젝트의 acl정보가 올바른지 확인")]
+		[Trait(MainData.Explanation, "public-read로 생성한 오브젝트의 acl 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_canned_authenticatedread()
+		public void TestObjectAclPublicRead()
 		{
+			var key = "testObjectAclPublicRead";
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			var key = "foo";
-			client.PutObject(bucketName, key, body: "bar", acl: S3CannedACL.AuthenticatedRead);
+			client.PutObject(bucketName, key, body: key, acl: S3CannedACL.PublicRead);
+
 			var response = client.GetObjectACL(bucketName, key);
-
-
-			var displayName = Config.MainUser.DisplayName;
-			var userId = Config.MainUser.UserId;
-
-			var GetGrants = response.AccessControlList.Grants;
-
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = userId,
-						DisplayName = displayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						URI = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
-					}
-				},
-			],
-			GetGrants);
-		}
-
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Object")]
-		[Trait(MainData.Explanation, "[bucket_acl: public-read-write]" +
-									 "[object_acl: public-read-write => object_acl : bucket-owner-read]" +
-									 "메인 유저가 권한을 public-read-write로 생성한 버켓에서 서브유저가 업로드한 오브젝트를" +
-									 "서브 유저가 권한을 bucket-owner-read로 변경하였을때 올바르게 적용되는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_canned_bucketownerread()
-		{
-			var bucketName = GetNewBucketName();
-			var MainClient = GetClient();
-			var AltClient = GetAltClient();
-			var key = "foo";
-
-			MainClient.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
-			AltClient.PutObject(bucketName, key, body: "bar");
-
-			var BucketACLResponse = MainClient.GetBucketACL(bucketName);
-			var BucketOwnerId = BucketACLResponse.AccessControlList.Owner.Id;
-			var BucketOwnerDisplayName = BucketACLResponse.AccessControlList.Owner.DisplayName;
-
-			AltClient.PutObject(bucketName, key, acl: S3CannedACL.BucketOwnerRead);
-			var response = AltClient.GetObjectACL(bucketName, key);
-
-			var AltDisplayName = Config.AltUser.DisplayName;
-			var AltUserId = Config.AltUser.UserId;
-
-			var GetGrants = response.AccessControlList.Grants;
-
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						CanonicalUser = BucketOwnerId,
-						DisplayName = BucketOwnerDisplayName,
-					}
-				},
-			],
-			GetGrants);
+			CheckGrants(PublicAcl(S3Permission.READ), response.AccessControlList.Grants);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Object")]
-		[Trait(MainData.Explanation, "[bucket_acl: public-read-write]" +
-									 "[object_acl: public-read-write => object_acl : bucket-owner-full-control]" +
-									 "메인 유저가 권한을 public-read-write로 생성한 버켓에서 서브유저가 업로드한 오브젝트를" +
-									 "서브 유저가 권한을 bucket-owner-full-control로 변경하였을때 올바르게 적용되는지 확인")]
+		[Trait(MainData.Explanation, "public-read-write로 생성한 오브젝트의 acl 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_canned_bucketownerfullcontrol()
+		public void TestObjectAclPublicRW()
 		{
-			var bucketName = GetNewBucketName();
-			var MainClient = GetClient();
-			var AltClient = GetAltClient();
-			var key = "foo";
+			var key = "testObjectAclPublicRW";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			MainClient.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
-			AltClient.PutObject(bucketName, key, body: "bar");
+			client.PutObject(bucketName, key, body: key, acl: S3CannedACL.PublicReadWrite);
 
-			var BucketACLResponse = MainClient.GetBucketACL(bucketName);
-			var BucketOwnerId = BucketACLResponse.AccessControlList.Owner.Id;
-			var BucketOwnerDisplayName = BucketACLResponse.AccessControlList.Owner.DisplayName;
-
-			AltClient.PutObject(bucketName, key, acl: S3CannedACL.BucketOwnerFullControl);
-			var response = AltClient.GetObjectACL(bucketName, key);
-
-			var AltDisplayName = Config.AltUser.DisplayName;
-			var AltUserId = Config.AltUser.UserId;
-
-			var GetGrants = response.AccessControlList.Grants;
-
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = BucketOwnerId,
-						DisplayName = BucketOwnerDisplayName,
-					}
-				},
-			],
-			GetGrants);
+			var response = client.GetObjectACL(bucketName, key);
+			CheckGrants(PublicAcl(S3Permission.READ, S3Permission.WRITE), response.AccessControlList.Grants);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Object")]
-		[Trait(MainData.Explanation, "[bucket_acl: public-read-write]" +
-			"메인 유저가 권한을 public-read-write로 생성한 버켓에서 메인유저가 생성한 오브젝트를 권한을" +
-			"서브유저에게 FULL_CONTROL, 소유주를 메인유저로 설정한뒤 서브 유저가 권한을 READ_ACP, 소유주를 메인유저로 설정하였을때" +
-			"오브젝트의 소유자가 유지되는지 확인")]
+		[Trait(MainData.Explanation, "authenticated-read로 생성한 오브젝트의 acl 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_full_control_verify_owner()
+		public void TestObjectAclAuthenticatedRead()
 		{
-			var bucketName = GetNewBucketName();
-			var MainClient = GetClient();
-			var AltClient = GetAltClient();
-			var key = "foo";
+			var key = "testObjectAclAuthenticatedRead";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			MainClient.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
-			MainClient.PutObject(bucketName, key, body: "bar");
+			client.PutObject(bucketName, key, body: key, acl: S3CannedACL.AuthenticatedRead);
 
-			var MainUserId = Config.MainUser.UserId;
-			var MainDisplayName = Config.MainUser.DisplayName;
-
-			var AltUserId = Config.AltUser.UserId;
-			var AltDisplayName = Config.AltUser.DisplayName;
-
-			var Grant = new S3AccessControlList()
-			{
-				Owner = new Owner() { DisplayName = MainDisplayName, Id = MainUserId },
-				Grants =
-				[
-					new()
-					{
-						Permission = S3Permission.FULL_CONTROL,
-						Grantee = new()
-						{
-							CanonicalUser = AltUserId,
-							DisplayName = AltDisplayName,
-						}
-					},
-				]
-			};
-
-			MainClient.PutObjectACL(bucketName, key, accessControlPolicy: Grant);
-
-			Grant = new S3AccessControlList()
-			{
-				Owner = new Owner() { DisplayName = MainDisplayName, Id = MainUserId },
-				Grants =
-				[
-					new()
-					{
-						Permission = S3Permission.READ_ACP,
-						Grantee = new()
-						{
-							CanonicalUser = AltUserId,
-							DisplayName = AltDisplayName,
-						}
-					},
-				]
-			};
-
-			AltClient.PutObjectACL(bucketName, key, accessControlPolicy: Grant);
-
-			var response = AltClient.GetObjectACL(bucketName, key);
-			Assert.Equal(MainUserId, response.AccessControlList.Owner.Id);
+			var response = client.GetObjectACL(bucketName, key);
+			CheckGrants(AuthenticatedAcl(S3Permission.READ), response.AccessControlList.Grants);
 		}
-
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "ETag")]
-		[Trait(MainData.Explanation, "[bucket_acl: public-read-write] 권한정보를 추가한 오브젝트의 eTag값이 변경되지 않는지 확인")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "[bucket_acl:public-read-write] 서브유저가 업로드한 오브젝트를 bucket-owner-read로 " +
+									 "변경했을때 올바르게 적용되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_full_control_verify_attributes()
+		public void TestObjectAclBucketOwnerRead()
 		{
-			var bucketName = GetNewBucketName();
-			var MainClient = GetClient();
-			var key = "foo";
+			var key = "testObjectAclBucketOwnerRead";
+			var mainClient = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = CreateBucketWithAcl(mainClient, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
 
-			MainClient.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
+			altClient.PutObject(bucketName, key, body: key, acl: S3CannedACL.BucketOwnerRead);
 
-			var Headers = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
-			MainClient.PutObject(bucketName, key, body: "bar", metadataList: Headers);
+			var response = altClient.GetObjectACL(bucketName, key);
+			CheckGrants([AltGrant(S3Permission.FULL_CONTROL), MainGrant(S3Permission.READ)], response.AccessControlList.Grants);
+		}
 
-			var response = MainClient.GetObject(bucketName, key);
-			var ContentType = response.Headers.ContentType;
-			var ETag = response.ETag;
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "[ownership:object-writer, bucket_acl:public-read-write] 서브유저가 업로드한 오브젝트를 " +
+									 "bucket-owner-full-control로 변경했을때 소유자가 서브유저로 유지되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketObjectWriterObjectOwnerFullControl()
+		{
+			var key = "testBucketObjectWriterObjectOwnerFullControl";
+			var mainClient = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = CreateBucketWithAcl(mainClient, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
 
-			var AltUserId = Config.AltUser.UserId;
+			altClient.PutObject(bucketName, key, body: key, acl: S3CannedACL.BucketOwnerFullControl);
 
-			var Grant = new S3Grant()
-			{
-				Permission = S3Permission.FULL_CONTROL,
-				Grantee = new()
-				{
-					CanonicalUser = AltUserId,
-					//DisplayName = AltDisplayName,
-				}
-			};
+			var response = mainClient.GetObjectACL(bucketName, key);
+			CheckGrants([AltGrant(S3Permission.FULL_CONTROL), MainGrant(S3Permission.FULL_CONTROL)], response.AccessControlList.Grants);
+		}
 
-			var Grants = AddObjectUserGrant(bucketName, key, Grant);
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "[ownership:bucket-owner-preferred, bucket_acl:public-read-write] 서브유저가 업로드한 오브젝트를 " +
+									 "bucket-owner-full-control로 변경했을때 소유자가 버킷 소유자로 설정되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketOwnerEnforcedObjectOwnerFullControl()
+		{
+			var key = "testBucketOwnerEnforcedObjectOwnerFullControl";
+			var mainClient = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = CreateBucketWithAcl(mainClient, ObjectOwnership.BucketOwnerPreferred, S3CannedACL.PublicReadWrite);
 
-			MainClient.PutObjectACL(bucketName, key, accessControlPolicy: Grants);
+			altClient.PutObject(bucketName, key, body: key, acl: S3CannedACL.BucketOwnerFullControl);
 
-			response = MainClient.GetObject(bucketName, key);
-			Assert.Equal(ContentType, response.Headers.ContentType);
-			Assert.Equal(ETag, response.ETag);
+			var response = mainClient.GetObjectACL(bucketName, key);
+			CheckGrants(PublicAcl(), response.AccessControlList.Grants);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "[bucket_acl:public-read-write] 오브젝트의 소유자를 서브유저가 변경해도 소유자가 유지되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestObjectAclOwnerNotChange()
+		{
+			var key = "testObjectAclOwnerNotChange";
+			var mainClient = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = CreateBucketWithAcl(mainClient, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
+
+			mainClient.PutObject(bucketName, key, body: key);
+
+			var acl1 = CreateAltAcl(S3Permission.FULL_CONTROL);
+			mainClient.PutObjectACL(bucketName, key, accessControlPolicy: acl1);
+
+			var acl2 = CreateAltAcl(S3Permission.READ_ACP);
+			altClient.PutObjectACL(bucketName, key, accessControlPolicy: acl2);
+
+			var response = altClient.GetObjectACL(bucketName, key);
+			CheckGrants(acl2.Grants, response.AccessControlList.Grants);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Effect")]
+		[Trait(MainData.Explanation, "[bucket_acl:public-read-write] 권한정보를 변경한 오브젝트의 ContentType과 eTag가 변경되지 않는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketAclChangeNotEffect()
+		{
+			var key = "testBucketAclChangeNotEffect";
+			var client = GetClient();
+			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
+
+			client.PutObject(bucketName, key, body: key);
+
+			var response = client.GetObject(bucketName, key);
+			var contentType = response.Headers.ContentType;
+			var eTag = response.ETag;
+
+			var acl = CreateAltAcl(S3Permission.FULL_CONTROL);
+			client.PutObjectACL(bucketName, key, accessControlPolicy: acl);
+
+			response = client.GetObject(bucketName, key);
+			Assert.Equal(contentType, response.Headers.ContentType);
+			Assert.Equal(eTag, response.ETag);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "[bucket_acl:private] " +
-									 "기본생성한 버킷에 priavte 설정이 가능한지 확인")]
+		[Trait(MainData.Explanation, "private로 생성한 버킷에 private 권한을 중복 설정할 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_canned_private_to_private()
+		public void TestBucketAclDuplicated()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.Private);
 
 			var response = client.PutBucketACL(bucketName, acl: S3CannedACL.Private);
 			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Permission")]
+		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : FULL_CONTROL")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketPermissionFullControl() => CheckBucketPermission(S3Permission.FULL_CONTROL);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL")]
+		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : WRITE")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl()
-		{
-			CheckObjectACL(S3Permission.FULL_CONTROL);
-		}
+		public void TestBucketPermissionWrite() => CheckBucketPermission(S3Permission.WRITE);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE")]
+		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : WRITE_ACP")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_write()
-		{
-			CheckObjectACL(S3Permission.WRITE);
-		}
+		public void TestBucketPermissionWriteAcp() => CheckBucketPermission(S3Permission.WRITE_ACP);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP")]
+		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : READ")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_writeacp()
-		{
-			CheckObjectACL(S3Permission.WRITE_ACP);
-		}
+		public void TestBucketPermissionRead() => CheckBucketPermission(S3Permission.READ);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ")]
+		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : READ_ACP")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_read()
-		{
-			CheckObjectACL(S3Permission.READ);
-		}
+		public void TestBucketPermissionReadAcp() => CheckBucketPermission(S3Permission.READ_ACP);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP")]
+		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : FULL_CONTROL")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_readacp()
-		{
-			CheckObjectACL(S3Permission.READ_ACP);
-		}
+		public void TestObjectPermissionFullControl() => CheckObjectPermission(S3Permission.FULL_CONTROL);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : FULL_CONTROL")]
+		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : WRITE")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_grant_userid_fullcontrol()
-		{
-			var bucketName = SetupBucketACLGrantUserid(S3Permission.FULL_CONTROL);
-
-			CheckBucketACLGrantCanRead(bucketName);
-			CheckBucketACLGrantCanReadACP(bucketName);
-			CheckBucketACLGrantCanWrite(bucketName);
-			CheckBucketACLGrantCanWriteACP(bucketName);
-
-			var client = GetClient();
-
-			var BucketACLResponse = client.GetBucketACL(bucketName);
-			var OwnerId = BucketACLResponse.AccessControlList.Owner.Id;
-			var OwnerDisplayName = BucketACLResponse.AccessControlList.Owner.DisplayName;
-
-			var MainUserId = Config.MainUser.UserId;
-			var MainDisplayName = Config.MainUser.DisplayName;
-
-			Assert.Equal(MainUserId, OwnerId);
-			if (!Config.S3.IsAWS) Assert.Equal(MainDisplayName, OwnerDisplayName);
-		}
+		public void TestObjectPermissionWrite() => CheckObjectPermission(S3Permission.WRITE);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ")]
+		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : WRITE_ACP")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_grant_userid_read()
-		{
-			var bucketName = SetupBucketACLGrantUserid(S3Permission.READ);
-
-			CheckBucketACLGrantCanRead(bucketName);
-			CheckBucketACLGrantCantReadACP(bucketName);
-			CheckBucketACLGrantCantWrite(bucketName);
-			CheckBucketACLGrantCantWriteACP(bucketName);
-		}
+		public void TestObjectPermissionWriteAcp() => CheckObjectPermission(S3Permission.WRITE_ACP);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : READ_ACP")]
+		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : READ")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_grant_userid_readacp()
-		{
-			var bucketName = SetupBucketACLGrantUserid(S3Permission.READ_ACP);
-
-			CheckBucketACLGrantCantRead(bucketName);
-			CheckBucketACLGrantCanReadACP(bucketName);
-			CheckBucketACLGrantCantWrite(bucketName);
-			CheckBucketACLGrantCantWriteACP(bucketName);
-		}
+		public void TestObjectPermissionRead() => CheckObjectPermission(S3Permission.READ);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE")]
+		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : READ_ACP")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_grant_userid_write()
-		{
-			var bucketName = SetupBucketACLGrantUserid(S3Permission.WRITE);
-
-			CheckBucketACLGrantCantRead(bucketName);
-			CheckBucketACLGrantCantReadACP(bucketName);
-			CheckBucketACLGrantCanWrite(bucketName);
-			CheckBucketACLGrantCantWriteACP(bucketName);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Permission")]
-		[Trait(MainData.Explanation, "메인 유저가 버킷에 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인 : WRITE_ACP")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_acl_grant_userid_writeacp()
-		{
-			var bucketName = SetupBucketACLGrantUserid(S3Permission.WRITE_ACP);
-
-			CheckBucketACLGrantCantRead(bucketName);
-			CheckBucketACLGrantCantReadACP(bucketName);
-			CheckBucketACLGrantCantWrite(bucketName);
-			CheckBucketACLGrantCanWriteACP(bucketName);
-		}
+		public void TestObjectPermissionReadAcp() => CheckObjectPermission(S3Permission.READ_ACP);
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "ERROR")]
-		[Trait(MainData.Explanation, "버킷에 존재하지 않는 유저를 추가하려고 하면 에러 발생 확인")]
+		[Trait(MainData.Explanation, "존재하지 않는 유저에게 권한을 부여하려고 하면 에러가 발생하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_acl_grant_nonexist_user()
+		public void TestBucketAclGrantNonExistUser()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			var BadUserId = "_foo";
+			var grant = new S3Grant() { Permission = S3Permission.FULL_CONTROL, Grantee = new S3Grantee() { CanonicalUser = "Foo" } };
+			var acl = AddBucketUserGrant(bucketName, grant);
 
-			var Grant = new S3Grant() { Permission = S3Permission.FULL_CONTROL, Grantee = new() { CanonicalUser = BadUserId } };
-
-			var Grants = AddBucketUserGrant(bucketName, Grant);
-
-			var e = Assert.Throws<AggregateException>(() => client.PutBucketACL(bucketName, accessControlPolicy: Grants));
+			var e = Assert.Throws<AggregateException>(() => client.PutBucketACL(bucketName, accessControlPolicy: acl));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
 		}
 
-		[Fact]
+		// AWS는 PutBucketAcl 본문에 <Owner>와 <AccessControlList>가 모두 있어야 하는데
+		// (없으면 MalformedACLError), .NET SDK v4는 Grants가 비면 <AccessControlList>를 통째로 생략한다.
+		// 빈 Grants를 서버에 그대로 보낼 방법이 없어 이 케이스를 검증할 수 없다(SDK 한계).
+		[Fact(Skip = ".NET SDK v4 omits empty <AccessControlList> element; AWS rejects the body as MalformedACLError")]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "ERROR")]
-		[Trait(MainData.Explanation, "버킷에 권한정보를 모두 제거했을때 오브젝트를 업데이트 하면 실패 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_acl_no_grants()
+		[Trait(MainData.Explanation, "버킷의 권한을 모두 제거한 뒤 소유자가 여전히 오브젝트를 업로드하고 권한을 복구할 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketAclNoGrants()
 		{
+			var key = "testBucketAclNoGrants";
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			var key = "foo";
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			client.PutObject(bucketName, key, body: "bar");
+			client.PutObject(bucketName, key, body: key);
 			var response = client.GetBucketACL(bucketName);
-			var OldGrants = response.AccessControlList.Grants;
-			var Policy = new S3AccessControlList()
+			var oldGrants = response.AccessControlList.Grants;
+			var policy = new S3AccessControlList()
 			{
 				Owner = response.AccessControlList.Owner,
 				Grants = []
 			};
 
-			client.PutBucketACL(bucketName, accessControlPolicy: Policy);
+			client.PutBucketACL(bucketName, accessControlPolicy: policy);
 
-			client.GetObject(bucketName, key);
+			client.PutObject(bucketName, key, body: "A");
 
-			Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: "A"));
+			var client2 = GetClient();
+			client2.GetBucketACL(bucketName);
+			client2.PutBucketACL(bucketName, acl: S3CannedACL.Private);
 
-			var Client2 = GetClient();
-			Client2.GetBucketACL(bucketName);
-			Client2.PutBucketACL(bucketName, acl: S3CannedACL.Private);
-
-			Policy.Grants = OldGrants;
-			Client2.PutBucketACL(bucketName, accessControlPolicy: Policy);
-
+			policy.Grants = oldGrants;
+			client2.PutBucketACL(bucketName, accessControlPolicy: policy);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Header")]
-		[Trait(MainData.Explanation, "오브젝트를 생성하면서 권한정보를 여러개보낼때 모두 올바르게 적용되었는지 확인")]
+		[Trait(MainData.Minor, "Grant")]
+		[Trait(MainData.Explanation, "버킷에 여러 권한을 한번에 설정했을때 모두 올바르게 적용되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_header_acl_grants()
+		public void TestBucketAclMultiGrants()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			var key = "foo_key";
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			var AltUserId = Config.AltUser.UserId;
-			var AltDisplayName = Config.AltUser.DisplayName;
+			var acl = CreateAltAcl(S3Permission.READ, S3Permission.WRITE, S3Permission.READ_ACP,
+									S3Permission.WRITE_ACP, S3Permission.FULL_CONTROL);
 
-			var Grants = GetGrantList();
+			client.PutBucketACL(bucketName, accessControlPolicy: acl);
 
-			client.PutObject(bucketName, key, body: "bar", grants: Grants);
-			var response = client.GetObjectACL(bucketName, key);
-
-			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ_ACP,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.WRITE,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.WRITE_ACP,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-			],
-			GetGrants);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Header")]
-		[Trait(MainData.Explanation, "버킷 생성하면서 권한정보를 여러개 보낼때 모두 올바르게 적용되었는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_header_acl_grants()
-		{
-			var bucketName = GetNewBucketName();
-			var client = GetClient();
-
-			var AltUserId = Config.AltUser.UserId;
-			var AltDisplayName = Config.AltUser.DisplayName;
-
-			var Headers = GetACLHeader();
-
-			client.PutBucket(bucketName, headerList: Headers);
 			var response = client.GetBucketACL(bucketName);
+			CheckGrants(acl.Grants, response.AccessControlList.Grants);
+		}
 
-			var GetGrants = response.AccessControlList.Grants;
-			CheckGrants(
-			[
-				new()
-				{
-					Permission = S3Permission.FULL_CONTROL,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.READ_ACP,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.WRITE,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-				new()
-				{
-					Permission = S3Permission.WRITE_ACP,
-					Grantee = new()
-					{
-						CanonicalUser = AltUserId,
-						DisplayName = AltDisplayName,
-					}
-				},
-			],
-			GetGrants);
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Grant")]
+		[Trait(MainData.Explanation, "오브젝트에 여러 권한을 한번에 설정했을때 모두 올바르게 적용되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestObjectAclMultiGrants()
+		{
+			var key = "testObjectAclMultiGrants";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+
+			var acl = CreateAltAcl(S3Permission.READ, S3Permission.WRITE, S3Permission.READ_ACP,
+									S3Permission.WRITE_ACP, S3Permission.FULL_CONTROL);
+
+			client.PutObject(bucketName, key, body: key);
+			client.PutObjectACL(bucketName, key, accessControlPolicy: acl);
+
+			var response = client.GetObjectACL(bucketName, key);
+			CheckGrants(acl.Grants, response.AccessControlList.Grants);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Delete")]
-		[Trait(MainData.Explanation, "버킷의 acl 설정이 누락될 경우 실패함을 확인")]
+		[Trait(MainData.Explanation, "버킷의 acl에서 소유자 정보가 누락될 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_acl_revoke_all()
+		public void TestBucketAclRevokeAll()
 		{
+			var key = "testBucketAclRevokeAll";
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 
+			client.PutObject(bucketName, key, body: key);
 			var response = client.GetBucketACL(bucketName);
 
-			Assert.Throws<AggregateException>(()
-				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = null, Grants = response.AccessControlList.Grants }));
 			Assert.Throws<AggregateException>(()
 				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = new(), Grants = response.AccessControlList.Grants }));
-			Assert.Throws<AggregateException>(()
-				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = null }));
-			Assert.Throws<AggregateException>(()
-				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = [] }));
-			Assert.Throws<AggregateException>(()
-				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = null, Grants = null }));
-			Assert.Throws<AggregateException>(()
-				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = new(), Grants = [] }));
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Delete")]
-		[Trait(MainData.Explanation, "오브젝트의 acl 설정이 누락될 경우 실패함을 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_object_acl_revoke_all()
+		[Trait(MainData.Explanation, "오브젝트의 acl에서 소유자 정보가 누락될 경우 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectAclRevokeAll()
 		{
+			var key = "testObjectAclRevokeAll";
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			var key = "foo";
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			client.PutObject(bucketName, key: key, body: "bar");
+			client.PutObject(bucketName, key, body: key);
 			var response = client.GetObjectACL(bucketName, key);
 
 			Assert.Throws<AggregateException>(()
-				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = null, Grants = response.AccessControlList.Grants }));
-			Assert.Throws<AggregateException>(()
 				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = new(), Grants = response.AccessControlList.Grants }));
-			Assert.Throws<AggregateException>(()
-				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = null }));
-			Assert.Throws<AggregateException>(()
-				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = response.AccessControlList.Owner, Grants = [] }));
-			Assert.Throws<AggregateException>(()
-				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = null, Grants = null }));
-			Assert.Throws<AggregateException>(()
-				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = new(), Grants = [] }));
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:private, object_acl:private]" +
-			"메인유저가 pirvate권한으로 생성한 버킷과 오브젝트를 서브유저가 오브젝트 목록을 보거나 다운로드 할 수 없음을 확인")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "권한 대상 유저의 아이디가 누락될 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_private_object_private()
+		public void TestBucketAclRevokeAllId()
 		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.Private, S3CannedACL.Private);
+			var key = "testBucketAclRevokeAllId";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
 
-			var AltClient = GetAltClient();
+			client.PutObject(bucketName, key, body: key);
+			var response = client.GetBucketACL(bucketName);
 
-			Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, Key1));
-			Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient.ListObjects(bucketName));
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
+			var acl = new S3AccessControlList()
+			{
+				Owner = response.AccessControlList.Owner,
+				Grants =
+				[
+					new()
+					{
+						Permission = S3Permission.FULL_CONTROL,
+						Grantee = new S3Grantee() { CanonicalUser = null, DisplayName = Config.MainUser.DisplayName }
+					}
+				]
+			};
 
-			var AltClient2 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, Key2, body: Key2));
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, NewKey, body: NewKey));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:private, object_acl:private]" +
-			"메인유저가 pirvate권한으로 생성한 버킷과 오브젝트를 서브유저가 오브젝트 목록을 보거나 다운로드 할 수 없음을 확인(ListObjects_v2)")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_private_objectv2_private()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.Private, S3CannedACL.Private);
-
-			var AltClient = GetAltClient();
-
-			Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, Key1));
-			Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient.ListObjectsV2(bucketName));
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			var AltClient2 = GetAltClient();
-
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, Key2, body: Key2));
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, NewKey, body: NewKey));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:private, object_acl:private, public-read] " +
-									 "메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 " +
-									 "public-read로 설정한 오브젝트는 다운로드 할 수 있음을 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_private_object_publicread()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.Private, S3CannedACL.PublicRead);
-			var AltClient = GetAltClient();
-			var response = AltClient.GetObject(bucketName, Key1);
-
-			var body = S3Utils.GetBody(response);
-			Assert.Equal("foocontent", body);
-
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			var AltClient2 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient2.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, Key2, body: Key2));
-
-			var AltClient3 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient3.ListObjects(bucketName));
-			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:private, object_acl:private, public-read] " +
-									 "메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만 " +
-									 "public-read로 설정한 오브젝트는 다운로드 할 수 있음을 확인(ListObjectsV2)")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_private_objectv2_publicread()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.Private, S3CannedACL.PublicRead);
-			var AltClient = GetAltClient();
-			var response = AltClient.GetObject(bucketName, Key1);
-
-			var body = S3Utils.GetBody(response);
-			Assert.Equal("foocontent", body);
-
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			var AltClient2 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient2.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, Key2, body: Key2));
-
-			var AltClient3 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient3.ListObjectsV2(bucketName));
-			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:private, object_acl:private, public-read-write]" +
-			"메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만" +
-			"public-read-write로 설정한 오브젝트는 다운로드만 할 수 있음을 확인 " +
-			"(버킷의 권한이 private이기 때문에 오브젝트의 권한이 public-read-write로 설정되어있어도 업로드불가)")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_private_object_publicreadwrite()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.Private, S3CannedACL.PublicReadWrite);
-			var AltClient = GetAltClient();
-			var response = AltClient.GetObject(bucketName, Key1);
-
-			var body = S3Utils.GetBody(response);
-			Assert.Equal("foocontent", body);
-
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			var AltClient2 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient2.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, Key2, body: Key2));
-
-			var AltClient3 = GetAltClient();
-			var ObjList = GetKeys(AltClient3.ListObjects(bucketName));
-			Assert.Equal([Key2, Key1], ObjList);
-			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:private, object_acl:private, public-read-write]" +
-			"메인유저가 pirvate권한으로 생성한 버킷과 오브젝트는 서브유저가 목록을 보거나 다운로드할 수 없지만" +
-			"public-read-write로 설정한 오브젝트는 다운로드만 할 수 있음을 확인 (ListObjectsV2)" +
-			"(버킷의 권한이 private이기 때문에 오브젝트의 권한이 public-read-write로 설정되어있어도 업로드불가)")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_private_objectv2_publicreadwrite()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.Private, S3CannedACL.PublicReadWrite);
-			var AltClient = GetAltClient();
-			var response = AltClient.GetObject(bucketName, Key1);
-
-			var body = S3Utils.GetBody(response);
-			Assert.Equal("foocontent", body);
-
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			var AltClient2 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient2.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, Key2, body: Key2));
-
-			var AltClient3 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient3.ListObjectsV2(bucketName));
-			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:public-read, object_acl:private] " +
-									 "메인유저가 public-read권한으로 생성한 버킷에서 private권한으로 생성한 오브젝트에 대해 " +
-									 "서브유저는 오브젝트 목록만 볼 수 있음을 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_publicread_object_private()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.PublicRead, S3CannedACL.Private);
-			var AltClient = GetAltClient();
-
-			Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, Key1));
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			var AltClient2 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient2.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, Key2, body: Key2));
-
-			var AltClient3 = GetAltClient();
-			var ObjList = GetKeys(AltClient3.ListObjects(bucketName));
-			Assert.Equal([Key2, Key1], ObjList);
-			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:public-read, object_acl:public-read, private] " +
-									 "메인유저가 public-read권한으로 생성한 버킷에서 private권한으로 생성한 오브젝트에 대해 " +
-									 "서브유저는 오브젝트 목록만 볼 수 있음을 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_publicread_object_publicread()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.PublicRead, S3CannedACL.PublicRead);
-			var AltClient = GetAltClient();
-
-			var response = AltClient.GetObject(bucketName, Key1);
-			var body = S3Utils.GetBody(response);
-			Assert.Equal("foocontent", body);
-
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			var AltClient2 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient2.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, Key2, body: Key2));
-
-			var AltClient3 = GetAltClient();
-			var ObjList = GetKeys(AltClient3.ListObjects(bucketName));
-			Assert.Equal([Key2, Key1], ObjList);
-			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:public-read, object_acl:public-read-wirte, private]" +
-			"메인유저가 public-read권한으로 생성한 버킷에서 public-read-write권한으로 생성한 오브젝트에 대해" +
-			"서브유저는 오브젝트 목록을 보거나 다운로드 할 수 있음을 확인" +
-			"(버킷의 권한이 public-read이기 때문에 오브젝트의 권한이 public-read-write로 설정되어있어도 수정불가)")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_publicread_object_publicreadwrite()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.PublicRead, S3CannedACL.PublicReadWrite);
-			var AltClient = GetAltClient();
-
-			var response = AltClient.GetObject(bucketName, Key1);
-			var body = S3Utils.GetBody(response);
-			Assert.Equal("foocontent", body);
-
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			var AltClient2 = GetAltClient();
-			Assert.Throws<AggregateException>(() => AltClient2.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient2.PutObject(bucketName, Key2, body: Key2));
-
-			var AltClient3 = GetAltClient();
-			var ObjList = GetKeys(AltClient3.ListObjects(bucketName));
-			Assert.Equal([Key2, Key1], ObjList);
-			Assert.Throws<AggregateException>(() => AltClient3.PutObject(bucketName, NewKey, body: NewKey));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:public-read-write, object_acl:private] " +
-			"메인유저가 public-read-write권한으로 생성한 버킷에서 private권한으로 생성한 오브젝트에 대해 " +
-			"서브유저는 오브젝트 목록조회는 가능하지만 다운로드 할 수 없음을 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_publicreadwrite_object_private()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.PublicReadWrite, S3CannedACL.Private);
-			var AltClient = GetAltClient();
-
-			Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, Key1));
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key2, body: Key2));
-
-			var ObjList = GetKeys(AltClient.ListObjects(bucketName));
-			Assert.Equal([Key2, Key1], ObjList);
-			AltClient.PutObject(bucketName, NewKey, body: NewKey);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:public-read-write, object_acl:public-read, private] " +
-									 "메인유저가 public-read-write권한으로 생성한 버킷에서 public-read권한으로 생성한 오브젝트에 대해 " +
-									 "서브유저는 오브젝트 목록을 읽거나 다운로드 가능함을 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_publicreadwrite_object_publicread()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.PublicReadWrite, S3CannedACL.PublicRead);
-			var AltClient = GetAltClient();
-
-			var response = AltClient.GetObject(bucketName, Key1);
-			var body = S3Utils.GetBody(response);
-			Assert.Equal("foocontent", body);
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key2, body: Key2));
-
-			var ObjList = GetKeys(AltClient.ListObjects(bucketName));
-			Assert.Equal([Key2, Key1], ObjList);
-			AltClient.PutObject(bucketName, NewKey, body: NewKey);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Access")]
-		[Trait(MainData.Explanation, "[bucket_acl:public-read-write, object_acl:public-read-write, private] " +
-									 "메인유저가 public-read-write권한으로 생성한 버킷에서 public-read-write권한으로 생성한 오브젝트에 대해 " +
-									 "서브유저는 오브젝트 목록을 읽거나 다운로드 가능함을 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_access_bucket_publicreadwrite_object_publicreadwrite()
-		{
-			var bucketName = SetupBucketAndObjectsACL(out string Key1, out string Key2, out string NewKey, S3CannedACL.PublicReadWrite, S3CannedACL.PublicReadWrite);
-			var AltClient = GetAltClient();
-
-			var response = AltClient.GetObject(bucketName, Key1);
-			var body = S3Utils.GetBody(response);
-			Assert.Equal(Key1, body);
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key1, body: Key1));
-
-			Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, Key2));
-			Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key2, body: Key2));
-
-			var ObjList = GetKeys(AltClient.ListObjects(bucketName));
-			Assert.Equal([Key2, Key1], ObjList);
-			AltClient.PutObject(bucketName, NewKey, body: NewKey);
+			var e = Assert.Throws<AggregateException>(() => client.PutBucketACL(bucketName, accessControlPolicy: acl));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.MALFORMED_ACL_ERROR, GetErrorCode(e));
 		}
 	}
-
 }

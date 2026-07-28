@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
@@ -19,7 +19,31 @@ namespace s3tests.Test
 {
 	public class Inventory : TestBase
 	{
-		public Inventory(Xunit.Abstractions.ITestOutputHelper Output) => this.Output = Output;
+		public Inventory(Xunit.Abstractions.ITestOutputHelper output) => Output = output;
+
+		/// <summary>인벤토리 설정 객체를 생성한다. 오류 케이스를 위해 잘못된 값을 문자열로 주입할 수 있다.</summary>
+		private static InventoryConfiguration GetInventoryConfig(string inventoryId, string targetBucketName,
+			InventoryFormat format = null, string prefix = null,
+			InventoryIncludedObjectVersions includedVersions = null, InventoryFrequency frequency = null,
+			List<InventoryOptionalField> optionalFields = null)
+		{
+			var destination = new InventoryS3BucketDestination
+			{
+				BucketName = $"arn:aws:s3:::{targetBucketName}",
+				InventoryFormat = format ?? InventoryFormat.CSV,
+			};
+			if (prefix != null) destination.Prefix = prefix;
+
+			return new InventoryConfiguration
+			{
+				Destination = new InventoryDestination { S3BucketDestination = destination },
+				InventoryId = inventoryId,
+				IncludedObjectVersions = includedVersions ?? InventoryIncludedObjectVersions.Current,
+				IsEnabled = true,
+				Schedule = new InventorySchedule { Frequency = frequency ?? InventoryFrequency.Daily },
+				InventoryOptionalFields = optionalFields,
+			};
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Inventory")]
@@ -28,11 +52,11 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestListBucketInventory()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
 
-			var Response = Client.ListBucketInventoryConfigurations(bucketName);
-			Assert.Empty(Response.InventoryConfigurationList);
+			var response = client.ListBucketInventoryConfigurations(bucketName);
+			Assert.Empty(response.InventoryConfigurationList);
 		}
 
 		[Fact]
@@ -42,27 +66,12 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutBucketInventory()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{bucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-			};
-
-			Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration);
+			client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName));
 		}
 
 		[Fact]
@@ -70,32 +79,17 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Check")]
 		[Trait(MainData.Explanation, "버킷에 인벤토리가 설정되었는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_check_bucket_inventory()
+		public void TestCheckBucketInventory()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{bucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-			};
+			client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName));
 
-			Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration);
-
-			var Response = Client.ListBucketInventoryConfigurations(bucketName);
-			Assert.Single(Response.InventoryConfigurationList);
+			var response = client.ListBucketInventoryConfigurations(bucketName);
+			Assert.Single(response.InventoryConfigurationList);
 		}
 
 		[Fact]
@@ -103,32 +97,17 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Get")]
 		[Trait(MainData.Explanation, "버킷에 설정된 인벤토리 설정을 가져올 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_get_bucket_inventory()
+		public void TestGetBucketInventory()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{bucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-			};
+			client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName, prefix: "a/"));
 
-			Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration);
-
-			var Response = Client.GetBucketInventoryConfiguration(bucketName, InventoryId);
-			Assert.Equal(InventoryId, Response.InventoryConfiguration.InventoryId);
+			var response = client.GetBucketInventoryConfiguration(bucketName, inventoryId);
+			Assert.Equal(inventoryId, response.InventoryConfiguration.InventoryId);
 		}
 
 		[Fact]
@@ -136,64 +115,48 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delete")]
 		[Trait(MainData.Explanation, "버킷에 설정된 인벤토리 설정을 삭제할 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_delete_bucket_inventory()
+		public void TestDeleteBucketInventory()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
+			client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName));
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{bucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-			};
+			client.DeleteBucketInventoryConfiguration(bucketName, inventoryId);
 
-			Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration);
-
-			Client.DeleteBucketInventoryConfiguration(bucketName, InventoryId);
-
-			var Response = Client.ListBucketInventoryConfigurations(bucketName);
-			Assert.Empty(Response.InventoryConfigurationList);
+			var response = client.ListBucketInventoryConfigurations(bucketName);
+			Assert.Empty(response.InventoryConfigurationList);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Inventory")]
 		[Trait(MainData.Minor, "Error")]
-		[Trait(MainData.Explanation, "존재하지 않은 인벤토리를 가져오려고 할 경우 실패하는지 확인")]
+		[Trait(MainData.Explanation, "존재하지 않는 인벤토리를 가져오려고 할 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_get_bucket_inventory_not_exist()
+		public void TestGetBucketInventoryNotExist()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
-			var Response = Client.GetBucketInventoryConfiguration(bucketName, InventoryId);
-			Assert.Equal(HttpStatusCode.NotFound, Response.HttpStatusCode);
+			CheckErrorResponse(HttpStatusCode.NotFound,
+				() => client.GetBucketInventoryConfiguration(bucketName, inventoryId), MainData.NO_SUCH_CONFIGURATION);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Inventory")]
 		[Trait(MainData.Minor, "Error")]
-		[Trait(MainData.Explanation, "존재하지 않은 인벤토리를 삭제하려고 할 경우 실패하는지 확인")]
+		[Trait(MainData.Explanation, "존재하지 않는 인벤토리를 삭제하려고 할 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_delete_bucket_inventory_not_exist()
+		public void TestDeleteBucketInventoryNotExist()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
-			var e = Assert.Throws<AggregateException>(() => Client.DeleteBucketInventoryConfiguration(bucketName, InventoryId));
+			var e = Assert.Throws<AggregateException>(() => client.DeleteBucketInventoryConfiguration(bucketName, inventoryId));
 			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
 			Assert.Equal(MainData.NO_SUCH_CONFIGURATION, GetErrorCode(e));
 		}
@@ -203,30 +166,15 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "존재하지 않는 버킷에 인벤토리 설정을 추가하려고 할 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_put_bucket_inventory_not_exist()
+		public void TestPutBucketInventoryNotExist()
 		{
-			var Client = GetClient();
+			var client = GetClient();
 			var bucketName = GetNewBucketName();
-			var TargetBucketName = GetNewBucketName();
-			var InventoryId = "my-inventory";
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{TargetBucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-			};
-
-			var e = Assert.Throws<AggregateException>(() => Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration));
+			var e = Assert.Throws<AggregateException>(()
+				=> client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName)));
 			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
 			Assert.Equal(MainData.NO_SUCH_BUCKET, GetErrorCode(e));
 		}
@@ -235,62 +183,51 @@ namespace s3tests.Test
 		[Trait(MainData.Major, "Inventory")]
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "인벤토리 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인")]
-		public void test_put_bucket_inventory_id_not_exist()
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutBucketInventoryIdNotExist()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucketName();
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{TargetBucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = "",
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-			};
-
-			var e = Assert.Throws<AggregateException>(() => Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration));
-			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
-			Assert.Equal(MainData.INVALID_CONFIGURATION_ID, GetErrorCode(e));
+			// AWS 대상에서는 SDK v4가 빈 InventoryId를 클라이언트 측에서 먼저 거부해 요청이 나가지 않는다.
+			CheckRejected(HttpStatusCode.BadRequest,
+				() => client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig("", targetBucketName)), MainData.MALFORMED_XML);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Inventory")]
 		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "동일한 아이디로 인벤토리를 중복 설정할 경우 하나로 유지되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutBucketInventoryIdDuplicate()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
+
+			client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName));
+			client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName));
+
+			var response = client.ListBucketInventoryConfigurations(bucketName);
+			Assert.Single(response.InventoryConfigurationList);
+		}
+
+		[Fact(Skip = "aws에서 타깃 버킷이 존재하는지 확인하지 않음")]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "타깃 버킷이 존재하지 않을 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_put_bucket_inventory_target_not_exist()
+		public void TestPutBucketInventoryTargetNotExist()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucketName();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucketName();
+			var inventoryId = "my-inventory";
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{TargetBucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-			};
-
-			var e = Assert.Throws<AggregateException>(() => Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration));
+			var e = Assert.Throws<AggregateException>(()
+				=> client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName)));
 			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
 			Assert.Equal(MainData.NO_SUCH_BUCKET, GetErrorCode(e));
 		}
@@ -300,30 +237,15 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "지원하지 않는 파일 형식의 인벤토리를 설정하려고 할 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_put_bucket_inventory_invalid_format()
+		public void TestPutBucketInventoryInvalidFormat()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{TargetBucketName}",
-						InventoryFormat = "JSON",
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-			};
-
-			var e = Assert.Throws<AggregateException>(() => Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration));
+			var e = Assert.Throws<AggregateException>(()
+				=> client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName, format: "JSON")));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.MALFORMED_XML, GetErrorCode(e));
 		}
@@ -333,63 +255,36 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "올바르지 않은 주기의 인벤토리를 설정하려고 할 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_put_bucket_inventory_invalid_frequency()
+		public void TestPutBucketInventoryInvalidFrequency()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{TargetBucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = "Hourly" },
-			};
-
-			var e = Assert.Throws<AggregateException>(() => Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration));
+			var e = Assert.Throws<AggregateException>(()
+				=> client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName, frequency: "Hourly")));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.MALFORMED_XML, GetErrorCode(e));
 		}
 
-		[Fact]
+		// .NET SDK v4는 IncludedObjectVersions를 ConstantClass로 다루며 마셜링 시 대소문자를 정규화한다
+		// ("CUrrENT" -> "Current"). 잘못된 대소문자가 서버에 전달되지 않아 이 검증을 수행할 수 없다.
+		// (java SDK v2는 문자열을 그대로 보내 AWS가 400 MalformedXML을 반환한다)
+		[Fact(Skip = ".NET SDK v4 marshaller normalizes IncludedObjectVersions casing; invalid value never reaches S3")]
 		[Trait(MainData.Major, "Inventory")]
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "대소문자를 잘못 입력하여 인벤토리를 설정하려고 할 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_put_bucket_inventory_invalid_case()
+		public void TestPutBucketInventoryInvalidCase()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{TargetBucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = "CURRENT",
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = "DAILY" },
-			};
-
-			var e = Assert.Throws<AggregateException>(() => Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration));
+			var e = Assert.Throws<AggregateException>(()
+				=> client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName, includedVersions: "CUrrENT")));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.MALFORMED_XML, GetErrorCode(e));
 		}
@@ -398,104 +293,62 @@ namespace s3tests.Test
 		[Trait(MainData.Major, "Inventory")]
 		[Trait(MainData.Minor, "Put")]
 		[Trait(MainData.Explanation, "접두어를 포함한 인벤토리 설정이 올바르게 적용되는지 확인")]
-		public void test_put_bucket_inventory_prefix()
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutBucketInventoryPrefix()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
-			var Prefix = "my-prefix";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
+			var inventoryPrefix = "a/";
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{TargetBucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-						Prefix = Prefix,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-			};
+			client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName, prefix: inventoryPrefix));
 
-			Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration);
-
-			var Response = Client.GetBucketInventoryConfiguration(bucketName, InventoryId);
-			Assert.Equal(InventoryId, Response.InventoryConfiguration.InventoryId);
-			Assert.Equal(Prefix, Response.InventoryConfiguration.Destination.S3BucketDestination.Prefix);
+			var response = client.GetBucketInventoryConfiguration(bucketName, inventoryId);
+			Assert.Equal(inventoryId, response.InventoryConfiguration.InventoryId);
+			Assert.Equal(inventoryPrefix, response.InventoryConfiguration.Destination.S3BucketDestination.Prefix);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Inventory")]
 		[Trait(MainData.Minor, "Put")]
 		[Trait(MainData.Explanation, "옵션을 포함한 인벤토리 설정이 올바르게 적용되는지 확인")]
-		public void test_put_bucket_inventory_optional()
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutBucketInventoryOptional()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
-			var InventoryOptionalFields = new List<InventoryOptionalField> { InventoryOptionalField.Size, InventoryOptionalField.LastModifiedDate };
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
+			var inventoryPrefix = "a/";
+			var inventoryOptionalFields = new List<InventoryOptionalField> { InventoryOptionalField.Size, InventoryOptionalField.LastModifiedDate };
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{TargetBucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-				InventoryOptionalFields = InventoryOptionalFields,
-			};
+			client.PutBucketInventoryConfiguration(bucketName,
+				GetInventoryConfig(inventoryId, targetBucketName, prefix: inventoryPrefix, optionalFields: inventoryOptionalFields));
 
-			Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration);
-
-			var Response = Client.GetBucketInventoryConfiguration(bucketName, InventoryId);
-			Assert.Equal(InventoryId, Response.InventoryConfiguration.InventoryId);
-			Assert.Equal(InventoryOptionalFields, Response.InventoryConfiguration.InventoryOptionalFields);
+			var response = client.GetBucketInventoryConfiguration(bucketName, inventoryId);
+			Assert.Equal(inventoryId, response.InventoryConfiguration.InventoryId);
+			Assert.Equal(inventoryPrefix, response.InventoryConfiguration.Destination.S3BucketDestination.Prefix);
+			Assert.Equal(inventoryOptionalFields, response.InventoryConfiguration.InventoryOptionalFields);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Inventory")]
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "옵션을 잘못 입력하여 인벤토리를 설정하려고 할 경우 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutBucketInventoryInvalidOptional()
 		{
-			var Client = GetClient();
-			var bucketName = GetNewBucket();
-			var TargetBucketName = GetNewBucket();
-			var InventoryId = "my-inventory";
-			var InventoryOptionalFields = new List<InventoryOptionalField> { "SIZE", "LAST_MODIFIED_DATE" };
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
+			var inventoryPrefix = "a/";
+			var inventoryOptionalFields = new List<InventoryOptionalField> { "SIZE", "--" };
 
-			var InventoryConfiguration = new InventoryConfiguration
-			{
-				Destination = new InventoryDestination
-				{
-					S3BucketDestination = new InventoryS3BucketDestination
-					{
-						BucketName = $"arn:aws:s3:::{TargetBucketName}",
-						InventoryFormat = InventoryFormat.CSV,
-					}
-				},
-				InventoryId = InventoryId,
-				IncludedObjectVersions = InventoryIncludedObjectVersions.Current,
-				IsEnabled = true,
-				Schedule = new InventorySchedule { Frequency = InventoryFrequency.Daily },
-				InventoryOptionalFields = InventoryOptionalFields,
-			};
-
-			var e = Assert.Throws<AggregateException>(() => Client.PutBucketInventoryConfiguration(bucketName, InventoryConfiguration));
+			var e = Assert.Throws<AggregateException>(()
+				=> client.PutBucketInventoryConfiguration(bucketName,
+					GetInventoryConfig(inventoryId, targetBucketName, prefix: inventoryPrefix, optionalFields: inventoryOptionalFields)));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.MALFORMED_XML, GetErrorCode(e));
 		}

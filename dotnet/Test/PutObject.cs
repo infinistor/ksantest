@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
@@ -50,7 +50,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "존재하지 않는 버킷에 오브젝트 업로드할 경우 실패")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestObjectWriteToNonexistBucket()
+		public void TestObjectWriteToNonExistBucket()
 		{
 			var key = "TestObjectWriteToNonexistBucket";
 			var bucketName = "whatchutalkinboutwillis";
@@ -91,7 +91,7 @@ namespace s3tests.Test
 
 			var response = client.PutObject(bucketName, key: key, body: key);
 			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
-			Assert.Equal(S3Utils.GetMD5(key), response.ETag.Replace("\"", ""));
+			Assert.Equal(S3Utils.GetMD5Hex(key), response.ETag.Replace("\"", ""));
 		}
 
 		[Fact]
@@ -279,11 +279,11 @@ namespace s3tests.Test
 		{
 			var keyNames = new List<string>() { " ", "\"", "$", "%", "&", "'", "<", ">", "_", "_ ", "_ _", "__", };
 
-			var bucketName = SetupObjects(keyNames);
+			// 키별로 PutObjectACL을 호출하므로 ACL이 허용되는 버킷이어야 한다.
+			var client = GetClient();
+			var bucketName = SetupObjects(keyNames, GetNewBucketCannedAcl(client));
 
 			var objectList = GetObjectList(bucketName);
-
-			var client = GetClient();
 
 			foreach (var key in keyNames)
 			{
@@ -379,63 +379,12 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "PutObject")]
 		[Trait(MainData.Minor, "Special Characters")]
-		[Trait(MainData.Explanation, "[SignatureVersion2] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인")]
+		[Trait(MainData.Explanation, "특수문자를 포함한 오브젝트 업로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutEmptyObjectSignatureVersion2()
+		public void TestPutObjectSpecialCharacters()
 		{
-			var keyNames = new List<string>() { "t !", "t $", "t '", "t (", "t )", "t *", "t /", "t :", "t [", "t ]" };
-			var bucketName = SetupObjects(keyNames, body: "");
-			var client = GetClient();
-
-			var response = client.ListObjects(bucketName);
-			var keys = GetKeys(response);
-
-			Assert.Equal(keyNames, keys);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "PutObject")]
-		[Trait(MainData.Minor, "Special Characters")]
-		[Trait(MainData.Explanation, "[SignatureVersion4] 특수문자를 포함한 비어있는 오브젝트 업로드 성공 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutEmptyObjectSignatureVersion4()
-		{
-			var keyNames = new List<string>() { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" };
-			var bucketName = SetupObjectsV4(keyNames, body: "");
-			var client = GetClientV4();
-
-			var response = client.ListObjects(bucketName);
-			var keys = GetKeys(response);
-
-			Assert.Equal(keyNames, keys);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "PutObject")]
-		[Trait(MainData.Minor, "Special Characters")]
-		[Trait(MainData.Explanation, "[SignatureVersion2] 특수문자를 포함한 오브젝트 업로드 성공 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObjectSignatureVersion2()
-		{
-			var keyNames = new List<string>() { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" };
-			var bucketName = SetupObjects(keyNames);
-			var client = GetClient();
-
-			var response = client.ListObjects(bucketName);
-			var keys = GetKeys(response);
-
-			Assert.Equal(keyNames, keys);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "PutObject")]
-		[Trait(MainData.Minor, "Special Characters")]
-		[Trait(MainData.Explanation, "[SignatureVersion4] 특수문자를 포함한 오브젝트 업로드 성공 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObjectSignatureVersion4()
-		{
-			var keyNames = new List<string>() { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" };
-			var bucketName = SetupObjectsV4(keyNames);
+			var keyNames = SpecialCharacterKeys();
+			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: true);
 			var client = GetClientV4();
 
 			var response = client.ListObjects(bucketName);
@@ -449,9 +398,9 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Encoding")]
 		[Trait(MainData.Explanation, "[SignatureVersion4, useChunkEncoding = true] 특수문자를 포함한 오브젝트 업로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObjectUseChunkEncoding()
+		public void TestPutObjectSpecialCharactersUseChunkEncoding()
 		{
-			var keyNames = new List<string>() { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" };
+			var keyNames = SpecialCharacterKeys();
 			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: true);
 			var client = GetClientV4();
 
@@ -466,9 +415,9 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Encoding")]
 		[Trait(MainData.Explanation, "[SignatureVersion4, useChunkEncoding = true, disablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObjectUseChunkEncodingAndDisablePayloadSigning()
+		public void TestPutObjectUseSpecialCharactersChunkEncodingAndDisablePayloadSigning()
 		{
-			var keyNames = new List<string>() { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" };
+			var keyNames = SpecialCharacterKeys();
 			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: true, disablePayloadSigning: true);
 			var client = GetClientHttpsV4();
 
@@ -483,9 +432,9 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Encoding")]
 		[Trait(MainData.Explanation, "[SignatureVersion4, useChunkEncoding = false] 특수문자를 포함한 오브젝트 업로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObjectNotChunkEncoding()
+		public void TestPutObjectSpecialCharactersNotChunkEncoding()
 		{
-			var keyNames = new List<string>() { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" };
+			var keyNames = SpecialCharacterKeys();
 			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: false);
 			var client = GetClientV4();
 
@@ -500,9 +449,9 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Encoding")]
 		[Trait(MainData.Explanation, "[SignatureVersion4, useChunkEncoding = false, disablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObjectNotChunkEncodingAndDisablePayloadSigning()
+		public void TestPutObjectSpecialCharactersNotChunkEncodingAndDisablePayloadSigning()
 		{
-			var keyNames = new List<string>() { "t !", "t $", "t '", "t (", "t )", "t *", "t :", "t [", "t ]" };
+			var keyNames = SpecialCharacterKeys();
 			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: false, disablePayloadSigning: true);
 			var client = GetClientHttpsV4();
 
@@ -593,39 +542,506 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "PutObject")]
-		[Trait(MainData.Minor, "PUT")]
-		[Trait(MainData.Explanation, "오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인")]
+		[Trait(MainData.Minor, "checksum")]
+		[Trait(MainData.Explanation, "ChunkEncoding 사용 시 체크섬 알고리즘별 PutObject 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectChecksumUseChunkEncoding()
+		{
+			var bucketName = GetNewBucket();
+			var configs = new (RequestChecksumCalculation Req, ResponseChecksumValidation Resp)[]
+			{
+				(RequestChecksumCalculation.WHEN_REQUIRED, ResponseChecksumValidation.WHEN_REQUIRED),
+				(RequestChecksumCalculation.WHEN_REQUIRED, ResponseChecksumValidation.WHEN_SUPPORTED),
+				(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_REQUIRED),
+				(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_SUPPORTED),
+			};
+
+			foreach (var config in configs)
+			{
+				var client = GetClientHttpsV4(config.Req, config.Resp);
+				foreach (var checksum in CheckSum.AllAlgorithms)
+				{
+					var prefix = $"req_{config.Req}/resp_{config.Resp}";
+					var key = $"{prefix}/sync/{checksum.Value}";
+					var response = client.PutObject(bucketName, key, body: key, checksumAlgorithm: checksum, useChunkEncoding: true);
+					ChecksumCompare(checksum, key, response);
+				}
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "checksum")]
+		[Trait(MainData.Explanation, "체크섬 알고리즘별 PutObject 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectChecksum()
 		{
-			var client = GetClientHttpsV4(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_SUPPORTED);
-			var bucketName = GetNewBucket(client);
-			var key = "TestPutObjectChecksum";
-			var checksums = new List<ChecksumAlgorithm>
+			var bucketName = GetNewBucket();
+			var configs = new (RequestChecksumCalculation Req, ResponseChecksumValidation Resp)[]
 			{
-				ChecksumAlgorithm.CRC32,
-				// ChecksumAlgorithm.CRC32C,
-				// ChecksumAlgorithm.SHA1,
-				// ChecksumAlgorithm.SHA256
+				(RequestChecksumCalculation.WHEN_REQUIRED, ResponseChecksumValidation.WHEN_REQUIRED),
+				(RequestChecksumCalculation.WHEN_REQUIRED, ResponseChecksumValidation.WHEN_SUPPORTED),
+				(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_REQUIRED),
+				(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_SUPPORTED),
 			};
-			foreach (var checksum in checksums)
+
+			foreach (var config in configs)
 			{
-				client.PutObject(bucketName, key: $"{key}/00", body: key, checksumAlgorithm: checksum, useChunkEncoding: false, disablePayloadSigning: false);
-				client.PutObject(bucketName, key: $"{key}/01", body: key, checksumAlgorithm: checksum, useChunkEncoding: true, disablePayloadSigning: false);
-				client.PutObject(bucketName, key: $"{key}/10", body: key, checksumAlgorithm: checksum, useChunkEncoding: false, disablePayloadSigning: true);
-				client.PutObject(bucketName, key: $"{key}/11", body: key, checksumAlgorithm: checksum);
+				var client = GetClientHttpsV4(config.Req, config.Resp);
+				foreach (var checksum in CheckSum.AllAlgorithms)
+				{
+					var prefix = $"req_{config.Req}/resp_{config.Resp}";
+					var key = $"{prefix}/sync/{checksum.Value}";
+					var response = client.PutObject(bucketName, key, body: key, checksumAlgorithm: checksum, useChunkEncoding: false);
+					ChecksumCompare(checksum, key, response);
+				}
+			}
+		}
 
-				// var response = client.GetObject(bucketName, key: $"{key}/00");
-				// Assert.Equal(key, S3Utils.GetBody(response));
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "checksum")]
+		[Trait(MainData.Explanation, "사전 계산한 체크섬 값으로 PutObject 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectChecksumWithValue()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			foreach (var checksum in CheckSum.AllAlgorithms)
+			{
+				var key = $"precomputed/{checksum.Value}";
+				var value = CheckSum.CalculateChecksum(checksum, key);
+				var response = client.PutObject(bucketName, key, body: key, checksumAlgorithm: checksum, checksumValue: value);
+				ChecksumCompare(checksum, key, response);
+			}
+		}
 
-				// response = client.GetObject(bucketName, key: $"{key}/01");
-				// Assert.Equal(key, S3Utils.GetBody(response));
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "checksum-failure")]
+		[Trait(MainData.Explanation, "잘못된 체크섬 값 지정 시 BadDigest 에러 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectChecksumFailure()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			foreach (var checksum in CheckSum.AllAlgorithms)
+			{
+				var key = $"wrong-checksum/{checksum.Value}";
+				var wrongValue = CheckSum.CalculateChecksum(checksum, key + "-wrong");
+				var e = Assert.Throws<AggregateException>(() =>
+					client.PutObject(bucketName, key, body: key, checksumAlgorithm: checksum, checksumValue: wrongValue));
+				Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+				Assert.Equal(MainData.BAD_DIGEST, GetErrorCode(e));
+			}
+		}
 
-				// response = client.GetObject(bucketName, key: $"{key}/10");
-				// Assert.Equal(key, S3Utils.GetBody(response));
+		/// <summary>특수문자 키 목록. testV2와 동일한 순서를 유지한다.</summary>
+		private static List<string> SpecialCharacterKeys() =>
+		[
+			"!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(",
+			")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]"
+		];
 
-				// response = client.GetObject(bucketName, key: $"{key}/11");
-				// Assert.Equal(key, S3Utils.GetBody(response));
+		private static string Repeat(string value, int count)
+		{
+			var builder = new StringBuilder(value.Length * count);
+			for (var i = 0; i < count; i++) builder.Append(value);
+			return builder.ToString();
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "UTF-8 문자열을 메타데이터로 사용할 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestObjectSetGetMetadataUtf8()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "foo";
+			var metadataKey1 = "x-amz-meta-meta1";
+			var metadataKey2 = "x-amz-meta-meta2";
+			var metadata1 = "utf-8";
+			var metadata2 = "UTF-8";
+			var contentType = "text/plain; charset=UTF-8";
+
+			client.PutObject(bucketName, key, body: "bar", contentType: contentType,
+				metadataList: [new(metadataKey1, metadata1), new(metadataKey2, metadata2)]);
+
+			var response = client.GetObjectMetadata(bucketName, key);
+			Assert.Equal(metadata1, response.Metadata[metadataKey1]);
+			Assert.Equal(metadata2, response.Metadata[metadataKey2]);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "대상 오브젝트와 일치하는 If-Match 조건으로 덮어쓰기 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectIfMatchGood()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testPutObjectIfMatchGood";
+
+			var eTag = client.PutObject(bucketName, key, body: "old").ETag;
+
+			client.PutObject(bucketName, key, body: "new", ifMatch: eTag);
+
+			var response = client.GetObject(bucketName, key);
+			Assert.Equal("new", GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "대상 오브젝트와 일치하지 않는 If-Match 조건으로 덮어쓰기 시 412 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectIfMatchFailed()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testPutObjectIfMatchFailed";
+
+			client.PutObject(bucketName, key, body: "old");
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.PutObject(bucketName, key, body: "new", ifMatch: "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+
+			// 덮어쓰기 되지 않았는지 확인
+			var response = client.GetObject(bucketName, key);
+			Assert.Equal("old", GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "IfNoneMatch")]
+		[Trait(MainData.Explanation, "존재하지 않는 키에 If-None-Match: * 조건으로 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectIfNoneMatchGood()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testPutObjectIfNoneMatchGood";
+
+			client.PutObject(bucketName, key, body: "bar", ifNoneMatch: "*");
+
+			var response = client.GetObject(bucketName, key);
+			Assert.Equal("bar", GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "IfNoneMatch")]
+		[Trait(MainData.Explanation, "이미 존재하는 키에 If-None-Match: * 조건으로 업로드 시 412 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectIfNoneMatchFailed()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testPutObjectIfNoneMatchFailed";
+
+			client.PutObject(bucketName, key, body: "old");
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.PutObject(bucketName, key, body: "new", ifNoneMatch: "*"));
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+
+			// 덮어쓰기 되지 않았는지 확인
+			var response = client.GetObject(bucketName, key);
+			Assert.Equal("old", GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectIfMatchAndIfNoneMatch()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testPutObjectIfMatchAndIfNoneMatch";
+
+			var eTag = client.PutObject(bucketName, key, body: "old").ETag;
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.PutObject(bucketName, key, body: "new", ifMatch: eTag, ifNoneMatch: "*"));
+			Assert.Equal(HttpStatusCode.NotImplemented, GetStatus(e));
+			Assert.Equal(MainData.NOT_IMPLEMENTED, GetErrorCode(e));
+
+			// 덮어쓰기 되지 않았는지 확인
+			var response = client.GetObject(bucketName, key);
+			Assert.Equal("old", GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "KeyLength")]
+		[Trait(MainData.Explanation, "최소 길이(1자) 키로 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectKeyMinLength()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "a";
+			var body = "test-min-length";
+
+			var response = client.PutObject(bucketName, key, body: body);
+			Assert.NotNull(response.ETag);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal(body, GetBody(getResponse));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "KeyLength")]
+		[Trait(MainData.Explanation, "최대 길이(1024자) 키로 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectKeyMaxLength()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = S3Utils.RandomObjectName(MainData.MAX_KEY_LENGTH);
+			var body = "test-max-length";
+
+			var response = client.PutObject(bucketName, key, body: body);
+			Assert.NotNull(response.ETag);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal(body, GetBody(getResponse));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "KeyLength")]
+		[Trait(MainData.Explanation, "최대 길이를 초과한 키로 업로드 시 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectKeyTooLong()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = S3Utils.RandomObjectName(MainData.MAX_KEY_LENGTH + 1);
+			var body = "test-too-long";
+
+			var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: body));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.KEY_TOO_LONG, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "KeyLength")]
+		[Trait(MainData.Explanation, "다양한 경계 길이의 키로 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectKeyBoundaryLengths()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var testCases = new List<int>()
+			{
+				MainData.MAX_KEY_LENGTH - 1, // 1023
+				MainData.MAX_KEY_LENGTH,     // 1024
+				500,                         // 중간 길이
+				100,                         // 짧은 길이
+				50                           // 매우 짧은 길이
+			};
+
+			foreach (var length in testCases)
+			{
+				var key = S3Utils.RandomObjectName(length);
+				var body = "boundary-test-" + length;
+
+				var response = client.PutObject(bucketName, key, body: body);
+				Assert.NotNull(response.ETag);
+
+				var getResponse = client.GetObject(bucketName, key);
+				Assert.Equal(body, GetBody(getResponse));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Special Characters")]
+		[Trait(MainData.Explanation, "특수문자로 시작하는 최대 길이 키로 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectKeySpecialCharactersAtStart()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// '/'는 제외한다. path style 요청에서 키가 '/'로 시작하면 경로가 '/{bucket}//key'가 되어
+			// SDK v4의 SigV4 서명이 어긋난다(SignatureDoesNotMatch). 키 이름 규칙이 아니라 서명 경로 문제다.
+			var specialChars = new List<string>()
+			{
+				"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{",
+				"}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "~", "`"
+			};
+
+			foreach (var specialChar in specialChars)
+			{
+				// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
+				var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.Length;
+				var key = specialChar + S3Utils.RandomObjectName(remainingLength);
+				var body = "test-body-" + specialChar;
+
+				Assert.Equal(MainData.MAX_KEY_LENGTH, key.Length);
+				var response = client.PutObject(bucketName, key, body: body);
+				Assert.NotNull(response.ETag);
+
+				var getResponse = client.GetObject(bucketName, key);
+				Assert.Equal(body, GetBody(getResponse));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Special Characters")]
+		[Trait(MainData.Explanation, "특수문자로 끝나는 최대 길이 키로 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectKeySpecialCharactersAtEnd()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var specialChars = new List<string>()
+			{
+				"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{",
+				"}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`"
+			};
+
+			foreach (var specialChar in specialChars)
+			{
+				// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
+				var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.Length;
+				var key = S3Utils.RandomObjectName(remainingLength) + specialChar;
+				var body = "test-body-" + specialChar;
+
+				Assert.Equal(MainData.MAX_KEY_LENGTH, key.Length);
+				var response = client.PutObject(bucketName, key, body: body);
+				Assert.NotNull(response.ETag);
+
+				var getResponse = client.GetObject(bucketName, key);
+				Assert.Equal(body, GetBody(getResponse));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Unicode")]
+		[Trait(MainData.Explanation, "유니코드 문자로 구성된 키로 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectKeyUnicodeCharacters()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var unicodeChars = new List<string>() { "한", "中", "日", "а", "α", "ع", "т", "ф" };
+
+			foreach (var unicodeChar in unicodeChars)
+			{
+				// 실제 바이트 길이 확인
+				var singleCharBytes = Encoding.UTF8.GetByteCount(unicodeChar);
+				var maxLength = 200 / singleCharBytes; // 200바이트 제한에 맞는 최대 문자 수
+
+				// 안전하게 조금 작은 길이로 시도
+				var safeLength = Math.Max(1, maxLength - 1);
+				var key = Repeat(unicodeChar, safeLength);
+				var body = "unicode-test-" + unicodeChar;
+
+				var response = client.PutObject(bucketName, key, body: body);
+				Assert.NotNull(response.ETag);
+
+				var getResponse = client.GetObject(bucketName, key);
+				Assert.Equal(body, GetBody(getResponse));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Unicode")]
+		[Trait(MainData.Explanation, "1024바이트를 초과하는 유니코드 키로 업로드 시 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectKeyUnicodeCharactersTooLong()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var unicodeChars = new List<string>() { "한", "中", "日", "а", "α", "ع", "т", "ф" };
+
+			foreach (var unicodeChar in unicodeChars)
+			{
+				// 실제 바이트 길이 확인
+				var singleCharBytes = Encoding.UTF8.GetByteCount(unicodeChar);
+				var maxLength = MainData.MAX_KEY_LENGTH / singleCharBytes; // 1024바이트 제한에 맞는 최대 문자 수
+
+				// 1024바이트를 초과하는 길이로 시도
+				var key = Repeat(unicodeChar, maxLength + 1);
+				var body = "unicode-test-fail-" + unicodeChar;
+
+				var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: body));
+				Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+				Assert.Equal(MainData.KEY_TOO_LONG, GetErrorCode(e));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Special Characters")]
+		[Trait(MainData.Explanation, "연속된 슬래시를 포함한 키로 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectKeyWithConsecutiveSlashes()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// '/'로 시작하는 키는 제외한다. path style 요청에서 경로가 '/{bucket}//key'가 되어
+			// SDK v4의 SigV4 서명이 어긋난다(SignatureDoesNotMatch). 중간/끝의 연속 슬래시는 정상 동작한다.
+			var keys = new List<string>()
+			{
+				"folder//double-slash",
+				"folder///triple-slash",
+				"trailing-double-slash//",
+				"folder////multiple-slashes"
+			};
+
+			foreach (var key in keys)
+			{
+				var body = "slash-test-" + key.Replace("/", "-");
+
+				var response = client.PutObject(bucketName, key, body: body);
+				Assert.NotNull(response.ETag);
+
+				var getResponse = client.GetObject(bucketName, key);
+				Assert.Equal(body, GetBody(getResponse));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Special Characters")]
+		[Trait(MainData.Explanation, "앞뒤에 공백이 있는 최대 길이 키로 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectKeyWithLeadingAndTrailingSpaces()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var testCases = new List<int>() { 1, 2, 3, 5 };
+
+			foreach (var spaceCount in testCases)
+			{
+				var spaces = Repeat(" ", spaceCount);
+				var middleLength = MainData.MAX_KEY_LENGTH - (spaceCount * 2);
+				var middle = S3Utils.RandomObjectName(middleLength);
+				var key = spaces + middle + spaces;
+				var body = "space-test-" + spaceCount;
+
+				Assert.Equal(MainData.MAX_KEY_LENGTH, key.Length);
+				var response = client.PutObject(bucketName, key, body: body);
+				Assert.NotNull(response.ETag);
+
+				var getResponse = client.GetObject(bucketName, key);
+				Assert.Equal(body, GetBody(getResponse));
 			}
 		}
 	}

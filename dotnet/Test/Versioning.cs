@@ -61,7 +61,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Object")]
 		[Trait(MainData.Explanation, "버저닝 오브젝트의 해더 정보를 사용하여 읽기/쓰기/삭제확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_obj_create_read_remove_head()
+		public void TestVersioningObjCreateReadRemoveHead()
 		{
 			var bucketName = GetNewBucket();
 
@@ -101,7 +101,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Object")]
 		[Trait(MainData.Explanation, "버킷에 버저닝 설정을 할 경우 소급적용되지 않음을 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_versioning_obj_plain_null_version_removal()
+		public void TestVersioningObjPlainNullVersionRemoval()
 		{
 			var bucketName = GetNewBucket();
 			CheckVersioning(bucketName, VersionStatus.Off);
@@ -128,7 +128,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[버킷에 버저닝 설정이 되어있는 상태] " +
 									 "null 버전 오브젝트를 덮어쓰기 할경우 버전 정보가 추가됨을 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_versioning_obj_plain_null_version_overwrite()
+		public void TestVersioningObjPlainNullVersionOverwrite()
 		{
 			var bucketName = GetNewBucket();
 			CheckVersioning(bucketName, VersionStatus.Off);
@@ -168,7 +168,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[버킷에 버저닝 설정이 되어있지만 중단된 상태일때] " +
 									 "null 버전 오브젝트를 덮어쓰기 할경우 버전정보가 추가되지 않음을 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_versioning_obj_plain_null_version_overwrite_suspended()
+		public void TestVersioningObjPlainNullVersionOverwriteSuspended()
 		{
 			var bucketName = GetNewBucket();
 			CheckVersioning(bucketName, VersionStatus.Off);
@@ -202,7 +202,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Object")]
 		[Trait(MainData.Explanation, "버전관리를 일시중단했을때 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_obj_suspend_versions()
+		public void TestVersioningObjSuspendVersions()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -243,7 +243,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Object")]
 		[Trait(MainData.Explanation, "오브젝트하나의 여러버전을 모두 삭제 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_obj_create_versions_remove_all()
+		public void TestVersioningObjCreateVersionsRemoveAll()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -269,7 +269,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Object")]
 		[Trait(MainData.Explanation, "이름에 특수문자가 들어간 오브젝트에 대해 버전관리가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_obj_create_versions_remove_special_names()
+		public void TestVersioningObjCreateVersionsRemoveSpecialNames()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -298,7 +298,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Multipart")]
 		[Trait(MainData.Explanation, "오브젝트를 멀티파트 업로드하였을 경우 버전관리가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_obj_create_overwrite_multipart()
+		public void TestVersioningObjCreateOverwriteMultipart()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -311,7 +311,7 @@ namespace s3tests.Test
 			var contents = new List<string>();
 
 			for (int i = 0; i < numVersions; i++)
-				contents.Add(TestMultipartUploadContents(bucketName, key, 3));
+				contents.Add(DoTestMultipartUploadContents(bucketName, key, 3));
 
 			var response = client.ListVersions(bucketName);
 			foreach (var version in response.Versions) versionIds.Add(version.VersionId);
@@ -331,7 +331,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Check")]
 		[Trait(MainData.Explanation, "오브젝트의 해당 버전 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_obj_list_marker()
+		public void TestVersioningObjListMarker()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -395,7 +395,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Copy")]
 		[Trait(MainData.Explanation, "오브젝트의 버전별 복사가 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_copy_obj_version()
+		public void TestVersioningCopyObjVersion()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -443,7 +443,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delete")]
 		[Trait(MainData.Explanation, "버전이 여러개인 오브젝트에 대한 삭제가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_multi_object_delete()
+		public void TestVersioningMultiObjectDelete()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -479,7 +479,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delete Marker")]
 		[Trait(MainData.Explanation, "버전이 여러개인 오브젝트에 대한 삭제마커가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_multi_object_delete_with_marker()
+		public void TestVersioningMultiObjectDeleteWithMarker()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -529,7 +529,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delete Marker")]
 		[Trait(MainData.Explanation, "존재하지않는 오브젝트를 삭제할경우 삭제마커가 생성되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_multi_object_delete_with_marker_create()
+		public void TestVersioningMultiObjectDeleteWithMarkerCreate()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -554,7 +554,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ACL")]
 		[Trait(MainData.Explanation, "오브젝트 버전의 acl이 올바르게 관리되고 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioned_object_acl()
+		public void TestVersionedObjectAcl()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -601,10 +601,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ACL")]
 		[Trait(MainData.Explanation, "버전정보를 입력하지 않고 오브젝트의 acl정보를 수정할 경우 가장 최신 버전에 반영되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioned_object_acl_no_version_specified()
+		public void TestVersionedObjectAclNoVersionSpecified()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
@@ -681,7 +681,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Check")]
 		[Trait(MainData.Explanation, "오브젝트 버전을 추가/삭제를 여러번 했을 경우 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioned_concurrent_object_create_and_remove()
+		public void TestVersionedConcurrentObjectCreateAndRemove()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -716,7 +716,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Check")]
 		[Trait(MainData.Explanation, "버킷의 버저닝 설정이 업로드시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_bucket_atomic_upload_return_version_id()
+		public void TestVersioningBucketAtomicUploadReturnVersionId()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -748,7 +748,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "MultiPart")]
 		[Trait(MainData.Explanation, "버킷의 버저닝 설정이 멀티파트 업로드시 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_bucket_multipart_upload_return_version_id()
+		public void TestVersioningBucketMultipartUploadReturnVersionId()
 		{
 			var contentType = "text/bla";
 			var size = 50 * MainData.MB;
@@ -791,7 +791,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Metadata")]
 		[Trait(MainData.Explanation, "업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_versioning_get_object_head()
+		public void TestVersioningGetObjectHead()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -803,7 +803,7 @@ namespace s3tests.Test
 
 			for (int i = 1; i <= 5; i++)
 			{
-				var response = client.PutObject(bucketName, key: keyName, RandomTextToLong(i));
+				var response = client.PutObject(bucketName, key: keyName, S3Utils.RandomTextToLong(i));
 				versionList.Add(response.VersionId);
 			}
 
@@ -831,7 +831,7 @@ namespace s3tests.Test
 
 			for (int i = 1; i <= 5; i++)
 			{
-				var response = client.PutObject(bucketName, keyName, RandomTextToLong(i));
+				var response = client.PutObject(bucketName, keyName, S3Utils.RandomTextToLong(i));
 				versionStack.Push(response.VersionId);
 			}
 
@@ -844,6 +844,562 @@ namespace s3tests.Test
 				var response = client.GetObjectMetadata(bucketName, keyName);
 				Assert.Equal(lastVersionId, response.VersionId);
 			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "Mixed")]
+		[Trait(MainData.Explanation, "버저닝 버킷에서 PutObject와 Multipart 혼합 업로드 후 버전별 조회 검증")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningObjMixPutAndMultipart()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			var key = "TestVersioningObjMixPutAndMultipart";
+			var versionIds = new List<string>();
+			var contents = new List<string>();
+
+			// PutObject 1KB
+			var content1kb = S3Utils.RandomTextToLong(1 * MainData.KB);
+			var put1kb = client.PutObject(bucketName, key, body: content1kb);
+			Assert.NotNull(put1kb.VersionId);
+			versionIds.Add(put1kb.VersionId);
+			contents.Add(content1kb);
+
+			// MultipartUpload 50MB
+			var upload50mb = S3Utils.SetupMultipartUpload(client, bucketName, key, 50 * MainData.MB);
+			var comp50mb = client.CompleteMultipartUpload(bucketName, key, upload50mb.UploadId, upload50mb.Parts);
+			Assert.NotNull(comp50mb.VersionId);
+			versionIds.Add(comp50mb.VersionId);
+			contents.Add(upload50mb.Body);
+
+			// PutObject 1MB
+			var content1mb = S3Utils.RandomTextToLong(1 * MainData.MB);
+			var put1mb = client.PutObject(bucketName, key, body: content1mb);
+			Assert.NotNull(put1mb.VersionId);
+			versionIds.Add(put1mb.VersionId);
+			contents.Add(content1mb);
+
+			// MultipartUpload 10MB
+			var upload10mb = S3Utils.SetupMultipartUpload(client, bucketName, key, 10 * MainData.MB);
+			var comp10mb = client.CompleteMultipartUpload(bucketName, key, upload10mb.UploadId, upload10mb.Parts);
+			Assert.NotNull(comp10mb.VersionId);
+			versionIds.Add(comp10mb.VersionId);
+			contents.Add(upload10mb.Body);
+
+			// ListVersions: 최신 버전부터 반환
+			var listResponse = client.ListVersions(bucketName);
+			var versions = GetVersions(listResponse.Versions);
+			Assert.Equal(4, versions.Count);
+			for (int i = 0; i < versions.Count; i++)
+			{
+				var version = versions[i];
+				Assert.Equal(key, version.Key);
+				Assert.Equal(versionIds[versionIds.Count - 1 - i], version.VersionId);
+				Assert.Equal(contents[contents.Count - 1 - i].Length, version.Size);
+			}
+
+			// 업로드 순서대로 versionId 지정 GetObject 후 내용 검증
+			for (int i = 0; i < versionIds.Count; i++)
+			{
+				var getResponse = client.GetObject(bucketName, key, versionId: versionIds[i]);
+				Assert.Equal(contents[i], S3Utils.GetBody(getResponse));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "존재하지 않는 VersionId로 조회시 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestVersioningInvalidVersionId()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestVersioningInvalidVersionId";
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			client.PutObject(bucketName, key, body: key);
+
+			var e = Assert.Throws<AggregateException>(() => client.GetObject(bucketName, key, versionId: "f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59"));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_VERSION, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "CopyObject")]
+		[Trait(MainData.Explanation, "버저닝 상태에 따른 CopyObject의 버전 처리 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningCopyObject()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var sourceKey = "source";
+			var targetKey = "target";
+			var content = "content-version1";
+			var expectedVersions = new List<string>();
+
+			// 버저닝 설정
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			// PutObject - 첫 번째 버전 생성
+			var putResponse = client.PutObject(bucketName, sourceKey, body: content);
+			expectedVersions.Add(putResponse.VersionId);
+
+			// CopyObject - 복제가 정상적인지 확인
+			var copyResponse = client.CopyObject(bucketName, sourceKey, bucketName, targetKey);
+			var targetVersion1 = copyResponse.VersionId;
+			expectedVersions.Add(targetVersion1);
+
+			var getResponse = client.GetObject(bucketName, targetKey);
+			Assert.Equal(content, S3Utils.GetBody(getResponse));
+			Assert.Equal(targetVersion1, getResponse.VersionId);
+
+			// ListVersions 확인 - source(1), target(1)
+			var listResponse = client.ListVersions(bucketName);
+			Assert.Equal(2, GetVersions(listResponse.Versions).Count);
+			foreach (var version in GetVersions(listResponse.Versions))
+				Assert.Contains(version.VersionId, expectedVersions);
+
+			copyResponse = client.CopyObject(bucketName, sourceKey, bucketName, targetKey);
+			var targetVersion2 = copyResponse.VersionId;
+			expectedVersions.Add(targetVersion2);
+
+			// 복제가 정상적인지 확인
+			getResponse = client.GetObject(bucketName, targetKey);
+			Assert.Equal(content, S3Utils.GetBody(getResponse));
+			Assert.Equal(targetVersion2, getResponse.VersionId);
+
+			// ListVersions - source(1), target(2)
+			listResponse = client.ListVersions(bucketName);
+			Assert.Equal(3, GetVersions(listResponse.Versions).Count);
+			Assert.Equal(expectedVersions.Count, GetVersions(listResponse.Versions).Count);
+			foreach (var version in GetVersions(listResponse.Versions))
+				Assert.Contains(version.VersionId, expectedVersions);
+
+			// CopyObject(metadata only overwrite) - 메타데이터만 변경하여 복사
+			var metadata = new List<KeyValuePair<string, string>>() { new("x-amz-meta-test-key", "test-value") };
+			copyResponse = client.CopyObject(bucketName, sourceKey, bucketName, targetKey,
+				metadataList: metadata, metadataDirective: S3MetadataDirective.REPLACE, contentType: "text/plain");
+			var targetVersion3 = copyResponse.VersionId;
+			expectedVersions.Add(targetVersion3);
+
+			// 복제가 정상적인지 확인
+			var metadataResponse = client.GetObjectMetadata(bucketName, targetKey);
+			Assert.Equal("test-value", metadataResponse.Metadata["x-amz-meta-test-key"]);
+			Assert.Equal("text/plain", metadataResponse.Headers.ContentType);
+			Assert.Equal(targetVersion3, metadataResponse.VersionId);
+
+			// ListVersions - source(1), target(3)
+			listResponse = client.ListVersions(bucketName);
+			Assert.Equal(4, GetVersions(listResponse.Versions).Count);
+			Assert.Equal(expectedVersions.Count, GetVersions(listResponse.Versions).Count);
+			foreach (var version in GetVersions(listResponse.Versions))
+				Assert.Contains(version.VersionId, expectedVersions);
+
+			// 버저닝 중단
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
+
+			// CopyObject - 버저닝 중단 상태에서 기존 버전 복사
+			copyResponse = client.CopyObject(bucketName, sourceKey, bucketName, targetKey);
+			var targetVersion4 = copyResponse.VersionId;
+			Assert.True(targetVersion4 == null || targetVersion4 == "null");
+			expectedVersions.Add("null");
+
+			// 복제가 정상적인지 확인
+			getResponse = client.GetObject(bucketName, targetKey);
+			Assert.Equal(content, S3Utils.GetBody(getResponse));
+
+			// ListVersions - source(1), target(3+null)
+			listResponse = client.ListVersions(bucketName);
+			Assert.Equal(5, GetVersions(listResponse.Versions).Count);
+			Assert.Equal(expectedVersions.Count, GetVersions(listResponse.Versions).Count);
+			foreach (var version in GetVersions(listResponse.Versions))
+				Assert.Contains(version.VersionId ?? "null", expectedVersions);
+
+			// CopyObject(overwrite) - 버저닝 중단 상태에서 다시 덮어쓰기
+			copyResponse = client.CopyObject(bucketName, sourceKey, bucketName, targetKey);
+			var targetVersion5 = copyResponse.VersionId;
+			Assert.True(targetVersion5 == null || targetVersion5 == "null");
+			// null 버전은 덮어쓰기되므로 expectedVersions에 추가하지 않음
+
+			// 복제가 정상적인지 확인
+			getResponse = client.GetObject(bucketName, targetKey);
+			Assert.Equal(content, S3Utils.GetBody(getResponse));
+
+			// ListVersions - null 버전은 덮어써지므로 개수 유지
+			listResponse = client.ListVersions(bucketName);
+			Assert.Equal(5, GetVersions(listResponse.Versions).Count);
+			Assert.Equal(expectedVersions.Count, GetVersions(listResponse.Versions).Count);
+			foreach (var version in GetVersions(listResponse.Versions))
+				Assert.Contains(version.VersionId ?? "null", expectedVersions);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "VersionId")]
+		[Trait(MainData.Explanation, "버저닝 미설정 버킷에서 모든 업로드 방식의 VersionId가 null인지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningUnversionedAllVersionId()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestVersioningUnversionedAllVersionId";
+			var multipartKey = key + "-multipart";
+			var copyKey = key + "-copy";
+			var content = "testContent";
+			var size = 5 * MainData.MB;
+
+			var putResponse = client.PutObject(bucketName, key, body: content);
+			Assert.Null(putResponse.VersionId);
+
+			var headResponse = client.GetObjectMetadata(bucketName, key);
+			Assert.Null(headResponse.VersionId);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Null(getResponse.VersionId);
+			Assert.Equal(content, S3Utils.GetBody(getResponse));
+
+			var uploadData = S3Utils.SetupMultipartUpload(client, bucketName, multipartKey, size);
+			var compResponse = client.CompleteMultipartUpload(bucketName, multipartKey, uploadData.UploadId, uploadData.Parts);
+			Assert.Null(compResponse.VersionId);
+
+			var copyResponse = client.CopyObject(bucketName, key, bucketName, copyKey);
+			Assert.Null(copyResponse.VersionId);
+
+			var listObjects = client.ListObjects(bucketName);
+			Assert.Equal(3, listObjects.S3Objects.Count);
+
+			var listVersions = client.ListVersions(bucketName);
+			var versions = GetVersions(listVersions.Versions);
+			Assert.Equal(3, versions.Count);
+			foreach (var version in versions)
+				Assert.Equal("null", version.VersionId);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "VersionId")]
+		[Trait(MainData.Explanation, "버저닝 설정 버킷에서 모든 업로드 방식의 VersionId가 존재하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningEnabledAllVersionId()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestVersioningEnabledAllVersionId";
+			var multipartKey = key + "-multipart";
+			var copyKey = key + "-copy";
+			var content = "testContent";
+			var size = 5 * MainData.MB;
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			var putResponse = client.PutObject(bucketName, key, body: content);
+			var versionId = putResponse.VersionId;
+			Assert.NotNull(versionId);
+
+			var headResponse = client.GetObjectMetadata(bucketName, key);
+			Assert.Equal(versionId, headResponse.VersionId);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal(versionId, getResponse.VersionId);
+			Assert.Equal(content, S3Utils.GetBody(getResponse));
+
+			var uploadData = S3Utils.SetupMultipartUpload(client, bucketName, multipartKey, size);
+			var compResponse = client.CompleteMultipartUpload(bucketName, multipartKey, uploadData.UploadId, uploadData.Parts);
+			var multipartVersionId = compResponse.VersionId;
+			Assert.NotNull(multipartVersionId);
+
+			var copyResponse = client.CopyObject(bucketName, key, bucketName, copyKey);
+			var copyVersionId = copyResponse.VersionId;
+			Assert.NotNull(copyVersionId);
+
+			var listObjects = client.ListObjects(bucketName);
+			Assert.Equal(3, listObjects.S3Objects.Count);
+
+			var listVersions = client.ListVersions(bucketName);
+			var versionIds = GetVersionIds(listVersions.Versions);
+			Assert.Equal(3, GetVersions(listVersions.Versions).Count);
+			Assert.Contains(versionId, versionIds);
+			Assert.Contains(multipartVersionId, versionIds);
+			Assert.Contains(copyVersionId, versionIds);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "VersionId")]
+		[Trait(MainData.Explanation, "버저닝 중단 버킷에서 모든 업로드 방식의 VersionId가 null인지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningSuspendedAllVersionId()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestVersioningSuspendedAllVersionId";
+			var multipartKey = key + "-multipart";
+			var copyKey = key + "-copy";
+			var content = "testContent";
+			var size = 5 * MainData.MB;
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
+
+			var putResponse = client.PutObject(bucketName, key, body: content);
+			Assert.Null(putResponse.VersionId);
+
+			var headResponse = client.GetObjectMetadata(bucketName, key);
+			Assert.Equal("null", headResponse.VersionId);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal("null", getResponse.VersionId);
+			Assert.Equal(content, S3Utils.GetBody(getResponse));
+
+			var uploadData = S3Utils.SetupMultipartUpload(client, bucketName, multipartKey, size);
+			var compResponse = client.CompleteMultipartUpload(bucketName, multipartKey, uploadData.UploadId, uploadData.Parts);
+			Assert.Null(compResponse.VersionId);
+
+			var copyResponse = client.CopyObject(bucketName, key, bucketName, copyKey);
+			Assert.True(copyResponse.VersionId == null || copyResponse.VersionId == "null");
+
+			var listObjects = client.ListObjects(bucketName);
+			Assert.Equal(3, listObjects.S3Objects.Count);
+
+			var listVersions = client.ListVersions(bucketName);
+			var versions = GetVersions(listVersions.Versions);
+			Assert.Equal(3, versions.Count);
+			foreach (var version in versions)
+				Assert.Equal("null", version.VersionId);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "동일 key에 OFF→ENABLED→SUSPENDED 순서로 업로드시 버전 목록 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningListVersionsOffEnabledSuspended()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestVersioningListVersionsOffEnabledSuspended";
+			var contentOff = "content-off";
+			var contentEnabled = "content-enabled";
+			var contentSuspended = "content-suspended";
+
+			// 1. OFF: put
+			var offResponse = client.PutObject(bucketName, key, body: contentOff);
+			Assert.Null(offResponse.VersionId);
+
+			// 2. ENABLED: put (새 versionId 추가 → null + versionId)
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var enabledResponse = client.PutObject(bucketName, key, body: contentEnabled);
+			var enabledVersionId = enabledResponse.VersionId;
+			Assert.NotNull(enabledVersionId);
+
+			// 3. SUSPENDED: put (기존 null 버전을 덮어씀 → 여전히 2개)
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
+			var suspendedResponse = client.PutObject(bucketName, key, body: contentSuspended);
+			Assert.Null(suspendedResponse.VersionId);
+
+			var listObjects = client.ListObjects(bucketName);
+			Assert.Single(listObjects.S3Objects);
+			Assert.Equal(key, listObjects.S3Objects[0].Key);
+
+			var listVersions = client.ListVersions(bucketName);
+			var versions = GetVersions(listVersions.Versions);
+			Assert.Equal(2, versions.Count);
+
+			var versionIds = GetVersionIds(listVersions.Versions);
+			Assert.Contains(enabledVersionId, versionIds);
+			Assert.Contains("null", versionIds);
+
+			// current는 suspended put으로 덮어쓴 null 버전
+			var latest = versions.Find(v => v.IsLatest == true);
+			Assert.NotNull(latest);
+			Assert.Equal("null", latest.VersionId);
+			Assert.Equal(contentSuspended.Length, latest.Size);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal(contentSuspended, S3Utils.GetBody(getResponse));
+
+			// ENABLED 때 만든 versionId로 Get하면 해당 내용이 반환되어야 함
+			var getByVersion = client.GetObject(bucketName, key, versionId: enabledVersionId);
+			Assert.Equal(contentEnabled, S3Utils.GetBody(getByVersion));
+			Assert.Equal(enabledVersionId, getByVersion.VersionId);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "서로 다른 key에 OFF→ENABLED→SUSPENDED 순서로 업로드시 버전 목록 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningListVersionsOffEnabledSuspendedDifferentKeys()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var keyOff = "TestVersioningListVersionsOff";
+			var keyEnabled = "TestVersioningListVersionsEnabled";
+			var keySuspended = "TestVersioningListVersionsSuspended";
+			var contentOff = "content-off";
+			var contentEnabled = "content-enabled";
+			var contentSuspended = "content-suspended";
+
+			// 1. OFF: put (key별 null 버전)
+			var offResponse = client.PutObject(bucketName, keyOff, body: contentOff);
+			Assert.Null(offResponse.VersionId);
+
+			// 2. ENABLED: put (다른 key → versionId)
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var enabledResponse = client.PutObject(bucketName, keyEnabled, body: contentEnabled);
+			var enabledVersionId = enabledResponse.VersionId;
+			Assert.NotNull(enabledVersionId);
+
+			// 3. SUSPENDED: put (또 다른 key → null 버전)
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
+			var suspendedResponse = client.PutObject(bucketName, keySuspended, body: contentSuspended);
+			Assert.Null(suspendedResponse.VersionId);
+
+			var listObjects = client.ListObjects(bucketName);
+			Assert.Equal(3, listObjects.S3Objects.Count);
+
+			var listVersions = client.ListVersions(bucketName);
+			var versions = GetVersions(listVersions.Versions);
+			Assert.Equal(3, versions.Count);
+
+			var versionByKey = new Dictionary<string, string>();
+			foreach (var version in versions) versionByKey[version.Key] = version.VersionId;
+			Assert.Equal("null", versionByKey[keyOff]);
+			Assert.Equal(enabledVersionId, versionByKey[keyEnabled]);
+			Assert.Equal("null", versionByKey[keySuspended]);
+
+			var nullVersionCount = versions.FindAll(v => v.VersionId == "null").Count;
+			Assert.Equal(2, nullVersionCount);
+
+			// key별 Head/Get versionId 확인
+			Assert.Equal("null", client.GetObjectMetadata(bucketName, keyOff).VersionId);
+			Assert.Equal(contentOff, S3Utils.GetBody(client.GetObject(bucketName, keyOff)));
+
+			Assert.Equal(enabledVersionId, client.GetObjectMetadata(bucketName, keyEnabled).VersionId);
+			Assert.Equal(contentEnabled, S3Utils.GetBody(client.GetObject(bucketName, keyEnabled)));
+
+			Assert.Equal("null", client.GetObjectMetadata(bucketName, keySuspended).VersionId);
+			Assert.Equal(contentSuspended, S3Utils.GetBody(client.GetObject(bucketName, keySuspended)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "버저닝 중단 후 null 버전 삭제시 current가 ENABLED 버전이 되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningDeleteNullVersionAfterSuspend()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestVersioningDeleteNullVersionAfterSuspend";
+			var contentEnabled = "content-enabled";
+			var contentSuspended = "content-suspended";
+
+			client.PutObject(bucketName, key, body: "content-off");
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var enabledVersionId = client.PutObject(bucketName, key, body: contentEnabled).VersionId;
+			Assert.NotNull(enabledVersionId);
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
+			client.PutObject(bucketName, key, body: contentSuspended);
+			Assert.Equal(contentSuspended, S3Utils.GetBody(client.GetObject(bucketName, key)));
+
+			// null 버전 삭제 후 current는 ENABLED 버전이 되어야 함
+			client.DeleteObject(bucketName, key, versionId: "null");
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal(contentEnabled, S3Utils.GetBody(getResponse));
+			Assert.Equal(enabledVersionId, getResponse.VersionId);
+
+			var listVersions = client.ListVersions(bucketName);
+			var versions = GetVersions(listVersions.Versions);
+			Assert.Single(versions);
+			Assert.Equal(enabledVersionId, versions[0].VersionId);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "ENABLED에서 여러 버전 생성 후 SUSPENDED로 전환시 버전 목록 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningListVersionsMultipleEnabledThenSuspended()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestVersioningListVersionsMultipleEnabledThenSuspended";
+			var enabledVersionIds = new List<string>();
+
+			client.PutObject(bucketName, key, body: "content-off");
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			for (int i = 1; i <= 3; i++)
+			{
+				var versionId = client.PutObject(bucketName, key, body: "content-enabled-" + i).VersionId;
+				Assert.NotNull(versionId);
+				enabledVersionIds.Add(versionId);
+			}
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
+			client.PutObject(bucketName, key, body: "content-suspended");
+
+			// ENABLED 3개 + null 1개
+			var listVersions = client.ListVersions(bucketName);
+			var versions = GetVersions(listVersions.Versions);
+			Assert.Equal(4, versions.Count);
+
+			var versionIds = GetVersionIds(listVersions.Versions);
+			foreach (var enabledVersionId in enabledVersionIds)
+				Assert.Contains(enabledVersionId, versionIds);
+			Assert.Contains("null", versionIds);
+
+			var latest = versions.Find(v => v.IsLatest == true);
+			Assert.NotNull(latest);
+			Assert.Equal("null", latest.VersionId);
+			Assert.Equal("content-suspended", S3Utils.GetBody(client.GetObject(bucketName, key)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "DeleteMarker")]
+		[Trait(MainData.Explanation, "오브젝트 삭제로 생성된 DeleteMarker에 대한 HeadObject가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestVersioningHeadObjectDeleteMarker()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestVersioningHeadObjectDeleteMarker";
+			var content = "testContent";
+
+			// 1. 버킷 생성 및 버저닝 설정
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			// 2. 오브젝트 업로드
+			var putResponse = client.PutObject(bucketName, key, body: content);
+			var versionId = putResponse.VersionId;
+
+			// 3. 업로드 확인
+			var headResponse = client.GetObjectMetadata(bucketName, key);
+			Assert.Equal(content.Length, headResponse.ContentLength);
+			Assert.Equal(versionId, headResponse.VersionId);
+
+			// 4. 오브젝트 삭제
+			client.DeleteObject(bucketName, key);
+
+			// 5. DeleteMarker 생성 확인
+			var listResponse = client.ListVersions(bucketName);
+			Assert.Single(GetVersions(listResponse.Versions));
+			Assert.Equal(1, GetDeleteMarkerCount(listResponse.Versions));
+			Assert.Equal(key, GetDeleteMarkers(listResponse.Versions)[0].Key);
+
+			// 6. HeadObject 실패 확인
+			var e = Assert.Throws<AggregateException>(() => client.GetObjectMetadata(bucketName, key));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
 		}
 	}
 }

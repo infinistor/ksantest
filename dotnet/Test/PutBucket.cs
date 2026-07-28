@@ -38,7 +38,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름의 맨앞에 [_]가 있을 경우 버킷 생성 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestBucketCreateNamingBadStartsNonalpha()
+		public void TestBucketCreateNamingBadStartsNonAlpha()
 		{
 			var bucketName = GetNewBucketName();
 			CheckBadBucketName("_" + bucketName);
@@ -59,7 +59,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름이 두글자인 경우 버킷 생성 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_create_naming_bad_short_two()
+		public void TestBucketCreateNamingBadShortTwo()
 		{
 			CheckBadBucketName("aa");
 		}
@@ -69,7 +69,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름이 60자인 경우 버킷 생성 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_create_naming_good_long_60()
+		public void TestBucketCreateNamingGoodLong60()
 		{
 			TestBucketCreateNamingGoodLong(60);
 		}
@@ -79,7 +79,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름이 61자인 경우 버킷 생성 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_create_naming_good_long_61()
+		public void TestBucketCreateNamingGoodLong61()
 		{
 			TestBucketCreateNamingGoodLong(61);
 		}
@@ -89,7 +89,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름이 62자인 경우 버킷 생성 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_create_naming_good_long_62()
+		public void TestBucketCreateNamingGoodLong62()
 		{
 			TestBucketCreateNamingGoodLong(62);
 		}
@@ -99,7 +99,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름이 63자인 경우 버킷 생성 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_create_naming_good_long_63()
+		public void TestBucketCreateNamingGoodLong63()
 		{
 			TestBucketCreateNamingGoodLong(63);
 		}
@@ -107,15 +107,11 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "PutBucket")]
 		[Trait(MainData.Minor, "Creation rules")]
-		[Trait(MainData.Explanation, "버킷이름의 길이 긴 경우 버킷 목록을 읽어올 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_list_long_name()
+		[Trait(MainData.Explanation, "생성할 버킷이름이 64자인 경우 버킷 생성 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketCreateNamingGoodLong64()
 		{
-			var bucketName = GetNewBucketName(61);
-			var client = GetClient();
-			client.PutBucket(bucketName);
-			var Response = client.ListObjects(bucketName);
-			Assert.Empty(Response.S3Objects);
+			TestBucketCreateNamingBadLong(64);
 		}
 
 		[Fact]
@@ -123,7 +119,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름이 IP 주소로 되어 있을 경우 버킷 생성 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_create_naming_bad_ip()
+		public void TestBucketCreateNamingBadIp()
 		{
 			CheckBadBucketName("192.168.11.123");
 		}
@@ -133,7 +129,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름에 문자와 [_]가 포함되어 있을 경우 버킷 생성 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_create_naming_dns_underscore()
+		public void TestBucketCreateNamingDnsUnderscore()
 		{
 			CheckBadBucketName("foo_bar");
 		}
@@ -143,7 +139,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름이 랜덤 알파벳 63자로 구성된 경우 버킷 생성 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_create_naming_dns_long()
+		public void TestBucketCreateNamingDnsLong()
 		{
 			var prefix = GetPrefix();
 			var AddLength = 63 - prefix.Length;
@@ -156,7 +152,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름의 끝이 [-]로 끝날 경우 버킷 생성 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_create_naming_dns_dash_at_end()
+		public void TestBucketCreateNamingDnsDashAtEnd()
 		{
 			CheckBadBucketName("foo-");
 		}
@@ -166,7 +162,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름에 문자와 [..]가 포함되어 있을 경우 버킷 생성 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_create_naming_dns_dot_dot()
+		public void TestBucketCreateNamingDnsDotDot()
 		{
 			CheckBadBucketName("foo..bar");
 		}
@@ -176,7 +172,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름의 사이에 [.-]가 포함되어 있을 경우 버킷 생성 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_create_naming_dns_dot_dash()
+		public void TestBucketCreateNamingDnsDotDash()
 		{
 			CheckBadBucketName("foo.-bar");
 		}
@@ -186,7 +182,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷이름의 사이에 [-.]가 포함되어 있을 경우 버킷 생성 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_create_naming_dns_dash_dot()
+		public void TestBucketCreateNamingDnsDashDot()
 		{
 			CheckBadBucketName("foo-.bar");
 		}
@@ -196,7 +192,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Duplicate")]
 		[Trait(MainData.Explanation, "버킷 중복 생성시 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_create_exists()
+		public void TestBucketCreateExists()
 		{
 			var bucketName = GetNewBucketName();
 			var client = GetClient();
@@ -214,7 +210,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[다른 2명의 사용자가 버킷 생성하려고 할 경우] " +
 									 "메인유저가 버킷을 생성하고 서브유저가가 같은 이름으로 버킷 생성하려고 할 경우 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_bucket_create_exists_nonowner()
+		public void TestBucketCreateExistsNonowner()
 		{
 			var bucketName = GetNewBucketName();
 			var client = GetClient();
@@ -232,7 +228,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷의 이름이 알파벳으로 시작할 경우 생성되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_create_naming_good_starts_alpha()
+		public void TestBucketCreateNamingGoodStartsAlpha()
 		{
 			CheckGoodBucketName("foo", prefix: "a" + GetPrefix());
 		}
@@ -242,7 +238,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Creation rules")]
 		[Trait(MainData.Explanation, "생성할 버킷의 이름이 알파벳으로 시작할 경우 생성되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_bucket_create_naming_good_starts_digit()
+		public void TestBucketCreateNamingGoodStartsDigit()
 		{
 			CheckGoodBucketName("foo", prefix: "0" + GetPrefix());
 		}

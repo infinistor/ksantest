@@ -8,12 +8,14 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading;
 using Xunit;
 
 namespace s3tests.Test
@@ -164,8 +166,7 @@ namespace s3tests.Test
 		{
 			var client = GetClient();
 			var altClient = GetAltClient();
-			var bucketName = GetNewBucketName();
-			client.PutBucket(bucketName);
+			var bucketName = GetNewBucketCannedAcl(client);
 
 			var key1 = "foo123bar";
 			var key2 = "bar321foo";
@@ -182,8 +183,8 @@ namespace s3tests.Test
 
 
 			grants = AddBucketUserGrant(bucketName, grant);
-			response = client.PutBucketACL(bucketName, accessControlPolicy: grants);
-			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+			var bucketAclResponse = client.PutBucketACL(bucketName, accessControlPolicy: grants);
+			Assert.Equal(HttpStatusCode.OK, bucketAclResponse.HttpStatusCode);
 
 			var response2 = altClient.GetObject(bucketName, key1);
 			Assert.Equal(HttpStatusCode.OK, response2.HttpStatusCode);
@@ -198,10 +199,10 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "권한정보를 포함하여 복사할때 올바르게 적용되는지 확인 " +
 									 "메타데이터를 포함하여 복사할때 올바르게 적용되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestObjectCopyCannedACL()
+		public void TestObjectCopyCannedAcl()
 		{
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
+			var bucketName = GetNewBucketCannedAcl(client);
 			var altClient = GetAltClient();
 			var key1 = "foo123bar";
 			var key2 = "bar321foo";
@@ -251,7 +252,7 @@ namespace s3tests.Test
 
 				var response = client.GetObject(bucketName, key2);
 				Assert.Equal(contentType, response.Headers.ContentType);
-				Assert.Equal(metaData, GetMetaData(response.Metadata));
+				CheckMetaData(metaData, response.Metadata);
 				Assert.Equal(size, response.ContentLength);
 			}
 		}
@@ -327,7 +328,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Version")]
 		[Trait(MainData.Explanation, "버저닝된 오브젝트 복사 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyVersionedBucket()
+		public void TestObjectCopyVersioningBucket()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -386,7 +387,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Version")]
 		[Trait(MainData.Explanation, "[버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyVersionedUrlEncoding()
+		public void TestObjectCopyVersioningUrlEncoding()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -480,7 +481,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Imatch")]
 		[Trait(MainData.Explanation, "ifmatch 값을 추가하여 오브젝트를 복사할 경우 성공확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyIfmatchGood()
+		public void TestCopyObjectIfMatchGood()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -498,7 +499,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Imatch")]
 		[Trait(MainData.Explanation, "ifmatch에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestObjectCopyIfmatchFailed()
+		public void TestCopyObjectIfMatchFailed()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -515,7 +516,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyNorSrcToNorBucketAndObj()
+		public void TestCopyNorSrcToNorBucketAndObj()
 		{
 			TestObjectCopy(false, false, false, false, 1024);
 			TestObjectCopy(false, false, false, false, 256 * 1024);
@@ -527,7 +528,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyNorSrcToNorBucketEncryptionObj()
+		public void TestCopyNorSrcToNorBucketEncryptionObj()
 		{
 			TestObjectCopy(false, false, false, true, 1024);
 			TestObjectCopy(false, false, false, true, 256 * 1024);
@@ -539,7 +540,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyNorSrcToEncryptionBucketNorObj()
+		public void TestCopyNorSrcToEncryptionBucketNorObj()
 		{
 			TestObjectCopy(false, false, true, false, 1024);
 			TestObjectCopy(false, false, true, false, 256 * 1024);
@@ -551,7 +552,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyNorSrcToEncryptionBucketAndObj()
+		public void TestCopyNorSrcToEncryptionBucketAndObj()
 		{
 			TestObjectCopy(false, false, true, true, 1024);
 			TestObjectCopy(false, false, true, true, 256 * 1024);
@@ -563,7 +564,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionSrcToNorBucketAndObj()
+		public void TestCopyEncryptionSrcToNorBucketAndObj()
 		{
 			TestObjectCopy(true, false, false, false, 1024);
 			TestObjectCopy(true, false, false, false, 256 * 1024);
@@ -575,7 +576,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionSrcToNorBucketEncryptionObj()
+		public void TestCopyEncryptionSrcToNorBucketEncryptionObj()
 		{
 			TestObjectCopy(true, false, false, true, 1024);
 			TestObjectCopy(true, false, false, true, 256 * 1024);
@@ -587,7 +588,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionSrcToEncryptionBucketNorObj()
+		public void TestCopyEncryptionSrcToEncryptionBucketNorObj()
 		{
 			TestObjectCopy(true, false, true, false, 1024);
 			TestObjectCopy(true, false, true, false, 256 * 1024);
@@ -599,7 +600,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionSrcToEncryptionBucketAndObj()
+		public void TestCopyEncryptionSrcToEncryptionBucketAndObj()
 		{
 			TestObjectCopy(true, false, true, true, 1024);
 			TestObjectCopy(true, false, true, true, 256 * 1024);
@@ -612,7 +613,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source bucket : encryption, source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionBucketNorObjToNorBucketAndObj()
+		public void TestCopyEncryptionBucketNorObjToNorBucketAndObj()
 		{
 			TestObjectCopy(false, true, false, false, 1024);
 			TestObjectCopy(false, true, false, false, 256 * 1024);
@@ -624,7 +625,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionBucketNorObjToNorBucketEncryptionObj()
+		public void TestCopyEncryptionBucketNorObjToNorBucketEncryptionObj()
 		{
 			TestObjectCopy(false, true, false, true, 1024);
 			TestObjectCopy(false, true, false, true, 256 * 1024);
@@ -636,7 +637,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionBucketNorObjToEncryptionBucketNorObj()
+		public void TestCopyEncryptionBucketNorObjToEncryptionBucketNorObj()
 		{
 			TestObjectCopy(false, true, true, false, 1024);
 			TestObjectCopy(false, true, true, false, 256 * 1024);
@@ -648,7 +649,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionBucketNorObjToEncryptionBucketAndObj()
+		public void TestCopyEncryptionBucketNorObjToEncryptionBucketAndObj()
 		{
 			TestObjectCopy(false, true, true, true, 1024);
 			TestObjectCopy(false, true, true, true, 256 * 1024);
@@ -660,7 +661,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionBucketAndObjToNorBucketAndObj()
+		public void TestCopyEncryptionBucketAndObjToNorBucketAndObj()
 		{
 			TestObjectCopy(true, true, false, false, 1024);
 			TestObjectCopy(true, true, false, false, 256 * 1024);
@@ -672,7 +673,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionBucketAndObjToNorBucketEncryptionObj()
+		public void TestCopyEncryptionBucketAndObjToNorBucketEncryptionObj()
 		{
 			TestObjectCopy(true, true, false, true, 1024);
 			TestObjectCopy(true, true, false, true, 256 * 1024);
@@ -684,7 +685,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionBucketAndObjToEncryptionBucketNorObj()
+		public void TestCopyEncryptionBucketAndObjToEncryptionBucketNorObj()
 		{
 			TestObjectCopy(true, true, true, false, 1024);
 			TestObjectCopy(true, true, true, false, 256 * 1024);
@@ -696,7 +697,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "[source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyEncryptionBucketAndObjToEncryptionBucketAndObj()
+		public void TestCopyEncryptionBucketAndObjToEncryptionBucketAndObj()
 		{
 			TestObjectCopy(true, true, true, true, 1024);
 			TestObjectCopy(true, true, true, true, 256 * 1024);
@@ -708,7 +709,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "일반 오브젝트에서 다양한 방식으로 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyToNormalSource()
+		public void TestCopyToNormalSource()
 		{
 			var size1 = 1024;
 			var size2 = 256 * 1024;
@@ -732,7 +733,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "SSE-S3암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyToSseS3Source()
+		public void TestCopyToSseS3Source()
 		{
 			var size1 = 1024;
 			var size2 = 256 * 1024;
@@ -756,7 +757,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyToSseCSource()
+		public void TestCopyToSseCSource()
 		{
 			var size1 = 1024;
 			var size2 = 256 * 1024;
@@ -800,7 +801,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Overwrite")]
 		[Trait(MainData.Explanation, "복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인(Versioning 설정)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyVersioningCopyToItselfWithMetadata()
+		public void TestObjectVersioningCopyToItselfWithMetadata()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -843,7 +844,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Overwrite")]
 		[Trait(MainData.Explanation, "복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 변경하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인(Versioning 설정)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectCopyVersioningCopyToItselfWithMetadataOverwrite()
+		public void TestObjectVersioningCopyToItselfWithMetadataOverwrite()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -859,6 +860,534 @@ namespace s3tests.Test
 			client.CopyObject(bucketName, key, bucketName, key, metadataList: metaData, metadataDirective: S3MetadataDirective.REPLACE);
 			var response = client.GetObjectMetadata(bucketName, key);
 			Assert.Equal(metaData, GetMetaData(response.Metadata));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "checksum")]
+		[Trait(MainData.Explanation, "ChunkEncoding 환경에서 CopyObject 체크섬 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectChecksumUseChunkEncoding()
+		{
+			var bucketName = GetNewBucket();
+			var configs = new (RequestChecksumCalculation Req, ResponseChecksumValidation Resp)[]
+			{
+				(RequestChecksumCalculation.WHEN_REQUIRED, ResponseChecksumValidation.WHEN_REQUIRED),
+				(RequestChecksumCalculation.WHEN_REQUIRED, ResponseChecksumValidation.WHEN_SUPPORTED),
+				(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_REQUIRED),
+				(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_SUPPORTED),
+			};
+
+			foreach (var config in configs)
+			{
+				var client = GetClientHttpsV4(config.Req, config.Resp);
+				foreach (var checksum in CheckSum.AllAlgorithms)
+				{
+					var sourceKey = $"req_{config.Req}/resp_{config.Resp}/src/{checksum.Value}";
+					var destKey = $"req_{config.Req}/resp_{config.Resp}/dst/{checksum.Value}";
+					var putResponse = client.PutObject(bucketName, sourceKey, body: sourceKey,
+						checksumAlgorithm: checksum, useChunkEncoding: true);
+					ChecksumCompare(checksum, sourceKey, putResponse);
+
+					var copyResponse = client.CopyObject(bucketName, sourceKey, bucketName, destKey,
+						checksumAlgorithm: checksum);
+					ChecksumCompare(checksum, sourceKey, copyResponse);
+				}
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "If Match")]
+		[Trait(MainData.Explanation, "소스 오브젝트와 일치하지 않는 copy-source-if-none-match 조건으로 복사 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectIfNoneMatchGood()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfNoneMatchGoodSource";
+			var target = "testCopyObjectIfNoneMatchGoodTarget";
+
+			client.PutObject(bucketName, source, body: source);
+
+			client.CopyObject(bucketName, source, bucketName, target, eTagToNotMatch: "ABC");
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal(source, GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "If Match")]
+		[Trait(MainData.Explanation, "소스 오브젝트와 일치하는 copy-source-if-none-match 조건으로 복사 시 412 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectIfNoneMatchFailed()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfNoneMatchFailedSource";
+			var target = "testCopyObjectIfNoneMatchFailedTarget";
+
+			var eTag = client.PutObject(bucketName, source, body: source).ETag;
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, eTagToNotMatch: eTag));
+
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "If Match")]
+		[Trait(MainData.Explanation, "소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 복사 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectIfModifiedSinceGood()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfModifiedSinceGoodSource";
+			var target = "testCopyObjectIfModifiedSinceGoodTarget";
+
+			client.PutObject(bucketName, source, body: source);
+
+			var days = new DateTime(1994, 9, 29, 19, 43, 31, DateTimeKind.Utc);
+
+			client.CopyObject(bucketName, source, bucketName, target, modifiedSince: days);
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal(source, GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "If Match")]
+		[Trait(MainData.Explanation, "소스 오브젝트 업로드 이후 시간의 copy-source-if-modified-since 조건으로 복사 시 412 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectIfModifiedSinceFailed()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfModifiedSinceFailedSource";
+			var target = "testCopyObjectIfModifiedSinceFailedTarget";
+
+			client.PutObject(bucketName, source, body: source);
+
+			// 미래 날짜는 RFC 7232에 따라 무시되므로 업로드 시간 + 1초를 지정하고 1초 대기
+			var lastModified = client.GetObjectMetadata(bucketName, source).LastModified.Value;
+			var after = lastModified.AddSeconds(1);
+
+			Thread.Sleep(1000);
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, modifiedSince: after));
+
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "If Match")]
+		[Trait(MainData.Explanation, "소스 오브젝트 업로드 이후 시간의 copy-source-if-unmodified-since 조건으로 복사 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectIfUnmodifiedSinceGood()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfUnmodifiedSinceGoodSource";
+			var target = "testCopyObjectIfUnmodifiedSinceGoodTarget";
+
+			client.PutObject(bucketName, source, body: source);
+
+			var days = new DateTime(2100, 9, 29, 19, 43, 31, DateTimeKind.Utc);
+
+			client.CopyObject(bucketName, source, bucketName, target, unmodifiedSince: days);
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal(source, GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "If Match")]
+		[Trait(MainData.Explanation, "소스 오브젝트 업로드 이전 시간의 copy-source-if-unmodified-since 조건으로 복사 시 412 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectIfUnmodifiedSinceFailed()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfUnmodifiedSinceFailedSource";
+			var target = "testCopyObjectIfUnmodifiedSinceFailedTarget";
+
+			client.PutObject(bucketName, source, body: source);
+
+			var days = new DateTime(1994, 9, 29, 19, 43, 31, DateTimeKind.Utc);
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, unmodifiedSince: days));
+
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "If Match")]
+		[Trait(MainData.Explanation, "copy-source-if-match(일치)와 copy-source-if-unmodified-since(불일치)를 함께 사용할 경우 ETag 조건이 우선되어 복사에 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectIfMatchWithIfUnmodifiedSince()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfMatchWithIfUnmodifiedSinceSource";
+			var target = "testCopyObjectIfMatchWithIfUnmodifiedSinceTarget";
+
+			var eTag = client.PutObject(bucketName, source, body: source).ETag;
+
+			var days = new DateTime(1994, 9, 29, 19, 43, 31, DateTimeKind.Utc);
+
+			// copy-source-if-match: true, copy-source-if-unmodified-since: false -> 200 OK
+			client.CopyObject(bucketName, source, bucketName, target, eTagToMatch: eTag, unmodifiedSince: days);
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal(source, GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "If Match")]
+		[Trait(MainData.Explanation, "copy-source-if-none-match(불일치)와 copy-source-if-modified-since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 412가 반환되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectIfNoneMatchWithIfModifiedSince()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfNoneMatchWithIfModifiedSinceSource";
+			var target = "testCopyObjectIfNoneMatchWithIfModifiedSinceTarget";
+
+			var eTag = client.PutObject(bucketName, source, body: source).ETag;
+
+			var days = new DateTime(1994, 9, 29, 19, 43, 31, DateTimeKind.Utc);
+
+			// copy-source-if-none-match: false, copy-source-if-modified-since: true -> 412
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, eTagToNotMatch: eTag, modifiedSince: days));
+
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "copy-source-if-match와 copy-source-if-none-match에 동일한 ETag를 지정하면 412가 반환되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectIfMatchAndIfNoneMatch()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfMatchAndIfNoneMatchSource";
+			var target = "testCopyObjectIfMatchAndIfNoneMatchTarget";
+
+			var eTag = client.PutObject(bucketName, source, body: source).ETag;
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, eTagToMatch: eTag, eTagToNotMatch: eTag));
+
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "copy-source-if-match와 copy-source-if-none-match: * 를 함께 지정하면 412가 반환되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectIfMatchAndIfNoneMatchAny()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectIfMatchAndIfNoneMatchAnySource";
+			var target = "testCopyObjectIfMatchAndIfNoneMatchAnyTarget";
+
+			var eTag = client.PutObject(bucketName, source, body: source).ETag;
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, eTagToMatch: eTag, eTagToNotMatch: "*"));
+
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "대상 오브젝트와 일치하는 If-Match 조건으로 덮어쓰기 복사 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectDestinationIfMatchGood()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectDestinationIfMatchGoodSource";
+			var target = "testCopyObjectDestinationIfMatchGoodTarget";
+
+			client.PutObject(bucketName, source, body: source);
+			var targetETag = client.PutObject(bucketName, target, body: "old").ETag;
+
+			client.CopyObject(bucketName, source, bucketName, target, ifMatch: targetETag);
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal(source, GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "대상 오브젝트와 일치하지 않는 If-Match 조건으로 복사 시 412 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectDestinationIfMatchFailed()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectDestinationIfMatchFailedSource";
+			var target = "testCopyObjectDestinationIfMatchFailedTarget";
+
+			client.PutObject(bucketName, source, body: source);
+			client.PutObject(bucketName, target, body: "old");
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, ifMatch: "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+
+			// 덮어쓰기 되지 않았는지 확인
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal("old", GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "IfNoneMatch")]
+		[Trait(MainData.Explanation, "존재하지 않는 대상 키에 If-None-Match: * 조건으로 복사 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectDestinationIfNoneMatchGood()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectDestinationIfNoneMatchGoodSource";
+			var target = "testCopyObjectDestinationIfNoneMatchGoodTarget";
+
+			client.PutObject(bucketName, source, body: source);
+
+			client.CopyObject(bucketName, source, bucketName, target, ifNoneMatch: "*");
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal(source, GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "IfNoneMatch")]
+		[Trait(MainData.Explanation, "이미 존재하는 대상 키에 If-None-Match: * 조건으로 복사 시 412 실패 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectDestinationIfNoneMatchFailed()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectDestinationIfNoneMatchFailedSource";
+			var target = "testCopyObjectDestinationIfNoneMatchFailedTarget";
+
+			client.PutObject(bucketName, source, body: source);
+			client.PutObject(bucketName, target, body: "old");
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, ifNoneMatch: "*"));
+
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+
+			// 덮어쓰기 되지 않았는지 확인
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal("old", GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "대상에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectDestinationIfMatchAndIfNoneMatch()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectDestinationIfMatchAndIfNoneMatchSource";
+			var target = "testCopyObjectDestinationIfMatchAndIfNoneMatchTarget";
+
+			client.PutObject(bucketName, source, body: source);
+			var targetETag = client.PutObject(bucketName, target, body: "old").ETag;
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, ifMatch: targetETag, ifNoneMatch: targetETag));
+
+			Assert.Equal(HttpStatusCode.NotImplemented, GetStatus(e));
+			Assert.Equal(MainData.NOT_IMPLEMENTED, GetErrorCode(e));
+
+			// 덮어쓰기 되지 않았는지 확인
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal("old", GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "대상에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectDestinationIfMatchAndIfNoneMatchAny()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectDestinationIfMatchAndIfNoneMatchAnySource";
+			var target = "testCopyObjectDestinationIfMatchAndIfNoneMatchAnyTarget";
+
+			client.PutObject(bucketName, source, body: source);
+			var targetETag = client.PutObject(bucketName, target, body: "old").ETag;
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target, ifMatch: targetETag, ifNoneMatch: "*"));
+
+			Assert.Equal(HttpStatusCode.NotImplemented, GetStatus(e));
+			Assert.Equal(MainData.NOT_IMPLEMENTED, GetErrorCode(e));
+
+			// 덮어쓰기 되지 않았는지 확인
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal("old", GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "소스 If-Match와 대상 If-None-Match: * 를 함께 사용해 복사 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectSourceIfMatchWithDestinationIfNoneMatch()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyObjectSourceIfMatchWithDestinationIfNoneMatchSource";
+			var target = "testCopyObjectSourceIfMatchWithDestinationIfNoneMatchTarget";
+
+			var eTag = client.PutObject(bucketName, source, body: source).ETag;
+
+			client.CopyObject(bucketName, source, bucketName, target, eTagToMatch: eTag, ifNoneMatch: "*");
+			var response = client.GetObject(bucketName, target);
+			Assert.Equal(source, GetBody(response));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "복사시 메타데이터와 태그가 유지되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectMetadataAndTags()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var sourceKey = "testCopyObjectMetadataAndTagsSource";
+			var targetKey = "testCopyObjectMetadataAndTagsTarget";
+
+			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
+			var tagSet = new List<Tag>() { new() { Key = "tag1", Value = "value1" } };
+
+			client.PutObject(bucketName, sourceKey, body: sourceKey, metadataList: metadataList, tagSet: tagSet);
+
+			var response = client.GetObject(bucketName, sourceKey);
+			Assert.Equal("bar", response.Metadata["x-amz-meta-foo"]);
+
+			var tagResponse = client.GetObjectTagging(bucketName, sourceKey);
+			TaggingCompare(tagSet, tagResponse.Tagging);
+
+			client.CopyObject(bucketName, sourceKey, bucketName, targetKey);
+
+			response = client.GetObject(bucketName, targetKey);
+			Assert.Equal("bar", response.Metadata["x-amz-meta-foo"]);
+
+			tagResponse = client.GetObjectTagging(bucketName, targetKey);
+			TaggingCompare(tagSet, tagResponse.Tagging);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "SSE-C로 암호화된 오브젝트를 복사할 때 대상 암호화 알고리즘을 지정하지 않으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyRevokeSseAlgorithm()
+		{
+			var client = GetClientHttps();
+			var bucketName = GetNewBucket(client);
+			UnblockSseC(bucketName);
+			var sourceKey = "testCopyRevokeSseAlgorithmSource";
+			var targetKey = "testCopyRevokeSseAlgorithmTarget";
+			var data = S3Utils.RandomTextToLong(1024);
+
+			var sseC = new SSECustomerKey()
+			{
+				Method = ServerSideEncryptionCustomerMethod.AES256,
+				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
+				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
+			};
+
+			client.PutObject(bucketName, sourceKey, body: data, sseCustomerKey: sseC);
+
+			// 키/MD5만 넘기고 알고리즘(x-amz-copy-source-server-side-encryption-customer-algorithm)은 생략한다.
+			var noAlgorithm = new SSECustomerKey()
+			{
+				Method = ServerSideEncryptionCustomerMethod.None,
+				ProvidedKey = sseC.ProvidedKey,
+				MD5 = sseC.MD5,
+			};
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, sourceKey, bucketName, targetKey, srcCustomerKey: noAlgorithm));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "삭제된 오브젝트를 복사할 경우 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyToDeletedObject()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyToDeletedObjectSource";
+			var target = "testCopyToDeletedObjectTarget";
+
+			client.PutObject(bucketName, source, body: source);
+			client.DeleteObject(bucketName, source);
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_KEY, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "삭제 마커가 있는 오브젝트를 복사할 경우 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyToDeleteMarkerObject()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var source = "testCopyToDeleteMarkerObjectSource";
+			var target = "testCopyToDeleteMarkerObjectTarget";
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			client.PutObject(bucketName, source, body: source);
+			client.DeleteObject(bucketName, source);
+
+			var e = Assert.Throws<AggregateException>(() =>
+				client.CopyObject(bucketName, source, bucketName, target));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_KEY, GetErrorCode(e));
 		}
 	}
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
@@ -27,7 +27,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Put / Get")]
 		[Trait(MainData.Explanation, "1Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_encrypted_transfer_1b()
+		public void TestSseS3EncryptedTransfer1b()
 		{
 			TestEncryptionSSES3ustomerWrite(1);
 		}
@@ -37,7 +37,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Put / Get")]
 		[Trait(MainData.Explanation, "1KB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_encrypted_transfer_1kb()
+		public void TestSseS3EncryptedTransfer1kb()
 		{
 			TestEncryptionSSES3ustomerWrite(1024);
 		}
@@ -47,7 +47,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Put / Get")]
 		[Trait(MainData.Explanation, "1MB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_encrypted_transfer_1MB()
+		public void TestSseS3EncryptedTransfer1MB()
 		{
 			TestEncryptionSSES3ustomerWrite(1024 * 1024);
 		}
@@ -57,7 +57,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Put / Get")]
 		[Trait(MainData.Explanation, "13Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_encrypted_transfer_13b()
+		public void TestSseS3EncryptedTransfer13b()
 		{
 			TestEncryptionSSES3ustomerWrite(13);
 		}
@@ -67,7 +67,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Metadata")]
 		[Trait(MainData.Explanation, "SSE-S3 설정하여 업로드한 오브젝트의 헤더정보읽기가 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_encryption_method_head()
+		public void TestSseS3EncryptionMethodHead()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -89,7 +89,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Multipart")]
 		[Trait(MainData.Explanation, "멀티파트업로드를 SSE-S3 설정하여 업로드 가능 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_encryption_multipart_upload()
+		public void TestSseS3EncryptionMultipartUpload()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -127,21 +127,26 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "버킷의 SSE-S3 설정 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_get_bucket_encryption()
+		public void TestGetBucketEncryption()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
-			var Response = client.GetBucketEncryption(bucketName);
-
-			Assert.Empty(Response.ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
+			if (Config.S3.IsAWS)
+			{
+				// 2023년 1월부터 AWS는 모든 버킷에 SSE-S3 기본 암호화를 적용하므로 기본 설정이 반환됨
+				var Response = client.GetBucketEncryption(bucketName);
+				Assert.Equal(ServerSideEncryptionMethod.AES256,
+					Response.ServerSideEncryptionConfiguration.ServerSideEncryptionRules[0].ServerSideEncryptionByDefault.ServerSideEncryptionAlgorithm);
+			}
+			else CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketEncryption(bucketName));
 		}
 
 		[Fact]
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "버킷의 SSE-S3 설정이 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_put_bucket_encryption()
+		public void TestPutBucketEncryption()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -171,7 +176,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "버킷의 SSE-S3 설정 삭제가 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_delete_bucket_encryption()
+		public void TestDeleteBucketEncryption()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -198,8 +203,14 @@ namespace s3tests.Test
 			var DelResponse = client.DeleteBucketEncryption(bucketName);
 			Assert.Equal(HttpStatusCode.NoContent, DelResponse.HttpStatusCode);
 
-			Response = client.GetBucketEncryption(bucketName);
-			Assert.Empty(Response.ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
+			if (Config.S3.IsAWS)
+			{
+				// 2023년 1월부터 AWS는 모든 버킷에 SSE-S3 기본 암호화를 적용하므로 삭제 후에도 기본 설정이 반환됨
+				Response = client.GetBucketEncryption(bucketName);
+				Assert.Equal(ServerSideEncryptionMethod.AES256,
+					Response.ServerSideEncryptionConfiguration.ServerSideEncryptionRules[0].ServerSideEncryptionByDefault.ServerSideEncryptionAlgorithm);
+			}
+			else CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketEncryption(bucketName));
 		}
 
 		[Fact]
@@ -207,7 +218,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "encryption")]
 		[Trait(MainData.Explanation, "버킷의 SSE-S3 설정이 오브젝트에 반영되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_put_bucket_encryption_and_object_set_check()
+		public void TestPutBucketEncryptionAndObjectSetCheck()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -246,7 +257,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "CopyObject")]
 		[Trait(MainData.Explanation, "버킷에 SSE-S3 설정하여 업로드한 1kb 오브젝트를 복사 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_copy_object_encryption_1kb()
+		public void TestCopyObjectEncryption1kb()
 		{
 			TestEncryptionSSES3Copy(1024);
 		}
@@ -256,7 +267,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "CopyObject")]
 		[Trait(MainData.Explanation, "버킷에 SSE-S3 설정하여 업로드한 256kb 오브젝트를 복사 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_copy_object_encryption_256kb()
+		public void TestCopyObjectEncryption256kb()
 		{
 			TestEncryptionSSES3Copy(256 * 1024);
 		}
@@ -266,7 +277,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "CopyObject")]
 		[Trait(MainData.Explanation, "버킷에 SSE-S3 설정하여 업로드한 1mb 오브젝트를 복사 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_copy_object_encryption_1mb()
+		public void TestCopyObjectEncryption1mb()
 		{
 			TestEncryptionSSES3Copy(1024 * 1024);
 		}
@@ -276,7 +287,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Put / Get")]
 		[Trait(MainData.Explanation, "[버킷에 SSE-S3 설정] 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_bucket_put_get()
+		public void TestSseS3BucketPutGet()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -313,48 +324,9 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "SSE-S3")]
 		[Trait(MainData.Minor, "Put / Get")]
-		[Trait(MainData.Explanation, "[버킷에 SSE-S3 설정, SignatureVersion4] 다운로드 성공 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_bucket_put_get_v4()
-		{
-			var bucketName = GetNewBucket();
-			var client = GetClientHttpsV4();
-			var Data = new string('A', 1024);
-
-			var SSEConfig = new ServerSideEncryptionConfiguration()
-			{
-				ServerSideEncryptionRules =
-				[
-					new()
-					{
-						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
-						{
-							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
-						}
-					}
-				]
-			};
-
-			client.PutBucketEncryption(bucketName, SSEConfig);
-
-			var EncryptionResponse = client.GetBucketEncryption(bucketName);
-			Assert.Single(EncryptionResponse.ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
-
-			var key = "bar";
-			client.PutObject(bucketName, key, body: Data);
-
-			var Response = client.GetObject(bucketName, key);
-			var body = S3Utils.GetBody(Response);
-			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
-			Assert.Equal(body, body);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "SSE-S3")]
-		[Trait(MainData.Minor, "Put / Get")]
 		[Trait(MainData.Explanation, "[버킷에 SSE-S3 설정, SignatureVersion4, useChunkEncoding = true] 업로드, 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_bucket_put_get_use_chunk_encoding()
+		public void TestSseS3BucketPutGetUseChunkEncoding()
 		{
 			var bucketName = GetNewBucket();
 			var client = GetClientV4();
@@ -391,48 +363,9 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "SSE-S3")]
 		[Trait(MainData.Minor, "Put / Get")]
-		[Trait(MainData.Explanation, "[버킷에 SSE-S3 설정, SignatureVersion4, useChunkEncoding = true, disablePayloadSigning = true] 업로드, 다운로드 성공 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_bucket_put_get_use_chunk_encoding_and_disable_payload_signing()
-		{
-			var bucketName = GetNewBucket();
-			var client = GetClientHttpsV4();
-			var Data = new string('A', 1024);
-
-			var SSEConfig = new ServerSideEncryptionConfiguration()
-			{
-				ServerSideEncryptionRules =
-				[
-					new()
-					{
-						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
-						{
-							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
-						}
-					}
-				]
-			};
-
-			client.PutBucketEncryption(bucketName, SSEConfig);
-
-			var EncryptionResponse = client.GetBucketEncryption(bucketName);
-			Assert.Single(EncryptionResponse.ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
-
-			var key = "bar";
-			client.PutObject(bucketName, key, body: Data, useChunkEncoding: true, disablePayloadSigning: true);
-
-			var Response = client.GetObject(bucketName, key);
-			var body = S3Utils.GetBody(Response);
-			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
-			Assert.Equal(body, body);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "SSE-S3")]
-		[Trait(MainData.Minor, "Put / Get")]
 		[Trait(MainData.Explanation, "[버킷에 SSE-S3 설정, SignatureVersion4, useChunkEncoding = false] 업로드, 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_bucket_put_get_not_chunk_encoding()
+		public void TestSseS3BucketPutGetNotChunkEncoding()
 		{
 			var bucketName = GetNewBucket();
 			var client = GetClientV4();
@@ -468,49 +401,10 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "SSE-S3")]
-		[Trait(MainData.Minor, "Put / Get")]
-		[Trait(MainData.Explanation, "[버킷에 SSE-S3 설정, SignatureVersion4, useChunkEncoding = false, disablePayloadSigning = true] 업로드, 다운로드 성공 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_bucket_put_get_not_chunk_encoding_and_disable_payload_signing()
-		{
-			var bucketName = GetNewBucket();
-			var client = GetClientHttpsV4();
-			var Data = new string('A', 1024);
-
-			var SSEConfig = new ServerSideEncryptionConfiguration()
-			{
-				ServerSideEncryptionRules =
-				[
-					new()
-					{
-						ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault()
-						{
-							ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256)
-						}
-					}
-				]
-			};
-
-			client.PutBucketEncryption(bucketName, SSEConfig);
-
-			var EncryptionResponse = client.GetBucketEncryption(bucketName);
-			Assert.Single(EncryptionResponse.ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
-
-			var key = "bar";
-			client.PutObject(bucketName, key, body: Data, useChunkEncoding: false, disablePayloadSigning: true);
-
-			var Response = client.GetObject(bucketName, key);
-			var body = S3Utils.GetBody(Response);
-			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
-			Assert.Equal(body, body);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "SSE-S3")]
 		[Trait(MainData.Minor, "PresignedURL")]
 		[Trait(MainData.Explanation, "[버킷에 SSE-S3 설정]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_bucket_presignedurl_put_get()
+		public void TestSseS3BucketPresignedUrlPutGet()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -549,7 +443,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "PresignedURL")]
 		[Trait(MainData.Explanation, "[버킷에 SSE-S3 설정, SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_bucket_presignedurl_put_get_v4()
+		public void TestSseS3BucketPresignedUrlPutGetV4()
 		{
 			var bucketName = GetNewBucket();
 			var client = GetClientV4();
@@ -587,7 +481,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Get")]
 		[Trait(MainData.Explanation, "SSE-S3설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_get_object_many()
+		public void TestSseS3GetObjectMany()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -603,7 +497,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Get")]
 		[Trait(MainData.Explanation, "SSE-S3설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_range_object_many()
+		public void TestSseS3RangeObjectMany()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -620,7 +514,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Copy")]
 		[Trait(MainData.Explanation, "SSE-S3 설정하여 멀티파트로 업로드한 오브젝트를 mulitcopy 로 복사 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_encryption_multipart_copypart_upload()
+		public void TestSseS3EncryptionMultipartCopyPartUpload()
 		{
 			var bucketName = GetNewBucket();
 			var client = GetClientHttps();
@@ -659,7 +553,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Multipart")]
 		[Trait(MainData.Explanation, "SSE-S3 설정하여 Multipart와 Copypart를 모두 사용하여 오브젝트가 업로드 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_s3_encryption_multipart_copy_many()
+		public void TestSseS3EncryptionMultipartCopyMany()
 		{
 			var bucketName = GetNewBucket();
 			var SrcKey = "mymultipart_enc";
@@ -703,7 +597,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "sse-s3설정은 소급적용 되지 않음을 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		//
-		public void test_sse_s3_not_retroactive()
+		public void TestSseS3NotRetroactive()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -717,6 +611,8 @@ namespace s3tests.Test
 			client.PutObject(bucketName, PutKey, PutData);
 			client.CopyObject(bucketName, PutKey, bucketName, CopyKey);
 			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, MultiKey, 1000, sseKey: ServerSideEncryptionMethod.AES256);
+			// SetupMultipartUpload은 파트 업로드까지만 한다. Complete를 해야 오브젝트가 생성된다.
+			client.CompleteMultipartUpload(bucketName, MultiKey, UploadData.UploadId, UploadData.Parts);
 
 			// SSE-S3 설정
 			client.PutBucketEncryption(bucketName, SSEConfig);
@@ -739,10 +635,13 @@ namespace s3tests.Test
 			client.PutObject(bucketName, PutKey2, PutData2);
 			client.CopyObject(bucketName, PutKey2, bucketName, CopyKey2);
 			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, MultiKey2, 1000, sseKey: ServerSideEncryptionMethod.AES256);
+			client.CompleteMultipartUpload(bucketName, MultiKey2, UploadData.UploadId, UploadData.Parts);
 
 			// SSE-S3 설정 해제
 			Assert.Equal(HttpStatusCode.NoContent, client.DeleteBucketEncryption(bucketName).HttpStatusCode);
-			Assert.Empty(client.GetBucketEncryption(bucketName).ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
+			// AWS는 2023-01부터 버킷 기본 암호화(SSE-S3)를 항상 적용하므로 설정을 지워도 규칙이 비지 않는다.
+			if (!Config.S3.IsAWS)
+				Assert.Empty(client.GetBucketEncryption(bucketName).ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
 
 			// 오브젝트 다운로드 확인
 			Response = client.GetObject(bucketName, PutKey2);
@@ -752,6 +651,72 @@ namespace s3tests.Test
 			Response = client.GetObject(bucketName, MultiKey2);
 			Assert.Equal(UploadData.Body, S3Utils.GetBody(Response));
 
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-S3")]
+		[Trait(MainData.Minor, "Multipart")]
+		[Trait(MainData.Explanation, "SSE-S3 설정된 버킷에 업로드한 오브젝트를 멀티파트로 덮어쓰기 가능한지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestSseS3MultipartUploadOverwriteExistingObject()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestSseS3MultipartUploadOverwriteExistingObject";
+			var Size = 10 * MainData.MB;
+			var Content = S3Utils.RandomTextToLong(5 * MainData.MB);
+
+			var SSEConfig = new ServerSideEncryptionConfiguration() { ServerSideEncryptionRules = [new() { ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault() { ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256) } }] };
+			client.PutBucketEncryption(bucketName, SSEConfig);
+
+			// 기존 오브젝트 업로드
+			client.PutObject(bucketName, key, body: Content);
+
+			// 멀티파트로 덮어쓰기
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, Size);
+			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
+
+			var Response = client.GetObject(bucketName, key);
+			var body = S3Utils.GetBody(Response);
+			Assert.Equal(UploadData.Body, body);
+			Assert.Equal(Size, Response.ContentLength);
+			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-S3")]
+		[Trait(MainData.Minor, "Multipart")]
+		[Trait(MainData.Explanation, "SSE-S3 설정된 버킷에 멀티파트 업로드한 오브젝트를 PutObject로 덮어쓰기 가능한지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestSseS3PutObjectOverwriteMultipartUpload()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestSseS3PutObjectOverwriteMultipartUpload";
+			var MultipartSize = 10 * MainData.MB;
+			var Content = S3Utils.RandomTextToLong(1 * MainData.MB);
+
+			var SSEConfig = new ServerSideEncryptionConfiguration() { ServerSideEncryptionRules = [new() { ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault() { ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(ServerSideEncryptionMethod.AES256) } }] };
+			client.PutBucketEncryption(bucketName, SSEConfig);
+
+			// 멀티파트 업로드
+			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, MultipartSize);
+			client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
+
+			// PutObject로 덮어쓰기
+			client.PutObject(bucketName, key, body: Content);
+
+			var HeadResponse = client.GetObjectMetadata(bucketName, key);
+			Assert.Equal(Content.Length, HeadResponse.ContentLength);
+			Assert.Equal(ServerSideEncryptionMethod.AES256, HeadResponse.ServerSideEncryptionMethod);
+
+			var Response = client.GetObject(bucketName, key);
+			var body = S3Utils.GetBody(Response);
+			Assert.Equal(Content.Length, body.Length);
+			Assert.Equal(Content, body);
+			Assert.Equal(ServerSideEncryptionMethod.AES256, Response.ServerSideEncryptionMethod);
+
+			CheckContentUsingRange(client, bucketName, key, Content, MainData.KB);
 		}
 	}
 }

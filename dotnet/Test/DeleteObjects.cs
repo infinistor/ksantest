@@ -10,6 +10,10 @@
 */
 using System.Collections.Generic;
 using Amazon.S3;
+using Amazon.S3.Model;
+using System;
+using System.Linq;
+using System.Net;
 using Xunit;
 
 namespace s3tests.Test
@@ -85,7 +89,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Versioning")]
 		[Trait(MainData.Explanation, "버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_multi_object_delete_versions()
+		public void TestMultiObjectDeleteVersions()
 		{
 			var keyNames = new List<string>() { "key0", "key1", "key2" };
 			var client = GetClient();
@@ -120,7 +124,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Quiet")]
 		[Trait(MainData.Explanation, "quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_multi_object_delete_quiet()
+		public void TestMultiObjectDeleteQuiet()
 		{
 			var keyNames = new List<string>() { "key0", "key1", "key2" };
 			var bucketName = SetupObjects(keyNames);
@@ -186,15 +190,16 @@ namespace s3tests.Test
 			Assert.Equal(keyNames.Count, listResponse.S3Objects.Count);
 
 			var verResponse = client.ListVersions(bucketName);
-			Assert.Equal(15, verResponse.Versions.Count);
+			Assert.Equal(15, GetVersions(verResponse.Versions).Count);
 
 			client.DeleteObject(bucketName, "a/");
 
 			listResponse = client.ListObjectsV2(bucketName);
-			Assert.Equal(keyNames.Count, listResponse.S3Objects.Count);
+			Assert.Equal(4, listResponse.S3Objects.Count);
 
 			verResponse = client.ListVersions(bucketName);
-			Assert.Equal(16, verResponse.Versions.Count);
+			Assert.Equal(15, GetVersions(verResponse.Versions).Count);
+			Assert.Single(GetDeleteMarkers(verResponse.Versions));
 
 			var deleteList = new List<string> { "a/obj1", "a/obj2" };
 			var objectList = GetKeyVersions(deleteList);
@@ -203,7 +208,373 @@ namespace s3tests.Test
 			Assert.Equal(2, delResponse.DeletedObjects.Count);
 
 			verResponse = client.ListVersions(bucketName);
-			Assert.Equal(18, verResponse.Versions.Count);
+			Assert.Equal(15, GetVersions(verResponse.Versions).Count);
+			Assert.Equal(3, GetDeleteMarkers(verResponse.Versions).Count);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "DeleteObjects")]
+		public void TestDeleteObjects()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			const int keyCount = 100;
+			var keyNames = new List<string>();
+
+			for (var i = 0; i < keyCount; i++)
+			{
+				var key = string.Format("key-{0:D3}", i);
+				keyNames.Add(key);
+				client.PutObject(bucketName, key, body: key);
+			}
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Equal(keyCount, listResponse.S3Objects.Count);
+
+			var objectList = GetKeyVersions(keyNames);
+			var delResponse = client.DeleteObjects(bucketName, objectList);
+			Assert.Equal(keyCount, delResponse.DeletedObjects.Count);
+
+			listResponse = client.ListObjects(bucketName);
+			Assert.Empty(listResponse.S3Objects);
+
+			foreach (var key in keyNames)
+			{
+				var e = Assert.Throws<AggregateException>(() => client.GetObject(bucketName, key));
+				Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Versioning")]
+		public void TestDeleteObjectsWithVersioning()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			const string methodName = "testDeleteObjectsWithVersioning";
+			var keyNames = new List<string>
+			{
+				methodName + "-0",
+				methodName + "-1",
+				methodName + "-2",
+				methodName + "-3",
+				methodName + "-4"
+			};
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			foreach (var key in keyNames)
+				SetupMultipleVersion(client, bucketName, key, 2, false);
+
+			var initialVersResponse = client.ListVersions(bucketName);
+			var nonCurrentVersions = new List<KeyVersion>();
+			foreach (var key in keyNames)
+			{
+				var keyVersions = GetVersions(initialVersResponse.Versions).Where(v => v.Key == key).ToList();
+				if (keyVersions.Count > 0)
+				{
+					var oldestVersion = keyVersions[^1];
+					nonCurrentVersions.Add(new KeyVersion { Key = oldestVersion.Key, VersionId = oldestVersion.VersionId });
+				}
+			}
+
+			var objectList = GetKeyVersions(keyNames);
+			var mixedDeleteList = new List<KeyVersion>(objectList);
+			mixedDeleteList.AddRange(nonCurrentVersions);
+
+			var delResponse = client.DeleteObjects(bucketName, mixedDeleteList);
+			Assert.Equal(keyNames.Count + nonCurrentVersions.Count, delResponse.DeletedObjects.Count);
+
+			var versResponse = client.ListVersions(bucketName);
+			Assert.Equal(5, GetDeleteMarkers(versResponse.Versions).Count);
+			Assert.Equal(5, GetVersions(versResponse.Versions).Count);
+
+			// dotnet SDK의 Versions는 삭제 마커까지 포함하므로 한 번의 순회로 전체 삭제 목록을 만든다.
+			var deleteList = new List<KeyVersion>();
+			foreach (var version in versResponse.Versions)
+				deleteList.Add(new KeyVersion { Key = version.Key, VersionId = version.VersionId });
+
+			delResponse = client.DeleteObjects(bucketName, deleteList);
+			Assert.Equal(versResponse.Versions.Count, delResponse.DeletedObjects.Count);
+
+			versResponse = client.ListVersions(bucketName);
+			Assert.Empty(GetVersions(versResponse.Versions));
+			Assert.Empty(GetDeleteMarkers(versResponse.Versions));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Versioning")]
+		public void TestDeleteObjectsWithVersioningDeleteMarker()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testDeleteObjectsWithVersioningDeleteMarker";
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			client.PutObject(bucketName, key, body: key);
+			client.DeleteObject(bucketName, key);
+
+			var versResponse = client.ListVersions(bucketName);
+			Assert.Single(GetVersions(versResponse.Versions));
+			Assert.Single(GetDeleteMarkers(versResponse.Versions));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Versioning")]
+		public void TestVersioningMultiObjectDeleteWithMarker()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var keyNames = new List<string>
+			{
+				"testVersioningMultiObjectDeleteWithMarker-0",
+				"testVersioningMultiObjectDeleteWithMarker-1",
+				"testVersioningMultiObjectDeleteWithMarker-2"
+			};
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			foreach (var key in keyNames)
+				client.PutObject(bucketName, key, body: key);
+
+			client.DeleteObjects(bucketName, GetKeyVersions(keyNames));
+
+			var versResponse = client.ListVersions(bucketName);
+			Assert.Equal(keyNames.Count, GetVersions(versResponse.Versions).Count);
+			Assert.Equal(keyNames.Count, GetDeleteMarkers(versResponse.Versions).Count);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Versioning")]
+		public void TestVersioningMultiObjectDeleteWithMarkerCreate()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testVersioningMultiObjectDeleteWithMarkerCreate";
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			for (var i = 0; i < 10; i++)
+				client.DeleteObject(bucketName, key);
+
+			var versResponse = client.ListVersions(bucketName);
+			Assert.Empty(GetVersions(versResponse.Versions));
+			Assert.Equal(10, GetDeleteMarkers(versResponse.Versions).Count);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Versioning")]
+		public void TestVersioningMultiObjectDeleteWithMarkerCreateObjects()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testVersioningMultiObjectDeleteWithMarkerCreateObjects";
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			for (var i = 0; i < 10; i++)
+				client.DeleteObjects(bucketName, GetKeyVersions(new List<string> { key }));
+
+			var versResponse = client.ListVersions(bucketName);
+			Assert.Empty(GetVersions(versResponse.Versions));
+			Assert.Equal(10, GetDeleteMarkers(versResponse.Versions).Count);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "IfMatch")]
+		public void TestDeleteObjectIfMatchGood()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testDeleteObjectIfMatchGood";
+
+			var eTag = client.PutObject(bucketName, key, body: key).ETag;
+			client.DeleteObject(bucketName, key, ifMatch: eTag);
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Empty(listResponse.S3Objects);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "IfMatch")]
+		public void TestDeleteObjectIfMatchFailed()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testDeleteObjectIfMatchFailed";
+
+			client.PutObject(bucketName, key, body: key);
+
+			var e = Assert.Throws<AggregateException>(() => client.DeleteObject(bucketName, key, ifMatch: "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+			Assert.Equal(HttpStatusCode.PreconditionFailed, GetStatus(e));
+			Assert.Equal(MainData.PRECONDITION_FAILED, GetErrorCode(e));
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Single(listResponse.S3Objects);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "IfMatch")]
+		public void TestDeleteObjectIfMatchAny()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testDeleteObjectIfMatchAny";
+
+			client.PutObject(bucketName, key, body: key);
+			client.DeleteObject(bucketName, key, ifMatch: "*");
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Empty(listResponse.S3Objects);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "IfMatch")]
+		public void TestDeleteObjectIfMatchAndIfNoneMatch()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testDeleteObjectIfMatchAndIfNoneMatch";
+
+			var eTag = client.PutObject(bucketName, key, body: key).ETag;
+			var e = Assert.Throws<AggregateException>(() => client.DeleteObject(bucketName, key, ifMatch: eTag,
+				headerList: [new KeyValuePair<string, string>("If-None-Match", eTag)]));
+			Assert.Equal(HttpStatusCode.NotImplemented, GetStatus(e));
+			Assert.Equal(MainData.NOT_IMPLEMENTED, GetErrorCode(e));
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Single(listResponse.S3Objects);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "IfMatch")]
+		public void TestDeleteObjectIfMatchAndIfNoneMatchAny()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testDeleteObjectIfMatchAndIfNoneMatchAny";
+
+			var eTag = client.PutObject(bucketName, key, body: key).ETag;
+			var e = Assert.Throws<AggregateException>(() => client.DeleteObject(bucketName, key, ifMatch: eTag,
+				headerList: [new KeyValuePair<string, string>("If-None-Match", "*")]));
+			Assert.Equal(HttpStatusCode.NotImplemented, GetStatus(e));
+			Assert.Equal(MainData.NOT_IMPLEMENTED, GetErrorCode(e));
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Single(listResponse.S3Objects);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "IfMatch")]
+		public void TestDeleteObjectsIfMatchGood()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var keyNames = new List<string> { "testDeleteObjectsIfMatchGood0", "testDeleteObjectsIfMatchGood1" };
+			var objectList = new List<KeyVersion>();
+
+			foreach (var key in keyNames)
+			{
+				var eTag = client.PutObject(bucketName, key, body: key).ETag;
+				objectList.Add(new KeyVersion { Key = key, ETag = eTag });
+			}
+
+			var delResponse = client.DeleteObjects(bucketName, objectList);
+			Assert.Equal(keyNames.Count, delResponse.DeletedObjects.Count);
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Empty(listResponse.S3Objects);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "IfMatch")]
+		public void TestDeleteObjectsIfMatchMixed()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			const string goodKey = "testDeleteObjectsIfMatchMixedGood";
+			const string badKey = "testDeleteObjectsIfMatchMixedBad";
+
+			var goodETag = client.PutObject(bucketName, goodKey, body: goodKey).ETag;
+			client.PutObject(bucketName, badKey, body: badKey);
+
+			var objectList = new List<KeyVersion>
+			{
+				new() { Key = goodKey, ETag = goodETag },
+				new() { Key = badKey, ETag = "\"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"" }
+			};
+
+			// .NET SDK는 일부만 실패해도 DeleteObjectsException을 던지므로 예외에서 응답을 꺼낸다.
+			DeleteObjectsResponse delResponse;
+			try { delResponse = client.DeleteObjects(bucketName, objectList); }
+			catch (AggregateException e) when (e.InnerException is DeleteObjectsException de) { delResponse = de.Response; }
+
+			Assert.Single(delResponse.DeletedObjects);
+			Assert.Equal(goodKey, delResponse.DeletedObjects[0].Key);
+			Assert.Single(delResponse.DeleteErrors);
+			Assert.Equal(badKey, delResponse.DeleteErrors[0].Key);
+			Assert.Equal(MainData.PRECONDITION_FAILED, delResponse.DeleteErrors[0].Code);
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Single(listResponse.S3Objects);
+			Assert.Equal(badKey, listResponse.S3Objects[0].Key);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "IfMatch")]
+		public void TestDeleteObjectsIfMatchAndIfNoneMatch()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testDeleteObjectsIfMatchAndIfNoneMatch";
+
+			var eTag = client.PutObject(bucketName, key, body: key).ETag;
+			var objectList = new List<KeyVersion> { new() { Key = key } };
+			var e = Assert.Throws<AggregateException>(() => client.DeleteObjects(bucketName, objectList,
+				headerList:
+				[
+					new KeyValuePair<string, string>("If-Match", eTag),
+					new KeyValuePair<string, string>("If-None-Match", eTag)
+				]));
+			Assert.Equal(HttpStatusCode.NotImplemented, GetStatus(e));
+			Assert.Equal(MainData.NOT_IMPLEMENTED, GetErrorCode(e));
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Single(listResponse.S3Objects);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "IfMatch")]
+		public void TestDeleteObjectsIfMatchAndIfNoneMatchAny()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "testDeleteObjectsIfMatchAndIfNoneMatchAny";
+
+			var eTag = client.PutObject(bucketName, key, body: key).ETag;
+			var objectList = new List<KeyVersion> { new() { Key = key } };
+			var e = Assert.Throws<AggregateException>(() => client.DeleteObjects(bucketName, objectList,
+				headerList:
+				[
+					new KeyValuePair<string, string>("If-Match", eTag),
+					new KeyValuePair<string, string>("If-None-Match", "*")
+				]));
+			Assert.Equal(HttpStatusCode.NotImplemented, GetStatus(e));
+			Assert.Equal(MainData.NOT_IMPLEMENTED, GetErrorCode(e));
+
+			var listResponse = client.ListObjects(bucketName);
+			Assert.Single(listResponse.S3Objects);
 		}
 	}
 }

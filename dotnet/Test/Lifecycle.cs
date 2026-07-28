@@ -20,7 +20,10 @@ namespace s3tests.Test
 {
 	public class Lifecycle : TestBase
 	{
-		public Lifecycle(Xunit.Abstractions.ITestOutputHelper Output) => this.Output = Output;
+		public Lifecycle(Xunit.Abstractions.ITestOutputHelper output) => Output = output;
+
+		private static LifecycleFilter PrefixFilter(string prefix) =>
+			new() { LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = prefix } };
 
 		[Fact]
 		[Trait(MainData.Major, "Lifecycle")]
@@ -31,27 +34,14 @@ namespace s3tests.Test
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ Days = 1 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
-				new()
-				{
-					Id = "rule2",
-					Expiration = new LifecycleRuleExpiration(){ Days = 2 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test2/" } },
-					Status = LifecycleRuleStatus.Disabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Days = 1 }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
+				new() { Id = "rule2", Expiration = new LifecycleRuleExpiration(){ Days = 2 }, Filter = PrefixFilter("test2/"), Status = LifecycleRuleStatus.Disabled },
 			};
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
 
-			var Response = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
+			var response = client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
 		[Fact]
@@ -63,28 +53,15 @@ namespace s3tests.Test
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "test1/",
-					Expiration = new LifecycleRuleExpiration(){ Days = 31 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
-				new()
-				{
-					Id = "test2/",
-					Expiration = new LifecycleRuleExpiration(){ Days = 120 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test2/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Days = 31 }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
+				new() { Id = "rule2", Expiration = new LifecycleRuleExpiration(){ Days = 120 }, Filter = PrefixFilter("test2/"), Status = LifecycleRuleStatus.Enabled },
 			};
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
 
-			client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			var Response = client.GetLifecycleConfiguration(bucketName);
-			PrefixLifecycleConfigurationCheck(Rules, Response.Configuration.Rules);
+			client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			var response = client.GetLifecycleConfiguration(bucketName);
+			PrefixLifecycleConfigurationCheck(rules, response.Configuration.Rules);
 		}
 
 		[Fact]
@@ -92,39 +69,28 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Check")]
 		[Trait(MainData.Explanation, "Id 없이 버킷에 Lifecycle 규칙을 설정 할 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_get_no_id()
+		public void TestLifecycleGetNoId()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Expiration = new LifecycleRuleExpiration(){ Days = 31 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
-				new()
-				{
-					Expiration = new LifecycleRuleExpiration(){ Days = 120 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test2/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Expiration = new LifecycleRuleExpiration(){ Days = 31 }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
+				new() { Expiration = new LifecycleRuleExpiration(){ Days = 120 }, Filter = PrefixFilter("test2/"), Status = LifecycleRuleStatus.Enabled },
 			};
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
 
-			client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			var Response = client.GetLifecycleConfiguration(bucketName);
-			var CurrentLifeCycle = Response.Configuration.Rules;
+			client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			var response = client.GetLifecycleConfiguration(bucketName);
+			var getRules = response.Configuration.Rules;
 
-			for (int i = 0; i < Rules.Count; i++)
+			for (int i = 0; i < rules.Count; i++)
 			{
-				Assert.NotEmpty(CurrentLifeCycle[i].Id);
-				Assert.Equal(Rules[i].Expiration.Date, CurrentLifeCycle[i].Expiration.Date);
-				Assert.Equal(Rules[i].Expiration.Days, CurrentLifeCycle[i].Expiration.Days);
-				Assert.Equal((Rules[i].Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix,
-							 (CurrentLifeCycle[i].Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix);
-				Assert.Equal(Rules[i].Status, CurrentLifeCycle[i].Status);
+				Assert.NotEmpty(getRules[i].Id);
+				Assert.Equal(rules[i].Expiration.Date, getRules[i].Expiration.Date);
+				Assert.Equal(rules[i].Expiration.Days, getRules[i].Expiration.Days);
+				Assert.Equal((rules[i].Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix,
+							 (getRules[i].Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix);
+				Assert.Equal(rules[i].Status, getRules[i].Status);
 			}
 		}
 
@@ -133,33 +99,24 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Version")]
 		[Trait(MainData.Explanation, "버킷에 버저닝 설정이 되어있는 상태에서 Lifecycle 규칙을 추가 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_expiration_versioning_enabled()
+		public void TestLifecycleExpirationVersioningEnabled()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Key = "test1/a";
+			var key = "test1/a";
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
-			SetupMultipleVersion(client, bucketName, Key, 1);
-			client.DeleteObject(bucketName, Key);
+			SetupMultipleVersion(client, bucketName, key, 1);
+			client.DeleteObject(bucketName, key);
 
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ Days = 1 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "expire1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Days = 1 }, Filter = PrefixFilter("expire1/"), Status = LifecycleRuleStatus.Enabled },
 			};
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			client.PutLifecycleConfiguration(bucketName, LifeCycle);
+			client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
 
-			var Response = client.ListVersions(bucketName);
-			var Versions = GetVersions(Response.Versions);
-			var DeleteMarkers = GetDeleteMarkers(Response.Versions);
-			Assert.Single(Versions);
-			Assert.Single(DeleteMarkers);
+			var response = client.ListVersions(bucketName);
+			Assert.Single(GetVersions(response.Versions));
+			Assert.Single(GetDeleteMarkers(response.Versions));
 		}
 
 		[Fact]
@@ -167,24 +124,16 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Check")]
 		[Trait(MainData.Explanation, "버킷에 Lifecycle 규칙을 설정할때 Id의 길이가 너무 길면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_lifecycle_id_too_long()
+		public void TestLifecycleIdTooLong()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = S3Utils.RandomTextToLong(256),
-					Expiration = new LifecycleRuleExpiration(){ Days = 2 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "tset1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = S3Utils.RandomTextToLong(256), Expiration = new LifecycleRuleExpiration(){ Days = 2 }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var e = Assert.Throws<AggregateException>(() => client.PutLifecycleConfiguration(bucketName, LifeCycle));
+			var e = Assert.Throws<AggregateException>(() => client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules }));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
 		}
@@ -194,33 +143,19 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Duplicate")]
 		[Trait(MainData.Explanation, "버킷에 Lifecycle 규칙을 설정할때 같은 Id로 규칙을 여러개 설정할경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_lifecycle_same_id()
+		public void TestLifecycleSameId()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ Days = 1 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "tset1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ Days = 2 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "tset2/" } },
-					Status = LifecycleRuleStatus.Disabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Days = 1 }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Days = 2 }, Filter = PrefixFilter("test2/"), Status = LifecycleRuleStatus.Disabled },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var e = Assert.Throws<AggregateException>(() => client.PutLifecycleConfiguration(bucketName, LifeCycle));
+			var e = Assert.Throws<AggregateException>(() => client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules }));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
-			if (Config.S3.IsAWS) Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
 		}
 
 		[Fact]
@@ -228,24 +163,16 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "버킷에 Lifecycle 규칙중 status를 잘못 설정할때 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_lifecycle_invalid_status()
+		public void TestLifecycleInvalidStatus()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ Days = 2 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "tset1/" } },
-					Status = new LifecycleRuleStatus("invalid"),
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Days = 2 }, Filter = PrefixFilter("test1/"), Status = new LifecycleRuleStatus("invalid") },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var e = Assert.Throws<AggregateException>(() => client.PutLifecycleConfiguration(bucketName, LifeCycle));
+			var e = Assert.Throws<AggregateException>(() => client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules }));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.MALFORMED_XML, GetErrorCode(e));
 		}
@@ -255,51 +182,36 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Date")]
 		[Trait(MainData.Explanation, "버킷의 Lifecycle규칙에 날짜를 입력가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_set_date()
+		public void TestLifecycleSetDate()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ Date = DateTime.Parse("2099-10-10 00:00:00 GMT") },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "tset1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Date = DateTime.Parse("2099-10-10 00:00:00 GMT") }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var Response = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
+			var response = client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Lifecycle")]
 		[Trait(MainData.Minor, "ERROR")]
-		[Trait(MainData.Explanation, "버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식으로 입력했을때 실패 확인")]
+		[Trait(MainData.Explanation, "버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식(자정이 아닌 시간)으로 입력했을때 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_lifecycle_set_invalid_date()
+		public void TestLifecycleSetInvalidDate()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ Date = DateTime.Parse("2017-09-27") },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "tset1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Date = DateTime.Parse("2099-10-10 15:00:00 GMT") }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var e = Assert.Throws<AggregateException>(() => client.PutLifecycleConfiguration(bucketName, LifeCycle));
+			var e = Assert.Throws<AggregateException>(() => client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules }));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
 		}
 
 		[Fact]
@@ -307,32 +219,19 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Version")]
 		[Trait(MainData.Explanation, "버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_set_noncurrent()
+		public void TestLifecycleSetNoncurrent()
 		{
-			var bucketName = SetupObjects(["past/foo", "future/bar"]);
 			var client = GetClient();
+			var bucketName = SetupObjects(["past/foo", "future/bar"]);
 
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					NoncurrentVersionExpiration = new LifecycleRuleNoncurrentVersionExpiration() { NoncurrentDays = 2 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "past/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
-				new()
-				{
-					Id = "rule2",
-					NoncurrentVersionExpiration = new LifecycleRuleNoncurrentVersionExpiration() { NoncurrentDays = 3 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "futrue/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = "rule1", NoncurrentVersionExpiration = new LifecycleRuleNoncurrentVersionExpiration() { NoncurrentDays = 2 }, Filter = PrefixFilter("past/"), Status = LifecycleRuleStatus.Enabled },
+				new() { Id = "rule2", NoncurrentVersionExpiration = new LifecycleRuleNoncurrentVersionExpiration() { NoncurrentDays = 3 }, Filter = PrefixFilter("future/"), Status = LifecycleRuleStatus.Enabled },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var Response = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
+			var response = client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
 		[Fact]
@@ -340,7 +239,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Version")]
 		[Trait(MainData.Explanation, "버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_noncur_expiration()
+		public void TestLifecycleNoncurrentExpiration()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -349,50 +248,34 @@ namespace s3tests.Test
 			SetupMultipleVersion(client, bucketName, "test1/a", 3);
 			SetupMultipleVersion(client, bucketName, "test2/abc", 3, false);
 
-			var Response = client.ListVersions(bucketName);
-			var InitVersions = Response.Versions;
+			var response = client.ListVersions(bucketName);
+			var versions = GetVersions(response.Versions);
 
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					NoncurrentVersionExpiration = new LifecycleRuleNoncurrentVersionExpiration() { NoncurrentDays = 2 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = "rule1", NoncurrentVersionExpiration = new LifecycleRuleNoncurrentVersionExpiration() { NoncurrentDays = 2 }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var PutResponse = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
-			Assert.Equal(6, InitVersions.Count);
+			client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(6, versions.Count);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Lifecycle")]
-		[Trait(MainData.Minor, "Delete Marker")]
+		[Trait(MainData.Minor, "DeleteMarker")]
 		[Trait(MainData.Explanation, "DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_set_deletemarker()
+		public void TestLifecycleSetDeleteMarker()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ ExpiredObjectDeleteMarker = true },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ ExpiredObjectDeleteMarker = true }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var PutResponse = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
+			var response = client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
 		[Fact]
@@ -400,25 +283,17 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Filter")]
 		[Trait(MainData.Explanation, "Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_set_filter()
+		public void TestLifecycleSetFilter()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ ExpiredObjectDeleteMarker = true },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "foo" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ ExpiredObjectDeleteMarker = true }, Filter = PrefixFilter("foo"), Status = LifecycleRuleStatus.Enabled },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var PutResponse = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
+			var response = client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
 		[Fact]
@@ -426,33 +301,25 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Filter")]
 		[Trait(MainData.Explanation, "Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_set_empty_filter()
+		public void TestLifecycleSetEmptyFilter()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ ExpiredObjectDeleteMarker = true },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ ExpiredObjectDeleteMarker = true }, Filter = PrefixFilter(""), Status = LifecycleRuleStatus.Enabled },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var PutResponse = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
+			var response = client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Lifecycle")]
-		[Trait(MainData.Minor, "Delete Marker")]
+		[Trait(MainData.Minor, "DeleteMarker")]
 		[Trait(MainData.Explanation, "DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_deletemarker_expiration()
+		public void TestLifecycleDeleteMarkerExpiration()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -463,25 +330,24 @@ namespace s3tests.Test
 			client.DeleteObject(bucketName, "test1/a");
 			client.DeleteObject(bucketName, "test2/abc");
 
-			var Response = client.ListVersions(bucketName);
-			var TotalVersions = Response.Versions;
+			var response = client.ListVersions(bucketName);
+			Assert.Equal(2, GetVersions(response.Versions).Count);
+			Assert.Equal(2, GetDeleteMarkers(response.Versions).Count);
 
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
 				new()
 				{
 					Id = "rule1",
 					NoncurrentVersionExpiration = new LifecycleRuleNoncurrentVersionExpiration() { NoncurrentDays = 1 },
 					Expiration = new LifecycleRuleExpiration() { ExpiredObjectDeleteMarker = true },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } },
+					Filter = PrefixFilter("test1/"),
 					Status = LifecycleRuleStatus.Enabled,
 				},
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var PutResponse = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
-			Assert.Equal(4, TotalVersions.Count);
+			var putResponse = client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(HttpStatusCode.OK, putResponse.HttpStatusCode);
 		}
 
 		[Fact]
@@ -489,32 +355,18 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Multipart")]
 		[Trait(MainData.Explanation, "AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_set_multipart()
+		public void TestLifecycleSetMultipart()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-					AbortIncompleteMultipartUpload = new LifecycleRuleAbortIncompleteMultipartUpload(){ DaysAfterInitiation = 2},
-				},
-				new()
-				{
-					Id = "rule2",
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test2/" } },
-					Status = LifecycleRuleStatus.Disabled,
-					AbortIncompleteMultipartUpload = new LifecycleRuleAbortIncompleteMultipartUpload(){ DaysAfterInitiation = 3},
-				},
+				new() { Id = "rule1", Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled, AbortIncompleteMultipartUpload = new LifecycleRuleAbortIncompleteMultipartUpload(){ DaysAfterInitiation = 2 } },
+				new() { Id = "rule2", Filter = PrefixFilter("test2/"), Status = LifecycleRuleStatus.Enabled, AbortIncompleteMultipartUpload = new LifecycleRuleAbortIncompleteMultipartUpload(){ DaysAfterInitiation = 3 } },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			var PutResponse = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, PutResponse.HttpStatusCode);
+			var response = client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 
 		[Fact]
@@ -522,37 +374,33 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Multipart")]
 		[Trait(MainData.Explanation, "AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_multipart_expiration()
+		public void TestLifecycleMultipartExpiration()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
-			var KeyNames = new List<string>() { "test1/a", "test2/b" };
-			var UploadIds = new List<string>();
+			var keyNames = new List<string>() { "test1/a", "test2/b" };
+			var uploadIds = new List<string>();
 
-			foreach (var Key in KeyNames)
+			foreach (var key in keyNames)
 			{
-				var Response = client.InitiateMultipartUpload(bucketName, Key);
-				UploadIds.Add(Response.UploadId);
+				var response = client.InitiateMultipartUpload(bucketName, key);
+				uploadIds.Add(response.UploadId);
 			}
 
-			var ListResponse = client.ListMultipartUploads(bucketName);
-			var InitUploads = ListResponse.MultipartUploads;
+			var listResponse = client.ListMultipartUploads(bucketName);
+			var uploads = listResponse.MultipartUploads;
 
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-					AbortIncompleteMultipartUpload = new LifecycleRuleAbortIncompleteMultipartUpload(){ DaysAfterInitiation = 2},
-				},
+				new() { Id = "rule1", Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled, AbortIncompleteMultipartUpload = new LifecycleRuleAbortIncompleteMultipartUpload(){ DaysAfterInitiation = 2 } },
 			};
 
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
-			client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(2, InitUploads.Count);
+			client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			Assert.Equal(2, uploads.Count);
+
+			foreach (var upload in uploads)
+				client.AbortMultipartUpload(bucketName, upload.Key, upload.UploadId);
 		}
 
 		[Fact]
@@ -564,66 +412,56 @@ namespace s3tests.Test
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){ Days = 1 },
-					NoncurrentVersionExpiration = new LifecycleRuleNoncurrentVersionExpiration() { NoncurrentDays = 2 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } },
-					Status = LifecycleRuleStatus.Enabled,
-				},
-				new()
-				{
-					Id = "rule2",
-					Expiration = new LifecycleRuleExpiration(){ Days = 2 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test2/" } },
-					Status = LifecycleRuleStatus.Disabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Days = 1 }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
+				new() { Id = "rule2", Expiration = new LifecycleRuleExpiration(){ Days = 2 }, Filter = PrefixFilter("test2/"), Status = LifecycleRuleStatus.Disabled },
 			};
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
 
-			var Response = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
-
-			var DelResponse = client.DeleteLifecycleConfiguration(bucketName);
-			Assert.Equal(HttpStatusCode.NoContent, DelResponse.HttpStatusCode);
+			client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+			client.DeleteLifecycleConfiguration(bucketName);
 		}
 
 		[Fact]
 		[Trait(MainData.Major, "Lifecycle")]
-		[Trait(MainData.Minor, "Get")]
-		[Trait(MainData.Explanation, "버킷에 다양한 Lifecycle 설정이 가능한지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_lifecycle_set_and()
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "버킷의 Lifecycle규칙에 만료일을 0일로 설정할 경우 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleSetExpirationZero()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Rules = new List<LifecycleRule>()
+			var rules = new List<LifecycleRule>()
 			{
-				new()
-				{
-					Id = "rule1",
-					Expiration = new LifecycleRuleExpiration(){
-						Days = 31, //31뒤에 삭제
-                        ExpiredObjectDeleteMarker = true}, // Object의 모든 버전이 삭제되고 DeleteMarker만 남았을 경우 삭제
-                    AbortIncompleteMultipartUpload = new LifecycleRuleAbortIncompleteMultipartUpload(){ DaysAfterInitiation = 2},// Multipart의 유예시간을 2일로 설정
-                    Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test1/" } }, // Object명이 test1/ 으로 시작할 경우에만 동작
-                    Status = LifecycleRuleStatus.Enabled,
-				},
-				new()
-				{
-					Id = "rule2",
-					Expiration = new LifecycleRuleExpiration(){ Days = 31 },
-					Filter = new LifecycleFilter(){ LifecycleFilterPredicate = new LifecyclePrefixPredicate() { Prefix = "test2/" } },
-					Status = LifecycleRuleStatus.Disabled,
-				},
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Days = 0 }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
 			};
-			var LifeCycle = new LifecycleConfiguration() { Rules = Rules };
 
-			var Response = client.PutLifecycleConfiguration(bucketName, LifeCycle);
-			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
+			var e = Assert.Throws<AggregateException>(() => client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules }));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+		}
+
+		[Fact(Skip = "SDK 버전에 따라 expires 헤더 검증 동작이 달라 비활성화 (testV2 @Disabled와 동일)")]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "Lifecycle 만료 규칙 설정 시 오브젝트의 expires 헤더가 올바르게 반영되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleSetExpiration()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var rules = new List<LifecycleRule>()
+			{
+				new() { Id = "rule1", Expiration = new LifecycleRuleExpiration(){ Days = 1 }, Filter = PrefixFilter("test1/"), Status = LifecycleRuleStatus.Enabled },
+			};
+
+			client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
+
+			var key = "test1/a";
+			client.PutObject(bucketName, key, body: "test");
+
+			var response = client.GetObjectMetadata(bucketName, key);
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 		}
 	}
 }

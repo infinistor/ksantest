@@ -10,6 +10,7 @@
 */
 using Amazon.S3;
 using Newtonsoft.Json.Linq;
+using s3tests.Data;
 using s3tests.Utils;
 using System;
 using System.Collections.Generic;
@@ -58,7 +59,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Put / Get")]
 		[Trait(MainData.Explanation, "13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_encrypted_transfer_13b()
+		public void TestEncryptedTransfer13b()
 		{
 			TestEncryptionSSECustomerWrite(13);
 		}
@@ -68,9 +69,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Metadata")]
 		[Trait(MainData.Explanation, "SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_encryption_sse_c_method_head()
+		public void TestEncryptionSseCMethodHead()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "testobj";
 			var body = new string('A', 1000);
@@ -96,9 +98,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_encryption_sse_c_present()
+		public void TestEncryptionSseCPresent()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "testobj";
 			var body = new string('A', 1000);
@@ -121,9 +124,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_encryption_sse_c_other_key()
+		public void TestEncryptionSseCOtherKey()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "testobj";
 			var body = new string('A', 100);
@@ -153,9 +157,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "SSE-C 설정값중 key-md5값이 올바르지 않을 경우 업로드 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_encryption_sse_c_invalid_md5()
+		public void TestEncryptionSseCInvalidMd5()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "testobj";
 			var body = new string('A', 100);
@@ -178,9 +183,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "SSE-C 설정값중 key-md5값을 누락했을 경우 업로드 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_encryption_sse_c_no_md5()
+		public void TestEncryptionSseCNoMd5()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "testobj";
 			var body = new string('A', 100);
@@ -201,9 +207,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "SSE-C 설정값중 key값을 누락했을 경우 업로드 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_encryption_sse_c_no_key()
+		public void TestEncryptionSseCNoKey()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "testobj";
 			var body = new string('A', 100);
@@ -223,9 +230,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "SSE-C 설정값중 algorithm값을 누락했을 경우 업로드 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_encryption_key_no_sse_c()
+		public void TestEncryptionKeyNoSseC()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "testobj";
 			var body = new string('A', 100);
@@ -245,9 +253,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Multipart")]
 		[Trait(MainData.Explanation, "멀티파트업로드를 SSE-C 설정하여 업로드 가능 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_encryption_sse_c_multipart_upload()
+		public void TestEncryptionSseCMultipartUpload()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "multipart_enc";
 			var Size = 50 * MainData.MB;
@@ -288,9 +297,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Multipart")]
 		[Trait(MainData.Explanation, "SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_encryption_sse_c_multipart_bad_download()
+		public void TestEncryptionSseCMultipartBadDownload()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "multipart_enc";
 			var Size = 50 * MainData.MB;
@@ -332,9 +342,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Post")]
 		[Trait(MainData.Explanation, "Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_encryption_sse_c_post_object_authenticated_request()
+		public void TestEncryptionSseCPostObjectAuthenticatedRequest()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 
 			var ContentType = "text/plain";
@@ -364,26 +375,22 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "x-amz-server-side-encryption-customer-algorithm", "AES256" },
 					{ "x-amz-server-side-encryption-customer-key", sseC.ProvidedKey },
 					{ "x-amz-server-side-encryption-customer-key-md5", sseC.MD5 },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
-			var Result = PostUpload(bucketName, Payload);
-			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
+			// SSE-C는 TLS 연결에서만 허용된다.
+			var Result = PostUpload(bucketName, Payload, secure: true);
+			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
 
 			var Response = Client.GetObject(bucketName, key, sseCustomerKey: sseC);
 			var body = S3Utils.GetBody(Response);
@@ -395,12 +402,13 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Get")]
 		[Trait(MainData.Explanation, "SSE-C설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_encryption_sse_c_get_object_many()
+		public void TestEncryptionSseCGetObjectMany()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "foo";
-			var body = RandomTextToLong(15 * 1024 * 1024);
+			var body = S3Utils.RandomTextToLong(15 * 1024 * 1024);
 			var sseC = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
@@ -417,13 +425,14 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Get")]
 		[Trait(MainData.Explanation, "SSE-C설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_encryption_sse_c_range_object_many()
+		public void TestEncryptionSseCRangeObjectMany()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var key = "foo";
 			var Size = 15 * 1024 * 1024;
-			var body = RandomTextToLong(Size);
+			var body = S3Utils.RandomTextToLong(Size);
 			var sseC = new SSECustomerKey()
 			{
 				Method = ServerSideEncryptionCustomerMethod.AES256,
@@ -440,9 +449,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Copy")]
 		[Trait(MainData.Explanation, "SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 mulitcopy 로 복사 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_sse_c_encryption_multipart_copypart_upload()
+		public void TestSseCEncryptionMultipartCopyPartUpload()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
 			var SrcKey = "multipart_enc";
 			var Size = 50 * MainData.MB;
@@ -488,6 +498,7 @@ namespace s3tests.Test
 		public void TestSseCEncryptionMultipartCopyMany()
 		{
 			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
 			var SrcKey = "mymultipart_enc";
 			var Size = 10 * MainData.MB;
 			var Client = GetClientHttps();
@@ -528,6 +539,75 @@ namespace s3tests.Test
 			// 업로드가 올바르게 되었는지 확인
 			body += UploadData.Body;
 			CheckContent(Client, bucketName, DestKey2, body, sseC: sseC);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-C")]
+		[Trait(MainData.Minor, "Multipart")]
+		[Trait(MainData.Explanation, "SSE-C 설정하여 업로드한 오브젝트를 멀티파트로 덮어쓰기 가능한지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestEncryptionSseCMultipartUploadOverwriteExistingObject()
+		{
+			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
+			var Client = GetClientHttps();
+			var key = "TestEncryptionSseCMultipartUploadOverwriteExistingObject";
+			var Size = 10 * MainData.MB;
+			var Content = S3Utils.RandomTextToLong(5 * MainData.MB);
+			var sseC = new SSECustomerKey()
+			{
+				Method = ServerSideEncryptionCustomerMethod.AES256,
+				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
+				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
+			};
+
+			// 기존 오브젝트 업로드
+			Client.PutObject(bucketName, key, body: Content, sseCustomerKey: sseC);
+
+			// 멀티파트로 덮어쓰기
+			var UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, key, Size, sseCustomerKey: sseC);
+			Client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
+
+			var Response = Client.GetObject(bucketName, key, sseCustomerKey: sseC);
+			var body = S3Utils.GetBody(Response);
+			Assert.Equal(UploadData.Body, body);
+			Assert.Equal(Size, Response.ContentLength);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-C")]
+		[Trait(MainData.Minor, "Multipart")]
+		[Trait(MainData.Explanation, "SSE-C 설정하여 멀티파트 업로드한 오브젝트를 PutObject로 덮어쓰기 가능한지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestEncryptionSseCPutObjectOverwriteMultipartUpload()
+		{
+			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
+			var Client = GetClientHttps();
+			var key = "TestEncryptionSseCPutObjectOverwriteMultipartUpload";
+			var MultipartSize = 10 * MainData.MB;
+			var Content = S3Utils.RandomTextToLong(1 * MainData.MB);
+			var sseC = new SSECustomerKey()
+			{
+				Method = ServerSideEncryptionCustomerMethod.AES256,
+				ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
+				MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
+			};
+
+			// 멀티파트 업로드
+			var UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, key, MultipartSize, sseCustomerKey: sseC);
+			Client.CompleteMultipartUpload(bucketName, key, UploadData.UploadId, UploadData.Parts);
+
+			// PutObject로 덮어쓰기
+			Client.PutObject(bucketName, key, body: Content, sseCustomerKey: sseC);
+
+			var Response = Client.GetObject(bucketName, key, sseCustomerKey: sseC);
+			var body = S3Utils.GetBody(Response);
+			Assert.Equal(Content.Length, body.Length);
+			Assert.Equal(Content, body);
+			Assert.Equal(Content.Length, Response.ContentLength);
+
+			CheckContentUsingRange(Client, bucketName, key, Content, MainData.KB, sseC: sseC);
 		}
 	}
 }

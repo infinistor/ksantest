@@ -31,12 +31,15 @@ namespace s3tests.Client
 		private string URL { get; set; }
 		private string AccessKey { get; set; }
 		private string SecretKey { get; set; }
+		private string Region { get; set; }
 
-		public MyHttpClient(string URL, string AccessKey, string SecretKey)
+		public MyHttpClient(string URL, string AccessKey, string SecretKey, string Region = null)
 		{
 			this.URL = URL;
 			this.AccessKey = AccessKey;
 			this.SecretKey = SecretKey;
+			// SigV4 서명은 리전이 실제 엔드포인트와 일치해야 한다. 미지정 시 AWS 기본 리전으로 둔다.
+			this.Region = string.IsNullOrWhiteSpace(Region) ? "us-east-1" : Region;
 		}
 
 		public MyResult PutObject(string Key, string Content, string ContentType = "text/plain")
@@ -53,7 +56,7 @@ namespace s3tests.Client
 
 			var URI = new Uri($"{URL}/{Key}");
 
-			var Signer = new AWS4SignerForAuthorizationHeader { EndpointUri = URI, HttpMethod = "PUT", Service = "s3", Region = "us-west-2" };
+			var Signer = new AWS4SignerForAuthorizationHeader { EndpointUri = URI, HttpMethod = "PUT", Service = "s3", Region = Region };
 
 			var Authorization = Signer.ComputeSignature(Headers, "", ContentHashString, AccessKey, SecretKey);
 
@@ -76,7 +79,7 @@ namespace s3tests.Client
 
 			var URI = new Uri($"{URL}/{Key}");
 
-			var Signer = new AWS4SignerForChunkedUpload { EndpointUri = URI, HttpMethod = "PUT", Service = "s3", Region = "us-west-2" };
+			var Signer = new AWS4SignerForChunkedUpload { EndpointUri = URI, HttpMethod = "PUT", Service = "s3", Region = Region };
 			var TotalLength = AWS4SignerForChunkedUpload.CalculateChunkedContentLength(Content.Length, UserDataBlockSize);
 
 			var Authorization = Signer.ComputeSignature(Headers, "", AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256, AccessKey, SecretKey);
@@ -121,7 +124,7 @@ namespace s3tests.Client
 
 			var URI = new Uri($"{URL}/{Key}");
 
-			var Signer = new AWS4SignerForAuthorizationHeader { EndpointUri = URI, HttpMethod = "GET", Service = "s3", Region = "us-west-2" };
+			var Signer = new AWS4SignerForAuthorizationHeader { EndpointUri = URI, HttpMethod = "GET", Service = "s3", Region = Region };
 
 			var Authorization = Signer.ComputeSignature(Headers, "", AWS4SignerBase.EMPTY_BODY_SHA256, AccessKey, SecretKey);
 

@@ -8,7 +8,9 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using Amazon.S3;
 using Amazon.S3.Model;
+using s3tests.Utils;
 using System.Collections.Generic;
 
 namespace s3tests
@@ -17,8 +19,10 @@ namespace s3tests
 	{
 		public string UploadId { get; set; }
 		public List<PartETag> Parts { get; set; }
-		public int NextPartNumber { get { return Parts.Count + 1; } }
+		public int NextPartNumber => Parts.Count + 1;
 		public string Body { get; set; }
+		public int PartSize { get; set; } = 5 * MainData.MB;
+
 		public MultipartUploadData()
 		{
 			UploadId = string.Empty;
@@ -26,8 +30,17 @@ namespace s3tests
 			Parts = [];
 		}
 
-		public void AddPart(int PartNumber, string Etag) => Parts.Add(new PartETag(PartNumber, Etag));
-		public void AddPart(PartETag Part) => Parts.Add(Part);
-		public void AppendBody(string Body) => this.Body += Body;
+		public void AddPart(int partNumber, string eTag) => Parts.Add(new PartETag(partNumber, eTag));
+		public void AddPart(PartETag part) => Parts.Add(part);
+		public void AddPart(string eTag) => Parts.Add(new PartETag(NextPartNumber, eTag));
+
+		public void AddPart(ChecksumAlgorithm algorithm, UploadPartResponse response)
+		{
+			var part = new PartETag(NextPartNumber, response.ETag);
+			CheckSum.SetChecksum(part, algorithm, CheckSum.GetChecksum(response, algorithm));
+			Parts.Add(part);
+		}
+
+		public void AppendBody(string body) => Body += body;
 	}
 }

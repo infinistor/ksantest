@@ -16,19 +16,120 @@ namespace s3tests.Utils
 {
 	public static class S3Utils
 	{
-		private static readonly Random rand = new(Guid.NewGuid().GetHashCode());
 		private static readonly char[] TEXT = "abcdefghijklmnopqrstuvwxyz0123456789".ToCharArray();
 		private static readonly char[] TEXT_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
 
-		public static string RandomText(int length) => new([.. Enumerable.Range(0, length).Select(x => TEXT[rand.Next(0, TEXT.Length)])]);
-		public static string RandomTextToLong(int length) => new([.. Enumerable.Range(0, length).Select(x => TEXT_STRING[rand.Next(0, TEXT_STRING.Length)])]);
+		// Random.Shared: xUnit 병렬 실행에서도 thread-safe
+		public static string RandomText(int length)
+		{
+			if (length <= 0) return string.Empty;
+			var chars = new char[length];
+			for (int i = 0; i < length; i++) chars[i] = TEXT[Random.Shared.Next(TEXT.Length)];
+			return new string(chars);
+		}
+		public static string RandomTextToLong(int length)
+		{
+			if (length <= 0) return string.Empty;
+			var chars = new char[length];
+			for (int i = 0; i < length; i++) chars[i] = TEXT_STRING[Random.Shared.Next(TEXT_STRING.Length)];
+			return new string(chars);
+		}
+
+		private const int BUCKET_MAX_LENGTH = 63;
+
+		/// <summary>prefix + 랜덤문자로 최대 길이를 채운 버킷명. (Java Utils.randomBucketName)</summary>
+		public static string RandomBucketName(string prefix)
+		{
+			prefix ??= "";
+			var maxLength = BUCKET_MAX_LENGTH - 1;
+			var bucketName = prefix + RandomText(BUCKET_MAX_LENGTH);
+			return bucketName[..Math.Min(maxLength, bucketName.Length)];
+		}
+
+		/// <summary>
+		/// prefix + suite + "-" + testId + "-" + 랜덤문자 형태로 최대 길이(62자)를 채운 버킷명을 만든다.
+		/// (Java Utils.getNewBucketName와 동일)
+		/// </summary>
+		public static string MakeBucketName(string prefix, string suite, int testId)
+		{
+			prefix ??= "";
+			suite = ToSuiteId(suite);
+
+			var maxLength = BUCKET_MAX_LENGTH - 1;
+			const int minRandom = 6;
+			var idxPart = testId.ToString();
+
+			// prefix + '-' + testId + '-' + 최소 랜덤길이는 항상 확보한다.
+			var reserved = prefix.Length + 1 + idxPart.Length + 1 + minRandom;
+			var suiteMax = maxLength - reserved;
+			if (suiteMax < 1) return RandomBucketName(prefix);
+			if (suite.Length > suiteMax) suite = suite[..suiteMax];
+
+			var head = $"{prefix}{suite}-{idxPart}-";
+			var bucketName = head + RandomText(Math.Max(maxLength - head.Length, 0));
+			if (bucketName.Length > maxLength) bucketName = bucketName[..maxLength];
+			return bucketName;
+		}
+
+		/// <summary>클래스명을 버킷명에 쓸 수 있는 suite id로 변환한다. (Java Utils.toSuiteId)</summary>
+		public static string ToSuiteId(string className)
+		{
+			if (string.IsNullOrEmpty(className)) return "x";
+
+			var dot = className.LastIndexOf('.');
+			var simple = dot >= 0 ? className[(dot + 1)..] : className;
+			simple = new string([.. simple.ToLowerInvariant().Where(char.IsLetterOrDigit)]);
+			return simple.Length == 0 ? "x" : simple;
+		}
+
+		/// <summary>지정한 길이의 오브젝트 이름을 생성한다. 200자마다 '/'를 넣어 디렉터리 구조를 흉내낸다.</summary>
+		public static string RandomObjectName(int length)
+		{
+			const int MAX_LENGTH = 200;
+
+			var name = new StringBuilder();
+			var index = 0;
+			while (name.Length <= length)
+			{
+				if (index + MAX_LENGTH < length)
+				{
+					name.Append(RandomTextToLong(MAX_LENGTH));
+					index += MAX_LENGTH;
+				}
+				else
+				{
+					name.Append(RandomTextToLong(length - index));
+					index = length;
+				}
+				name.Append('/');
+			}
+			return name.ToString()[..length];
+		}
 
 		public static ByteRange MakeRandomRange(int fileSize)
 		{
-			var offset = rand.Next(fileSize - 1000);
-			var length = rand.Next(fileSize - offset) - 1;
+			var offset = Random.Shared.Next(fileSize - 1000);
+			var length = Random.Shared.Next(fileSize - offset) - 1;
 
 			return new ByteRange(offset, offset + length);
+		}
+
+		/// <summary>POST 정책(base64)에 SigV4로 서명한다. (Java AWS4SignerBase.getPostPolicySignature)</summary>
+		public static string GetPostPolicySignature(string secretKey, string dateStamp, string regionName, string policyBase64)
+		{
+			static byte[] Hmac(byte[] key, string data)
+			{
+				using var hmac = new HMACSHA256(key);
+				return hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
+			}
+
+			var kSecret = Encoding.UTF8.GetBytes("AWS4" + secretKey);
+			var kDate = Hmac(kSecret, dateStamp);
+			var kRegion = Hmac(kDate, regionName);
+			var kService = Hmac(kRegion, "s3");
+			var kSigning = Hmac(kService, "aws4_request");
+
+			return Convert.ToHexString(Hmac(kSigning, policyBase64)).ToLowerInvariant();
 		}
 
 		public static string GetBase64EncodedSHA1Hash(string policy, string secretKey)
@@ -39,6 +140,10 @@ namespace s3tests.Utils
 			using HMACSHA1 sha1 = new(keyBytes);
 			return Convert.ToBase64String(sha1.ComputeHash(data));
 		}
+		/// <summary>ETag 비교용 16진수 MD5. (ETag는 base64가 아니라 hex다)</summary>
+		public static string GetMD5Hex(string data)
+			=> Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(data))).ToLowerInvariant();
+
 		public static string GetMD5(string data)
 		{
 			var byteData = Encoding.UTF8.GetBytes(data);
@@ -273,14 +378,10 @@ namespace s3tests.Utils
 
 		public static List<S3Grant> GrantsSort(List<S3Grant> data)
 		{
-			var newList = new List<S3Grant>();
-
-			var sortMap = new SortedDictionary<string, S3Grant>();
-
-			foreach (var grant in data) sortMap.Add($"{grant.Grantee.CanonicalUser}{grant.Permission}", grant);
-
-			foreach (var item in sortMap) newList.Add(item.Value);
-
+			// 같은 (사용자, 권한) 조합이 중복될 수 있으므로 Dictionary가 아니라 리스트를 정렬한다.
+			var newList = new List<S3Grant>(data);
+			newList.Sort((x, y) => string.CompareOrdinal(
+				$"{x.Grantee.CanonicalUser}{x.Permission}", $"{y.Grantee.CanonicalUser}{y.Permission}"));
 			return newList;
 		}
 
@@ -424,7 +525,8 @@ namespace s3tests.Utils
 			Assert.Equal(expected.Count, actual.Count);
 			for (int i = 0; i < expected.Count; i++)
 			{
-				Assert.Equal(expected[i].ETag, actual[i].ETag);
+				// UploadPart 응답의 ETag에는 따옴표가 붙지만 ListParts 응답에는 붙지 않는다.
+				Assert.Equal(expected[i].ETag?.Replace("\"", ""), actual[i].ETag?.Replace("\"", ""));
 				Assert.Equal(expected[i].PartNumber, actual[i].PartNumber);
 			}
 		}

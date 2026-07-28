@@ -32,10 +32,8 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectAnonymousRequest()
 		{
-			var bucketName = GetNewBucketName();
 			var client = GetClient();
-
-			client.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
 			var contentType = "text/plain";
 			var key = "TestPostObjectAnonymousRequest";
@@ -80,20 +78,15 @@ namespace s3tests.Test
 				},
 			};
 
-			var bytesJsonPolicyDocument = Encoding.UTF8.GetBytes(policyDocument.ToString());
-			var policy = Convert.ToBase64String(bytesJsonPolicyDocument);
-
-			var signature = S3Utils.GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
+			var sign = SignPostPolicy(policyDocument);
 			var fileData = new FormFile() { Name = key, ContentType = contentType, Body = key };
 			var payload = new Dictionary<string, object>() {
 					{ "key", key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", signature },
-					{ "policy", policy },
 					{ "Content-Type", contentType },
 					{ "file", fileData },
 			};
+			sign.Apply(payload);
 
 			var result = PostUpload(bucketName, payload);
 			AssertX.Equal(HttpStatusCode.NoContent, result.StatusCode, result.Message);
@@ -109,9 +102,8 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectAuthenticatedNoContentType()
 		{
-			var bucketName = GetNewBucketName();
 			var client = GetClient();
-			client.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 			var contentType = "text/plain";
 			var key = "TestPostObjectAuthenticatedNoContentType";
 
@@ -128,19 +120,14 @@ namespace s3tests.Test
 				},
 			};
 
-			var bytesJsonPolicyDocument = Encoding.UTF8.GetBytes(policyDocument.ToString());
-			var policy = Convert.ToBase64String(bytesJsonPolicyDocument);
-
-			var signature = S3Utils.GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
+			var sign = SignPostPolicy(policyDocument);
 			var fileData = new FormFile() { Name = key, ContentType = contentType, Body = key };
 			var payload = new Dictionary<string, object>() {
 					{ "key", key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", signature },
-					{ "policy", policy },
 					{ "file", fileData },
 			};
+			sign.Apply(payload);
 
 			var result = PostUpload(bucketName, payload);
 			AssertX.Equal(HttpStatusCode.NoContent, result.StatusCode, result.Message);
@@ -156,9 +143,8 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectAuthenticatedRequestBadAccessKey()
 		{
-			var bucketName = GetNewBucketName();
 			var client = GetClient();
-			client.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
 			var contentType = "text/plain";
 			var key = "TestPostObjectAuthenticatedRequestBadAccessKey";
@@ -177,20 +163,17 @@ namespace s3tests.Test
 				},
 			};
 
-			var bytesJsonPolicyDocument = Encoding.UTF8.GetBytes(policyDocument.ToString());
-			var policy = Convert.ToBase64String(bytesJsonPolicyDocument);
-
-			var signature = S3Utils.GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
+			var sign = SignPostPolicy(policyDocument);
 			var fileData = new FormFile() { Name = key, ContentType = contentType, Body = key };
 			var payload = new Dictionary<string, object>() {
 					{ "key", key },
-					{ "AWSAccessKeyId", "foo" },
 					{ "acl", "private" },
-					{ "signature", signature },
-					{ "policy", policy },
 					{ "Content-Type", contentType },
 					{ "file", fileData },
 			};
+			sign.Apply(payload);
+			// 정상 서명 후 credential의 AccessKey 부분만 존재하지 않는 값으로 교체한다.
+			payload["x-amz-credential"] = sign.Credential.Replace(Config.MainUser.AccessKey, "foo");
 
 			var result = PostUpload(bucketName, payload);
 			AssertX.Equal(HttpStatusCode.Forbidden, result.StatusCode, result.Message);
@@ -203,10 +186,8 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectSetSuccessCode()
 		{
-			var bucketName = GetNewBucketName();
 			var client = GetClient();
-
-			client.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
 			var contentType = "text/plain";
 			var key = "TestPostObjectSetSuccessCode";
@@ -233,9 +214,8 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectSetInvalidSuccessCode()
 		{
-			var bucketName = GetNewBucketName();
 			var client = GetClient();
-			client.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
 			var contentType = "text/plain";
 			var key = "TestPostObjectSetInvalidSuccessCode";
@@ -283,20 +263,15 @@ namespace s3tests.Test
 				},
 			};
 
-			var bytesJsonPolicyDocument = Encoding.UTF8.GetBytes(policyDocument.ToString());
-			var policy = Convert.ToBase64String(bytesJsonPolicyDocument);
-
-			var signature = S3Utils.GetBase64EncodedSHA1Hash(policy, Config.MainUser.SecretKey);
+			var sign = SignPostPolicy(policyDocument);
 			var fileData = new FormFile() { Name = key, ContentType = contentType, Body = key };
 			var payload = new Dictionary<string, object>() {
 					{ "key", key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", signature },
-					{ "policy", policy },
 					{ "Content-Type", contentType },
 					{ "file", fileData },
 			};
+			sign.Apply(payload);
 
 			var result = PostUpload(bucketName, payload);
 			AssertX.Equal(HttpStatusCode.NoContent, result.StatusCode, result.Message);
@@ -312,7 +287,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[오브젝트 이름을 로그인정보에 포함되어 있는 key값으로 대체할 경우] " +
 									 "post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_post_object_set_key_from_filename()
+		public void TestPostObjectSetKeyFromFilename()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -334,20 +309,15 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
@@ -361,7 +331,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Upload")]
 		[Trait(MainData.Explanation, "post 방식으로 로그인, 헤더 정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_post_object_ignored_header()
+		public void TestPostObjectIgnoredHeader()
 		{
 			var bucketName = GetNewBucket();
 
@@ -382,21 +352,16 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "x-ignore-foo" , "bar"},
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
@@ -408,7 +373,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[헤더정보에 대소문자를 섞어서 사용할 경우] " +
 									 "post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_post_object_case_insensitive_condition_fields()
+		public void TestPostObjectCaseInsensitiveConditionFields()
 		{
 			var bucketName = GetNewBucket();
 
@@ -429,20 +394,15 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "kEy", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "aCl", "private" },
-					{ "signature", Signature },
-					{ "pOLICy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
@@ -454,7 +414,7 @@ namespace s3tests.Test
 		[Trait(MainData.Explanation, "[오브젝트 이름에 '\'를 사용할 경우] " +
 									 "post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_post_object_escaped_field_values()
+		public void TestPostObjectEscapedFieldValues()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -476,20 +436,15 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
@@ -503,11 +458,10 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Upload")]
 		[Trait(MainData.Explanation, "[redirect url설정하여 체크] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_post_object_success_redirect_action()
+		public void TestPostObjectSuccessRedirectAction()
 		{
-			var bucketName = GetNewBucketName();
 			var client = GetClient();
-			client.PutBucket(bucketName, acl: S3CannedACL.PublicReadWrite);
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
 			var ContentType = "text/plain";
 			var Key = "foo.txt";
@@ -528,27 +482,25 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "success_action_redirect" , RedirectURL },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.OK, Result.StatusCode, Result.Message);
 
 			var Response = client.GetObject(bucketName, Key);
-			Assert.Equal(string.Format("{0}?bucket={1}&key={2}&etag=%22{3}%22", RedirectURL, bucketName, Key, Response.ETag.Replace("\"", "")), Result.URL);
+			// S3는 경로가 없는 리다이렉트 URL에 '/'를 붙여 정규화하므로 Uri로 맞춰서 비교한다.
+			var expectedUrl = new Uri(string.Format("{0}?bucket={1}&key={2}&etag=%22{3}%22",
+				RedirectURL, bucketName, Key, Response.ETag.Replace("\"", "")));
+			Assert.Equal(expectedUrl, new Uri(Result.URL));
 		}
 
 		[Fact]
@@ -556,7 +508,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[SecretKey Hash 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_invalid_signature()
+		public void TestPostObjectInvalidSignature()
 		{
 			var bucketName = GetNewBucket();
 
@@ -577,20 +529,17 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature[0..^1] },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
+			// 정상 서명 후 서명값 끝 한 글자를 잘라 무효화한다.
+			Payload["x-amz-signature"] = Sign.Signature[0..^1];
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
@@ -601,7 +550,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[AccessKey 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_invalid_access_key()
+		public void TestPostObjectInvalidAccessKey()
 		{
 			var bucketName = GetNewBucket();
 
@@ -622,20 +571,17 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey[0..^1] },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
+			// 정상 서명 후 credential의 AccessKey 끝 한 글자를 잘라 무효화한다.
+			Payload["x-amz-credential"] = Sign.Credential.Replace(Config.MainUser.AccessKey, Config.MainUser.AccessKey[0..^1]);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
@@ -646,7 +592,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[로그인 정보의 날짜포맷이 다를경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_invalid_date_format()
+		public void TestPostObjectInvalidDateFormat()
 		{
 			var bucketName = GetNewBucket();
 
@@ -667,23 +613,18 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -691,7 +632,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[오브젝트 이름을 입력하지 않을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_no_key_specified()
+		public void TestPostObjectNoKeySpecified()
 		{
 			var bucketName = GetNewBucket();
 
@@ -710,22 +651,17 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = "", ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -733,7 +669,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[signature 정보를 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_missing_signature()
+		public void TestPostObjectMissingSignature()
 		{
 			var bucketName = GetNewBucket();
 
@@ -754,22 +690,20 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
+			// 서명 필드를 누락시킨다.
+			Payload.Remove("x-amz-signature");
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -777,7 +711,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy에 버킷 이름을 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_missing_policy_condition()
+		public void TestPostObjectMissingPolicyCondition()
 		{
 			var bucketName = GetNewBucket();
 
@@ -797,20 +731,15 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
@@ -821,7 +750,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Metadata")]
 		[Trait(MainData.Explanation, "[사용자가 추가 메타데이터를 입력한 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_post_object_user_specified_header()
+		public void TestPostObjectUserSpecifiedHeader()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -844,21 +773,16 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "x-amz-meta-foo" , "barclamp" },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.NoContent, Result.StatusCode, Result.Message);
@@ -872,7 +796,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[사용자가 추가 메타데이터를 policy에 설정하였으나 오브젝트에 해당 정보가 누락된 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_request_missing_policy_specified_field()
+		public void TestPostObjectRequestMissingPolicySpecifiedField()
 		{
 			var bucketName = GetNewBucket();
 
@@ -894,20 +818,15 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
@@ -918,7 +837,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy의 condition을 대문자(CONDITIONS)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_condition_is_case_sensitive()
+		public void TestPostObjectConditionIsCaseSensitive()
 		{
 			var bucketName = GetNewBucket();
 
@@ -939,23 +858,18 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -963,7 +877,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy의 expiration을 대문자(EXPIRATION)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_expires_is_case_sensitive()
+		public void TestPostObjectExpiresIsCaseSensitive()
 		{
 			var bucketName = GetNewBucket();
 
@@ -984,23 +898,18 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -1008,7 +917,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy의 expiration을 만료된 값으로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_expired_policy()
+		public void TestPostObjectExpiredPolicy()
 		{
 			var bucketName = GetNewBucket();
 
@@ -1029,20 +938,15 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
@@ -1053,7 +957,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[사용자가 추가 메타데이터를 policy에 설정하였으나 설정정보가 올바르지 않을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_invalid_request_field_value()
+		public void TestPostObjectInvalidRequestFieldValue()
 		{
 			var bucketName = GetNewBucket();
 
@@ -1075,21 +979,16 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "x-amz-meta-foo" , "barclamp" },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
@@ -1100,7 +999,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy의 expiration값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_missing_expires_condition()
+		public void TestPostObjectMissingExpiresCondition()
 		{
 			var bucketName = GetNewBucket();
 
@@ -1120,23 +1019,18 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -1144,7 +1038,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy의 conditions값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_missing_conditions_list()
+		public void TestPostObjectMissingConditionsList()
 		{
 			var bucketName = GetNewBucket();
 
@@ -1156,23 +1050,18 @@ namespace s3tests.Test
 				{"expiration", DateTime.UtcNow.AddMinutes(100).ToString("yyyy-MM-ddTHH:mm:ssZ") },
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -1180,7 +1069,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy에 설정한 용량보다 큰 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_upload_size_limit_exceeded()
+		public void TestPostObjectUploadSizeLimitExceeded()
 		{
 			var bucketName = GetNewBucket();
 
@@ -1201,23 +1090,18 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -1225,7 +1109,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy에 용량정보 설정을 누락할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_missing_content_length_argument()
+		public void TestPostObjectMissingContentLengthArgument()
 		{
 			var bucketName = GetNewBucket();
 
@@ -1246,23 +1130,18 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -1270,7 +1149,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy에 용량정보 설정값이 틀렸을 경우(용량값을 음수로 입력)] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_invalid_content_length_argument()
+		public void TestPostObjectInvalidContentLengthArgument()
 		{
 			var bucketName = GetNewBucket();
 
@@ -1291,23 +1170,18 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -1315,7 +1189,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy에 설정한 용량보다 작은 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_upload_size_below_minimum()
+		public void TestPostObjectUploadSizeBelowMinimum()
 		{
 			var bucketName = GetNewBucket();
 
@@ -1336,23 +1210,18 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
-			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+			AssertX.Equal(HttpStatusCode.BadRequest, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -1360,7 +1229,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "[policy의 conditions값이 비어있을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_post_object_empty_conditions()
+		public void TestPostObjectEmptyConditions()
 		{
 			var bucketName = GetNewBucket();
 
@@ -1374,23 +1243,63 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
+			// 조건 목록이 비어 있으면 정책이 어떤 폼 필드도 허용하지 않으므로
+			// S3는 "Extra input fields"로 403을 반환한다.
 			var Result = PostUpload(bucketName, Payload);
 			AssertX.Equal(HttpStatusCode.Forbidden, Result.StatusCode, Result.Message);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "[policy에 명시된 버킷과 다른 버킷으로 업로드할 경우] post 방식으로 파일 업로드시 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectWrongBucket()
+		{
+			var bucketName = GetNewBucketName();
+			var badBucketName = GetNewBucketName();
+
+			var ContentType = "text/plain";
+			var Key = "\\$foo.txt";
+
+			var PolicyDocument = new JObject()
+			{
+				{"expiration", DateTime.UtcNow.AddMinutes(100).ToString("yyyy-MM-ddTHH:mm:ssZ") },
+				{ "conditions", new JArray()
+					{
+						{ new JObject() { { "bucket", bucketName } } },
+						{ new JArray() { "starts-with", "$key", "\\$foo" } },
+						{ new JObject() { { "acl", "private" } } },
+						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
+						{ new JArray() { "content-length-range", 512, 1024 } },
+					}
+				},
+			};
+
+			var Sign = SignPostPolicy(PolicyDocument);
+			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
+			var Payload = new Dictionary<string, object>() {
+					{ "key", Key },
+					{ "bucket", bucketName },
+					{ "acl", "private" },
+					{ "Content-Type", ContentType },
+					{ "file", FileData },
+			};
+			Sign.Apply(Payload);
+
+			// policy에 적힌 버킷이 아니라 존재하지 않는 버킷으로 업로드한다.
+			var Result = PostUpload(badBucketName, Payload);
+			AssertX.Equal(HttpStatusCode.NotFound, Result.StatusCode, Result.Message);
 		}
 
 		[Fact]
@@ -1398,7 +1307,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "PresignedURL")]
 		[Trait(MainData.Explanation, "PresignedURL로 오브젝트 업로드, 다운로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_presignedurl_put_get()
+		public void TestPresignedUrlPutGet()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -1418,34 +1327,10 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "Post")]
-		[Trait(MainData.Minor, "PresignedURL")]
-		[Trait(MainData.Explanation, "[SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_presignedurl_put_get_v4()
-		{
-			var bucketName = GetNewBucketName();
-			var client = GetClientV4();
-			var Key = "foo";
-
-			client.PutBucket(bucketName);
-
-			var PutURL = client.GeneratePresignedURL(bucketName, Key, DateTime.Now.AddSeconds(100000), HttpVerb.PUT);
-			var PutResponse = PutObject(PutURL, Key);
-
-			Assert.Equal(HttpStatusCode.OK, PutResponse.StatusCode);
-
-			var GetURL = client.GeneratePresignedURL(bucketName, Key, DateTime.Now.AddSeconds(100000), HttpVerb.GET);
-			var GetResponse = GetObject(GetURL);
-
-			Assert.Equal(HttpStatusCode.OK, GetResponse.StatusCode);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Post")]
 		[Trait(MainData.Minor, "signV4")]
 		[Trait(MainData.Explanation, "[SignatureVersion4] post 방식으로 오브젝트 업로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_put_object_v4()
+		public void TestPutObjectV4()
 		{
 			var bucketName = GetNewBucket();
 			var ContentType = "text/plain";
@@ -1453,7 +1338,7 @@ namespace s3tests.Test
 			var Size = 100;
 			var Content = S3Utils.RandomTextToLong(Size);
 
-			var client = new MyHttpClient(GetURL(bucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey);
+			var client = new MyHttpClient(GetURL(bucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey, Config.S3.RegionName);
 
 			var Response = client.PutObject(Key, Content, ContentType: ContentType);
 			Assert.Equal(HttpStatusCode.OK, Response.StatusCode);
@@ -1464,7 +1349,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "signV4")]
 		[Trait(MainData.Explanation, "[SignatureVersion4] post 방식으로 오브젝트 업로드 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_put_object_chunked_v4()
+		public void TestPutObjectChunkedV4()
 		{
 			var bucketName = GetNewBucket();
 			var ContentType = "text/plain";
@@ -1472,7 +1357,7 @@ namespace s3tests.Test
 			var Size = 100;
 			var Content = S3Utils.RandomTextToLong(Size);
 
-			var client = new MyHttpClient(GetURL(bucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey);
+			var client = new MyHttpClient(GetURL(bucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey, Config.S3.RegionName);
 
 			var Response = client.PutObjectChunked(Key, Content, ContentType: ContentType);
 			Assert.Equal(HttpStatusCode.OK, Response.StatusCode);
@@ -1493,7 +1378,7 @@ namespace s3tests.Test
 
 			client.PutObject(bucketName, Key, Content);
 
-			var MyClient = new MyHttpClient(GetURL(bucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey);
+			var MyClient = new MyHttpClient(GetURL(bucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey, Config.S3.RegionName);
 			var Response = MyClient.GetObject(Key, out string Body);
 			Assert.Equal(HttpStatusCode.OK, Response.StatusCode);
 			Assert.Equal(Size, Body.Length);

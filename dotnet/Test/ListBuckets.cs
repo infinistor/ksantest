@@ -8,6 +8,7 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using s3tests.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -43,6 +44,80 @@ namespace s3tests.Test
 				if (!BucketList.Contains(bucketName))
 					throw new Exception(string.Format("S3 implementation's GET on Service did not return bucket we created: {0}", bucketName));
 			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "Prefix")]
+		[Trait(MainData.Explanation, "prefix로 버킷 목록을 필터링할 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListBucketsPrefix()
+		{
+			var client = GetClient();
+			var prefix = "1111-my-test";
+			var bucketName = S3Utils.MakeBucketName(prefix, GetSuiteId(), 5);
+			client.PutBucket(bucketName);
+
+			for (int i = 0; i < 5; i++) GetNewBucket(client);
+
+			var response = client.ListBuckets(prefix: prefix);
+			var bucketList = GetBucketList(response);
+			Assert.Single(bucketList);
+			Assert.Equal(bucketName, bucketList[0]);
+			client.DeleteBucket(bucketName);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "MaxBuckets")]
+		[Trait(MainData.Explanation, "maxBuckets로 버킷 목록 개수를 제한할 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListBucketsMaxBuckets()
+		{
+			var client = GetClient();
+			for (int i = 0; i < 5; i++) GetNewBucket(client);
+
+			// GetPrefix()는 {random} 치환 때문에 호출마다 값이 달라질 수 있으므로 한 번만 구한다.
+			var prefix = GetPrefix();
+
+			// 전체 버킷 리스트를 먼저 가져옴
+			var fullBucketList = GetBucketList(client.ListBuckets(prefix: prefix));
+			fullBucketList.Sort(StringComparer.Ordinal);
+
+			// maxBuckets로 제한해서 가져온 결과가 전체 리스트의 앞부분과 일치하는지 확인
+			var bucketList = GetBucketList(client.ListBuckets(prefix: prefix, maxBuckets: 2));
+			Assert.Equal(2, bucketList.Count);
+			Assert.Equal(fullBucketList.GetRange(0, 2), bucketList);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "ContinuationToken")]
+		[Trait(MainData.Explanation, "continuationToken으로 버킷 목록을 페이징할 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListBucketsContinuationToken()
+		{
+			var client = GetClient();
+			for (int i = 0; i < 5; i++) GetNewBucket(client);
+
+			// GetPrefix()는 {random} 치환 때문에 호출마다 값이 달라질 수 있으므로 한 번만 구한다.
+			var prefix = GetPrefix();
+
+			// 전체 버킷 리스트를 먼저 가져옴
+			var fullBucketList = GetBucketList(client.ListBuckets(prefix: prefix));
+			fullBucketList.Sort(StringComparer.Ordinal);
+
+			// 첫 번째 페이지: maxBuckets=2
+			var response = client.ListBuckets(prefix: prefix, maxBuckets: 2);
+			var bucketList = GetBucketList(response);
+			Assert.Equal(2, bucketList.Count);
+			Assert.Equal(fullBucketList.GetRange(0, 2), bucketList);
+
+			// 두 번째 페이지: continuationToken 사용
+			var response2 = client.ListBuckets(prefix: prefix, maxBuckets: 2, continuationToken: response.ContinuationToken);
+			var bucketList2 = GetBucketList(response2);
+			Assert.Equal(2, bucketList2.Count);
+			Assert.Equal(fullBucketList.GetRange(2, 2), bucketList2);
 		}
 
 		[Fact]

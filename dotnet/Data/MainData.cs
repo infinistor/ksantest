@@ -31,6 +31,8 @@ namespace s3tests
 		public const int KB = 1024;
 		public const int MB = 1024 * 1024;
 
+		public const int MAX_KEY_LENGTH = 1024;
+
 		public const string HTTP = "http://";
 		public const string HTTPS = "https://";
 
@@ -55,12 +57,14 @@ namespace s3tests
 		public const string NO_SUCH_BUCKET = "NoSuchBucket";
 		public const string BUCKET_NOT_EMPTY = "BucketNotEmpty";
 		public const string NO_SUCH_KEY = "NoSuchKey";
+		public const string NO_SUCH_CORS_CONFIGURATION = "NoSuchCORSConfiguration";
 		public const string ACCESS_DENIED = "AccessDenied";
 		public const string PRECONDITION_FAILED = "PreconditionFailed";
 		public const string NOT_MODIFIED = "NotModified";
 		public const string BUCKET_ALREADY_OWNED_BY_YOU = "BucketAlreadyOwnedByYou";
 		public const string BUCKET_ALREADY_EXISTS = "BucketAlreadyExists";
 		public const string UNRESOLVABLE_GRANT_BY_EMAIL_ADDRESS = "UnresolvableGrantByEmailAddress";
+		public const string MALFORMED_ACL_ERROR = "MalformedACLError";
 		public const string INVALID_REQUEST = "InvalidRequest";
 		public const string MALFORMED_XML = "MalformedXML";
 		public const string INVALID_RANGE = "InvalidRange";
@@ -71,7 +75,10 @@ namespace s3tests
 		public const string INVALID_BUCKET_STATE = "InvalidBucketState";
 		public const string INVALID_RETENTION_PERIOD = "InvalidRetentionPeriod";
 		public const string OBJECT_LOCK_CONFIGURATION_NOT_FOUND_ERROR = "ObjectLockConfigurationNotFoundError";
+		public const string NO_SUCH_TAG_SET = "NoSuchTagSet";
 		public const string NOT_IMPLEMENTED = "NotImplemented";
+		public const string KEY_TOO_LONG = "KeyTooLongError";
+		public const string METHOD_NOT_ALLOWED = "MethodNotAllowed";
 		public const string SIGNATURE_DOES_NOT_MATCH = "SignatureDoesNotMatch";
 		public const string PERMANENT_REDIRECT = "PermanentRedirect";
 		public const string NO_SUCH_PUBLIC_ACCESS_BLOCK_CONFIGURATION = "NoSuchPublicAccessBlockConfiguration";
@@ -79,6 +86,9 @@ namespace s3tests
 		public const string INVALID_TARGET_BUCKET_FOR_LOGGING = "InvalidTargetBucketForLogging";
 		public const string NO_SUCH_CONFIGURATION = "NoSuchConfiguration";
 		public const string INVALID_CONFIGURATION_ID = "InvalidConfigurationId";
+		public const string BAD_DIGEST = "BadDigest";
+		public const string NO_SUCH_VERSION = "NoSuchVersion";
+		public const string ACCESS_CONTROL_LIST_NOT_SUPPORTED = "AccessControlListNotSupported";
 		#endregion
 	}
 }

@@ -69,12 +69,17 @@ namespace s3tests.Test
 			var decrypt = AES.CreateDecryptor();
 
 			using MemoryStream ms = new();
-			using CryptoStream cs = new(ms, decrypt, CryptoStreamMode.Write);
-			byte[] xmlBytes = Convert.FromBase64String(input);
-			cs.Write(xmlBytes, 0, xmlBytes.Length);
-			byte[] buf = ms.ToArray();
-			string output = Encoding.UTF8.GetString(buf);
-			return output;
+			byte[] buf;
+			// using 선언문은 메서드 끝에서야 Dispose되므로 ToArray() 시점에 마지막 블록이 아직 기록되지 않는다.
+			// 한 블록 미만 입력이면 결과가 빈 문자열이 되므로 명시적으로 블록을 닫는다.
+			using (CryptoStream cs = new(ms, decrypt, CryptoStreamMode.Write))
+			{
+				byte[] xmlBytes = Convert.FromBase64String(input);
+				cs.Write(xmlBytes, 0, xmlBytes.Length);
+				cs.FlushFinalBlock();
+				buf = ms.ToArray();
+			}
+			return Encoding.UTF8.GetString(buf);
 		}
 
 		private static string RandomString(int Length)

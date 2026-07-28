@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit.Abstractions;
 
@@ -28,9 +29,26 @@ namespace s3tests.Test
 
 		public AmazonS3Client Client { get; private set; }
 
+		/// <summary>모든 요청에 추가할 헤더(백엔드 클라이언트용)</summary>
+		private readonly Dictionary<string, string> ClientHeaders = [];
+		/// <summary>요청 단위로 추가할 헤더. SDK v4에서 request.BeforeRequestEvent가 제거되어 요청 인스턴스를 키로 보관한다.</summary>
+		private readonly ConditionalWeakTable<AmazonWebServiceRequest, Dictionary<string, string>> RequestHeaders = [];
+
+		/// <summary>이 클라이언트의 요청 체크섬 계산 모드.</summary>
+		private readonly RequestChecksumCalculation RequestChecksum;
+
+		/// <summary>
+		/// SDK v4는 RequestChecksumCalculation이 WHEN_REQUIRED이면 ChecksumAlgorithm을 명시해도
+		/// x-amz-sdk-checksum-algorithm 헤더만 붙이고 체크섬 값도 트레일러도 만들지 않아 400을 받는다.
+		/// 이 경우에만 값을 미리 계산해 넣는다. (WHEN_SUPPORTED는 SDK가 정상 처리하므로 건드리지 않는다)
+		/// </summary>
+		private bool NeedsPrecomputedChecksum(ChecksumAlgorithm algorithm, string value)
+			=> algorithm != null && value == null && RequestChecksum == RequestChecksumCalculation.WHEN_REQUIRED;
+
 		public S3Client(S3Config s3, bool isSecure, UserData user, ITestOutputHelper output = null,
 		RequestChecksumCalculation? requestChecksumCalculation = null,
-		ResponseChecksumValidation? responseChecksumValidation = null)
+		ResponseChecksumValidation? responseChecksumValidation = null,
+		List<KeyValuePair<string, string>> clientHeaders = null)
 		{
 			if (output != null) Output = output;
 
@@ -49,12 +67,35 @@ namespace s3tests.Test
 
 			s3Config.Timeout = TimeSpan.FromSeconds(S3_TIMEOUT);
 			s3Config.ForcePathStyle = true;
-			if (requestChecksumCalculation != null) s3Config.RequestChecksumCalculation = requestChecksumCalculation.Value;
-			if (responseChecksumValidation != null) s3Config.ResponseChecksumValidation = responseChecksumValidation.Value;
+			if (!isSecure) s3Config.UseHttp = true;
 
-			else s3Config.UseHttp = true;
+			// SDK v4 기본값은 WHEN_SUPPORTED라 모든 요청에 체크섬(aws-chunked 트레일러)이 붙는다.
+			// Java testV2는 표준 클라이언트에 WHEN_REQUIRED를 명시하므로 기본값을 맞춘다.
+			s3Config.RequestChecksumCalculation = requestChecksumCalculation ?? RequestChecksumCalculation.WHEN_REQUIRED;
+			s3Config.ResponseChecksumValidation = responseChecksumValidation ?? ResponseChecksumValidation.WHEN_REQUIRED;
+			RequestChecksum = s3Config.RequestChecksumCalculation;
 
 			Client = new(credentials, s3Config);
+
+			if (clientHeaders != null)
+			{
+				foreach (var header in clientHeaders)
+					ClientHeaders[header.Key] = header.Value;
+			}
+
+			// 서명 이전 단계에서 클라이언트 공통 헤더와 요청별 헤더를 주입한다.
+			Client.BeforeRequestEvent += (_, e) =>
+			{
+				if (e is not WebServiceRequestEventArgs args) return;
+
+				foreach (var header in ClientHeaders)
+					args.Headers[header.Key] = header.Value;
+
+				if (args.Request == null) return;
+				if (!RequestHeaders.TryGetValue(args.Request, out var headers)) return;
+				foreach (var header in headers)
+					args.Headers[header.Key] = header.Value;
+			};
 		}
 
 		// HttpClientFactory 클래스 추가
@@ -75,10 +116,16 @@ namespace s3tests.Test
 
 		#region Bucket Function
 
-		public ListBucketsResponse ListBuckets()
+		public ListBucketsResponse ListBuckets(string prefix = null, int? maxBuckets = null, string continuationToken = null)
 		{
 			if (Client == null) return null;
-			var response = Client.ListBucketsAsync();
+
+			var request = new ListBucketsRequest();
+			if (prefix != null) request.Prefix = prefix;
+			if (maxBuckets.HasValue) request.MaxBuckets = maxBuckets.Value;
+			if (continuationToken != null) request.ContinuationToken = continuationToken;
+
+			var response = Client.ListBucketsAsync(request);
 			response.Wait();
 			return response.Result;
 		}
@@ -92,20 +139,13 @@ namespace s3tests.Test
 		}
 		public PutBucketResponse PutBucket(string bucketName, S3CannedACL acl = null, string regionName = null,
 			List<S3Grant> grants = null, List<KeyValuePair<string, string>> headerList = null,
-			bool? objectLockEnabledForBucket = null)
+			bool? objectLockEnabledForBucket = null, ObjectOwnership objectOwnership = null)
 		{
 			var request = new PutBucketRequest() { BucketName = bucketName };
 			if (acl != null) request.CannedACL = acl;
 			if (regionName != null) request.BucketRegionName = regionName;
-			if (headerList != null)
-			{
-				Client.BeforeRequestEvent += delegate (object sender, RequestEventArgs e)
-				{
-					var requestEvent = e as WebServiceRequestEventArgs;
-					foreach (var header in headerList)
-						requestEvent.Headers.Add(header.Key, header.Value);
-				};
-			}
+			if (objectOwnership != null) request.ObjectOwnership = objectOwnership;
+			ApplyRequestHeaders(request, null, headerList);
 			if (grants != null) request.Grants = grants;
 			if (objectLockEnabledForBucket.HasValue) request.ObjectLockEnabledForBucket = objectLockEnabledForBucket.Value;
 
@@ -172,10 +212,17 @@ namespace s3tests.Test
 		}
 		public PutBucketVersioningResponse PutBucketVersioning(string bucketName, bool? enableMfaDelete = null, VersionStatus status = null)
 		{
-			var request = new PutBucketVersioningRequest() { BucketName = bucketName };
+			// SDK v4의 VersioningConfig getter는 값을 저장하지 않는 새 인스턴스를 돌려주므로
+			// 프로퍼티 경유로 설정하면 유실된다. 반드시 객체를 만들어 대입할 것.
+			var config = new S3BucketVersioningConfig();
+			if (enableMfaDelete != null) config.EnableMfaDelete = enableMfaDelete.Value;
+			if (status != null) config.Status = status;
 
-			if (enableMfaDelete != null) request.VersioningConfig.EnableMfaDelete = enableMfaDelete.Value;
-			if (status != null) request.VersioningConfig.Status = status;
+			var request = new PutBucketVersioningRequest()
+			{
+				BucketName = bucketName,
+				VersioningConfig = config,
+			};
 
 			return PutBucketVersioning(request);
 		}
@@ -211,17 +258,26 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public PutACLResponse PutBucketACL(string bucketName, S3CannedACL acl = null, S3AccessControlList accessControlPolicy = null)
+
+		/// <summary>
+		/// 비권장 PutACL 대신 전용 PutBucketAcl을 쓴다.
+		/// PutACL 마셜러는 Grants가 비어 있으면 &lt;Owner&gt;까지 통째로 빼고 &lt;AccessControlPolicy/&gt;만 보내
+		/// AWS가 MalformedXML로 거부한다. 전용 오퍼레이션은 Owner를 유지한다.
+		/// </summary>
+		public PutBucketAclResponse PutBucketACL(string bucketName, S3CannedACL acl = null, S3AccessControlList accessControlPolicy = null)
 		{
-			var request = new PutACLRequest()
+			var request = new PutBucketAclRequest()
 			{
 				BucketName = bucketName
 			};
 
-			if (acl != null) request.CannedACL = acl;
-			if (accessControlPolicy != null) request.AccessControlList = accessControlPolicy;
+			if (acl != null) request.ACL = acl;
+			if (accessControlPolicy != null) request.AccessControlPolicy = accessControlPolicy;
 
-			return PutACL(request);
+			if (Client == null) return null;
+			var response = Client.PutBucketAclAsync(request);
+			response.Wait();
+			return response.Result;
 		}
 
 		private PutCORSConfigurationResponse PutCORSConfiguration(PutCORSConfigurationRequest request)
@@ -756,6 +812,137 @@ namespace s3tests.Test
 
 			return GetBucketAccelerateConfiguration(request);
 		}
+
+		private ListBucketMetricsConfigurationsResponse ListBucketMetricsConfigurations(ListBucketMetricsConfigurationsRequest request)
+		{
+			if (Client == null) return null;
+			var response = Client.ListBucketMetricsConfigurationsAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+		public ListBucketMetricsConfigurationsResponse ListBucketMetricsConfigurations(string bucketName)
+		{
+			var request = new ListBucketMetricsConfigurationsRequest() { BucketName = bucketName };
+			return ListBucketMetricsConfigurations(request);
+		}
+
+		private PutBucketMetricsConfigurationResponse PutBucketMetricsConfiguration(PutBucketMetricsConfigurationRequest request)
+		{
+			if (Client == null) return null;
+			var response = Client.PutBucketMetricsConfigurationAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+		public PutBucketMetricsConfigurationResponse PutBucketMetricsConfiguration(string bucketName, string id, MetricsConfiguration metricsConfiguration)
+		{
+			var request = new PutBucketMetricsConfigurationRequest()
+			{
+				BucketName = bucketName,
+				MetricsConfiguration = metricsConfiguration
+			};
+			if (id != null) request.MetricsId = id;
+			return PutBucketMetricsConfiguration(request);
+		}
+
+		private GetBucketMetricsConfigurationResponse GetBucketMetricsConfiguration(GetBucketMetricsConfigurationRequest request)
+		{
+			if (Client == null) return null;
+			var response = Client.GetBucketMetricsConfigurationAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+		public GetBucketMetricsConfigurationResponse GetBucketMetricsConfiguration(string bucketName, string id)
+		{
+			var request = new GetBucketMetricsConfigurationRequest()
+			{
+				BucketName = bucketName,
+				MetricsId = id
+			};
+			return GetBucketMetricsConfiguration(request);
+		}
+
+		private DeleteBucketMetricsConfigurationResponse DeleteBucketMetricsConfiguration(DeleteBucketMetricsConfigurationRequest request)
+		{
+			if (Client == null) return null;
+			var response = Client.DeleteBucketMetricsConfigurationAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+		public DeleteBucketMetricsConfigurationResponse DeleteBucketMetricsConfiguration(string bucketName, string id)
+		{
+			var request = new DeleteBucketMetricsConfigurationRequest()
+			{
+				BucketName = bucketName,
+				MetricsId = id
+			};
+			return DeleteBucketMetricsConfiguration(request);
+		}
+
+		private GetBucketNotificationResponse GetBucketNotification(GetBucketNotificationRequest request)
+		{
+			if (Client == null) return null;
+			var response = Client.GetBucketNotificationAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+		public GetBucketNotificationResponse GetBucketNotificationConfiguration(string bucketName)
+		{
+			var request = new GetBucketNotificationRequest() { BucketName = bucketName };
+			return GetBucketNotification(request);
+		}
+
+		private PutBucketNotificationResponse PutBucketNotification(PutBucketNotificationRequest request)
+		{
+			if (Client == null) return null;
+			var response = Client.PutBucketNotificationAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+
+		public PutBucketNotificationResponse PutBucketNotificationConfiguration(string bucketName,
+			List<LambdaFunctionConfiguration> lambdaFunctionConfigurations = null,
+			List<TopicConfiguration> topicConfigurations = null,
+			List<QueueConfiguration> queueConfigurations = null)
+		{
+			var request = new PutBucketNotificationRequest()
+			{
+				BucketName = bucketName,
+				LambdaFunctionConfigurations = lambdaFunctionConfigurations,
+				TopicConfigurations = topicConfigurations,
+				QueueConfigurations = queueConfigurations
+			};
+			return PutBucketNotification(request);
+		}
+
+		private GetBucketOwnershipControlsResponse GetBucketOwnershipControls(GetBucketOwnershipControlsRequest request)
+		{
+			if (Client == null) return null;
+			var response = Client.GetBucketOwnershipControlsAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+		public GetBucketOwnershipControlsResponse GetBucketOwnershipControls(string bucketName)
+		{
+			var request = new GetBucketOwnershipControlsRequest() { BucketName = bucketName };
+			return GetBucketOwnershipControls(request);
+		}
+
+		private PutBucketOwnershipControlsResponse PutBucketOwnershipControls(PutBucketOwnershipControlsRequest request)
+		{
+			if (Client == null) return null;
+			var response = Client.PutBucketOwnershipControlsAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+		public PutBucketOwnershipControlsResponse PutBucketOwnershipControls(string bucketName, OwnershipControls ownershipControls)
+		{
+			var request = new PutBucketOwnershipControlsRequest()
+			{
+				BucketName = bucketName,
+				OwnershipControls = ownershipControls
+			};
+			return PutBucketOwnershipControls(request);
+		}
 		#endregion
 
 		#region Object Function
@@ -768,7 +955,7 @@ namespace s3tests.Test
 		}
 		public PutObjectResponse PutObject(string bucketName, string key, string body = null, byte[] byteBody = null, string contentType = null,
 			string cacheControl = null, DateTime? expires = null, string ifMatch = null, string ifNoneMatch = null, ChecksumAlgorithm checksumAlgorithm = null,
-			string md5Digest = null, List<Tag> tagSet = null, SSECustomerKey sseCustomerKey = null,
+			string checksumValue = null, string md5Digest = null, List<Tag> tagSet = null, SSECustomerKey sseCustomerKey = null,
 			List<KeyValuePair<string, string>> metadataList = null, List<KeyValuePair<string, string>> headerList = null,
 			S3CannedACL acl = null, List<S3Grant> grants = null, ServerSideEncryptionMethod sseKey = null,
 			ObjectLockLegalHoldStatus objectLockLegalHoldStatus = null, DateTime? objectLockRetainUntilDate = null,
@@ -806,7 +993,17 @@ namespace s3tests.Test
 			if (md5Digest != null) request.MD5Digest = md5Digest;
 
 			//Checksum
-			if (checksumAlgorithm != null) request.ChecksumAlgorithm = checksumAlgorithm;
+			if (checksumValue != null && checksumAlgorithm != null)
+				s3tests.Utils.CheckSum.SetChecksum(request, checksumAlgorithm, checksumValue);
+			else if (NeedsPrecomputedChecksum(checksumAlgorithm, checksumValue))
+			{
+				request.ChecksumAlgorithm = checksumAlgorithm;
+				var content = byteBody ?? System.Text.Encoding.UTF8.GetBytes(body ?? string.Empty);
+				s3tests.Utils.CheckSum.SetChecksum(request, checksumAlgorithm,
+					Convert.ToBase64String(s3tests.Utils.CheckSum.CalculateChecksumBytes(checksumAlgorithm, content)));
+			}
+			else if (checksumAlgorithm != null)
+				request.ChecksumAlgorithm = checksumAlgorithm;
 
 			//Tag
 			if (tagSet != null) request.TagSet = tagSet;
@@ -850,7 +1047,7 @@ namespace s3tests.Test
 			DateTime? ifUnmodifiedSinceDateTime = null, string responseContentType = null,
 			string responseContentLanguage = null, string responseExpires = null,
 			string responseCacheControl = null, string responseContentDisposition = null,
-			string responseContentEncoding = null)
+			string responseContentEncoding = null, int? partNumber = null)
 		{
 			var request = new GetObjectRequest()
 			{
@@ -874,7 +1071,8 @@ namespace s3tests.Test
 			if (ifModifiedSince != null) request.ModifiedSinceDate = DateTime.Parse(ifModifiedSince);
 			if (ifModifiedSinceDateTime != null) request.ModifiedSinceDate = ifModifiedSinceDateTime.Value;
 			if (ifUnmodifiedSince != null) request.UnmodifiedSinceDate = DateTime.Parse(ifUnmodifiedSince);
-			if (ifUnmodifiedSinceDateTime != null) request.ModifiedSinceDate = ifUnmodifiedSinceDateTime.Value;
+			if (ifUnmodifiedSinceDateTime != null) request.UnmodifiedSinceDate = ifUnmodifiedSinceDateTime.Value;
+			if (partNumber != null) request.PartNumber = partNumber.Value;
 
 			//ResponseHeaderOverrides
 			if (responseContentType != null) request.ResponseHeaderOverrides.ContentType = responseContentType;
@@ -899,7 +1097,10 @@ namespace s3tests.Test
 			List<KeyValuePair<string, string>> metadataList = null, S3MetadataDirective? metadataDirective = null,
 			ServerSideEncryptionMethod sseKey = null, SSECustomerKey srcCustomerKey = null, SSECustomerKey destCustomerKey = null,
 			string versionId = null, S3CannedACL acl = null, string eTagToMatch = null, string eTagToNotMatch = null,
-			string contentType = null)
+			string contentType = null, ChecksumAlgorithm checksumAlgorithm = null,
+			List<KeyValuePair<string, string>> headerList = null,
+			DateTime? modifiedSince = null, DateTime? unmodifiedSince = null,
+			string ifMatch = null, string ifNoneMatch = null)
 		{
 			var request = new CopyObjectRequest()
 			{
@@ -910,6 +1111,9 @@ namespace s3tests.Test
 			};
 			if (acl != null) request.CannedACL = acl;
 			if (contentType != null) request.ContentType = contentType;
+			// CopyObject는 본문이 없어 체크섬을 S3가 계산한다. SDK v4가 x-amz-sdk-checksum-algorithm(본문 체크섬용)을
+			// 내보내면 AWS가 대응 값이 없다며 400을 반환하므로, 알고리즘 지정 헤더를 직접 넣는다.
+			if (checksumAlgorithm != null) request.Headers["x-amz-checksum-algorithm"] = checksumAlgorithm.Value;
 			if (metadataList != null)
 			{
 				foreach (var metaData in metadataList)
@@ -917,23 +1121,40 @@ namespace s3tests.Test
 			}
 			if (metadataDirective != null) request.MetadataDirective = metadataDirective.Value;
 			if (versionId != null) request.SourceVersionId = versionId;
+
+			// SDK v4는 x-amz-copy-source의 '/'까지 %2F로 인코딩한다. 복사 자체는 되지만
+			// IAM/버킷 정책의 s3:x-amz-copy-source 조건은 원본 헤더 값과 비교하므로 매칭에 실패한다.
+			// java SDK v2와 동일하게 슬래시는 남기고 키만 인코딩한다.
+			var copySource = $"{sourceBucket}/{Amazon.Util.AWSSDKUtils.UrlEncode(sourceKey, true)}";
+			if (versionId != null) copySource += $"?versionId={versionId}";
+			var copySourceHeader = new List<KeyValuePair<string, string>> { new("x-amz-copy-source", copySource) };
+			if (headerList != null) copySourceHeader.AddRange(headerList);
+			ApplyRequestHeaders(request, null, copySourceHeader);
+			// 소스 조건(x-amz-copy-source-if-*)
 			if (eTagToMatch != null) request.ETagToMatch = eTagToMatch;
 			if (eTagToNotMatch != null) request.ETagToNotMatch = eTagToNotMatch;
+			if (modifiedSince != null) request.ModifiedSinceDate = modifiedSince.Value;
+			if (unmodifiedSince != null) request.UnmodifiedSinceDate = unmodifiedSince.Value;
+
+			// 대상 조건(If-Match / If-None-Match)
+			if (ifMatch != null) request.IfMatch = ifMatch;
+			if (ifNoneMatch != null) request.IfNoneMatch = ifNoneMatch;
 
 			//SSE-S3
 			if (sseKey != null) request.ServerSideEncryptionMethod = sseKey;
 
+			//SSE-C
 			if (srcCustomerKey != null)
 			{
-				request.ServerSideEncryptionCustomerMethod = srcCustomerKey.Method;
-				request.ServerSideEncryptionCustomerProvidedKey = srcCustomerKey.ProvidedKey;
-				request.ServerSideEncryptionCustomerProvidedKeyMD5 = srcCustomerKey.MD5;
+				request.CopySourceServerSideEncryptionCustomerMethod = srcCustomerKey.Method;
+				request.CopySourceServerSideEncryptionCustomerProvidedKey = srcCustomerKey.ProvidedKey;
+				request.CopySourceServerSideEncryptionCustomerProvidedKeyMD5 = srcCustomerKey.MD5;
 			}
 			if (destCustomerKey != null)
 			{
-				request.CopySourceServerSideEncryptionCustomerMethod = destCustomerKey.Method;
-				request.CopySourceServerSideEncryptionCustomerProvidedKey = destCustomerKey.ProvidedKey;
-				request.CopySourceServerSideEncryptionCustomerProvidedKeyMD5 = destCustomerKey.MD5;
+				request.ServerSideEncryptionCustomerMethod = destCustomerKey.Method;
+				request.ServerSideEncryptionCustomerProvidedKey = destCustomerKey.ProvidedKey;
+				request.ServerSideEncryptionCustomerProvidedKeyMD5 = destCustomerKey.MD5;
 			}
 
 			return CopyObject(request);
@@ -993,14 +1214,17 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public ListVersionsResponse ListVersions(string bucketName, string prefix = null)
+		public ListVersionsResponse ListVersions(string bucketName, string delimiter = null, string keyMarker = null,
+			int maxKeys = -1, string prefix = null, string encodingTypeName = null, bool useLegacyMaxKeys = true)
 		{
-			var request = new ListVersionsRequest()
-			{
-				BucketName = bucketName,
-				MaxKeys = 2000
-			};
+			var request = new ListVersionsRequest() { BucketName = bucketName };
+
+			if (delimiter != null) request.Delimiter = delimiter;
+			if (keyMarker != null) request.KeyMarker = keyMarker;
 			if (prefix != null) request.Prefix = prefix;
+			if (encodingTypeName != null) request.Encoding = new EncodingType(encodingTypeName);
+			if (maxKeys >= 0) request.MaxKeys = maxKeys;
+			else if (useLegacyMaxKeys) request.MaxKeys = 2000;
 
 			return ListVersions(request);
 		}
@@ -1013,7 +1237,8 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public DeleteObjectResponse DeleteObject(string bucketName, string key, string versionId = null,
-			bool? bypassGovernanceRetention = null)
+			bool? bypassGovernanceRetention = null, string ifMatch = null,
+			List<KeyValuePair<string, string>> headerList = null)
 		{
 			var request = new DeleteObjectRequest()
 			{
@@ -1023,6 +1248,7 @@ namespace s3tests.Test
 
 			if (versionId != null) request.VersionId = versionId;
 			if (bypassGovernanceRetention.HasValue) request.BypassGovernanceRetention = bypassGovernanceRetention.Value;
+			ApplyRequestHeaders(request, ifMatch, headerList);
 
 			return DeleteObject(request);
 		}
@@ -1034,7 +1260,8 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public DeleteObjectsResponse DeleteObjects(string bucketName, List<KeyVersion> keyList, bool? quiet = null)
+		public DeleteObjectsResponse DeleteObjects(string bucketName, List<KeyVersion> keyList, bool? quiet = null,
+			List<KeyValuePair<string, string>> headerList = null, bool? bypassGovernanceRetention = null)
 		{
 			var request = new DeleteObjectsRequest()
 			{
@@ -1043,8 +1270,22 @@ namespace s3tests.Test
 			};
 
 			if (quiet.HasValue) request.Quiet = quiet.Value;
+			if (bypassGovernanceRetention.HasValue) request.BypassGovernanceRetention = bypassGovernanceRetention.Value;
+			ApplyRequestHeaders(request, null, headerList);
 
 			return DeleteObjects(request);
+		}
+
+		private void ApplyRequestHeaders(AmazonWebServiceRequest request, string ifMatch,
+			List<KeyValuePair<string, string>> headerList)
+		{
+			if (ifMatch == null && (headerList == null || headerList.Count == 0)) return;
+
+			var headers = RequestHeaders.GetOrCreateValue(request);
+			if (ifMatch != null) headers["If-Match"] = ifMatch;
+			if (headerList == null) return;
+			foreach (var header in headerList)
+				headers[header.Key] = header.Value;
 		}
 
 		private GetObjectMetadataResponse GetObjectMetadata(GetObjectMetadataRequest request)
@@ -1055,6 +1296,21 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public GetObjectMetadataResponse GetObjectMetadata(string bucketName, string key, string versionId = null, SSECustomerKey sseC = null)
+			=> HeadObject(bucketName, key, versionId: versionId, sseCustomerKey: sseC);
+
+		public HeadBucketResponse HeadBucket(string bucketName)
+		{
+			var request = new HeadBucketRequest() { BucketName = bucketName };
+			if (Client == null) return null;
+			var response = Client.HeadBucketAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+
+		public GetObjectMetadataResponse HeadObject(string bucketName, string key, string ifMatch = null,
+			string ifNoneMatch = null, string ifModifiedSince = null, DateTime? ifModifiedSinceDateTime = null,
+			string ifUnmodifiedSince = null, DateTime? ifUnmodifiedSinceDateTime = null,
+			string versionId = null, SSECustomerKey sseCustomerKey = null)
 		{
 			var request = new GetObjectMetadataRequest()
 			{
@@ -1062,15 +1318,19 @@ namespace s3tests.Test
 				Key = key
 			};
 
-			//Version
 			if (versionId != null) request.VersionId = versionId;
+			if (ifMatch != null) request.EtagToMatch = ifMatch;
+			if (ifNoneMatch != null) request.EtagToNotMatch = ifNoneMatch;
+			if (ifModifiedSince != null) request.ModifiedSinceDate = DateTime.Parse(ifModifiedSince);
+			if (ifModifiedSinceDateTime != null) request.ModifiedSinceDate = ifModifiedSinceDateTime.Value;
+			if (ifUnmodifiedSince != null) request.UnmodifiedSinceDate = DateTime.Parse(ifUnmodifiedSince);
+			if (ifUnmodifiedSinceDateTime != null) request.UnmodifiedSinceDate = ifUnmodifiedSinceDateTime.Value;
 
-			//SSE-C
-			if (sseC != null)
+			if (sseCustomerKey != null)
 			{
-				request.ServerSideEncryptionCustomerMethod = sseC.Method;
-				request.ServerSideEncryptionCustomerProvidedKey = sseC.ProvidedKey;
-				request.ServerSideEncryptionCustomerProvidedKeyMD5 = sseC.MD5;
+				request.ServerSideEncryptionCustomerMethod = sseCustomerKey.Method;
+				request.ServerSideEncryptionCustomerProvidedKey = sseCustomerKey.ProvidedKey;
+				request.ServerSideEncryptionCustomerProvidedKeyMD5 = sseCustomerKey.MD5;
 			}
 
 			return GetObjectMetadata(request);
@@ -1096,7 +1356,8 @@ namespace s3tests.Test
 			return GetACL(request);
 		}
 
-		public PutACLResponse PutObjectACL(string bucketName, string key, S3CannedACL acl = null, S3AccessControlList accessControlPolicy = null)
+		public PutACLResponse PutObjectACL(string bucketName, string key, S3CannedACL acl = null,
+			S3AccessControlList accessControlPolicy = null, string versionId = null)
 		{
 			var request = new PutACLRequest()
 			{
@@ -1105,6 +1366,7 @@ namespace s3tests.Test
 			};
 			if (acl != null) request.CannedACL = acl;
 			if (accessControlPolicy != null) request.AccessControlList = accessControlPolicy;
+			if (versionId != null) request.VersionId = versionId;
 
 			return PutACL(request);
 		}
@@ -1116,13 +1378,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetObjectTaggingResponse GetObjectTagging(string bucketName, string key)
+		public GetObjectTaggingResponse GetObjectTagging(string bucketName, string key, string versionId = null)
 		{
 			var request = new GetObjectTaggingRequest()
 			{
 				BucketName = bucketName,
 				Key = key,
 			};
+			if (versionId != null) request.VersionId = versionId;
 
 			return GetObjectTagging(request);
 		}
@@ -1134,7 +1397,7 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public PutObjectTaggingResponse PutObjectTagging(string bucketName, string key, Tagging tagging)
+		public PutObjectTaggingResponse PutObjectTagging(string bucketName, string key, Tagging tagging, string versionId = null)
 		{
 			var request = new PutObjectTaggingRequest()
 			{
@@ -1142,6 +1405,7 @@ namespace s3tests.Test
 				Key = key,
 				Tagging = tagging,
 			};
+			if (versionId != null) request.VersionId = versionId;
 
 			return PutObjectTagging(request);
 		}
@@ -1153,13 +1417,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public DeleteObjectTaggingResponse DeleteObjectTagging(string bucketName, string key)
+		public DeleteObjectTaggingResponse DeleteObjectTagging(string bucketName, string key, string versionId = null)
 		{
 			var request = new DeleteObjectTaggingRequest()
 			{
 				BucketName = bucketName,
 				Key = key,
 			};
+			if (versionId != null) request.VersionId = versionId;
 
 			return DeleteObjectTagging(request);
 		}
@@ -1171,13 +1436,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetObjectRetentionResponse GetObjectRetention(string bucketName, string key)
+		public GetObjectRetentionResponse GetObjectRetention(string bucketName, string key, string versionId = null)
 		{
 			var request = new GetObjectRetentionRequest()
 			{
 				BucketName = bucketName,
 				Key = key,
 			};
+			if (versionId != null) request.VersionId = versionId;
 
 			return GetObjectRetention(request);
 		}
@@ -1325,7 +1591,9 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public InitiateMultipartUploadResponse InitiateMultipartUpload(string bucketName, string key, string contentType = null,
-			List<KeyValuePair<string, string>> metadataList = null, ServerSideEncryptionMethod sseKey = null, SSECustomerKey sseCustomerKey = null)
+			List<KeyValuePair<string, string>> metadataList = null, ServerSideEncryptionMethod sseKey = null, SSECustomerKey sseCustomerKey = null,
+			ChecksumAlgorithm checksumAlgorithm = null, ChecksumType checksumType = null,
+			List<KeyValuePair<string, string>> headerList = null, List<Tag> tagSet = null)
 		{
 			var request = new InitiateMultipartUploadRequest()
 			{
@@ -1338,6 +1606,10 @@ namespace s3tests.Test
 					request.Metadata[metaData.Key] = metaData.Value;
 			}
 			if (contentType != null) request.ContentType = contentType;
+			if (checksumAlgorithm != null) request.ChecksumAlgorithm = checksumAlgorithm;
+			if (checksumType != null) request.ChecksumType = checksumType;
+			if (tagSet != null) request.TagSet = tagSet;
+			ApplyRequestHeaders(request, null, headerList);
 
 			//SSE-S3
 			if (sseKey != null) request.ServerSideEncryptionMethod = sseKey;
@@ -1361,7 +1633,7 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public UploadPartResponse UploadPart(string bucketName, string key, string uploadId, string body,
-			int partNumber, SSECustomerKey sseC = null)
+			int partNumber, SSECustomerKey sseC = null, ChecksumAlgorithm checksumAlgorithm = null, string checksumValue = null)
 		{
 			var request = new UploadPartRequest()
 			{
@@ -1369,8 +1641,19 @@ namespace s3tests.Test
 				Key = key,
 				PartNumber = partNumber,
 				UploadId = uploadId,
-				InputStream = new MemoryStream(Encoding.ASCII.GetBytes(body))
+				InputStream = new MemoryStream(Encoding.UTF8.GetBytes(body))
 			};
+
+			if (checksumValue != null && checksumAlgorithm != null)
+				s3tests.Utils.CheckSum.SetChecksum(request, checksumAlgorithm, checksumValue);
+			else if (NeedsPrecomputedChecksum(checksumAlgorithm, checksumValue))
+			{
+				request.ChecksumAlgorithm = checksumAlgorithm;
+				s3tests.Utils.CheckSum.SetChecksum(request, checksumAlgorithm,
+					s3tests.Utils.CheckSum.CalculateChecksum(checksumAlgorithm, body));
+			}
+			else if (checksumAlgorithm != null)
+				request.ChecksumAlgorithm = checksumAlgorithm;
 
 			//SSE-C
 			if (sseC != null)
@@ -1392,7 +1675,10 @@ namespace s3tests.Test
 		}
 		public CopyPartResponse CopyPart(string srcBucketName, string srcKey, string destBucketName, string destKey,
 			string uploadId, int partNumber, int start, int end, string versionId = null,
-			SSECustomerKey srcEncryptionKey = null, SSECustomerKey destEncryptionKey = null)
+			SSECustomerKey srcEncryptionKey = null, SSECustomerKey destEncryptionKey = null,
+			string eTagToMatch = null, string eTagToNotMatch = null,
+			DateTime? modifiedSince = null, DateTime? unmodifiedSince = null,
+			string ifMatch = null, string ifNoneMatch = null)
 		{
 			var request = new CopyPartRequest()
 			{
@@ -1407,6 +1693,20 @@ namespace s3tests.Test
 			};
 
 			if (versionId != null) request.SourceVersionId = versionId;
+			// 소스 조건(x-amz-copy-source-if-*)
+			if (eTagToMatch != null) request.ETagToMatch = [eTagToMatch];
+			if (eTagToNotMatch != null) request.ETagsToNotMatch = [eTagToNotMatch];
+			if (modifiedSince != null) request.ModifiedSinceDate = modifiedSince.Value;
+			if (unmodifiedSince != null) request.UnmodifiedSinceDate = unmodifiedSince.Value;
+
+			// 대상 조건(If-Match / If-None-Match). SDK에 전용 속성이 없어 헤더로 직접 넣는다.
+			if (ifMatch != null || ifNoneMatch != null)
+			{
+				var conditions = new List<KeyValuePair<string, string>>();
+				if (ifMatch != null) conditions.Add(new("If-Match", ifMatch));
+				if (ifNoneMatch != null) conditions.Add(new("If-None-Match", ifNoneMatch));
+				ApplyRequestHeaders(request, null, conditions);
+			}
 
 			////SSE-C
 			if (srcEncryptionKey != null)
@@ -1432,7 +1732,9 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public CompleteMultipartUploadResponse CompleteMultipartUpload(string bucketName, string key,
-			string uploadId, List<PartETag> parts)
+			string uploadId, List<PartETag> parts, ChecksumType checksumType = null,
+			string ifMatch = null, string ifNoneMatch = null,
+			List<KeyValuePair<string, string>> headerList = null)
 		{
 			var request = new CompleteMultipartUploadRequest()
 			{
@@ -1441,8 +1743,33 @@ namespace s3tests.Test
 				UploadId = uploadId,
 				PartETags = parts
 			};
+			if (checksumType != null) request.ChecksumType = checksumType;
+			if (ifMatch != null) request.IfMatch = ifMatch;
+			if (ifNoneMatch != null) request.IfNoneMatch = ifNoneMatch;
+			ApplyRequestHeaders(request, null, headerList);
 
 			return CompleteMultipartUpload(request);
+		}
+
+		private GetObjectAttributesResponse GetObjectAttributes(GetObjectAttributesRequest request)
+		{
+			if (Client == null) return null;
+			var response = Client.GetObjectAttributesAsync(request);
+			response.Wait();
+			return response.Result;
+		}
+
+		public GetObjectAttributesResponse GetObjectAttributes(string bucketName, string key,
+			List<ObjectAttributes> objectAttributes = null, string versionId = null)
+		{
+			var request = new GetObjectAttributesRequest()
+			{
+				BucketName = bucketName,
+				Key = key,
+			};
+			if (objectAttributes != null) request.ObjectAttributes = objectAttributes;
+			if (versionId != null) request.VersionId = versionId;
+			return GetObjectAttributes(request);
 		}
 
 		private AbortMultipartUploadResponse AbortMultipartUpload(AbortMultipartUploadRequest request)

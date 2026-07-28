@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright (c) 2021 PSPACE, inc. KSAN Development Team ksan@pspace.co.kr
 * KSAN is a suite of free software: you can redistribute it and/or modify it under the terms of
 * the GNU General Public License as published by the Free Software Foundation, either version
@@ -33,23 +33,23 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
-			var Tags = new List<Tag>() { new() { Key = "Hello", Value = "world" } };
+			var Tags = new List<Tag>() { new() { Key = "Hello", Value = "World" } };
 
-			var Response = client.GetBucketTagging(bucketName);
-			Assert.Empty(Response.TagSet);
+			var e = Assert.Throws<AggregateException>(() => client.GetBucketTagging(bucketName));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_TAG_SET, GetErrorCode(e));
 
 			client.PutBucketTagging(bucketName, Tags);
 
-			Response = client.GetBucketTagging(bucketName);
+			var Response = client.GetBucketTagging(bucketName);
 			Assert.Single(Response.TagSet);
-			Assert.Equal(Tags[0].Key, Response.TagSet[0].Key);
-			Assert.Equal(Tags[0].Value, Response.TagSet[0].Value);
+			TaggingCompare(Tags, Response.TagSet);
 
 			client.DeleteBucketTagging(bucketName);
 
-			Response = client.GetBucketTagging(bucketName);
-			Assert.Empty(Response.TagSet);
-
+			e = Assert.Throws<AggregateException>(() => client.GetBucketTagging(bucketName));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_TAG_SET, GetErrorCode(e));
 		}
 		[Fact]
 		[Trait(MainData.Major, "Taggings")]
@@ -76,7 +76,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Check")]
 		[Trait(MainData.Explanation, "오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_get_obj_head_tagging()
+		public void TestGetObjHeadTagging()
 		{
 			var Key = "testputtags";
 			var bucketName = SetupKeyWithRandomContent(Key);
@@ -90,7 +90,7 @@ namespace s3tests.Test
 
 			var GetResponse = client.GetObject(bucketName, Key);
 			Assert.Equal(HttpStatusCode.OK, GetResponse.HttpStatusCode);
-			Assert.Equal(Count.ToString(), GetResponse.Headers["x-amz-tagging-count"]);
+			Assert.Equal(Count, GetResponse.TagCount);
 		}
 
 		[Fact]
@@ -98,7 +98,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Max")]
 		[Trait(MainData.Explanation, "추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_put_max_tags()
+		public void TestPutMaxTags()
 		{
 			var Key = "testputmaxtags";
 			var bucketName = SetupKeyWithRandomContent(Key);
@@ -118,7 +118,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Overflow")]
 		[Trait(MainData.Explanation, "추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_put_excess_tags()
+		public void TestPutExcessTags()
 		{
 			var Key = "testputmaxtags";
 			var bucketName = SetupKeyWithRandomContent(Key);
@@ -139,7 +139,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Max")]
 		[Trait(MainData.Explanation, "태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_put_max_kvsize_tags()
+		public void TestPutMaxSizeTags()
 		{
 			var Key = "testputmaxkeysize";
 			var bucketName = SetupKeyWithRandomContent(Key);
@@ -159,7 +159,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Overflow")]
 		[Trait(MainData.Explanation, "태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_put_excess_key_tags()
+		public void TestPutExcessKeyTags()
 		{
 			var Key = "testputexcesskeytags";
 			var bucketName = SetupKeyWithRandomContent(Key);
@@ -180,7 +180,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Overflow")]
 		[Trait(MainData.Explanation, "태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void test_put_excess_val_tags()
+		public void TestPutExcessValTags()
 		{
 			var Key = "testputexcesskeytags";
 			var bucketName = SetupKeyWithRandomContent(Key);
@@ -201,7 +201,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Overwrite")]
 		[Trait(MainData.Explanation, "오브젝트의 태그목록을 덮어쓰기 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_put_modify_tags()
+		public void TestPutModifyTags()
 		{
 			var Key = "testputmodifytags";
 			var bucketName = SetupKeyWithRandomContent(Key);
@@ -242,7 +242,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delete")]
 		[Trait(MainData.Explanation, "오브젝트의 태그를 삭제 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_put_delete_tags()
+		public void TestPutDeleteTags()
 		{
 			var Key = "testputmodifytags";
 			var bucketName = SetupKeyWithRandomContent(Key);
@@ -268,7 +268,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Post")]
 		[Trait(MainData.Explanation, "로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void test_post_object_tags_authenticated_request()
+		public void TestPostObjectTagsAuthenticatedRequest()
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -293,21 +293,16 @@ namespace s3tests.Test
 				},
 			};
 
-			var BytesJsonPolicyDocument = Encoding.UTF8.GetBytes(PolicyDocument.ToString());
-			var Policy = Convert.ToBase64String(BytesJsonPolicyDocument);
-
-			var Signature = S3Utils.GetBase64EncodedSHA1Hash(Policy, Config.MainUser.SecretKey);
+			var Sign = SignPostPolicy(PolicyDocument);
 			var FileData = new FormFile() { Name = Key, ContentType = ContentType, Body = "bar" };
 			var Payload = new Dictionary<string, object>() {
 					{ "key", Key },
-					{ "AWSAccessKeyId", Config.MainUser.AccessKey },
 					{ "acl", "private" },
-					{ "signature", Signature },
-					{ "policy", Policy },
 					{ "tagging", XmlInputTagset },
 					{ "Content-Type", ContentType },
 					{ "file", FileData },
 			};
+			Sign.Apply(Payload);
 
 			var Result = PostUpload(bucketName, Payload);
 			Assert.Equal(HttpStatusCode.NoContent, Result.StatusCode);
@@ -349,6 +344,20 @@ namespace s3tests.Test
 			var ResponseTagSet = GetResponse.Tagging;
 
 			TaggingCompare(TagSet, ResponseTagSet);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "PutObject")]
+		[Trait(MainData.Explanation, "빈 태그 설정으로 오브젝트를 업로드할 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestGetObjNonTagging()
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var Key = "obj";
+
+			client.PutObject(bucketName, Key, body: "", tagSet: []);
 		}
 	}
 }
