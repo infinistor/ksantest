@@ -356,8 +356,31 @@ func testMultiGrants(t *testing.T, object bool) {
 }
 func testRevokeOwner(t *testing.T, object bool) {
 	t.Helper()
-	// Java expects this to fail, but KSAN accepts empty Owner (Java Result also fails).
-	t.Skip("KSAN accepts ACL without owner ID; Java intentional failure")
+	s := newSuite(t)
+	bucket, key := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter), "revoke-owner"
+	put(t, s, bucket, key, key, nil)
+	emptyOwner := &types.Owner{}
+	if object {
+		out, err := s.client.GetObjectAcl(context.Background(), &s3.GetObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{
+			Bucket: aws.String(bucket), Key: aws.String(key),
+			AccessControlPolicy: &types.AccessControlPolicy{Owner: emptyOwner, Grants: out.Grants},
+		})
+		assertS3Error(t, err, 400, "MalformedACLError")
+		return
+	}
+	out, err := s.client.GetBucketAcl(context.Background(), &s3.GetBucketAclInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{
+		Bucket: aws.String(bucket),
+		AccessControlPolicy: &types.AccessControlPolicy{Owner: emptyOwner, Grants: out.Grants},
+	})
+	assertS3Error(t, err, 400, "MalformedACLError")
 }
 func testRevokeGranteeID(t *testing.T) {
 	t.Helper()
