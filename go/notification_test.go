@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷에 알람 설정이 없는지 확인
 func TestNotificationGetEmpty(t *testing.T) {
 	t.Parallel()
 
@@ -23,6 +24,7 @@ func TestNotificationGetEmpty(t *testing.T) {
 		t.Fatalf("empty notification configuration = %#v", out)
 	}
 }
+// 버킷에 알람 설정이 가능한지 확인
 func TestNotificationPut(t *testing.T) {
 	t.Parallel()
 
@@ -31,6 +33,7 @@ func TestNotificationPut(t *testing.T) {
 	bucket := s.bucket(t)
 	putNotification(t, s, bucket, notificationConfiguration(s))
 }
+// 버킷에 알람 설정이 되어있는지 확인
 func TestNotificationGet(t *testing.T) {
 	t.Parallel()
 
@@ -42,6 +45,7 @@ func TestNotificationGet(t *testing.T) {
 	out := getNotification(t, s, bucket)
 	assertNotification(t, out, want.LambdaFunctionConfigurations[0])
 }
+// 버킷에 알람 설정이 삭제되는지 확인
 func TestNotificationDelete(t *testing.T) {
 	t.Parallel()
 

@@ -13,6 +13,7 @@ package s3tests
 
 // const selectObjectContentSkipReason = "SelectObjectContent migration policy: implementation retained but execution is intentionally disabled"
 
+// // CSV 오브젝트에 대해 SelectObjectContent 기본 동작 확인
 // func TestSelectObjectContentCsvBasic(t *testing.T) {
 // 	t.Parallel()
 
@@ -21,6 +22,7 @@ package s3tests
 // 		assertSelectContains(t, result, "Alice", "Bob", "Seoul", "Busan")
 // 	})
 // }
+// // CSV 오브젝트에 WHERE 조건 적용
 // func TestSelectObjectContentCsvWithWhere(t *testing.T) {
 // 	t.Parallel()
 
@@ -32,6 +34,7 @@ package s3tests
 // 		}
 // 	})
 // }
+// // CSV 오브젝트 LIMIT 적용
 // func TestSelectObjectContentCsvLimit(t *testing.T) {
 // 	t.Parallel()
 
@@ -40,6 +43,7 @@ package s3tests
 // 		assertSelectContains(t, result, "1", "2")
 // 	})
 // }
+// // JSON 오브젝트에 대해 SelectObjectContent 기본 동작 확인
 // func TestSelectObjectContentJsonBasic(t *testing.T) {
 // 	t.Parallel()
 
@@ -55,6 +59,7 @@ package s3tests
 // 		}
 // 	})
 // }
+// // 존재하지 않는 버킷에 SelectObjectContent 요청 시 실패 확인
 // func TestSelectObjectContentNonExistentBucket(t *testing.T) {
 // 	t.Parallel()
 
@@ -65,6 +70,7 @@ package s3tests
 // 		assertS3Error(t, err, 404, "NoSuchBucket")
 // 	})
 // }
+// // 존재하지 않는 오브젝트에 SelectObjectContent 요청 시 실패 확인
 // func TestSelectObjectContentNonExistentObject(t *testing.T) {
 // 	t.Parallel()
 
@@ -75,6 +81,7 @@ package s3tests
 // 		assertS3Error(t, err, 404, "NoSuchKey")
 // 	})
 // }
+// // 빈 CSV 오브젝트에 SelectObjectContent (헤더만 있는 경우)
 // func TestSelectObjectContentCsvEmptyRows(t *testing.T) {
 // 	t.Parallel()
 

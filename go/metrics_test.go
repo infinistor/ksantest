@@ -9,71 +9,85 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷에 Metrics를 설정하지 않은 상태에서 조회가 가능한지 확인
 func TestMetrics(t *testing.T) {
 	t.Parallel()
 
 	testMetricsList(t)
 }
+// 버킷에 Metrics를 설정할 수 있는지 확인
 func TestPutMetrics(t *testing.T) {
 	t.Parallel()
 
 	testMetricsPut(t)
 }
+// 버킷에 Metrics 설정이 되었는지 확인
 func TestCheckMetrics(t *testing.T) {
 	t.Parallel()
 
 	testMetricsCheck(t)
 }
+// 버킷에 설정된 Metrics를 조회할 수 있는지 확인
 func TestGetMetrics(t *testing.T) {
 	t.Parallel()
 
 	testMetricsGet(t)
 }
+// 버킷에 설정된 Metrics를 삭제할 수 있는지 확인
 func TestDeleteMetrics(t *testing.T) {
 	t.Parallel()
 
 	testMetricsDelete(t)
 }
+// 존재하지 않은 Metrics를 가져오려고 할 경우 실패하는지 확인
 func TestGetMetricsNotExist(t *testing.T) {
 	t.Parallel()
 
 	testMetricsGetMissing(t)
 }
+// 존재하지 않은 Metrics를 삭제하려고 할 경우 실패하는지 확인
 func TestDeleteMetricsNotExist(t *testing.T) {
 	t.Parallel()
 
 	testMetricsDeleteMissing(t)
 }
+// 존재하지 않은 Metrics를 설정하려고 할 경우 실패하는지 확인
 func TestPutMetricsNotExist(t *testing.T) {
 	t.Parallel()
 
 	testMetricsPutMissingBucket(t)
 }
+// Metrics 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
 func TestPutMetricsEmptyId(t *testing.T) {
 	t.Parallel()
 
 	testMetricsEmptyID(t)
 }
+// Metrics 아이디를 설정하지 않고 설정하려고 할 경우 실패하는지 확인
 func TestPutMetricsNoId(t *testing.T) {
 	t.Parallel()
 
 	testMetricsNoID(t)
 }
+// Metrics 아이디를 중복으로 설정하려고 할 경우 덮어쓰기 확인
 func TestPutMetricsDuplicateId(t *testing.T) {
 	t.Parallel()
 
 	testMetricsDuplicateID(t)
 }
+// 접두어를 포함한 Metrics 설정이 올바르게 적용되는지 확인
 func TestMetricsPrefix(t *testing.T) {
 	t.Parallel()
 
 	testMetricsPrefix(t)
 }
+// Metrics 설정에 태그를 적용할 수 있는지 확인
 func TestMetricsTag(t *testing.T) {
 	t.Parallel()
 
 	testMetricsTag(t)
 }
+// Metrics 설정에 필터를 적용할 수 있는지 확인
 func TestMetricsFilter(t *testing.T) {
 	t.Parallel()
 

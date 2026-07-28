@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷에 존재하지 않는 오브젝트 다운로드를 할 경우 실패 확인
 func TestObjectReadNotExist(t *testing.T) {
 	t.Parallel()
 
@@ -20,156 +21,218 @@ func TestObjectReadNotExist(t *testing.T) {
 	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(s.bucket(t)), Key: aws.String("foo")})
 	assertS3Error(t, err, 404, "NoSuchKey")
 }
+
+// 존재하는 오브젝트 이름과 ETag 값으로 오브젝트를 가져오는지 확인
 func TestGetObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_match_good")
 }
+
+// 오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
 func TestGetObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_match_failed")
 }
+
+// 오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
 func TestGetObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_none_match_good")
 }
+
+// 오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
 func TestGetObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_none_match_failed")
 }
+
+// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifModifiedSince)보다 이후에 수정된 오브젝트를 조회 성공
 func TestGetObjectIfModifiedSinceGood(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_modified_since_good")
 }
+
+// [지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 실패
 func TestGetObjectIfModifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_modified_since_failed")
 }
+
+// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 실패
 func TestGetObjectIfUnmodifiedSinceGood(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_unmodified_since_good")
 }
+
+// [지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 성공
 func TestGetObjectIfUnmodifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_unmodified_since_failed")
 }
+
+// If-Match(일치)와 If-Unmodified-Since(불일치)를 함께 사용할 경우 ETag 조건이 우선되어 성공하는지 확인
 func TestGetObjectIfMatchWithIfUnmodifiedSince(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_match_with_if_unmodified_since")
 }
+
+// If-None-Match(불일치)와 If-Modified-Since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 304가 반환되는지 확인
 func TestGetObjectIfNoneMatchWithIfModifiedSince(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_none_match_with_if_modified_since")
 }
+
+// If-Match와 If-None-Match에 동일한 ETag를 지정하면 304가 반환되는지 확인
 func TestGetObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_match_and_if_none_match")
 }
+
+// If-Match와 If-None-Match: * 를 함께 지정하면 304가 반환되는지 확인
 func TestGetObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 
 	testConditionalGet(t, "test_get_object_if_match_and_if_none_match_any")
 }
+
+// HeadObject에서 일치하는 If-Match 조건으로 성공 확인
 func TestHeadObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testConditionalHead(t, "test_head_object_if_match_good")
 }
+
+// HeadObject에서 일치하지 않는 If-Match 조건으로 412 실패 확인
 func TestHeadObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testConditionalHead(t, "test_head_object_if_match_failed")
 }
+
+// HeadObject에서 일치하는 If-None-Match 조건으로 304 반환 확인
 func TestHeadObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testConditionalHead(t, "test_head_object_if_none_match_good")
 }
+
+// HeadObject에서 일치하지 않는 If-None-Match 조건으로 성공 확인
 func TestHeadObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testConditionalHead(t, "test_head_object_if_none_match_failed")
 }
+
+// HeadObject에서 오브젝트 업로드 이전 시간의 If-Modified-Since 조건으로 성공 확인
 func TestHeadObjectIfModifiedSinceGood(t *testing.T) {
 	t.Parallel()
 
 	testConditionalHead(t, "test_head_object_if_modified_since_good")
 }
+
+// HeadObject에서 오브젝트 업로드 이후 시간의 If-Modified-Since 조건으로 304 반환 확인
 func TestHeadObjectIfModifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 
 	testConditionalHead(t, "test_head_object_if_modified_since_failed")
 }
+
+// HeadObject에서 오브젝트 업로드 이전 시간의 If-Unmodified-Since 조건으로 412 실패 확인
 func TestHeadObjectIfUnmodifiedSinceGood(t *testing.T) {
 	t.Parallel()
 
 	testConditionalHead(t, "test_head_object_if_unmodified_since_good")
 }
+
+// HeadObject에서 오브젝트 업로드 이후 시간의 If-Unmodified-Since 조건으로 성공 확인
 func TestHeadObjectIfUnmodifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 
 	testConditionalHead(t, "test_head_object_if_unmodified_since_failed")
 }
+
+// 지정한 범위로 오브젝트 다운로드가 가능한지 확인
 func TestRangedRequestResponseCode(t *testing.T) {
 	t.Parallel()
 
 	testGetRange(t, "test_ranged_request_response_code")
 }
+
+// 지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
 func TestRangedBigRequestResponseCode(t *testing.T) {
 	t.Parallel()
 
 	testGetRange(t, "test_ranged_big_request_response_code")
 }
+
+// 특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
 func TestRangedRequestSkipLeadingBytesResponseCode(t *testing.T) {
 	t.Parallel()
 
 	testGetRange(t, "test_ranged_request_skip_leading_bytes_response_code")
 }
+
+// 끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
 func TestRangedRequestReturnTrailingBytesResponseCode(t *testing.T) {
 	t.Parallel()
 
 	testGetRange(t, "test_ranged_request_return_trailing_bytes_response_code")
 }
+
+// 오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
 func TestRangedRequestInvalidRange(t *testing.T) {
 	t.Parallel()
 
 	testGetRange(t, "test_ranged_request_invalid_range")
 }
+
+// 비어있는 오브젝트를 범위를 지정하여 다운로드 실패 확인
 func TestRangedRequestEmptyObject(t *testing.T) {
 	t.Parallel()
 
 	testGetRange(t, "test_ranged_request_empty_object")
 }
+
+// 같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
 func TestGetObjectMany(t *testing.T) {
 	t.Parallel()
 
 	testGetMany(t, "test_get_object_many")
 }
+
+// 같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 func TestRangeObjectMany(t *testing.T) {
 	t.Parallel()
 
 	testGetMany(t, "test_range_object_many")
 }
+
+// GetObject의 반환헤더값을 설정하여 업로드 할 경우 적용되었는지 확인
 func TestObjectResponseHeaders(t *testing.T) {
 	t.Parallel()
 
 	testGetResponseHeaders(t)
 }
+
+// 멀티파트로 업로드 된 오브젝트를 다운로드 할때 파트 번호를 지정하여 다운로드 가능한지 확인
 func TestMultipartObjectRange(t *testing.T) {
 	t.Parallel()
 
 	testGetMultipartPart(t)
 }
+
+// GetObject에서 파일을 읽지 않고 버려도 무시되는지 확인
 func TestGetObjectIgnore(t *testing.T) {
 	t.Parallel()
 
@@ -182,16 +245,22 @@ func TestGetObjectIgnore(t *testing.T) {
 	}
 	out.Body.Close()
 }
+
+// 삭제한 파일 GetObject 실패 확인
 func TestGetObjectAfterDelete(t *testing.T) {
 	t.Parallel()
 
 	testGetAfterDelete(t, false)
 }
+
+// 버저닝한 버킷에서 삭제한 파일 GetObject 실패 확인
 func TestGetObjectAfterDeleteVersioning(t *testing.T) {
 	t.Parallel()
 
 	testGetAfterDelete(t, true)
 }
+
+// 버저닝한 버킷에서 DeleteMarker로 GetObject 실패 확인
 func TestGetObjectDeleteMarker(t *testing.T) {
 	t.Parallel()
 

@@ -14,311 +14,373 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 오브젝트의 크기가 0일때 복사가 가능한지 확인하는 테스트
 func TestObjectCopyZeroSize(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_zero_size")
 }
+// 동일한 버킷에서 오브젝트 복사가 가능한지 확인하는 테스트
 func TestObjectCopySameBucket(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_same_bucket")
 }
+// ContentType을 설정한 오브젝트를 복사할 경우 복사된 오브젝트도 ContentType값이 일치하는지 확인하는 테스트
 func TestObjectCopyVerifyContentType(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_verify_content_type")
 }
+// 복사할 오브젝트와 복사될 오브젝트의 경로가 같을 경우 에러를 확인하는 테스트
 func TestObjectCopyToItself(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_to_itself")
 }
+// 복사할 오브젝트와 복사될 오브젝트의 경로가 같지만 메타데이터를 덮어쓰기 모드로 추가하면 해당 오브젝트의 메타데이터가 업데이트되는지 확인하는 테스트
 func TestObjectCopyToItselfWithMetadata(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_to_itself_with_metadata")
 }
+// 다른 버킷으로 오브젝트 복사가 가능한지 확인하는 테스트
 func TestObjectCopyDiffBucket(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_diff_bucket")
 }
+// [bucket1:created main user, object:created main user / bucket2:created sub user] 메인유저가 만든 버킷, 오브젝트를 서브유저가 만든 버킷으로 오브젝트 복사가 불가능한지 확인하는 테스트
 func TestObjectCopyNotOwnedBucket(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_not_owned_bucket")
 }
+// 다른유저의 버킷의 오브젝트를 권한이 충분할 경우 복사 가능한지 확인하는 테스트
 func TestObjectCopyNotOwnedObjectBucket(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_not_owned_object_bucket")
 }
+// 권한정보를 포함하여 복사할때 올바르게 적용되는지 확인하는 테스트
 func TestObjectCopyCannedAcl(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_canned_acl")
 }
+// 크고 작은 용량의 오브젝트가 복사되는지 확인하는 테스트
 func TestObjectCopyRetainingMetadata(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_retaining_metadata")
 }
+// 크고 작은 용량의 오브젝트및 메타데이터가 복사되는지 확인하는 테스트
 func TestObjectCopyReplacingMetadata(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_replacing_metadata")
 }
+// 존재하지 않는 버킷에서 존재하지 않는 오브젝트 복사 실패를 확인하는 테스트
 func TestObjectCopyBucketNotFound(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_bucket_not_found")
 }
+// 존재하지않는 오브젝트 복사 실패를 확인하는 테스트
 func TestObjectCopyKeyNotFound(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_key_not_found")
 }
+// 버저닝된 오브젝트 복사를 확인하는 테스트
 func TestObjectCopyVersioningBucket(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_versioning_bucket")
 }
+// [버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공을 확인하는 테스트
 func TestObjectCopyVersioningUrlEncoding(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_versioning_url_encoding")
 }
+// [버킷에 버저닝 설정] 멀티파트로 업로드된 오브젝트 복사를 확인하는 테스트
 func TestObjectCopyVersioningMultipartUpload(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_versioning_multipart_upload")
 }
+// ifMatch 값을 추가하여 오브젝트를 복사할 경우 성공을 확인하는 테스트
 func TestCopyObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_match_good")
 }
+// ifMatch에 잘못된 값을 입력하여 오브젝트를 복사할 경우 실패를 확인하는 테스트
 func TestCopyObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_match_failed")
 }
+// 소스 오브젝트와 일치하지 않는 copy-source-if-none-match 조건으로 복사 성공 확인
 func TestCopyObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_none_match_good")
 }
+// 소스 오브젝트와 일치하는 copy-source-if-none-match 조건으로 복사 시 412 실패 확인
 func TestCopyObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_none_match_failed")
 }
+// 소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 복사 성공 확인
 func TestCopyObjectIfModifiedSinceGood(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_modified_since_good")
 }
+// 소스 오브젝트 업로드 이후 시간의 copy-source-if-modified-since 조건으로 복사 시 412 실패 확인
 func TestCopyObjectIfModifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_modified_since_failed")
 }
+// 소스 오브젝트 업로드 이후 시간의 copy-source-if-unmodified-since 조건으로 복사 성공 확인
 func TestCopyObjectIfUnmodifiedSinceGood(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_unmodified_since_good")
 }
+// 소스 오브젝트 업로드 이전 시간의 copy-source-if-unmodified-since 조건으로 복사 시 412 실패 확인
 func TestCopyObjectIfUnmodifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_unmodified_since_failed")
 }
+// copy-source-if-match(일치)와 copy-source-if-unmodified-since(불일치)를 함께 사용할 경우 ETag 조건이 우선되어 복사에 성공하는지 확인
 func TestCopyObjectIfMatchWithIfUnmodifiedSince(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_match_with_if_unmodified_since")
 }
+// copy-source-if-none-match(불일치)와 copy-source-if-modified-since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 412가 반환되는지 확인
 func TestCopyObjectIfNoneMatchWithIfModifiedSince(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_none_match_with_if_modified_since")
 }
+// copy-source-if-match와 copy-source-if-none-match에 동일한 ETag를 지정하면 412가 반환되는지 확인
 func TestCopyObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_match_and_if_none_match")
 }
+// copy-source-if-match와 copy-source-if-none-match: * 를 함께 지정하면 412가 반환되는지 확인
 func TestCopyObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_if_match_and_if_none_match_any")
 }
+// 대상 오브젝트와 일치하는 If-Match 조건으로 덮어쓰기 복사 성공 확인
 func TestCopyObjectDestinationIfMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_destination_if_match_good")
 }
+// 대상 오브젝트와 일치하지 않는 If-Match 조건으로 덮어쓰기 복사 시 412 실패 확인
 func TestCopyObjectDestinationIfMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_destination_if_match_failed")
 }
+// 존재하지 않는 대상 키에 If-None-Match: * 조건으로 복사 성공 확인
 func TestCopyObjectDestinationIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_destination_if_none_match_good")
 }
+// 이미 존재하는 대상 키에 If-None-Match: * 조건으로 복사 시 412 실패 확인
 func TestCopyObjectDestinationIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_destination_if_none_match_failed")
 }
+// 대상에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
 func TestCopyObjectDestinationIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_destination_if_match_and_if_none_match")
 }
+// 대상에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
 func TestCopyObjectDestinationIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_destination_if_match_and_if_none_match_any")
 }
+// 소스 If-Match와 대상 If-None-Match: * 를 함께 사용해 복사 성공 확인
 func TestCopyObjectSourceIfMatchWithDestinationIfNoneMatch(t *testing.T) {
 	t.Parallel()
 
 	testCopyConditions(t, "test_copy_object_source_if_match_with_destination_if_none_match")
 }
+// [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyNorSrcToNorBucketAndObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_nor_src_to_nor_bucket_and_obj")
 }
+// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyNorSrcToNorBucketEncryptionObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_nor_src_to_nor_bucket_encryption_obj")
 }
+// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyNorSrcToEncryptionBucketNorObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_nor_src_to_encryption_bucket_nor_obj")
 }
+// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyNorSrcToEncryptionBucketAndObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_nor_src_to_encryption_bucket_and_obj")
 }
+// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionSrcToNorBucketAndObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_src_to_nor_bucket_and_obj")
 }
+// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionSrcToNorBucketEncryptionObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_src_to_nor_bucket_encryption_obj")
 }
+// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionSrcToEncryptionBucketNorObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_src_to_encryption_bucket_nor_obj")
 }
+// [source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionSrcToEncryptionBucketAndObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_src_to_encryption_bucket_and_obj")
 }
+// [source bucket : encryption, source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketNorObjToNorBucketAndObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_bucket_nor_obj_to_nor_bucket_and_obj")
 }
+// [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketNorObjToNorBucketEncryptionObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_bucket_nor_obj_to_nor_bucket_encryption_obj")
 }
+// [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketNorObjToEncryptionBucketNorObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_bucket_nor_obj_to_encryption_bucket_nor_obj")
 }
+// [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketNorObjToEncryptionBucketAndObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_bucket_nor_obj_to_encryption_bucket_and_obj")
 }
+// [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketAndObjToNorBucketAndObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_bucket_and_obj_to_nor_bucket_and_obj")
 }
+// [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketAndObjToNorBucketEncryptionObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_bucket_and_obj_to_nor_bucket_encryption_obj")
 }
+// [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketAndObjToEncryptionBucketNorObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_bucket_and_obj_to_encryption_bucket_nor_obj")
 }
+// [source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketAndObjToEncryptionBucketAndObj(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_encryption_bucket_and_obj_to_encryption_bucket_and_obj")
 }
+// 일반 오브젝트에서 다양한 방식으로 복사 성공을 확인하는 테스트
 func TestCopyToNormalSource(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_to_normal_source")
 }
+// SSE-S3암호화 된 오브젝트에서 다양한 방식으로 복사 성공을 확인하는 테스트
 func TestCopyToSseS3Source(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_to_sse_s3_source")
 }
+// SSE-C암호화 된 오브젝트에서 다양한 방식으로 복사 성공을 확인하는 테스트 SDK V1은 SSE-C 차단 해제(BlockedEncryptionTypes)를 지원하지 않아 V2만 테스트한다.
 func TestCopyToSseCSource(t *testing.T) {
 	t.Parallel()
 
 	testCopyEncryption(t, "test_copy_to_sse_c_source")
 }
+// 삭제된 오브젝트 복사 실패를 확인하는 테스트
 func TestCopyToDeletedObject(t *testing.T) {
 	t.Parallel()
 
 	testCopyDeleted(t, "test_copy_to_deleted_object")
 }
+// 버저닝된 버킷에서 삭제된 오브젝트 복사 실패를 확인하는 테스트
 func TestCopyToDeleteMarkerObject(t *testing.T) {
 	t.Parallel()
 
 	testCopyDeleted(t, "test_copy_to_delete_marker_object")
 }
+// 버저닝된 버킷에서 copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 추가 가능한지 확인하는 테스트
 func TestObjectVersioningCopyToItselfWithMetadata(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_versioning_copy_to_itself_with_metadata")
 }
+// copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인하는 테스트
 func TestObjectCopyToItselfWithMetadataOverwrite(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_copy_to_itself_with_metadata_overwrite")
 }
+// 버저닝된 버킷에서 copyObject로 덮어쓰기할 경우 메타데이터 덮어쓰기 모드로 메타데이터를 변경 가능한지 확인하는 테스트
 func TestObjectVersioningCopyToItselfWithMetadataOverwrite(t *testing.T) {
 	t.Parallel()
 
 	testCopyCore(t, "test_object_versioning_copy_to_itself_with_metadata_overwrite")
 }
+// sse-c로 암호화된 오브젝트를 복사할때 Algorithm을 누락하면 오류가 발생하는지 확인하는 테스트 SDK V1은 SSE-C 차단 해제(BlockedEncryptionTypes)를 지원하지 않아 V2만 테스트한다.
 func TestCopyRevokeSseAlgorithm(t *testing.T) {
 	t.Parallel()
 
 	testCopyRevokedSSEC(t)
 }
+// UseChunkEncoding을 사용하는 오브젝트 복사 시 체크섬 계산 및 검증을 확인하는 테스트
 func TestCopyObjectChecksumUseChunkEncoding(t *testing.T) {
 	t.Parallel()
 
 	testCopyChecksums(t)
 }
+// 메타데이터와 태그가 복사되는지 확인하는 테스트
 func TestCopyObjectMetadataAndTags(t *testing.T) {
 	t.Parallel()
 

@@ -62,26 +62,26 @@ func newSuite(t *testing.T) *suite {
 	return &suite{s3.New(opt), cfg}
 }
 
-// applyCompatibleS3Options mirrors Java TestBase.getClient defaults
-// (RequestChecksumCalculation/ResponseChecksumValidation WHEN_REQUIRED) and
-// applies KSAN-compatible request wire rewrites.
+// applyCompatibleS3Options는 Java TestBase.getClient 기본값
+// (RequestChecksumCalculation/ResponseChecksumValidation WHEN_REQUIRED)을 따르고
+// KSAN 호환 요청 와이어 재작성을 적용합니다.
 func applyCompatibleS3Options(o *s3.Options) {
 	o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
 	o.ResponseChecksumValidation = aws.ResponseChecksumValidationWhenRequired
 	ensureDisableDoubleEncoding(o)
 	fixGetObjectAttributesWireFormat(o)
 	lowercaseMetadataHeaders(o)
-	// Adjacent-slash collapse is only for KSAN SigV4 compatibility. On AWS it
-	// breaks object keys like "/" (path becomes CreateBucket-shaped).
+	// 인접 슬래시 축약은 KSAN SigV4 호환용입니다. AWS에서는
+	// "/" 같은 객체 키가 깨집니다(경로가 CreateBucket 형태가 됨).
 	if o.BaseEndpoint != nil && aws.ToString(o.BaseEndpoint) != "" {
 		preserveOrCollapseAdjacentSlashes(o)
 	}
 }
 
-// preserveOrCollapseAdjacentSlashes rewrites request paths that contain "//".
-// KSAN's SigV4 verification matches Java's HTTP client path normalization
-// (adjacent slashes collapsed). aws-sdk-go-v2 keeps "//" in Path/RawPath and
-// signs that form, which KSAN rejects with SignatureDoesNotMatch.
+// preserveOrCollapseAdjacentSlashes는 "//"가 포함된 요청 경로를 재작성합니다.
+// KSAN의 SigV4 검증은 Java HTTP 클라이언트의 경로 정규화
+// (인접 슬래시 축약)와 일치합니다. aws-sdk-go-v2는 Path/RawPath에 "//"를 유지하고
+// 그 형태로 서명하므로, KSAN은 SignatureDoesNotMatch로 거부합니다.
 func preserveOrCollapseAdjacentSlashes(o *s3.Options) {
 	o.APIOptions = append(o.APIOptions, func(stack *middleware.Stack) error {
 		return stack.Finalize.Add(middleware.FinalizeMiddlewareFunc("collapseAdjacentSlashes",
@@ -108,10 +108,10 @@ func collapseAdjacentSlashes(path string) string {
 	return path
 }
 
-// ensureDisableDoubleEncoding forces SigV4 DisableURIPathEscaping for custom
-// BaseEndpoint clients (aws-sdk-go-v2#3349). Without it, keys containing
-// parentheses and similar characters are percent-encoded twice and KSAN
-// returns SignatureDoesNotMatch.
+// ensureDisableDoubleEncoding은 커스텀 BaseEndpoint 클라이언트에 대해
+// SigV4 DisableURIPathEscaping을 강제합니다(aws-sdk-go-v2#3349). 없으면
+// 괄호 등 문자가 포함된 키가 이중 percent-encoding되어 KSAN이
+// SignatureDoesNotMatch를 반환합니다.
 func ensureDisableDoubleEncoding(o *s3.Options) {
 	inner := o.EndpointResolverV2
 	if inner == nil {
@@ -146,15 +146,15 @@ func (r disableDoubleEncodingResolver) ResolveEndpoint(ctx context.Context, para
 	return out, nil
 }
 
-// fixGetObjectAttributesWireFormat matches Java AWS SDK v2 wire format:
+// fixGetObjectAttributesWireFormat는 Java AWS SDK v2 와이어 형식에 맞춥니다:
 //
-//  1. Header (required by AWS): merge multi-value X-Amz-Object-Attributes into
-//     one comma-separated header (aws-sdk-go-v2#1620). Never remove this header.
+//  1. 헤더(AWS 필수): 다중 값 X-Amz-Object-Attributes를
+//     하나의 쉼표 구분 헤더로 병합(aws-sdk-go-v2#1620). 이 헤더는 절대 제거하지 않음.
 //
-//  2. Query subresource: smithy Encode()s "?attributes" as "attributes=".
-//     Java stores a null value and omits "=" (bare "attributes"). Sign with the
-//     SDK's attributes= form, then rewrite the outbound URL to bare "attributes"
-//     in the HTTP client (last hop) so AWS/KSAN see the Java shape.
+//  2. 쿼리 서브리소스: smithy Encode()는 "?attributes"를 "attributes="로 인코딩.
+//     Java는 null 값을 저장하고 "="를 생략(bare "attributes"). SDK의 attributes= 형태로
+//     서명한 뒤, HTTP 클라이언트(마지막 hop)에서 송신 URL을 bare "attributes"로
+//     재작성하여 AWS/KSAN이 Java 형태를 보게 함.
 func fixGetObjectAttributesWireFormat(o *s3.Options) {
 	o.APIOptions = append(o.APIOptions, func(stack *middleware.Stack) error {
 		return stack.Finalize.Add(middleware.FinalizeMiddlewareFunc("mergeObjectAttributesHeader",
@@ -208,9 +208,9 @@ func mergeObjectAttributesHeader(h http.Header) {
 	h.Set(objectAttributesHeader, strings.Join(values, ","))
 }
 
-// ensureBareAttributesQueryFlag rewrites empty attributes= to the bare
-// subresource flag "attributes" (Java SdkHttpUtils null-value shape). Leaves
-// attributes=<non-empty> alone. No-op when the key is absent.
+// ensureBareAttributesQueryFlag는 빈 attributes=를 bare 서브리소스 플래그
+// "attributes"로 재작성합니다(Java SdkHttpUtils null-value 형태).
+// attributes=<비어 있지 않음>은 그대로 둡니다. 키가 없으면 no-op입니다.
 func ensureBareAttributesQueryFlag(raw string) string {
 	if raw == "" {
 		return raw
@@ -235,20 +235,19 @@ func ensureBareAttributesQueryFlag(raw string) string {
 	return "attributes&" + strings.Join(parts, "&")
 }
 
-// lowercaseMetadataHeaders rewrites user-metadata headers before SigV4 signing.
+// lowercaseMetadataHeaders는 SigV4 서명 전에 user-metadata 헤더를 재작성합니다.
 //
-// aws-sdk-go-v2 serializes Metadata with http.CanonicalHeaderKey
-// (e.g. X-Amz-Meta-Meta1). Java AWS SDK v2 concatenates locationName+key as-is
-// (x-amz-meta-meta1). KSAN matches the user-metadata prefix case-sensitively,
-// so Canonical headers are ignored while Content-Type and other fields work.
+// aws-sdk-go-v2는 Metadata를 http.CanonicalHeaderKey로 직렬화합니다
+// (예: X-Amz-Meta-Meta1). Java AWS SDK v2는 locationName+key를 그대로 연결합니다
+// (x-amz-meta-meta1). KSAN은 user-metadata 접두사를 대소문자 구분으로 매칭하므로
+// Canonical 헤더는 무시되고 Content-Type 등 다른 필드는 정상 동작합니다.
 //
-// Evidence: TestPost/test_post_object_user_specified_header (form field
-// x-amz-meta-foo) passes HeadObject metadata checks; PutObject/CopyObject/
-// CreateMultipartUpload Metadata fails with metadata=map[] / Metadata:nil.
+// 근거: TestPost/test_post_object_user_specified_header (폼 필드
+// x-amz-meta-foo)는 HeadObject 메타데이터 검사를 통과; PutObject/CopyObject/
+// CreateMultipartUpload Metadata는 metadata=map[] / Metadata:nil로 실패.
 //
-// Also collapses accidental double prefixes when callers put keys that already
-// include "x-amz-meta-" (Java MAP marshaller skips re-prefixing; Go always
-// prefixes).
+// 또한 호출자가 이미 "x-amz-meta-"를 포함한 키를 넣을 때 이중 접두사를 축약합니다
+// (Java MAP marshaller는 재접두사를 건너뛰고, Go는 항상 접두사를 붙임).
 func lowercaseMetadataHeaders(o *s3.Options) {
 	o.APIOptions = append(o.APIOptions, func(stack *middleware.Stack) error {
 		return stack.Finalize.Add(middleware.FinalizeMiddlewareFunc("lowercaseMetadataHeaders",
@@ -609,8 +608,8 @@ func put(t *testing.T, s *suite, bucket, key, body string, metadata map[string]s
 	return out
 }
 
-// putObjectMaybeChunked mirrors Java getClientHttps(useChunkEncoding): non-seekable
-// body with UNSIGNED-PAYLOAD. ContentLength is set so KSAN does not return 411.
+// putObjectMaybeChunked는 Java getClientHttps(useChunkEncoding)를 따릅니다:
+// UNSIGNED-PAYLOAD와 함께 non-seekable body. ContentLength를 설정하여 KSAN이 411을 반환하지 않게 함.
 func putObjectMaybeChunked(t *testing.T, client *s3.Client, bucket, key string, body []byte, chunked bool) {
 	t.Helper()
 	input := &s3.PutObjectInput{
@@ -631,7 +630,7 @@ func putObjectMaybeChunked(t *testing.T, client *s3.Client, bucket, key string, 
 	}
 }
 
-// opaqueReader hides Seek so the SDK treats the body as a streaming/chunked upload.
+// opaqueReader는 Seek를 숨겨 SDK가 body를 streaming/chunked 업로드로 취급하게 합니다.
 type opaqueReader struct{ io.Reader }
 
 func read(t *testing.T, s *suite, bucket, key string) string {

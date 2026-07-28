@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷의 소유권 조회 확인
 func TestGetBucketOwnership(t *testing.T) {
 	t.Parallel()
 
@@ -19,6 +20,7 @@ func TestGetBucketOwnership(t *testing.T) {
 		t.Fatalf("GetBucketOwnershipControls: %v", err)
 	}
 }
+// 버킷을 생성할때 소유권 설정 확인
 func TestCreateBucketWithOwnership(t *testing.T) {
 	t.Parallel()
 
@@ -26,6 +28,7 @@ func TestCreateBucketWithOwnership(t *testing.T) {
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
 	assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
 }
+// 버킷의 소유권 변경 확인
 func TestChangeBucketOwnership(t *testing.T) {
 	t.Parallel()
 
@@ -35,6 +38,7 @@ func TestChangeBucketOwnership(t *testing.T) {
 	putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerPreferred)
 	assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerPreferred)
 }
+// [BucketOwnerEnforced] 버킷 ACL 설정이 실패하는지 확인
 func TestBucketOwnershipDenyACL(t *testing.T) {
 	t.Parallel()
 
@@ -43,6 +47,7 @@ func TestBucketOwnershipDenyACL(t *testing.T) {
 	_, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicRead})
 	assertS3Error(t, err, 403, "AccessDenied")
 }
+// [BucketOwnerEnforced] 오브젝트 ACL 설정이 실패하는지 확인
 func TestBucketOwnershipDenyObjectACL(t *testing.T) {
 	t.Parallel()
 
@@ -53,6 +58,7 @@ func TestBucketOwnershipDenyObjectACL(t *testing.T) {
 	_, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPublicRead})
 	assertS3Error(t, err, 403, "AccessDenied")
 }
+// ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경해도 접근 가능한지 확인
 func TestObjectOwnershipDenyChange(t *testing.T) {
 	t.Parallel()
 
@@ -68,6 +74,7 @@ func TestObjectOwnershipDenyChange(t *testing.T) {
 	putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
 	headPublic(t, public, bucket, key)
 }
+// ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경할경우 ACL 설정이 실패하는지 확인
 func TestObjectOwnershipDenyACL(t *testing.T) {
 	t.Parallel()
 

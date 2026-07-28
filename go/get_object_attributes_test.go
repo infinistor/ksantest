@@ -16,26 +16,35 @@ import (
 
 var basicObjectAttributes = []types.ObjectAttributes{types.ObjectAttributesObjectSize, types.ObjectAttributesStorageClass, types.ObjectAttributesEtag}
 
+// 기본 GetObjectAttributes 테스트 모든 속성을 요청하고 응답이 올바른지 확인
 func TestGetObjectAttributesBasic(t *testing.T) {
 	t.Parallel()
 
 	testAttributesBasic(t, "test_get_object_attributes_basic")
 }
+
+// 특정 속성만 요청하는 테스트
 func TestGetObjectAttributesSpecificAttributes(t *testing.T) {
 	t.Parallel()
 
 	testAttributesBasic(t, "test_get_object_attributes_specific_attributes")
 }
+
+// 멀티파트 업로드된 객체에 대한 GetObjectAttributes 테스트
 func TestGetObjectAttributesMultipart(t *testing.T) {
 	t.Parallel()
 
 	testAttributesMultipart(t, "test_get_object_attributes_multipart")
 }
+
+// 체크섬 알고리즘을 사용한 객체에 대한 GetObjectAttributes 테스트
 func TestGetObjectAttributesWithChecksum(t *testing.T) {
 	t.Parallel()
 
 	testAttributesBasic(t, "test_get_object_attributes_with_checksum")
 }
+
+// 존재하지 않는 객체에 대한 GetObjectAttributes 테스트
 func TestGetObjectAttributesNonExistentObject(t *testing.T) {
 	t.Parallel()
 
@@ -44,6 +53,8 @@ func TestGetObjectAttributesNonExistentObject(t *testing.T) {
 	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String("missing"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
 	assertS3Error(t, err, 404, "NoSuchKey")
 }
+
+// 존재하지 않는 버킷에 대한 GetObjectAttributes 테스트
 func TestGetObjectAttributesNonExistentBucket(t *testing.T) {
 	t.Parallel()
 
@@ -51,41 +62,57 @@ func TestGetObjectAttributesNonExistentBucket(t *testing.T) {
 	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t)), Key: aws.String("key"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
 	assertS3Error(t, err, 404, "NoSuchBucket")
 }
+
+// 속성을 지정하지 않은 GetObjectAttributes 테스트
 func TestGetObjectAttributesNoAttributes(t *testing.T) {
 	t.Parallel()
 
 	testAttributesNone(t)
 }
+
+// 버전 ID를 사용한 GetObjectAttributes 테스트
 func TestGetObjectAttributesWithVersionId(t *testing.T) {
 	t.Parallel()
 
 	testAttributesVersion(t, "test_get_object_attributes_with_version_id")
 }
+
+// 잘못된 버전 ID를 사용한 GetObjectAttributes 테스트
 func TestGetObjectAttributesInvalidVersionId(t *testing.T) {
 	t.Parallel()
 
 	testAttributesVersion(t, "test_get_object_attributes_invalid_version_id")
 }
+
+// 대용량 멀티파트 업로드 객체에 대한 GetObjectAttributes 테스트
 func TestGetObjectAttributesLargeMultipart(t *testing.T) {
 	t.Parallel()
 
 	testAttributesMultipart(t, "test_get_object_attributes_large_multipart")
 }
+
+// 메타데이터가 있는 객체에 대한 GetObjectAttributes 테스트
 func TestGetObjectAttributesWithMetadata(t *testing.T) {
 	t.Parallel()
 
 	testAttributesBasic(t, "test_get_object_attributes_with_metadata")
 }
+
+// SSE-S3 암호화된 객체에 대한 GetObjectAttributes 테스트
 func TestGetObjectAttributesWithSSES3(t *testing.T) {
 	t.Parallel()
 
 	testAttributesBasic(t, "test_get_object_attributes_with_sse_s3")
 }
+
+// 비동기 클라이언트를 사용한 GetObjectAttributes 테스트
 func TestGetObjectAttributesAsync(t *testing.T) {
 	t.Parallel()
 
 	testAttributesBasic(t, "test_get_object_attributes_async")
 }
+
+// 비동기 클라이언트를 사용한 GetObjectAttributes 에러 테스트
 func TestGetObjectAttributesAsyncError(t *testing.T) {
 	t.Parallel()
 
@@ -93,6 +120,8 @@ func TestGetObjectAttributesAsyncError(t *testing.T) {
 	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t)), Key: aws.String("key"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
 	assertS3Error(t, err, 404, "NoSuchBucket")
 }
+
+// 모든 가능한 속성을 요청하는 GetObjectAttributes 테스트
 func TestGetObjectAttributesAllAttributes(t *testing.T) {
 	t.Parallel()
 
@@ -177,8 +206,8 @@ func testAttributesNone(t *testing.T) {
 	if err == nil {
 		t.Fatal("request without attributes was accepted")
 	}
-	// Java reaches the service (HTTP 400). Go SDK validates ObjectAttributes as
-	// required client-side (*smithy.OperationError) before the request is sent.
+	// Java는 서비스까지 도달(HTTP 400). Go SDK는 요청 전송 전에 ObjectAttributes를
+	// 클라이언트 측 필수로 검증(*smithy.OperationError).
 	var responseErr *smithyhttp.ResponseError
 	if errors.As(err, &responseErr) {
 		assertHTTPError(t, err, 400)

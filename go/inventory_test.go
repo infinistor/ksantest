@@ -9,86 +9,119 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷에 인벤토리를 설정하지 않은 상태에서 조회가 가능한지 확인
 func TestListBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	testInventoryList(t)
 }
+
+// 버킷에 인벤토리를 설정할 수 있는지 확인
 func TestPutBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	testInventoryPut(t)
 }
+
+// 버킷에 인벤토리 설정이 되었는지 확인
 func TestCheckBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	testInventoryCheck(t)
 }
+
+// 버킷에 설정된 인벤토리를 조회할 수 있는지 확인
 func TestGetBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	testInventoryGet(t)
 }
+
+// 버킷에 설정된 인벤토리를 삭제할 수 있는지 확인
 func TestDeleteBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	testInventoryDelete(t)
 }
+
+// 존재하지 않은 인벤토리를 가져오려고 할 경우 실패하는지 확인
 func TestGetBucketInventoryNotExist(t *testing.T) {
 	t.Parallel()
 
 	testInventoryGetMissing(t)
 }
+
+// 존재하지 않은 인벤토리를 삭제하려고 할 경우 실패하는지 확인
 func TestDeleteBucketInventoryNotExist(t *testing.T) {
 	t.Parallel()
 
 	testInventoryDeleteMissing(t)
 }
+
+// 존재하지 않은 버킷에 인벤토리를 설정하려고 할 경우 실패하는지 확인
 func TestPutBucketInventoryNotExist(t *testing.T) {
 	t.Parallel()
 
 	testInventoryPutMissingBucket(t)
 }
+
+// 인벤토리 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
 func TestPutBucketInventoryIdNotExist(t *testing.T) {
 	t.Parallel()
 
 	testInventoryMissingID(t)
 }
+
+// 인벤토리 아이디가 중복되는 경우 덮어쓰기 되는지 확인
 func TestPutBucketInventoryIdDuplicate(t *testing.T) {
 	t.Parallel()
 
 	testInventoryDuplicateID(t)
 }
+
+// 타깃 버킷이 존재하지 않을 경우 실패하는지 확인
 func TestPutBucketInventoryTargetNotExist(t *testing.T) {
 	t.Parallel()
 
 	testInventoryMissingTarget(t)
 }
+
+// 지원하지 않는 파일 형식의 인벤토리를 설정하려고 할 경우 실패하는지 확인
 func TestPutBucketInventoryInvalidFormat(t *testing.T) {
 	t.Parallel()
 
 	testInventoryInvalidFormat(t)
 }
+
+// 올바르지 않은 주기의 인벤토리를 설정하려고 할 경우 실패하는지 확인
 func TestPutBucketInventoryInvalidFrequency(t *testing.T) {
 	t.Parallel()
 
 	testInventoryInvalidFrequency(t)
 }
+
+// 대소문자를 잘못 입력하여 인벤토리를 설정하려고 할 경우 실패하는지 확인
 func TestPutBucketInventoryInvalidCase(t *testing.T) {
 	t.Parallel()
 
 	testInventoryInvalidCase(t)
 }
+
+// 접두어를 포함한 인벤토리 설정이 올바르게 적용되는지 확인
 func TestPutBucketInventoryPrefix(t *testing.T) {
 	t.Parallel()
 
 	testInventoryPrefix(t)
 }
+
+// 옵션을 포함한 인벤토리 설정이 올바르게 적용되는지 확인
 func TestPutBucketInventoryOptional(t *testing.T) {
 	t.Parallel()
 
 	testInventoryOptional(t)
 }
+
+// 올바르지 않은 옵션을 포함한 인벤토리를 설정하려고 할 경우 실패하는지 확인
 func TestPutBucketInventoryInvalidOptional(t *testing.T) {
 	t.Parallel()
 

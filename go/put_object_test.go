@@ -18,241 +18,289 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 오브젝트가 올바르게 생성되는지 확인
 func TestBucketListDistinct(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_bucket_list_distinct")
 }
+// 존재하지 않는 버킷에 오브젝트 업로드할 경우 실패 확인
 func TestObjectWriteToNonExistBucket(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_write_to_non_exist_bucket")
 }
+// 0바이트로 업로드한 오브젝트가 실제로 0바이트인지 확인
 func TestObjectHeadZeroBytes(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_head_zero_bytes")
 }
+// 업로드한 오브젝트의 ETag가 올바른지 확인
 func TestObjectWriteCheckEtag(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_write_check_etag")
 }
+// 캐시(시간)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
 func TestObjectWriteCacheControl(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_write_cache_control")
 }
+// 캐시(날짜)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
 func TestObjectWriteExpires(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_write_expires")
 }
+// 오브젝트의 기본 작업을 모드 올바르게 할 수 있는지 확인(read, write, update, delete)
 func TestObjectWriteReadUpdateReadDelete(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_write_read_update_read_delete")
 }
+// 오브젝트에 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
 func TestObjectSetGetMetadataNoneToGood(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_set_get_metadata_none_to_good")
 }
+// 오브젝트에 빈 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
 func TestObjectSetGetMetadataNoneToEmpty(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_set_get_metadata_none_to_empty")
 }
+// 메타 데이터 업데이트가 올바르게 적용되었는지 확인
 func TestObjectSetGetMetadataOverwriteToEmpty(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_set_get_metadata_overwrite_to_empty")
 }
+// 메타데이터에 올바르지 않는 문자열[EOF(\x04)를 사용할 경우 실패 확인
 func TestObjectSetGetNonUtf8Metadata(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_set_get_non_utf8_metadata")
 }
+// 메타데이터에 올바르지 않는 문자[EOF(\x04)를 문자열 맨앞에 사용할 경우 실패 확인
 func TestObjectSetGetMetadataEmptyToUnreadablePrefix(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_set_get_metadata_empty_to_unreadable_prefix")
 }
+// 메타데이터에 올바르지 않는 문자[EOF(\x04)를 문자열 맨뒤에 사용할 경우 실패 확인
 func TestObjectSetGetMetadataEmptyToUnreadableSuffix(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_set_get_metadata_empty_to_unreadable_suffix")
 }
+// 오브젝트를 메타데이타 없이 덮어쓰기 했을 때, 메타데이타 값이 비어있는지 확인
 func TestObjectMetadataReplacedOnPut(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_metadata_replaced_on_put")
 }
+// body의 내용을utf-8로 인코딩한 오브젝트를 업로드 했을때 올바르게 업로드 되었는지 확인
 func TestObjectWriteFile(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_write_file")
 }
+// 오브젝트 이름과 내용이 모두 특수문자인 오브젝트 여러개를 업로드 할 경우 모두 재대로 업로드 되는지 확인
 func TestBucketCreateSpecialKeyNames(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_bucket_create_special_key_names")
 }
+// [_], [/]가 포함된 이름을 가진 오브젝트를 업로드 한뒤 prefix정보를 설정한 GetObjectList가 가능한지 확인
 func TestBucketListSpecialPrefix(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_bucket_list_special_prefix")
 }
+// [버킷의 Lock옵션을 활성화] LegalHold와 Lock유지기한을 설정하여 오브젝트 업로드할 경우 설정이 적용되는지 메타데이터를 통해 확인
 func TestObjectLockUploadingObj(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_lock_uploading_obj")
 }
+// 오브젝트의 중간에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
 func TestObjectInfixSpace(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_object_infix_space")
 }
+// 오브젝트의 마지막에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
 func TestObjectSuffixSpace(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_object_suffix_space")
 }
+// [AWS SDK V2] 특수문자를 포함한 오브젝트 업로드 성공 확인
 func TestPutObjectSpecialCharacters(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_put_object_special_characters")
 }
+// [AWS SDK V2, UseChunkEncoding = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
 func TestPutObjectSpecialCharactersUseChunkEncoding(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_put_object_special_characters_use_chunk_encoding")
 }
+// [AWS SDK V2, UseChunkEncoding = true, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
 func TestPutObjectUseSpecialCharactersChunkEncodingAndDisablePayloadSigning(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_put_object_use_special_characters_chunk_encoding_and_disable_payload_signing")
 }
+// [AWS SDK V2, UseChunkEncoding = false] 특수문자를 포함한 오브젝트 업로드 성공 확인
 func TestPutObjectSpecialCharactersNotChunkEncoding(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_put_object_special_characters_not_chunk_encoding")
 }
+// [AWS SDK V2, UseChunkEncoding = false, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
 func TestPutObjectSpecialCharactersNotChunkEncodingAndDisablePayloadSigning(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_put_object_special_characters_not_chunk_encoding_and_disable_payload_signing")
 }
+// 폴더의 이름과 동일한 오브젝트 업로드가 가능한지 확인
 func TestPutObjectDirAndFile(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_put_object_dir_and_file")
 }
+// 오브젝트를 여러번 업로드 했을때 올바르게 반영되는지 확인
 func TestObjectOverwrite(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_overwrite")
 }
+// 오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인
 func TestObjectEmoji(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_emoji")
 }
+// 메타데이터에 utf-8이 포함될 경우 올바르게 업로드 되는지 확인
 func TestObjectSetGetMetadataUtf8(t *testing.T) {
 	t.Parallel()
 
 	testPutCore(t, "test_object_set_get_metadata_utf8")
 }
+// useChunkEncoding을 사용하는 오브젝트 업로드 시 체크섬 계산 및 검증 확인
 func TestPutObjectChecksumUseChunkEncoding(t *testing.T) {
 	t.Parallel()
 
 	testPutChecksums(t, "test_put_object_checksum_use_chunk_encoding")
 }
+// useChunkEncoding을 사용하지 않는 오브젝트 업로드 시 체크섬 계산 및 검증 확인
 func TestPutObjectChecksum(t *testing.T) {
 	t.Parallel()
 
 	testPutChecksums(t, "test_put_object_checksum")
 }
+// 사전 계산한 체크섬 값을 직접 지정하여 오브젝트 업로드 시 검증 성공 확인
 func TestPutObjectChecksumWithValue(t *testing.T) {
 	t.Parallel()
 
 	testPutChecksums(t, "test_put_object_checksum_with_value")
 }
+// 잘못된 체크섬 값을 지정하여 오브젝트 업로드 시 BadDigest 실패 확인
 func TestPutObjectChecksumFailure(t *testing.T) {
 	t.Parallel()
 
 	testPutChecksums(t, "test_put_object_checksum_failure")
 }
+// 일치하는 If-Match 조건으로 오브젝트 덮어쓰기 성공 확인
 func TestPutObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testPutConditions(t, "test_put_object_if_match_good")
 }
+// 일치하지 않는 If-Match 조건으로 오브젝트 덮어쓰기 시 412 실패 확인
 func TestPutObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testPutConditions(t, "test_put_object_if_match_failed")
 }
+// 존재하지 않는 키에 If-None-Match: * 조건으로 업로드 성공 확인
 func TestPutObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testPutConditions(t, "test_put_object_if_none_match_good")
 }
+// 이미 존재하는 키에 If-None-Match: * 조건으로 업로드 시 412 실패 확인
 func TestPutObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testPutConditions(t, "test_put_object_if_none_match_failed")
 }
+// If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
 func TestPutObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 
 	testPutConditions(t, "test_put_object_if_match_and_if_none_match")
 }
+// 최대 길이(1024자)의 오브젝트 키로 업로드 성공 확인
 func TestPutObjectKeyMaxLength(t *testing.T) {
 	t.Parallel()
 
 	testPutKeyBoundary(t, "test_put_object_key_max_length")
 }
+// 최소 길이(1자)의 오브젝트 키로 업로드 성공 확인
 func TestPutObjectKeyMinLength(t *testing.T) {
 	t.Parallel()
 
 	testPutKeyBoundary(t, "test_put_object_key_min_length")
 }
+// 최대 길이(1024자)를 초과하는 오브젝트 키로 업로드 실패 확인
 func TestPutObjectKeyTooLong(t *testing.T) {
 	t.Parallel()
 
 	testPutKeyBoundary(t, "test_put_object_key_too_long")
 }
+// 특수문자로 시작하는 오브젝트 키로 업로드 성공 확인
 func TestPutObjectKeySpecialCharactersAtStart(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_put_object_key_special_characters_at_start")
 }
+// 특수문자로 끝나는 오브젝트 키로 업로드 성공 확인
 func TestPutObjectKeySpecialCharactersAtEnd(t *testing.T) {
 	t.Parallel()
 
 	testPutSpecialKeys(t, "test_put_object_key_special_characters_at_end")
 }
+// 유니코드 문자를 포함한 오브젝트 키로 업로드 성공 확인
 func TestPutObjectKeyUnicodeCharacters(t *testing.T) {
 	t.Parallel()
 
 	testPutKeyBoundary(t, "test_put_object_key_unicode_characters")
 }
+// 1024바이트를 초과하는 키로 업로드 실패 확인
 func TestPutObjectKeyUnicodeCharactersTooLong(t *testing.T) {
 	t.Parallel()
 
 	testPutKeyBoundary(t, "test_put_object_key_unicode_characters_too_long")
 }
+// 앞뒤 공백문자를 포함한 오브젝트 키로 업로드 성공 확인
 func TestPutObjectKeyWithLeadingAndTrailingSpaces(t *testing.T) {
 	t.Parallel()
 
 	testPutKeyBoundary(t, "test_put_object_key_with_leading_and_trailing_spaces")
 }
+// 연속된 슬래시를 포함한 오브젝트 키로 업로드 성공 확인
 func TestPutObjectKeyWithConsecutiveSlashes(t *testing.T) {
 	t.Parallel()
 
 	testPutKeyBoundary(t, "test_put_object_key_with_consecutive_slashes")
 }
+// 다양한 경계 길이의 오브젝트 키로 업로드 성공 확인
 func TestPutObjectKeyBoundaryLengths(t *testing.T) {
 	t.Parallel()
 

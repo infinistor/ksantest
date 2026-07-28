@@ -12,6 +12,7 @@ import (
 	"ksantest/go-s3tests/internal/testconfig"
 )
 
+// 여러개의 버킷 생성해서 목록 조회 확인
 func TestBucketsCreateThenList(t *testing.T) {
 	t.Parallel()
 
@@ -28,6 +29,8 @@ func TestBucketsCreateThenList(t *testing.T) {
 		}
 	}
 }
+
+// 존재하지 않는 사용자가 버킷목록 조회시 에러 확인
 func TestListBucketsInvalidAuth(t *testing.T) {
 	t.Parallel()
 
@@ -36,6 +39,8 @@ func TestListBucketsInvalidAuth(t *testing.T) {
 	_, err := client.ListBuckets(context.Background(), &s3.ListBucketsInput{})
 	assertS3Error(t, err, 403, "InvalidAccessKeyId")
 }
+
+// 로그인정보를 잘못입력한 사용자가 버킷목록 조회시 에러 확인
 func TestListBucketsBadAuth(t *testing.T) {
 	t.Parallel()
 
@@ -44,6 +49,8 @@ func TestListBucketsBadAuth(t *testing.T) {
 	_, err := client.ListBuckets(context.Background(), &s3.ListBucketsInput{})
 	assertS3Error(t, err, 403, "SignatureDoesNotMatch")
 }
+
+// 버킷의 메타데이터를 가져올 수 있는지 확인
 func TestHeadBucket(t *testing.T) {
 	t.Parallel()
 
@@ -53,6 +60,8 @@ func TestHeadBucket(t *testing.T) {
 		t.Fatalf("HeadBucket: %v", err)
 	}
 }
+
+// 버킷 목록 조회시 Prefix를 이용한 필터링 확인
 func TestListBucketsPrefix(t *testing.T) {
 	t.Parallel()
 
@@ -68,11 +77,15 @@ func TestListBucketsPrefix(t *testing.T) {
 		t.Fatalf("buckets = %v, want %v", got, created)
 	}
 }
+
+// 버킷 목록 조회시 MaxBuckets를 이용한 필터링 확인
 func TestListBucketsMaxBuckets(t *testing.T) {
 	t.Parallel()
 
 	testBucketPages(t, false)
 }
+
+// 버킷 목록 조회시 ContinuationToken를 이용한 필터링 확인
 func TestListBucketsContinuationToken(t *testing.T) {
 	t.Parallel()
 

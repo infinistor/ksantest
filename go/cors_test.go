@@ -12,6 +12,7 @@ package s3tests
 // 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 // )
 
+// // 버킷의 cors정보 세팅 성공 확인
 // func TestSetCors(t *testing.T) {
 // 	t.Parallel()
 
@@ -32,6 +33,7 @@ package s3tests
 // 	assertNoCors(t, s, bucket)
 // }
 
+// // 버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인
 // func TestCorsOriginResponse(t *testing.T) {
 // 	t.Parallel()
 // 	s := newSuite(t)
@@ -136,6 +138,7 @@ package s3tests
 // 	}, 200, "foo.put", "PUT")
 // }
 
+// // 와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인
 // func TestCorsOriginWildcard(t *testing.T) {
 // 	t.Parallel()
 // 	s := newSuite(t)
@@ -147,6 +150,7 @@ package s3tests
 // 	checkCors(t, s, "GET", bucket, "", map[string]string{"Origin": "example.origin"}, 200, "*", "GET")
 // }
 
+// // cors옵션에서 사용자 추가 헤더를 설정하고 존재하지 않는 헤더를 request 설정한 채로 cors호출하면 실패하는지 확인
 // func TestCorsHeaderOption(t *testing.T) {
 // 	t.Parallel()
 // 	s := newSuite(t)

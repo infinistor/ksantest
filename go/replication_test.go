@@ -11,31 +11,37 @@ import (
 
 const replicationRole = "arn:aws:iam::635518764071:role/replication"
 
+// 버킷의 Replication 설정이 되는지 확인(put/get/delete)
 func TestReplicationSet(t *testing.T) {
 	t.Parallel()
 
 	testReplicationSet(t)
 }
+// 원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
 func TestReplicationInvalidSourceBucketName(t *testing.T) {
 	t.Parallel()
 
 	testReplicationInvalidSource(t)
 }
+// 원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
 func TestReplicationInvalidSourceBucketVersioning(t *testing.T) {
 	t.Parallel()
 
 	testReplicationInvalidSourceVersioning(t)
 }
+// 대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
 func TestReplicationInvalidTargetBucketName(t *testing.T) {
 	t.Parallel()
 
 	testReplicationInvalidTarget(t)
 }
+// 대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
 func TestReplicationInvalidTargetBucketVersioning(t *testing.T) {
 	t.Parallel()
 
 	testReplicationInvalidTargetVersioning(t)
 }
+// 버킷에 복제 설정을 하고 버저닝 설정을 중단 했을 때 실패하는지 확인
 func TestReplicationBucketVersioningSuspend(t *testing.T) {
 	t.Parallel()
 

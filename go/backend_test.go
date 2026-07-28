@@ -24,6 +24,7 @@ const (
 	backendKSANDeleteHeader   = "x-ksan-delete-marker-version-id"
 )
 
+// [Versioning] PutObject가 정상 동작하는지 확인
 func TestPutObjectVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -34,6 +35,7 @@ func TestPutObjectVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_put_object_versioning")
 }
+// [Versioning] PutObject 버전 정보 추가시 정상 동작 확인
 func TestPutObjectVersioningWithVersionId(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -44,6 +46,7 @@ func TestPutObjectVersioningWithVersionId(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_put_object_versioning_with_version_id")
 }
+// [Versioning] GetObject가 정상 동작하는지 확인
 func TestGetObjectVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -54,6 +57,7 @@ func TestGetObjectVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_get_object_versioning")
 }
+// [Versioning] DeleteObject가 정상 동작하는지 확인
 func TestDeleteObjectVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -64,6 +68,7 @@ func TestDeleteObjectVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_delete_object_versioning")
 }
+// [Versioning] DeleteObjects가 정상 동작하는지 확인
 func TestDeleteObjectsVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -74,6 +79,7 @@ func TestDeleteObjectsVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_delete_objects_versioning")
 }
+// [Versioning] HeadObject가 정상 동작하는지 확인
 func TestHeadObjectVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -84,6 +90,7 @@ func TestHeadObjectVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_head_object_versioning")
 }
+// [Versioning] CopyObject가 정상 동작하는지 확인
 func TestCopyObjectVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -94,6 +101,7 @@ func TestCopyObjectVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_copy_object_versioning")
 }
+// [Versioning] MultipartUpload가 정상 동작하는지 확인
 func TestMultipartUploadVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -104,6 +112,7 @@ func TestMultipartUploadVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_multipart_upload_versioning")
 }
+// [Versioning] PutObjectAcl가 정상 동작하는지 확인
 func TestPutObjectAclVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -114,6 +123,7 @@ func TestPutObjectAclVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_put_object_acl_versioning")
 }
+// [Versioning] GetObjectAcl가 정상 동작하는지 확인
 func TestGetObjectAclVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -124,6 +134,7 @@ func TestGetObjectAclVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_get_object_acl_versioning")
 }
+// [Versioning] PutObjectTagging가 정상 동작하는지 확인
 func TestPutObjectTaggingVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -134,6 +145,7 @@ func TestPutObjectTaggingVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_put_object_tagging_versioning")
 }
+// [Versioning] GetObjectTagging가 정상 동작하는지 확인
 func TestGetObjectTaggingVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -144,6 +156,7 @@ func TestGetObjectTaggingVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_get_object_tagging_versioning")
 }
+// [Versioning] DeleteObjectTagging가 정상 동작하는지 확인
 func TestDeleteObjectTaggingVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -154,6 +167,7 @@ func TestDeleteObjectTaggingVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_delete_object_tagging_versioning")
 }
+// [Versioning] PutObjectRetention가 정상 동작하는지 확인
 func TestPutObjectRetentionVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -164,6 +178,7 @@ func TestPutObjectRetentionVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_put_object_retention_versioning")
 }
+// [Versioning] GetObjectRetention가 정상 동작하는지 확인
 func TestGetObjectRetentionVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -174,6 +189,7 @@ func TestGetObjectRetentionVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_get_object_retention_versioning")
 }
+// [Versioning] PutObjectRetention 후 GetObjectRetention으로 조회가 정상 동작하는지 확인
 func TestPutAndGetObjectRetentionVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -184,6 +200,7 @@ func TestPutAndGetObjectRetentionVersioning(t *testing.T) {
 
 	runBackendVersioning(t, s, backend, "test_put_and_get_object_retention_versioning")
 }
+// PutObject 복제가 정상 동작하는지 확인
 func TestPutObjectReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -194,6 +211,7 @@ func TestPutObjectReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_put_object_replication")
 }
+// PutObject 태그가 복제되는지 확인
 func TestPutObjectWithTaggingReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -204,6 +222,7 @@ func TestPutObjectWithTaggingReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_put_object_with_tagging_replication")
 }
+// PutObject 헤더와 메타데이터가 복제되는지 확인
 func TestPutObjectWithMetadataReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -214,6 +233,7 @@ func TestPutObjectWithMetadataReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_put_object_with_metadata_replication")
 }
+// CopyObject 복제가 정상 동작하는지 확인
 func TestCopyObjectReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -224,6 +244,7 @@ func TestCopyObjectReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_copy_object_replication")
 }
+// CopyObject 태그가 복제되는지 확인
 func TestCopyObjectWithTaggingReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -234,6 +255,7 @@ func TestCopyObjectWithTaggingReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_copy_object_with_tagging_replication")
 }
+// CopyObject 헤더와 메타데이터가 복제되는지 확인
 func TestCopyObjectWithMetadataReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -244,6 +266,7 @@ func TestCopyObjectWithMetadataReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_copy_object_with_metadata_replication")
 }
+// CopyObject 메타데이터가 Replace되었을 경우 복제되는지 확인
 func TestCopyObjectMetadataReplaceReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -254,6 +277,7 @@ func TestCopyObjectMetadataReplaceReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_copy_object_metadata_replace_replication")
 }
+// MultipartUpload 복제가 정상 동작하는지 확인
 func TestMultipartUploadReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -264,6 +288,7 @@ func TestMultipartUploadReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_multipart_upload_replication")
 }
+// MultipartUpload 태그가 복제되는지 확인
 func TestMultipartUploadWithTaggingReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -274,6 +299,7 @@ func TestMultipartUploadWithTaggingReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_multipart_upload_with_tagging_replication")
 }
+// MultipartUpload 헤더와 메타데이터가 복제되는지 확인
 func TestMultipartUploadWithMetadataReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -284,6 +310,7 @@ func TestMultipartUploadWithMetadataReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_multipart_upload_with_metadata_replication")
 }
+// PutObjectAcl 복제가 정상 동작하는지 확인
 func TestPutObjectAclReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -294,6 +321,7 @@ func TestPutObjectAclReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_put_object_acl_replication")
 }
+// putObjectTagging 복제가 정상 동작하는지 확인
 func TestPutObjectTaggingReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -304,6 +332,7 @@ func TestPutObjectTaggingReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_put_object_tagging_replication")
 }
+// deleteObject 복제가 정상 동작하는지 확인
 func TestDeleteObjectReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -314,6 +343,7 @@ func TestDeleteObjectReplication(t *testing.T) {
 
 	runBackendReplication(t, s, backend, "test_delete_object_replication")
 }
+// deleteObjectTagging 복제가 정상 동작하는지 확인
 func TestDeleteObjectTaggingReplication(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)

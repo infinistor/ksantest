@@ -18,241 +18,287 @@ type aclMatrixCase struct {
 	objectACL  types.ObjectCannedACL
 	altUpload  bool
 	ownerFirst bool
-	privAfter  bool // PutBucketAcl PRIVATE after alt upload (Java uploadAltUser)
+	privAfter  bool // alt 업로드 후 PutBucketAcl PRIVATE (Java uploadAltUser)
 }
 
+// [Bucket = private, Object = private] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPrivateBucketAndObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLPrivate, false, false, false})
 }
+// [Bucket = private, Object = public-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPrivateBucketPublicReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLPublicRead, false, false, false})
 }
+// [Bucket = private, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPrivateBucketPublicRWObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLPublicReadWrite, false, false, false})
 }
+// [Bucket = private, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPrivateBucketAuthenticatedReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLAuthenticatedRead, false, false, false})
 }
+// [Bucket = private, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPrivateBucketBucketOwnerReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLBucketOwnerRead, false, false, false})
 }
+// [Bucket = private, Object = bucket-owner-read] Alt 사용자가 업로드한 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPrivateBucketBucketOwnerReadObjectUploadAltUser(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerRead, true, false, true})
 }
+// [Bucket = private, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPrivateBucketBucketOwnerFullControlObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
 }
+// [Bucket = public-read, Object = private] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicReadBucketPrivateObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLPrivate, false, false, false})
 }
+// [Bucket = public-read, Object = public-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicReadBucketAndObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLPublicRead, false, false, false})
 }
+// [Bucket = public-read, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicReadBucketPublicRWObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLPublicReadWrite, false, false, false})
 }
+// [Bucket = public-read, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicReadBucketAuthenticatedReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLAuthenticatedRead, false, false, false})
 }
+// [Bucket = public-read, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicReadBucketBucketOwnerReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLBucketOwnerRead, false, false, false})
 }
+// [Bucket = public-read, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicReadBucketBucketOwnerFullControlObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
 }
+// [Bucket = public-read-write, Object = private] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketPrivateObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPrivate, false, false, false})
 }
+// [Bucket = public-read-write, Object = private, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketPrivateObjectByAltUser(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPrivate, true, false, false})
 }
+// [Bucket = public-read-write, Object = public-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketPublicReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicRead, false, false, false})
 }
+// [Bucket = public-read-write, Object = public-read, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketPublicReadObjectByAltUser(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicRead, true, false, false})
 }
+// [Bucket = public-read-write, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketPublicRWObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicReadWrite, false, false, false})
 }
+// [Bucket = public-read-write, Object = public-read-write, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketPublicRWObjectByAltUser(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicReadWrite, true, false, false})
 }
+// [Bucket = public-read-write, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketAuthenticatedReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLAuthenticatedRead, false, false, false})
 }
+// [Bucket = public-read-write, Object = authenticated-read, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketAuthenticatedReadObjectByAltUser(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLAuthenticatedRead, true, false, false})
 }
+// [Bucket = public-read-write, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketBucketOwnerReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerRead, false, false, false})
 }
+// [Bucket = public-read-write, Object = bucket-owner-read, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketBucketOwnerReadObjectByAltUser(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerRead, true, false, false})
 }
+// [Bucket = public-read-write, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketBucketOwnerFullControlObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
 }
+// [Bucket = public-read-write, Object = bucket-owner-full-control, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketBucketOwnerFullControlObjectByAltUser(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerFullControl, true, false, false})
 }
+// [Bucket = public-read-write, BucketOwnerPreferred, Object = bucket-owner-full-control, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferred(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerFullControl, true, true, false})
 }
+// [Bucket = authenticated-read, Object = private] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestAuthenticatedReadBucketPrivateObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLPrivate, false, false, false})
 }
+// [Bucket = authenticated-read, Object = public-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestAuthenticatedReadBucketPublicReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLPublicRead, false, false, false})
 }
+// [Bucket = authenticated-read, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestAuthenticatedReadBucketPublicRWObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLPublicReadWrite, false, false, false})
 }
+// [Bucket = authenticated-read, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestAuthenticatedReadBucketAndObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLAuthenticatedRead, false, false, false})
 }
+// [Bucket = authenticated-read, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestAuthenticatedReadBucketBucketOwnerReadObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLBucketOwnerRead, false, false, false})
 }
+// [Bucket = authenticated-read, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
 func TestAuthenticatedReadBucketBucketOwnerFullControlObject(t *testing.T) {
 	t.Parallel()
 
 	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
 }
+// [Bucket = private] 오브젝트 목록 조회가 가능한지 확인하는 테스트
 func TestPrivateBucketList(t *testing.T) {
 	t.Parallel()
 
 	runACLList(t, types.BucketCannedACLPrivate, false, false)
 }
+// [Bucket = public-read] 오브젝트 목록 조회가 가능한지 확인하는 테스트
 func TestPublicReadBucketList(t *testing.T) {
 	t.Parallel()
 
 	runACLList(t, types.BucketCannedACLPublicRead, true, true)
 }
+// [Bucket = public-read-write] 오브젝트 목록 조회가 가능한지 확인하는 테스트
 func TestPublicRWBucketList(t *testing.T) {
 	t.Parallel()
 
 	runACLList(t, types.BucketCannedACLPublicReadWrite, true, true)
 }
+// [Bucket = authenticated-read] 오브젝트 목록 조회가 가능한지 확인하는 테스트
 func TestAuthenticatedReadBucketList(t *testing.T) {
 	t.Parallel()
 
 	runACLList(t, types.BucketCannedACLAuthenticatedRead, true, false)
 }
+// [Bucket = FullControl] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
 func TestBucketPermissionAltUserFullControl(t *testing.T) {
 	t.Parallel()
 
 	runBucketPermission(t, types.PermissionFullControl, true, true, true, true)
 }
+// [Bucket = Read] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
 func TestBucketPermissionAltUserRead(t *testing.T) {
 	t.Parallel()
 
 	runBucketPermission(t, types.PermissionRead, true, false, false, false)
 }
+// [Bucket = ReadAcp] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
 func TestBucketPermissionAltUserReadAcp(t *testing.T) {
 	t.Parallel()
 
 	runBucketPermission(t, types.PermissionReadAcp, false, true, false, false)
 }
+// [Bucket = Write] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
 func TestBucketPermissionAltUserWrite(t *testing.T) {
 	t.Parallel()
 
 	runBucketPermission(t, types.PermissionWrite, false, false, true, false)
 }
+// [Bucket = WriteAcp] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
 func TestBucketPermissionAltUserWriteAcp(t *testing.T) {
 	t.Parallel()
 
 	runBucketPermission(t, types.PermissionWriteAcp, false, false, false, true)
 }
+// [Object = FullControl] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
 func TestObjectPermissionAltUserFullControl(t *testing.T) {
 	t.Parallel()
 
 	runObjectPermission(t, types.PermissionFullControl, true, true, true)
 }
+// [Object = Read] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
 func TestObjectPermissionAltUserRead(t *testing.T) {
 	t.Parallel()
 
 	runObjectPermission(t, types.PermissionRead, true, false, false)
 }
+// [Object = ReadAcp] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
 func TestObjectPermissionAltUserReadAcp(t *testing.T) {
 	t.Parallel()
 
 	runObjectPermission(t, types.PermissionReadAcp, false, true, false)
 }
+// [Object = Write] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
 func TestObjectPermissionAltUserWrite(t *testing.T) {
 	t.Parallel()
 
 	runObjectPermission(t, types.PermissionWrite, false, false, false)
 }
+// [Object = WriteAcp] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
 func TestObjectPermissionAltUserWriteAcp(t *testing.T) {
 	t.Parallel()
 
 	runObjectPermission(t, types.PermissionWriteAcp, false, false, true)
 }
 
-// aclExpectations mirrors Java ACL.java Access cases (non-uploadAltUser special path).
+// aclExpectations는 Java ACL.java Access 케이스(비-uploadAltUser 특수 경로)를 따릅니다.
 func aclExpectations(tc aclMatrixCase) (mainGet, altGet, pubGet, mainPut, altPut, pubPut, altCreate, pubCreate bool) {
 	objectPublic := tc.objectACL == types.ObjectCannedACLPublicRead || tc.objectACL == types.ObjectCannedACLPublicReadWrite
 	objectAuth := objectPublic || tc.objectACL == types.ObjectCannedACLAuthenticatedRead
@@ -487,8 +533,8 @@ func runObjectPermission(t *testing.T, permission types.Permission, readOK, read
 	expectACLStatus(t, err, writeACPOK)
 }
 
-// expectACLStatus matches Java checkBucketAcl*/checkObjectAcl* deny helpers: HTTP 403 only.
-// HeadBucket has no XML body, so SDK ErrorCode is often "Forbidden" rather than "AccessDenied".
+// expectACLStatus는 Java checkBucketAcl*/checkObjectAcl* deny 헬퍼와 일치: HTTP 403만 검사.
+// HeadBucket에는 XML body가 없어 SDK ErrorCode가 "AccessDenied" 대신 "Forbidden"인 경우가 많음.
 func expectACLStatus(t *testing.T, err error, allowed bool) {
 	t.Helper()
 	if allowed {

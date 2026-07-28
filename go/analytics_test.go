@@ -9,6 +9,7 @@ package s3tests
 // 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 // )
 
+// // 버킷 분석 설정이 가능한지 확인
 // func TestPutBucketAnalytics(t *testing.T) {
 // 	t.Parallel()
 
@@ -16,6 +17,7 @@ package s3tests
 // 	source, target := s.bucket(t), s.bucket(t)
 // 	putAnalytics(t, s, source, "test", analyticsConfig("test", target, types.StorageClassAnalysisSchemaVersionV1, types.AnalyticsS3ExportFileFormatCsv))
 // }
+// // 버킷 분석 설정이 올바르게 적용되는지 확인
 // func TestGetBucketAnalytics(t *testing.T) {
 // 	t.Parallel()
 
@@ -28,6 +30,7 @@ package s3tests
 // 	}
 // 	assertAnalytics(t, out.AnalyticsConfiguration, "test", target)
 // }
+// // 버킷 분석 설정이 여러개 가능한지 확인
 // func TestAddBucketAnalytics(t *testing.T) {
 // 	t.Parallel()
 
@@ -40,6 +43,7 @@ package s3tests
 // 		t.Fatalf("analytics list=%v err=%v", out, err)
 // 	}
 // }
+// // 버킷 분석 설정이 목록으로 조회되는지 확인
 // func TestListBucketAnalytics(t *testing.T) {
 // 	t.Parallel()
 
@@ -52,6 +56,7 @@ package s3tests
 // 	}
 // 	assertAnalytics(t, &out.AnalyticsConfigurationList[0], "test", target)
 // }
+// // 버킷 분석 설정이 삭제되는지 확인
 // func TestDeleteBucketAnalytics(t *testing.T) {
 // 	t.Parallel()
 
@@ -64,6 +69,7 @@ package s3tests
 // 	_, err := s.client.GetBucketAnalyticsConfiguration(context.Background(), &s3.GetBucketAnalyticsConfigurationInput{Bucket: aws.String(source), Id: aws.String("test")})
 // 	assertS3Error(t, err, 404, "NoSuchConfiguration")
 // }
+// // 버킷 분석 설정을 잘못 입력했을 때 에러가 발생하는지 확인
 // func TestPutBucketAnalyticsInvalid(t *testing.T) {
 // 	t.Parallel()
 

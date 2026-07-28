@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// BlockPublicAcls와 BlockPublicPolicy 접근 권한 블록이 정상적으로 동작하는지 확인하는 테스트
 func TestBlockPublicAclAndPolicy(t *testing.T) {
 	t.Parallel()
 
@@ -25,6 +26,8 @@ func TestBlockPublicAclAndPolicy(t *testing.T) {
 		assertS3Error(t, err, 403, "AccessDenied")
 	}
 }
+
+// BlockPublicAcls 접근 권한 블록이 정상적으로 동작하는지 확인하는 테스트
 func TestBlockPublicAcls(t *testing.T) {
 	t.Parallel()
 
@@ -38,6 +41,8 @@ func TestBlockPublicAcls(t *testing.T) {
 		assertS3Error(t, err, 403, "AccessDenied")
 	}
 }
+
+// BlockPublicPolicy 접근 권한 블록이 정상적으로 동작하는지 확인하는 테스트
 func TestBlockPublicPolicy(t *testing.T) {
 	t.Parallel()
 
@@ -48,6 +53,8 @@ func TestBlockPublicPolicy(t *testing.T) {
 	_, err := s.client.PutBucketPolicy(context.Background(), &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(policy)})
 	assertS3Error(t, err, 403, "AccessDenied")
 }
+
+// 버킷의 접근 권한 블록 삭제 기능을 확인하는 테스트
 func TestDeletePublicBlock(t *testing.T) {
 	t.Parallel()
 
@@ -62,6 +69,8 @@ func TestDeletePublicBlock(t *testing.T) {
 	_, err := s.client.GetPublicAccessBlock(context.Background(), &s3.GetPublicAccessBlockInput{Bucket: aws.String(bucket)})
 	assertS3Error(t, err, 404, "NoSuchPublicAccessBlockConfiguration")
 }
+
+// IgnorePublicAcls 접근 권한 블록이 정상적으로 동작하는지 확인하는 테스트
 func TestIgnorePublicAcls(t *testing.T) {
 	t.Parallel()
 
@@ -95,6 +104,8 @@ func TestIgnorePublicAcls(t *testing.T) {
 	_, err = public.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	assertS3Error(t, err, 403, "AccessDenied")
 }
+
+// 버킷의 접근 권한 블록 설정 기능을 확인하는 테스트
 func TestPutPublicBlock(t *testing.T) {
 	t.Parallel()
 

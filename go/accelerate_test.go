@@ -9,12 +9,14 @@ package s3tests
 // 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 // )
 
+// // 버킷 가속 설정이 가능한지 확인
 // func TestPutBucketAccelerate(t *testing.T) {
 // 	t.Parallel()
 
 // 	s := newSuite(t)
 // 	putAccelerate(t, s, s.bucket(t), types.BucketAccelerateStatusEnabled)
 // }
+// // 버킷 가속 설정이 올바르게 적용되는지 확인
 // func TestGetBucketAccelerate(t *testing.T) {
 // 	t.Parallel()
 
@@ -29,6 +31,7 @@ package s3tests
 // 		t.Fatalf("status = %q, want Enabled", out.Status)
 // 	}
 // }
+// // 버킷 가속 설정이 변경되는지 확인
 // func TestChangeBucketAccelerate(t *testing.T) {
 // 	t.Parallel()
 
@@ -44,6 +47,7 @@ package s3tests
 // 		t.Fatalf("status = %q, want Suspended", out.Status)
 // 	}
 // }
+// // 버킷 가속 설정을 잘못 입력했을 때 에러가 발생하는지 확인
 // func TestPutBucketAccelerateInvalid(t *testing.T) {
 // 	t.Parallel()
 

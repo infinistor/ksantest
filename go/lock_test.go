@@ -15,181 +15,217 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷을 생성한 후 오브젝트의 잠금 설정을 활성화 할 수 있는지 확인
 func TestCreatedBucketEnableObjectLock(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_created_bucket_enable_object_lock")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 잠금 설정이 가능한지 확인
 func TestObjectLockPutObjLock(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_put_obj_lock")
 }
+// 버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정이 실패
 func TestObjectLockPutObjLockInvalidBucket(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_bucket")
 }
+// [버킷의 Lock옵션을 활성화] Days, Years값 모두 입력하여 Lock 설정할경우 실패
 func TestObjectLockPutObjLockWithDaysAndYears(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_put_obj_lock_with_days_and_years")
 }
+// [버킷의 Lock옵션을 활성화] Days값을 0이하로 입력하여 Lock 설정할경우 실패
 func TestObjectLockPutObjLockInvalidDays(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_days")
 }
+// [버킷의 Lock옵션을 활성화] Years값을 0이하로 입력하여 Lock 설정할경우 실패
 func TestObjectLockPutObjLockInvalidYears(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_years")
 }
+// [버킷의 Lock옵션을 활성화] mode값이 올바르지 않은상태에서 Lock 설정할 경우 실패
 func TestObjectLockPutObjLockInvalidMode(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_mode")
 }
+// [버킷의 Lock옵션을 활성화] status값이 올바르지 않은상태에서 Lock 설정할 경우 실패
 func TestObjectLockPutObjLockInvalidStatus(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_status")
 }
+// [버킷의 Lock옵션을 활성화] 버킷의 버저닝을 일시중단하려고 할경우 실패
 func TestObjectLockSuspendVersioning(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_suspend_versioning")
 }
+// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 올바르게 되었는지 확인
 func TestObjectLockGetObjLock(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_get_obj_lock")
 }
+// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 오브젝트 업로드가 정상적으로 이루어지는지 확인
 func TestObjectLockPutObject(t *testing.T) {
 	t.Parallel()
 
 	testLockObject(t, "test_object_lock_put_object")
 }
+// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 오브젝트 복제가 정상적으로 이루어지는지 확인
 func TestObjectLockCopyObject(t *testing.T) {
 	t.Parallel()
 
 	testLockCopy(t)
 }
+// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 멀티파트 업로드가 정상적으로 이루어지는지 확인
 func TestObjectLockMultipart(t *testing.T) {
 	t.Parallel()
 
 	testLockMultipart(t)
 }
+// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 오브젝트 업로드시 md5 값이 없을 경우 업로드 실패 확인
 func TestObjectLockMD5(t *testing.T) {
 	t.Parallel()
 
 	testLockMD5(t)
 }
+// 버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정 조회 실패
 func TestObjectLockGetObjLockInvalidBucket(t *testing.T) {
 	t.Parallel()
 
 	testLockConfiguration(t, "test_object_lock_get_obj_lock_invalid_bucket")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정이 가능한지 확인
 func TestObjectLockPutObjRetention(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_put_obj_retention")
 }
+// 버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 설정 실패
 func TestObjectLockPutObjRetentionInvalidBucket(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_put_obj_retention_invalid_bucket")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정할때 Mode값이 올바르지 않을 경우 설정 실패
 func TestObjectLockPutObjRetentionInvalidMode(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_put_obj_retention_invalid_mode")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정이 올바른지 확인
 func TestObjectLockGetObjRetention(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_get_obj_retention")
 }
+// 버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 조회 실패
 func TestObjectLockGetObjRetentionInvalidBucket(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_get_obj_retention_invalid_bucket")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 특정 버전에 Lock 유지기한을 설정할 경우 올바르게 적용되었는지 확인
 func TestObjectLockPutObjRetentionVersionid(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_put_obj_retention_versionid")
 }
+// [버킷의 Lock옵션을 활성화] 버킷에 설정한 Lock설정보다 오브젝트에 Lock설정한 값이 우선 적용됨을 확인
 func TestObjectLockPutObjRetentionOverrideDefaultRetention(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_put_obj_retention_override_default_retention")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한을 늘렸을때 적용되는지 확인
 func TestObjectLockPutObjRetentionIncreasePeriod(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_put_obj_retention_increase_period")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한을 줄였을때 실패 확인
 func TestObjectLockPutObjRetentionShortenPeriod(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_put_obj_retention_shorten_period")
 }
+// [버킷의 Lock옵션을 활성화] 바이패스를 True로 설정하고 오브젝트의 lock 유지기한을 줄였을때 적용되는지 확인
 func TestObjectLockPutObjRetentionShortenPeriodBypass(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_put_obj_retention_shorten_period_bypass")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한내에 삭제를 시도할 경우 실패 확인
 func TestObjectLockDeleteObjectWithRetention(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_delete_object_with_retention")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 Lock 유지기한이 있어도 바이패스를 통해 삭제가 가능한지 확인
 func TestObjectLockDeleteObjectWithRetentionBypass(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_delete_object_with_retention_bypass")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 Lock 유지기한이 있어도 바이패스를 통해 삭제가 가능한지 확인
 func TestObjectLockDeleteObjectsWithRetentionBypass(t *testing.T) {
 	t.Parallel()
 
 	testLockRetention(t, "test_object_lock_delete_objects_with_retention_bypass")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold를 활성화 가능한지 확인
 func TestObjectLockPutLegalHold(t *testing.T) {
 	t.Parallel()
 
 	testLockLegalHold(t, "test_object_lock_put_legal_hold")
 }
+// [버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold를 활성화 실패 확인
 func TestObjectLockPutLegalHoldInvalidBucket(t *testing.T) {
 	t.Parallel()
 
 	testLockLegalHold(t, "test_object_lock_put_legal_hold_invalid_bucket")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold에 잘못된 값을 넣을 경우 실패 확인
 func TestObjectLockPutLegalHoldInvalidStatus(t *testing.T) {
 	t.Parallel()
 
 	testLockLegalHold(t, "test_object_lock_put_legal_hold_invalid_status")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 올바르게 적용되었는지 확인
 func TestObjectLockGetLegalHold(t *testing.T) {
 	t.Parallel()
 
 	testLockLegalHold(t, "test_object_lock_get_legal_hold")
 }
+// [버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold설정 조회 실패 확인
 func TestObjectLockGetLegalHoldInvalidBucket(t *testing.T) {
 	t.Parallel()
 
 	testLockLegalHold(t, "test_object_lock_get_legal_hold_invalid_bucket")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 활성화되어 있을 경우 오브젝트 삭제 실패 확인
 func TestObjectLockDeleteObjectWithLegalHoldOn(t *testing.T) {
 	t.Parallel()
 
 	testLockLegalHold(t, "test_object_lock_delete_object_with_legal_hold_on")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 비활성화되어 있을 경우 오브젝트 삭제 확인
 func TestObjectLockDeleteObjectWithLegalHoldOff(t *testing.T) {
 	t.Parallel()
 
 	testLockLegalHold(t, "test_object_lock_delete_object_with_legal_hold_off")
 }
+// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold와 Lock유지기한 설정이 모두 적용되는지 메타데이터를 통해 확인
 func TestObjectLockGetObjMetadata(t *testing.T) {
 	t.Parallel()
 

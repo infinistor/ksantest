@@ -15,31 +15,42 @@ const (
 	authUsersURI = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
 )
 
+// 권한을 설정하지 않고 생성한 버킷의 default acl정보가 올바른지 확인
 func TestBucketAclDefault(t *testing.T) {
 	t.Parallel()
 
 	runBucketCannedGrant(t, types.BucketCannedACLPrivate, "", nil)
 }
+
+// [bucket : private] 생성한 버킷의 acl정보가 올바른지 확인
 func TestBucketAclPrivate(t *testing.T) {
 	t.Parallel()
 
 	runBucketCannedGrant(t, types.BucketCannedACLPrivate, "", nil)
 }
+
+// [bucket : public-read] 생성한 버킷의 acl정보가 올바른지 확인
 func TestBucketAclPublicRead(t *testing.T) {
 	t.Parallel()
 
 	runBucketCannedGrant(t, types.BucketCannedACLPublicRead, allUsersURI, []types.Permission{types.PermissionRead})
 }
+
+// [bucket : public-read-write] 생성한 버킷의 acl정보가 올바른지 확인
 func TestBucketAclPublicRW(t *testing.T) {
 	t.Parallel()
 
 	runBucketCannedGrant(t, types.BucketCannedACLPublicReadWrite, allUsersURI, []types.Permission{types.PermissionRead, types.PermissionWrite})
 }
+
+// [bucket : authenticated-read] 생성한 버킷의 acl정보가 올바른지 확인
 func TestBucketAclAuthenticatedRead(t *testing.T) {
 	t.Parallel()
 
 	runBucketCannedGrant(t, types.BucketCannedACLAuthenticatedRead, authUsersURI, []types.Permission{types.PermissionRead})
 }
+
+// [bucket : public-read => private] 권한을 변경할경우 올바르게 적용되는지 확인
 func TestBucketAclChanged(t *testing.T) {
 	t.Parallel()
 
@@ -50,31 +61,43 @@ func TestBucketAclChanged(t *testing.T) {
 	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPrivate)
 	assertGrants(t, getBucketGrants(t, s, bucket), "", nil)
 }
+
+// 권한을 설정하지 않고 생성한 오브젝트의 acl정보가 올바른지 확인
 func TestObjectAclDefault(t *testing.T) {
 	t.Parallel()
 
 	runObjectCannedGrant(t, types.ObjectCannedACLPrivate, "", nil)
 }
+
+// [object:private] 생성한 오브젝트의 acl정보가 올바른지 확인
 func TestObjectAclPrivate(t *testing.T) {
 	t.Parallel()
 
 	runObjectCannedGrant(t, types.ObjectCannedACLPrivate, "", nil)
 }
+
+// [object:public-read] 생성한 오브젝트의 acl정보가 올바른지 확인
 func TestObjectAclPublicRead(t *testing.T) {
 	t.Parallel()
 
 	runObjectCannedGrant(t, types.ObjectCannedACLPublicRead, allUsersURI, []types.Permission{types.PermissionRead})
 }
+
+// [object:public-read-write] 생성한 오브젝트의 acl정보가 올바른지 확인
 func TestObjectAclPublicRW(t *testing.T) {
 	t.Parallel()
 
 	runObjectCannedGrant(t, types.ObjectCannedACLPublicReadWrite, allUsersURI, []types.Permission{types.PermissionRead, types.PermissionWrite})
 }
+
+// [object:authenticated-read] 생성한 오브젝트의 acl정보가 올바른지 확인
 func TestObjectAclAuthenticatedRead(t *testing.T) {
 	t.Parallel()
 
 	runObjectCannedGrant(t, types.ObjectCannedACLAuthenticatedRead, authUsersURI, []types.Permission{types.PermissionRead})
 }
+
+// [object:public-read => private] 오브젝트의 권한을 변경할경우 올바르게 적용되는지 확인
 func TestObjectAclChange(t *testing.T) {
 	t.Parallel()
 
@@ -87,56 +110,78 @@ func TestObjectAclChange(t *testing.T) {
 	}
 	assertGrants(t, getObjectGrants(t, s, bucket, key), "", nil)
 }
+
+// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
 func TestBucketPermissionFullControl(t *testing.T) {
 	t.Parallel()
 
 	verifyBucketGrant(t, types.PermissionFullControl)
 }
+
+// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
 func TestBucketPermissionWrite(t *testing.T) {
 	t.Parallel()
 
 	verifyBucketGrant(t, types.PermissionWrite)
 }
+
+// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
 func TestBucketPermissionWriteAcp(t *testing.T) {
 	t.Parallel()
 
 	verifyBucketGrant(t, types.PermissionWriteAcp)
 }
+
+// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
 func TestBucketPermissionRead(t *testing.T) {
 	t.Parallel()
 
 	verifyBucketGrant(t, types.PermissionRead)
 }
+
+// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
 func TestBucketPermissionReadAcp(t *testing.T) {
 	t.Parallel()
 
 	verifyBucketGrant(t, types.PermissionReadAcp)
 }
+
+// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
 func TestObjectPermissionFullControl(t *testing.T) {
 	t.Parallel()
 
 	verifyObjectGrant(t, types.PermissionFullControl)
 }
+
+// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
 func TestObjectPermissionWrite(t *testing.T) {
 	t.Parallel()
 
 	verifyObjectGrant(t, types.PermissionWrite)
 }
+
+// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
 func TestObjectPermissionWriteAcp(t *testing.T) {
 	t.Parallel()
 
 	verifyObjectGrant(t, types.PermissionWriteAcp)
 }
+
+// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
 func TestObjectPermissionRead(t *testing.T) {
 	t.Parallel()
 
 	verifyObjectGrant(t, types.PermissionRead)
 }
+
+// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
 func TestObjectPermissionReadAcp(t *testing.T) {
 	t.Parallel()
 
 	verifyObjectGrant(t, types.PermissionReadAcp)
 }
+
+// [bucket:private] 버킷에 ACL 중복 설정이 가능한지 확인
 func TestBucketAclDuplicated(t *testing.T) {
 	t.Parallel()
 
@@ -145,61 +190,85 @@ func TestBucketAclDuplicated(t *testing.T) {
 	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPrivate)
 	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPrivate)
 }
+
+// [object:bucket-owner-read] 생성한 오브젝트의 acl정보가 올바른지 확인
 func TestObjectAclBucketOwnerRead(t *testing.T) {
 	t.Parallel()
 
 	testObjectOwnerGrant(t, types.ObjectOwnershipObjectWriter, types.ObjectCannedACLBucketOwnerRead, types.PermissionRead, false, true)
 }
+
+// [ObjectWriter][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가 올바른지 확인
 func TestBucketObjectWriterObjectOwnerFullControl(t *testing.T) {
 	t.Parallel()
 
 	testObjectOwnerGrant(t, types.ObjectOwnershipObjectWriter, types.ObjectCannedACLBucketOwnerFullControl, types.PermissionFullControl, false, false)
 }
+
+// [BucketOwnerEnforced][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가 올바른지 확인
 func TestBucketOwnerEnforcedObjectOwnerFullControl(t *testing.T) {
 	t.Parallel()
 
 	testObjectOwnerGrant(t, types.ObjectOwnershipBucketOwnerPreferred, types.ObjectCannedACLBucketOwnerFullControl, types.PermissionFullControl, true, false)
 }
+
+// [object: public-read-write => alt-user-full-control => alt-user-read-acl] 권한을 변경해도 소유주가 변경되지 않는지 확인
 func TestObjectAclOwnerNotChange(t *testing.T) {
 	t.Parallel()
 
 	testObjectACLOwnerNotChange(t)
 }
+
+// 권한을 변경해도 오브젝트에 영향을 주지 않는지 확인
 func TestBucketAclChangeNotEffect(t *testing.T) {
 	t.Parallel()
 
 	testACLChangeNotEffect(t)
 }
+
+// 버킷에 존재하지 않는 유저를 추가하려고 하면 에러 발생 확인
 func TestBucketAclGrantNonExistUser(t *testing.T) {
 	t.Parallel()
 
 	testGrantNonexistentUser(t)
 }
+
+// 버킷에 권한정보를 모두 제거했을때 오브젝트를 업데이트 하면 실패 확인
 func TestBucketAclNoGrants(t *testing.T) {
 	t.Parallel()
 
 	testBucketNoGrants(t)
 }
+
+// 버킷 생성하면서 권한정보를 여러개 보낼때 모두 올바르게 적용되었는지 확인
 func TestBucketAclMultiGrants(t *testing.T) {
 	t.Parallel()
 
 	testMultiGrants(t, false)
 }
+
+// 오브젝트를 생성하면서 권한정보를 여러개보낼때 모두 올바르게 적용되었는지 확인
 func TestObjectAclMultiGrants(t *testing.T) {
 	t.Parallel()
 
 	testMultiGrants(t, true)
 }
+
+// 버킷의 acl 설정이 누락될 경우 실패함을 확인
 func TestBucketAclRevokeAll(t *testing.T) {
 	t.Parallel()
 
 	testRevokeOwner(t, false)
 }
+
+// 오브젝트의 acl 설정이 누락될 경우 실패함을 확인
 func TestObjectAclRevokeAll(t *testing.T) {
 	t.Parallel()
 
 	testRevokeOwner(t, true)
 }
+
+// 버킷의 acl 설정에 Id가 누락될 경우 실패함을 확인
 func TestBucketAclRevokeAllId(t *testing.T) {
 	t.Parallel()
 

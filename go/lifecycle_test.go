@@ -11,101 +11,140 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷의 Lifecycle 규칙을 추가 가능한지 확인
 func TestLifecycleSet(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleSet(t)
 }
+
+// 버킷에 설정한 Lifecycle 규칙을 가져올 수 있는지 확인
 func TestLifecycleGet(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleGet(t)
 }
+
+// ID 없이 버킷에 Lifecycle 규칙을 설정 할 수 있는지 확인
 func TestLifecycleGetNoId(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleGetNoID(t)
 }
+
+// 버킷에 버저닝 설정이 되어있는 상태에서 Lifecycle 규칙을 추가 가능한지 확인
 func TestLifecycleExpirationVersioningEnabled(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleVersioningEnabled(t)
 }
+
+// 버킷에 Lifecycle 규칙을 설정할때 ID의 길이가 너무 길면 실패하는지 확인
 func TestLifecycleIdTooLong(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleIDTooLong(t)
 }
+
+// 버킷에 Lifecycle 규칙을 설정할때 같은 ID로 규칙을 여러개 설정할경우 실패하는지 확인
 func TestLifecycleSameId(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleSameID(t)
 }
+
+// 버킷에 Lifecycle 규칙중 status를 잘못 설정할때 실패하는지 확인
 func TestLifecycleInvalidStatus(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleInvalidStatus(t)
 }
+
+// 버킷의 Lifecycle규칙에 날짜를 입력가능한지 확인
 func TestLifecycleSetDate(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleSetDate(t)
 }
+
+// 버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식으로 입력했을때 실패 확인
 func TestLifecycleSetInvalidDate(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleInvalidDate(t)
 }
+
+// 버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인
 func TestLifecycleSetNoncurrent(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleSetNoncurrent(t)
 }
+
+// 버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
 func TestLifecycleNoncurrentExpiration(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleNoncurrentExpiration(t)
 }
+
+// DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
 func TestLifecycleSetDeleteMarker(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleSetDeleteMarker(t)
 }
+
+// Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인
 func TestLifecycleSetFilter(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleSetFilter(t)
 }
+
+// Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인
 func TestLifecycleSetEmptyFilter(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleSetEmptyFilter(t)
 }
+
+// DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
 func TestLifecycleDeleteMarkerExpiration(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleDeleteMarkerExpiration(t)
 }
+
+// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
 func TestLifecycleSetMultipart(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleSetMultipart(t)
 }
+
+// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
 func TestLifecycleMultipartExpiration(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleMultipartExpiration(t)
 }
+
+// 버킷의 Lifecycle 규칙을 삭제 가능한지 확인
 func TestLifecycleDelete(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleDelete(t)
 }
+
+// Lifecycle 규칙에 0일을 설정할때 실패하는지 확인
 func TestLifecycleSetExpirationZero(t *testing.T) {
 	t.Parallel()
 
 	testLifecycleExpirationZero(t)
 }
+
+// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
 func TestLifecycleSetExpiration(t *testing.T) {
 	t.Parallel()
 

@@ -37,108 +37,128 @@ const (
 	sseCOtherMD5  = "arxBvwY2V4SiOne6yppVPQ=="
 )
 
+// 1Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 func TestEncryptedTransfer1b(t *testing.T) {
 	t.Parallel()
 
 	testSSECWrite(t, 1)
 }
+// 1KB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 func TestEncryptedTransfer1kb(t *testing.T) {
 	t.Parallel()
 
 	testSSECWrite(t, 1024)
 }
+// 1MB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 func TestEncryptedTransfer1MB(t *testing.T) {
 	t.Parallel()
 
 	testSSECWrite(t, 1024*1024)
 }
+// 13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
 func TestEncryptedTransfer13b(t *testing.T) {
 	t.Parallel()
 
 	testSSECWrite(t, 13)
 }
+// SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인
 func TestEncryptionSseCMethodHead(t *testing.T) {
 	t.Parallel()
 
 	testSSECHead(t)
 }
+// SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인
 func TestEncryptionSseCPresent(t *testing.T) {
 	t.Parallel()
 
 	testSSECMissingOnGet(t)
 }
+// SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 func TestEncryptionSseCOtherKey(t *testing.T) {
 	t.Parallel()
 
 	testSSECOtherKey(t)
 }
+// SSE-C 설정값중 key-md5값이 올바르지 않을 경우 업로드 실패 확인
 func TestEncryptionSseCInvalidMd5(t *testing.T) {
 	t.Parallel()
 
 	testSSECInvalidMD5(t)
 }
+// SSE-C 설정값중 key-md5값을 누락했을 경우 업로드 확인
 func TestEncryptionSseCNoMd5(t *testing.T) {
 	t.Parallel()
 
 	testSSECNoMD5(t)
 }
+// SSE-C 설정값중 key값을 누락했을 경우 업로드 실패 확인
 func TestEncryptionSseCNoKey(t *testing.T) {
 	t.Parallel()
 
 	testSSECNoKey(t)
 }
+// SSE-C 설정값중 algorithm값을 누락했을 경우 업로드 실패 확인
 func TestEncryptionKeyNoSseC(t *testing.T) {
 	t.Parallel()
 
 	testSSECNoAlgorithm(t)
 }
+// 멀티파트업로드를 SSE-C 설정하여 업로드 가능 확인
 func TestEncryptionSseCMultipartUpload(t *testing.T) {
 	t.Parallel()
 
 	testSSECMultipart(t)
 }
+// SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 func TestEncryptionSseCMultipartBadDownload(t *testing.T) {
 	t.Parallel()
 
 	testSSECMultipartBadDownload(t)
 }
+// Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인
 func TestEncryptionSseCPostObjectAuthenticatedRequest(t *testing.T) {
 	t.Parallel()
 
 	testSSECPost(t)
 }
+// SSE-C설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 func TestEncryptionSseCGetObjectMany(t *testing.T) {
 	t.Parallel()
 
 	testSSECGetMany(t)
 }
+// SSE-C설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 func TestEncryptionSseCRangeObjectMany(t *testing.T) {
 	t.Parallel()
 
 	testSSECRangeMany(t)
 }
+// SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 multi copy 로 복사 가능한지 확인
 func TestSseCEncryptionMultipartCopyPartUpload(t *testing.T) {
 	t.Parallel()
 
 	testSSECMultipartCopy(t)
 }
+// 멀티파트 오브젝트를 여러 번 복사하여 정상적으로 동작하는지 확인
 func TestSseCEncryptionMultipartCopyMany(t *testing.T) {
 	t.Parallel()
 
 	testSSECMultipartCopyMany(t)
 }
+// SSE-C로 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
 func TestEncryptionSseCMultipartUploadOverwriteExistingObject(t *testing.T) {
 	t.Parallel()
 
 	testSSECMultipartUploadOverwriteExistingObject(t)
 }
+// SSE-C 멀티파트로 업로드된 오브젝트를 putObject로 덮어쓴 뒤 파일이 정상인지 확인
 func TestEncryptionSseCPutObjectOverwriteMultipartUpload(t *testing.T) {
 	t.Parallel()
 
 	testSSECPutObjectOverwriteMultipartUpload(t)
 }
 
-// ssecBucket creates a bucket with SSE-C unblocked (AWS BlockedEncryptionTypes=NONE).
+// ssecBucket은 SSE-C가 차단 해제된(AWS BlockedEncryptionTypes=NONE) 버킷을 생성한다.
 func ssecBucket(t *testing.T, s *suite) string {
 	t.Helper()
 	bucket := s.bucket(t)
@@ -146,8 +166,8 @@ func ssecBucket(t *testing.T, s *suite) string {
 	return bucket
 }
 
-// unblockSseC mirrors Java/Python: AWS new buckets block SSE-C by default since 2026-04.
-// aws-sdk-go-v2 v1.90.2 lacks BlockedEncryptionTypes, so use a signed raw PutBucketEncryption.
+// unblockSseC는 Java/Python과 동일: AWS는 2026-04부터 새 버킷에서 기본적으로 SSE-C를 차단한다.
+// aws-sdk-go-v2 v1.90.2에는 BlockedEncryptionTypes가 없으므로, 서명된 raw PutBucketEncryption을 사용한다.
 func unblockSseC(t *testing.T, s *suite, bucket string) {
 	t.Helper()
 	if s.cfg.Endpoint() != "" {

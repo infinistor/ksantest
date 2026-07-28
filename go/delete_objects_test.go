@@ -11,106 +11,127 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 func TestMultiObjectDelete(t *testing.T) {
 	t.Parallel()
 
 	testMultiDelete(t, "test_multi_object_delete")
 }
+// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
 func TestMultiObjectV2Delete(t *testing.T) {
 	t.Parallel()
 
 	testMultiDelete(t, "test_multi_object_v2_delete")
 }
+// 버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제
 func TestMultiObjectDeleteVersions(t *testing.T) {
 	t.Parallel()
 
 	testMultiDelete(t, "test_multi_object_delete_versions")
 }
+// quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
 func TestMultiObjectDeleteQuiet(t *testing.T) {
 	t.Parallel()
 
 	testMultiDelete(t, "test_multi_object_delete_quiet")
 }
+// 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 func TestDirectoryDelete(t *testing.T) {
 	t.Parallel()
 
 	testDirectoryDeleteV2(t, "test_directory_delete")
 }
+// 버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
 func TestDirectoryDeleteVersions(t *testing.T) {
 	t.Parallel()
 
 	testDirectoryDeleteV2(t, "test_directory_delete_versions")
 }
+// 삭제한 오브젝트가 재대로 삭제 되었는지 확인
 func TestDeleteObjects(t *testing.T) {
 	t.Parallel()
 
 	testDeleteHundred(t)
 }
+// 버저닝 된 버켓에서 버전 정보를 포함한 삭제가 정상 동작하는지 확인
 func TestDeleteObjectsWithVersioning(t *testing.T) {
 	t.Parallel()
 
 	testDeleteVersionMix(t)
 }
+// 버저닝된 버킷에서 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
 func TestDeleteObjectsWithVersioningDeleteMarker(t *testing.T) {
 	t.Parallel()
 
 	testDeleteMarkerOne(t)
 }
+// 버저닝된 버킷에서 여러 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
 func TestVersioningMultiObjectDeleteWithMarker(t *testing.T) {
 	t.Parallel()
 
 	testDeleteMarkersForObjects(t)
 }
+// 버저닝된 버킷에서 존재하지 않는 오브젝트를 반복 삭제할 경우 DeleteMarker가 생성되는지 확인
 func TestVersioningMultiObjectDeleteWithMarkerCreate(t *testing.T) {
 	t.Parallel()
 
 	testCreateDeleteMarkers(t, "test_versioning_multi_object_delete_with_marker_create")
 }
+// 버저닝된 버킷에서 존재하지 않는 여러개의 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
 func TestVersioningMultiObjectDeleteWithMarkerCreateObjects(t *testing.T) {
 	t.Parallel()
 
 	testCreateDeleteMarkers(t, "test_versioning_multi_object_delete_with_marker_create_objects")
 }
+// 일치하는 If-Match 조건으로 오브젝트 삭제 성공 확인
 func TestDeleteObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testDeleteObjectConditions(t, "test_delete_object_if_match_good")
 }
+// 일치하지 않는 If-Match 조건으로 오브젝트 삭제 시 412 실패 확인
 func TestDeleteObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 
 	testDeleteObjectConditions(t, "test_delete_object_if_match_failed")
 }
+// If-Match: * 조건으로 존재하는 오브젝트 삭제 성공 확인
 func TestDeleteObjectIfMatchAny(t *testing.T) {
 	t.Parallel()
 
 	testDeleteObjectConditions(t, "test_delete_object_if_match_any")
 }
+// If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
 func TestDeleteObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 
 	testDeleteObjectConditions(t, "test_delete_object_if_match_and_if_none_match")
 }
+// If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
 func TestDeleteObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 
 	testDeleteObjectConditions(t, "test_delete_object_if_match_and_if_none_match_any")
 }
+// 모든 오브젝트의 ETag 조건이 일치하는 DeleteObjects 성공 확인
 func TestDeleteObjectsIfMatchGood(t *testing.T) {
 	t.Parallel()
 
 	testDeleteObjectsConditions(t, "test_delete_objects_if_match_good")
 }
+// ETag 조건이 일치하지 않는 오브젝트만 삭제에 실패(PreconditionFailed)하는지 확인
 func TestDeleteObjectsIfMatchMixed(t *testing.T) {
 	t.Parallel()
 
 	testDeleteObjectsConditions(t, "test_delete_objects_if_match_mixed")
 }
+// If-Match와 If-None-Match를 함께 지정하면 DeleteObjects가 501로 거부되는지 확인
 func TestDeleteObjectsIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 
 	testDeleteObjectsConditions(t, "test_delete_objects_if_match_and_if_none_match")
 }
+// If-Match와 If-None-Match: * 를 함께 지정하면 DeleteObjects가 501로 거부되는지 확인
 func TestDeleteObjectsIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 

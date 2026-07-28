@@ -14,166 +14,199 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷의 버저닝 옵션 변경 가능 확인
 func TestVersioningBucketCreateSuspend(t *testing.T) {
 	t.Parallel()
 
 	testVersioningBucketState(t)
 }
+// 버저닝 오브젝트의 생성/읽기/삭제 확인
 func TestVersioningObjCreateReadRemove(t *testing.T) {
 	t.Parallel()
 
 	testVersioningDeleteMarker(t, "test_versioning_obj_create_read_remove")
 }
+// 버저닝 오브젝트의 해더 정보를 사용하여 읽기/쓰기/삭제확인
 func TestVersioningObjCreateReadRemoveHead(t *testing.T) {
 	t.Parallel()
 
 	testVersioningDeleteMarker(t, "test_versioning_obj_create_read_remove_head")
 }
+// 버킷에 버저닝 설정을 할 경우 소급적용되지 않음을 확인
 func TestVersioningObjPlainNullVersionRemoval(t *testing.T) {
 	t.Parallel()
 
 	testVersioningNull(t, "test_versioning_obj_plain_null_version_removal")
 }
+// [버킷에 버저닝 설정이 되어있는 상태] null 버전 오브젝트를 덮어쓰기 할경우 버전 정보가 추가됨을 확인
 func TestVersioningObjPlainNullVersionOverwrite(t *testing.T) {
 	t.Parallel()
 
 	testVersioningNull(t, "test_versioning_obj_plain_null_version_overwrite")
 }
+// [버킷에 버저닝 설정이 되어있지만 중단된 상태일때] null 버전 오브젝트를 덮어쓰기 할경우 버전정보가 추가되지 않음을 확인
 func TestVersioningObjPlainNullVersionOverwriteSuspended(t *testing.T) {
 	t.Parallel()
 
 	testVersioningNull(t, "test_versioning_obj_plain_null_version_overwrite_suspended")
 }
+// 버전관리를 일시중단했을때 올바르게 동작하는지 확인
 func TestVersioningObjSuspendVersions(t *testing.T) {
 	t.Parallel()
 
 	testVersioningVersions(t, "test_versioning_obj_suspend_versions")
 }
+// 오브젝트하나의 여러버전을 모두 삭제 가능한지 확인
 func TestVersioningObjCreateVersionsRemoveAll(t *testing.T) {
 	t.Parallel()
 
 	testVersioningVersions(t, "test_versioning_obj_create_versions_remove_all")
 }
+// 이름에 특수문자가 들어간 오브젝트에 대해 버전관리가 올바르게 동작하는지 확인
 func TestVersioningObjCreateVersionsRemoveSpecialNames(t *testing.T) {
 	t.Parallel()
 
 	testVersioningVersions(t, "test_versioning_obj_create_versions_remove_special_names")
 }
+// 오브젝트를 멀티파트 업로드하였을 경우 버전관리가 올바르게 동작하는지 확인
 func TestVersioningObjCreateOverwriteMultipart(t *testing.T) {
 	t.Parallel()
 
 	testVersioningMultipart(t, "test_versioning_obj_create_overwrite_multipart")
 }
+// 버저닝 버킷에서 PutObject와 MultipartUpload를 섞어 업로드한 뒤 버전별 조회가 올바른지 확인
 func TestVersioningObjMixPutAndMultipart(t *testing.T) {
 	t.Parallel()
 
 	testVersioningObjMixPutAndMultipart(t)
 }
+// 오브젝트의 해당 버전 정보가 올바른지 확인
 func TestVersioning_ObjListMarker(t *testing.T) {
 	t.Parallel()
 
 	testVersioningMarkers(t)
 }
+// 오브젝트의 버전별 복사가 가능한지 화인
 func TestVersioningCopyObjVersion(t *testing.T) {
 	t.Parallel()
 
 	testVersioningCopy(t, "test_versioning_copy_obj_version")
 }
+// 버전이 여러개인 오브젝트에 대한 삭제가 올바르게 동작하는지 확인
 func TestVersioningMultiObjectDelete(t *testing.T) {
 	t.Parallel()
 
 	testVersioningMultiDelete(t, "test_versioning_multi_object_delete")
 }
+// 버전이 여러개인 오브젝트에 대한 삭제마커가 올바르게 동작하는지 확인
 func TestVersioning_MultiObjectDeleteWithMarker(t *testing.T) {
 	t.Parallel()
 
 	testVersioningMultiDelete(t, "test_versioning_multi_object_delete_with_marker")
 }
+// 존재하지않는 오브젝트를 삭제할경우 삭제마커가 생성되는지 확인
 func TestVersioning_MultiObjectDeleteWithMarkerCreate(t *testing.T) {
 	t.Parallel()
 
 	testVersioningMultiDelete(t, "test_versioning_multi_object_delete_with_marker_create")
 }
+// 오브젝트 버전의 acl이 올바르게 관리되고 있는지 확인
 func TestVersionedObjectAcl(t *testing.T) {
 	t.Parallel()
 
 	testVersioningACL(t, "test_versioned_object_acl")
 }
+// 버전정보를 입력하지 않고 오브젝트의 acl정보를 수정할 경우 가장 최신 버전에 반영되는지 확인
 func TestVersionedObjectAclNoVersionSpecified(t *testing.T) {
 	t.Parallel()
 
 	testVersioningACL(t, "test_versioned_object_acl_no_version_specified")
 }
+// 오브젝트 버전을 추가/삭제를 여러번 했을 경우 올바르게 동작하는지 확인
 func TestVersionedConcurrentObjectCreateAndRemove(t *testing.T) {
 	t.Parallel()
 
 	testVersioningConcurrent(t)
 }
+// 버킷의 버저닝 설정이 업로드시 올바르게 동작하는지 확인
 func TestVersioningBucketAtomicUploadReturnVersionId(t *testing.T) {
 	t.Parallel()
 
 	testVersioningVersions(t, "test_versioning_bucket_atomic_upload_return_version_id")
 }
+// 버킷의 버저닝 설정이 멀티파트 업로드시 올바르게 동작하는지 확인
 func TestVersioningBucketMultipartUploadReturnVersionId(t *testing.T) {
 	t.Parallel()
 
 	testVersioningMultipart(t, "test_versioning_bucket_multipart_upload_return_version_id")
 }
+// 업로드한 오브젝트의 버전별 헤더 정보가 올바른지 확인
 func TestVersioningGetObjectHead(t *testing.T) {
 	t.Parallel()
 
 	testVersioningVersions(t, "test_versioning_get_object_head")
 }
+// 버전이 여러개인 오브젝트의 최신 버전을 삭제 했을때 이전버전이 최신버전으로 변경되는지 확인
 func TestVersioningLatest(t *testing.T) {
 	t.Parallel()
 
 	testVersioningVersions(t, "test_versioning_latest")
 }
+// 잘못된 버전 정보를 사용하여 오브젝트 조회 실패 확인
 func TestVersioningInvalidVersionId(t *testing.T) {
 	t.Parallel()
 
 	testVersioningInvalidID(t)
 }
+// CopyObject로 복사할 경우 버저닝이 올바르게 동작하는지 확인
 func TestVersioningCopyObject(t *testing.T) {
 	t.Parallel()
 
 	testVersioningCopy(t, "test_versioning_copy_object")
 }
+// 버저닝 미설정 버킷에서 Put/Head/Get/Multipart/Copy/List의 versionId가 비어있는지 확인
 func TestVersioningUnversionedAllVersionId(t *testing.T) {
 	t.Parallel()
 
 	testVersioningAllIDs(t, "test_versioning_unversioned_all_version_id")
 }
+// 버저닝 ENABLED 상태에서 Put/Head/Get/Multipart/Copy/List의 versionId가 존재하고 일치하는지 확인
 func TestVersioningEnabledAllVersionId(t *testing.T) {
 	t.Parallel()
 
 	testVersioningAllIDs(t, "test_versioning_enabled_all_version_id")
 }
+// 버저닝 SUSPENDED 상태에서 Put/Head/Get/Multipart/Copy/List의 versionId가 "null"인지 확인
 func TestVersioningSuspendedAllVersionId(t *testing.T) {
 	t.Parallel()
 
 	testVersioningAllIDs(t, "test_versioning_suspended_all_version_id")
 }
+// OFF→ENABLED→SUSPENDED 순으로 같은 key에 put 후 listVersions가 null+versionId 2개인지 확인
 func TestVersioningListVersionsOffEnabledSuspended(t *testing.T) {
 	t.Parallel()
 
 	testVersioningTransitions(t, "test_versioning_list_versions_off_enabled_suspended")
 }
+// OFF→ENABLED→SUSPENDED 순으로 서로 다른 key에 put 후 listVersions가 3개(null 2개+versionId 1개)인지 확인
 func TestVersioningListVersionsOffEnabledSuspendedDifferentKeys(t *testing.T) {
 	t.Parallel()
 
 	testVersioningTransitions(t, "test_versioning_list_versions_off_enabled_suspended_different_keys")
 }
+// OFF→ENABLED→SUSPENDED 후 null 버전 삭제 시 current가 ENABLED 버전으로 바뀌는지 확인
 func TestVersioningDeleteNullVersionAfterSuspend(t *testing.T) {
 	t.Parallel()
 
 	testVersioningNull(t, "test_versioning_delete_null_version_after_suspend")
 }
+// ENABLED에서 여러 번 put 후 SUSPENDED put 시 listVersions가 versionId N개+null 1개인지 확인
 func TestVersioningListVersionsMultipleEnabledThenSuspended(t *testing.T) {
 	t.Parallel()
 
 	testVersioningTransitions(t, "test_versioning_list_versions_multiple_enabled_then_suspended")
 }
+// Current가 DeleteMarker인 오브젝트를 HeadObject 요청 시 올바르게 동작하는지 확인
 func TestVersioningHeadObjectDeleteMarker(t *testing.T) {
 	t.Parallel()
 

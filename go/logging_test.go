@@ -9,41 +9,49 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// 버킷에 로깅 설정 조회 가능한지 확인
 func TestLoggingGet(t *testing.T) {
 	t.Parallel()
 
 	testLoggingGet(t)
 }
+// 버킷에 로깅 설정 가능한지 확인
 func TestLoggingSet(t *testing.T) {
 	t.Parallel()
 
 	testLoggingConfigure(t, "", false, false, false)
 }
+// 버킷에 설정한 로깅 정보 조회가 가능한지 확인
 func TestLoggingSetGet(t *testing.T) {
 	t.Parallel()
 
 	testLoggingConfigure(t, "", true, false, false)
 }
+// 버킷의 로깅에 Prefix가 설정되는지 확인
 func TestLoggingPrefix(t *testing.T) {
 	t.Parallel()
 
 	testLoggingConfigure(t, "logs/", true, false, false)
 }
+// 버저닝 설정된 버킷의 로깅이 설정되는지 확인
 func TestLoggingVersioning(t *testing.T) {
 	t.Parallel()
 
 	testLoggingConfigure(t, "logs/", true, true, false)
 }
+// SSE-s3설정된 버킷의 로깅이 설정되는지 확인
 func TestLoggingEncryption(t *testing.T) {
 	t.Parallel()
 
 	testLoggingConfigure(t, "logs/", true, false, true)
 }
+// 존재하지 않는 버킷에 로깅 설정 실패 확인
 func TestLoggingBucketNotFound(t *testing.T) {
 	t.Parallel()
 
 	testLoggingSourceMissing(t)
 }
+// 타깃 버킷이 존재하지 않을때 로깅 설정 실패 확인
 func TestLoggingTargetBucketNotFound(t *testing.T) {
 	t.Parallel()
 
