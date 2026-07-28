@@ -114,13 +114,16 @@ public class ListBuckets extends TestBase {
 			createBucket(client, 6);
 		}
 
+		// {prefix}{suite}-{testId}- 로 한정해 병렬 실행 시 다른 테스트 버킷과 섞이지 않게 함
+		var prefix = getPrefix() + getSuiteId() + "-6-";
+
 		// 전체 버킷 리스트를 먼저 가져옴
-		var fullResponse = client.listBuckets(l -> l.prefix(getPrefix()));
+		var fullResponse = client.listBuckets(l -> l.prefix(prefix));
 		var fullBucketList = getBucketList(fullResponse);
 		fullBucketList.sort(String::compareTo);
 
 		// maxBuckets로 제한해서 가져온 결과가 전체 리스트의 앞부분과 일치하는지 확인
-		var response = client.listBuckets(l -> l.prefix(getPrefix()).maxBuckets(2));
+		var response = client.listBuckets(l -> l.prefix(prefix).maxBuckets(2));
 		var bucketList = getBucketList(response);
 		assertEquals(2, bucketList.size());
 		assertEquals(fullBucketList.subList(0, 2), bucketList);
@@ -134,20 +137,23 @@ public class ListBuckets extends TestBase {
 			createBucket(client, 7);
 		}
 
+		// {prefix}{suite}-{testId}- 로 한정해 병렬 실행 시 다른 테스트 버킷과 섞이지 않게 함
+		var prefix = getPrefix() + getSuiteId() + "-7-";
+
 		// 전체 버킷 리스트를 먼저 가져옴
-		var fullResponse = client.listBuckets(l -> l.prefix(getPrefix()));
+		var fullResponse = client.listBuckets(l -> l.prefix(prefix));
 		var fullBucketList = getBucketList(fullResponse);
 		fullBucketList.sort(String::compareTo);
 
 		// 첫 번째 페이지: maxBuckets=2
-		var response = client.listBuckets(l -> l.prefix(getPrefix()).maxBuckets(2));
+		var response = client.listBuckets(l -> l.prefix(prefix).maxBuckets(2));
 		var bucketList = getBucketList(response);
 		assertEquals(2, bucketList.size());
 		assertEquals(fullBucketList.subList(0, 2), bucketList);
 
 		// 두 번째 페이지: continuationToken 사용
 		var response2 = client
-				.listBuckets(l -> l.prefix(getPrefix()).maxBuckets(2).continuationToken(response.continuationToken()));
+				.listBuckets(l -> l.prefix(prefix).maxBuckets(2).continuationToken(response.continuationToken()));
 		var bucketList2 = getBucketList(response2);
 		assertEquals(2, bucketList2.size());
 		assertEquals(fullBucketList.subList(2, 4), bucketList2);
