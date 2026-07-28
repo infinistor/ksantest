@@ -15,126 +15,195 @@ const (
 	authUsersURI = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
 )
 
-func TestGrants(t *testing.T) {
+func TestBucketAclDefault(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 권한을 설정하지 않고 생성한 버킷의 default acl정보가 올바른지 확인
-		{"test_bucket_acl_default", func(t *testing.T) { runBucketCannedGrant(t, types.BucketCannedACLPrivate, "", nil) }},
-		// [bucket : private] 생성한 버킷의 acl정보가 올바른지 확인
-		{"test_bucket_acl_private", func(t *testing.T) { runBucketCannedGrant(t, types.BucketCannedACLPrivate, "", nil) }},
-		// [bucket : public-read] 생성한 버킷의 acl정보가 올바른지 확인
-		{"test_bucket_acl_public_read", func(t *testing.T) {
-			runBucketCannedGrant(t, types.BucketCannedACLPublicRead, allUsersURI, []types.Permission{types.PermissionRead})
-		}},
-		// [bucket : public-read-write] 생성한 버킷의 acl정보가 올바른지 확인
-		{"test_bucket_acl_public_rw", func(t *testing.T) {
-			runBucketCannedGrant(t, types.BucketCannedACLPublicReadWrite, allUsersURI, []types.Permission{types.PermissionRead, types.PermissionWrite})
-		}},
-		// [bucket : authenticated-read] 생성한 버킷의 acl정보가 올바른지 확인
-		{"test_bucket_acl_authenticated_read", func(t *testing.T) {
-			runBucketCannedGrant(t, types.BucketCannedACLAuthenticatedRead, authUsersURI, []types.Permission{types.PermissionRead})
-		}},
-		// [bucket : public-read => private] 권한을 변경할경우 올바르게 적용되는지 확인
-		{"test_bucket_acl_changed", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
-			setBucketCannedACL(t, s, bucket, types.BucketCannedACLPublicRead)
-			assertGrants(t, getBucketGrants(t, s, bucket), allUsersURI, []types.Permission{types.PermissionRead})
-			setBucketCannedACL(t, s, bucket, types.BucketCannedACLPrivate)
-			assertGrants(t, getBucketGrants(t, s, bucket), "", nil)
-		}},
-		// 권한을 설정하지 않고 생성한 오브젝트의 acl정보가 올바른지 확인
-		{"test_object_acl_default", func(t *testing.T) { runObjectCannedGrant(t, types.ObjectCannedACLPrivate, "", nil) }},
-		// [object:private] 생성한 오브젝트의 acl정보가 올바른지 확인
-		{"test_object_acl_private", func(t *testing.T) { runObjectCannedGrant(t, types.ObjectCannedACLPrivate, "", nil) }},
-		// [object:public-read] 생성한 오브젝트의 acl정보가 올바른지 확인
-		{"test_object_acl_public_read", func(t *testing.T) {
-			runObjectCannedGrant(t, types.ObjectCannedACLPublicRead, allUsersURI, []types.Permission{types.PermissionRead})
-		}},
-		// [object:public-read-write] 생성한 오브젝트의 acl정보가 올바른지 확인
-		{"test_object_acl_public_rw", func(t *testing.T) {
-			runObjectCannedGrant(t, types.ObjectCannedACLPublicReadWrite, allUsersURI, []types.Permission{types.PermissionRead, types.PermissionWrite})
-		}},
-		// [object:authenticated-read] 생성한 오브젝트의 acl정보가 올바른지 확인
-		{"test_object_acl_authenticated_read", func(t *testing.T) {
-			runObjectCannedGrant(t, types.ObjectCannedACLAuthenticatedRead, authUsersURI, []types.Permission{types.PermissionRead})
-		}},
-		// [object:public-read => private] 오브젝트의 권한을 변경할경우 올바르게 적용되는지 확인
-		{"test_object_acl_change", func(t *testing.T) {
-			s := newSuite(t)
-			bucket, key := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter), "object-acl-change"
-			putObjectWithACL(t, s, bucket, key, types.ObjectCannedACLPublicRead)
-			assertGrants(t, getObjectGrants(t, s, bucket, key), allUsersURI, []types.Permission{types.PermissionRead})
-			if _, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPrivate}); err != nil {
-				t.Fatal(err)
-			}
-			assertGrants(t, getObjectGrants(t, s, bucket, key), "", nil)
-		}},
-		// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
-		{"test_bucket_permission_full_control", func(t *testing.T) { verifyBucketGrant(t, types.PermissionFullControl) }},
-		// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
-		{"test_bucket_permission_write", func(t *testing.T) { verifyBucketGrant(t, types.PermissionWrite) }},
-		// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
-		{"test_bucket_permission_write_acp", func(t *testing.T) { verifyBucketGrant(t, types.PermissionWriteAcp) }},
-		// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
-		{"test_bucket_permission_read", func(t *testing.T) { verifyBucketGrant(t, types.PermissionRead) }},
-		// 버킷에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ_ACP
-		{"test_bucket_permission_read_acp", func(t *testing.T) { verifyBucketGrant(t, types.PermissionReadAcp) }},
-		// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : FULL_CONTROL
-		{"test_object_permission_full_control", func(t *testing.T) { verifyObjectGrant(t, types.PermissionFullControl) }},
-		// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE
-		{"test_object_permission_write", func(t *testing.T) { verifyObjectGrant(t, types.PermissionWrite) }},
-		// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : WRITE_ACP
-		{"test_object_permission_write_acp", func(t *testing.T) { verifyObjectGrant(t, types.PermissionWriteAcp) }},
-		// 오브젝트에 설정한 acl정보가 올바르게 적용되었는지 확인 : READ
-		{"test_object_permission_read", func(t *testing.T) { verifyObjectGrant(t, types.PermissionRead) }},
-		// object permission read acp 확인
-		{"test_object_permission_read_acp", func(t *testing.T) { verifyObjectGrant(t, types.PermissionReadAcp) }},
-		// [bucket:private] 버킷에 ACL 중복 설정이 가능한지 확인
-		{"test_bucket_acl_duplicated", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
-			setBucketCannedACL(t, s, bucket, types.BucketCannedACLPrivate)
-			setBucketCannedACL(t, s, bucket, types.BucketCannedACLPrivate)
-		}},
-		// [object:bucket-owner-read] 생성한 오브젝트의 acl정보가 올바른지 확인
-		{"test_object_acl_bucket_owner_read", func(t *testing.T) {
-			// Java: altClient puts with BucketOwnerRead, then altClient.GetObjectAcl.
-			testObjectOwnerGrant(t, types.ObjectOwnershipObjectWriter, types.ObjectCannedACLBucketOwnerRead, types.PermissionRead, false, true)
-		}},
-		// [ObjectWriter][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가 올바른지 확인
-		{"test_bucket_object_writer_object_owner_full_control", func(t *testing.T) {
-			testObjectOwnerGrant(t, types.ObjectOwnershipObjectWriter, types.ObjectCannedACLBucketOwnerFullControl, types.PermissionFullControl, false, false)
-		}},
-		// [BucketOwnerEnforced][object:bucket-owner-full-control] 생성한 오브젝트의 acl정보가 올바른지 확인
-		{"test_bucket_owner_enforced_object_owner_full_control", func(t *testing.T) {
-			testObjectOwnerGrant(t, types.ObjectOwnershipBucketOwnerPreferred, types.ObjectCannedACLBucketOwnerFullControl, types.PermissionFullControl, true, false)
-		}},
-		// [object: public-read-write => alt-user-full-control => alt-user-read-acl] 권한을 변경해도 소유주가 변경되지 않는지 확인
-		{"test_object_acl_owner_not_change", testObjectACLOwnerNotChange},
-		// 권한을 변경해도 오브젝트에 영향을 주지 않는지 확인
-		{"test_bucket_acl_change_not_effect", testACLChangeNotEffect},
-		// 버킷에 존재하지 않는 유저를 추가하려고 하면 에러 발생 확인
-		{"test_bucket_acl_grant_non_exist_user", testGrantNonexistentUser},
-		// 버킷에 권한정보를 모두 제거했을때 오브젝트를 업데이트 하면 실패 확인
-		{"test_bucket_acl_no_grants", testBucketNoGrants},
-		// 버킷 생성하면서 권한정보를 여러개 보낼때 모두 올바르게 적용되었는지 확인
-		{"test_bucket_acl_multi_grants", func(t *testing.T) { testMultiGrants(t, false) }},
-		// 오브젝트를 생성하면서 권한정보를 여러개보낼때 모두 올바르게 적용되었는지 확인
-		{"test_object_acl_multi_grants", func(t *testing.T) { testMultiGrants(t, true) }},
-		// 버킷의 acl 설정이 누락될 경우 실패함을 확인
-		{"test_bucket_acl_revoke_all", func(t *testing.T) { testRevokeOwner(t, false) }},
-		// 오브젝트의 acl 설정이 누락될 경우 실패함을 확인
-		{"test_object_acl_revoke_all", func(t *testing.T) { testRevokeOwner(t, true) }},
-		// 버킷의 acl 설정에 Id가 누락될 경우 실패함을 확인
-		{"test_bucket_acl_revoke_all_id", testRevokeGranteeID},
+
+	runBucketCannedGrant(t, types.BucketCannedACLPrivate, "", nil)
+}
+func TestBucketAclPrivate(t *testing.T) {
+	t.Parallel()
+
+	runBucketCannedGrant(t, types.BucketCannedACLPrivate, "", nil)
+}
+func TestBucketAclPublicRead(t *testing.T) {
+	t.Parallel()
+
+	runBucketCannedGrant(t, types.BucketCannedACLPublicRead, allUsersURI, []types.Permission{types.PermissionRead})
+}
+func TestBucketAclPublicRW(t *testing.T) {
+	t.Parallel()
+
+	runBucketCannedGrant(t, types.BucketCannedACLPublicReadWrite, allUsersURI, []types.Permission{types.PermissionRead, types.PermissionWrite})
+}
+func TestBucketAclAuthenticatedRead(t *testing.T) {
+	t.Parallel()
+
+	runBucketCannedGrant(t, types.BucketCannedACLAuthenticatedRead, authUsersURI, []types.Permission{types.PermissionRead})
+}
+func TestBucketAclChanged(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPublicRead)
+	assertGrants(t, getBucketGrants(t, s, bucket), allUsersURI, []types.Permission{types.PermissionRead})
+	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPrivate)
+	assertGrants(t, getBucketGrants(t, s, bucket), "", nil)
+}
+func TestObjectAclDefault(t *testing.T) {
+	t.Parallel()
+
+	runObjectCannedGrant(t, types.ObjectCannedACLPrivate, "", nil)
+}
+func TestObjectAclPrivate(t *testing.T) {
+	t.Parallel()
+
+	runObjectCannedGrant(t, types.ObjectCannedACLPrivate, "", nil)
+}
+func TestObjectAclPublicRead(t *testing.T) {
+	t.Parallel()
+
+	runObjectCannedGrant(t, types.ObjectCannedACLPublicRead, allUsersURI, []types.Permission{types.PermissionRead})
+}
+func TestObjectAclPublicRW(t *testing.T) {
+	t.Parallel()
+
+	runObjectCannedGrant(t, types.ObjectCannedACLPublicReadWrite, allUsersURI, []types.Permission{types.PermissionRead, types.PermissionWrite})
+}
+func TestObjectAclAuthenticatedRead(t *testing.T) {
+	t.Parallel()
+
+	runObjectCannedGrant(t, types.ObjectCannedACLAuthenticatedRead, authUsersURI, []types.Permission{types.PermissionRead})
+}
+func TestObjectAclChange(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket, key := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter), "object-acl-change"
+	putObjectWithACL(t, s, bucket, key, types.ObjectCannedACLPublicRead)
+	assertGrants(t, getObjectGrants(t, s, bucket, key), allUsersURI, []types.Permission{types.PermissionRead})
+	if _, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPrivate}); err != nil {
+		t.Fatal(err)
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+	assertGrants(t, getObjectGrants(t, s, bucket, key), "", nil)
+}
+func TestBucketPermissionFullControl(t *testing.T) {
+	t.Parallel()
+
+	verifyBucketGrant(t, types.PermissionFullControl)
+}
+func TestBucketPermissionWrite(t *testing.T) {
+	t.Parallel()
+
+	verifyBucketGrant(t, types.PermissionWrite)
+}
+func TestBucketPermissionWriteAcp(t *testing.T) {
+	t.Parallel()
+
+	verifyBucketGrant(t, types.PermissionWriteAcp)
+}
+func TestBucketPermissionRead(t *testing.T) {
+	t.Parallel()
+
+	verifyBucketGrant(t, types.PermissionRead)
+}
+func TestBucketPermissionReadAcp(t *testing.T) {
+	t.Parallel()
+
+	verifyBucketGrant(t, types.PermissionReadAcp)
+}
+func TestObjectPermissionFullControl(t *testing.T) {
+	t.Parallel()
+
+	verifyObjectGrant(t, types.PermissionFullControl)
+}
+func TestObjectPermissionWrite(t *testing.T) {
+	t.Parallel()
+
+	verifyObjectGrant(t, types.PermissionWrite)
+}
+func TestObjectPermissionWriteAcp(t *testing.T) {
+	t.Parallel()
+
+	verifyObjectGrant(t, types.PermissionWriteAcp)
+}
+func TestObjectPermissionRead(t *testing.T) {
+	t.Parallel()
+
+	verifyObjectGrant(t, types.PermissionRead)
+}
+func TestObjectPermissionReadAcp(t *testing.T) {
+	t.Parallel()
+
+	verifyObjectGrant(t, types.PermissionReadAcp)
+}
+func TestBucketAclDuplicated(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPrivate)
+	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPrivate)
+}
+func TestObjectAclBucketOwnerRead(t *testing.T) {
+	t.Parallel()
+
+	testObjectOwnerGrant(t, types.ObjectOwnershipObjectWriter, types.ObjectCannedACLBucketOwnerRead, types.PermissionRead, false, true)
+}
+func TestBucketObjectWriterObjectOwnerFullControl(t *testing.T) {
+	t.Parallel()
+
+	testObjectOwnerGrant(t, types.ObjectOwnershipObjectWriter, types.ObjectCannedACLBucketOwnerFullControl, types.PermissionFullControl, false, false)
+}
+func TestBucketOwnerEnforcedObjectOwnerFullControl(t *testing.T) {
+	t.Parallel()
+
+	testObjectOwnerGrant(t, types.ObjectOwnershipBucketOwnerPreferred, types.ObjectCannedACLBucketOwnerFullControl, types.PermissionFullControl, true, false)
+}
+func TestObjectAclOwnerNotChange(t *testing.T) {
+	t.Parallel()
+
+	testObjectACLOwnerNotChange(t)
+}
+func TestBucketAclChangeNotEffect(t *testing.T) {
+	t.Parallel()
+
+	testACLChangeNotEffect(t)
+}
+func TestBucketAclGrantNonExistUser(t *testing.T) {
+	t.Parallel()
+
+	testGrantNonexistentUser(t)
+}
+func TestBucketAclNoGrants(t *testing.T) {
+	t.Parallel()
+
+	testBucketNoGrants(t)
+}
+func TestBucketAclMultiGrants(t *testing.T) {
+	t.Parallel()
+
+	testMultiGrants(t, false)
+}
+func TestObjectAclMultiGrants(t *testing.T) {
+	t.Parallel()
+
+	testMultiGrants(t, true)
+}
+func TestBucketAclRevokeAll(t *testing.T) {
+	t.Parallel()
+
+	testRevokeOwner(t, false)
+}
+func TestObjectAclRevokeAll(t *testing.T) {
+	t.Parallel()
+
+	testRevokeOwner(t, true)
+}
+func TestBucketAclRevokeAllId(t *testing.T) {
+	t.Parallel()
+
+	testRevokeGranteeID(t)
 }
 
 func runBucketCannedGrant(t *testing.T, acl types.BucketCannedACL, uri string, permissions []types.Permission) {
@@ -377,7 +446,7 @@ func testRevokeOwner(t *testing.T, object bool) {
 		t.Fatal(err)
 	}
 	_, err = s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{
-		Bucket: aws.String(bucket),
+		Bucket:              aws.String(bucket),
 		AccessControlPolicy: &types.AccessControlPolicy{Owner: emptyOwner, Grants: out.Grants},
 	})
 	assertS3Error(t, err, 400, "MalformedACLError")

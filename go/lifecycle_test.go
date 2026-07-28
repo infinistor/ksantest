@@ -11,56 +11,105 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func TestLifeCycle(t *testing.T) {
+func TestLifecycleSet(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷의 Lifecycle 규칙을 추가 가능한지 확인
-		{"test_lifecycle_set", testLifecycleSet},
-		// 버킷에 설정한 Lifecycle 규칙을 가져올 수 있는지 확인
-		{"test_lifecycle_get", testLifecycleGet},
-		// ID 없이 버킷에 Lifecycle 규칙을 설정 할 수 있는지 확인
-		{"test_lifecycle_get_no_id", testLifecycleGetNoID},
-		// 버킷에 버저닝 설정이 되어있는 상태에서 Lifecycle 규칙을 추가 가능한지 확인
-		{"test_lifecycle_expiration_versioning_enabled", testLifecycleVersioningEnabled},
-		// 버킷에 Lifecycle 규칙을 설정할때 ID의 길이가 너무 길면 실패하는지 확인
-		{"test_lifecycle_id_too_long", testLifecycleIDTooLong},
-		// 버킷에 Lifecycle 규칙을 설정할때 같은 ID로 규칙을 여러개 설정할경우 실패하는지 확인
-		{"test_lifecycle_same_id", testLifecycleSameID},
-		// 버킷에 Lifecycle 규칙중 status를 잘못 설정할때 실패하는지 확인
-		{"test_lifecycle_invalid_status", testLifecycleInvalidStatus},
-		// 버킷의 Lifecycle규칙에 날짜를 입력가능한지 확인
-		{"test_lifecycle_set_date", testLifecycleSetDate},
-		// 버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식으로 입력했을때 실패 확인
-		{"test_lifecycle_set_invalid_date", testLifecycleInvalidDate},
-		// 버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인
-		{"test_lifecycle_set_noncurrent", testLifecycleSetNoncurrent},
-		// 버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
-		{"test_lifecycle_noncurrent_expiration", testLifecycleNoncurrentExpiration},
-		// DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
-		{"test_lifecycle_set_delete_marker", testLifecycleSetDeleteMarker},
-		// Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인
-		{"test_lifecycle_set_filter", testLifecycleSetFilter},
-		// Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인
-		{"test_lifecycle_set_empty_filter", testLifecycleSetEmptyFilter},
-		// DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
-		{"test_lifecycle_delete_marker_expiration", testLifecycleDeleteMarkerExpiration},
-		// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
-		{"test_lifecycle_set_multipart", testLifecycleSetMultipart},
-		// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
-		{"test_lifecycle_multipart_expiration", testLifecycleMultipartExpiration},
-		// 버킷의 Lifecycle 규칙을 삭제 가능한지 확인
-		{"test_lifecycle_delete", testLifecycleDelete},
-		// Lifecycle 규칙에 0일을 설정할때 실패하는지 확인
-		{"test_lifecycle_set_expiration_zero", testLifecycleExpirationZero},
-		// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
-		{"test_lifecycle_set_expiration", testLifecycleExpirationHeaders},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testLifecycleSet(t)
+}
+func TestLifecycleGet(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleGet(t)
+}
+func TestLifecycleGetNoId(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleGetNoID(t)
+}
+func TestLifecycleExpirationVersioningEnabled(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleVersioningEnabled(t)
+}
+func TestLifecycleIdTooLong(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleIDTooLong(t)
+}
+func TestLifecycleSameId(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleSameID(t)
+}
+func TestLifecycleInvalidStatus(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleInvalidStatus(t)
+}
+func TestLifecycleSetDate(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleSetDate(t)
+}
+func TestLifecycleSetInvalidDate(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleInvalidDate(t)
+}
+func TestLifecycleSetNoncurrent(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleSetNoncurrent(t)
+}
+func TestLifecycleNoncurrentExpiration(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleNoncurrentExpiration(t)
+}
+func TestLifecycleSetDeleteMarker(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleSetDeleteMarker(t)
+}
+func TestLifecycleSetFilter(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleSetFilter(t)
+}
+func TestLifecycleSetEmptyFilter(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleSetEmptyFilter(t)
+}
+func TestLifecycleDeleteMarkerExpiration(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleDeleteMarkerExpiration(t)
+}
+func TestLifecycleSetMultipart(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleSetMultipart(t)
+}
+func TestLifecycleMultipartExpiration(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleMultipartExpiration(t)
+}
+func TestLifecycleDelete(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleDelete(t)
+}
+func TestLifecycleSetExpirationZero(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleExpirationZero(t)
+}
+func TestLifecycleSetExpiration(t *testing.T) {
+	t.Parallel()
+
+	testLifecycleExpirationHeaders(t)
 }
 
 func lifecycleRule(id, prefix string, days int32, status types.ExpirationStatus) types.LifecycleRule {
@@ -276,8 +325,7 @@ func testLifecycleExpirationZero(t *testing.T) {
 }
 
 func testLifecycleExpirationHeaders(t *testing.T) {
-	// Java testV2 LifeCycle.testLifecycleSetExpiration is @Disabled
-	// ("Java SDK V2에서는 expires값을 재대로 가져오지 못함").
+
 	t.Skip("Java SDK V2에서는 expires값을 재대로 가져오지 못함")
 }
 

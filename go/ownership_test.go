@@ -10,81 +10,77 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func TestOwnership(t *testing.T) {
+func TestGetBucketOwnership(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷의 소유권 조회 확인
-		{"test_get_bucket_ownership", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
-			if _, err := s.client.GetBucketOwnershipControls(context.Background(), &s3.GetBucketOwnershipControlsInput{Bucket: aws.String(bucket)}); err != nil {
-				t.Fatalf("GetBucketOwnershipControls: %v", err)
-			}
-		}},
-		// 버킷을 생성할때 소유권 설정 확인
-		{"test_create_bucket_with_ownership", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
-			assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
-		}},
-		// 버킷의 소유권 변경 확인
-		{"test_change_bucket_ownership", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
-			assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
-			putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerPreferred)
-			assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerPreferred)
-		}},
-		// [BucketOwnerEnforced] 버킷 ACL 설정이 실패하는지 확인
-		{"test_bucket_ownership_deny_acl", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
-			_, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicRead})
-			assertS3Error(t, err, 403, "AccessDenied")
-		}},
-		// [BucketOwnerEnforced] 오브젝트 ACL 설정이 실패하는지 확인
-		{"test_bucket_ownership_deny_object_acl", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
-			key := "testBucketOwnershipDenyObjectACL"
-			put(t, s, bucket, key, key, nil)
-			_, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPublicRead})
-			assertS3Error(t, err, 403, "AccessDenied")
-		}},
-		// ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경해도 접근 가능한지 확인
-		{"test_object_ownership_deny_change", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
-			key := "testObjectOwnershipDenyChange"
-			_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
-			if err != nil {
-				t.Fatal(err)
-			}
-			public := anonymousClient(s)
-			headPublic(t, public, bucket, key)
-			putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
-			headPublic(t, public, bucket, key)
-		}},
-		// ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경할경우 ACL 설정이 실패하는지 확인
-		{"test_object_ownership_deny_acl", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
-			key := "testObjectOwnershipDenyACL"
-			_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
-			if err != nil {
-				t.Fatal(err)
-			}
-			putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
-			_, err = s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPrivate})
-			assertS3Error(t, err, 400, "AccessControlListNotSupported")
-		}},
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	if _, err := s.client.GetBucketOwnershipControls(context.Background(), &s3.GetBucketOwnershipControlsInput{Bucket: aws.String(bucket)}); err != nil {
+		t.Fatalf("GetBucketOwnershipControls: %v", err)
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
+}
+func TestCreateBucketWithOwnership(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
+}
+func TestChangeBucketOwnership(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
+	putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerPreferred)
+	assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerPreferred)
+}
+func TestBucketOwnershipDenyACL(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	_, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicRead})
+	assertS3Error(t, err, 403, "AccessDenied")
+}
+func TestBucketOwnershipDenyObjectACL(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	key := "testBucketOwnershipDenyObjectACL"
+	put(t, s, bucket, key, key, nil)
+	_, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPublicRead})
+	assertS3Error(t, err, 403, "AccessDenied")
+}
+func TestObjectOwnershipDenyChange(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	key := "testObjectOwnershipDenyChange"
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
+	if err != nil {
+		t.Fatal(err)
 	}
+	public := anonymousClient(s)
+	headPublic(t, public, bucket, key)
+	putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
+	headPublic(t, public, bucket, key)
+}
+func TestObjectOwnershipDenyACL(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	key := "testObjectOwnershipDenyACL"
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
+	if err != nil {
+		t.Fatal(err)
+	}
+	putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
+	_, err = s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPrivate})
+	assertS3Error(t, err, 400, "AccessControlListNotSupported")
 }
 
 func ownershipBucket(t *testing.T, s *suite, ownership types.ObjectOwnership) string {

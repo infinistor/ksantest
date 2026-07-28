@@ -16,59 +16,87 @@ import (
 
 var basicObjectAttributes = []types.ObjectAttributes{types.ObjectAttributesObjectSize, types.ObjectAttributesStorageClass, types.ObjectAttributesEtag}
 
-func TestGetObjectAttributes(t *testing.T) {
+func TestGetObjectAttributesBasic(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 기본 GetObjectAttributes 테스트. ObjectSize/StorageClass/ETag를 요청하고 응답이 올바른지 확인.
-		{"test_get_object_attributes_basic", func(t *testing.T) { testAttributesBasic(t, "test_get_object_attributes_basic") }},
-		// 특정 속성만 요청하는 테스트. 요청하지 않은 속성은 nil이어야 함.
-		{"test_get_object_attributes_specific_attributes", func(t *testing.T) { testAttributesBasic(t, "test_get_object_attributes_specific_attributes") }},
-		// 멀티파트 업로드된 객체에 대한 GetObjectAttributes 테스트.
-		{"test_get_object_attributes_multipart", func(t *testing.T) { testAttributesMultipart(t, "test_get_object_attributes_multipart") }},
-		// 체크섬 알고리즘을 사용한 객체에 대한 GetObjectAttributes 테스트.
-		{"test_get_object_attributes_with_checksum", func(t *testing.T) { testAttributesBasic(t, "test_get_object_attributes_with_checksum") }},
-		// 존재하지 않는 객체에 대한 GetObjectAttributes 테스트.
-		{"test_get_object_attributes_non_existent_object", func(t *testing.T) {
-			s := newSuite(t)
-			b := s.bucket(t)
-			_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String("missing"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
-			assertS3Error(t, err, 404, "NoSuchKey")
-		}},
-		// 존재하지 않는 버킷에 대한 GetObjectAttributes 테스트.
-		{"test_get_object_attributes_non_existent_bucket", func(t *testing.T) {
-			s := newSuite(t)
-			_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t)), Key: aws.String("key"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
-			assertS3Error(t, err, 404, "NoSuchBucket")
-		}},
-		// 속성을 지정하지 않은 GetObjectAttributes 테스트.
-		{"test_get_object_attributes_no_attributes", testAttributesNone},
-		// 버전 ID를 사용한 GetObjectAttributes 테스트.
-		{"test_get_object_attributes_with_version_id", func(t *testing.T) { testAttributesVersion(t, "test_get_object_attributes_with_version_id") }},
-		// 잘못된 버전 ID를 사용한 GetObjectAttributes 테스트.
-		{"test_get_object_attributes_invalid_version_id", func(t *testing.T) { testAttributesVersion(t, "test_get_object_attributes_invalid_version_id") }},
-		// 대용량 멀티파트 업로드 객체에 대한 GetObjectAttributes 테스트.
-		{"test_get_object_attributes_large_multipart", func(t *testing.T) { testAttributesMultipart(t, "test_get_object_attributes_large_multipart") }},
-		// 메타데이터가 있는 객체에 대한 GetObjectAttributes 테스트. 메타데이터는 HeadObject로 확인.
-		{"test_get_object_attributes_with_metadata", func(t *testing.T) { testAttributesBasic(t, "test_get_object_attributes_with_metadata") }},
-		// SSE-S3 암호화된 객체에 대한 GetObjectAttributes 테스트. 암호화 정보는 HeadObject로 확인.
-		{"test_get_object_attributes_with_sse_s3", func(t *testing.T) { testAttributesBasic(t, "test_get_object_attributes_with_sse_s3") }},
-		// 비동기 클라이언트를 사용한 GetObjectAttributes 테스트. Go는 동기 클라이언트로 동일 시나리오 검증.
-		{"test_get_object_attributes_async", func(t *testing.T) { testAttributesBasic(t, "test_get_object_attributes_async") }},
-		// 비동기 클라이언트를 사용한 GetObjectAttributes 에러 테스트.
-		{"test_get_object_attributes_async_error", func(t *testing.T) {
-			s := newSuite(t)
-			_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t)), Key: aws.String("key"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
-			assertS3Error(t, err, 404, "NoSuchBucket")
-		}},
-		// 모든 가능한 속성을 요청하는 GetObjectAttributes 테스트.
-		{"test_get_object_attributes_all_attributes", func(t *testing.T) { testAttributesMultipart(t, "test_get_object_attributes_all_attributes") }},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testAttributesBasic(t, "test_get_object_attributes_basic")
+}
+func TestGetObjectAttributesSpecificAttributes(t *testing.T) {
+	t.Parallel()
+
+	testAttributesBasic(t, "test_get_object_attributes_specific_attributes")
+}
+func TestGetObjectAttributesMultipart(t *testing.T) {
+	t.Parallel()
+
+	testAttributesMultipart(t, "test_get_object_attributes_multipart")
+}
+func TestGetObjectAttributesWithChecksum(t *testing.T) {
+	t.Parallel()
+
+	testAttributesBasic(t, "test_get_object_attributes_with_checksum")
+}
+func TestGetObjectAttributesNonExistentObject(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b := s.bucket(t)
+	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String("missing"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
+	assertS3Error(t, err, 404, "NoSuchKey")
+}
+func TestGetObjectAttributesNonExistentBucket(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t)), Key: aws.String("key"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+func TestGetObjectAttributesNoAttributes(t *testing.T) {
+	t.Parallel()
+
+	testAttributesNone(t)
+}
+func TestGetObjectAttributesWithVersionId(t *testing.T) {
+	t.Parallel()
+
+	testAttributesVersion(t, "test_get_object_attributes_with_version_id")
+}
+func TestGetObjectAttributesInvalidVersionId(t *testing.T) {
+	t.Parallel()
+
+	testAttributesVersion(t, "test_get_object_attributes_invalid_version_id")
+}
+func TestGetObjectAttributesLargeMultipart(t *testing.T) {
+	t.Parallel()
+
+	testAttributesMultipart(t, "test_get_object_attributes_large_multipart")
+}
+func TestGetObjectAttributesWithMetadata(t *testing.T) {
+	t.Parallel()
+
+	testAttributesBasic(t, "test_get_object_attributes_with_metadata")
+}
+func TestGetObjectAttributesWithSSES3(t *testing.T) {
+	t.Parallel()
+
+	testAttributesBasic(t, "test_get_object_attributes_with_sse_s3")
+}
+func TestGetObjectAttributesAsync(t *testing.T) {
+	t.Parallel()
+
+	testAttributesBasic(t, "test_get_object_attributes_async")
+}
+func TestGetObjectAttributesAsyncError(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t)), Key: aws.String("key"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+func TestGetObjectAttributesAllAttributes(t *testing.T) {
+	t.Parallel()
+
+	testAttributesMultipart(t, "test_get_object_attributes_all_attributes")
 }
 
 func getAttributes(t *testing.T, client *s3.Client, input *s3.GetObjectAttributesInput) *s3.GetObjectAttributesOutput {
@@ -170,8 +198,7 @@ func testAttributesVersion(t *testing.T, name string) {
 	first := put(t, s, b, "key", "first", nil)
 	second := put(t, s, b, "key", "second-version", nil)
 	if name == "test_get_object_attributes_invalid_version_id" {
-		// Java와 동일한 형태의 versionId 토큰 사용.
-		// "invalid-version"처럼 형식이 다르면 AWS는 InvalidArgument를 반환함.
+
 		_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{
 			Bucket: aws.String(b), Key: aws.String("key"),
 			VersionId:        aws.String("f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59"),

@@ -15,88 +15,185 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func TestLock(t *testing.T) {
+func TestCreatedBucketEnableObjectLock(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷을 생성한 후 오브젝트의 잠금 설정을 활성화 할 수 있는지 확인
-		{"test_created_bucket_enable_object_lock", func(t *testing.T) { testLockConfiguration(t, "test_created_bucket_enable_object_lock") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 잠금 설정이 가능한지 확인
-		{"test_object_lock_put_obj_lock", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_put_obj_lock") }},
-		// 버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정이 실패
-		{"test_object_lock_put_obj_lock_invalid_bucket", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_bucket") }},
-		// [버킷의 Lock옵션을 활성화] Days, Years값 모두 입력하여 Lock 설정할경우 실패
-		{"test_object_lock_put_obj_lock_with_days_and_years", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_put_obj_lock_with_days_and_years") }},
-		// [버킷의 Lock옵션을 활성화] Days값을 0이하로 입력하여 Lock 설정할경우 실패
-		{"test_object_lock_put_obj_lock_invalid_days", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_days") }},
-		// [버킷의 Lock옵션을 활성화] Years값을 0이하로 입력하여 Lock 설정할경우 실패
-		{"test_object_lock_put_obj_lock_invalid_years", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_years") }},
-		// [버킷의 Lock옵션을 활성화] mode값이 올바르지 않은상태에서 Lock 설정할 경우 실패
-		{"test_object_lock_put_obj_lock_invalid_mode", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_mode") }},
-		// [버킷의 Lock옵션을 활성화] status값이 올바르지 않은상태에서 Lock 설정할 경우 실패
-		{"test_object_lock_put_obj_lock_invalid_status", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_status") }},
-		// [버킷의 Lock옵션을 활성화] 버킷의 버저닝을 일시중단하려고 할경우 실패
-		{"test_object_lock_suspend_versioning", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_suspend_versioning") }},
-		// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 올바르게 되었는지 확인
-		{"test_object_lock_get_obj_lock", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_get_obj_lock") }},
-		// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 오브젝트 업로드가 정상적으로 이루어지는지 확인
-		{"test_object_lock_put_object", func(t *testing.T) { testLockObject(t, "test_object_lock_put_object") }},
-		// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 오브젝트 복제가 정상적으로 이루어지는지 확인
-		{"test_object_lock_copy_object", testLockCopy},
-		// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 멀티파트 업로드가 정상적으로 이루어지는지 확인
-		{"test_object_lock_multipart", testLockMultipart},
-		// [버킷의 Lock옵션을 활성화] 버킷의 lock설정이 있을때 오브젝트 업로드시 md5 값이 없을 경우 업로드 실패 확인
-		{"test_object_lock_md5", testLockMD5},
-		// 버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정 조회 실패
-		{"test_object_lock_get_obj_lock_invalid_bucket", func(t *testing.T) { testLockConfiguration(t, "test_object_lock_get_obj_lock_invalid_bucket") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정이 가능한지 확인
-		{"test_object_lock_put_obj_retention", func(t *testing.T) { testLockRetention(t, "test_object_lock_put_obj_retention") }},
-		// 버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 설정 실패
-		{"test_object_lock_put_obj_retention_invalid_bucket", func(t *testing.T) { testLockRetention(t, "test_object_lock_put_obj_retention_invalid_bucket") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정할때 Mode값이 올바르지 않을 경우 설정 실패
-		{"test_object_lock_put_obj_retention_invalid_mode", func(t *testing.T) { testLockRetention(t, "test_object_lock_put_obj_retention_invalid_mode") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트에 Lock 유지기한 설정이 올바른지 확인
-		{"test_object_lock_get_obj_retention", func(t *testing.T) { testLockRetention(t, "test_object_lock_get_obj_retention") }},
-		// 버킷을 Lock옵션을 활성화 하지않을 경우 오브젝트에 Lock 유지기한 조회 실패
-		{"test_object_lock_get_obj_retention_invalid_bucket", func(t *testing.T) { testLockRetention(t, "test_object_lock_get_obj_retention_invalid_bucket") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 특정 버전에 Lock 유지기한을 설정할 경우 올바르게 적용되었는지 확인
-		{"test_object_lock_put_obj_retention_versionid", func(t *testing.T) { testLockRetention(t, "test_object_lock_put_obj_retention_versionid") }},
-		// [버킷의 Lock옵션을 활성화] 버킷에 설정한 Lock설정보다 오브젝트에 Lock설정한 값이 우선 적용됨을 확인
-		{"test_object_lock_put_obj_retention_override_default_retention", func(t *testing.T) { testLockRetention(t, "test_object_lock_put_obj_retention_override_default_retention") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한을 늘렸을때 적용되는지 확인
-		{"test_object_lock_put_obj_retention_increase_period", func(t *testing.T) { testLockRetention(t, "test_object_lock_put_obj_retention_increase_period") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한을 줄였을때 실패 확인
-		{"test_object_lock_put_obj_retention_shorten_period", func(t *testing.T) { testLockRetention(t, "test_object_lock_put_obj_retention_shorten_period") }},
-		// [버킷의 Lock옵션을 활성화] 바이패스를 True로 설정하고 오브젝트의 lock 유지기한을 줄였을때 적용되는지 확인
-		{"test_object_lock_put_obj_retention_shorten_period_bypass", func(t *testing.T) { testLockRetention(t, "test_object_lock_put_obj_retention_shorten_period_bypass") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 lock 유지기한내에 삭제를 시도할 경우 실패 확인
-		{"test_object_lock_delete_object_with_retention", func(t *testing.T) { testLockRetention(t, "test_object_lock_delete_object_with_retention") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 Lock 유지기한이 있어도 바이패스를 통해 삭제가 가능한지 확인
-		{"test_object_lock_delete_object_with_retention_bypass", func(t *testing.T) { testLockRetention(t, "test_object_lock_delete_object_with_retention_bypass") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 Lock 유지기한이 있어도 바이패스를 통해 삭제가 가능한지 확인
-		{"test_object_lock_delete_objects_with_retention_bypass", func(t *testing.T) { testLockRetention(t, "test_object_lock_delete_objects_with_retention_bypass") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold를 활성화 가능한지 확인
-		{"test_object_lock_put_legal_hold", func(t *testing.T) { testLockLegalHold(t, "test_object_lock_put_legal_hold") }},
-		// [버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold를 활성화 실패 확인
-		{"test_object_lock_put_legal_hold_invalid_bucket", func(t *testing.T) { testLockLegalHold(t, "test_object_lock_put_legal_hold_invalid_bucket") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold에 잘못된 값을 넣을 경우 실패 확인
-		{"test_object_lock_put_legal_hold_invalid_status", func(t *testing.T) { testLockLegalHold(t, "test_object_lock_put_legal_hold_invalid_status") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 올바르게 적용되었는지 확인
-		{"test_object_lock_get_legal_hold", func(t *testing.T) { testLockLegalHold(t, "test_object_lock_get_legal_hold") }},
-		// [버킷의 Lock옵션을 비활성화] 오브젝트의 LegalHold설정 조회 실패 확인
-		{"test_object_lock_get_legal_hold_invalid_bucket", func(t *testing.T) { testLockLegalHold(t, "test_object_lock_get_legal_hold_invalid_bucket") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 활성화되어 있을 경우 오브젝트 삭제 실패 확인
-		{"test_object_lock_delete_object_with_legal_hold_on", func(t *testing.T) { testLockLegalHold(t, "test_object_lock_delete_object_with_legal_hold_on") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold가 비활성화되어 있을 경우 오브젝트 삭제 확인
-		{"test_object_lock_delete_object_with_legal_hold_off", func(t *testing.T) { testLockLegalHold(t, "test_object_lock_delete_object_with_legal_hold_off") }},
-		// [버킷의 Lock옵션을 활성화] 오브젝트의 LegalHold와 Lock유지기한 설정이 모두 적용되는지 메타데이터를 통해 확인
-		{"test_object_lock_get_obj_metadata", func(t *testing.T) { testLockObject(t, "test_object_lock_get_obj_metadata") }},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testLockConfiguration(t, "test_created_bucket_enable_object_lock")
+}
+func TestObjectLockPutObjLock(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_put_obj_lock")
+}
+func TestObjectLockPutObjLockInvalidBucket(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_bucket")
+}
+func TestObjectLockPutObjLockWithDaysAndYears(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_put_obj_lock_with_days_and_years")
+}
+func TestObjectLockPutObjLockInvalidDays(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_days")
+}
+func TestObjectLockPutObjLockInvalidYears(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_years")
+}
+func TestObjectLockPutObjLockInvalidMode(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_mode")
+}
+func TestObjectLockPutObjLockInvalidStatus(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_put_obj_lock_invalid_status")
+}
+func TestObjectLockSuspendVersioning(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_suspend_versioning")
+}
+func TestObjectLockGetObjLock(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_get_obj_lock")
+}
+func TestObjectLockPutObject(t *testing.T) {
+	t.Parallel()
+
+	testLockObject(t, "test_object_lock_put_object")
+}
+func TestObjectLockCopyObject(t *testing.T) {
+	t.Parallel()
+
+	testLockCopy(t)
+}
+func TestObjectLockMultipart(t *testing.T) {
+	t.Parallel()
+
+	testLockMultipart(t)
+}
+func TestObjectLockMD5(t *testing.T) {
+	t.Parallel()
+
+	testLockMD5(t)
+}
+func TestObjectLockGetObjLockInvalidBucket(t *testing.T) {
+	t.Parallel()
+
+	testLockConfiguration(t, "test_object_lock_get_obj_lock_invalid_bucket")
+}
+func TestObjectLockPutObjRetention(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_put_obj_retention")
+}
+func TestObjectLockPutObjRetentionInvalidBucket(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_put_obj_retention_invalid_bucket")
+}
+func TestObjectLockPutObjRetentionInvalidMode(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_put_obj_retention_invalid_mode")
+}
+func TestObjectLockGetObjRetention(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_get_obj_retention")
+}
+func TestObjectLockGetObjRetentionInvalidBucket(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_get_obj_retention_invalid_bucket")
+}
+func TestObjectLockPutObjRetentionVersionid(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_put_obj_retention_versionid")
+}
+func TestObjectLockPutObjRetentionOverrideDefaultRetention(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_put_obj_retention_override_default_retention")
+}
+func TestObjectLockPutObjRetentionIncreasePeriod(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_put_obj_retention_increase_period")
+}
+func TestObjectLockPutObjRetentionShortenPeriod(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_put_obj_retention_shorten_period")
+}
+func TestObjectLockPutObjRetentionShortenPeriodBypass(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_put_obj_retention_shorten_period_bypass")
+}
+func TestObjectLockDeleteObjectWithRetention(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_delete_object_with_retention")
+}
+func TestObjectLockDeleteObjectWithRetentionBypass(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_delete_object_with_retention_bypass")
+}
+func TestObjectLockDeleteObjectsWithRetentionBypass(t *testing.T) {
+	t.Parallel()
+
+	testLockRetention(t, "test_object_lock_delete_objects_with_retention_bypass")
+}
+func TestObjectLockPutLegalHold(t *testing.T) {
+	t.Parallel()
+
+	testLockLegalHold(t, "test_object_lock_put_legal_hold")
+}
+func TestObjectLockPutLegalHoldInvalidBucket(t *testing.T) {
+	t.Parallel()
+
+	testLockLegalHold(t, "test_object_lock_put_legal_hold_invalid_bucket")
+}
+func TestObjectLockPutLegalHoldInvalidStatus(t *testing.T) {
+	t.Parallel()
+
+	testLockLegalHold(t, "test_object_lock_put_legal_hold_invalid_status")
+}
+func TestObjectLockGetLegalHold(t *testing.T) {
+	t.Parallel()
+
+	testLockLegalHold(t, "test_object_lock_get_legal_hold")
+}
+func TestObjectLockGetLegalHoldInvalidBucket(t *testing.T) {
+	t.Parallel()
+
+	testLockLegalHold(t, "test_object_lock_get_legal_hold_invalid_bucket")
+}
+func TestObjectLockDeleteObjectWithLegalHoldOn(t *testing.T) {
+	t.Parallel()
+
+	testLockLegalHold(t, "test_object_lock_delete_object_with_legal_hold_on")
+}
+func TestObjectLockDeleteObjectWithLegalHoldOff(t *testing.T) {
+	t.Parallel()
+
+	testLockLegalHold(t, "test_object_lock_delete_object_with_legal_hold_off")
+}
+func TestObjectLockGetObjMetadata(t *testing.T) {
+	t.Parallel()
+
+	testLockObject(t, "test_object_lock_get_obj_metadata")
 }
 
 func newLockBucket(t *testing.T, s *suite) string {
@@ -347,7 +444,7 @@ func testLockRetention(t *testing.T, name string) {
 	}
 	early, late := time.Now().UTC().Add(48*time.Hour), time.Now().UTC().Add(96*time.Hour)
 	if name == "test_object_lock_put_obj_retention_override_default_retention" {
-		// Java uses a far-future retain-until without VersionId / BypassGovernance.
+
 		early = time.Date(2030, 2, 1, 0, 0, 0, 0, time.UTC)
 	}
 	if strings.Contains(name, "invalid_bucket") {
@@ -377,7 +474,7 @@ func testLockRetention(t *testing.T, name string) {
 		Bucket: aws.String(b), Key: aws.String(key),
 		VersionId: func() *string {
 			if name == "test_object_lock_put_obj_retention_override_default_retention" {
-				return nil // Java omits VersionId here
+				return nil
 			}
 			return version
 		}(),

@@ -10,40 +10,32 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-func TestDeleteBucket(t *testing.T) {
+func TestBucketDeleteNotExist(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 존재하지 않는 버킷을 삭제하려 했을 경우 실패 확인
-		{"test_bucket_delete_not_exist", func(t *testing.T) {
-			s := newSuite(t)
-			_, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t))})
-			assertS3Error(t, err, 404, "NoSuchBucket")
-		}},
-		// 내용이 비어있지 않은 버킷을 삭제하려 했을 경우 실패 확인
-		{"test_bucket_delete_nonempty", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := s.bucket(t)
-			put(t, s, bucket, "foo", "foo", nil)
-			_, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
-			assertS3Error(t, err, 409, "BucketNotEmpty")
-		}},
-		// 이미 삭제된 버킷을 다시 삭제 시도할 경우 실패 확인
-		{"test_bucket_create_delete", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := s.bucket(t)
-			if _, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String(bucket)}); err != nil {
-				t.Fatalf("first DeleteBucket: %v", err)
-			}
-			_, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
-			assertS3Error(t, err, 404, "NoSuchBucket")
-		}},
+
+	s := newSuite(t)
+	_, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t))})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+func TestBucketDeleteNonempty(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	put(t, s, bucket, "foo", "foo", nil)
+	_, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 409, "BucketNotEmpty")
+}
+func TestBucketCreateDelete(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	if _, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String(bucket)}); err != nil {
+		t.Fatalf("first DeleteBucket: %v", err)
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+	_, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
 }
 
 func assertS3Error(t *testing.T, err error, status int, code string) {

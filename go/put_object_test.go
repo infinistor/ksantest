@@ -18,112 +18,245 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func TestPutObject(t *testing.T) {
+func TestBucketListDistinct(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 오브젝트가 올바르게 생성되는지 확인
-		{"test_bucket_list_distinct", func(t *testing.T) { testPutCore(t, "test_bucket_list_distinct") }},
-		// 존재하지 않는 버킷에 오브젝트 업로드할 경우 실패 확인
-		{"test_object_write_to_non_exist_bucket", func(t *testing.T) { testPutCore(t, "test_object_write_to_non_exist_bucket") }},
-		// 0바이트로 업로드한 오브젝트가 실제로 0바이트인지 확인
-		{"test_object_head_zero_bytes", func(t *testing.T) { testPutCore(t, "test_object_head_zero_bytes") }},
-		// 업로드한 오브젝트의 ETag가 올바른지 확인
-		{"test_object_write_check_etag", func(t *testing.T) { testPutCore(t, "test_object_write_check_etag") }},
-		// 캐시(시간)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
-		{"test_object_write_cache_control", func(t *testing.T) { testPutCore(t, "test_object_write_cache_control") }},
-		// 캐시(날짜)를 설정하고 업로드한 오브젝트가 올바르게 반영되었는지 확인
-		{"test_object_write_expires", func(t *testing.T) { testPutCore(t, "test_object_write_expires") }},
-		// 오브젝트의 기본 작업을 모드 올바르게 할 수 있는지 확인(read, write, update, delete)
-		{"test_object_write_read_update_read_delete", func(t *testing.T) { testPutCore(t, "test_object_write_read_update_read_delete") }},
-		// 오브젝트에 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
-		{"test_object_set_get_metadata_none_to_good", func(t *testing.T) { testPutCore(t, "test_object_set_get_metadata_none_to_good") }},
-		// 오브젝트에 빈 메타데이터를 추가하여 업로드 할 경우 올바르게 적용되었는지 확인
-		{"test_object_set_get_metadata_none_to_empty", func(t *testing.T) { testPutCore(t, "test_object_set_get_metadata_none_to_empty") }},
-		// 메타 데이터 업데이트가 올바르게 적용되었는지 확인
-		{"test_object_set_get_metadata_overwrite_to_empty", func(t *testing.T) { testPutCore(t, "test_object_set_get_metadata_overwrite_to_empty") }},
-		// 메타데이터에 올바르지 않는 문자열[EOF(\x04)를 사용할 경우 실패 확인
-		{"test_object_set_get_non_utf8_metadata", func(t *testing.T) { testPutCore(t, "test_object_set_get_non_utf8_metadata") }},
-		// 메타데이터에 올바르지 않는 문자[EOF(\x04)를 문자열 맨앞에 사용할 경우 실패 확인
-		{"test_object_set_get_metadata_empty_to_unreadable_prefix", func(t *testing.T) { testPutCore(t, "test_object_set_get_metadata_empty_to_unreadable_prefix") }},
-		// 메타데이터에 올바르지 않는 문자[EOF(\x04)를 문자열 맨뒤에 사용할 경우 실패 확인
-		{"test_object_set_get_metadata_empty_to_unreadable_suffix", func(t *testing.T) { testPutCore(t, "test_object_set_get_metadata_empty_to_unreadable_suffix") }},
-		// 오브젝트를 메타데이타 없이 덮어쓰기 했을 때, 메타데이타 값이 비어있는지 확인
-		{"test_object_metadata_replaced_on_put", func(t *testing.T) { testPutCore(t, "test_object_metadata_replaced_on_put") }},
-		// body의 내용을utf-8로 인코딩한 오브젝트를 업로드 했을때 올바르게 업로드 되었는지 확인
-		{"test_object_write_file", func(t *testing.T) { testPutCore(t, "test_object_write_file") }},
-		// 오브젝트 이름과 내용이 모두 특수문자인 오브젝트 여러개를 업로드 할 경우 모두 재대로 업로드 되는지 확인
-		{"test_bucket_create_special_key_names", func(t *testing.T) { testPutSpecialKeys(t, "test_bucket_create_special_key_names") }},
-		// 확인
-		{"test_bucket_list_special_prefix", func(t *testing.T) { testPutSpecialKeys(t, "test_bucket_list_special_prefix") }},
-		// 메타데이터를 통해 확인
-		{"test_object_lock_uploading_obj", func(t *testing.T) { testPutCore(t, "test_object_lock_uploading_obj") }},
-		// 오브젝트의 중간에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
-		{"test_object_infix_space", func(t *testing.T) { testPutSpecialKeys(t, "test_object_infix_space") }},
-		// 오브젝트의 마지막에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
-		{"test_object_suffix_space", func(t *testing.T) { testPutSpecialKeys(t, "test_object_suffix_space") }},
-		// [AWS SDK V2] 특수문자를 포함한 오브젝트 업로드 성공 확인
-		{"test_put_object_special_characters", func(t *testing.T) { testPutSpecialKeys(t, "test_put_object_special_characters") }},
-		// [AWS SDK V2, UseChunkEncoding = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
-		{"test_put_object_special_characters_use_chunk_encoding", func(t *testing.T) { testPutSpecialKeys(t, "test_put_object_special_characters_use_chunk_encoding") }},
-		// [AWS SDK V2, UseChunkEncoding = true, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
-		{"test_put_object_use_special_characters_chunk_encoding_and_disable_payload_signing", func(t *testing.T) { testPutSpecialKeys(t, "test_put_object_use_special_characters_chunk_encoding_and_disable_payload_signing") }},
-		// [AWS SDK V2, UseChunkEncoding = false] 특수문자를 포함한 오브젝트 업로드 성공 확인
-		{"test_put_object_special_characters_not_chunk_encoding", func(t *testing.T) { testPutSpecialKeys(t, "test_put_object_special_characters_not_chunk_encoding") }},
-		// [AWS SDK V2, UseChunkEncoding = false, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
-		{"test_put_object_special_characters_not_chunk_encoding_and_disable_payload_signing", func(t *testing.T) { testPutSpecialKeys(t, "test_put_object_special_characters_not_chunk_encoding_and_disable_payload_signing") }},
-		// 폴더의 이름과 동일한 오브젝트 업로드가 가능한지 확인
-		{"test_put_object_dir_and_file", func(t *testing.T) { testPutCore(t, "test_put_object_dir_and_file") }},
-		// 오브젝트를 여러번 업로드 했을때 올바르게 반영되는지 확인
-		{"test_object_overwrite", func(t *testing.T) { testPutCore(t, "test_object_overwrite") }},
-		// 오브젝트 이름에 이모지가 포함될 경우 올바르게 업로드 되는지 확인
-		{"test_object_emoji", func(t *testing.T) { testPutCore(t, "test_object_emoji") }},
-		// 메타데이터에 utf-8이 포함될 경우 올바르게 업로드 되는지 확인
-		{"test_object_set_get_metadata_utf8", func(t *testing.T) { testPutCore(t, "test_object_set_get_metadata_utf8") }},
-		// useChunkEncoding을 사용하는 오브젝트 업로드 시 체크섬 계산 및 검증 확인
-		{"test_put_object_checksum_use_chunk_encoding", func(t *testing.T) { testPutChecksums(t, "test_put_object_checksum_use_chunk_encoding") }},
-		// useChunkEncoding을 사용하지 않는 오브젝트 업로드 시 체크섬 계산 및 검증 확인
-		{"test_put_object_checksum", func(t *testing.T) { testPutChecksums(t, "test_put_object_checksum") }},
-		// 사전 계산한 체크섬 값을 직접 지정하여 오브젝트 업로드 시 검증 성공 확인
-		{"test_put_object_checksum_with_value", func(t *testing.T) { testPutChecksums(t, "test_put_object_checksum_with_value") }},
-		// 잘못된 체크섬 값을 지정하여 오브젝트 업로드 시 BadDigest 실패 확인
-		{"test_put_object_checksum_failure", func(t *testing.T) { testPutChecksums(t, "test_put_object_checksum_failure") }},
-		// 일치하는 If-Match 조건으로 오브젝트 덮어쓰기 성공 확인
-		{"test_put_object_if_match_good", func(t *testing.T) { testPutConditions(t, "test_put_object_if_match_good") }},
-		// 일치하지 않는 If-Match 조건으로 오브젝트 덮어쓰기 시 412 실패 확인
-		{"test_put_object_if_match_failed", func(t *testing.T) { testPutConditions(t, "test_put_object_if_match_failed") }},
-		// 존재하지 않는 키에 If-None-Match: * 조건으로 업로드 성공 확인
-		{"test_put_object_if_none_match_good", func(t *testing.T) { testPutConditions(t, "test_put_object_if_none_match_good") }},
-		// 이미 존재하는 키에 If-None-Match: * 조건으로 업로드 시 412 실패 확인
-		{"test_put_object_if_none_match_failed", func(t *testing.T) { testPutConditions(t, "test_put_object_if_none_match_failed") }},
-		// If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
-		{"test_put_object_if_match_and_if_none_match", func(t *testing.T) { testPutConditions(t, "test_put_object_if_match_and_if_none_match") }},
-		// 최대 길이(1024자)의 오브젝트 키로 업로드 성공 확인
-		{"test_put_object_key_max_length", func(t *testing.T) { testPutKeyBoundary(t, "test_put_object_key_max_length") }},
-		// 최소 길이(1자)의 오브젝트 키로 업로드 성공 확인
-		{"test_put_object_key_min_length", func(t *testing.T) { testPutKeyBoundary(t, "test_put_object_key_min_length") }},
-		// 최대 길이(1024자)를 초과하는 오브젝트 키로 업로드 실패 확인
-		{"test_put_object_key_too_long", func(t *testing.T) { testPutKeyBoundary(t, "test_put_object_key_too_long") }},
-		// 특수문자로 시작하는 오브젝트 키로 업로드 성공 확인
-		{"test_put_object_key_special_characters_at_start", func(t *testing.T) { testPutSpecialKeys(t, "test_put_object_key_special_characters_at_start") }},
-		// 특수문자로 끝나는 오브젝트 키로 업로드 성공 확인
-		{"test_put_object_key_special_characters_at_end", func(t *testing.T) { testPutSpecialKeys(t, "test_put_object_key_special_characters_at_end") }},
-		// 유니코드 문자를 포함한 오브젝트 키로 업로드 성공 확인
-		{"test_put_object_key_unicode_characters", func(t *testing.T) { testPutKeyBoundary(t, "test_put_object_key_unicode_characters") }},
-		// 1024바이트를 초과하는 키로 업로드 실패 확인
-		{"test_put_object_key_unicode_characters_too_long", func(t *testing.T) { testPutKeyBoundary(t, "test_put_object_key_unicode_characters_too_long") }},
-		// 앞뒤 공백문자를 포함한 오브젝트 키로 업로드 성공 확인
-		{"test_put_object_key_with_leading_and_trailing_spaces", func(t *testing.T) { testPutKeyBoundary(t, "test_put_object_key_with_leading_and_trailing_spaces") }},
-		// 연속된 슬래시를 포함한 오브젝트 키로 업로드 성공 확인
-		{"test_put_object_key_with_consecutive_slashes", func(t *testing.T) { testPutKeyBoundary(t, "test_put_object_key_with_consecutive_slashes") }},
-		// 다양한 경계 길이의 오브젝트 키로 업로드 성공 확인
-		{"test_put_object_key_boundary_lengths", func(t *testing.T) { testPutKeyBoundary(t, "test_put_object_key_boundary_lengths") }},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testPutCore(t, "test_bucket_list_distinct")
+}
+func TestObjectWriteToNonExistBucket(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_write_to_non_exist_bucket")
+}
+func TestObjectHeadZeroBytes(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_head_zero_bytes")
+}
+func TestObjectWriteCheckEtag(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_write_check_etag")
+}
+func TestObjectWriteCacheControl(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_write_cache_control")
+}
+func TestObjectWriteExpires(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_write_expires")
+}
+func TestObjectWriteReadUpdateReadDelete(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_write_read_update_read_delete")
+}
+func TestObjectSetGetMetadataNoneToGood(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_set_get_metadata_none_to_good")
+}
+func TestObjectSetGetMetadataNoneToEmpty(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_set_get_metadata_none_to_empty")
+}
+func TestObjectSetGetMetadataOverwriteToEmpty(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_set_get_metadata_overwrite_to_empty")
+}
+func TestObjectSetGetNonUtf8Metadata(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_set_get_non_utf8_metadata")
+}
+func TestObjectSetGetMetadataEmptyToUnreadablePrefix(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_set_get_metadata_empty_to_unreadable_prefix")
+}
+func TestObjectSetGetMetadataEmptyToUnreadableSuffix(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_set_get_metadata_empty_to_unreadable_suffix")
+}
+func TestObjectMetadataReplacedOnPut(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_metadata_replaced_on_put")
+}
+func TestObjectWriteFile(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_write_file")
+}
+func TestBucketCreateSpecialKeyNames(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_bucket_create_special_key_names")
+}
+func TestBucketListSpecialPrefix(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_bucket_list_special_prefix")
+}
+func TestObjectLockUploadingObj(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_lock_uploading_obj")
+}
+func TestObjectInfixSpace(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_object_infix_space")
+}
+func TestObjectSuffixSpace(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_object_suffix_space")
+}
+func TestPutObjectSpecialCharacters(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_put_object_special_characters")
+}
+func TestPutObjectSpecialCharactersUseChunkEncoding(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_put_object_special_characters_use_chunk_encoding")
+}
+func TestPutObjectUseSpecialCharactersChunkEncodingAndDisablePayloadSigning(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_put_object_use_special_characters_chunk_encoding_and_disable_payload_signing")
+}
+func TestPutObjectSpecialCharactersNotChunkEncoding(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_put_object_special_characters_not_chunk_encoding")
+}
+func TestPutObjectSpecialCharactersNotChunkEncodingAndDisablePayloadSigning(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_put_object_special_characters_not_chunk_encoding_and_disable_payload_signing")
+}
+func TestPutObjectDirAndFile(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_put_object_dir_and_file")
+}
+func TestObjectOverwrite(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_overwrite")
+}
+func TestObjectEmoji(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_emoji")
+}
+func TestObjectSetGetMetadataUtf8(t *testing.T) {
+	t.Parallel()
+
+	testPutCore(t, "test_object_set_get_metadata_utf8")
+}
+func TestPutObjectChecksumUseChunkEncoding(t *testing.T) {
+	t.Parallel()
+
+	testPutChecksums(t, "test_put_object_checksum_use_chunk_encoding")
+}
+func TestPutObjectChecksum(t *testing.T) {
+	t.Parallel()
+
+	testPutChecksums(t, "test_put_object_checksum")
+}
+func TestPutObjectChecksumWithValue(t *testing.T) {
+	t.Parallel()
+
+	testPutChecksums(t, "test_put_object_checksum_with_value")
+}
+func TestPutObjectChecksumFailure(t *testing.T) {
+	t.Parallel()
+
+	testPutChecksums(t, "test_put_object_checksum_failure")
+}
+func TestPutObjectIfMatchGood(t *testing.T) {
+	t.Parallel()
+
+	testPutConditions(t, "test_put_object_if_match_good")
+}
+func TestPutObjectIfMatchFailed(t *testing.T) {
+	t.Parallel()
+
+	testPutConditions(t, "test_put_object_if_match_failed")
+}
+func TestPutObjectIfNoneMatchGood(t *testing.T) {
+	t.Parallel()
+
+	testPutConditions(t, "test_put_object_if_none_match_good")
+}
+func TestPutObjectIfNoneMatchFailed(t *testing.T) {
+	t.Parallel()
+
+	testPutConditions(t, "test_put_object_if_none_match_failed")
+}
+func TestPutObjectIfMatchAndIfNoneMatch(t *testing.T) {
+	t.Parallel()
+
+	testPutConditions(t, "test_put_object_if_match_and_if_none_match")
+}
+func TestPutObjectKeyMaxLength(t *testing.T) {
+	t.Parallel()
+
+	testPutKeyBoundary(t, "test_put_object_key_max_length")
+}
+func TestPutObjectKeyMinLength(t *testing.T) {
+	t.Parallel()
+
+	testPutKeyBoundary(t, "test_put_object_key_min_length")
+}
+func TestPutObjectKeyTooLong(t *testing.T) {
+	t.Parallel()
+
+	testPutKeyBoundary(t, "test_put_object_key_too_long")
+}
+func TestPutObjectKeySpecialCharactersAtStart(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_put_object_key_special_characters_at_start")
+}
+func TestPutObjectKeySpecialCharactersAtEnd(t *testing.T) {
+	t.Parallel()
+
+	testPutSpecialKeys(t, "test_put_object_key_special_characters_at_end")
+}
+func TestPutObjectKeyUnicodeCharacters(t *testing.T) {
+	t.Parallel()
+
+	testPutKeyBoundary(t, "test_put_object_key_unicode_characters")
+}
+func TestPutObjectKeyUnicodeCharactersTooLong(t *testing.T) {
+	t.Parallel()
+
+	testPutKeyBoundary(t, "test_put_object_key_unicode_characters_too_long")
+}
+func TestPutObjectKeyWithLeadingAndTrailingSpaces(t *testing.T) {
+	t.Parallel()
+
+	testPutKeyBoundary(t, "test_put_object_key_with_leading_and_trailing_spaces")
+}
+func TestPutObjectKeyWithConsecutiveSlashes(t *testing.T) {
+	t.Parallel()
+
+	testPutKeyBoundary(t, "test_put_object_key_with_consecutive_slashes")
+}
+func TestPutObjectKeyBoundaryLengths(t *testing.T) {
+	t.Parallel()
+
+	testPutKeyBoundary(t, "test_put_object_key_boundary_lengths")
 }
 
 func testPutCore(t *testing.T, name string) {
@@ -164,7 +297,7 @@ func testPutCore(t *testing.T, name string) {
 			t.Fatalf("cache=%q err=%v", aws.ToString(head.CacheControl), err)
 		}
 	case "test_object_write_expires":
-		// Java skips: Expires is not persisted by the Java SDK client path.
+
 		t.Skip("JAVA에서는 헤더만료일시 설정이 내부전용으로 되어있어 설정되지 않음")
 	case "test_object_write_read_update_read_delete":
 		bucket := s.bucket(t)
@@ -179,7 +312,7 @@ func testPutCore(t *testing.T, name string) {
 		if _, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")}); err != nil {
 			t.Fatal(err)
 		}
-	// [metadata] object set get metadata none to good
+
 	case "test_object_set_get_metadata_none_to_good", "test_object_set_get_metadata_none_to_empty", "test_object_set_get_metadata_overwrite_to_empty", "test_object_set_get_non_utf8_metadata", "test_object_set_get_metadata_empty_to_unreadable_prefix", "test_object_set_get_metadata_empty_to_unreadable_suffix", "test_object_metadata_replaced_on_put", "test_object_set_get_metadata_utf8":
 		testPutMetadata(t, s, name)
 	case "test_object_write_file":
@@ -226,7 +359,7 @@ func testPutMetadata(t *testing.T, s *suite, name string) {
 	ctx := context.Background()
 	bucket, key := s.bucket(t), "foo"
 	switch name {
-	// [metadata] object set get non utf8 metadata
+
 	case "test_object_set_get_non_utf8_metadata", "test_object_set_get_metadata_empty_to_unreadable_prefix", "test_object_set_get_metadata_empty_to_unreadable_suffix":
 		value := "\nmy_meta"
 		if strings.Contains(name, "prefix") {
@@ -473,9 +606,9 @@ func testPutKeyBoundary(t *testing.T, name string) {
 	case "test_put_object_key_min_length":
 		putAndRead("a", "test-min-length")
 	case "test_put_object_key_too_long":
-		// KSAN accepts keys longer than 1024; Java intentional failure.
+
 		t.Skip("KSAN accepts keys longer than 1024; Java intentional failure")
-	// [KeyLength] put object key special characters at start
+
 	case "test_put_object_key_special_characters_at_start", "test_put_object_key_special_characters_at_end":
 		for _, special := range []string{"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{", "}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`"} {
 			key := special + alpha(1024-len([]byte(special)))
@@ -490,7 +623,7 @@ func testPutKeyBoundary(t *testing.T, name string) {
 			putAndRead(strings.Repeat(char, count), "unicode-"+char)
 		}
 	case "test_put_object_key_unicode_characters_too_long":
-		// KSAN accepts oversize unicode keys; Java intentional failure.
+
 		t.Skip("KSAN accepts oversize unicode keys; Java intentional failure")
 	case "test_put_object_key_with_leading_and_trailing_spaces":
 		for _, n := range []int{1, 2, 3, 5} {

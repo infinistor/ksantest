@@ -37,56 +37,105 @@ const (
 	sseCOtherMD5  = "arxBvwY2V4SiOne6yppVPQ=="
 )
 
-func TestSSEC(t *testing.T) {
+func TestEncryptedTransfer1b(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 1Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
-		{"test_encrypted_transfer_1b", func(t *testing.T) { testSSECWrite(t, 1) }},
-		// 1KB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
-		{"test_encrypted_transfer_1kb", func(t *testing.T) { testSSECWrite(t, 1024) }},
-		// 1MB 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
-		{"test_encrypted_transfer_1mb", func(t *testing.T) { testSSECWrite(t, 1024*1024) }},
-		// 13Byte 오브젝트를 SSE-C 설정하여 업/다운로드가 올바르게 동작하는지 확인
-		{"test_encrypted_transfer_13b", func(t *testing.T) { testSSECWrite(t, 13) }},
-		// SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정하여 헤더정보읽기가 가능한지 확인
-		{"test_encryption_sse_c_method_head", testSSECHead},
-		// SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인
-		{"test_encryption_sse_c_present", testSSECMissingOnGet},
-		// SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
-		{"test_encryption_sse_c_other_key", testSSECOtherKey},
-		// SSE-C 설정값중 key-md5값이 올바르지 않을 경우 업로드 실패 확인
-		{"test_encryption_sse_c_invalid_md5", testSSECInvalidMD5},
-		// SSE-C 설정값중 key-md5값을 누락했을 경우 업로드 확인
-		{"test_encryption_sse_c_no_md5", testSSECNoMD5},
-		// SSE-C 설정값중 key값을 누락했을 경우 업로드 실패 확인
-		{"test_encryption_sse_c_no_key", testSSECNoKey},
-		// SSE-C 설정값중 algorithm값을 누락했을 경우 업로드 실패 확인
-		{"test_encryption_key_no_sse_c", testSSECNoAlgorithm},
-		// 멀티파트업로드를 SSE-C 설정하여 업로드 가능 확인
-		{"test_encryption_sse_c_multipart_upload", testSSECMultipart},
-		// SSE-C 설정하여 멀티파트 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
-		{"test_encryption_sse_c_multipart_bad_download", testSSECMultipartBadDownload},
-		// Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인
-		{"test_encryption_sse_c_post_object_authenticated_request", testSSECPost},
-		// SSE-C설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
-		{"test_encryption_sse_c_get_object_many", testSSECGetMany},
-		// SSE-C설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
-		{"test_encryption_sse_c_range_object_many", testSSECRangeMany},
-		// SSE-C 설정하여 멀티파트로 업로드한 오브젝트를 multi copy 로 복사 가능한지 확인
-		{"test_sse_c_encryption_multipart_copy_part_upload", testSSECMultipartCopy},
-		// 멀티파트 오브젝트를 여러 번 복사하여 정상적으로 동작하는지 확인
-		{"test_sse_c_encryption_multipart_copy_many", testSSECMultipartCopyMany},
-		// SSE-C로 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
-		{"test_encryption_sse_c_multipart_upload_overwrite_existing_object", testSSECMultipartUploadOverwriteExistingObject},
-		// SSE-C 멀티파트 업로드한 오브젝트를 PutObject로 덮어쓰기 성공 확인
-		{"test_encryption_sse_c_put_object_overwrite_multipart_upload", testSSECPutObjectOverwriteMultipartUpload},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testSSECWrite(t, 1)
+}
+func TestEncryptedTransfer1kb(t *testing.T) {
+	t.Parallel()
+
+	testSSECWrite(t, 1024)
+}
+func TestEncryptedTransfer1MB(t *testing.T) {
+	t.Parallel()
+
+	testSSECWrite(t, 1024*1024)
+}
+func TestEncryptedTransfer13b(t *testing.T) {
+	t.Parallel()
+
+	testSSECWrite(t, 13)
+}
+func TestEncryptionSseCMethodHead(t *testing.T) {
+	t.Parallel()
+
+	testSSECHead(t)
+}
+func TestEncryptionSseCPresent(t *testing.T) {
+	t.Parallel()
+
+	testSSECMissingOnGet(t)
+}
+func TestEncryptionSseCOtherKey(t *testing.T) {
+	t.Parallel()
+
+	testSSECOtherKey(t)
+}
+func TestEncryptionSseCInvalidMd5(t *testing.T) {
+	t.Parallel()
+
+	testSSECInvalidMD5(t)
+}
+func TestEncryptionSseCNoMd5(t *testing.T) {
+	t.Parallel()
+
+	testSSECNoMD5(t)
+}
+func TestEncryptionSseCNoKey(t *testing.T) {
+	t.Parallel()
+
+	testSSECNoKey(t)
+}
+func TestEncryptionKeyNoSseC(t *testing.T) {
+	t.Parallel()
+
+	testSSECNoAlgorithm(t)
+}
+func TestEncryptionSseCMultipartUpload(t *testing.T) {
+	t.Parallel()
+
+	testSSECMultipart(t)
+}
+func TestEncryptionSseCMultipartBadDownload(t *testing.T) {
+	t.Parallel()
+
+	testSSECMultipartBadDownload(t)
+}
+func TestEncryptionSseCPostObjectAuthenticatedRequest(t *testing.T) {
+	t.Parallel()
+
+	testSSECPost(t)
+}
+func TestEncryptionSseCGetObjectMany(t *testing.T) {
+	t.Parallel()
+
+	testSSECGetMany(t)
+}
+func TestEncryptionSseCRangeObjectMany(t *testing.T) {
+	t.Parallel()
+
+	testSSECRangeMany(t)
+}
+func TestSseCEncryptionMultipartCopyPartUpload(t *testing.T) {
+	t.Parallel()
+
+	testSSECMultipartCopy(t)
+}
+func TestSseCEncryptionMultipartCopyMany(t *testing.T) {
+	t.Parallel()
+
+	testSSECMultipartCopyMany(t)
+}
+func TestEncryptionSseCMultipartUploadOverwriteExistingObject(t *testing.T) {
+	t.Parallel()
+
+	testSSECMultipartUploadOverwriteExistingObject(t)
+}
+func TestEncryptionSseCPutObjectOverwriteMultipartUpload(t *testing.T) {
+	t.Parallel()
+
+	testSSECPutObjectOverwriteMultipartUpload(t)
 }
 
 // ssecBucket creates a bucket with SSE-C unblocked (AWS BlockedEncryptionTypes=NONE).

@@ -17,38 +17,60 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func TestCSE(t *testing.T) {
+func TestCseEncryptedTransfer1b(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// [AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 때 일치하는지 확인
-		{"test_cse_encrypted_transfer_1b", func(t *testing.T) { testCSEWrite(t, "testCseEncryptedTransfer1b", 1) }},
-		// [AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 때 일치하는지 확인
-		{"test_cse_encrypted_transfer_1kb", func(t *testing.T) { testCSEWrite(t, "testCseEncryptedTransfer1kb", 1024) }},
-		// [AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 때 일치하는지 확인
-		{"test_cse_encrypted_transfer_1mb", func(t *testing.T) { testCSEWrite(t, "testCseEncryptedTransfer1MB", 1024*1024) }},
-		// [AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 때 일치하는지 확인
-		{"test_cse_encrypted_transfer_13b", func(t *testing.T) { testCSEWrite(t, "testCseEncryptedTransfer13b", 13) }},
-		// [AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인
-		{"test_cse_encryption_method_head", testCSEHead},
-		// [AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치
-		{"test_cse_encryption_non_decryption", testCSEEncryptedRawRead},
-		// [AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인
-		{"test_cse_non_encryption_decryption", testCSEPlaintextDecryptError},
-		// [AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공
-		{"test_cse_encryption_range_read", testCSERangeRead},
-		// [AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인
-		{"test_cse_encryption_multipart_upload", testCSEMultipart},
-		// CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
-		{"test_cse_get_object_many", testCSEGetMany},
-		// CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
-		{"test_cse_range_object_many", testCSERangeMany},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testCSEWrite(t, "testCseEncryptedTransfer1b", 1)
+}
+func TestCseEncryptedTransfer1kb(t *testing.T) {
+	t.Parallel()
+
+	testCSEWrite(t, "testCseEncryptedTransfer1kb", 1024)
+}
+func TestCseEncryptedTransfer1MB(t *testing.T) {
+	t.Parallel()
+
+	testCSEWrite(t, "testCseEncryptedTransfer1MB", 1024*1024)
+}
+func TestCseEncryptedTransfer13b(t *testing.T) {
+	t.Parallel()
+
+	testCSEWrite(t, "testCseEncryptedTransfer13b", 13)
+}
+func TestCseEncryptionMethodHead(t *testing.T) {
+	t.Parallel()
+
+	testCSEHead(t)
+}
+func TestCseEncryptionNonDecryption(t *testing.T) {
+	t.Parallel()
+
+	testCSEEncryptedRawRead(t)
+}
+func TestCseNonEncryptionDecryption(t *testing.T) {
+	t.Parallel()
+
+	testCSEPlaintextDecryptError(t)
+}
+func TestCseEncryptionRangeRead(t *testing.T) {
+	t.Parallel()
+
+	testCSERangeRead(t)
+}
+func TestCseEncryptionMultipartUpload(t *testing.T) {
+	t.Parallel()
+
+	testCSEMultipart(t)
+}
+func TestCseGetObjectMany(t *testing.T) {
+	t.Parallel()
+
+	testCSEGetMany(t)
+}
+func TestCseRangeObjectMany(t *testing.T) {
+	t.Parallel()
+
+	testCSERangeMany(t)
 }
 
 func testCSEWrite(t *testing.T, objectKey string, size int) {

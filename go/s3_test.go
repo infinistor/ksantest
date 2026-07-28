@@ -37,8 +37,8 @@ func newSuite(t *testing.T) *suite {
 	t.Helper()
 	path := os.Getenv("S3TESTS_INI")
 	if path == "" {
-		// path = "awstests.ini"
-		path = "11.151.ini"
+		path = "awstests.ini"
+		// path = "11.151.ini"
 		// path = "config.ini"
 	}
 	if !filepath.IsAbs(path) {
@@ -743,7 +743,7 @@ func TestSmokeDeleteObjects(t *testing.T) {
 		t.Fatalf("objects remain: %v", out.Contents)
 	}
 }
-func TestMultipartUpload(t *testing.T) {
+func TestSmokeMultipartUpload(t *testing.T) {
 	s := newSuite(t)
 	b := s.bucket(t)
 	key := "multipart"

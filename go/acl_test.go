@@ -21,216 +21,235 @@ type aclMatrixCase struct {
 	privAfter  bool // PutBucketAcl PRIVATE after alt upload (Java uploadAltUser)
 }
 
-func TestACL(t *testing.T) {
+func TestPrivateBucketAndObject(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// [Bucket = private, Object = private] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_private_bucket_and_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLPrivate, false, false, false})
-		}},
-		// [Bucket = private, Object = public-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_private_bucket_public_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLPublicRead, false, false, false})
-		}},
-		// [Bucket = private, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_private_bucket_public_rw_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLPublicReadWrite, false, false, false})
-		}},
-		// [Bucket = private, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_private_bucket_authenticated_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLAuthenticatedRead, false, false, false})
-		}},
-		// [Bucket = private, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_private_bucket_bucket_owner_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLBucketOwnerRead, false, false, false})
-		}},
-		// [Bucket = private, Object = bucket-owner-read] Alt 사용자가 업로드한 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_private_bucket_bucket_owner_read_object_upload_alt_user", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerRead, true, false, true})
-		}},
-		// [Bucket = private, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_private_bucket_bucket_owner_full_control_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
-		}},
-		// [Bucket = public-read, Object = private] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_read_bucket_private_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLPrivate, false, false, false})
-		}},
-		// [Bucket = public-read, Object = public-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_read_bucket_and_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLPublicRead, false, false, false})
-		}},
-		// [Bucket = public-read, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_read_bucket_public_rw_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLPublicReadWrite, false, false, false})
-		}},
-		// [Bucket = public-read, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_read_bucket_authenticated_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLAuthenticatedRead, false, false, false})
-		}},
-		// [Bucket = public-read, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_read_bucket_bucket_owner_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLBucketOwnerRead, false, false, false})
-		}},
-		// [Bucket = public-read, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_read_bucket_bucket_owner_full_control_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
-		}},
-		// [Bucket = public-read-write, Object = private] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_private_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPrivate, false, false, false})
-		}},
-		// [Bucket = public-read-write, Object = private, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_private_object_by_alt_user", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPrivate, true, false, false})
-		}},
-		// [Bucket = public-read-write, Object = public-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_public_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicRead, false, false, false})
-		}},
-		// [Bucket = public-read-write, Object = public-read, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_public_read_object_by_alt_user", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicRead, true, false, false})
-		}},
-		// [Bucket = public-read-write, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_public_rw_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicReadWrite, false, false, false})
-		}},
-		// [Bucket = public-read-write, Object = public-read-write, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_public_rw_object_by_alt_user", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicReadWrite, true, false, false})
-		}},
-		// [Bucket = public-read-write, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_authenticated_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLAuthenticatedRead, false, false, false})
-		}},
-		// [Bucket = public-read-write, Object = authenticated-read, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_authenticated_read_object_by_alt_user", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLAuthenticatedRead, true, false, false})
-		}},
-		// [Bucket = public-read-write, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_bucket_owner_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerRead, false, false, false})
-		}},
-		// [Bucket = public-read-write, Object = bucket-owner-read, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_bucket_owner_read_object_by_alt_user", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerRead, true, false, false})
-		}},
-		// [Bucket = public-read-write, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_bucket_owner_full_control_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
-		}},
-		// [Bucket = public-read-write, Object = bucket-owner-full-control, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_bucket_owner_full_control_object_by_alt_user", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerFullControl, true, false, false})
-		}},
-		// [Bucket = public-read-write, BucketOwnerPreferred, Object = bucket-owner-full-control, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_bucket_owner_full_control_object_by_alt_user_bucket_owner_preferred", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerFullControl, true, true, false})
-		}},
-		// [Bucket = authenticated-read, Object = private] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_authenticated_read_bucket_private_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLPrivate, false, false, false})
-		}},
-		// [Bucket = authenticated-read, Object = public-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_authenticated_read_bucket_public_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLPublicRead, false, false, false})
-		}},
-		// [Bucket = authenticated-read, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_authenticated_read_bucket_public_rw_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLPublicReadWrite, false, false, false})
-		}},
-		// [Bucket = authenticated-read, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_authenticated_read_bucket_and_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLAuthenticatedRead, false, false, false})
-		}},
-		// [Bucket = authenticated-read, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_authenticated_read_bucket_bucket_owner_read_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLBucketOwnerRead, false, false, false})
-		}},
-		// [Bucket = authenticated-read, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_authenticated_read_bucket_bucket_owner_full_control_object", func(t *testing.T) {
-			runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
-		}},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
-	listCases := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// [Bucket = private] 오브젝트 목록 조회가 가능한지 확인하는 테스트
-		{"test_private_bucket_list", func(t *testing.T) { runACLList(t, types.BucketCannedACLPrivate, false, false) }},
-		// [Bucket = public-read] 오브젝트 목록 조회가 가능한지 확인하는 테스트
-		{"test_public_read_bucket_list", func(t *testing.T) { runACLList(t, types.BucketCannedACLPublicRead, true, true) }},
-		// [Bucket = public-read-write] 오브젝트 목록 조회가 가능한지 확인하는 테스트
-		{"test_public_rw_bucket_list", func(t *testing.T) { runACLList(t, types.BucketCannedACLPublicReadWrite, true, true) }},
-		// [Bucket = authenticated-read] 오브젝트 목록 조회가 가능한지 확인하는 테스트
-		{"test_authenticated_read_bucket_list", func(t *testing.T) { runACLList(t, types.BucketCannedACLAuthenticatedRead, true, false) }},
-	}
-	for _, tc := range listCases {
-		t.Run(tc.name, tc.run)
-	}
-	bucketPermissions := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// [Bucket = FullControl] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
-		{"test_bucket_permission_alt_user_full_control", func(t *testing.T) {
-			runBucketPermission(t, types.PermissionFullControl, true, true, true, true)
-		}},
-		// [Bucket = Read] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
-		{"test_bucket_permission_alt_user_read", func(t *testing.T) {
-			runBucketPermission(t, types.PermissionRead, true, false, false, false)
-		}},
-		// [Bucket = ReadAcp] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
-		{"test_bucket_permission_alt_user_read_acp", func(t *testing.T) {
-			runBucketPermission(t, types.PermissionReadAcp, false, true, false, false)
-		}},
-		// [Bucket = Write] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
-		{"test_bucket_permission_alt_user_write", func(t *testing.T) {
-			runBucketPermission(t, types.PermissionWrite, false, false, true, false)
-		}},
-		// [Bucket = WriteAcp] 설정한 acl정보대로 서브유저가 해당 버킷에 접근 가능한지 확인하는 테스트
-		{"test_bucket_permission_alt_user_write_acp", func(t *testing.T) {
-			runBucketPermission(t, types.PermissionWriteAcp, false, false, false, true)
-		}},
-	}
-	for _, tc := range bucketPermissions {
-		t.Run(tc.name, tc.run)
-	}
-	objectPermissions := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// [Object = FullControl] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_object_permission_alt_user_full_control", func(t *testing.T) {
-			runObjectPermission(t, types.PermissionFullControl, true, true, true)
-		}},
-		// [Object = Read] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_object_permission_alt_user_read", func(t *testing.T) {
-			runObjectPermission(t, types.PermissionRead, true, false, false)
-		}},
-		// [Object = ReadAcp] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_object_permission_alt_user_read_acp", func(t *testing.T) {
-			runObjectPermission(t, types.PermissionReadAcp, false, true, false)
-		}},
-		// [Object = Write] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_object_permission_alt_user_write", func(t *testing.T) {
-			runObjectPermission(t, types.PermissionWrite, false, false, false)
-		}},
-		// [Object = WriteAcp] 설정한 acl정보대로 서브유저가 해당 오브젝트에 접근 가능한지 확인하는 테스트
-		{"test_object_permission_alt_user_write_acp", func(t *testing.T) {
-			runObjectPermission(t, types.PermissionWriteAcp, false, false, true)
-		}},
-	}
-	for _, tc := range objectPermissions {
-		t.Run(tc.name, tc.run)
-	}
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLPrivate, false, false, false})
+}
+func TestPrivateBucketPublicReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLPublicRead, false, false, false})
+}
+func TestPrivateBucketPublicRWObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLPublicReadWrite, false, false, false})
+}
+func TestPrivateBucketAuthenticatedReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLAuthenticatedRead, false, false, false})
+}
+func TestPrivateBucketBucketOwnerReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLBucketOwnerRead, false, false, false})
+}
+func TestPrivateBucketBucketOwnerReadObjectUploadAltUser(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerRead, true, false, true})
+}
+func TestPrivateBucketBucketOwnerFullControlObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPrivate, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
+}
+func TestPublicReadBucketPrivateObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLPrivate, false, false, false})
+}
+func TestPublicReadBucketAndObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLPublicRead, false, false, false})
+}
+func TestPublicReadBucketPublicRWObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLPublicReadWrite, false, false, false})
+}
+func TestPublicReadBucketAuthenticatedReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLAuthenticatedRead, false, false, false})
+}
+func TestPublicReadBucketBucketOwnerReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLBucketOwnerRead, false, false, false})
+}
+func TestPublicReadBucketBucketOwnerFullControlObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicRead, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
+}
+func TestPublicRWBucketPrivateObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPrivate, false, false, false})
+}
+func TestPublicRWBucketPrivateObjectByAltUser(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPrivate, true, false, false})
+}
+func TestPublicRWBucketPublicReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicRead, false, false, false})
+}
+func TestPublicRWBucketPublicReadObjectByAltUser(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicRead, true, false, false})
+}
+func TestPublicRWBucketPublicRWObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicReadWrite, false, false, false})
+}
+func TestPublicRWBucketPublicRWObjectByAltUser(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLPublicReadWrite, true, false, false})
+}
+func TestPublicRWBucketAuthenticatedReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLAuthenticatedRead, false, false, false})
+}
+func TestPublicRWBucketAuthenticatedReadObjectByAltUser(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLAuthenticatedRead, true, false, false})
+}
+func TestPublicRWBucketBucketOwnerReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerRead, false, false, false})
+}
+func TestPublicRWBucketBucketOwnerReadObjectByAltUser(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerRead, true, false, false})
+}
+func TestPublicRWBucketBucketOwnerFullControlObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
+}
+func TestPublicRWBucketBucketOwnerFullControlObjectByAltUser(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerFullControl, true, false, false})
+}
+func TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferred(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLPublicReadWrite, types.ObjectCannedACLBucketOwnerFullControl, true, true, false})
+}
+func TestAuthenticatedReadBucketPrivateObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLPrivate, false, false, false})
+}
+func TestAuthenticatedReadBucketPublicReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLPublicRead, false, false, false})
+}
+func TestAuthenticatedReadBucketPublicRWObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLPublicReadWrite, false, false, false})
+}
+func TestAuthenticatedReadBucketAndObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLAuthenticatedRead, false, false, false})
+}
+func TestAuthenticatedReadBucketBucketOwnerReadObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLBucketOwnerRead, false, false, false})
+}
+func TestAuthenticatedReadBucketBucketOwnerFullControlObject(t *testing.T) {
+	t.Parallel()
+
+	runACLMatrix(t, aclMatrixCase{types.BucketCannedACLAuthenticatedRead, types.ObjectCannedACLBucketOwnerFullControl, false, false, false})
+}
+func TestPrivateBucketList(t *testing.T) {
+	t.Parallel()
+
+	runACLList(t, types.BucketCannedACLPrivate, false, false)
+}
+func TestPublicReadBucketList(t *testing.T) {
+	t.Parallel()
+
+	runACLList(t, types.BucketCannedACLPublicRead, true, true)
+}
+func TestPublicRWBucketList(t *testing.T) {
+	t.Parallel()
+
+	runACLList(t, types.BucketCannedACLPublicReadWrite, true, true)
+}
+func TestAuthenticatedReadBucketList(t *testing.T) {
+	t.Parallel()
+
+	runACLList(t, types.BucketCannedACLAuthenticatedRead, true, false)
+}
+func TestBucketPermissionAltUserFullControl(t *testing.T) {
+	t.Parallel()
+
+	runBucketPermission(t, types.PermissionFullControl, true, true, true, true)
+}
+func TestBucketPermissionAltUserRead(t *testing.T) {
+	t.Parallel()
+
+	runBucketPermission(t, types.PermissionRead, true, false, false, false)
+}
+func TestBucketPermissionAltUserReadAcp(t *testing.T) {
+	t.Parallel()
+
+	runBucketPermission(t, types.PermissionReadAcp, false, true, false, false)
+}
+func TestBucketPermissionAltUserWrite(t *testing.T) {
+	t.Parallel()
+
+	runBucketPermission(t, types.PermissionWrite, false, false, true, false)
+}
+func TestBucketPermissionAltUserWriteAcp(t *testing.T) {
+	t.Parallel()
+
+	runBucketPermission(t, types.PermissionWriteAcp, false, false, false, true)
+}
+func TestObjectPermissionAltUserFullControl(t *testing.T) {
+	t.Parallel()
+
+	runObjectPermission(t, types.PermissionFullControl, true, true, true)
+}
+func TestObjectPermissionAltUserRead(t *testing.T) {
+	t.Parallel()
+
+	runObjectPermission(t, types.PermissionRead, true, false, false)
+}
+func TestObjectPermissionAltUserReadAcp(t *testing.T) {
+	t.Parallel()
+
+	runObjectPermission(t, types.PermissionReadAcp, false, true, false)
+}
+func TestObjectPermissionAltUserWrite(t *testing.T) {
+	t.Parallel()
+
+	runObjectPermission(t, types.PermissionWrite, false, false, false)
+}
+func TestObjectPermissionAltUserWriteAcp(t *testing.T) {
+	t.Parallel()
+
+	runObjectPermission(t, types.PermissionWriteAcp, false, false, true)
 }
 
 // aclExpectations mirrors Java ACL.java Access cases (non-uploadAltUser special path).
@@ -239,10 +258,10 @@ func aclExpectations(tc aclMatrixCase) (mainGet, altGet, pubGet, mainPut, altPut
 	objectAuth := objectPublic || tc.objectACL == types.ObjectCannedACLAuthenticatedRead
 	switch {
 	case tc.ownerFirst:
-		// preferred + alt upload bucket-owner-full-control: bucket owner owns objects
+
 		return true, false, false, true, false, false, true, true
 	case tc.altUpload:
-		// ByAltUser: main Get fails only for private; main+alt Put succeed; public Put fails; public may create
+
 		mainGet = tc.objectACL != types.ObjectCannedACLPrivate
 		altGet = true
 		pubGet = objectPublic
@@ -291,7 +310,7 @@ func runACLMatrix(t *testing.T, tc aclMatrixCase) {
 		if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPrivate}); err != nil {
 			t.Fatalf("PutBucketAcl private: %v", err)
 		}
-		// Java testPrivateBucketBucketOwnerReadObjectUploadAltUser: crossed client/key checks
+
 		assertACLRead(t, alt, bucket, keys[0], true)
 		assertACLRead(t, s.client, bucket, keys[1], true)
 		assertACLRead(t, public, bucket, keys[2], false)
@@ -340,7 +359,7 @@ func assertACLOverwrite(t *testing.T, client *s3.Client, bucket, key string, all
 	t.Helper()
 	body := []byte(key)
 	if !allowed {
-		body = nil // Java failedPutObject uses empty body
+		body = nil
 	}
 	_, err := client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(body)})
 	if !allowed {
@@ -429,7 +448,7 @@ func checkBucketPermission(t *testing.T, client *s3.Client, bucket string, readO
 	if writeOK {
 		_, _ = client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	}
-	// Java: allow → PUBLIC_READ_WRITE, deny → PUBLIC_READ
+
 	writeACPACL := types.BucketCannedACLPublicRead
 	if writeACPOK {
 		writeACPACL = types.BucketCannedACLPublicReadWrite

@@ -28,142 +28,185 @@ type postResult struct {
 	url    string
 }
 
-func TestPost(t *testing.T) {
+func TestPostObjectAnonymousRequest(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// post 방식으로 권한없는 사용자가 파일 업로드할 경우 성공 확인
-		{"test_post_object_anonymous_request", testPostAnonymous},
-		// post 방식으로 로그인 정보를 포함한 파일 업로드할 경우 성공 확인
-		{"test_post_object_authenticated_request", testPostAuthenticated},
-		// [성공시 반환상태값을 201로 설정] post 방식으로 권한없는 사용자가 파일 업로드시 에러체크가 올바른지 확인
-		{"test_post_object_set_success_code", func(t *testing.T) { testPostAnonymousStatus(t, "201", 201) }},
-		// [성공시 반환상태값을 에러코드인 404로 설정] post 방식으로 권한없는 사용자가 파일 업로드시 에러체크가 올바른지 확인
-		{"test_post_object_set_invalid_success_code", func(t *testing.T) { testPostAnonymousStatus(t, "404", 204) }},
-		// content-type 헤더 정보 없이 post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-		{"test_post_object_authenticated_no_content_type", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_authenticated_no_content_type", 204)
-		}},
-		// [PostKey 값이 틀린 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_authenticated_request_bad_access_key", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_authenticated_request_bad_access_key", 403)
-		}},
-		// post 방식으로 로그인정보를 포함한 대용량 파일 업로드시 올바르게 업로드 되는지 확인
-		{"test_post_object_upload_larger_than_chunk", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_upload_larger_than_chunk", 204)
-		}},
-		// [오브젝트 이름을 로그인정보에 포함되어 있는 key값으로 대체할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-		{"test_post_object_set_key_from_filename", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_set_key_from_filename", 204)
-		}},
-		// post 방식으로 로그인, 헤더 정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-		{"test_post_object_ignored_header", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_ignored_header", 204)
-		}},
-		// [헤더정보에 대소문자를 섞어서 사용할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-		{"test_post_object_case_insensitive_condition_fields", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_case_insensitive_condition_fields", 204)
-		}},
-		// [오브젝트 이름에 '\'를 사용할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-		{"test_post_object_escaped_field_values", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_escaped_field_values", 204)
-		}},
-		// [redirect url설정하여 체크] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-		{"test_post_object_success_redirect_action", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_success_redirect_action", 200)
-		}},
-		// [SecretKey Hash 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_invalid_signature", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_invalid_signature", 403)
-		}},
-		// [PostKey 값이 틀린경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_invalid_access_key", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_invalid_access_key", 403)
-		}},
-		// [로그인 정보의 날짜포맷이 다를경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_invalid_date_format", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_invalid_date_format", 400)
-		}},
-		// [오브젝트 이름을 입력하지 않을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_no_key_specified", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_no_key_specified", 400)
-		}},
-		// [signature 정보를 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_missing_signature", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_missing_signature", 400)
-		}},
-		// [policy에 버킷 이름을 누락하고 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_missing_policy_condition", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_missing_policy_condition", 403)
-		}},
-		// [사용자가 추가 메타데이터를 입력한 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 올바르게 업로드 되는지 확인
-		{"test_post_object_user_specified_header", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_user_specified_header", 204)
-		}},
-		// [사용자가 추가 메타데이터를 policy에 설정하였으나 오브젝트에 해당 정보가 누락된 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_request_missing_policy_specified_field", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_request_missing_policy_specified_field", 403)
-		}},
-		// [policy의 condition을 대문자(CONDITIONS)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_condition_is_case_sensitive", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_condition_is_case_sensitive", 400)
-		}},
-		// [policy의 expiration을 대문자(EXPIRATION)로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_expires_is_case_sensitive", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_expires_is_case_sensitive", 400)
-		}},
-		// [policy의 expiration을 만료된 값으로 입력할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_expired_policy", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_expired_policy", 403)
-		}},
-		// [사용자가 추가 메타데이터를 policy에 설정하였으나 설정정보가 올바르지 않을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_invalid_request_field_value", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_invalid_request_field_value", 403)
-		}},
-		// [policy의 expiration값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_missing_expires_condition", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_missing_expires_condition", 400)
-		}},
-		// [policy의 conditions값을 누락했을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_missing_conditions_list", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_missing_conditions_list", 400)
-		}},
-		// [policy에 설정한 용량보다 큰 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_upload_size_limit_exceeded", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_upload_size_limit_exceeded", 400)
-		}},
-		// [policy에 용량정보 설정을 누락할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_missing_content_length_argument", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_missing_content_length_argument", 400)
-		}},
-		// [policy에 용량정보 설정값이 틀렸을 경우(용량값을 음수로 입력) post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_invalid_content_length_argument", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_invalid_content_length_argument", 400)
-		}},
-		// [policy에 설정한 용량보다 작은 오브젝트를 업로드 할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_upload_size_below_minimum", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_upload_size_below_minimum", 400)
-		}},
-		// [policy의 conditions값이 비어있을 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_empty_conditions", func(t *testing.T) {
-			testPostCompatibilityCase(t, "test_post_object_empty_conditions", 400)
-		}},
-		// PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-		{"test_presigned_url_put_get", testPostPresigned},
-		// SignatureVersion4로 오브젝트 업로드 성공 확인
-		{"test_put_object_v4", func(t *testing.T) { testPostSDKPut(t, false) }},
-		// [SignatureVersion4] post 방식으로 내용을 암호화 하여 오브젝트 업로드 성공 확인
-		{"test_put_object_chunked_v4", func(t *testing.T) { testPostSDKPut(t, true) }},
-		// [SignatureVersion4] post 방식으로 오브젝트 다운로드 성공 확인
-		{"test_get_object_v4", testPostSDKGet},
-		// [policy에 설정된 버킷과 다른 버킷으로 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인
-		{"test_post_object_wrong_bucket", testPostWrongBucket},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testPostAnonymous(t)
+}
+func TestPostObjectAuthenticatedRequest(t *testing.T) {
+	t.Parallel()
+
+	testPostAuthenticated(t)
+}
+func TestPostObjectSetSuccessCode(t *testing.T) {
+	t.Parallel()
+
+	testPostAnonymousStatus(t, "201", 201)
+}
+func TestPostObjectSetInvalidSuccessCode(t *testing.T) {
+	t.Parallel()
+
+	testPostAnonymousStatus(t, "404", 204)
+}
+func TestPostObjectAuthenticatedNoContentType(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_authenticated_no_content_type", 204)
+}
+func TestPostObjectAuthenticatedRequestBadAccessKey(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_authenticated_request_bad_access_key", 403)
+}
+func TestPostObjectUploadLargerThanChunk(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_upload_larger_than_chunk", 204)
+}
+func TestPostObjectSetKeyFromFilename(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_set_key_from_filename", 204)
+}
+func TestPostObjectIgnoredHeader(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_ignored_header", 204)
+}
+func TestPostObjectCaseInsensitiveConditionFields(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_case_insensitive_condition_fields", 204)
+}
+func TestPostObjectEscapedFieldValues(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_escaped_field_values", 204)
+}
+func TestPostObjectSuccessRedirectAction(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_success_redirect_action", 200)
+}
+func TestPostObjectInvalidSignature(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_invalid_signature", 403)
+}
+func TestPostObjectInvalidAccessKey(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_invalid_access_key", 403)
+}
+func TestPostObjectInvalidDateFormat(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_invalid_date_format", 400)
+}
+func TestPostObjectNoKeySpecified(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_no_key_specified", 400)
+}
+func TestPostObjectMissingSignature(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_missing_signature", 400)
+}
+func TestPostObjectMissingPolicyCondition(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_missing_policy_condition", 403)
+}
+func TestPostObjectUserSpecifiedHeader(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_user_specified_header", 204)
+}
+func TestPostObjectRequestMissingPolicySpecifiedField(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_request_missing_policy_specified_field", 403)
+}
+func TestPostObjectConditionIsCaseSensitive(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_condition_is_case_sensitive", 400)
+}
+func TestPostObjectExpiresIsCaseSensitive(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_expires_is_case_sensitive", 400)
+}
+func TestPostObjectExpiredPolicy(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_expired_policy", 403)
+}
+func TestPostObjectInvalidRequestFieldValue(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_invalid_request_field_value", 403)
+}
+func TestPostObjectMissingExpiresCondition(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_missing_expires_condition", 400)
+}
+func TestPostObjectMissingConditionsList(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_missing_conditions_list", 400)
+}
+func TestPostObjectUploadSizeLimitExceeded(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_upload_size_limit_exceeded", 400)
+}
+func TestPostObjectMissingContentLengthArgument(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_missing_content_length_argument", 400)
+}
+func TestPostObjectInvalidContentLengthArgument(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_invalid_content_length_argument", 400)
+}
+func TestPostObjectUploadSizeBelowMinimum(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_upload_size_below_minimum", 400)
+}
+func TestPostObjectEmptyConditions(t *testing.T) {
+	t.Parallel()
+
+	testPostCompatibilityCase(t, "test_post_object_empty_conditions", 400)
+}
+func TestPresignedUrlPutGet(t *testing.T) {
+	t.Parallel()
+
+	testPostPresigned(t)
+}
+func TestPutObjectV4(t *testing.T) {
+	t.Parallel()
+
+	testPostSDKPut(t, false)
+}
+func TestPutObjectChunkedV4(t *testing.T) {
+	t.Parallel()
+
+	testPostSDKPut(t, true)
+}
+func TestGetObjectV4(t *testing.T) {
+	t.Parallel()
+
+	testPostSDKGet(t)
+}
+func TestPostObjectWrongBucket(t *testing.T) {
+	t.Parallel()
+
+	testPostWrongBucket(t)
 }
 
 func testPostAnonymous(t *testing.T) {

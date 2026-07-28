@@ -11,58 +11,110 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+func TestMultiObjectDelete(t *testing.T) {
+	t.Parallel()
+
+	testMultiDelete(t, "test_multi_object_delete")
+}
+func TestMultiObjectV2Delete(t *testing.T) {
+	t.Parallel()
+
+	testMultiDelete(t, "test_multi_object_v2_delete")
+}
+func TestMultiObjectDeleteVersions(t *testing.T) {
+	t.Parallel()
+
+	testMultiDelete(t, "test_multi_object_delete_versions")
+}
+func TestMultiObjectDeleteQuiet(t *testing.T) {
+	t.Parallel()
+
+	testMultiDelete(t, "test_multi_object_delete_quiet")
+}
+func TestDirectoryDelete(t *testing.T) {
+	t.Parallel()
+
+	testDirectoryDeleteV2(t, "test_directory_delete")
+}
+func TestDirectoryDeleteVersions(t *testing.T) {
+	t.Parallel()
+
+	testDirectoryDeleteV2(t, "test_directory_delete_versions")
+}
 func TestDeleteObjects(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
-		{"test_multi_object_delete", func(t *testing.T) { testMultiDelete(t, "test_multi_object_delete") }},
-		// 버킷에 존재하는 오브젝트 여러개를 한번에 삭제(ListObjectsV2)
-		{"test_multi_object_v2_delete", func(t *testing.T) { testMultiDelete(t, "test_multi_object_v2_delete") }},
-		// 버킷에 존재하는 버저닝 오브젝트 여러개를 한번에 삭제
-		{"test_multi_object_delete_versions", func(t *testing.T) { testMultiDelete(t, "test_multi_object_delete_versions") }},
-		// quiet옵션을 설정한 상태에서 버킷에 존재하는 오브젝트 여러개를 한번에 삭제
-		{"test_multi_object_delete_quiet", func(t *testing.T) { testMultiDelete(t, "test_multi_object_delete_quiet") }},
-		// 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
-		{"test_directory_delete", func(t *testing.T) { testDirectoryDeleteV2(t, "test_directory_delete") }},
-		// 버저닝 된 버킷에 업로드한 디렉토리를 삭제해도 해당 디렉토리에 오브젝트가 보이는지 확인
-		{"test_directory_delete_versions", func(t *testing.T) { testDirectoryDeleteV2(t, "test_directory_delete_versions") }},
-		// 삭제한 오브젝트가 재대로 삭제 되었는지 확인
-		{"test_delete_objects", testDeleteHundred},
-		// 버저닝 된 버켓에서 버전 정보를 포함한 삭제가 정상 동작하는지 확인
-		{"test_delete_objects_with_versioning", testDeleteVersionMix},
-		// 버저닝된 버킷에서 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
-		{"test_delete_objects_with_versioning_delete_marker", testDeleteMarkerOne},
-		// 버저닝된 버킷에서 여러 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
-		{"test_versioning_multi_object_delete_with_marker", testDeleteMarkersForObjects},
-		// 버저닝된 버킷에서 존재하지 않는 오브젝트를 반복 삭제할 경우 DeleteMarker가 생성되는지 확인
-		{"test_versioning_multi_object_delete_with_marker_create", func(t *testing.T) { testCreateDeleteMarkers(t, "test_versioning_multi_object_delete_with_marker_create") }},
-		// 버저닝된 버킷에서 존재하지 않는 여러개의 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
-		{"test_versioning_multi_object_delete_with_marker_create_objects", func(t *testing.T) { testCreateDeleteMarkers(t, "test_versioning_multi_object_delete_with_marker_create_objects") }},
-		// 일치하는 If-Match 조건으로 오브젝트 삭제 성공 확인
-		{"test_delete_object_if_match_good", func(t *testing.T) { testDeleteObjectConditions(t, "test_delete_object_if_match_good") }},
-		// 일치하지 않는 If-Match 조건으로 오브젝트 삭제 시 412 실패 확인
-		{"test_delete_object_if_match_failed", func(t *testing.T) { testDeleteObjectConditions(t, "test_delete_object_if_match_failed") }},
-		// If-Match: * 조건으로 존재하는 오브젝트 삭제 성공 확인
-		{"test_delete_object_if_match_any", func(t *testing.T) { testDeleteObjectConditions(t, "test_delete_object_if_match_any") }},
-		// If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
-		{"test_delete_object_if_match_and_if_none_match", func(t *testing.T) { testDeleteObjectConditions(t, "test_delete_object_if_match_and_if_none_match") }},
-		// If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
-		{"test_delete_object_if_match_and_if_none_match_any", func(t *testing.T) { testDeleteObjectConditions(t, "test_delete_object_if_match_and_if_none_match_any") }},
-		// 모든 오브젝트의 ETag 조건이 일치하는 DeleteObjects 성공 확인
-		{"test_delete_objects_if_match_good", func(t *testing.T) { testDeleteObjectsConditions(t, "test_delete_objects_if_match_good") }},
-		// ETag 조건이 일치하지 않는 오브젝트만 삭제에 실패(PreconditionFailed)하는지 확인
-		{"test_delete_objects_if_match_mixed", func(t *testing.T) { testDeleteObjectsConditions(t, "test_delete_objects_if_match_mixed") }},
-		// DeleteObjects 요청에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
-		{"test_delete_objects_if_match_and_if_none_match", func(t *testing.T) { testDeleteObjectsConditions(t, "test_delete_objects_if_match_and_if_none_match") }},
-		// DeleteObjects 요청에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
-		{"test_delete_objects_if_match_and_if_none_match_any", func(t *testing.T) { testDeleteObjectsConditions(t, "test_delete_objects_if_match_and_if_none_match_any") }},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testDeleteHundred(t)
+}
+func TestDeleteObjectsWithVersioning(t *testing.T) {
+	t.Parallel()
+
+	testDeleteVersionMix(t)
+}
+func TestDeleteObjectsWithVersioningDeleteMarker(t *testing.T) {
+	t.Parallel()
+
+	testDeleteMarkerOne(t)
+}
+func TestVersioningMultiObjectDeleteWithMarker(t *testing.T) {
+	t.Parallel()
+
+	testDeleteMarkersForObjects(t)
+}
+func TestVersioningMultiObjectDeleteWithMarkerCreate(t *testing.T) {
+	t.Parallel()
+
+	testCreateDeleteMarkers(t, "test_versioning_multi_object_delete_with_marker_create")
+}
+func TestVersioningMultiObjectDeleteWithMarkerCreateObjects(t *testing.T) {
+	t.Parallel()
+
+	testCreateDeleteMarkers(t, "test_versioning_multi_object_delete_with_marker_create_objects")
+}
+func TestDeleteObjectIfMatchGood(t *testing.T) {
+	t.Parallel()
+
+	testDeleteObjectConditions(t, "test_delete_object_if_match_good")
+}
+func TestDeleteObjectIfMatchFailed(t *testing.T) {
+	t.Parallel()
+
+	testDeleteObjectConditions(t, "test_delete_object_if_match_failed")
+}
+func TestDeleteObjectIfMatchAny(t *testing.T) {
+	t.Parallel()
+
+	testDeleteObjectConditions(t, "test_delete_object_if_match_any")
+}
+func TestDeleteObjectIfMatchAndIfNoneMatch(t *testing.T) {
+	t.Parallel()
+
+	testDeleteObjectConditions(t, "test_delete_object_if_match_and_if_none_match")
+}
+func TestDeleteObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
+	t.Parallel()
+
+	testDeleteObjectConditions(t, "test_delete_object_if_match_and_if_none_match_any")
+}
+func TestDeleteObjectsIfMatchGood(t *testing.T) {
+	t.Parallel()
+
+	testDeleteObjectsConditions(t, "test_delete_objects_if_match_good")
+}
+func TestDeleteObjectsIfMatchMixed(t *testing.T) {
+	t.Parallel()
+
+	testDeleteObjectsConditions(t, "test_delete_objects_if_match_mixed")
+}
+func TestDeleteObjectsIfMatchAndIfNoneMatch(t *testing.T) {
+	t.Parallel()
+
+	testDeleteObjectsConditions(t, "test_delete_objects_if_match_and_if_none_match")
+}
+func TestDeleteObjectsIfMatchAndIfNoneMatchAny(t *testing.T) {
+	t.Parallel()
+
+	testDeleteObjectsConditions(t, "test_delete_objects_if_match_and_if_none_match_any")
 }
 
 func deleteIdentifiers(keys []string) []types.ObjectIdentifier {
@@ -319,7 +371,9 @@ func testDeleteObjectsConditions(t *testing.T, name string) {
 		if strings.HasSuffix(name, "any") {
 			headers["If-None-Match"] = "*"
 		}
-		_, err := s.client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{Bucket: aws.String(b), Delete: &types.Delete{Objects: objects}}, func(o *s3.Options) { o.APIOptions = append(o.APIOptions, backendHeaders("delete-objects-if-none-match", headers)) })
+		_, err := s.client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{Bucket: aws.String(b), Delete: &types.Delete{Objects: objects}}, func(o *s3.Options) {
+			o.APIOptions = append(o.APIOptions, backendHeaders("delete-objects-if-none-match", headers))
+		})
 		assertHTTPError(t, err, 501)
 		return
 	}

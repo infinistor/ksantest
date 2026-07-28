@@ -13,70 +13,112 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func TestPolicy(t *testing.T) {
+func TestBucketPolicy(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷에 정책 설정이 올바르게 적용되는지 확인
-		{"test_bucket_policy", func(t *testing.T) { testListPolicy(t, false) }},
-		// 버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)
-		{"test_bucket_v2_policy", func(t *testing.T) { testListPolicy(t, true) }},
-		// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인
-		{"test_bucket_policy_acl", func(t *testing.T) { testPolicyOverridesACL(t, false) }},
-		// 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인(ListObjectsV2)
-		{"test_bucket_v2_policy_acl", func(t *testing.T) { testPolicyOverridesACL(t, true) }},
-		// 정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인
-		{"test_get_tags_acl_public", func(t *testing.T) { testTagPolicy(t, "s3:GetObjectTagging") }},
-		// 정책설정으로 오브젝트의 태그 입력을 public-read로 설정했을때 올바르게 동작하는지 확인
-		{"test_put_tags_acl_public", func(t *testing.T) { testTagPolicy(t, "s3:PutObjectTagging") }},
-		// 정책설정으로 오브젝트의 태그 삭제를 public-read로 설정했을때 올바르게 동작하는지 확인
-		{"test_delete_tags_obj_public", func(t *testing.T) { testTagPolicy(t, "s3:DeleteObjectTagging") }},
-		// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-		{"test_bucket_policy_get_obj_existing_tag", func(t *testing.T) { testExistingTagCondition(t, "s3:GetObject") }},
-		// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
-		{"test_bucket_policy_get_obj_tagging_existing_tag", func(t *testing.T) { testExistingTagCondition(t, "s3:GetObjectTagging") }},
-		// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 PutObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
-		{"test_bucket_policy_put_obj_tagging_existing_tag", func(t *testing.T) { testExistingTagCondition(t, "s3:PutObjectTagging") }},
-		// [복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-		{"test_bucket_policy_put_obj_copy_source", testPolicyCopySource},
-		// [오브젝트의 메타데이터값이 'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-		{"test_bucket_policy_put_obj_copy_source_meta", testPolicyCopySourceMetadata},
-		// [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시 올바르게 동작하는지 확인
-		{"test_bucket_policy_put_obj_acl", testPolicyPutObjectACL},
-		// [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-		{"test_bucket_policy_put_obj_grant", testPolicyPutObjectGrant},
-		// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용] 조건부 정책설정시 올바르게 동작하는지 확인
-		{"test_bucket_policy_get_obj_acl_existing_tag", testPolicyGetObjectACLExistingTag},
-		// 모든 사용자가 버킷에 접근 가능(public으으로 간주)
-		{"test_bucket_policy_status_with_all_user", func(t *testing.T) { testPolicyStatus(t, map[string]any{"AWS": "*"}, nil, true) }},
-		// 특정 사용자만 버킷에 접근 가능(private)
-		{"test_bucket_policy_status_with_specific_user_access", func(t *testing.T) {
-			s := newSuite(t)
-			testPolicyStatusWithSuite(t, s, map[string]any{"CanonicalUser": s.cfg.Main.ID}, nil, false)
-		}},
-		// 너무 넓은 IP 범위를 가진 정책 (public으으로 간주)
-		{"test_bucket_policy_status_with_wide_ip_range", func(t *testing.T) {
-			testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"IpAddress": map[string]any{"aws:SourceIp": "0.0.0.0/1"}}, true)
-		}},
-		// 특정 IP 범위를 가진 정책 (private)
-		{"test_bucket_policy_status_with_ip_range", func(t *testing.T) {
-			testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"IpAddress": map[string]any{"aws:SourceIp": "192.168.1.0/24"}}, false)
-		}},
-		// 매우 제한적인 시간에 대한 접근 허용 정책 (public으로 간주)
-		{"test_bucket_policy_status_with_time_condition", func(t *testing.T) {
-			start := time.Now().UTC().Add(10 * time.Minute)
-			testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"DateGreaterThan": map[string]any{"aws:CurrentTime": start.Format(time.RFC3339Nano)}, "DateLessThan": map[string]any{"aws:CurrentTime": start.Add(time.Second).Format(time.RFC3339Nano)}}, true)
-		}},
-		// 특정 태그를 가진 오브젝트에 대한 접근 허용용 정책 (public으로 간주)
-		{"test_bucket_policy_status_with_tag_condition", func(t *testing.T) {
-			testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"StringEquals": map[string]any{"s3:ExistingObjectTag/access": "restricted"}}, true)
-		}},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testListPolicy(t, false)
+}
+func TestBucketV2Policy(t *testing.T) {
+	t.Parallel()
+
+	testListPolicy(t, true)
+}
+func TestBucketPolicyAcl(t *testing.T) {
+	t.Parallel()
+
+	testPolicyOverridesACL(t, false)
+}
+func TestBucketV2PolicyAcl(t *testing.T) {
+	t.Parallel()
+
+	testPolicyOverridesACL(t, true)
+}
+func TestGetTagsAclPublic(t *testing.T) {
+	t.Parallel()
+
+	testTagPolicy(t, "s3:GetObjectTagging")
+}
+func TestPutTagsAclPublic(t *testing.T) {
+	t.Parallel()
+
+	testTagPolicy(t, "s3:PutObjectTagging")
+}
+func TestDeleteTagsObjPublic(t *testing.T) {
+	t.Parallel()
+
+	testTagPolicy(t, "s3:DeleteObjectTagging")
+}
+func TestBucketPolicyGetObjExistingTag(t *testing.T) {
+	t.Parallel()
+
+	testExistingTagCondition(t, "s3:GetObject")
+}
+func TestBucketPolicyGetObjTaggingExistingTag(t *testing.T) {
+	t.Parallel()
+
+	testExistingTagCondition(t, "s3:GetObjectTagging")
+}
+func TestBucketPolicyPutObjTaggingExistingTag(t *testing.T) {
+	t.Parallel()
+
+	testExistingTagCondition(t, "s3:PutObjectTagging")
+}
+func TestBucketPolicyPutObjCopySource(t *testing.T) {
+	t.Parallel()
+
+	testPolicyCopySource(t)
+}
+func TestBucketPolicyPutObjCopySourceMeta(t *testing.T) {
+	t.Parallel()
+
+	testPolicyCopySourceMetadata(t)
+}
+func TestBucketPolicyPutObjAcl(t *testing.T) {
+	t.Parallel()
+
+	testPolicyPutObjectACL(t)
+}
+func TestBucketPolicyPutObjGrant(t *testing.T) {
+	t.Parallel()
+
+	testPolicyPutObjectGrant(t)
+}
+func TestBucketPolicyGetObjAclExistingTag(t *testing.T) {
+	t.Parallel()
+
+	testPolicyGetObjectACLExistingTag(t)
+}
+func TestBucketPolicyStatusWithAllUser(t *testing.T) {
+	t.Parallel()
+
+	testPolicyStatus(t, map[string]any{"AWS": "*"}, nil, true)
+}
+func TestBucketPolicyStatusWithSpecificUserAccess(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	testPolicyStatusWithSuite(t, s, map[string]any{"CanonicalUser": s.cfg.Main.ID}, nil, false)
+}
+func TestBucketPolicyStatusWithWideIPRange(t *testing.T) {
+	t.Parallel()
+
+	testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"IpAddress": map[string]any{"aws:SourceIp": "0.0.0.0/1"}}, true)
+}
+func TestBucketPolicyStatusWithIPRange(t *testing.T) {
+	t.Parallel()
+
+	testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"IpAddress": map[string]any{"aws:SourceIp": "192.168.1.0/24"}}, false)
+}
+func TestBucketPolicyStatusWithTimeCondition(t *testing.T) {
+	t.Parallel()
+
+	start := time.Now().UTC().Add(10 * time.Minute)
+	testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"DateGreaterThan": map[string]any{"aws:CurrentTime": start.Format(time.RFC3339Nano)}, "DateLessThan": map[string]any{"aws:CurrentTime": start.Add(time.Second).Format(time.RFC3339Nano)}}, true)
+}
+func TestBucketPolicyStatusWithTagCondition(t *testing.T) {
+	t.Parallel()
+
+	testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"StringEquals": map[string]any{"s3:ExistingObjectTag/access": "restricted"}}, true)
 }
 
 func testPolicyCopySource(t *testing.T) {
@@ -98,7 +140,7 @@ func testPolicyCopySource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CopyObject(%s): %v", sourceKey, err)
 		}
-		// Java verifies with altClient.GetObject (object writer owns the object).
+
 		assertClientObjectBody(t, alt, target, targetKey, sourceKey)
 	}
 	_, err := alt.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(target), Key: aws.String("denied"), CopySource: aws.String(source + "/" + keys[2])})

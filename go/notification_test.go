@@ -10,57 +10,50 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func TestNotification(t *testing.T) {
+func TestNotificationGetEmpty(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷에 알람 설정이 없는지 확인
-		{"test_notification_get_empty", func(t *testing.T) {
-			s := newSuite(t)
-			bucket := s.bucket(t)
-			out, err := s.client.GetBucketNotificationConfiguration(context.Background(), &s3.GetBucketNotificationConfigurationInput{Bucket: aws.String(bucket)})
-			if err != nil {
-				t.Fatalf("GetBucketNotificationConfiguration: %v", err)
-			}
-			if len(out.LambdaFunctionConfigurations) != 0 || len(out.QueueConfigurations) != 0 || len(out.TopicConfigurations) != 0 {
-				t.Fatalf("empty notification configuration = %#v", out)
-			}
-		}},
-		// 버킷에 알람 설정이 가능한지 확인
-		{"test_notification_put", func(t *testing.T) {
-			s := newSuite(t)
-			skipNotificationOnAWS(t, s)
-			bucket := s.bucket(t)
-			putNotification(t, s, bucket, notificationConfiguration(s))
-		}},
-		// 버킷에 알람 설정이 되어있는지 확인
-		{"test_notification_get", func(t *testing.T) {
-			s := newSuite(t)
-			skipNotificationOnAWS(t, s)
-			bucket := s.bucket(t)
-			want := notificationConfiguration(s)
-			putNotification(t, s, bucket, want)
-			out := getNotification(t, s, bucket)
-			assertNotification(t, out, want.LambdaFunctionConfigurations[0])
-		}},
-		// 버킷에 알람 설정이 삭제되는지 확인
-		{"test_notification_delete", func(t *testing.T) {
-			s := newSuite(t)
-			skipNotificationOnAWS(t, s)
-			bucket := s.bucket(t)
-			want := notificationConfiguration(s)
-			putNotification(t, s, bucket, want)
-			assertNotification(t, getNotification(t, s, bucket), want.LambdaFunctionConfigurations[0])
-			putNotification(t, s, bucket, &types.NotificationConfiguration{})
-			if got := getNotification(t, s, bucket); len(got.LambdaFunctionConfigurations) != 0 {
-				t.Fatalf("Lambda configurations after delete = %#v", got.LambdaFunctionConfigurations)
-			}
-		}},
+
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	out, err := s.client.GetBucketNotificationConfiguration(context.Background(), &s3.GetBucketNotificationConfigurationInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatalf("GetBucketNotificationConfiguration: %v", err)
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
+	if len(out.LambdaFunctionConfigurations) != 0 || len(out.QueueConfigurations) != 0 || len(out.TopicConfigurations) != 0 {
+		t.Fatalf("empty notification configuration = %#v", out)
+	}
+}
+func TestNotificationPut(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipNotificationOnAWS(t, s)
+	bucket := s.bucket(t)
+	putNotification(t, s, bucket, notificationConfiguration(s))
+}
+func TestNotificationGet(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipNotificationOnAWS(t, s)
+	bucket := s.bucket(t)
+	want := notificationConfiguration(s)
+	putNotification(t, s, bucket, want)
+	out := getNotification(t, s, bucket)
+	assertNotification(t, out, want.LambdaFunctionConfigurations[0])
+}
+func TestNotificationDelete(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipNotificationOnAWS(t, s)
+	bucket := s.bucket(t)
+	want := notificationConfiguration(s)
+	putNotification(t, s, bucket, want)
+	assertNotification(t, getNotification(t, s, bucket), want.LambdaFunctionConfigurations[0])
+	putNotification(t, s, bucket, &types.NotificationConfiguration{})
+	if got := getNotification(t, s, bucket); len(got.LambdaFunctionConfigurations) != 0 {
+		t.Fatalf("Lambda configurations after delete = %#v", got.LambdaFunctionConfigurations)
 	}
 }
 

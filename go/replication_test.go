@@ -11,28 +11,35 @@ import (
 
 const replicationRole = "arn:aws:iam::635518764071:role/replication"
 
-func TestReplication(t *testing.T) {
+func TestReplicationSet(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷의 Replication 설정이 되는지 확인(put/get/delete)
-		{"test_replication_set", testReplicationSet},
-		// 원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
-		{"test_replication_invalid_source_bucket_name", testReplicationInvalidSource},
-		// 원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
-		{"test_replication_invalid_source_bucket_versioning", testReplicationInvalidSourceVersioning},
-		// 대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
-		{"test_replication_invalid_target_bucket_name", testReplicationInvalidTarget},
-		// 대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
-		{"test_replication_invalid_target_bucket_versioning", testReplicationInvalidTargetVersioning},
-		// 버킷에 복제 설정을 하고 버저닝 설정을 중단 했을 때 실패하는지 확인
-		{"test_replication_bucket_versioning_suspend", testReplicationSuspendVersioning},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testReplicationSet(t)
+}
+func TestReplicationInvalidSourceBucketName(t *testing.T) {
+	t.Parallel()
+
+	testReplicationInvalidSource(t)
+}
+func TestReplicationInvalidSourceBucketVersioning(t *testing.T) {
+	t.Parallel()
+
+	testReplicationInvalidSourceVersioning(t)
+}
+func TestReplicationInvalidTargetBucketName(t *testing.T) {
+	t.Parallel()
+
+	testReplicationInvalidTarget(t)
+}
+func TestReplicationInvalidTargetBucketVersioning(t *testing.T) {
+	t.Parallel()
+
+	testReplicationInvalidTargetVersioning(t)
+}
+func TestReplicationBucketVersioningSuspend(t *testing.T) {
+	t.Parallel()
+
+	testReplicationSuspendVersioning(t)
 }
 
 func replicationConfiguration(target, prefix string) *types.ReplicationConfiguration {

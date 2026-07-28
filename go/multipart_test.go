@@ -13,112 +13,245 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func TestMultipart(t *testing.T) {
+func TestMultipartUploadEmpty(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 비어있는 오브젝트를 멀티파트로 업로드 실패 확인
-		{"test_multipart_upload_empty", func(t *testing.T) { testMultipartUploadCase(t, "test_multipart_upload_empty") }},
-		// 파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인
-		{"test_multipart_upload_small", func(t *testing.T) { testMultipartUploadCase(t, "test_multipart_upload_small") }},
-		// 버킷a에서 버킷b로 멀티파트 복사 성공확인
-		{"test_multipart_copy_small", func(t *testing.T) { testMultipartCopyCase(t, "test_multipart_copy_small") }},
-		// 범위설정을 잘못한 멀티파트 복사 실패 확인
-		{"test_multipart_copy_invalid_range", func(t *testing.T) { testMultipartCopyCase(t, "test_multipart_copy_invalid_range") }},
-		// 범위를 지정한 멀티파트 복사 성공확인
-		{"test_multipart_copy_without_range", func(t *testing.T) { testMultipartCopyCase(t, "test_multipart_copy_without_range") }},
-		// 특수문자로 오브젝트 이름을 만들어 업로드한 오브젝트를 멀티파트 복사 성공 확인
-		{"test_multipart_copy_special_names", func(t *testing.T) { testMultipartCopyCase(t, "test_multipart_copy_special_names") }},
-		// Backend 헤더를 사용하여 멀티파트 업로드를 수행할 수 있는지 확인
-		{"test_multipart_upload", func(t *testing.T) { testMultipartUploadCase(t, "test_multipart_upload") }},
-		// 버저닝되어있는 버킷에서 오브젝트를 멀티파트로 복사 성공 확인
-		{"test_multipart_copy_versioned", func(t *testing.T) { testMultipartCopyCase(t, "test_multipart_copy_versioned") }},
-		// 멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
-		{"test_multipart_upload_resend_part", func(t *testing.T) { testMultipartUploadCase(t, "test_multipart_upload_resend_part") }},
-		// 한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
-		{"test_multipart_upload_multiple_sizes", func(t *testing.T) { testMultipartUploadCase(t, "test_multipart_upload_multiple_sizes") }},
-		// 한 오브젝트에 대해 다양한 크기의 오브젝트 멀티파트 복사 성공 확인
-		{"test_multipart_copy_multiple_sizes", func(t *testing.T) { testMultipartCopyCase(t, "test_multipart_copy_multiple_sizes") }},
-		// 멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
-		{"test_multipart_upload_size_too_small", func(t *testing.T) { testMultipartCompletionErrors(t, "test_multipart_upload_size_too_small") }},
-		// 내용물을 채운 멀티파트 업로드 성공 확인
-		{"test_multipart_upload_contents", func(t *testing.T) { testMultipartUploadCase(t, "test_multipart_upload_contents") }},
-		// 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
-		{"test_multipart_upload_overwrite_existing_object", testMultipartUploadOverwriteExistingObject},
-		// 멀티파트 업로드한 오브젝트를 PutObject로 덮어쓰기 성공 확인
-		{"test_put_object_overwrite_multipart_upload", testPutObjectOverwriteMultipartUpload},
-		// 멀티파트 업로드하는 도중 중단 성공 확인
-		{"test_abort_multipart_upload", func(t *testing.T) { testMultipartLifecycle(t, "test_abort_multipart_upload") }},
-		// 존재하지 않은 멀티파트 업로드 중단 실패 확인
-		{"test_abort_multipart_upload_not_found", func(t *testing.T) { testMultipartLifecycle(t, "test_abort_multipart_upload_not_found") }},
-		// 멀티파트 업로드 중인 목록 확인
-		{"test_list_multipart_upload", func(t *testing.T) { testMultipartLifecycle(t, "test_list_multipart_upload") }},
-		// 업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인
-		{"test_multipart_upload_missing_part", func(t *testing.T) { testMultipartCompletionErrors(t, "test_multipart_upload_missing_part") }},
-		// 잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인
-		{"test_multipart_upload_incorrect_etag", func(t *testing.T) { testMultipartCompletionErrors(t, "test_multipart_upload_incorrect_etag") }},
-		// 버킷에 존재하는 오브젝트와 동일한 이름으로 멀티파트 업로드를 시작 또는 중단했을때 오브젝트에 영향이 없음을 확인
-		{"test_atomic_multipart_upload_write", testAtomicMultipartUploadWrite},
-		// 멀티파트 업로드 목록 확인
-		{"test_multipart_upload_list", func(t *testing.T) { testMultipartLifecycle(t, "test_multipart_upload_list") }},
-		// 멀티파트 업로드하는 도중 중단 성공 확인
-		{"test_abort_multipart_upload_list", func(t *testing.T) { testMultipartLifecycle(t, "test_abort_multipart_upload_list") }},
-		// 멀티파트업로드와 멀티파티 카피로 오브젝트가 업로드 가능한지 확인
-		{"test_multipart_copy_many", func(t *testing.T) { testMultipartCopyCase(t, "test_multipart_copy_many") }},
-		// 멀티파트 목록 확인
-		{"test_multipart_list_parts", testMultipartListParts},
-		// UseChunkEncoding을 사용하는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
-		{"test_multipart_upload_checksum_use_chunk_encoding", func(t *testing.T) { testMultipartChecksumCase(t, "test_multipart_upload_checksum_use_chunk_encoding") }},
-		// UseChunkEncoding을 사용하지 않는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
-		{"test_multipart_upload_checksum", func(t *testing.T) { testMultipartChecksumCase(t, "test_multipart_upload_checksum") }},
-		// 멀티파트 업로드 시 체크섬 계산 및 검증 실패 확인
-		{"test_multipart_upload_checksum_failure", func(t *testing.T) { testMultipartChecksumCase(t, "test_multipart_upload_checksum_failure") }},
-		// 멀티파트 업로드 시 체크섬 계산 및 검증 확인
-		{"test_multipart_copy_checksum", testMultipartCopyChecksum},
-		// 빈 값일 때 동작 확인
-		{"test_create_multipart_upload_empty_checksum_algorithm", func(t *testing.T) { testMultipartChecksumCase(t, "test_create_multipart_upload_empty_checksum_algorithm") }},
-		// 빈 값일 때 동작 확인
-		{"test_create_multipart_upload_empty_checksum_type", func(t *testing.T) { testMultipartChecksumCase(t, "test_create_multipart_upload_empty_checksum_type") }},
-		// 소스 오브젝트와 일치하는 copy-source-if-match 조건으로 UploadPartCopy 성공 확인
-		{"test_upload_part_copy_if_match_good", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_match_good") }},
-		// 소스 오브젝트와 일치하지 않는 copy-source-if-match 조건으로 UploadPartCopy 시 412 실패 확인
-		{"test_upload_part_copy_if_match_failed", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_match_failed") }},
-		// 소스 오브젝트와 일치하지 않는 copy-source-if-none-match 조건으로 UploadPartCopy 성공 확인
-		{"test_upload_part_copy_if_none_match_good", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_none_match_good") }},
-		// 소스 오브젝트와 일치하는 copy-source-if-none-match 조건으로 UploadPartCopy 시 412 실패 확인
-		{"test_upload_part_copy_if_none_match_failed", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_none_match_failed") }},
-		// UploadPartCopy 요청에 If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
-		{"test_upload_part_copy_if_match_and_if_none_match", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_match_and_if_none_match") }},
-		// UploadPartCopy 요청에 If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
-		{"test_upload_part_copy_if_match_and_if_none_match_any", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_match_and_if_none_match_any") }},
-		// 소스 오브젝트 업로드 이전 시간의 copy-source-if-modified-since 조건으로 UploadPartCopy 성공 확인
-		{"test_upload_part_copy_if_modified_since_good", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_modified_since_good") }},
-		// 소스 오브젝트 업로드 이후 시간의 copy-source-if-modified-since 조건으로 UploadPartCopy 시 412 실패 확인
-		{"test_upload_part_copy_if_modified_since_failed", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_modified_since_failed") }},
-		// 소스 오브젝트 업로드 이후 시간의 copy-source-if-unmodified-since 조건으로 UploadPartCopy 성공 확인
-		{"test_upload_part_copy_if_unmodified_since_good", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_unmodified_since_good") }},
-		// 소스 오브젝트 업로드 이전 시간의 copy-source-if-unmodified-since 조건으로 UploadPartCopy 시 412 실패 확인
-		{"test_upload_part_copy_if_unmodified_since_failed", func(t *testing.T) { testMultipartCopyCondition(t, "test_upload_part_copy_if_unmodified_since_failed") }},
-		// 대상 오브젝트와 일치하는 If-Match 조건으로 CompleteMultipartUpload 덮어쓰기 성공 확인
-		{"test_complete_multipart_upload_if_match_good", func(t *testing.T) { testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_match_good") }},
-		// 대상 오브젝트와 일치하지 않는 If-Match 조건으로 CompleteMultipartUpload 시 412 실패 확인
-		{"test_complete_multipart_upload_if_match_failed", func(t *testing.T) { testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_match_failed") }},
-		// 존재하지 않는 키에 If-None-Match: * 조건으로 CompleteMultipartUpload 성공 확인
-		{"test_complete_multipart_upload_if_none_match_good", func(t *testing.T) { testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_none_match_good") }},
-		// 이미 존재하는 키에 If-None-Match: * 조건으로 CompleteMultipartUpload 시 412 실패 확인
-		{"test_complete_multipart_upload_if_none_match_failed", func(t *testing.T) { testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_none_match_failed") }},
-		// If-Match와 If-None-Match를 함께 지정하면 501로 거부되는지 확인
-		{"test_complete_multipart_upload_if_match_and_if_none_match", func(t *testing.T) { testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_match_and_if_none_match") }},
-		// If-Match와 If-None-Match: * 를 함께 지정하면 501로 거부되는지 확인
-		{"test_complete_multipart_upload_if_match_and_if_none_match_any", func(t *testing.T) { testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_match_and_if_none_match_any") }},
-		// 멀티파티 업로드 abort 이후 uploadPart가 실패하는지 확인
-		{"test_multipart_upload_abort_during_upload", func(t *testing.T) { testMultipartLifecycle(t, "test_multipart_upload_abort_during_upload") }},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testMultipartUploadCase(t, "test_multipart_upload_empty")
+}
+func TestMultipartUploadSmall(t *testing.T) {
+	t.Parallel()
+
+	testMultipartUploadCase(t, "test_multipart_upload_small")
+}
+func TestMultipartCopySmall(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCase(t, "test_multipart_copy_small")
+}
+func TestMultipartCopyInvalidRange(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCase(t, "test_multipart_copy_invalid_range")
+}
+func TestMultipartCopyWithoutRange(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCase(t, "test_multipart_copy_without_range")
+}
+func TestMultipartCopySpecialNames(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCase(t, "test_multipart_copy_special_names")
+}
+func TestMultipartUpload(t *testing.T) {
+	t.Parallel()
+
+	testMultipartUploadCase(t, "test_multipart_upload")
+}
+func TestMultipartCopyVersioned(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCase(t, "test_multipart_copy_versioned")
+}
+func TestMultipartUploadResendPart(t *testing.T) {
+	t.Parallel()
+
+	testMultipartUploadCase(t, "test_multipart_upload_resend_part")
+}
+func TestMultipartUploadMultipleSizes(t *testing.T) {
+	t.Parallel()
+
+	testMultipartUploadCase(t, "test_multipart_upload_multiple_sizes")
+}
+func TestMultipartCopyMultipleSizes(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCase(t, "test_multipart_copy_multiple_sizes")
+}
+func TestMultipartUploadSizeTooSmall(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCompletionErrors(t, "test_multipart_upload_size_too_small")
+}
+func TestMultipartUploadContents(t *testing.T) {
+	t.Parallel()
+
+	testMultipartUploadCase(t, "test_multipart_upload_contents")
+}
+func TestMultipartUploadOverwriteExistingObject(t *testing.T) {
+	t.Parallel()
+
+	testMultipartUploadOverwriteExistingObject(t)
+}
+func TestPutObjectOverwriteMultipartUpload(t *testing.T) {
+	t.Parallel()
+
+	testPutObjectOverwriteMultipartUpload(t)
+}
+func TestAbortMultipartUpload(t *testing.T) {
+	t.Parallel()
+
+	testMultipartLifecycle(t, "test_abort_multipart_upload")
+}
+func TestAbortMultipartUploadNotFound(t *testing.T) {
+	t.Parallel()
+
+	testMultipartLifecycle(t, "test_abort_multipart_upload_not_found")
+}
+func TestListMultipartUpload(t *testing.T) {
+	t.Parallel()
+
+	testMultipartLifecycle(t, "test_list_multipart_upload")
+}
+func TestMultipartUploadMissingPart(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCompletionErrors(t, "test_multipart_upload_missing_part")
+}
+func TestMultipartUploadIncorrectEtag(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCompletionErrors(t, "test_multipart_upload_incorrect_etag")
+}
+func TestAtomicMultipartUploadWrite(t *testing.T) {
+	t.Parallel()
+
+	testAtomicMultipartUploadWrite(t)
+}
+func TestMultipartUploadList(t *testing.T) {
+	t.Parallel()
+
+	testMultipartLifecycle(t, "test_multipart_upload_list")
+}
+func TestAbortMultipartUploadList(t *testing.T) {
+	t.Parallel()
+
+	testMultipartLifecycle(t, "test_abort_multipart_upload_list")
+}
+func TestMultipartCopyMany(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCase(t, "test_multipart_copy_many")
+}
+func TestMultipartListParts(t *testing.T) {
+	t.Parallel()
+
+	testMultipartListParts(t)
+}
+func TestMultipartUploadChecksumUseChunkEncoding(t *testing.T) {
+	t.Parallel()
+
+	testMultipartChecksumCase(t, "test_multipart_upload_checksum_use_chunk_encoding")
+}
+func TestMultipartUploadChecksum(t *testing.T) {
+	t.Parallel()
+
+	testMultipartChecksumCase(t, "test_multipart_upload_checksum")
+}
+func TestMultipartUploadChecksumFailure(t *testing.T) {
+	t.Parallel()
+
+	testMultipartChecksumCase(t, "test_multipart_upload_checksum_failure")
+}
+func TestMultipartCopyChecksum(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyChecksum(t)
+}
+func TestCreateMultipartUploadEmptyChecksumAlgorithm(t *testing.T) {
+	t.Parallel()
+
+	testMultipartChecksumCase(t, "test_create_multipart_upload_empty_checksum_algorithm")
+}
+func TestCreateMultipartUploadEmptyChecksumType(t *testing.T) {
+	t.Parallel()
+
+	testMultipartChecksumCase(t, "test_create_multipart_upload_empty_checksum_type")
+}
+func TestUploadPartCopyIfMatchGood(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_match_good")
+}
+func TestUploadPartCopyIfMatchFailed(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_match_failed")
+}
+func TestUploadPartCopyIfNoneMatchGood(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_none_match_good")
+}
+func TestUploadPartCopyIfNoneMatchFailed(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_none_match_failed")
+}
+func TestUploadPartCopyIfMatchAndIfNoneMatch(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_match_and_if_none_match")
+}
+func TestUploadPartCopyIfMatchAndIfNoneMatchAny(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_match_and_if_none_match_any")
+}
+func TestUploadPartCopyIfModifiedSinceGood(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_modified_since_good")
+}
+func TestUploadPartCopyIfModifiedSinceFailed(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_modified_since_failed")
+}
+func TestUploadPartCopyIfUnmodifiedSinceGood(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_unmodified_since_good")
+}
+func TestUploadPartCopyIfUnmodifiedSinceFailed(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCopyCondition(t, "test_upload_part_copy_if_unmodified_since_failed")
+}
+func TestCompleteMultipartUploadIfMatchGood(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_match_good")
+}
+func TestCompleteMultipartUploadIfMatchFailed(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_match_failed")
+}
+func TestCompleteMultipartUploadIfNoneMatchGood(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_none_match_good")
+}
+func TestCompleteMultipartUploadIfNoneMatchFailed(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_none_match_failed")
+}
+func TestCompleteMultipartUploadIfMatchAndIfNoneMatch(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_match_and_if_none_match")
+}
+func TestCompleteMultipartUploadIfMatchAndIfNoneMatchAny(t *testing.T) {
+	t.Parallel()
+
+	testMultipartCompleteCondition(t, "test_complete_multipart_upload_if_match_and_if_none_match_any")
+}
+func TestMultipartUploadAbortDuringUpload(t *testing.T) {
+	t.Parallel()
+
+	testMultipartLifecycle(t, "test_multipart_upload_abort_during_upload")
 }
 
 type multipartFixture struct {
@@ -372,7 +505,7 @@ func testMultipartCopyCondition(t *testing.T, name string) {
 	case "test_upload_part_copy_if_modified_since_good":
 		input.CopySourceIfModifiedSince = &past
 	case "test_upload_part_copy_if_modified_since_failed":
-		// RFC 7232: If-Modified-Since later than server time is ignored, so use LastModified+1s and wait.
+
 		head := headObject(t, s.client, b, source)
 		after := head.LastModified.Add(time.Second)
 		input.CopySourceIfModifiedSince = &after
@@ -397,7 +530,7 @@ func testMultipartCompleteCondition(t *testing.T, name string) {
 	bucket := s.bucket(t)
 	key := name
 	var existingETag *string
-	// IfNoneMatch good: key must not exist before Complete. Other cases need an existing object first.
+
 	if name != "test_complete_multipart_upload_if_none_match_good" {
 		existing := put(t, s, bucket, key, "old", nil)
 		existingETag = existing.ETag
@@ -450,7 +583,7 @@ func testMultipartChecksumCase(t *testing.T, name string) {
 		return
 	}
 	if name == "test_multipart_upload_checksum_failure" {
-		// Java: FULL_OBJECT rejects non-CRC algorithms (e.g. SHA256) with InvalidRequest.
+
 		_, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{
 			Bucket: aws.String(b), Key: aws.String(name),
 			ChecksumAlgorithm: types.ChecksumAlgorithmSha256,

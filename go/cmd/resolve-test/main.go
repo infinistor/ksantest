@@ -9,69 +9,77 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 )
 
 var nonAlphanumeric = regexp.MustCompile(`[^A-Za-z0-9]+`)
+
+// classFiles maps Java-style class names to Go test source files.
+var classFiles = map[string]string{
+	"accelerate":          "accelerate_test.go",
+	"access":              "access_test.go",
+	"acl":                 "acl_test.go",
+	"analytics":           "analytics_test.go",
+	"backend":             "backend_test.go",
+	"copyobject":          "copy_object_test.go",
+	"cors":                "cors_test.go",
+	"cse":                 "cse_test.go",
+	"deletebucket":        "delete_bucket_test.go",
+	"deleteobjects":       "delete_objects_test.go",
+	"getobject":           "get_object_test.go",
+	"getobjectattributes": "get_object_attributes_test.go",
+	"grants":              "grants_test.go",
+	"inventory":           "inventory_test.go",
+	"kms":                 "kms_test.go",
+	"lifecycle":           "lifecycle_test.go",
+	"listbuckets":         "list_buckets_test.go",
+	"listobjects":         "list_objects_test.go",
+	"listobjectsv2":       "list_objects_v2_test.go",
+	"listobjectsversions": "list_objects_versions_test.go",
+	"lock":                "lock_test.go",
+	"logging":             "logging_test.go",
+	"metrics":             "metrics_test.go",
+	"multipart":           "multipart_test.go",
+	"notification":        "notification_test.go",
+	"ownership":           "ownership_test.go",
+	"payment":             "payment_test.go",
+	"policy":              "policy_test.go",
+	"post":                "post_test.go",
+	"putbucket":           "put_bucket_test.go",
+	"putobject":           "put_object_test.go",
+	"replication":         "replication_test.go",
+	"selectobjectcontent": "select_object_content_test.go",
+	"ssec":                "sse_c_test.go",
+	"sses3":               "sse_s3_test.go",
+	"taggings":            "taggings_test.go",
+	"versioning":          "versioning_test.go",
+	"website":             "website_test.go",
+}
 
 func normalized(name string) string {
 	name = strings.ToLower(nonAlphanumeric.ReplaceAllString(strings.TrimSpace(name), ""))
 	return strings.TrimPrefix(name, "test")
 }
 
-func availableTargets() (map[string][]string, error) {
-	paths, err := filepath.Glob("*_test.go")
+func classKey(name string) string {
+	return normalized(name)
+}
+
+func testsInFile(path string) ([]string, error) {
+	f, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
 	if err != nil {
 		return nil, err
 	}
-	targets := make(map[string][]string)
-	for _, path := range paths {
-		f, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
-		if err != nil {
-			return nil, err
+	var names []string
+	for _, decl := range f.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Recv != nil || !strings.HasPrefix(fn.Name.Name, "Test") || fn.Body == nil {
+			continue
 		}
-		for _, decl := range f.Decls {
-			fn, ok := decl.(*ast.FuncDecl)
-			if !ok || !strings.HasPrefix(fn.Name.Name, "Test") || fn.Body == nil {
-				continue
-			}
-			targets[normalized(fn.Name.Name)] = append(targets[normalized(fn.Name.Name)], fn.Name.Name)
-			ast.Inspect(fn.Body, func(node ast.Node) bool {
-				if literal, ok := node.(*ast.BasicLit); ok && literal.Kind == token.STRING {
-					name, err := strconv.Unquote(literal.Value)
-					if err == nil && strings.HasPrefix(name, "test_") {
-						addTarget(targets, normalized(name), fn.Name.Name+"/"+name)
-					}
-				}
-				call, ok := node.(*ast.CallExpr)
-				if !ok || len(call.Args) == 0 {
-					return true
-				}
-				selector, ok := call.Fun.(*ast.SelectorExpr)
-				literal, literalOK := call.Args[0].(*ast.BasicLit)
-				if !ok || selector.Sel.Name != "Run" || !literalOK || literal.Kind != token.STRING {
-					return true
-				}
-				name, err := strconv.Unquote(literal.Value)
-				if err == nil {
-					target := fn.Name.Name + "/" + name
-					addTarget(targets, normalized(name), target)
-				}
-				return true
-			})
-		}
+		names = append(names, fn.Name.Name)
 	}
-	return targets, nil
-}
-
-func addTarget(targets map[string][]string, key, target string) {
-	for _, existing := range targets[key] {
-		if existing == target {
-			return
-		}
-	}
-	targets[key] = append(targets[key], target)
+	sort.Strings(names)
+	return names, nil
 }
 
 func main() {
@@ -79,38 +87,36 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: resolve-test <test-class> <test-method>")
 		os.Exit(2)
 	}
-	targets, err := availableTargets()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "read Go tests: %v\n", err)
+	file, ok := classFiles[classKey(os.Args[1])]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "unknown test class %q\n", os.Args[1])
 		os.Exit(1)
 	}
-	matches := append([]string(nil), targets[normalized(os.Args[2])]...)
-	if len(matches) > 1 {
-		className := normalized(os.Args[1])
-		filtered := matches[:0]
-		for _, target := range matches {
-			top := strings.SplitN(target, "/", 2)[0]
-			topName := normalized(top)
-			if topName == className {
-				filtered = append(filtered, target)
-			}
-		}
-		matches = filtered
+	if _, err := os.Stat(file); err != nil {
+		fmt.Fprintf(os.Stderr, "test file for class %q not found: %v\n", os.Args[1], err)
+		os.Exit(1)
 	}
-	if len(matches) > 1 {
-		subtests := make([]string, 0, len(matches))
-		for _, target := range matches {
-			if strings.Contains(target, "/") {
-				subtests = append(subtests, target)
-			}
+	names, err := testsInFile(file)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "parse %s: %v\n", file, err)
+		os.Exit(1)
+	}
+	want := normalized(os.Args[2])
+	classNorm := classKey(os.Args[1])
+	var matches []string
+	for _, name := range names {
+		n := normalized(name)
+		if n == want {
+			matches = append(matches, name)
+			continue
 		}
-		if len(subtests) == 1 {
-			matches = subtests
+		// Collision-disambiguated names: TestBackend_MultipartUpload
+		if strings.HasPrefix(n, classNorm) && strings.TrimPrefix(n, classNorm) == want {
+			matches = append(matches, name)
 		}
 	}
-	sort.Strings(matches)
 	if len(matches) != 1 {
-		fmt.Fprintf(os.Stderr, "Go test not found for class=%q method=%q\n", os.Args[1], os.Args[2])
+		fmt.Fprintf(os.Stderr, "Go test not found for class=%q method=%q in %s\n", os.Args[1], os.Args[2], filepath.Base(file))
 		os.Exit(1)
 	}
 	fmt.Println(matches[0])

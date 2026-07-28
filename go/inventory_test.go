@@ -9,50 +9,90 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func TestInventory(t *testing.T) {
+func TestListBucketInventory(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷에 인벤토리를 설정하지 않은 상태에서 조회가 가능한지 확인
-		{"test_list_bucket_inventory", testInventoryList},
-		// 버킷에 인벤토리를 설정할 수 있는지 확인
-		{"test_put_bucket_inventory", testInventoryPut},
-		// 버킷에 인벤토리 설정이 되었는지 확인
-		{"test_check_bucket_inventory", testInventoryCheck},
-		// 버킷에 설정된 인벤토리를 조회할 수 있는지 확인
-		{"test_get_bucket_inventory", testInventoryGet},
-		// 버킷에 설정된 인벤토리를 삭제할 수 있는지 확인
-		{"test_delete_bucket_inventory", testInventoryDelete},
-		// 존재하지 않은 인벤토리를 가져오려고 할 경우 실패하는지 확인
-		{"test_get_bucket_inventory_not_exist", testInventoryGetMissing},
-		// 존재하지 않은 인벤토리를 삭제하려고 할 경우 실패하는지 확인
-		{"test_delete_bucket_inventory_not_exist", testInventoryDeleteMissing},
-		// 존재하지 않은 버킷에 인벤토리를 설정하려고 할 경우 실패하는지 확인
-		{"test_put_bucket_inventory_not_exist", testInventoryPutMissingBucket},
-		// 인벤토리 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
-		{"test_put_bucket_inventory_id_not_exist", testInventoryMissingID},
-		// 인벤토리 아이디가 중복되는 경우 덮어쓰기 되는지 확인
-		{"test_put_bucket_inventory_id_duplicate", testInventoryDuplicateID},
-		// 타깃 버킷이 존재하지 않을 경우 실패하는지 확인
-		{"test_put_bucket_inventory_target_not_exist", testInventoryMissingTarget},
-		// 지원하지 않는 파일 형식의 인벤토리를 설정하려고 할 경우 실패하는지 확인
-		{"test_put_bucket_inventory_invalid_format", testInventoryInvalidFormat},
-		// 올바르지 않은 주기의 인벤토리를 설정하려고 할 경우 실패하는지 확인
-		{"test_put_bucket_inventory_invalid_frequency", testInventoryInvalidFrequency},
-		// 대소문자를 잘못 입력하여 인벤토리를 설정하려고 할 경우 실패하는지 확인
-		{"test_put_bucket_inventory_invalid_case", testInventoryInvalidCase},
-		// 접두어를 포함한 인벤토리 설정이 올바르게 적용되는지 확인
-		{"test_put_bucket_inventory_prefix", testInventoryPrefix},
-		// 옵션을 포함한 인벤토리 설정이 올바르게 적용되는지 확인
-		{"test_put_bucket_inventory_optional", testInventoryOptional},
-		// 올바르지 않은 옵션을 포함한 인벤토리를 설정하려고 할 경우 실패하는지 확인
-		{"test_put_bucket_inventory_invalid_optional", testInventoryInvalidOptional},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testInventoryList(t)
+}
+func TestPutBucketInventory(t *testing.T) {
+	t.Parallel()
+
+	testInventoryPut(t)
+}
+func TestCheckBucketInventory(t *testing.T) {
+	t.Parallel()
+
+	testInventoryCheck(t)
+}
+func TestGetBucketInventory(t *testing.T) {
+	t.Parallel()
+
+	testInventoryGet(t)
+}
+func TestDeleteBucketInventory(t *testing.T) {
+	t.Parallel()
+
+	testInventoryDelete(t)
+}
+func TestGetBucketInventoryNotExist(t *testing.T) {
+	t.Parallel()
+
+	testInventoryGetMissing(t)
+}
+func TestDeleteBucketInventoryNotExist(t *testing.T) {
+	t.Parallel()
+
+	testInventoryDeleteMissing(t)
+}
+func TestPutBucketInventoryNotExist(t *testing.T) {
+	t.Parallel()
+
+	testInventoryPutMissingBucket(t)
+}
+func TestPutBucketInventoryIdNotExist(t *testing.T) {
+	t.Parallel()
+
+	testInventoryMissingID(t)
+}
+func TestPutBucketInventoryIdDuplicate(t *testing.T) {
+	t.Parallel()
+
+	testInventoryDuplicateID(t)
+}
+func TestPutBucketInventoryTargetNotExist(t *testing.T) {
+	t.Parallel()
+
+	testInventoryMissingTarget(t)
+}
+func TestPutBucketInventoryInvalidFormat(t *testing.T) {
+	t.Parallel()
+
+	testInventoryInvalidFormat(t)
+}
+func TestPutBucketInventoryInvalidFrequency(t *testing.T) {
+	t.Parallel()
+
+	testInventoryInvalidFrequency(t)
+}
+func TestPutBucketInventoryInvalidCase(t *testing.T) {
+	t.Parallel()
+
+	testInventoryInvalidCase(t)
+}
+func TestPutBucketInventoryPrefix(t *testing.T) {
+	t.Parallel()
+
+	testInventoryPrefix(t)
+}
+func TestPutBucketInventoryOptional(t *testing.T) {
+	t.Parallel()
+
+	testInventoryOptional(t)
+}
+func TestPutBucketInventoryInvalidOptional(t *testing.T) {
+	t.Parallel()
+
+	testInventoryInvalidOptional(t)
 }
 
 func inventoryConfiguration(id, target, prefix string, optional []types.InventoryOptionalField, versions types.InventoryIncludedObjectVersions, frequency types.InventoryFrequency, format types.InventoryFormat) *types.InventoryConfiguration {
@@ -163,7 +203,7 @@ func testInventoryDuplicateID(t *testing.T) {
 
 func testInventoryMissingTarget(t *testing.T) {
 	s := newSuite(t)
-	// AWS does not validate that the inventory destination bucket exists.
+
 	if s.cfg.Endpoint() == "" {
 		t.Skip("AWS does not validate inventory destination bucket existence")
 	}

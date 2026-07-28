@@ -11,42 +11,73 @@ import (
 
 func TestMetrics(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷에 Metrics를 설정하지 않은 상태에서 조회가 가능한지 확인
-		{"test_metrics", testMetricsList},
-		// 버킷에 Metrics를 설정할 수 있는지 확인
-		{"test_put_metrics", testMetricsPut},
-		// 버킷에 Metrics 설정이 되었는지 확인
-		{"test_check_metrics", testMetricsCheck},
-		// 버킷에 설정된 Metrics를 조회할 수 있는지 확인
-		{"test_get_metrics", testMetricsGet},
-		// 버킷에 설정된 Metrics를 삭제할 수 있는지 확인
-		{"test_delete_metrics", testMetricsDelete},
-		// 존재하지 않은 Metrics를 가져오려고 할 경우 실패하는지 확인
-		{"test_get_metrics_not_exist", testMetricsGetMissing},
-		// 존재하지 않은 Metrics를 삭제하려고 할 경우 실패하는지 확인
-		{"test_delete_metrics_not_exist", testMetricsDeleteMissing},
-		// 존재하지 않은 Metrics를 설정하려고 할 경우 실패하는지 확인
-		{"test_put_metrics_not_exist", testMetricsPutMissingBucket},
-		// Metrics 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
-		{"test_put_metrics_empty_id", testMetricsEmptyID},
-		// Metrics 아이디를 설정하지 않고 설정하려고 할 경우 실패하는지 확인
-		{"test_put_metrics_no_id", testMetricsNoID},
-		// Metrics 아이디를 중복으로 설정하려고 할 경우 덮어쓰기 확인
-		{"test_put_metrics_duplicate_id", testMetricsDuplicateID},
-		// 접두어를 포함한 Metrics 설정이 올바르게 적용되는지 확인
-		{"test_metrics_prefix", testMetricsPrefix},
-		// Metrics 설정에 태그를 적용할 수 있는지 확인
-		{"test_metrics_tag", testMetricsTag},
-		// Metrics 설정에 필터를 적용할 수 있는지 확인
-		{"test_metrics_filter", testMetricsAndFilter},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testMetricsList(t)
+}
+func TestPutMetrics(t *testing.T) {
+	t.Parallel()
+
+	testMetricsPut(t)
+}
+func TestCheckMetrics(t *testing.T) {
+	t.Parallel()
+
+	testMetricsCheck(t)
+}
+func TestGetMetrics(t *testing.T) {
+	t.Parallel()
+
+	testMetricsGet(t)
+}
+func TestDeleteMetrics(t *testing.T) {
+	t.Parallel()
+
+	testMetricsDelete(t)
+}
+func TestGetMetricsNotExist(t *testing.T) {
+	t.Parallel()
+
+	testMetricsGetMissing(t)
+}
+func TestDeleteMetricsNotExist(t *testing.T) {
+	t.Parallel()
+
+	testMetricsDeleteMissing(t)
+}
+func TestPutMetricsNotExist(t *testing.T) {
+	t.Parallel()
+
+	testMetricsPutMissingBucket(t)
+}
+func TestPutMetricsEmptyId(t *testing.T) {
+	t.Parallel()
+
+	testMetricsEmptyID(t)
+}
+func TestPutMetricsNoId(t *testing.T) {
+	t.Parallel()
+
+	testMetricsNoID(t)
+}
+func TestPutMetricsDuplicateId(t *testing.T) {
+	t.Parallel()
+
+	testMetricsDuplicateID(t)
+}
+func TestMetricsPrefix(t *testing.T) {
+	t.Parallel()
+
+	testMetricsPrefix(t)
+}
+func TestMetricsTag(t *testing.T) {
+	t.Parallel()
+
+	testMetricsTag(t)
+}
+func TestMetricsFilter(t *testing.T) {
+	t.Parallel()
+
+	testMetricsAndFilter(t)
 }
 
 func metricsConfiguration(id string, filter types.MetricsFilter) *types.MetricsConfiguration {

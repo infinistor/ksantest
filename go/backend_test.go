@@ -24,148 +24,305 @@ const (
 	backendKSANDeleteHeader   = "x-ksan-delete-marker-version-id"
 )
 
-func TestBackend(t *testing.T) {
+func TestPutObjectVersioning(t *testing.T) {
 	t.Parallel()
-	// Java wrapper(java/src/test/.../Backend.java)와 동일하게 basic 테스트는 비활성.
-	// "test_put_object", "test_get_object", "test_delete_object", "test_copy_object", "test_multipart_upload",
-	// "test_put_object_acl", "test_get_object_acl", "test_put_object_tagging", "test_get_object_tagging", "test_delete_object_tagging",
-	run := func(fn func(*testing.T, *suite, *s3.Client)) func(*testing.T) {
-		return func(t *testing.T) {
-			s := newSuite(t)
-			if s.cfg.Endpoint() == "" {
-				t.Skip("Backend API is unavailable on AWS")
-			}
-			fn(t, s, newBackendClient(t, s))
-		}
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
 	}
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// [Versioning] PutObject가 정상 동작하는지 확인
-		{"test_put_object_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_put_object_versioning")
-		})},
-		// [Versioning] PutObject 버전 정보 추가시 정상 동작 확인
-		{"test_put_object_versioning_with_version_id", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_put_object_versioning_with_version_id")
-		})},
-		// [Versioning] GetObject가 정상 동작하는지 확인
-		{"test_get_object_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_get_object_versioning")
-		})},
-		// [Versioning] DeleteObject가 정상 동작하는지 확인
-		{"test_delete_object_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_delete_object_versioning")
-		})},
-		// [Versioning] DeleteObjects가 정상 동작하는지 확인
-		{"test_delete_objects_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_delete_objects_versioning")
-		})},
-		// [Versioning] HeadObject가 정상 동작하는지 확인
-		{"test_head_object_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_head_object_versioning")
-		})},
-		// [Versioning] CopyObject가 정상 동작하는지 확인
-		{"test_copy_object_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_copy_object_versioning")
-		})},
-		// [Versioning] MultipartUpload가 정상 동작하는지 확인
-		{"test_multipart_upload_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_multipart_upload_versioning")
-		})},
-		// [Versioning] PutObjectAcl가 정상 동작하는지 확인
-		{"test_put_object_acl_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_put_object_acl_versioning")
-		})},
-		// [Versioning] GetObjectAcl가 정상 동작하는지 확인
-		{"test_get_object_acl_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_get_object_acl_versioning")
-		})},
-		// [Versioning] PutObjectTagging가 정상 동작하는지 확인
-		{"test_put_object_tagging_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_put_object_tagging_versioning")
-		})},
-		// [Versioning] GetObjectTagging가 정상 동작하는지 확인
-		{"test_get_object_tagging_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_get_object_tagging_versioning")
-		})},
-		// [Versioning] DeleteObjectTagging가 정상 동작하는지 확인
-		{"test_delete_object_tagging_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_delete_object_tagging_versioning")
-		})},
-		// [Versioning] PutObjectRetention가 정상 동작하는지 확인
-		{"test_put_object_retention_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_put_object_retention_versioning")
-		})},
-		// [Versioning] GetObjectRetention가 정상 동작하는지 확인
-		{"test_get_object_retention_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_get_object_retention_versioning")
-		})},
-		// [Versioning] PutObjectRetention 후 GetObjectRetention으로 조회가 정상 동작하는지 확인
-		{"test_put_and_get_object_retention_versioning", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendVersioning(t, s, backend, "test_put_and_get_object_retention_versioning")
-		})},
-		// PutObject 복제가 정상 동작하는지 확인
-		{"test_put_object_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_put_object_replication")
-		})},
-		// PutObject 태그가 복제되는지 확인
-		{"test_put_object_with_tagging_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_put_object_with_tagging_replication")
-		})},
-		// PutObject 헤더와 메타데이터가 복제되는지 확인
-		{"test_put_object_with_metadata_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_put_object_with_metadata_replication")
-		})},
-		// CopyObject 복제가 정상 동작하는지 확인
-		{"test_copy_object_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_copy_object_replication")
-		})},
-		// CopyObject 태그가 복제되는지 확인
-		{"test_copy_object_with_tagging_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_copy_object_with_tagging_replication")
-		})},
-		// CopyObject 헤더와 메타데이터가 복제되는지 확인
-		{"test_copy_object_with_metadata_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_copy_object_with_metadata_replication")
-		})},
-		// CopyObject 메타데이터가 Replace되었을 경우 복제되는지 확인
-		{"test_copy_object_metadata_replace_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_copy_object_metadata_replace_replication")
-		})},
-		// MultipartUpload 복제가 정상 동작하는지 확인
-		{"test_multipart_upload_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_multipart_upload_replication")
-		})},
-		// MultipartUpload 태그가 복제되는지 확인
-		{"test_multipart_upload_with_tagging_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_multipart_upload_with_tagging_replication")
-		})},
-		// MultipartUpload 헤더와 메타데이터가 복제되는지 확인
-		{"test_multipart_upload_with_metadata_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_multipart_upload_with_metadata_replication")
-		})},
-		// PutObjectAcl 복제가 정상 동작하는지 확인
-		{"test_put_object_acl_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_put_object_acl_replication")
-		})},
-		// putObjectTagging 복제가 정상 동작하는지 확인
-		{"test_put_object_tagging_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_put_object_tagging_replication")
-		})},
-		// deleteObject 복제가 정상 동작하는지 확인
-		{"test_delete_object_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_delete_object_replication")
-		})},
-		// deleteObjectTagging 복제가 정상 동작하는지 확인
-		{"test_delete_object_tagging_replication", run(func(t *testing.T, s *suite, backend *s3.Client) {
-			runBackendReplication(t, s, backend, "test_delete_object_tagging_replication")
-		})},
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_put_object_versioning")
+}
+func TestPutObjectVersioningWithVersionId(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_put_object_versioning_with_version_id")
+}
+func TestGetObjectVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
 	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_get_object_versioning")
+}
+func TestDeleteObjectVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_delete_object_versioning")
+}
+func TestDeleteObjectsVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_delete_objects_versioning")
+}
+func TestHeadObjectVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_head_object_versioning")
+}
+func TestCopyObjectVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_copy_object_versioning")
+}
+func TestMultipartUploadVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_multipart_upload_versioning")
+}
+func TestPutObjectAclVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_put_object_acl_versioning")
+}
+func TestGetObjectAclVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_get_object_acl_versioning")
+}
+func TestPutObjectTaggingVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_put_object_tagging_versioning")
+}
+func TestGetObjectTaggingVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_get_object_tagging_versioning")
+}
+func TestDeleteObjectTaggingVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_delete_object_tagging_versioning")
+}
+func TestPutObjectRetentionVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_put_object_retention_versioning")
+}
+func TestGetObjectRetentionVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_get_object_retention_versioning")
+}
+func TestPutAndGetObjectRetentionVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendVersioning(t, s, backend, "test_put_and_get_object_retention_versioning")
+}
+func TestPutObjectReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_put_object_replication")
+}
+func TestPutObjectWithTaggingReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_put_object_with_tagging_replication")
+}
+func TestPutObjectWithMetadataReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_put_object_with_metadata_replication")
+}
+func TestCopyObjectReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_copy_object_replication")
+}
+func TestCopyObjectWithTaggingReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_copy_object_with_tagging_replication")
+}
+func TestCopyObjectWithMetadataReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_copy_object_with_metadata_replication")
+}
+func TestCopyObjectMetadataReplaceReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_copy_object_metadata_replace_replication")
+}
+func TestMultipartUploadReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_multipart_upload_replication")
+}
+func TestMultipartUploadWithTaggingReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_multipart_upload_with_tagging_replication")
+}
+func TestMultipartUploadWithMetadataReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_multipart_upload_with_metadata_replication")
+}
+func TestPutObjectAclReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_put_object_acl_replication")
+}
+func TestPutObjectTaggingReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_put_object_tagging_replication")
+}
+func TestDeleteObjectReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_delete_object_replication")
+}
+func TestDeleteObjectTaggingReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	runBackendReplication(t, s, backend, "test_delete_object_tagging_replication")
 }
 
 func newBackendClient(t *testing.T, s *suite) *s3.Client {

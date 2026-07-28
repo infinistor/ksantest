@@ -16,43 +16,72 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func TestTaggings(t *testing.T) {
+func TestSetTagging(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name string
-		run  func(*testing.T)
-	}{
-		// 버킷에 사용자 추가 태그값을 설정할경우 성공확인
-		{"test_set_tagging", testBucketTaggingCRUD},
-		// 오브젝트에 태그 설정이 올바르게 적용되는지 확인
-		{"test_get_obj_tagging", func(t *testing.T) { testObjectTaggingCase(t, "test_get_obj_tagging") }},
-		// 오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
-		{"test_get_obj_head_tagging", func(t *testing.T) { testObjectTaggingCase(t, "test_get_obj_head_tagging") }},
-		// 추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)
-		{"test_put_max_tags", func(t *testing.T) { testObjectTaggingCase(t, "test_put_max_tags") }},
-		// 추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인
-		{"test_put_excess_tags", func(t *testing.T) { testObjectTaggingCase(t, "test_put_excess_tags") }},
-		// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인
-		{"test_put_max_size_tags", func(t *testing.T) { testObjectTaggingCase(t, "test_put_max_size_tags") }},
-		// 태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인
-		{"test_put_excess_key_tags", func(t *testing.T) { testObjectTaggingCase(t, "test_put_excess_key_tags") }},
-		// 태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인
-		{"test_put_excess_val_tags", func(t *testing.T) { testObjectTaggingCase(t, "test_put_excess_val_tags") }},
-		// 오브젝트의 태그목록을 덮어쓰기 가능한지 확인
-		{"test_put_modify_tags", func(t *testing.T) { testObjectTaggingCase(t, "test_put_modify_tags") }},
-		// 오브젝트의 태그를 삭제 가능한지 확인
-		{"test_put_delete_tags", func(t *testing.T) { testObjectTaggingCase(t, "test_put_delete_tags") }},
-		// 헤더에 태그정보를 포함한 오브젝트 업로드 성공 확인
-		{"test_put_obj_with_tags", testPutObjectWithTags},
-		// 로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
-		{"test_post_object_tags_authenticated_request", testPostObjectTags},
-		// 업로드시 오브젝트의 태그 정보를 빈 값으로 올릴 경우 성공 확인
-		{"test_get_obj_non_tagging", func(t *testing.T) { testObjectTaggingCase(t, "test_get_obj_non_tagging") }},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, tc.run)
-	}
+
+	testBucketTaggingCRUD(t)
 }
+func TestGetObjTagging(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_get_obj_tagging")
+}
+func TestGetObjHeadTagging(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_get_obj_head_tagging")
+}
+func TestPutMaxTags(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_put_max_tags")
+}
+func TestPutExcessTags(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_put_excess_tags")
+}
+func TestPutMaxSizeTags(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_put_max_size_tags")
+}
+func TestPutExcessKeyTags(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_put_excess_key_tags")
+}
+func TestPutExcessValTags(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_put_excess_val_tags")
+}
+func TestPutModifyTags(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_put_modify_tags")
+}
+func TestPutDeleteTags(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_put_delete_tags")
+}
+func TestPutObjWithTags(t *testing.T) {
+	t.Parallel()
+
+	testPutObjectWithTags(t)
+}
+func TestPostObjectTagsAuthenticatedRequest(t *testing.T) {
+	t.Parallel()
+
+	testPostObjectTags(t)
+}
+func TestGetObjNonTagging(t *testing.T) {
+	t.Parallel()
+
+	testObjectTaggingCase(t, "test_get_obj_non_tagging")
+}
+
 func tags(count, keySize, valueSize int) []types.Tag {
 	result := make([]types.Tag, count)
 	for i := 0; i < count; i++ {
@@ -140,7 +169,7 @@ func testObjectTaggingCase(t *testing.T, name string) {
 		if err != nil || aws.ToInt32(head.TagCount) != 2 {
 			t.Fatalf("TagCount=%v err=%v", head.TagCount, err)
 		}
-	// [Max] put max tags
+
 	case "test_put_max_tags", "test_put_max_size_tags":
 		keySize, valueSize := 0, 0
 		if strings.Contains(name, "size") {

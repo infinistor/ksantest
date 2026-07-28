@@ -9,8 +9,8 @@
     e.g. 11.151 → 11.151.ini
 
 .EXAMPLE
+    .\start-function.ps1 config PutBucket testBucketCreateNamingBadIp
     .\start-function.ps1 config PutBucket test_bucket_create_naming_bad_ip
-    .\start-function.ps1 awstests PutBucket testBucketCreateNamingGoodLong60
     .\start-function.ps1 11.151 Multipart testPutObjectOverwriteMultipartUpload
 #>
 [CmdletBinding()]

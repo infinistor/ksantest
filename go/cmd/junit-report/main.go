@@ -6,7 +6,11 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -50,14 +54,59 @@ type skipped struct {
 	Message string `xml:"message,attr,omitempty"`
 }
 
+// fileToClass maps migration test filenames to Java-style class names.
+var fileToClass = map[string]string{
+	"accelerate_test.go":            "Accelerate",
+	"access_test.go":                "Access",
+	"acl_test.go":                   "ACL",
+	"analytics_test.go":             "Analytics",
+	"backend_test.go":               "Backend",
+	"copy_object_test.go":           "CopyObject",
+	"cors_test.go":                  "Cors",
+	"cse_test.go":                   "CSE",
+	"delete_bucket_test.go":         "DeleteBucket",
+	"delete_objects_test.go":        "DeleteObjects",
+	"get_object_test.go":            "GetObject",
+	"get_object_attributes_test.go": "GetObjectAttributes",
+	"grants_test.go":                "Grants",
+	"inventory_test.go":             "Inventory",
+	"lifecycle_test.go":             "LifeCycle",
+	"list_buckets_test.go":          "ListBuckets",
+	"list_objects_test.go":          "ListObjects",
+	"list_objects_v2_test.go":       "ListObjectsV2",
+	"list_objects_versions_test.go": "ListObjectsVersions",
+	"lock_test.go":                  "Lock",
+	"logging_test.go":               "Logging",
+	"metrics_test.go":               "Metrics",
+	"multipart_test.go":             "Multipart",
+	"notification_test.go":          "Notification",
+	"ownership_test.go":             "Ownership",
+	"payment_test.go":               "Payment",
+	"policy_test.go":                "Policy",
+	"post_test.go":                  "Post",
+	"put_bucket_test.go":            "PutBucket",
+	"put_object_test.go":            "PutObject",
+	"replication_test.go":           "Replication",
+	"select_object_content_test.go": "SelectObjectContent",
+	"sse_c_test.go":                 "SSE_C",
+	"sse_s3_test.go":                "SSE_S3",
+	"taggings_test.go":              "Taggings",
+	"versioning_test.go":            "Versioning",
+	"website_test.go":               "Website",
+}
+
 func main() {
 	output := flag.String("output", "Result_go.xml", "JUnit XML output path")
 	flag.Parse()
-	results := leafResults(readResults())
+	testClass, err := loadMigrationTests()
+	if err != nil {
+		fatal(err)
+	}
+	results := leafResults(readResults(), testClass)
 	suite := testSuite{Name: "go"}
 	var elapsed float64
 	for _, r := range results {
-		className, name := splitTestName(r.Name)
+		className, name := splitTestName(r.Name, testClass)
 		c := testCase{ClassName: className, Name: name, Time: fmt.Sprintf("%.3f", r.Elapsed), SystemOut: strings.TrimSpace(r.Output)}
 		suite.Tests++
 		elapsed += r.Elapsed
@@ -73,6 +122,33 @@ func main() {
 	}
 	suite.Time = fmt.Sprintf("%.3f", elapsed)
 	writeXML(*output, testSuites{Suites: []testSuite{suite}})
+}
+
+func loadMigrationTests() (map[string]string, error) {
+	out := map[string]string{}
+	for file, class := range fileToClass {
+		path := file
+		if _, err := os.Stat(path); err != nil {
+			// Allow running from repo root via go/ prefix.
+			alt := filepath.Join("go", file)
+			if _, err2 := os.Stat(alt); err2 != nil {
+				continue
+			}
+			path = alt
+		}
+		f, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
+		if err != nil {
+			return nil, err
+		}
+		for _, decl := range f.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Recv != nil || !strings.HasPrefix(fn.Name.Name, "Test") || fn.Body == nil {
+				continue
+			}
+			out[fn.Name.Name] = class
+		}
+	}
+	return out, nil
 }
 
 func readResults() map[string]*result {
@@ -100,10 +176,13 @@ func readResults() map[string]*result {
 	return items
 }
 
-func leafResults(items map[string]*result) []result {
+func leafResults(items map[string]*result, testClass map[string]string) []result {
 	results := make([]result, 0, len(items))
 	for name, r := range items {
-		if r.Status == "" || !isMigrationScenario(name) {
+		if r.Status == "" || strings.Contains(name, "/") {
+			continue
+		}
+		if _, ok := testClass[name]; !ok {
 			continue
 		}
 		results = append(results, *r)
@@ -112,32 +191,11 @@ func leafResults(items map[string]*result) []result {
 	return results
 }
 
-func isMigrationScenario(name string) bool {
-	className, _, found := strings.Cut(name, "/")
-	if !found || strings.Count(name, "/") != 1 {
-		return false
+func splitTestName(name string, testClass map[string]string) (string, string) {
+	if class, ok := testClass[name]; ok {
+		return "s3tests." + class, name
 	}
-	_, ok := migrationClasses[className]
-	return ok
-}
-
-var migrationClasses = map[string]struct{}{
-	"TestAccelerate": {}, "TestAccess": {}, "TestACL": {}, "TestAnalytics": {}, "TestBackend": {},
-	"TestCopyObject": {}, "TestCors": {}, "TestCSE": {}, "TestDeleteBucket": {}, "TestDeleteObjects": {},
-	"TestGetObject": {}, "TestGetObjectAttributes": {}, "TestGrants": {}, "TestInventory": {}, "TestLifeCycle": {},
-	"TestListBuckets": {}, "TestListObjects": {}, "TestListObjectsV2": {}, "TestListObjectsVersions": {}, "TestLock": {},
-	"TestLogging": {}, "TestMetrics": {}, "TestMultipart": {}, "TestNotification": {}, "TestOwnership": {},
-	"TestPayment": {}, "TestPolicy": {}, "TestPost": {}, "TestPutBucket": {}, "TestPutObject": {},
-	"TestReplication": {}, "TestSelectObjectContent": {}, "TestSSEC": {}, "TestSSES3": {}, "TestTaggings": {},
-	"TestVersioning": {}, "TestWebsite": {},
-}
-
-func splitTestName(name string) (string, string) {
-	className, method, found := strings.Cut(name, "/")
-	if !found {
-		return "s3tests", name
-	}
-	return "s3tests." + className, method
+	return "s3tests", name
 }
 
 func skipMessage(output string) string {
