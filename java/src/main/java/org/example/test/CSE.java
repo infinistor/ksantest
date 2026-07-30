@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.example.Data.AES256;
 import org.example.Data.MainData;
@@ -161,8 +160,7 @@ public class CSE extends TestBase {
 			metadata.setContentLength(encoding.length());
 			client.putObject(bucketName, key, createBody(encoding), metadata);
 
-			var r = new Random(System.currentTimeMillis());
-			var startPoint = r.nextInt(1024 * 1024 - 1001);
+			var startPoint = rand.nextInt(1024 * 1024 - 1001);
 			var endPoint = startPoint + 999;
 			var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(startPoint, endPoint));
 			var encodingBody = getBody(response.getObjectContent());
