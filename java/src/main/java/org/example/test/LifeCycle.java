@@ -384,11 +384,8 @@ public class LifeCycle extends TestBase {
 
 		var keyNames = List.of("test1/a", "test2/b");
 
-		var uploadIds = new ArrayList<String>();
-
 		for (var key : keyNames) {
-			var response = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
-			uploadIds.add(response.getUploadId());
+			client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
 		}
 
 		var listResponse = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
