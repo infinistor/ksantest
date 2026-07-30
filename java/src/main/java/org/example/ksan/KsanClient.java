@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -67,7 +68,7 @@ public class KsanClient {
 	 */
 	public void deleteBucketTagIndex(String bucketName) throws IOException {
 		var query = createHeaders("tag-index");
-		var uri = new URL(String.format("http://%s:%d/%s/?%s", host, port, bucketName, query));
+		var uri = URI.create(String.format("http://%s:%d/%s/?%s", host, port, bucketName, query)).toURL();
 
 		var headers = new HashMap<String, String>();
 		headers.put(AWS4SignerBase.X_AMZ_CONTENT_SHA256, AWS4SignerBase.EMPTY_BODY_SHA256);
