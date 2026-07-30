@@ -97,7 +97,7 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingBadIp() {
-		checkBadBucketName("192.168.11.123");
+		checkBadBucketName("127.0.0.1");
 	}
 
 	@Test
@@ -111,8 +111,7 @@ public class PutBucket extends TestBase {
 	public void testBucketCreateNamingDnsLong() {
 		var prefix = getPrefix();
 		var addLength = 63 - prefix.length();
-		prefix = Utils.randomText(addLength);
-		checkGoodBucketName(prefix, null);
+		checkGoodBucketName(prefix + Utils.randomText(addLength));
 	}
 
 	@Test
@@ -171,25 +170,25 @@ public class PutBucket extends TestBase {
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsAlpha() {
-		checkGoodBucketName("foo", "a" + getPrefix());
+		checkGoodBucketName(Utils.getNewBucketName("a", getSuiteId(), 19));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodStartsDigit() {
-		checkGoodBucketName("foo", "0" + getPrefix());
+		checkGoodBucketName(Utils.getNewBucketName("0", getSuiteId(), 20));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsPeriod() {
-		checkGoodBucketName("aaa.111", null);
+		checkGoodBucketName(getNewBucketNameOnly(21).replace('-', '.'));
 	}
 
 	@Test
 	@Tag("CreationRules")
 	public void testBucketCreateNamingGoodContainsHyphen() {
-		checkGoodBucketName("aaa-111", null);
+		checkGoodBucketName(getNewBucketNameOnly(22));
 	}
 
 	@Test
