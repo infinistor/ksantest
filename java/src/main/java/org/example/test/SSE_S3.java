@@ -36,7 +36,7 @@ import com.amazonaws.services.s3.model.ServerSideEncryptionRule;
 import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 
-public class SSE_S3 extends TestBase {
+public class SSE_S3 extends TestBase { // NOSONAR
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll() {
 		System.out.println("SSE_S3 Start");
