@@ -36,7 +36,7 @@ import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
 
-public class SSE_C extends TestBase {
+public class SSE_C extends TestBase { // NOSONAR
 	static final String SSE_KEY = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=";
 	static final String SSE_KEY_MD5 = "DWygnHRtgiJ77HCm+1rvHw==";
 	static final String SSE_ALGORITHM = "AES256";
