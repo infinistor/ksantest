@@ -31,7 +31,7 @@ import software.amazon.awssdk.services.s3.model.CompletedPart;
 import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 
 @SuppressWarnings("unchecked")
-public class SSE_S3 extends TestBase {
+public class SSE_S3 extends TestBase { // NOSONAR
 	static final String SSE_ALGORITHM = "AES256";
 
 	@org.junit.jupiter.api.BeforeAll
