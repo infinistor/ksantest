@@ -157,6 +157,7 @@ public class TestBase {
 	public static final String SSE_CUSTOMER_ALGORITHM = "AES256";
 	static final String SSE_KEY = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=";
 	static final String SSE_KEY_MD5 = "DWygnHRtgiJ77HCm+1rvHw==";
+	static final Random rand = new Random();// NOSONAR
 	/************************************************************************************************************/
 
 	private final ArrayList<String> buckets = new ArrayList<>();
@@ -188,7 +189,7 @@ public class TestBase {
 						NoopHostnameVerifier.INSTANCE);
 				httpClient.socketFactory(sslSocketFactory);
 			} catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-				e.printStackTrace();
+				e.printStackTrace();// NOSONAR
 				return null;
 			}
 			if (config.url.isEmpty())
@@ -880,7 +881,7 @@ public class TestBase {
 				}
 				return result.toString(StandardCharsets.UTF_8);
 			} catch (IOException e) {
-				e.printStackTrace();
+				e.printStackTrace();// NOSONAR
 			}
 		}
 		return body;
@@ -1063,10 +1064,8 @@ public class TestBase {
 		var response = client.listObjectVersions(l -> l.bucket(bucketName));
 		var versions = new ArrayList<>(response.versions());
 
-		Collections.reverse(versions);
-
 		var index = 0;
-		for (var version : versions) {
+		for (var version : versions.reversed()) {
 			assertEquals(version.versionId(), versionIds.get(index));
 			if (StringUtils.isNotBlank(key))
 				assertEquals(key, version.key());
@@ -1121,15 +1120,9 @@ public class TestBase {
 				() -> getClient().createBucket(c -> c.bucket(bucketName)));
 	}
 
-	public void checkGoodBucketName(String name, String prefix) {
-		if (StringUtils.isBlank(prefix))
-			prefix = getPrefix();
-
-		var bucketName = String.format("%s%s", prefix, name);
+	public void checkGoodBucketName(String bucketName) {
 		buckets.add(bucketName);
-
-		var client = getClient();
-		client.createBucket(c -> c.bucket(bucketName));
+		getClient().createBucket(c -> c.bucket(bucketName));
 	}
 
 	public void testBucketCreateNamingGoodLong(int length) {
@@ -1768,7 +1761,6 @@ public class TestBase {
 
 	public RangeSet getRandomRange(int fileSize) {
 		int maxSize = 500;
-		Random rand = new Random(System.currentTimeMillis());
 
 		var start = rand.nextInt(fileSize - maxSize * 2);
 		var maxLength = fileSize - start;
@@ -2694,7 +2686,6 @@ public class TestBase {
 
 		// 업로드 시작
 		var partList = new ArrayList<CompletedPart>();
-		// int partNumber = 1;
 		long index = 0;
 
 		while (index < size) {
@@ -2909,7 +2900,7 @@ public class TestBase {
 		try {
 			return client.execute(getRequest);
 		} catch (Exception e) {
-			e.printStackTrace();
+			e.printStackTrace();// NOSONAR
 		}
 		return null;
 	}
@@ -2926,7 +2917,7 @@ public class TestBase {
 			return client.execute(putRequest);
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			e.printStackTrace();// NOSONAR
 		}
 
 		return null;
