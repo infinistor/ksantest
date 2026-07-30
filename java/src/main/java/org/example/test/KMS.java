@@ -10,10 +10,7 @@
 */
 package org.example.test;
 
-import org.junit.Test;
-import org.junit.jupiter.api.Tag;
-
-public class KMS {
+public class KMS extends TestBase {// NOSONAR
 	
 	@org.junit.jupiter.api.BeforeAll
 	public static void beforeAll()
@@ -26,11 +23,4 @@ public class KMS {
 	{
 		System.out.println("KMS End");
 	}
-
-	@Test
-	@Tag("PutGet")
-	public void testSseKmsEncryptedTransfer1b(){
-		
-	}
-	
 }
