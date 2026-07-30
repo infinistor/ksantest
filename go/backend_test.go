@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"net/url"
-	"strings"
 	"testing"
 	"time"
 
@@ -33,8 +32,17 @@ func TestPutObjectVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_put_object_versioning")
+	bucket, key, body := s.bucket(t), "test_put_object_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	mustBackendPut(t, backend, bucket, key+"-target", body, nil, versionID)
+	assertBackendBody(t, s.client, bucket, key+"-target", body, versionID)
 }
+
 // [Versioning] PutObject 버전 정보 추가시 정상 동작 확인
 func TestPutObjectVersioningWithVersionId(t *testing.T) {
 	t.Parallel()
@@ -44,8 +52,17 @@ func TestPutObjectVersioningWithVersionId(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_put_object_versioning_with_version_id")
+	bucket, key, body := s.bucket(t), "test_put_object_versioning_with_version_id", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	mustBackendPut(t, backend, bucket, key+"-target", body, nil, versionID)
+	assertBackendBody(t, s.client, bucket, key+"-target", body, versionID)
 }
+
 // [Versioning] GetObject가 정상 동작하는지 확인
 func TestGetObjectVersioning(t *testing.T) {
 	t.Parallel()
@@ -55,8 +72,16 @@ func TestGetObjectVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_get_object_versioning")
+	bucket, key, body := s.bucket(t), "test_get_object_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	assertBackendBody(t, backend, bucket, key, body, versionID)
 }
+
 // [Versioning] DeleteObject가 정상 동작하는지 확인
 func TestDeleteObjectVersioning(t *testing.T) {
 	t.Parallel()
@@ -66,8 +91,21 @@ func TestDeleteObjectVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_delete_object_versioning")
+	ctx := context.Background()
+	bucket, key, body := s.bucket(t), "test_delete_object_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	if _, err := backend.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)}); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
+	assertHTTPError(t, err, 404)
 }
+
 // [Versioning] DeleteObjects가 정상 동작하는지 확인
 func TestDeleteObjectsVersioning(t *testing.T) {
 	t.Parallel()
@@ -77,8 +115,22 @@ func TestDeleteObjectsVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_delete_objects_versioning")
+	ctx := context.Background()
+	bucket, key, body := s.bucket(t), "test_delete_objects_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	_, err := backend.DeleteObjects(ctx, &s3.DeleteObjectsInput{Bucket: aws.String(bucket), Delete: &types.Delete{Objects: []types.ObjectIdentifier{{Key: aws.String(key), VersionId: aws.String(versionID)}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
+	assertHTTPError(t, err, 404)
 }
+
 // [Versioning] HeadObject가 정상 동작하는지 확인
 func TestHeadObjectVersioning(t *testing.T) {
 	t.Parallel()
@@ -88,8 +140,20 @@ func TestHeadObjectVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_head_object_versioning")
+	ctx := context.Background()
+	bucket, key, body := s.bucket(t), "test_head_object_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	head, err := backend.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
+	if err != nil || aws.ToInt64(head.ContentLength) != int64(len(body)) {
+		t.Fatalf("head=%v err=%v", head.ContentLength, err)
+	}
 }
+
 // [Versioning] CopyObject가 정상 동작하는지 확인
 func TestCopyObjectVersioning(t *testing.T) {
 	t.Parallel()
@@ -99,8 +163,21 @@ func TestCopyObjectVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_copy_object_versioning")
+	ctx := context.Background()
+	bucket, key, body := s.bucket(t), "test_copy_object_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	_, err := backend.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String(key + "-target"), CopySource: aws.String(url.PathEscape(bucket + "/" + key + "?versionId=" + versionID))}, versionOption(versionID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertBackendBody(t, s.client, bucket, key+"-target", body, versionID)
 }
+
 // [Versioning] MultipartUpload가 정상 동작하는지 확인
 func TestMultipartUploadVersioning(t *testing.T) {
 	t.Parallel()
@@ -110,8 +187,17 @@ func TestMultipartUploadVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_multipart_upload_versioning")
+	bucket, key, body := s.bucket(t), "test_multipart_upload_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	backendMultipart(t, backend, bucket, key+"-target", []byte(body), versionID)
+	assertBackendBody(t, s.client, bucket, key+"-target", body, versionID)
 }
+
 // [Versioning] PutObjectAcl가 정상 동작하는지 확인
 func TestPutObjectAclVersioning(t *testing.T) {
 	t.Parallel()
@@ -121,8 +207,21 @@ func TestPutObjectAclVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_put_object_acl_versioning")
+	ctx := context.Background()
+	bucket, key, body := s.bucket(t), "test_put_object_acl_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	_, err := backend.PutObjectAcl(ctx, &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID), ACL: types.ObjectCannedACLPublicRead})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertBackendACL(t, s.client, bucket, key, versionID, 2)
 }
+
 // [Versioning] GetObjectAcl가 정상 동작하는지 확인
 func TestGetObjectAclVersioning(t *testing.T) {
 	t.Parallel()
@@ -132,8 +231,16 @@ func TestGetObjectAclVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_get_object_acl_versioning")
+	bucket, key, body := s.bucket(t), "test_get_object_acl_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	assertBackendACL(t, backend, bucket, key, versionID, 1)
 }
+
 // [Versioning] PutObjectTagging가 정상 동작하는지 확인
 func TestPutObjectTaggingVersioning(t *testing.T) {
 	t.Parallel()
@@ -143,8 +250,17 @@ func TestPutObjectTaggingVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_put_object_tagging_versioning")
+	bucket, key, body := s.bucket(t), "test_put_object_tagging_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	backendPutTag(t, backend, bucket, key, versionID)
+	assertBackendTag(t, s.client, bucket, key, versionID, 1)
 }
+
 // [Versioning] GetObjectTagging가 정상 동작하는지 확인
 func TestGetObjectTaggingVersioning(t *testing.T) {
 	t.Parallel()
@@ -154,8 +270,17 @@ func TestGetObjectTaggingVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_get_object_tagging_versioning")
+	bucket, key, body := s.bucket(t), "test_get_object_tagging_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	backendPutTag(t, s.client, bucket, key, versionID)
+	assertBackendTag(t, backend, bucket, key, versionID, 1)
 }
+
 // [Versioning] DeleteObjectTagging가 정상 동작하는지 확인
 func TestDeleteObjectTaggingVersioning(t *testing.T) {
 	t.Parallel()
@@ -165,8 +290,21 @@ func TestDeleteObjectTaggingVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_delete_object_tagging_versioning")
+	ctx := context.Background()
+	bucket, key, body := s.bucket(t), "test_delete_object_tagging_versioning", "test content"
+	enableVersioning(t, s, bucket)
+	source := put(t, s, bucket, key, body, nil)
+	versionID := aws.ToString(source.VersionId)
+	if versionID == "" {
+		t.Fatal("missing source VersionId")
+	}
+	backendPutTag(t, s.client, bucket, key, versionID)
+	if _, err := backend.DeleteObjectTagging(ctx, &s3.DeleteObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)}); err != nil {
+		t.Fatal(err)
+	}
+	assertBackendTag(t, s.client, bucket, key, versionID, 0)
 }
+
 // [Versioning] PutObjectRetention가 정상 동작하는지 확인
 func TestPutObjectRetentionVersioning(t *testing.T) {
 	t.Parallel()
@@ -176,8 +314,28 @@ func TestPutObjectRetentionVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_put_object_retention_versioning")
+	ctx := context.Background()
+	bucket := newBucketName(s.cfg.BucketPrefix)
+	input := createBucketInput(s.cfg, bucket)
+	input.ObjectLockEnabledForBucket = aws.Bool(true)
+	_, err := s.client.CreateBucket(ctx, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if !s.cfg.NotDelete {
+			cleanupBucket(t, s, bucket)
+		}
+	})
+	key := "test_put_object_retention_versioning"
+	putOut := put(t, s, bucket, key, "retained", nil)
+	versionID, until := aws.ToString(putOut.VersionId), time.Now().Add(24*time.Hour)
+	retention := &types.ObjectLockRetention{Mode: types.ObjectLockRetentionModeGovernance, RetainUntilDate: &until}
+	if _, err := backend.PutObjectRetention(ctx, &s3.PutObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID), Retention: retention}); err != nil {
+		t.Fatal(err)
+	}
 }
+
 // [Versioning] GetObjectRetention가 정상 동작하는지 확인
 func TestGetObjectRetentionVersioning(t *testing.T) {
 	t.Parallel()
@@ -187,8 +345,32 @@ func TestGetObjectRetentionVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_get_object_retention_versioning")
+	ctx := context.Background()
+	bucket := newBucketName(s.cfg.BucketPrefix)
+	input := createBucketInput(s.cfg, bucket)
+	input.ObjectLockEnabledForBucket = aws.Bool(true)
+	_, err := s.client.CreateBucket(ctx, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if !s.cfg.NotDelete {
+			cleanupBucket(t, s, bucket)
+		}
+	})
+	key := "test_get_object_retention_versioning"
+	putOut := put(t, s, bucket, key, "retained", nil)
+	versionID, until := aws.ToString(putOut.VersionId), time.Now().Add(24*time.Hour)
+	retention := &types.ObjectLockRetention{Mode: types.ObjectLockRetentionModeGovernance, RetainUntilDate: &until}
+	if _, err := s.client.PutObjectRetention(ctx, &s3.PutObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID), Retention: retention}); err != nil {
+		t.Fatal(err)
+	}
+	out, err := backend.GetObjectRetention(ctx, &s3.GetObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
+	if err != nil || out.Retention == nil || out.Retention.Mode != types.ObjectLockRetentionModeGovernance {
+		t.Fatalf("retention=%#v err=%v", out.Retention, err)
+	}
 }
+
 // [Versioning] PutObjectRetention 후 GetObjectRetention으로 조회가 정상 동작하는지 확인
 func TestPutAndGetObjectRetentionVersioning(t *testing.T) {
 	t.Parallel()
@@ -198,8 +380,32 @@ func TestPutAndGetObjectRetentionVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendVersioning(t, s, backend, "test_put_and_get_object_retention_versioning")
+	ctx := context.Background()
+	bucket := newBucketName(s.cfg.BucketPrefix)
+	input := createBucketInput(s.cfg, bucket)
+	input.ObjectLockEnabledForBucket = aws.Bool(true)
+	_, err := s.client.CreateBucket(ctx, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if !s.cfg.NotDelete {
+			cleanupBucket(t, s, bucket)
+		}
+	})
+	key := "test_put_and_get_object_retention_versioning"
+	putOut := put(t, s, bucket, key, "retained", nil)
+	versionID, until := aws.ToString(putOut.VersionId), time.Now().Add(24*time.Hour)
+	retention := &types.ObjectLockRetention{Mode: types.ObjectLockRetentionModeGovernance, RetainUntilDate: &until}
+	if _, err := backend.PutObjectRetention(ctx, &s3.PutObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID), Retention: retention}); err != nil {
+		t.Fatal(err)
+	}
+	out, err := backend.GetObjectRetention(ctx, &s3.GetObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
+	if err != nil || out.Retention == nil || out.Retention.Mode != types.ObjectLockRetentionModeGovernance {
+		t.Fatalf("retention=%#v err=%v", out.Retention, err)
+	}
 }
+
 // PutObject 복제가 정상 동작하는지 확인
 func TestPutObjectReplication(t *testing.T) {
 	t.Parallel()
@@ -209,8 +415,14 @@ func TestPutObjectReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_put_object_replication")
+	bucket, sourceKey, targetKey := s.bucket(t), "test_put_object_replication-source", "test_put_object_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
 }
+
 // PutObject 태그가 복제되는지 확인
 func TestPutObjectWithTaggingReplication(t *testing.T) {
 	t.Parallel()
@@ -220,8 +432,17 @@ func TestPutObjectWithTaggingReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_put_object_with_tagging_replication")
+	bucket, sourceKey, targetKey := s.bucket(t), "test_put_object_with_tagging_replication-source", "test_put_object_with_tagging_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	backendPutTag(t, s.client, bucket, sourceKey, versionID)
+	backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
+	backendPutTag(t, backend, bucket, targetKey, versionID)
+	assertBackendTag(t, s.client, bucket, targetKey, versionID, 1)
 }
+
 // PutObject 헤더와 메타데이터가 복제되는지 확인
 func TestPutObjectWithMetadataReplication(t *testing.T) {
 	t.Parallel()
@@ -231,8 +452,14 @@ func TestPutObjectWithMetadataReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_put_object_with_metadata_replication")
+	bucket, sourceKey, targetKey := s.bucket(t), "test_put_object_with_metadata_replication-source", "test_put_object_with_metadata_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", map[string]string{"testkey": "testValue"})
+	versionID := aws.ToString(putOut.VersionId)
+	backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
 }
+
 // CopyObject 복제가 정상 동작하는지 확인
 func TestCopyObjectReplication(t *testing.T) {
 	t.Parallel()
@@ -242,8 +469,22 @@ func TestCopyObjectReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_copy_object_replication")
+	ctx := context.Background()
+	bucket, sourceKey, targetKey := s.bucket(t), "test_copy_object_replication-source", "test_copy_object_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	copyInput := &s3.CopyObjectInput{
+		Bucket: aws.String(bucket), Key: aws.String(targetKey),
+		CopySource:        aws.String(url.PathEscape(bucket + "/" + sourceKey + "?versionId=" + versionID)),
+		MetadataDirective: types.MetadataDirectiveCopy,
+	}
+	if _, err := backend.CopyObject(ctx, copyInput, versionOption(versionID)); err != nil {
+		t.Fatal(err)
+	}
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
 }
+
 // CopyObject 태그가 복제되는지 확인
 func TestCopyObjectWithTaggingReplication(t *testing.T) {
 	t.Parallel()
@@ -253,8 +494,25 @@ func TestCopyObjectWithTaggingReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_copy_object_with_tagging_replication")
+	ctx := context.Background()
+	bucket, sourceKey, targetKey := s.bucket(t), "test_copy_object_with_tagging_replication-source", "test_copy_object_with_tagging_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	backendPutTag(t, s.client, bucket, sourceKey, versionID)
+	copyInput := &s3.CopyObjectInput{
+		Bucket: aws.String(bucket), Key: aws.String(targetKey),
+		CopySource:        aws.String(url.PathEscape(bucket + "/" + sourceKey + "?versionId=" + versionID)),
+		MetadataDirective: types.MetadataDirectiveCopy,
+	}
+	if _, err := backend.CopyObject(ctx, copyInput, versionOption(versionID)); err != nil {
+		t.Fatal(err)
+	}
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
+	backendPutTag(t, backend, bucket, targetKey, versionID)
+	assertBackendTag(t, s.client, bucket, targetKey, versionID, 1)
 }
+
 // CopyObject 헤더와 메타데이터가 복제되는지 확인
 func TestCopyObjectWithMetadataReplication(t *testing.T) {
 	t.Parallel()
@@ -264,8 +522,22 @@ func TestCopyObjectWithMetadataReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_copy_object_with_metadata_replication")
+	ctx := context.Background()
+	bucket, sourceKey, targetKey := s.bucket(t), "test_copy_object_with_metadata_replication-source", "test_copy_object_with_metadata_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", map[string]string{"testkey": "testValue"})
+	versionID := aws.ToString(putOut.VersionId)
+	copyInput := &s3.CopyObjectInput{
+		Bucket: aws.String(bucket), Key: aws.String(targetKey),
+		CopySource:        aws.String(url.PathEscape(bucket + "/" + sourceKey + "?versionId=" + versionID)),
+		MetadataDirective: types.MetadataDirectiveCopy,
+	}
+	if _, err := backend.CopyObject(ctx, copyInput, versionOption(versionID)); err != nil {
+		t.Fatal(err)
+	}
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
 }
+
 // CopyObject 메타데이터가 Replace되었을 경우 복제되는지 확인
 func TestCopyObjectMetadataReplaceReplication(t *testing.T) {
 	t.Parallel()
@@ -275,8 +547,24 @@ func TestCopyObjectMetadataReplaceReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_copy_object_metadata_replace_replication")
+	ctx := context.Background()
+	bucket, sourceKey, targetKey := s.bucket(t), "test_copy_object_metadata_replace_replication-source", "test_copy_object_metadata_replace_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", map[string]string{"testkey": "testValue"})
+	versionID := aws.ToString(putOut.VersionId)
+	copyInput := &s3.CopyObjectInput{
+		Bucket:            aws.String(bucket),
+		Key:               aws.String(targetKey),
+		CopySource:        aws.String(url.PathEscape(bucket + "/" + sourceKey + "?versionId=" + versionID)),
+		MetadataDirective: types.MetadataDirectiveReplace,
+		Metadata:          map[string]string{"testkey2": "testValue2"},
+	}
+	if _, err := backend.CopyObject(ctx, copyInput, versionOption(versionID)); err != nil {
+		t.Fatal(err)
+	}
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
 }
+
 // MultipartUpload 복제가 정상 동작하는지 확인
 func TestMultipartUploadReplication(t *testing.T) {
 	t.Parallel()
@@ -286,8 +574,14 @@ func TestMultipartUploadReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_multipart_upload_replication")
+	bucket, sourceKey, targetKey := s.bucket(t), "test_multipart_upload_replication-source", "test_multipart_upload_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	backendMultipart(t, backend, bucket, targetKey, []byte("test content"), versionID)
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
 }
+
 // MultipartUpload 태그가 복제되는지 확인
 func TestMultipartUploadWithTaggingReplication(t *testing.T) {
 	t.Parallel()
@@ -297,8 +591,17 @@ func TestMultipartUploadWithTaggingReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_multipart_upload_with_tagging_replication")
+	bucket, sourceKey, targetKey := s.bucket(t), "test_multipart_upload_with_tagging_replication-source", "test_multipart_upload_with_tagging_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	backendPutTag(t, s.client, bucket, sourceKey, versionID)
+	backendMultipart(t, backend, bucket, targetKey, []byte("test content"), versionID)
+	backendPutTag(t, backend, bucket, targetKey, versionID)
+	assertBackendTag(t, s.client, bucket, targetKey, versionID, 1)
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
 }
+
 // MultipartUpload 헤더와 메타데이터가 복제되는지 확인
 func TestMultipartUploadWithMetadataReplication(t *testing.T) {
 	t.Parallel()
@@ -308,8 +611,14 @@ func TestMultipartUploadWithMetadataReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_multipart_upload_with_metadata_replication")
+	bucket, sourceKey, targetKey := s.bucket(t), "test_multipart_upload_with_metadata_replication-source", "test_multipart_upload_with_metadata_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", map[string]string{"testkey": "testValue"})
+	versionID := aws.ToString(putOut.VersionId)
+	backendMultipart(t, backend, bucket, targetKey, []byte("test content"), versionID)
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
 }
+
 // PutObjectAcl 복제가 정상 동작하는지 확인
 func TestPutObjectAclReplication(t *testing.T) {
 	t.Parallel()
@@ -319,8 +628,18 @@ func TestPutObjectAclReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_put_object_acl_replication")
+	ctx := context.Background()
+	bucket, sourceKey, targetKey := s.bucket(t), "test_put_object_acl_replication-source", "test_put_object_acl_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
+	if _, err := backend.PutObjectAcl(ctx, &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), VersionId: aws.String(versionID), ACL: types.ObjectCannedACLPublicRead}); err != nil {
+		t.Fatal(err)
+	}
+	assertBackendACL(t, s.client, bucket, targetKey, versionID, 2)
 }
+
 // putObjectTagging 복제가 정상 동작하는지 확인
 func TestPutObjectTaggingReplication(t *testing.T) {
 	t.Parallel()
@@ -330,8 +649,17 @@ func TestPutObjectTaggingReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_put_object_tagging_replication")
+	bucket, sourceKey, targetKey := s.bucket(t), "test_put_object_tagging_replication-source", "test_put_object_tagging_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	backendPutTag(t, s.client, bucket, sourceKey, versionID)
+	backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
+	assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
+	backendPutTag(t, backend, bucket, targetKey, versionID)
+	assertBackendTag(t, s.client, bucket, targetKey, versionID, 1)
 }
+
 // deleteObject 복제가 정상 동작하는지 확인
 func TestDeleteObjectReplication(t *testing.T) {
 	t.Parallel()
@@ -341,8 +669,26 @@ func TestDeleteObjectReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_delete_object_replication")
+	ctx := context.Background()
+	bucket, sourceKey, targetKey := s.bucket(t), "test_delete_object_replication-source", "test_delete_object_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
+	deleted, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(sourceKey)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	markerID := aws.ToString(deleted.VersionId)
+	if _, err := backend.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), Body: bytes.NewReader(nil)}, deleteMarkerOption(markerID)); err != nil {
+		t.Fatal(err)
+	}
+	versions, err := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(bucket)})
+	if err != nil || len(versions.DeleteMarkers) != 2 {
+		t.Fatalf("delete markers=%v err=%v", versions.DeleteMarkers, err)
+	}
 }
+
 // deleteObjectTagging 복제가 정상 동작하는지 확인
 func TestDeleteObjectTaggingReplication(t *testing.T) {
 	t.Parallel()
@@ -352,7 +698,19 @@ func TestDeleteObjectTaggingReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	runBackendReplication(t, s, backend, "test_delete_object_tagging_replication")
+	ctx := context.Background()
+	bucket, sourceKey, targetKey := s.bucket(t), "test_delete_object_tagging_replication-source", "test_delete_object_tagging_replication-target"
+	enableVersioning(t, s, bucket)
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	backendPutTag(t, s.client, bucket, sourceKey, versionID)
+	backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
+	backendPutTag(t, backend, bucket, targetKey, versionID)
+	if _, err := backend.DeleteObjectTagging(ctx, &s3.DeleteObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), VersionId: aws.String(versionID)}); err != nil {
+		t.Fatal(err)
+	}
+	assertBackendTag(t, s.client, bucket, sourceKey, versionID, 1)
+	assertBackendTag(t, s.client, bucket, targetKey, versionID, 0)
 }
 
 func newBackendClient(t *testing.T, s *suite) *s3.Client {
@@ -394,186 +752,6 @@ func versionOption(versionID string) func(*s3.Options) {
 func deleteMarkerOption(versionID string) func(*s3.Options) {
 	return func(options *s3.Options) {
 		options.APIOptions = append(options.APIOptions, backendHeaders("backend-delete-marker-headers", map[string]string{backendDeleteMarkerHeader: versionID, backendKSANDeleteHeader: versionID}))
-	}
-}
-
-func runBackendVersioning(t *testing.T, s *suite, backend *s3.Client, name string) {
-	t.Helper()
-	ctx := context.Background()
-	if strings.Contains(name, "retention") {
-		runBackendRetention(t, s, backend, name)
-		return
-	}
-	bucket, key, body := s.bucket(t), name, "test content"
-	enableVersioning(t, s, bucket)
-	source := put(t, s, bucket, key, body, nil)
-	versionID := aws.ToString(source.VersionId)
-	if versionID == "" {
-		t.Fatal("missing source VersionId")
-	}
-	switch name {
-	case "test_put_object_versioning", "test_put_object_versioning_with_version_id":
-		mustBackendPut(t, backend, bucket, key+"-target", body, nil, versionID)
-		assertBackendBody(t, s.client, bucket, key+"-target", body, versionID)
-	case "test_get_object_versioning":
-		assertBackendBody(t, backend, bucket, key, body, versionID)
-	case "test_delete_object_versioning":
-		if _, err := backend.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)}); err != nil {
-			t.Fatal(err)
-		}
-		_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
-		assertHTTPError(t, err, 404)
-	case "test_delete_objects_versioning":
-		_, err := backend.DeleteObjects(ctx, &s3.DeleteObjectsInput{Bucket: aws.String(bucket), Delete: &types.Delete{Objects: []types.ObjectIdentifier{{Key: aws.String(key), VersionId: aws.String(versionID)}}}})
-		if err != nil {
-			t.Fatal(err)
-		}
-		_, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
-		assertHTTPError(t, err, 404)
-	case "test_head_object_versioning":
-		head, err := backend.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
-		if err != nil || aws.ToInt64(head.ContentLength) != int64(len(body)) {
-			t.Fatalf("head=%v err=%v", head.ContentLength, err)
-		}
-	case "test_copy_object_versioning":
-		_, err := backend.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String(key + "-target"), CopySource: aws.String(url.PathEscape(bucket + "/" + key + "?versionId=" + versionID))}, versionOption(versionID))
-		if err != nil {
-			t.Fatal(err)
-		}
-		assertBackendBody(t, s.client, bucket, key+"-target", body, versionID)
-	case "test_multipart_upload_versioning":
-		backendMultipart(t, backend, bucket, key+"-target", []byte(body), versionID)
-		assertBackendBody(t, s.client, bucket, key+"-target", body, versionID)
-	case "test_put_object_acl_versioning":
-		_, err := backend.PutObjectAcl(ctx, &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID), ACL: types.ObjectCannedACLPublicRead})
-		if err != nil {
-			t.Fatal(err)
-		}
-		assertBackendACL(t, s.client, bucket, key, versionID, 2)
-	case "test_get_object_acl_versioning":
-		assertBackendACL(t, backend, bucket, key, versionID, 1)
-	case "test_put_object_tagging_versioning":
-		backendPutTag(t, backend, bucket, key, versionID)
-		assertBackendTag(t, s.client, bucket, key, versionID, 1)
-	case "test_get_object_tagging_versioning":
-		backendPutTag(t, s.client, bucket, key, versionID)
-		assertBackendTag(t, backend, bucket, key, versionID, 1)
-	case "test_delete_object_tagging_versioning":
-		backendPutTag(t, s.client, bucket, key, versionID)
-		if _, err := backend.DeleteObjectTagging(ctx, &s3.DeleteObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)}); err != nil {
-			t.Fatal(err)
-		}
-		assertBackendTag(t, s.client, bucket, key, versionID, 0)
-	}
-}
-
-func runBackendRetention(t *testing.T, s *suite, backend *s3.Client, name string) {
-	t.Helper()
-	ctx := context.Background()
-	bucket := newBucketName(s.cfg.BucketPrefix)
-	input := createBucketInput(s.cfg, bucket)
-	input.ObjectLockEnabledForBucket = aws.Bool(true)
-	_, err := s.client.CreateBucket(ctx, input)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if !s.cfg.NotDelete {
-			cleanupBucket(t, s, bucket)
-		}
-	})
-	key := name
-	putOut := put(t, s, bucket, key, "retained", nil)
-	versionID, until := aws.ToString(putOut.VersionId), time.Now().Add(24*time.Hour)
-	retention := &types.ObjectLockRetention{Mode: types.ObjectLockRetentionModeGovernance, RetainUntilDate: &until}
-	if name != "test_get_object_retention_versioning" {
-		if _, err := backend.PutObjectRetention(ctx, &s3.PutObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID), Retention: retention}); err != nil {
-			t.Fatal(err)
-		}
-	} else if _, err := s.client.PutObjectRetention(ctx, &s3.PutObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID), Retention: retention}); err != nil {
-		t.Fatal(err)
-	}
-	if name != "test_put_object_retention_versioning" {
-		out, err := backend.GetObjectRetention(ctx, &s3.GetObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
-		if err != nil || out.Retention == nil || out.Retention.Mode != types.ObjectLockRetentionModeGovernance {
-			t.Fatalf("retention=%#v err=%v", out.Retention, err)
-		}
-	}
-}
-
-func runBackendReplication(t *testing.T, s *suite, backend *s3.Client, name string) {
-	t.Helper()
-	ctx := context.Background()
-	bucket, sourceKey, targetKey := s.bucket(t), name+"-source", name+"-target"
-	enableVersioning(t, s, bucket)
-	metadata := map[string]string(nil)
-	if strings.Contains(name, "metadata") {
-		metadata = map[string]string{"testkey": "testValue"}
-	}
-	putOut := put(t, s, bucket, sourceKey, "test content", metadata)
-	versionID := aws.ToString(putOut.VersionId)
-	if strings.Contains(name, "tagging") {
-		backendPutTag(t, s.client, bucket, sourceKey, versionID)
-	}
-
-	switch {
-	case name == "test_delete_object_replication":
-		backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
-		deleted, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(sourceKey)})
-		if err != nil {
-			t.Fatal(err)
-		}
-		markerID := aws.ToString(deleted.VersionId)
-		if _, err := backend.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), Body: bytes.NewReader(nil)}, deleteMarkerOption(markerID)); err != nil {
-			t.Fatal(err)
-		}
-		versions, err := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(bucket)})
-		if err != nil || len(versions.DeleteMarkers) != 2 {
-			t.Fatalf("delete markers=%v err=%v", versions.DeleteMarkers, err)
-		}
-	case name == "test_delete_object_tagging_replication":
-		backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
-		backendPutTag(t, backend, bucket, targetKey, versionID)
-		if _, err := backend.DeleteObjectTagging(ctx, &s3.DeleteObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), VersionId: aws.String(versionID)}); err != nil {
-			t.Fatal(err)
-		}
-		assertBackendTag(t, s.client, bucket, sourceKey, versionID, 1)
-		assertBackendTag(t, s.client, bucket, targetKey, versionID, 0)
-	case strings.Contains(name, "multipart"):
-		backendMultipart(t, backend, bucket, targetKey, []byte("test content"), versionID)
-		if strings.Contains(name, "tagging") {
-			backendPutTag(t, backend, bucket, targetKey, versionID)
-			assertBackendTag(t, s.client, bucket, targetKey, versionID, 1)
-		}
-		assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
-	case strings.Contains(name, "copy_object"):
-		copyMetadata := types.MetadataDirectiveCopy
-		copyInput := &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), CopySource: aws.String(url.PathEscape(bucket + "/" + sourceKey + "?versionId=" + versionID)), MetadataDirective: copyMetadata}
-		if strings.Contains(name, "replace") {
-			copyInput.MetadataDirective = types.MetadataDirectiveReplace
-			copyInput.Metadata = map[string]string{"testkey2": "testValue2"}
-		}
-		if _, err := backend.CopyObject(ctx, copyInput, versionOption(versionID)); err != nil {
-			t.Fatal(err)
-		}
-		assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
-		if strings.Contains(name, "tagging") {
-			backendPutTag(t, backend, bucket, targetKey, versionID)
-			assertBackendTag(t, s.client, bucket, targetKey, versionID, 1)
-		}
-	case name == "test_put_object_acl_replication":
-		backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
-		if _, err := backend.PutObjectAcl(ctx, &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), VersionId: aws.String(versionID), ACL: types.ObjectCannedACLPublicRead}); err != nil {
-			t.Fatal(err)
-		}
-		assertBackendACL(t, s.client, bucket, targetKey, versionID, 2)
-	default:
-		backendReplicatePut(t, backend, bucket, sourceKey, targetKey, versionID)
-		assertBackendBody(t, s.client, bucket, targetKey, "test content", versionID)
-		if strings.Contains(name, "tagging") {
-			backendPutTag(t, backend, bucket, targetKey, versionID)
-			assertBackendTag(t, s.client, bucket, targetKey, versionID, 1)
-		}
 	}
 }
 

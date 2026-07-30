@@ -15,160 +15,14 @@ import (
 func TestLifecycleSet(t *testing.T) {
 	t.Parallel()
 
-	testLifecycleSet(t)
+	s := newSuite(t)
+	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled), lifecycleRule("rule2", "test2/", 2, types.ExpirationStatusDisabled)})
 }
 
 // 버킷에 설정한 Lifecycle 규칙을 가져올 수 있는지 확인
 func TestLifecycleGet(t *testing.T) {
 	t.Parallel()
 
-	testLifecycleGet(t)
-}
-
-// ID 없이 버킷에 Lifecycle 규칙을 설정 할 수 있는지 확인
-func TestLifecycleGetNoId(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleGetNoID(t)
-}
-
-// 버킷에 버저닝 설정이 되어있는 상태에서 Lifecycle 규칙을 추가 가능한지 확인
-func TestLifecycleExpirationVersioningEnabled(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleVersioningEnabled(t)
-}
-
-// 버킷에 Lifecycle 규칙을 설정할때 ID의 길이가 너무 길면 실패하는지 확인
-func TestLifecycleIdTooLong(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleIDTooLong(t)
-}
-
-// 버킷에 Lifecycle 규칙을 설정할때 같은 ID로 규칙을 여러개 설정할경우 실패하는지 확인
-func TestLifecycleSameId(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleSameID(t)
-}
-
-// 버킷에 Lifecycle 규칙중 status를 잘못 설정할때 실패하는지 확인
-func TestLifecycleInvalidStatus(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleInvalidStatus(t)
-}
-
-// 버킷의 Lifecycle규칙에 날짜를 입력가능한지 확인
-func TestLifecycleSetDate(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleSetDate(t)
-}
-
-// 버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식으로 입력했을때 실패 확인
-func TestLifecycleSetInvalidDate(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleInvalidDate(t)
-}
-
-// 버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인
-func TestLifecycleSetNoncurrent(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleSetNoncurrent(t)
-}
-
-// 버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
-func TestLifecycleNoncurrentExpiration(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleNoncurrentExpiration(t)
-}
-
-// DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
-func TestLifecycleSetDeleteMarker(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleSetDeleteMarker(t)
-}
-
-// Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인
-func TestLifecycleSetFilter(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleSetFilter(t)
-}
-
-// Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인
-func TestLifecycleSetEmptyFilter(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleSetEmptyFilter(t)
-}
-
-// DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
-func TestLifecycleDeleteMarkerExpiration(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleDeleteMarkerExpiration(t)
-}
-
-// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
-func TestLifecycleSetMultipart(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleSetMultipart(t)
-}
-
-// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
-func TestLifecycleMultipartExpiration(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleMultipartExpiration(t)
-}
-
-// 버킷의 Lifecycle 규칙을 삭제 가능한지 확인
-func TestLifecycleDelete(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleDelete(t)
-}
-
-// Lifecycle 규칙에 0일을 설정할때 실패하는지 확인
-func TestLifecycleSetExpirationZero(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleExpirationZero(t)
-}
-
-// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
-func TestLifecycleSetExpiration(t *testing.T) {
-	t.Parallel()
-
-	testLifecycleExpirationHeaders(t)
-}
-
-func lifecycleRule(id, prefix string, days int32, status types.ExpirationStatus) types.LifecycleRule {
-	return types.LifecycleRule{ID: aws.String(id), Filter: &types.LifecycleRuleFilter{Prefix: aws.String(prefix)}, Expiration: &types.LifecycleExpiration{Days: aws.Int32(days)}, Status: status}
-}
-
-func putLifecycle(t *testing.T, s *suite, bucket string, rules []types.LifecycleRule) {
-	t.Helper()
-	_, err := s.client.PutBucketLifecycleConfiguration(context.Background(), &s3.PutBucketLifecycleConfigurationInput{Bucket: aws.String(bucket), LifecycleConfiguration: &types.BucketLifecycleConfiguration{Rules: rules}})
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func testLifecycleSet(t *testing.T) {
-	s := newSuite(t)
-	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled), lifecycleRule("rule2", "test2/", 2, types.ExpirationStatusDisabled)})
-}
-
-func testLifecycleGet(t *testing.T) {
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	want := []types.LifecycleRule{lifecycleRule("rule1", "test1/", 31, types.ExpirationStatusEnabled), lifecycleRule("rule2", "test2/", 120, types.ExpirationStatusEnabled)}
@@ -177,7 +31,10 @@ func testLifecycleGet(t *testing.T) {
 	assertLifecycleRules(t, got, want, true)
 }
 
-func testLifecycleGetNoID(t *testing.T) {
+// ID 없이 버킷에 Lifecycle 규칙을 설정 할 수 있는지 확인
+func TestLifecycleGetNoId(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	rules := []types.LifecycleRule{lifecycleRule("", "test1/", 31, types.ExpirationStatusEnabled), lifecycleRule("", "test2/", 120, types.ExpirationStatusEnabled)}
@@ -196,7 +53,10 @@ func testLifecycleGetNoID(t *testing.T) {
 	}
 }
 
-func testLifecycleVersioningEnabled(t *testing.T) {
+// 버킷에 버저닝 설정이 되어있는 상태에서 Lifecycle 규칙을 추가 가능한지 확인
+func TestLifecycleExpirationVersioningEnabled(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	enableVersioning(t, s, bucket)
@@ -211,7 +71,10 @@ func testLifecycleVersioningEnabled(t *testing.T) {
 	}
 }
 
-func testLifecycleIDTooLong(t *testing.T) {
+// 버킷에 Lifecycle 규칙을 설정할때 ID의 길이가 너무 길면 실패하는지 확인
+func TestLifecycleIdTooLong(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	rule := lifecycleRule(strings.Repeat("a", 256), "test1/", 2, types.ExpirationStatusEnabled)
@@ -219,21 +82,30 @@ func testLifecycleIDTooLong(t *testing.T) {
 	assertS3Error(t, err, 400, "InvalidArgument")
 }
 
-func testLifecycleSameID(t *testing.T) {
+// 버킷에 Lifecycle 규칙을 설정할때 같은 ID로 규칙을 여러개 설정할경우 실패하는지 확인
+func TestLifecycleSameId(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	_, err := putLifecycleError(s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled), lifecycleRule("rule1", "test2/", 2, types.ExpirationStatusDisabled)})
 	assertS3Error(t, err, 400, "InvalidArgument")
 }
 
-func testLifecycleInvalidStatus(t *testing.T) {
+// 버킷에 Lifecycle 규칙중 status를 잘못 설정할때 실패하는지 확인
+func TestLifecycleInvalidStatus(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	_, err := putLifecycleError(s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 2, types.ExpirationStatus("invalid"))})
 	assertS3Error(t, err, 400, "MalformedXML")
 }
 
-func testLifecycleSetDate(t *testing.T) {
+// 버킷의 Lifecycle규칙에 날짜를 입력가능한지 확인
+func TestLifecycleSetDate(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	date := time.Date(2099, 11, 10, 0, 0, 0, 0, time.UTC)
@@ -242,7 +114,10 @@ func testLifecycleSetDate(t *testing.T) {
 	putLifecycle(t, s, bucket, []types.LifecycleRule{rule})
 }
 
-func testLifecycleInvalidDate(t *testing.T) {
+// 버킷의 Lifecycle규칙에 날짜를 올바르지 않은 형식으로 입력했을때 실패 확인
+func TestLifecycleSetInvalidDate(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	date := time.Date(2099, 11, 10, 12, 0, 0, 0, time.UTC)
@@ -252,11 +127,10 @@ func testLifecycleInvalidDate(t *testing.T) {
 	assertS3Error(t, err, 400, "InvalidArgument")
 }
 
-func noncurrentRule(id, prefix string, days int32) types.LifecycleRule {
-	return types.LifecycleRule{ID: aws.String(id), Filter: &types.LifecycleRuleFilter{Prefix: aws.String(prefix)}, NoncurrentVersionExpiration: &types.NoncurrentVersionExpiration{NoncurrentDays: aws.Int32(days)}, Status: types.ExpirationStatusEnabled}
-}
+// 버킷의 버저닝설정이 없는 환경에서 버전관리용 Lifecycle이 올바르게 설정되는지 확인
+func TestLifecycleSetNoncurrent(t *testing.T) {
+	t.Parallel()
 
-func testLifecycleSetNoncurrent(t *testing.T) {
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	put(t, s, bucket, "past/foo", "past", nil)
@@ -264,7 +138,10 @@ func testLifecycleSetNoncurrent(t *testing.T) {
 	putLifecycle(t, s, bucket, []types.LifecycleRule{noncurrentRule("rule1", "past/", 2), noncurrentRule("rule2", "future/", 3)})
 }
 
-func testLifecycleNoncurrentExpiration(t *testing.T) {
+// 버킷의 버저닝설정이 되어있는 환경에서 Lifecycle 이 올바르게 동작하는지 확인
+func TestLifecycleNoncurrentExpiration(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	enableVersioning(t, s, bucket)
@@ -280,26 +157,34 @@ func testLifecycleNoncurrentExpiration(t *testing.T) {
 	putLifecycle(t, s, bucket, []types.LifecycleRule{noncurrentRule("rule1", "test1/", 2)})
 }
 
-func deleteMarkerRule(prefix string) types.LifecycleRule {
-	return types.LifecycleRule{ID: aws.String("rule1"), Expiration: &types.LifecycleExpiration{ExpiredObjectDeleteMarker: aws.Bool(true)}, Filter: &types.LifecycleRuleFilter{Prefix: aws.String(prefix)}, Status: types.ExpirationStatusEnabled}
-}
+// DeleteMarker에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
+func TestLifecycleSetDeleteMarker(t *testing.T) {
+	t.Parallel()
 
-func testLifecycleSetDeleteMarker(t *testing.T) {
 	s := newSuite(t)
 	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{deleteMarkerRule("test1/")})
 }
 
-func testLifecycleSetFilter(t *testing.T) {
+// Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인
+func TestLifecycleSetFilter(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{deleteMarkerRule("foo")})
 }
 
-func testLifecycleSetEmptyFilter(t *testing.T) {
+// Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인
+func TestLifecycleSetEmptyFilter(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{deleteMarkerRule("")})
 }
 
-func testLifecycleDeleteMarkerExpiration(t *testing.T) {
+// DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
+func TestLifecycleDeleteMarkerExpiration(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	enableVersioning(t, s, bucket)
@@ -318,16 +203,18 @@ func testLifecycleDeleteMarkerExpiration(t *testing.T) {
 	putLifecycle(t, s, bucket, []types.LifecycleRule{rule})
 }
 
-func multipartLifecycleRule(id, prefix string, days int32) types.LifecycleRule {
-	return types.LifecycleRule{ID: aws.String(id), Filter: &types.LifecycleRuleFilter{Prefix: aws.String(prefix)}, Status: types.ExpirationStatusEnabled, AbortIncompleteMultipartUpload: &types.AbortIncompleteMultipartUpload{DaysAfterInitiation: aws.Int32(days)}}
-}
+// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙을 설정 할 수 있는지 확인
+func TestLifecycleSetMultipart(t *testing.T) {
+	t.Parallel()
 
-func testLifecycleSetMultipart(t *testing.T) {
 	s := newSuite(t)
 	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{multipartLifecycleRule("rule1", "test1/", 2), multipartLifecycleRule("rule2", "test2/", 3)})
 }
 
-func testLifecycleMultipartExpiration(t *testing.T) {
+// AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
+func TestLifecycleMultipartExpiration(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	for _, key := range []string{"test1/a", "test2/b"} {
@@ -347,7 +234,10 @@ func testLifecycleMultipartExpiration(t *testing.T) {
 	putLifecycle(t, s, bucket, []types.LifecycleRule{multipartLifecycleRule("rule1", "test1/", 2)})
 }
 
-func testLifecycleDelete(t *testing.T) {
+// 버킷의 Lifecycle 규칙을 삭제 가능한지 확인
+func TestLifecycleDelete(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putLifecycle(t, s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled), lifecycleRule("rule2", "test2/", 2, types.ExpirationStatusDisabled)})
@@ -356,16 +246,45 @@ func testLifecycleDelete(t *testing.T) {
 	}
 }
 
-func testLifecycleExpirationZero(t *testing.T) {
+// Lifecycle 규칙에 0일을 설정할때 실패하는지 확인
+func TestLifecycleSetExpirationZero(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	_, err := putLifecycleError(s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 0, types.ExpirationStatusEnabled)})
 	assertS3Error(t, err, 400, "InvalidArgument")
 }
 
-func testLifecycleExpirationHeaders(t *testing.T) {
+// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
+func TestLifecycleSetExpiration(t *testing.T) {
+	t.Parallel()
 
 	t.Skip("Java SDK V2에서는 expires값을 재대로 가져오지 못함")
+}
+
+func lifecycleRule(id, prefix string, days int32, status types.ExpirationStatus) types.LifecycleRule {
+	return types.LifecycleRule{ID: aws.String(id), Filter: &types.LifecycleRuleFilter{Prefix: aws.String(prefix)}, Expiration: &types.LifecycleExpiration{Days: aws.Int32(days)}, Status: status}
+}
+
+func putLifecycle(t *testing.T, s *suite, bucket string, rules []types.LifecycleRule) {
+	t.Helper()
+	_, err := s.client.PutBucketLifecycleConfiguration(context.Background(), &s3.PutBucketLifecycleConfigurationInput{Bucket: aws.String(bucket), LifecycleConfiguration: &types.BucketLifecycleConfiguration{Rules: rules}})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func noncurrentRule(id, prefix string, days int32) types.LifecycleRule {
+	return types.LifecycleRule{ID: aws.String(id), Filter: &types.LifecycleRuleFilter{Prefix: aws.String(prefix)}, NoncurrentVersionExpiration: &types.NoncurrentVersionExpiration{NoncurrentDays: aws.Int32(days)}, Status: types.ExpirationStatusEnabled}
+}
+
+func deleteMarkerRule(prefix string) types.LifecycleRule {
+	return types.LifecycleRule{ID: aws.String("rule1"), Expiration: &types.LifecycleExpiration{ExpiredObjectDeleteMarker: aws.Bool(true)}, Filter: &types.LifecycleRuleFilter{Prefix: aws.String(prefix)}, Status: types.ExpirationStatusEnabled}
+}
+
+func multipartLifecycleRule(id, prefix string, days int32) types.LifecycleRule {
+	return types.LifecycleRule{ID: aws.String(id), Filter: &types.LifecycleRuleFilter{Prefix: aws.String(prefix)}, Status: types.ExpirationStatusEnabled, AbortIncompleteMultipartUpload: &types.AbortIncompleteMultipartUpload{DaysAfterInitiation: aws.Int32(days)}}
 }
 
 func putLifecycleError(s *suite, bucket string, rules []types.LifecycleRule) (*s3.PutBucketLifecycleConfigurationOutput, error) {

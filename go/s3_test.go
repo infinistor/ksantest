@@ -333,18 +333,25 @@ func newBucketName(prefix string) string {
 	return randomBucketName(prefix)
 }
 
-func randomBucketName(prefix string) string {
-	const (
-		bucketMaxLength = 63
-		letters         = "abcdefghijklmnopqrstuvwxyz0123456789"
-	)
-	var b strings.Builder
-	b.Grow(bucketMaxLength)
-	b.WriteString(prefix)
-	for b.Len() < bucketMaxLength {
-		b.WriteByte(letters[rand.IntN(len(letters))])
+func randomText(length int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
+	if length <= 0 {
+		return ""
 	}
-	return b.String()[:bucketMaxLength-1]
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letters[rand.IntN(len(letters))]
+	}
+	return string(b)
+}
+
+func randomBucketName(prefix string) string {
+	const bucketMaxLength = 63
+	name := prefix + randomText(bucketMaxLength)
+	if len(name) > bucketMaxLength-1 {
+		return name[:bucketMaxLength-1]
+	}
+	return name
 }
 
 func createBucketInput(cfg testconfig.Config, name string) *s3.CreateBucketInput {

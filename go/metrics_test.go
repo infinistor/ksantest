@@ -13,99 +13,6 @@ import (
 func TestMetrics(t *testing.T) {
 	t.Parallel()
 
-	testMetricsList(t)
-}
-// 버킷에 Metrics를 설정할 수 있는지 확인
-func TestPutMetrics(t *testing.T) {
-	t.Parallel()
-
-	testMetricsPut(t)
-}
-// 버킷에 Metrics 설정이 되었는지 확인
-func TestCheckMetrics(t *testing.T) {
-	t.Parallel()
-
-	testMetricsCheck(t)
-}
-// 버킷에 설정된 Metrics를 조회할 수 있는지 확인
-func TestGetMetrics(t *testing.T) {
-	t.Parallel()
-
-	testMetricsGet(t)
-}
-// 버킷에 설정된 Metrics를 삭제할 수 있는지 확인
-func TestDeleteMetrics(t *testing.T) {
-	t.Parallel()
-
-	testMetricsDelete(t)
-}
-// 존재하지 않은 Metrics를 가져오려고 할 경우 실패하는지 확인
-func TestGetMetricsNotExist(t *testing.T) {
-	t.Parallel()
-
-	testMetricsGetMissing(t)
-}
-// 존재하지 않은 Metrics를 삭제하려고 할 경우 실패하는지 확인
-func TestDeleteMetricsNotExist(t *testing.T) {
-	t.Parallel()
-
-	testMetricsDeleteMissing(t)
-}
-// 존재하지 않은 Metrics를 설정하려고 할 경우 실패하는지 확인
-func TestPutMetricsNotExist(t *testing.T) {
-	t.Parallel()
-
-	testMetricsPutMissingBucket(t)
-}
-// Metrics 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
-func TestPutMetricsEmptyId(t *testing.T) {
-	t.Parallel()
-
-	testMetricsEmptyID(t)
-}
-// Metrics 아이디를 설정하지 않고 설정하려고 할 경우 실패하는지 확인
-func TestPutMetricsNoId(t *testing.T) {
-	t.Parallel()
-
-	testMetricsNoID(t)
-}
-// Metrics 아이디를 중복으로 설정하려고 할 경우 덮어쓰기 확인
-func TestPutMetricsDuplicateId(t *testing.T) {
-	t.Parallel()
-
-	testMetricsDuplicateID(t)
-}
-// 접두어를 포함한 Metrics 설정이 올바르게 적용되는지 확인
-func TestMetricsPrefix(t *testing.T) {
-	t.Parallel()
-
-	testMetricsPrefix(t)
-}
-// Metrics 설정에 태그를 적용할 수 있는지 확인
-func TestMetricsTag(t *testing.T) {
-	t.Parallel()
-
-	testMetricsTag(t)
-}
-// Metrics 설정에 필터를 적용할 수 있는지 확인
-func TestMetricsFilter(t *testing.T) {
-	t.Parallel()
-
-	testMetricsAndFilter(t)
-}
-
-func metricsConfiguration(id string, filter types.MetricsFilter) *types.MetricsConfiguration {
-	return &types.MetricsConfiguration{Id: aws.String(id), Filter: filter}
-}
-
-func putMetrics(t *testing.T, s *suite, bucket, id string, configuration *types.MetricsConfiguration) {
-	t.Helper()
-	if _, err := putMetricsError(s, bucket, id, configuration); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func testMetricsList(t *testing.T) {
 	s := newSuite(t)
 	out, err := s.client.ListBucketMetricsConfigurations(context.Background(), &s3.ListBucketMetricsConfigurationsInput{Bucket: aws.String(s.bucket(t))})
 	if err != nil || len(out.MetricsConfigurationList) != 0 {
@@ -113,12 +20,18 @@ func testMetricsList(t *testing.T) {
 	}
 }
 
-func testMetricsPut(t *testing.T) {
+// 버킷에 Metrics를 설정할 수 있는지 확인
+func TestPutMetrics(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	putMetrics(t, s, s.bucket(t), "metrics-id", metricsConfiguration("metrics-id", nil))
 }
 
-func testMetricsCheck(t *testing.T) {
+// 버킷에 Metrics 설정이 되었는지 확인
+func TestCheckMetrics(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putMetrics(t, s, bucket, "metrics-id", metricsConfiguration("metrics-id", nil))
@@ -128,7 +41,10 @@ func testMetricsCheck(t *testing.T) {
 	}
 }
 
-func testMetricsGet(t *testing.T) {
+// 버킷에 설정된 Metrics를 조회할 수 있는지 확인
+func TestGetMetrics(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket, id := s.bucket(t), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, nil))
@@ -138,7 +54,10 @@ func testMetricsGet(t *testing.T) {
 	}
 }
 
-func testMetricsDelete(t *testing.T) {
+// 버킷에 설정된 Metrics를 삭제할 수 있는지 확인
+func TestDeleteMetrics(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket, id := s.bucket(t), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, nil))
@@ -151,31 +70,46 @@ func testMetricsDelete(t *testing.T) {
 	}
 }
 
-func testMetricsGetMissing(t *testing.T) {
+// 존재하지 않은 Metrics를 가져오려고 할 경우 실패하는지 확인
+func TestGetMetricsNotExist(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	_, err := s.client.GetBucketMetricsConfiguration(context.Background(), &s3.GetBucketMetricsConfigurationInput{Bucket: aws.String(s.bucket(t)), Id: aws.String("metrics-id")})
 	assertS3Error(t, err, 404, "NoSuchConfiguration")
 }
 
-func testMetricsDeleteMissing(t *testing.T) {
+// 존재하지 않은 Metrics를 삭제하려고 할 경우 실패하는지 확인
+func TestDeleteMetricsNotExist(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	_, err := s.client.DeleteBucketMetricsConfiguration(context.Background(), &s3.DeleteBucketMetricsConfigurationInput{Bucket: aws.String(s.bucket(t)), Id: aws.String("metrics-id")})
 	assertS3Error(t, err, 404, "NoSuchConfiguration")
 }
 
-func testMetricsPutMissingBucket(t *testing.T) {
+// 존재하지 않은 Metrics를 설정하려고 할 경우 실패하는지 확인
+func TestPutMetricsNotExist(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	_, err := putMetricsError(s, "missing-"+uniqueBucketSuffix(t), "metrics-id", metricsConfiguration("metrics-id", nil))
 	assertS3Error(t, err, 404, "NoSuchBucket")
 }
 
-func testMetricsEmptyID(t *testing.T) {
+// Metrics 아이디를 빈값으로 설정하려고 할 경우 실패하는지 확인
+func TestPutMetricsEmptyId(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	_, err := putMetricsError(s, s.bucket(t), "", metricsConfiguration("", nil))
 	assertS3Error(t, err, 400, "InvalidConfigurationId")
 }
 
-func testMetricsNoID(t *testing.T) {
+// Metrics 아이디를 설정하지 않고 설정하려고 할 경우 실패하는지 확인
+func TestPutMetricsNoId(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	_, err := s.client.PutBucketMetricsConfiguration(context.Background(), &s3.PutBucketMetricsConfigurationInput{Bucket: aws.String(s.bucket(t))})
 	if err == nil {
@@ -183,7 +117,10 @@ func testMetricsNoID(t *testing.T) {
 	}
 }
 
-func testMetricsDuplicateID(t *testing.T) {
+// Metrics 아이디를 중복으로 설정하려고 할 경우 덮어쓰기 확인
+func TestPutMetricsDuplicateId(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket, id := s.bucket(t), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, &types.MetricsFilterMemberPrefix{Value: "test1"}))
@@ -196,14 +133,20 @@ func testMetricsDuplicateID(t *testing.T) {
 	}
 }
 
-func testMetricsPrefix(t *testing.T) {
+// 접두어를 포함한 Metrics 설정이 올바르게 적용되는지 확인
+func TestMetricsPrefix(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket, id := s.bucket(t), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, &types.MetricsFilterMemberPrefix{Value: "test"}))
 	assertMetricsPrefix(t, getMetrics(t, s, bucket, id), "test")
 }
 
-func testMetricsTag(t *testing.T) {
+// Metrics 설정에 태그를 적용할 수 있는지 확인
+func TestMetricsTag(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket, id := s.bucket(t), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, &types.MetricsFilterMemberTag{Value: types.Tag{Key: aws.String("key"), Value: aws.String("value")}}))
@@ -214,7 +157,10 @@ func testMetricsTag(t *testing.T) {
 	}
 }
 
-func testMetricsAndFilter(t *testing.T) {
+// Metrics 설정에 필터를 적용할 수 있는지 확인
+func TestMetricsFilter(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	bucket, id := s.bucket(t), "metrics-id"
 	filter := &types.MetricsFilterMemberAnd{Value: types.MetricsAndOperator{Prefix: aws.String("test"), Tags: []types.Tag{{Key: aws.String("key"), Value: aws.String("value")}}}}
@@ -223,6 +169,17 @@ func testMetricsAndFilter(t *testing.T) {
 	and, ok := out.Filter.(*types.MetricsFilterMemberAnd)
 	if !ok || aws.ToString(and.Value.Prefix) != "test" || len(and.Value.Tags) != 1 || aws.ToString(and.Value.Tags[0].Key) != "key" || aws.ToString(and.Value.Tags[0].Value) != "value" {
 		t.Fatalf("filter=%#v", out.Filter)
+	}
+}
+
+func metricsConfiguration(id string, filter types.MetricsFilter) *types.MetricsConfiguration {
+	return &types.MetricsConfiguration{Id: aws.String(id), Filter: filter}
+}
+
+func putMetrics(t *testing.T, s *suite, bucket, id string, configuration *types.MetricsConfiguration) {
+	t.Helper()
+	if _, err := putMetricsError(s, bucket, id, configuration); err != nil {
+		t.Fatal(err)
 	}
 }
 

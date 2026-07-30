@@ -11,7 +11,7 @@ Java SDK V2 is the primary source. Each Java `@Test` method maps to a top-level 
 
 Package-level collisions (same method name in two Java classes) use a class prefix, e.g. `Versioning.testVersioningObjListMarker` → `TestVersioning_ObjListMarker` while `ListObjectsVersions` keeps `TestVersioningObjListMarker`.
 
-Final static audit: 38 classes, 811 Java scenarios, 808 Python scenarios, and 810 executable/skip Go tests. Cors Python gap (3) and empty KMS (1) are intentional. `start-function` accepts Java camelCase and Python snake_case.
+Final static audit: 38 classes, 811 Java scenarios, 808 Python scenarios, and 808 executable/skip Go tests. Cors Python gap (3), empty KMS (1), and SSE_S3 SigV4-only duplicates (2) are intentional. `start-function` accepts Java camelCase and Python snake_case.
 
 `go vet ./...` and `go test -run '^$' ./...` pass. Accelerate (4), Analytics (6), Payment (3), and SelectObjectContent (7) SKIP every scenario. Backend reports 30 scenarios (Java wrapper-aligned; basic 10 disabled). Live S3 comparison remains pending.
 
@@ -51,7 +51,7 @@ Final static audit: 38 classes, 811 Java scenarios, 808 Python scenarios, and 81
 | Replication | 6 | 6 | 6 | 구현 완료 | Actual S3 run pending |
 | SelectObjectContent | 7 | 7 | 7 | SKIP 구현 완료 | Always SKIP |
 | SSE_C | 20 | 20 | 20 | 구현 완료 | Actual S3 run pending |
-| SSE_S3 | 25 | 25 | 25 | 구현 완료 | Actual S3 run pending |
+| SSE_S3 | 25 | 25 | 23 | 구현 완료 | NotChunkEncoding·PresignedUrlPutGetV4 생략 (Go SigV4만 / 기존 케이스와 동일) |
 | Taggings | 13 | 13 | 13 | 구현 완료 | Actual S3 run pending |
 | Versioning | 33 | 33 | 33 | 구현 완료 | 3 collision-prefixed names |
 | Website | 3 | 3 | 3 | 구현 완료 | Actual S3 run pending |

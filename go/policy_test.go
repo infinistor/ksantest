@@ -17,132 +17,235 @@ import (
 func TestBucketPolicy(t *testing.T) {
 	t.Parallel()
 
-	testListPolicy(t, false)
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket, key := s.bucket(t), "asdf"
+	put(t, s, bucket, key, key, nil)
+	policy := allowPolicy("s3:ListBucket", []string{bucketARN(bucket), bucketARN(bucket) + "/*"}, nil)
+	putBucketPolicy(t, s, bucket, policy)
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	listOut, err := alt.ListObjects(context.Background(), &s3.ListObjectsInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listOut.Contents) != 1 {
+		t.Fatalf("object count=%d, want 1", len(listOut.Contents))
+	}
+	policyOut, err := s.client.GetBucketPolicy(context.Background(), &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equalJSONPolicy(aws.ToString(policyOut.Policy), policy) {
+		t.Fatalf("policy mismatch: %s", aws.ToString(policyOut.Policy))
+	}
 }
 // 버킷에 정책 설정이 올바르게 적용되는지 확인(ListObjectsV2)
 func TestBucketV2Policy(t *testing.T) {
 	t.Parallel()
 
-	testListPolicy(t, true)
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket, key := s.bucket(t), "asdf"
+	put(t, s, bucket, key, key, nil)
+	policy := allowPolicy("s3:ListBucket", []string{bucketARN(bucket), bucketARN(bucket) + "/*"}, nil)
+	putBucketPolicy(t, s, bucket, policy)
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	listOut, err := alt.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listOut.Contents) != 1 {
+		t.Fatalf("object count=%d, want 1", len(listOut.Contents))
+	}
+	policyOut, err := s.client.GetBucketPolicy(context.Background(), &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equalJSONPolicy(aws.ToString(policyOut.Policy), policy) {
+		t.Fatalf("policy mismatch: %s", aws.ToString(policyOut.Policy))
+	}
 }
 // 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인
 func TestBucketPolicyAcl(t *testing.T) {
 	t.Parallel()
 
-	testPolicyOverridesACL(t, false)
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket, key := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter), "asdf"
+	put(t, s, bucket, key, key, nil)
+	setBucketCannedACL(t, s, bucket, types.BucketCannedACLAuthenticatedRead)
+	policy := denyPolicy("s3:ListBucket", []string{bucketARN(bucket), bucketARN(bucket) + "/*"})
+	putBucketPolicy(t, s, bucket, policy)
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	_, err := alt.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	if _, err := s.client.DeleteBucketPolicy(context.Background(), &s3.DeleteBucketPolicyInput{Bucket: aws.String(bucket)}); err != nil {
+		t.Fatal(err)
+	}
 }
 // 버킷에 정책과 acl설정을 할 경우 정책 설정이 우선시됨을 확인(ListObjectsV2)
 func TestBucketV2PolicyAcl(t *testing.T) {
 	t.Parallel()
 
-	testPolicyOverridesACL(t, true)
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket, key := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter), "asdf"
+	put(t, s, bucket, key, key, nil)
+	setBucketCannedACL(t, s, bucket, types.BucketCannedACLAuthenticatedRead)
+	policy := denyPolicy("s3:ListBucket", []string{bucketARN(bucket), bucketARN(bucket) + "/*"})
+	putBucketPolicy(t, s, bucket, policy)
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	_, err := alt.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	if _, err := s.client.DeleteBucketPolicy(context.Background(), &s3.DeleteBucketPolicyInput{Bucket: aws.String(bucket)}); err != nil {
+		t.Fatal(err)
+	}
 }
 // 정책설정으로 오브젝트의 태그목록 읽기를 public-read로 설정했을때 올바르게 동작하는지 확인
 func TestGetTagsAclPublic(t *testing.T) {
 	t.Parallel()
 
-	testTagPolicy(t, "s3:GetObjectTagging")
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket, key := s.bucket(t), "acl"
+	put(t, s, bucket, key, key, nil)
+	putBucketPolicy(t, s, bucket, allowPolicy("s3:GetObjectTagging", []string{bucketARN(bucket) + "/" + key}, nil))
+	tagList := []types.Tag{{Key: aws.String("key0"), Value: aws.String("value0")}, {Key: aws.String("key1"), Value: aws.String("value1")}}
+	tagging := &types.Tagging{TagSet: tagList}
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	if _, err := s.client.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), Tagging: tagging}); err != nil {
+		t.Fatal(err)
+	}
+	out, err := alt.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil || len(out.TagSet) != len(tagList) {
+		t.Fatalf("GetObjectTagging tags=%v err=%v", out, err)
+	}
 }
 // 정책설정으로 오브젝트의 태그 입력을 public-read로 설정했을때 올바르게 동작하는지 확인
 func TestPutTagsAclPublic(t *testing.T) {
 	t.Parallel()
 
-	testTagPolicy(t, "s3:PutObjectTagging")
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket, key := s.bucket(t), "acl"
+	put(t, s, bucket, key, key, nil)
+	putBucketPolicy(t, s, bucket, allowPolicy("s3:PutObjectTagging", []string{bucketARN(bucket) + "/" + key}, nil))
+	tagList := []types.Tag{{Key: aws.String("key0"), Value: aws.String("value0")}, {Key: aws.String("key1"), Value: aws.String("value1")}}
+	tagging := &types.Tagging{TagSet: tagList}
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	if _, err := alt.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), Tagging: tagging}); err != nil {
+		t.Fatal(err)
+	}
+	out, err := s.client.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil || len(out.TagSet) != len(tagList) {
+		t.Fatalf("tags=%v err=%v", out, err)
+	}
 }
 // 정책설정으로 오브젝트의 태그 삭제를 public-read로 설정했을때 올바르게 동작하는지 확인
 func TestDeleteTagsObjPublic(t *testing.T) {
 	t.Parallel()
 
-	testTagPolicy(t, "s3:DeleteObjectTagging")
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket, key := s.bucket(t), "acl"
+	put(t, s, bucket, key, key, nil)
+	putBucketPolicy(t, s, bucket, allowPolicy("s3:DeleteObjectTagging", []string{bucketARN(bucket) + "/" + key}, nil))
+	tagList := []types.Tag{{Key: aws.String("key0"), Value: aws.String("value0")}, {Key: aws.String("key1"), Value: aws.String("value1")}}
+	tagging := &types.Tagging{TagSet: tagList}
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	if _, err := s.client.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), Tagging: tagging}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := alt.DeleteObjectTagging(context.Background(), &s3.DeleteObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)}); err != nil {
+		t.Fatal(err)
+	}
+	out, err := s.client.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil || len(out.TagSet) != 0 {
+		t.Fatalf("tags after delete=%v err=%v", out, err)
+	}
 }
 // [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
 func TestBucketPolicyGetObjExistingTag(t *testing.T) {
 	t.Parallel()
 
-	testExistingTagCondition(t, "s3:GetObject")
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket := s.bucket(t)
+	keys := []string{"publicTag", "privateTag", "invalidTag"}
+	for _, k := range keys {
+		put(t, s, bucket, k, k, nil)
+	}
+	putObjectTags(t, s, bucket, keys[0], "security", "public")
+	putObjectTags(t, s, bucket, keys[1], "security", "private")
+	putObjectTags(t, s, bucket, keys[2], "security1", "public")
+	condition := map[string]any{"StringEquals": map[string]any{"s3:ExistingObjectTag/security": "public"}}
+	putBucketPolicy(t, s, bucket, allowPolicy("s3:GetObject", []string{bucketARN(bucket) + "/*"}, condition))
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	out, err := alt.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(keys[0])})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out.Body.Close()
+	for _, k := range keys[1:] {
+		_, err := alt.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(k)})
+		assertS3Error(t, err, 403, "AccessDenied")
+	}
 }
 // [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
 func TestBucketPolicyGetObjTaggingExistingTag(t *testing.T) {
 	t.Parallel()
 
-	testExistingTagCondition(t, "s3:GetObjectTagging")
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket := s.bucket(t)
+	keys := []string{"publicTag", "privateTag", "invalidTag"}
+	for _, k := range keys {
+		put(t, s, bucket, k, k, nil)
+	}
+	putObjectTags(t, s, bucket, keys[0], "security", "public")
+	putObjectTags(t, s, bucket, keys[1], "security", "private")
+	putObjectTags(t, s, bucket, keys[2], "security1", "public")
+	condition := map[string]any{"StringEquals": map[string]any{"s3:ExistingObjectTag/security": "public"}}
+	putBucketPolicy(t, s, bucket, allowPolicy("s3:GetObjectTagging", []string{bucketARN(bucket) + "/*"}, condition))
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	if _, err := alt.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(keys[0])}); err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range keys[1:] {
+		_, err := alt.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(k)})
+		assertS3Error(t, err, 403, "AccessDenied")
+	}
 }
 // [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 PutObjectTagging허용] 조건부 정책설정시 올바르게 동작하는지 확인
 func TestBucketPolicyPutObjTaggingExistingTag(t *testing.T) {
 	t.Parallel()
 
-	testExistingTagCondition(t, "s3:PutObjectTagging")
+	s := newSuite(t)
+	requireAltUser(t, s)
+	bucket := s.bucket(t)
+	keys := []string{"publicTag", "privateTag", "invalidTag"}
+	for _, k := range keys {
+		put(t, s, bucket, k, k, nil)
+	}
+	putObjectTags(t, s, bucket, keys[0], "security", "public")
+	putObjectTags(t, s, bucket, keys[1], "security", "private")
+	putObjectTags(t, s, bucket, keys[2], "security1", "public")
+	condition := map[string]any{"StringEquals": map[string]any{"s3:ExistingObjectTag/security": "public"}}
+	putBucketPolicy(t, s, bucket, allowPolicy("s3:PutObjectTagging", []string{bucketARN(bucket) + "/*"}, condition))
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	newTagging := &types.Tagging{TagSet: []types.Tag{{Key: aws.String("security"), Value: aws.String("public")}}}
+	if _, err := alt.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(keys[0]), Tagging: newTagging}); err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range keys[1:] {
+		_, err := alt.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(k), Tagging: newTagging})
+		assertS3Error(t, err, 403, "AccessDenied")
+	}
 }
 // [복사하려는 경로명이 'bucketName/public/*'에 해당할 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
 func TestBucketPolicyPutObjCopySource(t *testing.T) {
 	t.Parallel()
 
-	testPolicyCopySource(t)
-}
-// [오브젝트의 메타데이터값이 'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-func TestBucketPolicyPutObjCopySourceMeta(t *testing.T) {
-	t.Parallel()
-
-	testPolicyCopySourceMetadata(t)
-}
-// [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시 올바르게 동작하는지 확인
-func TestBucketPolicyPutObjAcl(t *testing.T) {
-	t.Parallel()
-
-	testPolicyPutObjectACL(t)
-}
-// [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
-func TestBucketPolicyPutObjGrant(t *testing.T) {
-	t.Parallel()
-
-	testPolicyPutObjectGrant(t)
-}
-// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용] 조건부 정책설정시 올바르게 동작하는지 확인
-func TestBucketPolicyGetObjAclExistingTag(t *testing.T) {
-	t.Parallel()
-
-	testPolicyGetObjectACLExistingTag(t)
-}
-// 모든 사용자가 버킷에 접근 가능(public으으로 간주)
-func TestBucketPolicyStatusWithAllUser(t *testing.T) {
-	t.Parallel()
-
-	testPolicyStatus(t, map[string]any{"AWS": "*"}, nil, true)
-}
-// 특정 사용자만 버킷에 접근 가능(private)
-func TestBucketPolicyStatusWithSpecificUserAccess(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	testPolicyStatusWithSuite(t, s, map[string]any{"CanonicalUser": s.cfg.Main.ID}, nil, false)
-}
-// 너무 넓은 IP 범위를 가진 정책 (public으으로 간주)
-func TestBucketPolicyStatusWithWideIPRange(t *testing.T) {
-	t.Parallel()
-
-	testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"IpAddress": map[string]any{"aws:SourceIp": "0.0.0.0/1"}}, true)
-}
-// 특정 IP 범위를 가진 정책 (private)
-func TestBucketPolicyStatusWithIPRange(t *testing.T) {
-	t.Parallel()
-
-	testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"IpAddress": map[string]any{"aws:SourceIp": "192.168.1.0/24"}}, false)
-}
-// 매우 제한적인 시간에 대한 접근 허용 정책 (public으로 간주)
-func TestBucketPolicyStatusWithTimeCondition(t *testing.T) {
-	t.Parallel()
-
-	start := time.Now().UTC().Add(10 * time.Minute)
-	testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"DateGreaterThan": map[string]any{"aws:CurrentTime": start.Format(time.RFC3339Nano)}, "DateLessThan": map[string]any{"aws:CurrentTime": start.Add(time.Second).Format(time.RFC3339Nano)}}, true)
-}
-// 특정 태그를 가진 오브젝트에 대한 접근 허용용 정책 (public으로 간주)
-func TestBucketPolicyStatusWithTagCondition(t *testing.T) {
-	t.Parallel()
-
-	testPolicyStatus(t, map[string]any{"AWS": "*"}, map[string]any{"StringEquals": map[string]any{"s3:ExistingObjectTag/access": "restricted"}}, true)
-}
-
-func testPolicyCopySource(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
 	source := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
@@ -161,14 +264,15 @@ func testPolicyCopySource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CopyObject(%s): %v", sourceKey, err)
 		}
-
 		assertClientObjectBody(t, alt, target, targetKey, sourceKey)
 	}
 	_, err := alt.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(target), Key: aws.String("denied"), CopySource: aws.String(source + "/" + keys[2])})
 	assertS3Error(t, err, 403, "AccessDenied")
 }
+// [오브젝트의 메타데이터값이 'x-amz-metadata-directive=COPY'일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
+func TestBucketPolicyPutObjCopySourceMeta(t *testing.T) {
+	t.Parallel()
 
-func testPolicyCopySourceMetadata(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
 	source := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
@@ -194,8 +298,10 @@ func testPolicyCopySourceMetadata(t *testing.T) {
 		assertS3Error(t, err, 403, "AccessDenied")
 	}
 }
+// [PutObject는 모든유저에게 허용하지만 권한설정에 'public*'이 포함되면 업로드허용하지 않음] 조건부 정책설정시 올바르게 동작하는지 확인
+func TestBucketPolicyPutObjAcl(t *testing.T) {
+	t.Parallel()
 
-func testPolicyPutObjectACL(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
@@ -210,8 +316,10 @@ func testPolicyPutObjectACL(t *testing.T) {
 	_, err := alt.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("public-key"), ACL: types.ObjectCannedACLPublicRead})
 	assertS3Error(t, err, 403, "AccessDenied")
 }
+// [오브젝트의 grant-full-control이 메인유저일 경우에만 모든유저에게 PutObject허용] 조건부 정책설정시 올바르게 동작하는지 확인
+func TestBucketPolicyPutObjGrant(t *testing.T) {
+	t.Parallel()
 
-func testPolicyPutObjectGrant(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
 	first := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
@@ -238,14 +346,16 @@ func testPolicyPutObjectGrant(t *testing.T) {
 	}
 	assertGrantID(t, secondACL.Grants, s.cfg.Alt.ID)
 }
+// [오브젝트의 태그에 'security'키 이름이 존재하며 키값이 public 일때만 모든유저에게 GetObjectACL허용] 조건부 정책설정시 올바르게 동작하는지 확인
+func TestBucketPolicyGetObjAclExistingTag(t *testing.T) {
+	t.Parallel()
 
-func testPolicyGetObjectACLExistingTag(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
 	keys := []string{"publicTag", "privateTag", "invalidTag"}
-	for _, key := range keys {
-		put(t, s, bucket, key, key, nil)
+	for _, k := range keys {
+		put(t, s, bucket, k, k, nil)
 	}
 	putObjectTags(t, s, bucket, keys[0], "security", "public")
 	putObjectTags(t, s, bucket, keys[1], "security", "private")
@@ -256,9 +366,118 @@ func testPolicyGetObjectACLExistingTag(t *testing.T) {
 	if _, err := alt.GetObjectAcl(context.Background(), &s3.GetObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(keys[0])}); err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range keys[1:] {
-		_, err := alt.GetObjectAcl(context.Background(), &s3.GetObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	for _, k := range keys[1:] {
+		_, err := alt.GetObjectAcl(context.Background(), &s3.GetObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(k)})
 		assertS3Error(t, err, 403, "AccessDenied")
+	}
+}
+// 모든 사용자가 버킷에 접근 가능(public으으로 간주)
+func TestBucketPolicyStatusWithAllUser(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	statement := map[string]any{"Effect": "Allow", "Principal": map[string]any{"AWS": "*"}, "Action": "s3:GetObject", "Resource": bucketARN(bucket) + "/*"}
+	doc := map[string]any{"Version": "2012-10-17", "Statement": []any{statement}}
+	data, _ := json.Marshal(doc)
+	putBucketPolicy(t, s, bucket, string(data))
+	out, err := s.client.GetBucketPolicyStatus(context.Background(), &s3.GetBucketPolicyStatusInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.PolicyStatus == nil || !aws.ToBool(out.PolicyStatus.IsPublic) {
+		t.Fatalf("policy status=%#v, want public=true", out.PolicyStatus)
+	}
+}
+// 특정 사용자만 버킷에 접근 가능(private)
+func TestBucketPolicyStatusWithSpecificUserAccess(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	statement := map[string]any{"Effect": "Allow", "Principal": map[string]any{"CanonicalUser": s.cfg.Main.ID}, "Action": "s3:GetObject", "Resource": bucketARN(bucket) + "/*"}
+	doc := map[string]any{"Version": "2012-10-17", "Statement": []any{statement}}
+	data, _ := json.Marshal(doc)
+	putBucketPolicy(t, s, bucket, string(data))
+	out, err := s.client.GetBucketPolicyStatus(context.Background(), &s3.GetBucketPolicyStatusInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.PolicyStatus == nil || aws.ToBool(out.PolicyStatus.IsPublic) {
+		t.Fatalf("policy status=%#v, want public=false", out.PolicyStatus)
+	}
+}
+// 너무 넓은 IP 범위를 가진 정책 (public으으로 간주)
+func TestBucketPolicyStatusWithWideIPRange(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	statement := map[string]any{"Effect": "Allow", "Principal": map[string]any{"AWS": "*"}, "Action": "s3:GetObject", "Resource": bucketARN(bucket) + "/*", "Condition": map[string]any{"IpAddress": map[string]any{"aws:SourceIp": "0.0.0.0/1"}}}
+	doc := map[string]any{"Version": "2012-10-17", "Statement": []any{statement}}
+	data, _ := json.Marshal(doc)
+	putBucketPolicy(t, s, bucket, string(data))
+	out, err := s.client.GetBucketPolicyStatus(context.Background(), &s3.GetBucketPolicyStatusInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.PolicyStatus == nil || !aws.ToBool(out.PolicyStatus.IsPublic) {
+		t.Fatalf("policy status=%#v, want public=true", out.PolicyStatus)
+	}
+}
+// 특정 IP 범위를 가진 정책 (private)
+func TestBucketPolicyStatusWithIPRange(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	statement := map[string]any{"Effect": "Allow", "Principal": map[string]any{"AWS": "*"}, "Action": "s3:GetObject", "Resource": bucketARN(bucket) + "/*", "Condition": map[string]any{"IpAddress": map[string]any{"aws:SourceIp": "192.168.1.0/24"}}}
+	doc := map[string]any{"Version": "2012-10-17", "Statement": []any{statement}}
+	data, _ := json.Marshal(doc)
+	putBucketPolicy(t, s, bucket, string(data))
+	out, err := s.client.GetBucketPolicyStatus(context.Background(), &s3.GetBucketPolicyStatusInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.PolicyStatus == nil || aws.ToBool(out.PolicyStatus.IsPublic) {
+		t.Fatalf("policy status=%#v, want public=false", out.PolicyStatus)
+	}
+}
+// 매우 제한적인 시간에 대한 접근 허용 정책 (public으로 간주)
+func TestBucketPolicyStatusWithTimeCondition(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	start := time.Now().UTC().Add(10 * time.Minute)
+	bucket := s.bucket(t)
+	statement := map[string]any{"Effect": "Allow", "Principal": map[string]any{"AWS": "*"}, "Action": "s3:GetObject", "Resource": bucketARN(bucket) + "/*", "Condition": map[string]any{"DateGreaterThan": map[string]any{"aws:CurrentTime": start.Format(time.RFC3339Nano)}, "DateLessThan": map[string]any{"aws:CurrentTime": start.Add(time.Second).Format(time.RFC3339Nano)}}}
+	doc := map[string]any{"Version": "2012-10-17", "Statement": []any{statement}}
+	data, _ := json.Marshal(doc)
+	putBucketPolicy(t, s, bucket, string(data))
+	out, err := s.client.GetBucketPolicyStatus(context.Background(), &s3.GetBucketPolicyStatusInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.PolicyStatus == nil || !aws.ToBool(out.PolicyStatus.IsPublic) {
+		t.Fatalf("policy status=%#v, want public=true", out.PolicyStatus)
+	}
+}
+// 특정 태그를 가진 오브젝트에 대한 접근 허용용 정책 (public으로 간주)
+func TestBucketPolicyStatusWithTagCondition(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	statement := map[string]any{"Effect": "Allow", "Principal": map[string]any{"AWS": "*"}, "Action": "s3:GetObject", "Resource": bucketARN(bucket) + "/*", "Condition": map[string]any{"StringEquals": map[string]any{"s3:ExistingObjectTag/access": "restricted"}}}
+	doc := map[string]any{"Version": "2012-10-17", "Statement": []any{statement}}
+	data, _ := json.Marshal(doc)
+	putBucketPolicy(t, s, bucket, string(data))
+	out, err := s.client.GetBucketPolicyStatus(context.Background(), &s3.GetBucketPolicyStatusInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.PolicyStatus == nil || !aws.ToBool(out.PolicyStatus.IsPublic) {
+		t.Fatalf("policy status=%#v, want public=true", out.PolicyStatus)
 	}
 }
 
@@ -312,108 +531,12 @@ func assertGrantID(t *testing.T, grants []types.Grant, want string) {
 	t.Fatalf("grant for canonical ID %q not found", want)
 }
 
-func testListPolicy(t *testing.T, v2 bool) {
-	t.Helper()
-	s := newSuite(t)
-	requireAltUser(t, s)
-	bucket, key := s.bucket(t), "asdf"
-	put(t, s, bucket, key, key, nil)
-	policy := allowPolicy("s3:ListBucket", []string{bucketARN(bucket), bucketARN(bucket) + "/*"}, nil)
-	putBucketPolicy(t, s, bucket, policy)
-	alt := s3Client(s.cfg, s.cfg.Alt)
-	var count int
-	if v2 {
-		out, err := alt.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
-		if err != nil {
-			t.Fatal(err)
-		}
-		count = len(out.Contents)
-	} else {
-		out, err := alt.ListObjects(context.Background(), &s3.ListObjectsInput{Bucket: aws.String(bucket)})
-		if err != nil {
-			t.Fatal(err)
-		}
-		count = len(out.Contents)
-	}
-	if count != 1 {
-		t.Fatalf("object count=%d, want 1", count)
-	}
-	out, err := s.client.GetBucketPolicy(context.Background(), &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !equalJSONPolicy(aws.ToString(out.Policy), policy) {
-		t.Fatalf("policy mismatch: %s", aws.ToString(out.Policy))
-	}
-}
-
 func equalJSONPolicy(left, right string) bool {
 	var a, b any
 	if json.Unmarshal([]byte(left), &a) != nil || json.Unmarshal([]byte(right), &b) != nil {
 		return false
 	}
 	return reflect.DeepEqual(a, b)
-}
-func testPolicyOverridesACL(t *testing.T, v2 bool) {
-	t.Helper()
-	s := newSuite(t)
-	requireAltUser(t, s)
-	bucket, key := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter), "asdf"
-	put(t, s, bucket, key, key, nil)
-	setBucketCannedACL(t, s, bucket, types.BucketCannedACLAuthenticatedRead)
-	policy := denyPolicy("s3:ListBucket", []string{bucketARN(bucket), bucketARN(bucket) + "/*"})
-	putBucketPolicy(t, s, bucket, policy)
-	alt := s3Client(s.cfg, s.cfg.Alt)
-	var err error
-	if v2 {
-		_, err = alt.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
-	} else {
-		_, err = alt.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
-	}
-	assertS3Error(t, err, 403, "AccessDenied")
-	if _, err := s.client.DeleteBucketPolicy(context.Background(), &s3.DeleteBucketPolicyInput{Bucket: aws.String(bucket)}); err != nil {
-		t.Fatal(err)
-	}
-}
-func testTagPolicy(t *testing.T, action string) {
-	t.Helper()
-	s := newSuite(t)
-	requireAltUser(t, s)
-	bucket, key := s.bucket(t), "acl"
-	put(t, s, bucket, key, key, nil)
-	putBucketPolicy(t, s, bucket, allowPolicy(action, []string{bucketARN(bucket) + "/" + key}, nil))
-	tags := []types.Tag{{Key: aws.String("key0"), Value: aws.String("value0")}, {Key: aws.String("key1"), Value: aws.String("value1")}}
-	tagging := &types.Tagging{TagSet: tags}
-	alt := s3Client(s.cfg, s.cfg.Alt)
-	switch action {
-	case "s3:GetObjectTagging":
-		if _, err := s.client.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), Tagging: tagging}); err != nil {
-			t.Fatal(err)
-		}
-		out, err := alt.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)})
-		if err != nil || len(out.TagSet) != len(tags) {
-			t.Fatalf("GetObjectTagging tags=%v err=%v", out, err)
-		}
-	case "s3:PutObjectTagging":
-		if _, err := alt.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), Tagging: tagging}); err != nil {
-			t.Fatal(err)
-		}
-		out, err := s.client.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)})
-		if err != nil || len(out.TagSet) != len(tags) {
-			t.Fatalf("tags=%v err=%v", out, err)
-		}
-	case "s3:DeleteObjectTagging":
-		if _, err := s.client.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), Tagging: tagging}); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := alt.DeleteObjectTagging(context.Background(), &s3.DeleteObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)}); err != nil {
-			t.Fatal(err)
-		}
-		out, err := s.client.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)})
-		if err != nil || len(out.TagSet) != 0 {
-			t.Fatalf("tags after delete=%v err=%v", out, err)
-		}
-	}
 }
 func bucketARN(bucket string) string { return "arn:aws:s3:::" + bucket }
 func allowPolicy(action string, resources []string, condition map[string]any) string {
@@ -435,79 +558,5 @@ func putBucketPolicy(t *testing.T, s *suite, bucket, policy string) {
 	disablePublicAccessBlock(t, s, bucket)
 	if _, err := s.client.PutBucketPolicy(context.Background(), &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(policy)}); err != nil {
 		t.Fatalf("PutBucketPolicy: %v", err)
-	}
-}
-
-func testExistingTagCondition(t *testing.T, action string) {
-	t.Helper()
-	s := newSuite(t)
-	requireAltUser(t, s)
-	bucket := s.bucket(t)
-	keys := []string{"publicTag", "privateTag", "invalidTag"}
-	for _, key := range keys {
-		put(t, s, bucket, key, key, nil)
-	}
-	putTags := func(key string, tags []types.Tag) {
-		_, err := s.client.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), Tagging: &types.Tagging{TagSet: tags}})
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	putTags(keys[0], []types.Tag{{Key: aws.String("security"), Value: aws.String("public")}})
-	putTags(keys[1], []types.Tag{{Key: aws.String("security"), Value: aws.String("private")}})
-	putTags(keys[2], []types.Tag{{Key: aws.String("security1"), Value: aws.String("public")}})
-	condition := map[string]any{"StringEquals": map[string]any{"s3:ExistingObjectTag/security": "public"}}
-	putBucketPolicy(t, s, bucket, allowPolicy(action, []string{bucketARN(bucket) + "/*"}, condition))
-	alt := s3Client(s.cfg, s.cfg.Alt)
-	switch action {
-	case "s3:GetObject":
-		out, err := alt.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(keys[0])})
-		if err != nil {
-			t.Fatal(err)
-		}
-		out.Body.Close()
-		for _, key := range keys[1:] {
-			_, err := alt.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
-			assertS3Error(t, err, 403, "AccessDenied")
-		}
-	case "s3:GetObjectTagging":
-		if _, err := alt.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(keys[0])}); err != nil {
-			t.Fatal(err)
-		}
-		for _, key := range keys[1:] {
-			_, err := alt.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)})
-			assertS3Error(t, err, 403, "AccessDenied")
-		}
-	case "s3:PutObjectTagging":
-		tags := &types.Tagging{TagSet: []types.Tag{{Key: aws.String("security"), Value: aws.String("public")}}}
-		if _, err := alt.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(keys[0]), Tagging: tags}); err != nil {
-			t.Fatal(err)
-		}
-		for _, key := range keys[1:] {
-			_, err := alt.PutObjectTagging(context.Background(), &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), Tagging: tags})
-			assertS3Error(t, err, 403, "AccessDenied")
-		}
-	}
-}
-func testPolicyStatus(t *testing.T, principal any, condition map[string]any, want bool) {
-	t.Helper()
-	testPolicyStatusWithSuite(t, newSuite(t), principal, condition, want)
-}
-func testPolicyStatusWithSuite(t *testing.T, s *suite, principal any, condition map[string]any, want bool) {
-	t.Helper()
-	bucket := s.bucket(t)
-	statement := map[string]any{"Effect": "Allow", "Principal": principal, "Action": "s3:GetObject", "Resource": bucketARN(bucket) + "/*"}
-	if condition != nil {
-		statement["Condition"] = condition
-	}
-	doc := map[string]any{"Version": "2012-10-17", "Statement": []any{statement}}
-	data, _ := json.Marshal(doc)
-	putBucketPolicy(t, s, bucket, string(data))
-	out, err := s.client.GetBucketPolicyStatus(context.Background(), &s3.GetBucketPolicyStatusInput{Bucket: aws.String(bucket)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if out.PolicyStatus == nil || aws.ToBool(out.PolicyStatus.IsPublic) != want {
-		t.Fatalf("policy status=%#v, want public=%v", out.PolicyStatus, want)
 	}
 }

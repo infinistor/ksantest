@@ -20,28 +20,82 @@ var basicObjectAttributes = []types.ObjectAttributes{types.ObjectAttributesObjec
 func TestGetObjectAttributesBasic(t *testing.T) {
 	t.Parallel()
 
-	testAttributesBasic(t, "test_get_object_attributes_basic")
+	s := newSuite(t)
+	b, key := s.bucket(t), "test_get_object_attributes_basic"
+	putOut, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: basicObjectAttributes})
+	if aws.ToInt64(out.ObjectSize) != int64(len(key)) || aws.ToString(out.ETag) == "" || out.StorageClass != types.StorageClassStandard {
+		t.Fatalf("attributes=%#v", out)
+	}
+	if strings.Trim(aws.ToString(putOut.ETag), "\"") != strings.Trim(aws.ToString(out.ETag), "\"") {
+		t.Fatalf("ETag=%q want=%q", aws.ToString(out.ETag), aws.ToString(putOut.ETag))
+	}
 }
 
 // 특정 속성만 요청하는 테스트
 func TestGetObjectAttributesSpecificAttributes(t *testing.T) {
 	t.Parallel()
 
-	testAttributesBasic(t, "test_get_object_attributes_specific_attributes")
+	s := newSuite(t)
+	b, key := s.bucket(t), "test_get_object_attributes_specific_attributes"
+	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key))}); err != nil {
+		t.Fatal(err)
+	}
+	size := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
+	if aws.ToInt64(size.ObjectSize) != int64(len(key)) || size.Checksum != nil {
+		t.Fatalf("size=%v checksum=%#v", size.ObjectSize, size.Checksum)
+	}
+	etag := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesEtag}})
+	if aws.ToString(etag.ETag) == "" || etag.ObjectSize != nil {
+		t.Fatalf("etag=%q size=%v", aws.ToString(etag.ETag), etag.ObjectSize)
+	}
 }
 
 // 멀티파트 업로드된 객체에 대한 GetObjectAttributes 테스트
 func TestGetObjectAttributesMultipart(t *testing.T) {
 	t.Parallel()
 
-	testAttributesMultipart(t, "test_get_object_attributes_multipart")
+	s := newSuite(t)
+	b, key := s.bucket(t), "test_get_object_attributes_multipart"
+	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	partBody := bytes.Repeat([]byte("m"), 5*1024*1024)
+	parts := make([]types.CompletedPart, 0, 2)
+	for i := 1; i <= 2; i++ {
+		part, partErr := s.client.UploadPart(context.Background(), &s3.UploadPartInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, PartNumber: aws.Int32(int32(i)), Body: bytes.NewReader(partBody)})
+		if partErr != nil {
+			t.Fatal(partErr)
+		}
+		parts = append(parts, types.CompletedPart{ETag: part.ETag, PartNumber: aws.Int32(int32(i))})
+	}
+	if _, err = s.client.CompleteMultipartUpload(context.Background(), &s3.CompleteMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts}}); err != nil {
+		t.Fatal(err)
+	}
+	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize, types.ObjectAttributesStorageClass, types.ObjectAttributesEtag, types.ObjectAttributesObjectParts}})
+	wantSize := int64(2 * len(partBody))
+	if aws.ToInt64(out.ObjectSize) != wantSize || out.ObjectParts == nil || aws.ToInt32(out.ObjectParts.TotalPartsCount) != 2 {
+		t.Fatalf("size=%v parts=%#v", out.ObjectSize, out.ObjectParts)
+	}
 }
 
 // 체크섬 알고리즘을 사용한 객체에 대한 GetObjectAttributes 테스트
 func TestGetObjectAttributesWithChecksum(t *testing.T) {
 	t.Parallel()
 
-	testAttributesBasic(t, "test_get_object_attributes_with_checksum")
+	s := newSuite(t)
+	b, key := s.bucket(t), "test_get_object_attributes_with_checksum"
+	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ChecksumAlgorithm: types.ChecksumAlgorithmSha256}); err != nil {
+		t.Fatal(err)
+	}
+	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesChecksum}})
+	if out.Checksum == nil || aws.ToString(out.Checksum.ChecksumSHA256) == "" {
+		t.Fatalf("checksum=%#v", out.Checksum)
+	}
 }
 
 // 존재하지 않는 객체에 대한 GetObjectAttributes 테스트
@@ -67,138 +121,6 @@ func TestGetObjectAttributesNonExistentBucket(t *testing.T) {
 func TestGetObjectAttributesNoAttributes(t *testing.T) {
 	t.Parallel()
 
-	testAttributesNone(t)
-}
-
-// 버전 ID를 사용한 GetObjectAttributes 테스트
-func TestGetObjectAttributesWithVersionId(t *testing.T) {
-	t.Parallel()
-
-	testAttributesVersion(t, "test_get_object_attributes_with_version_id")
-}
-
-// 잘못된 버전 ID를 사용한 GetObjectAttributes 테스트
-func TestGetObjectAttributesInvalidVersionId(t *testing.T) {
-	t.Parallel()
-
-	testAttributesVersion(t, "test_get_object_attributes_invalid_version_id")
-}
-
-// 대용량 멀티파트 업로드 객체에 대한 GetObjectAttributes 테스트
-func TestGetObjectAttributesLargeMultipart(t *testing.T) {
-	t.Parallel()
-
-	testAttributesMultipart(t, "test_get_object_attributes_large_multipart")
-}
-
-// 메타데이터가 있는 객체에 대한 GetObjectAttributes 테스트
-func TestGetObjectAttributesWithMetadata(t *testing.T) {
-	t.Parallel()
-
-	testAttributesBasic(t, "test_get_object_attributes_with_metadata")
-}
-
-// SSE-S3 암호화된 객체에 대한 GetObjectAttributes 테스트
-func TestGetObjectAttributesWithSSES3(t *testing.T) {
-	t.Parallel()
-
-	testAttributesBasic(t, "test_get_object_attributes_with_sse_s3")
-}
-
-// 비동기 클라이언트를 사용한 GetObjectAttributes 테스트
-func TestGetObjectAttributesAsync(t *testing.T) {
-	t.Parallel()
-
-	testAttributesBasic(t, "test_get_object_attributes_async")
-}
-
-// 비동기 클라이언트를 사용한 GetObjectAttributes 에러 테스트
-func TestGetObjectAttributesAsyncError(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t)), Key: aws.String("key"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
-	assertS3Error(t, err, 404, "NoSuchBucket")
-}
-
-// 모든 가능한 속성을 요청하는 GetObjectAttributes 테스트
-func TestGetObjectAttributesAllAttributes(t *testing.T) {
-	t.Parallel()
-
-	testAttributesMultipart(t, "test_get_object_attributes_all_attributes")
-}
-
-func getAttributes(t *testing.T, client *s3.Client, input *s3.GetObjectAttributesInput) *s3.GetObjectAttributesOutput {
-	t.Helper()
-	out, err := client.GetObjectAttributes(context.Background(), input)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return out
-}
-
-func testAttributesBasic(t *testing.T, name string) {
-	t.Helper()
-	s := newSuite(t)
-	b, key := s.bucket(t), name
-	input := &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key))}
-	if name == "test_get_object_attributes_with_checksum" {
-		input.ChecksumAlgorithm = types.ChecksumAlgorithmSha256
-	}
-	if name == "test_get_object_attributes_with_metadata" {
-		input.Metadata = map[string]string{"custom-key1": "custom-value1", "custom-key2": "custom-value2"}
-	}
-	if name == "test_get_object_attributes_with_sse_s3" {
-		input.ServerSideEncryption = types.ServerSideEncryptionAes256
-	}
-	putOut, err := s.client.PutObject(context.Background(), input)
-	if err != nil {
-		t.Fatal(err)
-	}
-	attributes := basicObjectAttributes
-	if name == "test_get_object_attributes_with_checksum" {
-		attributes = []types.ObjectAttributes{types.ObjectAttributesChecksum}
-	}
-	if name == "test_get_object_attributes_specific_attributes" {
-		size := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
-		if aws.ToInt64(size.ObjectSize) != int64(len(key)) || size.Checksum != nil {
-			t.Fatalf("size=%v checksum=%#v", size.ObjectSize, size.Checksum)
-		}
-		etag := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesEtag}})
-		if aws.ToString(etag.ETag) == "" || etag.ObjectSize != nil {
-			t.Fatalf("etag=%q size=%v", aws.ToString(etag.ETag), etag.ObjectSize)
-		}
-		return
-	}
-	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: attributes})
-	if name == "test_get_object_attributes_with_checksum" {
-		if out.Checksum == nil || aws.ToString(out.Checksum.ChecksumSHA256) == "" {
-			t.Fatalf("checksum=%#v", out.Checksum)
-		}
-		return
-	}
-	if aws.ToInt64(out.ObjectSize) != int64(len(key)) || aws.ToString(out.ETag) == "" || out.StorageClass != types.StorageClassStandard {
-		t.Fatalf("attributes=%#v", out)
-	}
-	if strings.Trim(aws.ToString(putOut.ETag), "\"") != strings.Trim(aws.ToString(out.ETag), "\"") {
-		t.Fatalf("ETag=%q want=%q", aws.ToString(out.ETag), aws.ToString(putOut.ETag))
-	}
-	if name == "test_get_object_attributes_with_metadata" {
-		head, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
-		if err != nil || head.Metadata["custom-key1"] != "custom-value1" {
-			t.Fatalf("metadata=%v err=%v", head.Metadata, err)
-		}
-	}
-	if name == "test_get_object_attributes_with_sse_s3" {
-		head, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
-		if err != nil || head.ServerSideEncryption != types.ServerSideEncryptionAes256 {
-			t.Fatalf("encryption=%q err=%v", head.ServerSideEncryption, err)
-		}
-	}
-}
-
-func testAttributesNone(t *testing.T) {
-	t.Helper()
 	s := newSuite(t)
 	b := s.bucket(t)
 	put(t, s, b, "key", "body", nil)
@@ -219,23 +141,15 @@ func testAttributesNone(t *testing.T) {
 	}
 }
 
-func testAttributesVersion(t *testing.T, name string) {
-	t.Helper()
+// 버전 ID를 사용한 GetObjectAttributes 테스트
+func TestGetObjectAttributesWithVersionId(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	b := s.bucket(t)
 	enableVersioning(t, s, b)
 	first := put(t, s, b, "key", "first", nil)
 	second := put(t, s, b, "key", "second-version", nil)
-	if name == "test_get_object_attributes_invalid_version_id" {
-
-		_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{
-			Bucket: aws.String(b), Key: aws.String("key"),
-			VersionId:        aws.String("f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59"),
-			ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize},
-		})
-		assertS3Error(t, err, 404, "NoSuchVersion")
-		return
-	}
 	one := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String("key"), VersionId: first.VersionId, ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
 	two := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String("key"), VersionId: second.VersionId, ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
 	if aws.ToInt64(one.ObjectSize) != 5 || aws.ToInt64(two.ObjectSize) != 14 || aws.ToString(one.VersionId) != aws.ToString(first.VersionId) || aws.ToString(two.VersionId) != aws.ToString(second.VersionId) {
@@ -243,50 +157,133 @@ func testAttributesVersion(t *testing.T, name string) {
 	}
 }
 
-func testAttributesMultipart(t *testing.T, name string) {
-	t.Helper()
+// 잘못된 버전 ID를 사용한 GetObjectAttributes 테스트
+func TestGetObjectAttributesInvalidVersionId(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
-	b, key := s.bucket(t), name
-	partCount := 2
-	if name == "test_get_object_attributes_large_multipart" {
-		partCount = 20
-	}
-	algorithm := types.ChecksumAlgorithm("")
-	checksumType := types.ChecksumType("")
-	if name == "test_get_object_attributes_all_attributes" {
-		partCount = 1
-		algorithm = types.ChecksumAlgorithmCrc64nvme
-		checksumType = types.ChecksumTypeFullObject
-	}
-	createInput := &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), ChecksumAlgorithm: algorithm, ChecksumType: checksumType}
-	created, err := s.client.CreateMultipartUpload(context.Background(), createInput)
+	b := s.bucket(t)
+	enableVersioning(t, s, b)
+	put(t, s, b, "key", "first", nil)
+	put(t, s, b, "key", "second-version", nil)
+	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{
+		Bucket:           aws.String(b),
+		Key:              aws.String("key"),
+		VersionId:        aws.String("f0lPRNkF3bFOqnocdRx5wLUxaJoESQ59"),
+		ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize},
+	})
+	assertS3Error(t, err, 404, "NoSuchVersion")
+}
+
+// 대용량 멀티파트 업로드 객체에 대한 GetObjectAttributes 테스트
+func TestGetObjectAttributesLargeMultipart(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t), "test_get_object_attributes_large_multipart"
+	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	partBody := bytes.Repeat([]byte("m"), 5*1024*1024)
-	parts := make([]types.CompletedPart, 0, partCount)
-	for i := 1; i <= partCount; i++ {
-		input := &s3.UploadPartInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, PartNumber: aws.Int32(int32(i)), Body: bytes.NewReader(partBody), ChecksumAlgorithm: algorithm}
-		part, partErr := s.client.UploadPart(context.Background(), input)
+	parts := make([]types.CompletedPart, 0, 20)
+	for i := 1; i <= 20; i++ {
+		part, partErr := s.client.UploadPart(context.Background(), &s3.UploadPartInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, PartNumber: aws.Int32(int32(i)), Body: bytes.NewReader(partBody)})
 		if partErr != nil {
 			t.Fatal(partErr)
 		}
-		parts = append(parts, types.CompletedPart{ETag: part.ETag, PartNumber: aws.Int32(int32(i)), ChecksumCRC64NVME: part.ChecksumCRC64NVME})
+		parts = append(parts, types.CompletedPart{ETag: part.ETag, PartNumber: aws.Int32(int32(i))})
 	}
-	completeInput := &s3.CompleteMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, ChecksumType: checksumType, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts}}
-	if _, err = s.client.CompleteMultipartUpload(context.Background(), completeInput); err != nil {
+	if _, err = s.client.CompleteMultipartUpload(context.Background(), &s3.CompleteMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts}}); err != nil {
 		t.Fatal(err)
 	}
-	attributes := []types.ObjectAttributes{types.ObjectAttributesObjectSize, types.ObjectAttributesStorageClass, types.ObjectAttributesEtag, types.ObjectAttributesObjectParts}
-	if name == "test_get_object_attributes_all_attributes" {
-		attributes = append(attributes, types.ObjectAttributesChecksum)
-	}
-	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: attributes})
-	wantSize := int64(partCount * len(partBody))
-	if aws.ToInt64(out.ObjectSize) != wantSize || out.ObjectParts == nil || aws.ToInt32(out.ObjectParts.TotalPartsCount) != int32(partCount) {
+	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize, types.ObjectAttributesStorageClass, types.ObjectAttributesEtag, types.ObjectAttributesObjectParts}})
+	wantSize := int64(20 * len(partBody))
+	if aws.ToInt64(out.ObjectSize) != wantSize || out.ObjectParts == nil || aws.ToInt32(out.ObjectParts.TotalPartsCount) != 20 {
 		t.Fatalf("size=%v parts=%#v", out.ObjectSize, out.ObjectParts)
 	}
-	if name == "test_get_object_attributes_all_attributes" && (out.Checksum == nil || aws.ToString(out.Checksum.ChecksumCRC64NVME) == "") {
+}
+
+// 메타데이터가 있는 객체에 대한 GetObjectAttributes 테스트
+func TestGetObjectAttributesWithMetadata(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t), "test_get_object_attributes_with_metadata"
+	putOut, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), Metadata: map[string]string{"custom-key1": "custom-value1", "custom-key2": "custom-value2"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: basicObjectAttributes})
+	if aws.ToInt64(out.ObjectSize) != int64(len(key)) || aws.ToString(out.ETag) == "" || out.StorageClass != types.StorageClassStandard {
+		t.Fatalf("attributes=%#v", out)
+	}
+	if strings.Trim(aws.ToString(putOut.ETag), "\"") != strings.Trim(aws.ToString(out.ETag), "\"") {
+		t.Fatalf("ETag=%q want=%q", aws.ToString(out.ETag), aws.ToString(putOut.ETag))
+	}
+	head, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil || head.Metadata["custom-key1"] != "custom-value1" {
+		t.Fatalf("metadata=%v err=%v", head.Metadata, err)
+	}
+}
+
+// SSE-S3 암호화된 객체에 대한 GetObjectAttributes 테스트
+func TestGetObjectAttributesWithSSES3(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t), "test_get_object_attributes_with_sse_s3"
+	putOut, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ServerSideEncryption: types.ServerSideEncryptionAes256})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: basicObjectAttributes})
+	if aws.ToInt64(out.ObjectSize) != int64(len(key)) || aws.ToString(out.ETag) == "" || out.StorageClass != types.StorageClassStandard {
+		t.Fatalf("attributes=%#v", out)
+	}
+	if strings.Trim(aws.ToString(putOut.ETag), "\"") != strings.Trim(aws.ToString(out.ETag), "\"") {
+		t.Fatalf("ETag=%q want=%q", aws.ToString(out.ETag), aws.ToString(putOut.ETag))
+	}
+	head, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil || head.ServerSideEncryption != types.ServerSideEncryptionAes256 {
+		t.Fatalf("encryption=%q err=%v", head.ServerSideEncryption, err)
+	}
+}
+
+// 모든 가능한 속성을 요청하는 GetObjectAttributes 테스트
+func TestGetObjectAttributesAllAttributes(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t), "test_get_object_attributes_all_attributes"
+	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), ChecksumAlgorithm: types.ChecksumAlgorithmCrc64nvme, ChecksumType: types.ChecksumTypeFullObject})
+	if err != nil {
+		t.Fatal(err)
+	}
+	partBody := bytes.Repeat([]byte("m"), 5*1024*1024)
+	part, partErr := s.client.UploadPart(context.Background(), &s3.UploadPartInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, PartNumber: aws.Int32(1), Body: bytes.NewReader(partBody), ChecksumAlgorithm: types.ChecksumAlgorithmCrc64nvme})
+	if partErr != nil {
+		t.Fatal(partErr)
+	}
+	parts := []types.CompletedPart{{ETag: part.ETag, PartNumber: aws.Int32(1), ChecksumCRC64NVME: part.ChecksumCRC64NVME}}
+	if _, err = s.client.CompleteMultipartUpload(context.Background(), &s3.CompleteMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, ChecksumType: types.ChecksumTypeFullObject, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts}}); err != nil {
+		t.Fatal(err)
+	}
+	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize, types.ObjectAttributesStorageClass, types.ObjectAttributesEtag, types.ObjectAttributesObjectParts, types.ObjectAttributesChecksum}})
+	wantSize := int64(len(partBody))
+	if aws.ToInt64(out.ObjectSize) != wantSize || out.ObjectParts == nil || aws.ToInt32(out.ObjectParts.TotalPartsCount) != 1 {
+		t.Fatalf("size=%v parts=%#v", out.ObjectSize, out.ObjectParts)
+	}
+	if out.Checksum == nil || aws.ToString(out.Checksum.ChecksumCRC64NVME) == "" {
 		t.Fatalf("checksum=%#v", out.Checksum)
 	}
+}
+
+func getAttributes(t *testing.T, client *s3.Client, input *s3.GetObjectAttributesInput) *s3.GetObjectAttributesOutput {
+	t.Helper()
+	out, err := client.GetObjectAttributes(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
 }

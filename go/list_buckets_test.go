@@ -82,14 +82,44 @@ func TestListBucketsPrefix(t *testing.T) {
 func TestListBucketsMaxBuckets(t *testing.T) {
 	t.Parallel()
 
-	testBucketPages(t, false)
+	s := newSuite(t)
+	prefix := "pages-" + uniqueBucketSuffix(t)
+	created := createNamedBuckets(t, s, prefix, 5)
+	sort.Strings(created)
+	first, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{Prefix: aws.String(prefix), MaxBuckets: aws.Int32(2)})
+	if err != nil {
+		t.Fatalf("ListBuckets first page: %v", err)
+	}
+	if got := bucketNames(first); !slices.Equal(got, created[:2]) {
+		t.Fatalf("first page = %v, want %v", got, created[:2])
+	}
 }
 
 // 버킷 목록 조회시 ContinuationToken를 이용한 필터링 확인
 func TestListBucketsContinuationToken(t *testing.T) {
 	t.Parallel()
 
-	testBucketPages(t, true)
+	s := newSuite(t)
+	prefix := "pages-" + uniqueBucketSuffix(t)
+	created := createNamedBuckets(t, s, prefix, 5)
+	sort.Strings(created)
+	first, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{Prefix: aws.String(prefix), MaxBuckets: aws.Int32(2)})
+	if err != nil {
+		t.Fatalf("ListBuckets first page: %v", err)
+	}
+	if got := bucketNames(first); !slices.Equal(got, created[:2]) {
+		t.Fatalf("first page = %v, want %v", got, created[:2])
+	}
+	if first.ContinuationToken == nil {
+		t.Fatal("missing continuation token")
+	}
+	next, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{Prefix: aws.String(prefix), MaxBuckets: aws.Int32(2), ContinuationToken: first.ContinuationToken})
+	if err != nil {
+		t.Fatalf("ListBuckets second page: %v", err)
+	}
+	if got := bucketNames(next); !slices.Equal(got, created[2:4]) {
+		t.Fatalf("second page = %v, want %v", got, created[2:4])
+	}
 }
 
 func createNamedBuckets(t *testing.T, s *suite, prefix string, count int) []string {
@@ -109,32 +139,4 @@ func bucketNames(out *s3.ListBucketsOutput) []string {
 		names = append(names, aws.ToString(bucket.Name))
 	}
 	return names
-}
-
-func testBucketPages(t *testing.T, secondPage bool) {
-	t.Helper()
-	s := newSuite(t)
-	prefix := "pages-" + uniqueBucketSuffix(t)
-	created := createNamedBuckets(t, s, prefix, 5)
-	sort.Strings(created)
-	first, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{Prefix: aws.String(prefix), MaxBuckets: aws.Int32(2)})
-	if err != nil {
-		t.Fatalf("ListBuckets first page: %v", err)
-	}
-	if got := bucketNames(first); !slices.Equal(got, created[:2]) {
-		t.Fatalf("first page = %v, want %v", got, created[:2])
-	}
-	if !secondPage {
-		return
-	}
-	if first.ContinuationToken == nil {
-		t.Fatal("missing continuation token")
-	}
-	next, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{Prefix: aws.String(prefix), MaxBuckets: aws.Int32(2), ContinuationToken: first.ContinuationToken})
-	if err != nil {
-		t.Fatalf("ListBuckets second page: %v", err)
-	}
-	if got := bucketNames(next); !slices.Equal(got, created[2:4]) {
-		t.Fatalf("second page = %v, want %v", got, created[2:4])
-	}
 }

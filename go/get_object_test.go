@@ -25,304 +25,12 @@ func TestObjectReadNotExist(t *testing.T) {
 // 존재하는 오브젝트 이름과 ETag 값으로 오브젝트를 가져오는지 확인
 func TestGetObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_match_good")
-}
-
-// 오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
-func TestGetObjectIfMatchFailed(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_match_failed")
-}
-
-// 오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
-func TestGetObjectIfNoneMatchGood(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_none_match_good")
-}
-
-// 오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
-func TestGetObjectIfNoneMatchFailed(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_none_match_failed")
-}
-
-// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifModifiedSince)보다 이후에 수정된 오브젝트를 조회 성공
-func TestGetObjectIfModifiedSinceGood(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_modified_since_good")
-}
-
-// [지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 실패
-func TestGetObjectIfModifiedSinceFailed(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_modified_since_failed")
-}
-
-// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 실패
-func TestGetObjectIfUnmodifiedSinceGood(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_unmodified_since_good")
-}
-
-// [지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 성공
-func TestGetObjectIfUnmodifiedSinceFailed(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_unmodified_since_failed")
-}
-
-// If-Match(일치)와 If-Unmodified-Since(불일치)를 함께 사용할 경우 ETag 조건이 우선되어 성공하는지 확인
-func TestGetObjectIfMatchWithIfUnmodifiedSince(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_match_with_if_unmodified_since")
-}
-
-// If-None-Match(불일치)와 If-Modified-Since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 304가 반환되는지 확인
-func TestGetObjectIfNoneMatchWithIfModifiedSince(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_none_match_with_if_modified_since")
-}
-
-// If-Match와 If-None-Match에 동일한 ETag를 지정하면 304가 반환되는지 확인
-func TestGetObjectIfMatchAndIfNoneMatch(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_match_and_if_none_match")
-}
-
-// If-Match와 If-None-Match: * 를 함께 지정하면 304가 반환되는지 확인
-func TestGetObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
-	t.Parallel()
-
-	testConditionalGet(t, "test_get_object_if_match_and_if_none_match_any")
-}
-
-// HeadObject에서 일치하는 If-Match 조건으로 성공 확인
-func TestHeadObjectIfMatchGood(t *testing.T) {
-	t.Parallel()
-
-	testConditionalHead(t, "test_head_object_if_match_good")
-}
-
-// HeadObject에서 일치하지 않는 If-Match 조건으로 412 실패 확인
-func TestHeadObjectIfMatchFailed(t *testing.T) {
-	t.Parallel()
-
-	testConditionalHead(t, "test_head_object_if_match_failed")
-}
-
-// HeadObject에서 일치하는 If-None-Match 조건으로 304 반환 확인
-func TestHeadObjectIfNoneMatchGood(t *testing.T) {
-	t.Parallel()
-
-	testConditionalHead(t, "test_head_object_if_none_match_good")
-}
-
-// HeadObject에서 일치하지 않는 If-None-Match 조건으로 성공 확인
-func TestHeadObjectIfNoneMatchFailed(t *testing.T) {
-	t.Parallel()
-
-	testConditionalHead(t, "test_head_object_if_none_match_failed")
-}
-
-// HeadObject에서 오브젝트 업로드 이전 시간의 If-Modified-Since 조건으로 성공 확인
-func TestHeadObjectIfModifiedSinceGood(t *testing.T) {
-	t.Parallel()
-
-	testConditionalHead(t, "test_head_object_if_modified_since_good")
-}
-
-// HeadObject에서 오브젝트 업로드 이후 시간의 If-Modified-Since 조건으로 304 반환 확인
-func TestHeadObjectIfModifiedSinceFailed(t *testing.T) {
-	t.Parallel()
-
-	testConditionalHead(t, "test_head_object_if_modified_since_failed")
-}
-
-// HeadObject에서 오브젝트 업로드 이전 시간의 If-Unmodified-Since 조건으로 412 실패 확인
-func TestHeadObjectIfUnmodifiedSinceGood(t *testing.T) {
-	t.Parallel()
-
-	testConditionalHead(t, "test_head_object_if_unmodified_since_good")
-}
-
-// HeadObject에서 오브젝트 업로드 이후 시간의 If-Unmodified-Since 조건으로 성공 확인
-func TestHeadObjectIfUnmodifiedSinceFailed(t *testing.T) {
-	t.Parallel()
-
-	testConditionalHead(t, "test_head_object_if_unmodified_since_failed")
-}
-
-// 지정한 범위로 오브젝트 다운로드가 가능한지 확인
-func TestRangedRequestResponseCode(t *testing.T) {
-	t.Parallel()
-
-	testGetRange(t, "test_ranged_request_response_code")
-}
-
-// 지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
-func TestRangedBigRequestResponseCode(t *testing.T) {
-	t.Parallel()
-
-	testGetRange(t, "test_ranged_big_request_response_code")
-}
-
-// 특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
-func TestRangedRequestSkipLeadingBytesResponseCode(t *testing.T) {
-	t.Parallel()
-
-	testGetRange(t, "test_ranged_request_skip_leading_bytes_response_code")
-}
-
-// 끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
-func TestRangedRequestReturnTrailingBytesResponseCode(t *testing.T) {
-	t.Parallel()
-
-	testGetRange(t, "test_ranged_request_return_trailing_bytes_response_code")
-}
-
-// 오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
-func TestRangedRequestInvalidRange(t *testing.T) {
-	t.Parallel()
-
-	testGetRange(t, "test_ranged_request_invalid_range")
-}
-
-// 비어있는 오브젝트를 범위를 지정하여 다운로드 실패 확인
-func TestRangedRequestEmptyObject(t *testing.T) {
-	t.Parallel()
-
-	testGetRange(t, "test_ranged_request_empty_object")
-}
-
-// 같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
-func TestGetObjectMany(t *testing.T) {
-	t.Parallel()
-
-	testGetMany(t, "test_get_object_many")
-}
-
-// 같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
-func TestRangeObjectMany(t *testing.T) {
-	t.Parallel()
-
-	testGetMany(t, "test_range_object_many")
-}
-
-// GetObject의 반환헤더값을 설정하여 업로드 할 경우 적용되었는지 확인
-func TestObjectResponseHeaders(t *testing.T) {
-	t.Parallel()
-
-	testGetResponseHeaders(t)
-}
-
-// 멀티파트로 업로드 된 오브젝트를 다운로드 할때 파트 번호를 지정하여 다운로드 가능한지 확인
-func TestMultipartObjectRange(t *testing.T) {
-	t.Parallel()
-
-	testGetMultipartPart(t)
-}
-
-// GetObject에서 파일을 읽지 않고 버려도 무시되는지 확인
-func TestGetObjectIgnore(t *testing.T) {
-	t.Parallel()
-
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "testObjectIgnore"
-	put(t, s, bucket, key, key, nil)
-	out := getObject(t, s.client, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
-	if aws.ToInt64(out.ContentLength) != int64(len(key)) {
-		t.Fatalf("length=%v", out.ContentLength)
-	}
-	out.Body.Close()
-}
-
-// 삭제한 파일 GetObject 실패 확인
-func TestGetObjectAfterDelete(t *testing.T) {
-	t.Parallel()
-
-	testGetAfterDelete(t, false)
-}
-
-// 버저닝한 버킷에서 삭제한 파일 GetObject 실패 확인
-func TestGetObjectAfterDeleteVersioning(t *testing.T) {
-	t.Parallel()
-
-	testGetAfterDelete(t, true)
-}
-
-// 버저닝한 버킷에서 DeleteMarker로 GetObject 실패 확인
-func TestGetObjectDeleteMarker(t *testing.T) {
-	t.Parallel()
-
-	testGetDeleteMarker(t)
-}
-
-func testConditionalGet(t *testing.T, name string) {
-	t.Helper()
-	s := newSuite(t)
-	bucket, key := s.bucket(t), name
+	bucket, key := s.bucket(t), "test_get_object_if_match_good"
 	created := put(t, s, bucket, key, "bar", nil)
-	past, future := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC), time.Date(2100, 9, 29, 19, 43, 31, 0, time.UTC)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
-	status, code := 0, ""
-	switch name {
-	case "test_get_object_if_match_good":
-		input.IfMatch = created.ETag
-	case "test_get_object_if_match_failed":
-		input.IfMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-		status, code = 412, "PreconditionFailed"
-	case "test_get_object_if_none_match_good":
-		input.IfNoneMatch = created.ETag
-		status = 304
-	case "test_get_object_if_none_match_failed":
-		input.IfNoneMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	case "test_get_object_if_modified_since_good":
-		input.IfModifiedSince = &past
-	case "test_get_object_if_modified_since_failed":
-
-		head := headObject(t, s.client, bucket, key)
-		after := head.LastModified.Add(time.Second)
-		input.IfModifiedSince = &after
-		time.Sleep(time.Second)
-		status = 304
-	case "test_get_object_if_unmodified_since_good":
-		input.IfUnmodifiedSince = &past
-		status, code = 412, "PreconditionFailed"
-	case "test_get_object_if_unmodified_since_failed":
-		input.IfUnmodifiedSince = &future
-	case "test_get_object_if_match_with_if_unmodified_since":
-		input.IfMatch, input.IfUnmodifiedSince = created.ETag, &past
-	case "test_get_object_if_none_match_with_if_modified_since":
-		input.IfNoneMatch, input.IfModifiedSince = created.ETag, &past
-		status = 304
-	case "test_get_object_if_match_and_if_none_match":
-		input.IfMatch, input.IfNoneMatch = created.ETag, created.ETag
-		status = 304
-	case "test_get_object_if_match_and_if_none_match_any":
-		input.IfMatch, input.IfNoneMatch = created.ETag, aws.String("*")
-		status = 304
-	default:
-		t.Fatalf("unknown conditional GET %q", name)
-	}
+	input.IfMatch = created.ETag
 	out, err := s.client.GetObject(context.Background(), input)
-	if status != 0 {
-		if code == "" {
-			assertHTTPError(t, err, status)
-		} else {
-			assertS3Error(t, err, status, code)
-		}
-		return
-	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -333,78 +41,292 @@ func testConditionalGet(t *testing.T, name string) {
 	}
 }
 
-func testConditionalHead(t *testing.T, name string) {
-	t.Helper()
+// 오브젝트와 일치하지 않는 ETag 값을 설정하여 오브젝트 조회 실패 확인
+func TestGetObjectIfMatchFailed(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), name
-	created := put(t, s, bucket, key, "bar", nil)
-	past, future := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC), time.Date(2100, 9, 29, 19, 43, 31, 0, time.UTC)
-	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
-	status := 0
-	switch name {
-	case "test_head_object_if_match_good":
-		input.IfMatch = created.ETag
-	case "test_head_object_if_match_failed":
-		input.IfMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-		status = 412
-	case "test_head_object_if_none_match_good":
-		input.IfNoneMatch = created.ETag
-		status = 304
-	case "test_head_object_if_none_match_failed":
-		input.IfNoneMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	case "test_head_object_if_modified_since_good":
-		input.IfModifiedSince = &past
-	case "test_head_object_if_modified_since_failed":
+	bucket, key := s.bucket(t), "test_get_object_if_match_failed"
+	put(t, s, bucket, key, "bar", nil)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	_, err := s.client.GetObject(context.Background(), input)
+	assertS3Error(t, err, 412, "PreconditionFailed")
+}
 
-		head := headObject(t, s.client, bucket, key)
-		after := head.LastModified.Add(time.Second)
-		input.IfModifiedSince = &after
-		time.Sleep(time.Second)
-		status = 304
-	case "test_head_object_if_unmodified_since_good":
-		input.IfUnmodifiedSince = &past
-		status = 412
-	case "test_head_object_if_unmodified_since_failed":
-		input.IfUnmodifiedSince = &future
-	default:
-		t.Fatalf("unknown conditional HEAD %q", name)
+// 오브젝트와 일치하는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 실패
+func TestGetObjectIfNoneMatchGood(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_none_match_good"
+	created := put(t, s, bucket, key, "bar", nil)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfNoneMatch = created.ETag
+	_, err := s.client.GetObject(context.Background(), input)
+	assertHTTPError(t, err, 304)
+}
+
+// 오브젝트와 일치하지 않는 ETag 값을 IfsNoneMatch에 설정하여 오브젝트 조회 성공
+func TestGetObjectIfNoneMatchFailed(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_none_match_failed"
+	put(t, s, bucket, key, "bar", nil)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfNoneMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	out, err := s.client.GetObject(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
 	}
+	defer out.Body.Close()
+	body, err := io.ReadAll(out.Body)
+	if err != nil || string(body) != "bar" {
+		t.Fatalf("body=%q err=%v", body, err)
+	}
+}
+
+// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifModifiedSince)보다 이후에 수정된 오브젝트를 조회 성공
+func TestGetObjectIfModifiedSinceGood(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_modified_since_good"
+	put(t, s, bucket, key, "bar", nil)
+	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfModifiedSince = &past
+	out, err := s.client.GetObject(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	body, err := io.ReadAll(out.Body)
+	if err != nil || string(body) != "bar" {
+		t.Fatalf("body=%q err=%v", body, err)
+	}
+}
+
+// [지정일을 오브젝트 업로드 시간 이후로 설정] 지정일(ifModifiedSince)보다 이전에 수정된 오브젝트 조회 실패
+func TestGetObjectIfModifiedSinceFailed(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_modified_since_failed"
+	put(t, s, bucket, key, "bar", nil)
+	head := headObject(t, s.client, bucket, key)
+	after := head.LastModified.Add(time.Second)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfModifiedSince = &after
+	time.Sleep(time.Second)
+	_, err := s.client.GetObject(context.Background(), input)
+	assertHTTPError(t, err, 304)
+}
+
+// [지정일을 오브젝트 업로드 시간 이전으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 실패
+func TestGetObjectIfUnmodifiedSinceGood(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_unmodified_since_good"
+	put(t, s, bucket, key, "bar", nil)
+	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfUnmodifiedSince = &past
+	_, err := s.client.GetObject(context.Background(), input)
+	assertS3Error(t, err, 412, "PreconditionFailed")
+}
+
+// [지정일을 오브젝트 업로드 시간 이후으로 설정] 지정일(ifUnmodifiedSince) 이후 수정되지 않은 오브젝트 조회 성공
+func TestGetObjectIfUnmodifiedSinceFailed(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_unmodified_since_failed"
+	put(t, s, bucket, key, "bar", nil)
+	future := time.Date(2100, 9, 29, 19, 43, 31, 0, time.UTC)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfUnmodifiedSince = &future
+	out, err := s.client.GetObject(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	body, err := io.ReadAll(out.Body)
+	if err != nil || string(body) != "bar" {
+		t.Fatalf("body=%q err=%v", body, err)
+	}
+}
+
+// If-Match(일치)와 If-Unmodified-Since(불일치)를 함께 사용할 경우 ETag 조건이 우선되어 성공하는지 확인
+func TestGetObjectIfMatchWithIfUnmodifiedSince(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_match_with_if_unmodified_since"
+	created := put(t, s, bucket, key, "bar", nil)
+	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfMatch, input.IfUnmodifiedSince = created.ETag, &past
+	out, err := s.client.GetObject(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	body, err := io.ReadAll(out.Body)
+	if err != nil || string(body) != "bar" {
+		t.Fatalf("body=%q err=%v", body, err)
+	}
+}
+
+// If-None-Match(불일치)와 If-Modified-Since(일치)를 함께 사용할 경우 ETag 조건이 우선되어 304가 반환되는지 확인
+func TestGetObjectIfNoneMatchWithIfModifiedSince(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_none_match_with_if_modified_since"
+	created := put(t, s, bucket, key, "bar", nil)
+	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfNoneMatch, input.IfModifiedSince = created.ETag, &past
+	_, err := s.client.GetObject(context.Background(), input)
+	assertHTTPError(t, err, 304)
+}
+
+// If-Match와 If-None-Match에 동일한 ETag를 지정하면 304가 반환되는지 확인
+func TestGetObjectIfMatchAndIfNoneMatch(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_match_and_if_none_match"
+	created := put(t, s, bucket, key, "bar", nil)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfMatch, input.IfNoneMatch = created.ETag, created.ETag
+	_, err := s.client.GetObject(context.Background(), input)
+	assertHTTPError(t, err, 304)
+}
+
+// If-Match와 If-None-Match: * 를 함께 지정하면 304가 반환되는지 확인
+func TestGetObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_get_object_if_match_and_if_none_match_any"
+	created := put(t, s, bucket, key, "bar", nil)
+	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfMatch, input.IfNoneMatch = created.ETag, aws.String("*")
+	_, err := s.client.GetObject(context.Background(), input)
+	assertHTTPError(t, err, 304)
+}
+
+// HeadObject에서 일치하는 If-Match 조건으로 성공 확인
+func TestHeadObjectIfMatchGood(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_head_object_if_match_good"
+	created := put(t, s, bucket, key, "bar", nil)
+	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfMatch = created.ETag
 	out, err := s.client.HeadObject(context.Background(), input)
-	if status != 0 {
-		assertHTTPError(t, err, status)
-		return
-	}
-	if err != nil || aws.ToInt64(out.ContentLength) != 3 || (name == "test_head_object_if_match_good" && aws.ToString(out.ETag) != aws.ToString(created.ETag)) {
+	if err != nil || aws.ToInt64(out.ContentLength) != 3 || aws.ToString(out.ETag) != aws.ToString(created.ETag) {
 		t.Fatalf("head=%#v err=%v", out, err)
 	}
 }
 
-func testGetRange(t *testing.T, name string) {
-	t.Helper()
+// HeadObject에서 일치하지 않는 If-Match 조건으로 412 실패 확인
+func TestHeadObjectIfMatchFailed(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_head_object_if_match_failed"
+	put(t, s, bucket, key, "bar", nil)
+	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	_, err := s.client.HeadObject(context.Background(), input)
+	assertHTTPError(t, err, 412)
+}
+
+// HeadObject에서 일치하는 If-None-Match 조건으로 304 반환 확인
+func TestHeadObjectIfNoneMatchGood(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_head_object_if_none_match_good"
+	created := put(t, s, bucket, key, "bar", nil)
+	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfNoneMatch = created.ETag
+	_, err := s.client.HeadObject(context.Background(), input)
+	assertHTTPError(t, err, 304)
+}
+
+// HeadObject에서 일치하지 않는 If-None-Match 조건으로 성공 확인
+func TestHeadObjectIfNoneMatchFailed(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_head_object_if_none_match_failed"
+	put(t, s, bucket, key, "bar", nil)
+	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfNoneMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	out, err := s.client.HeadObject(context.Background(), input)
+	if err != nil || aws.ToInt64(out.ContentLength) != 3 {
+		t.Fatalf("head=%#v err=%v", out, err)
+	}
+}
+
+// HeadObject에서 오브젝트 업로드 이전 시간의 If-Modified-Since 조건으로 성공 확인
+func TestHeadObjectIfModifiedSinceGood(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_head_object_if_modified_since_good"
+	put(t, s, bucket, key, "bar", nil)
+	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
+	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfModifiedSince = &past
+	out, err := s.client.HeadObject(context.Background(), input)
+	if err != nil || aws.ToInt64(out.ContentLength) != 3 {
+		t.Fatalf("head=%#v err=%v", out, err)
+	}
+}
+
+// HeadObject에서 오브젝트 업로드 이후 시간의 If-Modified-Since 조건으로 304 반환 확인
+func TestHeadObjectIfModifiedSinceFailed(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_head_object_if_modified_since_failed"
+	put(t, s, bucket, key, "bar", nil)
+	head := headObject(t, s.client, bucket, key)
+	after := head.LastModified.Add(time.Second)
+	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfModifiedSince = &after
+	time.Sleep(time.Second)
+	_, err := s.client.HeadObject(context.Background(), input)
+	assertHTTPError(t, err, 304)
+}
+
+// HeadObject에서 오브젝트 업로드 이전 시간의 If-Unmodified-Since 조건으로 412 실패 확인
+func TestHeadObjectIfUnmodifiedSinceGood(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_head_object_if_unmodified_since_good"
+	put(t, s, bucket, key, "bar", nil)
+	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
+	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfUnmodifiedSince = &past
+	_, err := s.client.HeadObject(context.Background(), input)
+	assertHTTPError(t, err, 412)
+}
+
+// HeadObject에서 오브젝트 업로드 이후 시간의 If-Unmodified-Since 조건으로 성공 확인
+func TestHeadObjectIfUnmodifiedSinceFailed(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test_head_object_if_unmodified_since_failed"
+	put(t, s, bucket, key, "bar", nil)
+	future := time.Date(2100, 9, 29, 19, 43, 31, 0, time.UTC)
+	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	input.IfUnmodifiedSince = &future
+	out, err := s.client.HeadObject(context.Background(), input)
+	if err != nil || aws.ToInt64(out.ContentLength) != 3 {
+		t.Fatalf("head=%#v err=%v", out, err)
+	}
+}
+
+// 지정한 범위로 오브젝트 다운로드가 가능한지 확인
+func TestRangedRequestResponseCode(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket, key := s.bucket(t), "obj"
 	content, requestRange, want, wantRange := "contentData", "bytes=4-7", "entD", "bytes 4-7/11"
-	switch name {
-	case "test_ranged_big_request_response_code":
-		content = stringsRepeatPattern(8 * 1024 * 1024)
-		requestRange = "bytes=3145728-5242880"
-		want = content[3145728:5242881]
-		wantRange = "bytes 3145728-5242880/8388608"
-	case "test_ranged_request_skip_leading_bytes_response_code":
-		requestRange, want, wantRange = "bytes=4-", content[4:], "bytes 4-10/11"
-	case "test_ranged_request_return_trailing_bytes_response_code":
-		requestRange, want, wantRange = "bytes=-7", content[len(content)-7:], "bytes 4-10/11"
-	case "test_ranged_request_invalid_range":
-		requestRange = "bytes=40-50"
-	case "test_ranged_request_empty_object":
-		content, requestRange = "", "bytes=40-50"
-	}
 	put(t, s, bucket, key, content, nil)
 	out, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String(requestRange)})
-	if name == "test_ranged_request_invalid_range" || name == "test_ranged_request_empty_object" {
-		assertS3Error(t, err, 416, "InvalidRange")
-		return
-	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -415,8 +337,88 @@ func testGetRange(t *testing.T, name string) {
 	}
 }
 
-func testGetMany(t *testing.T, name string) {
-	t.Helper()
+// 지정한 범위로 대용량인 오브젝트 다운로드가 가능한지 확인
+func TestRangedBigRequestResponseCode(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "obj"
+	content := stringsRepeatPattern(8 * 1024 * 1024)
+	requestRange := "bytes=3145728-5242880"
+	want := content[3145728:5242881]
+	wantRange := "bytes 3145728-5242880/8388608"
+	put(t, s, bucket, key, content, nil)
+	out, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String(requestRange)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	body, err := io.ReadAll(out.Body)
+	if err != nil || string(body) != want || aws.ToString(out.ContentRange) != wantRange {
+		t.Fatalf("length=%d range=%q want length=%d range=%q err=%v", len(body), aws.ToString(out.ContentRange), len(want), wantRange, err)
+	}
+}
+
+// 특정지점부터 끝까지 오브젝트 다운로드 가능한지 확인
+func TestRangedRequestSkipLeadingBytesResponseCode(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "obj"
+	content := "contentData"
+	requestRange, want, wantRange := "bytes=4-", content[4:], "bytes 4-10/11"
+	put(t, s, bucket, key, content, nil)
+	out, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String(requestRange)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	body, err := io.ReadAll(out.Body)
+	if err != nil || string(body) != want || aws.ToString(out.ContentRange) != wantRange {
+		t.Fatalf("length=%d range=%q want length=%d range=%q err=%v", len(body), aws.ToString(out.ContentRange), len(want), wantRange, err)
+	}
+}
+
+// 끝에서 부터 특정 길이까지 오브젝트 다운로드 가능한지 확인
+func TestRangedRequestReturnTrailingBytesResponseCode(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "obj"
+	content := "contentData"
+	requestRange, want, wantRange := "bytes=-7", content[len(content)-7:], "bytes 4-10/11"
+	put(t, s, bucket, key, content, nil)
+	out, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String(requestRange)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	body, err := io.ReadAll(out.Body)
+	if err != nil || string(body) != want || aws.ToString(out.ContentRange) != wantRange {
+		t.Fatalf("length=%d range=%q want length=%d range=%q err=%v", len(body), aws.ToString(out.ContentRange), len(want), wantRange, err)
+	}
+}
+
+// 오브젝트의 크기를 초과한 범위를 설정하여 다운로드 할경우 실패 확인
+func TestRangedRequestInvalidRange(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "obj"
+	put(t, s, bucket, key, "contentData", nil)
+	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String("bytes=40-50")})
+	assertS3Error(t, err, 416, "InvalidRange")
+}
+
+// 비어있는 오브젝트를 범위를 지정하여 다운로드 실패 확인
+func TestRangedRequestEmptyObject(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "obj"
+	put(t, s, bucket, key, "", nil)
+	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String("bytes=40-50")})
+	assertS3Error(t, err, 416, "InvalidRange")
+}
+
+// 같은 오브젝트를 여러번 반복하여 다운로드 성공 확인
+func TestGetObjectMany(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket, key := s.bucket(t), "foo"
 	data := stringsRepeatPattern(15 * 1024 * 1024)
@@ -424,11 +426,6 @@ func testGetMany(t *testing.T, name string) {
 	for i := 0; i < 50; i++ {
 		input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 		start, end := 0, len(data)-1
-		if name == "test_range_object_many" {
-			start = (i * 7919) % (len(data) - 65536)
-			end = start + 65535
-			input.Range = aws.String(fmt.Sprintf("bytes=%d-%d", start, end))
-		}
 		out := getObject(t, s.client, input)
 		body, err := io.ReadAll(out.Body)
 		out.Body.Close()
@@ -438,8 +435,29 @@ func testGetMany(t *testing.T, name string) {
 	}
 }
 
-func testGetResponseHeaders(t *testing.T) {
-	t.Helper()
+// 같은 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+func TestRangeObjectMany(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "foo"
+	data := stringsRepeatPattern(15 * 1024 * 1024)
+	put(t, s, bucket, key, data, nil)
+	for i := 0; i < 50; i++ {
+		start := (i * 7919) % (len(data) - 65536)
+		end := start + 65535
+		input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String(fmt.Sprintf("bytes=%d-%d", start, end))}
+		out := getObject(t, s.client, input)
+		body, err := io.ReadAll(out.Body)
+		out.Body.Close()
+		if err != nil || !bytes.Equal(body, []byte(data[start:end+1])) {
+			t.Fatalf("iteration=%d range=%d-%d length=%d err=%v", i, start, end, len(body), err)
+		}
+	}
+}
+
+// GetObject의 반환헤더값을 설정하여 업로드 할 경우 적용되었는지 확인
+func TestObjectResponseHeaders(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket, key := s.bucket(t), "testObjectResponseHeaders"
 	put(t, s, bucket, key, key, nil)
@@ -451,8 +469,9 @@ func testGetResponseHeaders(t *testing.T) {
 	}
 }
 
-func testGetMultipartPart(t *testing.T) {
-	t.Helper()
+// 멀티파트로 업로드 된 오브젝트를 다운로드 할때 파트 번호를 지정하여 다운로드 가능한지 확인
+func TestMultipartObjectRange(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket, key := s.bucket(t), "testMultipartObjectRange"
 	ctx := context.Background()
@@ -477,13 +496,25 @@ func testGetMultipartPart(t *testing.T) {
 	}
 }
 
-func testGetAfterDelete(t *testing.T, versioned bool) {
-	t.Helper()
+// GetObject에서 파일을 읽지 않고 버려도 무시되는지 확인
+func TestGetObjectIgnore(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "testObjectIgnore"
+	put(t, s, bucket, key, key, nil)
+	out := getObject(t, s.client, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if aws.ToInt64(out.ContentLength) != int64(len(key)) {
+		t.Fatalf("length=%v", out.ContentLength)
+	}
+	out.Body.Close()
+}
+
+// 삭제한 파일 GetObject 실패 확인
+func TestGetObjectAfterDelete(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket, key, body := s.bucket(t), "deleted", "testContent"
-	if versioned {
-		enableVersioning(t, s, bucket)
-	}
 	put(t, s, bucket, key, body, nil)
 	if read(t, s, bucket, key) != body {
 		t.Fatal("initial body mismatch")
@@ -496,8 +527,27 @@ func testGetAfterDelete(t *testing.T, versioned bool) {
 	assertS3Error(t, err, 404, "NoSuchKey")
 }
 
-func testGetDeleteMarker(t *testing.T) {
-	t.Helper()
+// 버저닝한 버킷에서 삭제한 파일 GetObject 실패 확인
+func TestGetObjectAfterDeleteVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket, key, body := s.bucket(t), "deleted", "testContent"
+	enableVersioning(t, s, bucket)
+	put(t, s, bucket, key, body, nil)
+	if read(t, s, bucket, key) != body {
+		t.Fatal("initial body mismatch")
+	}
+	_, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+}
+
+// 버저닝한 버킷에서 DeleteMarker로 GetObject 실패 확인
+func TestGetObjectDeleteMarker(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket, key, body := s.bucket(t), "marker", "testContent"
 	enableVersioning(t, s, bucket)

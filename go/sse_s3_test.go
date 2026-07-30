@@ -19,167 +19,54 @@ const ssePartSize = 5 * 1024 * 1024
 // 1Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
 func TestSseS3EncryptedTransfer1b(t *testing.T) {
 	t.Parallel()
-
-	testSSES3Write(t, 1)
-}
-// 1KB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
-func TestSseS3EncryptedTransfer1kb(t *testing.T) {
-	t.Parallel()
-
-	testSSES3Write(t, 1024)
-}
-// 1MB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
-func TestSseS3EncryptedTransfer1MB(t *testing.T) {
-	t.Parallel()
-
-	testSSES3Write(t, 1024*1024)
-}
-// 13Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
-func TestSseS3EncryptedTransfer13b(t *testing.T) {
-	t.Parallel()
-
-	testSSES3Write(t, 13)
-}
-// SSE-S3 설정하여 업로드한 오브젝트의 헤더정보읽기가 가능한지 확인
-func TestSseS3EncryptionMethodHead(t *testing.T) {
-	t.Parallel()
-
-	testSSES3Head(t)
-}
-// 멀티파트업로드를 SSE-S3 설정하여 업로드 가능 확인
-func TestSseS3EncryptionMultipartUpload(t *testing.T) {
-	t.Parallel()
-
-	testSSES3MultipartUpload(t)
-}
-// 버킷의 SSE-S3 설정 확인
-func TestGetBucketEncryption(t *testing.T) {
-	t.Parallel()
-
-	testSSES3GetBucketEncryption(t)
-}
-// 버킷의 SSE-S3 설정이 가능한지 확인
-func TestPutBucketEncryption(t *testing.T) {
-	t.Parallel()
-
-	testSSES3PutBucketEncryption(t)
-}
-// 버킷의 SSE-S3 설정 삭제가 가능한지 확인
-func TestDeleteBucketEncryption(t *testing.T) {
-	t.Parallel()
-
-	testSSES3DeleteBucketEncryption(t)
-}
-// 버킷의 SSE-S3 설정이 오브젝트에 반영되는지 확인
-func TestPutBucketEncryptionAndObjectSetCheck(t *testing.T) {
-	t.Parallel()
-
-	testSSES3DefaultObjects(t)
-}
-// 버킷에 SSE-S3 설정하여 업로드한 1kb 오브젝트를 복사 가능한지 확인
-func TestCopyObjectEncryption1kb(t *testing.T) {
-	t.Parallel()
-
-	testSSES3Copy(t, 1024)
-}
-// 버킷에 SSE-S3 설정하여 업로드한 256kb 오브젝트를 복사 가능한지 확인
-func TestCopyObjectEncryption256kb(t *testing.T) {
-	t.Parallel()
-
-	testSSES3Copy(t, 256*1024)
-}
-// 버킷에 SSE-S3 설정하여 업로드한 1mb 오브젝트를 복사 가능한지 확인
-func TestCopyObjectEncryption1mb(t *testing.T) {
-	t.Parallel()
-
-	testSSES3Copy(t, 1024*1024)
-}
-// [버킷에 SSE-S3 설정] 업로드, 다운로드 성공 확인
-func TestSseS3BucketPutGet(t *testing.T) {
-	t.Parallel()
-
-	testSSES3DefaultPutGet(t, false)
-}
-// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = true] 업로드, 다운로드 성공 확인
-func TestSseS3BucketPutGetUseChunkEncoding(t *testing.T) {
-	t.Parallel()
-
-	testSSES3DefaultPutGet(t, true)
-}
-// [버킷에 SSE-S3 설정, SignatureVersion4, UseChunkEncoding = false] 업로드, 다운로드 성공 확인
-func TestSseS3BucketPutGetNotChunkEncoding(t *testing.T) {
-	t.Parallel()
-
-	testSSES3DefaultPutGet(t, false)
-}
-// [버킷에 SSE-S3 설정]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-func TestSseS3BucketPresignedUrlPutGet(t *testing.T) {
-	t.Parallel()
-
-	testSSES3Presigned(t)
-}
-// [버킷에 SSE-S3 설정, SignatureVersion4]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
-func TestSseS3BucketPresignedUrlPutGetV4(t *testing.T) {
-	t.Parallel()
-
-	testSSES3Presigned(t)
-}
-// SSE-S3설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
-func TestSseS3GetObjectMany(t *testing.T) {
-	t.Parallel()
-
-	testSSES3GetMany(t)
-}
-// SSE-S3설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
-func TestSseS3RangeObjectMany(t *testing.T) {
-	t.Parallel()
-
-	testSSES3RangeMany(t)
-}
-// SSE-S3 설정하여 멀티파트로 업로드한 오브젝트를 multi copy 로 복사 가능한지 확인
-func TestSseS3EncryptionMultipartCopyPartUpload(t *testing.T) {
-	t.Parallel()
-
-	testSSES3MultipartCopy(t)
-}
-// SSE-S3 설정하여 Multipart와 Copy Part를 모두 사용하여 오브젝트가 업로드 가능한지 확인
-func TestSseS3EncryptionMultipartCopyMany(t *testing.T) {
-	t.Parallel()
-
-	testSSES3MultipartCopyMany(t)
-}
-// sse-s3설정은 소급적용 되지 않음을 확인
-func TestSseS3NotRetroactive(t *testing.T) {
-	t.Parallel()
-
-	testSSES3NotRetroactive(t)
-}
-// SSE-S3로 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
-func TestSseS3MultipartUploadOverwriteExistingObject(t *testing.T) {
-	t.Parallel()
-
-	testSSES3MultipartUploadOverwriteExistingObject(t)
-}
-// SSE-S3 멀티파트로 업로드된 오브젝트를 putObject로 덮어쓴 뒤 파일이 정상인지 확인
-func TestSseS3PutObjectOverwriteMultipartUpload(t *testing.T) {
-	t.Parallel()
-
-	testSSES3PutObjectOverwriteMultipartUpload(t)
-}
-
-func testSSES3Write(t *testing.T, size int) {
-	t.Helper()
 	s := newSuite(t)
 	bucket := s.bucket(t)
-	body := deterministicBody(size)
+	body := deterministicBody(1)
 	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("test"), Body: bytes.NewReader(body), ServerSideEncryption: types.ServerSideEncryptionAes256}); err != nil {
 		t.Fatal(err)
 	}
-
 	assertSSEObject(t, s, bucket, "test", body, true)
 }
 
-func testSSES3Head(t *testing.T) {
+// 1KB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
+func TestSseS3EncryptedTransfer1kb(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	body := deterministicBody(1024)
+	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("test"), Body: bytes.NewReader(body), ServerSideEncryption: types.ServerSideEncryptionAes256}); err != nil {
+		t.Fatal(err)
+	}
+	assertSSEObject(t, s, bucket, "test", body, true)
+}
+
+// 1MB 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
+func TestSseS3EncryptedTransfer1MB(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	body := deterministicBody(1024 * 1024)
+	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("test"), Body: bytes.NewReader(body), ServerSideEncryption: types.ServerSideEncryptionAes256}); err != nil {
+		t.Fatal(err)
+	}
+	assertSSEObject(t, s, bucket, "test", body, true)
+}
+
+// 13Byte 오브젝트를 SSE-S3 설정하여 업/다운로드가 올바르게 동작하는지 확인
+func TestSseS3EncryptedTransfer13b(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	body := deterministicBody(13)
+	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("test"), Body: bytes.NewReader(body), ServerSideEncryption: types.ServerSideEncryptionAes256}); err != nil {
+		t.Fatal(err)
+	}
+	assertSSEObject(t, s, bucket, "test", body, true)
+}
+
+// SSE-S3 설정하여 업로드한 오브젝트의 헤더정보읽기가 가능한지 확인
+func TestSseS3EncryptionMethodHead(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	body := deterministicBody(1000)
@@ -196,7 +83,9 @@ func testSSES3Head(t *testing.T) {
 	}
 }
 
-func testSSES3MultipartUpload(t *testing.T) {
+// 멀티파트업로드를 SSE-S3 설정하여 업로드 가능 확인
+func TestSseS3EncryptionMultipartUpload(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	body := deterministicBody(50 * 1024 * 1024)
@@ -211,7 +100,9 @@ func testSSES3MultipartUpload(t *testing.T) {
 	assertObjectRanges(t, s.client, bucket, "multipartEnc", body, []int{1024 * 1024, 10 * 1024 * 1024})
 }
 
-func testSSES3GetBucketEncryption(t *testing.T) {
+// 버킷의 SSE-S3 설정 확인
+func TestGetBucketEncryption(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	out, err := s.client.GetBucketEncryption(context.Background(), &s3.GetBucketEncryptionInput{Bucket: aws.String(bucket)})
@@ -227,13 +118,17 @@ func testSSES3GetBucketEncryption(t *testing.T) {
 	}
 }
 
-func testSSES3PutBucketEncryption(t *testing.T) {
+// 버킷의 SSE-S3 설정이 가능한지 확인
+func TestPutBucketEncryption(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putAESBucketEncryption(t, s.client, bucket)
 }
 
-func testSSES3DeleteBucketEncryption(t *testing.T) {
+// 버킷의 SSE-S3 설정 삭제가 가능한지 확인
+func TestDeleteBucketEncryption(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putAESBucketEncryption(t, s.client, bucket)
@@ -252,7 +147,9 @@ func testSSES3DeleteBucketEncryption(t *testing.T) {
 	}
 }
 
-func testSSES3DefaultObjects(t *testing.T) {
+// 버킷의 SSE-S3 설정이 오브젝트에 반영되는지 확인
+func TestPutBucketEncryptionAndObjectSetCheck(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putAESBucketEncryption(t, s.client, bucket)
@@ -266,12 +163,13 @@ func testSSES3DefaultObjects(t *testing.T) {
 	}
 }
 
-func testSSES3Copy(t *testing.T, size int) {
-	t.Helper()
+// 버킷에 SSE-S3 설정하여 업로드한 1kb 오브젝트를 복사 가능한지 확인
+func TestCopyObjectEncryption1kb(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putAESBucketEncryption(t, s.client, bucket)
-	body := deterministicBody(size)
+	body := deterministicBody(1024)
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("bar"), Body: bytes.NewReader(body)})
 	if err != nil {
 		t.Fatal(err)
@@ -283,18 +181,69 @@ func testSSES3Copy(t *testing.T, size int) {
 	assertSSEObject(t, s, bucket, "foo", body, true)
 }
 
-func testSSES3DefaultPutGet(t *testing.T, chunked bool) {
-	t.Helper()
+// 버킷에 SSE-S3 설정하여 업로드한 256kb 오브젝트를 복사 가능한지 확인
+func TestCopyObjectEncryption256kb(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	putAESBucketEncryption(t, s.client, bucket)
+	body := deterministicBody(256 * 1024)
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("bar"), Body: bytes.NewReader(body)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertSSEObject(t, s, bucket, "bar", body, true)
+	if _, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo"), CopySource: aws.String(bucket + "/bar")}); err != nil {
+		t.Fatal(err)
+	}
+	assertSSEObject(t, s, bucket, "foo", body, true)
+}
+
+// 버킷에 SSE-S3 설정하여 업로드한 1mb 오브젝트를 복사 가능한지 확인
+func TestCopyObjectEncryption1mb(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	putAESBucketEncryption(t, s.client, bucket)
+	body := deterministicBody(1024 * 1024)
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("bar"), Body: bytes.NewReader(body)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertSSEObject(t, s, bucket, "bar", body, true)
+	if _, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo"), CopySource: aws.String(bucket + "/bar")}); err != nil {
+		t.Fatal(err)
+	}
+	assertSSEObject(t, s, bucket, "foo", body, true)
+}
+
+// [버킷에 SSE-S3 설정] 업로드, 다운로드 성공 확인
+func TestSseS3BucketPutGet(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putAESBucketEncryption(t, s.client, bucket)
 	getAndAssertAESBucketEncryption(t, s.client, bucket)
 	body := deterministicBody(1000)
-	putObjectMaybeChunked(t, s.client, bucket, "bar", body, chunked)
+	putObjectMaybeChunked(t, s.client, bucket, "bar", body, false)
 	assertSSEObject(t, s, bucket, "bar", body, true)
 }
 
-func testSSES3Presigned(t *testing.T) {
+// [버킷에 SSE-S3 설정, UseChunkEncoding = true] 업로드, 다운로드 성공 확인
+func TestSseS3BucketPutGetUseChunkEncoding(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	putAESBucketEncryption(t, s.client, bucket)
+	getAndAssertAESBucketEncryption(t, s.client, bucket)
+	body := deterministicBody(1000)
+	putObjectMaybeChunked(t, s.client, bucket, "bar", body, true)
+	assertSSEObject(t, s, bucket, "bar", body, true)
+}
+
+// [버킷에 SSE-S3 설정]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
+func TestSseS3BucketPresignedUrlPutGet(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putAESBucketEncryption(t, s.client, bucket)
@@ -339,7 +288,9 @@ func testSSES3Presigned(t *testing.T) {
 	}
 }
 
-func testSSES3GetMany(t *testing.T) {
+// SSE-S3설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
+func TestSseS3GetObjectMany(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putAESBucketEncryption(t, s.client, bucket)
@@ -350,7 +301,9 @@ func testSSES3GetMany(t *testing.T) {
 	}
 }
 
-func testSSES3RangeMany(t *testing.T) {
+// SSE-S3설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+func TestSseS3RangeObjectMany(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	putAESBucketEncryption(t, s.client, bucket)
@@ -363,7 +316,9 @@ func testSSES3RangeMany(t *testing.T) {
 	}
 }
 
-func testSSES3MultipartCopy(t *testing.T) {
+// SSE-S3 설정하여 멀티파트로 업로드한 오브젝트를 multi copy 로 복사 가능한지 확인
+func TestSseS3EncryptionMultipartCopyPartUpload(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	body := deterministicBody(50 * 1024 * 1024)
@@ -372,7 +327,9 @@ func testSSES3MultipartCopy(t *testing.T) {
 	assertObjectRanges(t, s.client, bucket, "multipartEncCopy", body, []int{1024 * 1024})
 }
 
-func testSSES3MultipartCopyMany(t *testing.T) {
+// SSE-S3 설정하여 Multipart와 Copy Part를 모두 사용하여 오브젝트가 업로드 가능한지 확인
+func TestSseS3EncryptionMultipartCopyMany(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	body := deterministicBody(10 * 1024 * 1024)
@@ -385,7 +342,9 @@ func testSSES3MultipartCopyMany(t *testing.T) {
 	assertObjectRanges(t, s.client, bucket, "my_multipart2", second, []int{1024 * 1024})
 }
 
-func testSSES3NotRetroactive(t *testing.T) {
+// sse-s3설정은 소급적용 되지 않음을 확인
+func TestSseS3NotRetroactive(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	plain := deterministicBody(1000)
@@ -413,7 +372,9 @@ func testSSES3NotRetroactive(t *testing.T) {
 	assertSSEObject(t, s, bucket, "multi2", multipartBody, true)
 }
 
-func testSSES3MultipartUploadOverwriteExistingObject(t *testing.T) {
+// SSE-S3로 업로드한 오브젝트를 멀티파트 업로드로 덮어쓰기 성공 확인
+func TestSseS3MultipartUploadOverwriteExistingObject(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	key := "test_sse_s3_multipart_upload_overwrite_existing_object"
@@ -440,7 +401,9 @@ func testSSES3MultipartUploadOverwriteExistingObject(t *testing.T) {
 	assertSSEObject(t, s, bucket, key, want, true)
 }
 
-func testSSES3PutObjectOverwriteMultipartUpload(t *testing.T) {
+// SSE-S3 멀티파트로 업로드된 오브젝트를 putObject로 덮어쓴 뒤 파일이 정상인지 확인
+func TestSseS3PutObjectOverwriteMultipartUpload(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	key := "test_sse_s3_put_object_overwrite_multipart_upload"

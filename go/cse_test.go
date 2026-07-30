@@ -20,96 +20,70 @@ import (
 // [AES256] 1Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
 func TestCseEncryptedTransfer1b(t *testing.T) {
 	t.Parallel()
-
-	testCSEWrite(t, "testCseEncryptedTransfer1b", 1)
-}
-
-// [AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-func TestCseEncryptedTransfer1kb(t *testing.T) {
-	t.Parallel()
-
-	testCSEWrite(t, "testCseEncryptedTransfer1kb", 1024)
-}
-
-// [AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-func TestCseEncryptedTransfer1MB(t *testing.T) {
-	t.Parallel()
-
-	testCSEWrite(t, "testCseEncryptedTransfer1MB", 1024*1024)
-}
-
-// [AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
-func TestCseEncryptedTransfer13b(t *testing.T) {
-	t.Parallel()
-
-	testCSEWrite(t, "testCseEncryptedTransfer13b", 13)
-}
-
-// [AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인
-func TestCseEncryptionMethodHead(t *testing.T) {
-	t.Parallel()
-
-	testCSEHead(t)
-}
-
-// [AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치
-func TestCseEncryptionNonDecryption(t *testing.T) {
-	t.Parallel()
-
-	testCSEEncryptedRawRead(t)
-}
-
-// [AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인
-func TestCseNonEncryptionDecryption(t *testing.T) {
-	t.Parallel()
-
-	testCSEPlaintextDecryptError(t)
-}
-
-// [AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공
-func TestCseEncryptionRangeRead(t *testing.T) {
-	t.Parallel()
-
-	testCSERangeRead(t)
-}
-
-// [AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인
-func TestCseEncryptionMultipartUpload(t *testing.T) {
-	t.Parallel()
-
-	testCSEMultipart(t)
-}
-
-// CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
-func TestCseGetObjectMany(t *testing.T) {
-	t.Parallel()
-
-	testCSEGetMany(t)
-}
-
-// CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
-func TestCseRangeObjectMany(t *testing.T) {
-	t.Parallel()
-
-	testCSERangeMany(t)
-}
-
-func testCSEWrite(t *testing.T, objectKey string, size int) {
-	t.Helper()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	key := deterministicBody(32)
-	plain := deterministicBody(size)
+	plain := deterministicBody(1)
 	encoded := cseEncrypt(t, plain, key)
-	putCSEBytes(t, s.client, bucket, objectKey, encoded, map[string]string{"x-amz-meta-key": string(key)})
-	got := getObjectBytes(t, s.client, bucket, objectKey)
+	putCSEBytes(t, s.client, bucket, "testCseEncryptedTransfer1b", encoded, map[string]string{"x-amz-meta-key": string(key)})
+	got := getObjectBytes(t, s.client, bucket, "testCseEncryptedTransfer1b")
 	decrypted, err := cseDecrypt(got, key)
 	if err != nil || !bytes.Equal(decrypted, plain) {
 		t.Fatalf("CSE round trip size=%d err=%v", len(decrypted), err)
 	}
 }
 
-func testCSEHead(t *testing.T) {
+// [AES256] 1KB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+func TestCseEncryptedTransfer1kb(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	key := deterministicBody(32)
+	plain := deterministicBody(1024)
+	encoded := cseEncrypt(t, plain, key)
+	putCSEBytes(t, s.client, bucket, "testCseEncryptedTransfer1kb", encoded, map[string]string{"x-amz-meta-key": string(key)})
+	got := getObjectBytes(t, s.client, bucket, "testCseEncryptedTransfer1kb")
+	decrypted, err := cseDecrypt(got, key)
+	if err != nil || !bytes.Equal(decrypted, plain) {
+		t.Fatalf("CSE round trip size=%d err=%v", len(decrypted), err)
+	}
+}
+
+// [AES256] 1MB 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+func TestCseEncryptedTransfer1MB(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	key := deterministicBody(32)
+	plain := deterministicBody(1024 * 1024)
+	encoded := cseEncrypt(t, plain, key)
+	putCSEBytes(t, s.client, bucket, "testCseEncryptedTransfer1MB", encoded, map[string]string{"x-amz-meta-key": string(key)})
+	got := getObjectBytes(t, s.client, bucket, "testCseEncryptedTransfer1MB")
+	decrypted, err := cseDecrypt(got, key)
+	if err != nil || !bytes.Equal(decrypted, plain) {
+		t.Fatalf("CSE round trip size=%d err=%v", len(decrypted), err)
+	}
+}
+
+// [AES256] 13Byte 오브젝트를 암호화 하여 업로드한뒤, 다운로드하여 복호화 했을 경우 일치하는지 확인
+func TestCseEncryptedTransfer13b(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	key := deterministicBody(32)
+	plain := deterministicBody(13)
+	encoded := cseEncrypt(t, plain, key)
+	putCSEBytes(t, s.client, bucket, "testCseEncryptedTransfer13b", encoded, map[string]string{"x-amz-meta-key": string(key)})
+	got := getObjectBytes(t, s.client, bucket, "testCseEncryptedTransfer13b")
+	decrypted, err := cseDecrypt(got, key)
+	if err != nil || !bytes.Equal(decrypted, plain) {
+		t.Fatalf("CSE round trip size=%d err=%v", len(decrypted), err)
+	}
+}
+
+// [AES256] 암호화하고 메타데이터에 키값을 추가하여 업로드한 오브젝트가 올바르게 반영되었는지 확인
+func TestCseEncryptionMethodHead(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	key := deterministicBody(32)
@@ -122,7 +96,9 @@ func testCSEHead(t *testing.T) {
 	}
 }
 
-func testCSEEncryptedRawRead(t *testing.T) {
+// [AES256] 암호화 하여 업로드한 오브젝트를 다운로드하여 비교할경우 불일치
+func TestCseEncryptionNonDecryption(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	plain, key := deterministicBody(1000), deterministicBody(32)
@@ -133,7 +109,9 @@ func testCSEEncryptedRawRead(t *testing.T) {
 	}
 }
 
-func testCSEPlaintextDecryptError(t *testing.T) {
+// [AES256] 암호화 없이 업로드한 오브젝트를 다운로드하여 복호화할 경우 실패 확인
+func TestCseNonEncryptionDecryption(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	plain, key := deterministicBody(1000), deterministicBody(32)
@@ -144,7 +122,9 @@ func testCSEPlaintextDecryptError(t *testing.T) {
 	}
 }
 
-func testCSERangeRead(t *testing.T) {
+// [AES256] 암호화 하여 업로드한 오브젝트에 대해 범위를 지정하여 읽기 성공
+func TestCseEncryptionRangeRead(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	encoded := cseEncrypt(t, deterministicBody(1024*1024), deterministicBody(32))
@@ -153,7 +133,9 @@ func testCSERangeRead(t *testing.T) {
 	assertRange(t, s.client, bucket, "testCseEncryptionRangeRead", encoded, start, start+999)
 }
 
-func testCSEMultipart(t *testing.T) {
+// [AES256] 암호화된 오브젝트 멀티파트 업로드 / 다운로드 성공 확인
+func TestCseEncryptionMultipartUpload(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	key := deterministicBody(32)
@@ -176,7 +158,9 @@ func testCSEMultipart(t *testing.T) {
 	}
 }
 
-func testCSEGetMany(t *testing.T) {
+// CSE설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
+func TestCseGetObjectMany(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	plain, key := deterministicBody(15*1024*1024), deterministicBody(32)
@@ -193,7 +177,9 @@ func testCSEGetMany(t *testing.T) {
 	}
 }
 
-func testCSERangeMany(t *testing.T) {
+// CSE설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
+func TestCseRangeObjectMany(t *testing.T) {
+	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	plain, key := deterministicBody(15*1024*1024), deterministicBody(32)

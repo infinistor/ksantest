@@ -15,57 +15,6 @@ const replicationRole = "arn:aws:iam::635518764071:role/replication"
 func TestReplicationSet(t *testing.T) {
 	t.Parallel()
 
-	testReplicationSet(t)
-}
-// 원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
-func TestReplicationInvalidSourceBucketName(t *testing.T) {
-	t.Parallel()
-
-	testReplicationInvalidSource(t)
-}
-// 원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
-func TestReplicationInvalidSourceBucketVersioning(t *testing.T) {
-	t.Parallel()
-
-	testReplicationInvalidSourceVersioning(t)
-}
-// 대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
-func TestReplicationInvalidTargetBucketName(t *testing.T) {
-	t.Parallel()
-
-	testReplicationInvalidTarget(t)
-}
-// 대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
-func TestReplicationInvalidTargetBucketVersioning(t *testing.T) {
-	t.Parallel()
-
-	testReplicationInvalidTargetVersioning(t)
-}
-// 버킷에 복제 설정을 하고 버저닝 설정을 중단 했을 때 실패하는지 확인
-func TestReplicationBucketVersioningSuspend(t *testing.T) {
-	t.Parallel()
-
-	testReplicationSuspendVersioning(t)
-}
-
-func replicationConfiguration(target, prefix string) *types.ReplicationConfiguration {
-	rule := types.ReplicationRule{Status: types.ReplicationRuleStatusEnabled, Destination: &types.Destination{Bucket: aws.String("arn:aws:s3:::" + target)}}
-	if prefix != "" {
-		rule.Priority = aws.Int32(1)
-		rule.Filter = &types.ReplicationRuleFilter{Prefix: aws.String(prefix)}
-		rule.DeleteMarkerReplication = &types.DeleteMarkerReplication{Status: types.DeleteMarkerReplicationStatusDisabled}
-	}
-	return &types.ReplicationConfiguration{Role: aws.String(replicationRole), Rules: []types.ReplicationRule{rule}}
-}
-
-func putReplication(t *testing.T, s *suite, source string, configuration *types.ReplicationConfiguration) {
-	t.Helper()
-	if _, err := putReplicationError(s, source, configuration); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func testReplicationSet(t *testing.T) {
 	s := newSuite(t)
 	source, target := s.bucket(t), s.bucket(t)
 	enableVersioning(t, s, source)
@@ -84,21 +33,30 @@ func testReplicationSet(t *testing.T) {
 	assertHTTPError(t, err, 404)
 }
 
-func testReplicationInvalidSource(t *testing.T) {
+// 원본 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
+func TestReplicationInvalidSourceBucketName(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	source, target := "missing-source-"+uniqueBucketSuffix(t), "missing-target-"+uniqueBucketSuffix(t)
 	_, err := putReplicationError(s, source, replicationConfiguration(target, ""))
 	assertS3Error(t, err, 404, "NoSuchBucket")
 }
 
-func testReplicationInvalidSourceVersioning(t *testing.T) {
+// 원본 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
+func TestReplicationInvalidSourceBucketVersioning(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	source, target := s.bucket(t), s.bucket(t)
 	_, err := putReplicationError(s, source, replicationConfiguration(target, ""))
 	assertS3Error(t, err, 400, "InvalidRequest")
 }
 
-func testReplicationInvalidTarget(t *testing.T) {
+// 대상 버킷이 존재하지 않을때 버킷 복제 설정이 실패하는지 확인
+func TestReplicationInvalidTargetBucketName(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	source := s.bucket(t)
 	enableVersioning(t, s, source)
@@ -107,7 +65,10 @@ func testReplicationInvalidTarget(t *testing.T) {
 	assertS3Error(t, err, 400, "InvalidRequest")
 }
 
-func testReplicationInvalidTargetVersioning(t *testing.T) {
+// 대상 버킷의 버저닝 설정이 되어있지 않을때 실패하는지 확인
+func TestReplicationInvalidTargetBucketVersioning(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	source, target := s.bucket(t), s.bucket(t)
 	enableVersioning(t, s, source)
@@ -115,7 +76,10 @@ func testReplicationInvalidTargetVersioning(t *testing.T) {
 	assertS3Error(t, err, 400, "InvalidRequest")
 }
 
-func testReplicationSuspendVersioning(t *testing.T) {
+// 버킷에 복제 설정을 하고 버저닝 설정을 중단 했을 때 실패하는지 확인
+func TestReplicationBucketVersioningSuspend(t *testing.T) {
+	t.Parallel()
+
 	s := newSuite(t)
 	source, target := s.bucket(t), s.bucket(t)
 	enableVersioning(t, s, source)
@@ -123,6 +87,23 @@ func testReplicationSuspendVersioning(t *testing.T) {
 	putReplication(t, s, source, replicationConfiguration(target, "test/"))
 	_, err := s.client.PutBucketVersioning(context.Background(), &s3.PutBucketVersioningInput{Bucket: aws.String(source), VersioningConfiguration: &types.VersioningConfiguration{Status: types.BucketVersioningStatusSuspended}})
 	assertS3Error(t, err, 409, "InvalidBucketState")
+}
+
+func replicationConfiguration(target, prefix string) *types.ReplicationConfiguration {
+	rule := types.ReplicationRule{Status: types.ReplicationRuleStatusEnabled, Destination: &types.Destination{Bucket: aws.String("arn:aws:s3:::" + target)}}
+	if prefix != "" {
+		rule.Priority = aws.Int32(1)
+		rule.Filter = &types.ReplicationRuleFilter{Prefix: aws.String(prefix)}
+		rule.DeleteMarkerReplication = &types.DeleteMarkerReplication{Status: types.DeleteMarkerReplicationStatusDisabled}
+	}
+	return &types.ReplicationConfiguration{Role: aws.String(replicationRole), Rules: []types.ReplicationRule{rule}}
+}
+
+func putReplication(t *testing.T, s *suite, source string, configuration *types.ReplicationConfiguration) {
+	t.Helper()
+	if _, err := putReplicationError(s, source, configuration); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func assertReplicationConfiguration(t *testing.T, got, want *types.ReplicationConfiguration) {
