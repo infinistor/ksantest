@@ -798,7 +798,7 @@ public class Policy extends TestBase {
 		statement.add(MainData.POLICY_RESOURCE, resources);
 
 		var ipAddress = new JsonObject();
-		ipAddress.addProperty("aws:SourceIp", "192.168.1.0/24");
+		ipAddress.addProperty("aws:SourceIp", "127.0.0.1/32");
 		var condition = new JsonObject();
 		condition.add("IpAddress", ipAddress);
 		statement.add(MainData.POLICY_CONDITION, condition);
@@ -835,13 +835,14 @@ public class Policy extends TestBase {
 
 		// 매우 제한적인 시간 조건 추가 (1초)
 		var condition = new JsonObject();
-		
+		var now = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC);
+
 		var startTimeCondition = new JsonObject();
-		startTimeCondition.addProperty("aws:CurrentTime", java.time.OffsetDateTime.now().plusMinutes(10).toString());
+		startTimeCondition.addProperty("aws:CurrentTime", now.plusMinutes(10).toString());
 		condition.add("DateGreaterThan", startTimeCondition);
 		
 		var endTimeCondition = new JsonObject();
-		endTimeCondition.addProperty("aws:CurrentTime", java.time.OffsetDateTime.now().plusMinutes(10).plusSeconds(1).toString());
+		endTimeCondition.addProperty("aws:CurrentTime", now.plusMinutes(10).plusSeconds(1).toString());
 		condition.add("DateLessThan", endTimeCondition);
 		
 		allowStatement.add(MainData.POLICY_CONDITION, condition);
