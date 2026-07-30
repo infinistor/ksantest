@@ -19,11 +19,6 @@ import org.example.Data.UserData;
 
 public class S3Config {
 	public static final String STR_FILENAME = "config.ini";
-	// public static final String STR_FILENAME = "228.ini";
-	// public static final String STR_FILENAME = "227.ini";
-	// public static final String STR_FILENAME = "11.151.ini";
-	// public static final String STR_FILENAME = "awstests.ini";
-	// public static final String STR_FILENAME = "ksan.ini";
 
 	public static final String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
 	public static final String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";
@@ -96,7 +91,7 @@ public class S3Config {
 			backendUser = readUser(STR_BACKEND_USER);
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			e.printStackTrace();// NOSONAR
 		}
 		return true;
 	}
