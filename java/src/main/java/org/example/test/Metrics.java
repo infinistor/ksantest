@@ -237,10 +237,10 @@ public class Metrics extends TestBase {
 		String actualPrefix = null;
 		com.amazonaws.services.s3.model.Tag actualTag = null;
 		for (var operand : and.getOperands()) {
-			if (operand instanceof MetricsPrefixPredicate)
-				actualPrefix = ((MetricsPrefixPredicate) operand).getPrefix();
-			else if (operand instanceof MetricsTagPredicate)
-				actualTag = ((MetricsTagPredicate) operand).getTag();
+			if (operand instanceof MetricsPrefixPredicate metricsPrefixPredicate)
+				actualPrefix = metricsPrefixPredicate.getPrefix();
+			else if (operand instanceof MetricsTagPredicate metricsTagPredicate)
+				actualTag = metricsTagPredicate.getTag();
 		}
 
 		assertEquals(prefix, actualPrefix);
