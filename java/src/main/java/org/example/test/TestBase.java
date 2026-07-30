@@ -158,7 +158,7 @@ public class TestBase {
 	static final int RANDOM_SUFFIX_TEXT_LENGTH = 5;
 	static final int BUCKET_MAX_LENGTH = 63;
 	static final int MAX_LENGTH = 500;
-	static final Random rand = new Random();
+	static final Random rand = new Random();// NOSONAR
 	/************************************************************************************************************/
 
 	final ArrayList<String> buckets = new ArrayList<>();
@@ -195,7 +195,7 @@ public class TestBase {
 			clientBuilder.setCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()));
 		else
 			clientBuilder.setCredentials(
-					new AWSStaticCredentialsProvider(new BasicAWSCredentials(user.accessKey, user.secretKey)));
+					new AWSStaticCredentialsProvider(new BasicAWSCredentials(user.accessKey, user.secretKey)));// NOSONAR
 
 		if (StringUtils.isBlank(config.url))
 			clientBuilder.setRegion(config.regionName);
@@ -217,8 +217,8 @@ public class TestBase {
 
 	public AmazonS3 getOldClient() {
 		var address = NetUtils.createURLToHTTP(config.url, config.oldPort);
-		var credential = new AWSStaticCredentialsProvider(new BasicAWSCredentials(config.mainUser.accessKey,
-				config.mainUser.secretKey));
+		var credential = new AWSStaticCredentialsProvider(
+				new BasicAWSCredentials(config.mainUser.accessKey, config.mainUser.secretKey));// NOSONAR
 		var s3Config = new ClientConfiguration()
 				.withProtocol(Protocol.HTTP)
 				.withMaxErrorRetry(0)
@@ -501,7 +501,8 @@ public class TestBase {
 		return tagSets;
 	}
 
-	public String setupAclBucket(int testId, ObjectOwnership ownership, CannedAccessControlList acl, List<String> keys) {
+	public String setupAclBucket(int testId, ObjectOwnership ownership, CannedAccessControlList acl,
+			List<String> keys) {
 		var client = getClient();
 		var bucketName = createBucket(client, testId, ownership, acl);
 		createObjects(client, bucketName, keys);
@@ -679,7 +680,7 @@ public class TestBase {
 				}
 				return result.toString(StandardCharsets.UTF_8);
 			} catch (IOException e) {
-				e.printStackTrace();
+				e.printStackTrace();// NOSONAR
 			}
 		}
 		return body;
@@ -862,17 +863,6 @@ public class TestBase {
 		client.createBucket(bucketName);
 	}
 
-	public void checkGoodBucketName(String name, String prefix) {
-		if (StringUtils.isBlank(prefix))
-			prefix = getPrefix();
-
-		var bucketName = String.format("%s%s", prefix, name);
-		buckets.add(bucketName);
-
-		var client = getClient();
-		client.createBucket(bucketName);
-	}
-
 	public void checkConfigureVersioningRetry(String bucketName, String status) {
 		var client = getClient();
 
@@ -949,7 +939,7 @@ public class TestBase {
 		try {
 			return client.execute(getRequest);
 		} catch (Exception e) {
-			e.printStackTrace();
+			e.printStackTrace();// NOSONAR
 		}
 		return null;
 	}
@@ -966,7 +956,7 @@ public class TestBase {
 			return client.execute(putRequest);
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			e.printStackTrace();// NOSONAR
 		}
 
 		return null;
@@ -1505,7 +1495,8 @@ public class TestBase {
 		assertTrue(sourceBody.equals(targetBody), MainData.NOT_MATCHED);
 	}
 
-	public void testObjectCopy(int testId, String prefix, boolean sourceObjectEncryption, boolean sourceBucketEncryption,
+	public void testObjectCopy(int testId, String prefix, boolean sourceObjectEncryption,
+			boolean sourceBucketEncryption,
 			boolean targetBucketEncryption, boolean targetObjectEncryption, int fileSize) {
 		var sourceKey = prefix + "Source";
 		var targetKey = prefix + "Target";
@@ -1526,7 +1517,7 @@ public class TestBase {
 		else
 			client.putObject(sourceBucketName, sourceKey, data);
 
-		//// Source Object Check
+		// Source Object Check
 		var sourceResponse = client.getObject(sourceBucketName, sourceKey);
 		var sourceBody = getBody(sourceResponse.getObjectContent());
 		if (sourceObjectEncryption || sourceBucketEncryption || config.isAWS())
@@ -2188,7 +2179,7 @@ public class TestBase {
 		try {
 			Thread.sleep(milliseconds);
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			e.printStackTrace();// NOSONAR
 			Thread.currentThread().interrupt();
 		}
 	}
