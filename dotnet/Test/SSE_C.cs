@@ -31,6 +31,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptedTransfer1b()
 		{
+			TestId = 1;
 			TestEncryptionSSECustomerWrite(1);
 		}
 
@@ -41,6 +42,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptedTransfer1kb()
 		{
+			TestId = 2;
 			TestEncryptionSSECustomerWrite(1024);
 		}
 
@@ -51,6 +53,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptedTransfer1MB()
 		{
+			TestId = 3;
 			TestEncryptionSSECustomerWrite(1024 * 1024);
 		}
 
@@ -61,6 +64,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptedTransfer13b()
 		{
+			TestId = 4;
 			TestEncryptionSSECustomerWrite(13);
 		}
 
@@ -71,6 +75,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptionSseCMethodHead()
 		{
+			TestId = 5;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -100,6 +105,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestEncryptionSseCPresent()
 		{
+			TestId = 6;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -126,6 +132,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestEncryptionSseCOtherKey()
 		{
+			TestId = 7;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -159,6 +166,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestEncryptionSseCInvalidMd5()
 		{
+			TestId = 8;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -185,6 +193,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptionSseCNoMd5()
 		{
+			TestId = 9;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -209,6 +218,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestEncryptionSseCNoKey()
 		{
+			TestId = 10;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -232,6 +242,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestEncryptionKeyNoSseC()
 		{
+			TestId = 11;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -255,6 +266,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptionSseCMultipartUpload()
 		{
+			TestId = 12;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -299,6 +311,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestEncryptionSseCMultipartBadDownload()
 		{
+			TestId = 13;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -344,6 +357,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestEncryptionSseCPostObjectAuthenticatedRequest()
 		{
+			TestId = 14;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -404,6 +418,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptionSseCGetObjectMany()
 		{
+			TestId = 15;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -427,6 +442,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptionSseCRangeObjectMany()
 		{
+			TestId = 16;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -451,6 +467,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseCEncryptionMultipartCopyPartUpload()
 		{
+			TestId = 17;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -497,6 +514,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseCEncryptionMultipartCopyMany()
 		{
+			TestId = 18;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var SrcKey = "mymultipart_enc";
@@ -548,6 +566,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptionSseCMultipartUploadOverwriteExistingObject()
 		{
+			TestId = 19;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
@@ -581,6 +600,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptionSseCPutObjectOverwriteMultipartUpload()
 		{
+			TestId = 20;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();

@@ -45,6 +45,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestNotificationGetEmpty()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -62,6 +63,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestNotificationPut()
 		{
+			TestId = 2;
 			SkipIfAws();
 
 			var client = GetClient();
@@ -80,6 +82,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestNotificationGet()
 		{
+			TestId = 3;
 			SkipIfAws();
 
 			var client = GetClient();
@@ -102,6 +105,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestNotificationDelete()
 		{
+			TestId = 4;
 			SkipIfAws();
 
 			var client = GetClient();

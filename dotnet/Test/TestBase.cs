@@ -125,15 +125,24 @@ namespace s3tests.Test
 		/// <summary>테스트 클래스명을 suite id로 사용한다. (Java getSuiteId)</summary>
 		public string GetSuiteId() => S3Utils.ToSuiteId(GetType().Name);
 
-		/// <summary>테스트 인스턴스 내에서 생성한 버킷 순번. Java의 testId 자리에 들어간다.</summary>
-		private int BucketIndex;
+		/// <summary>
+		/// 각 테스트 메서드가 시작 시 자신의 testId(= java 선언 순번)를 대입한다.
+		/// 메서드 안에서 만드는 모든 버킷이 이 값을 공유한다. (Java의 createBucket(client, testId)와 동일)
+		/// 기본값 0 = 미설정. 버킷을 만들기 전에 반드시 대입해야 하며, 미설정이면 예외를 던진다.
+		/// </summary>
+		public int TestId = 0;
 
-		/// <summary>prefix + suite + "-" + 순번 + "-" + 랜덤문자로 62자를 채운 버킷명. (Java getNewBucketName)</summary>
-		public string GetNewBucketName(bool create = true) => GetNewBucketName(++BucketIndex, create);
+		/// <summary>prefix + suite + "-" + testId + "-" + 랜덤문자로 62자를 채운 버킷명. (Java getNewBucketName)</summary>
+		public string GetNewBucketName(bool create = true) => GetNewBucketName(TestId, create);
 
 		/// <summary>testId를 직접 지정하는 형태. (Java getNewBucketName(testId))</summary>
 		public string GetNewBucketName(int testId, bool create = true)
 		{
+			if (testId <= 0)
+				throw new InvalidOperationException(
+					$"TestId가 설정되지 않았습니다 (suite={GetSuiteId()}). 테스트 메서드 첫 줄에 'TestId = N;'을 추가하세요 " +
+					"(N = java testV2 동명 메서드의 클래스 내 선언 순번).");
+
 			var bucketName = S3Utils.MakeBucketName(GetPrefix(), GetSuiteId(), testId);
 			if (create) BucketList.Add(bucketName);
 			return bucketName;

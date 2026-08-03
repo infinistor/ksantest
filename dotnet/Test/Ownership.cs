@@ -27,6 +27,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetBucketOwnership()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client, ObjectOwnership.BucketOwnerEnforced);
 			client.GetBucketOwnershipControls(bucketName);
@@ -39,6 +40,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCreateBucketWithOwnership()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client, ObjectOwnership.BucketOwnerEnforced);
 			var response = client.GetBucketOwnershipControls(bucketName);
@@ -53,6 +55,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestChangeBucketOwnership()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client, ObjectOwnership.BucketOwnerEnforced);
 			var response = client.GetBucketOwnershipControls(bucketName);
@@ -76,6 +79,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketOwnershipDenyACL()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client, ObjectOwnership.BucketOwnerEnforced);
 			var response = client.GetBucketOwnershipControls(bucketName);
@@ -95,6 +99,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketOwnershipDenyObjectACL()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client, ObjectOwnership.BucketOwnerEnforced);
 			var key = "testBucketOwnershipDenyObjectACL";
@@ -114,6 +119,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectOwnershipDenyChange()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 			var key = "testObjectOwnershipDenyChange";
@@ -138,6 +144,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectOwnershipDenyACL()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 			var key = "testObjectOwnershipDenyACL";

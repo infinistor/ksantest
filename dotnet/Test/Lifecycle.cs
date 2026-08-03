@@ -32,6 +32,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleSet()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -51,6 +52,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleGet()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -71,6 +73,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleGetNoId()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -101,6 +104,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleExpirationVersioningEnabled()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "test1/a";
@@ -126,6 +130,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestLifecycleIdTooLong()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -145,6 +150,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestLifecycleSameId()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -165,6 +171,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestLifecycleInvalidStatus()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -184,6 +191,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleSetDate()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -202,6 +210,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestLifecycleSetInvalidDate()
 		{
+			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -221,6 +230,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleSetNoncurrent()
 		{
+			TestId = 10;
 			var client = GetClient();
 			var bucketName = SetupObjects(["past/foo", "future/bar"]);
 
@@ -241,6 +251,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleNoncurrentExpiration()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -267,6 +278,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleSetDeleteMarker()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -285,6 +297,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleSetFilter()
 		{
+			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -303,6 +316,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleSetEmptyFilter()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -321,6 +335,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleDeleteMarkerExpiration()
 		{
+			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -357,6 +372,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleSetMultipart()
 		{
+			TestId = 16;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -376,6 +392,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleMultipartExpiration()
 		{
+			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -410,6 +427,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleDelete()
 		{
+			TestId = 18;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -429,6 +447,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestLifecycleSetExpirationZero()
 		{
+			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()
@@ -448,6 +467,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleSetExpiration()
 		{
+			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var rules = new List<LifecycleRule>()

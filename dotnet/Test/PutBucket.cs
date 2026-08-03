@@ -27,6 +27,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListEmpty()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var Response = client.ListObjects(bucketName);
@@ -40,6 +41,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingBadStartsNonAlpha()
 		{
+			TestId = 2;
 			var bucketName = GetNewBucketName();
 			CheckBadBucketName("_" + bucketName);
 		}
@@ -51,6 +53,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingBadShortOne()
 		{
+			TestId = 3;
 			CheckBadBucketName("a");
 		}
 
@@ -61,6 +64,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingBadShortTwo()
 		{
+			TestId = 4;
 			CheckBadBucketName("aa");
 		}
 
@@ -71,6 +75,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateNamingGoodLong60()
 		{
+			TestId = 5;
 			TestBucketCreateNamingGoodLong(60);
 		}
 
@@ -81,6 +86,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateNamingGoodLong61()
 		{
+			TestId = 6;
 			TestBucketCreateNamingGoodLong(61);
 		}
 
@@ -91,6 +97,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateNamingGoodLong62()
 		{
+			TestId = 7;
 			TestBucketCreateNamingGoodLong(62);
 		}
 
@@ -101,6 +108,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateNamingGoodLong63()
 		{
+			TestId = 8;
 			TestBucketCreateNamingGoodLong(63);
 		}
 
@@ -111,6 +119,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingGoodLong64()
 		{
+			TestId = 9;
 			TestBucketCreateNamingBadLong(64);
 		}
 
@@ -121,6 +130,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingBadIp()
 		{
+			TestId = 10;
 			CheckBadBucketName("192.168.11.123");
 		}
 
@@ -131,6 +141,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingDnsUnderscore()
 		{
+			TestId = 11;
 			CheckBadBucketName("foo_bar");
 		}
 
@@ -141,6 +152,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateNamingDnsLong()
 		{
+			TestId = 12;
 			var prefix = GetPrefix();
 			var AddLength = 63 - prefix.Length;
 			prefix = S3Utils.RandomText(AddLength);
@@ -154,6 +166,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingDnsDashAtEnd()
 		{
+			TestId = 13;
 			CheckBadBucketName("foo-");
 		}
 
@@ -164,6 +177,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingDnsDotDot()
 		{
+			TestId = 14;
 			CheckBadBucketName("foo..bar");
 		}
 
@@ -174,6 +188,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingDnsDotDash()
 		{
+			TestId = 15;
 			CheckBadBucketName("foo.-bar");
 		}
 
@@ -184,6 +199,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateNamingDnsDashDot()
 		{
+			TestId = 16;
 			CheckBadBucketName("foo-.bar");
 		}
 
@@ -194,6 +210,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateExists()
 		{
+			TestId = 17;
 			var bucketName = GetNewBucketName();
 			var client = GetClient();
 
@@ -212,6 +229,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateExistsNonowner()
 		{
+			TestId = 18;
 			var bucketName = GetNewBucketName();
 			var client = GetClient();
 			var AltClient = GetAltClient();
@@ -230,6 +248,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateNamingGoodStartsAlpha()
 		{
+			TestId = 19;
 			CheckGoodBucketName("foo", prefix: "a" + GetPrefix());
 		}
 
@@ -240,6 +259,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateNamingGoodStartsDigit()
 		{
+			TestId = 20;
 			CheckGoodBucketName("foo", prefix: "0" + GetPrefix());
 		}
 
@@ -250,6 +270,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateNamingGoodContainsPeriod()
 		{
+			TestId = 21;
 			CheckGoodBucketName("aaa.111");
 		}
 
@@ -260,6 +281,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateNamingGoodContainsHyphen()
 		{
+			TestId = 22;
 			CheckGoodBucketName("aaa-111");
 		}
 
@@ -271,6 +293,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketRecreateNotOverriding()
 		{
+			TestId = 23;
 			var KeyNames = new List<string>() { "mykey1", "mykey2" };
 			var bucketName = SetupObjects(KeyNames);
 
@@ -291,6 +314,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetBucketLocation()
 		{
+			TestId = 24;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 

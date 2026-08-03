@@ -30,6 +30,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSetTagging()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -58,6 +59,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjTagging()
 		{
+			TestId = 2;
 			var Key = "testputtags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
@@ -78,6 +80,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjHeadTagging()
 		{
+			TestId = 3;
 			var Key = "testputtags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
@@ -100,6 +103,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutMaxTags()
 		{
+			TestId = 4;
 			var Key = "testputmaxtags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
@@ -120,6 +124,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutExcessTags()
 		{
+			TestId = 5;
 			var Key = "testputmaxtags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
@@ -141,6 +146,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutMaxSizeTags()
 		{
+			TestId = 6;
 			var Key = "testputmaxkeysize";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
@@ -161,6 +167,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutExcessKeyTags()
 		{
+			TestId = 7;
 			var Key = "testputexcesskeytags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
@@ -182,6 +189,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutExcessValTags()
 		{
+			TestId = 8;
 			var Key = "testputexcesskeytags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
@@ -203,6 +211,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutModifyTags()
 		{
+			TestId = 9;
 			var Key = "testputmodifytags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
@@ -244,6 +253,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutDeleteTags()
 		{
+			TestId = 10;
 			var Key = "testputmodifytags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
@@ -270,6 +280,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectTagsAuthenticatedRequest()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var ContentType = "text/plain";
@@ -322,6 +333,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjWithTags()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var Key = "testtagobj1";
@@ -353,6 +365,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjNonTagging()
 		{
+			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var Key = "obj";

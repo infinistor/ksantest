@@ -20,9 +20,9 @@ using Xunit;
 
 namespace s3tests.Test
 {
-	public class GetObjectAttributesTests : TestBase
+	public class GetObjectAttributes : TestBase
 	{
-		public GetObjectAttributesTests(Xunit.Abstractions.ITestOutputHelper Output) => this.Output = Output;
+		public GetObjectAttributes(Xunit.Abstractions.ITestOutputHelper Output) => this.Output = Output;
 
 		[Fact]
 		[Trait(MainData.Major, "GetObjectAttributes")]
@@ -31,6 +31,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesBasic()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesBasic";
@@ -57,6 +58,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesSpecificAttributes()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesSpecificAttributes";
@@ -81,6 +83,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesMultipart()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesMultipart";
@@ -113,6 +116,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesWithChecksum()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesWithChecksum";
@@ -134,6 +138,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetObjectAttributesNonExistentObject()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesNonExistentObject";
@@ -152,6 +157,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetObjectAttributesNonExistentBucket()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = "non-existent-bucket-" + S3Utils.RandomText(10).ToLowerInvariant();
 			var key = "testGetObjectAttributesNonExistentBucket";
@@ -170,6 +176,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetObjectAttributesNoAttributes()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesNoAttributes";
@@ -189,6 +196,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesWithVersionId()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesWithVersionId";
@@ -224,6 +232,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetObjectAttributesInvalidVersionId()
 		{
+			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesInvalidVersionId";
@@ -244,6 +253,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesLargeMultipart()
 		{
+			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesLargeMultipart";
@@ -284,6 +294,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesWithMetadata()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesWithMetadata";
@@ -315,6 +326,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesWithSSES3()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesWithSSES3";
@@ -341,6 +353,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesAsync()
 		{
+			TestId = 13;
 			var client = GetClient();
 			var asyncClient = GetClient(RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
@@ -369,6 +382,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetObjectAttributesAsyncError()
 		{
+			TestId = 14;
 			var asyncClient = GetClient(RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
 			var bucketName = GetNewBucketName(false);
@@ -395,6 +409,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAttributesAllAttributes()
 		{
+			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAttributesAllAttributes";

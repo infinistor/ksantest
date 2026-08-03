@@ -30,6 +30,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningBucketCreateSuspend()
 		{
+			TestId = 1;
 			var bucketName = GetNewBucket();
 			CheckVersioning(bucketName, VersionStatus.Off);
 
@@ -46,6 +47,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningObjCreateReadRemove()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			client.PutBucketVersioning(bucketName, status: VersionStatus.Enabled);
@@ -63,6 +65,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningObjCreateReadRemoveHead()
 		{
+			TestId = 3;
 			var bucketName = GetNewBucket();
 
 			var client = GetClient();
@@ -103,6 +106,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestVersioningObjPlainNullVersionRemoval()
 		{
+			TestId = 4;
 			var bucketName = GetNewBucket();
 			CheckVersioning(bucketName, VersionStatus.Off);
 
@@ -130,6 +134,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestVersioningObjPlainNullVersionOverwrite()
 		{
+			TestId = 5;
 			var bucketName = GetNewBucket();
 			CheckVersioning(bucketName, VersionStatus.Off);
 
@@ -170,6 +175,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestVersioningObjPlainNullVersionOverwriteSuspended()
 		{
+			TestId = 6;
 			var bucketName = GetNewBucket();
 			CheckVersioning(bucketName, VersionStatus.Off);
 
@@ -204,6 +210,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningObjSuspendVersions()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -245,6 +252,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningObjCreateVersionsRemoveAll()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -271,6 +279,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningObjCreateVersionsRemoveSpecialNames()
 		{
+			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -300,6 +309,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningObjCreateOverwriteMultipart()
 		{
+			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -333,6 +343,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningObjListMarker()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -397,6 +408,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningCopyObjVersion()
 		{
+			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -445,6 +457,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningMultiObjectDelete()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -481,6 +494,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningMultiObjectDeleteWithMarker()
 		{
+			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -531,6 +545,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningMultiObjectDeleteWithMarkerCreate()
 		{
+			TestId = 16;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -556,6 +571,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersionedObjectAcl()
 		{
+			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -603,6 +619,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersionedObjectAclNoVersionSpecified()
 		{
+			TestId = 18;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -683,6 +700,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersionedConcurrentObjectCreateAndRemove()
 		{
+			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -718,6 +736,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningBucketAtomicUploadReturnVersionId()
 		{
+			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "bar";
@@ -750,6 +769,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningBucketMultipartUploadReturnVersionId()
 		{
+			TestId = 21;
 			var contentType = "text/bla";
 			var size = 50 * MainData.MB;
 
@@ -793,6 +813,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningGetObjectHead()
 		{
+			TestId = 22;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -822,6 +843,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningLatest()
 		{
+			TestId = 23;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
@@ -853,6 +875,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningObjMixPutAndMultipart()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
@@ -916,6 +939,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestVersioningInvalidVersionId()
 		{
+			TestId = 24;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestVersioningInvalidVersionId";
@@ -936,6 +960,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningCopyObject()
 		{
+			TestId = 25;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var sourceKey = "source";
@@ -1046,6 +1071,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningUnversionedAllVersionId()
 		{
+			TestId = 26;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestVersioningUnversionedAllVersionId";
@@ -1088,6 +1114,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningEnabledAllVersionId()
 		{
+			TestId = 27;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestVersioningEnabledAllVersionId";
@@ -1136,6 +1163,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningSuspendedAllVersionId()
 		{
+			TestId = 28;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestVersioningSuspendedAllVersionId";
@@ -1180,6 +1208,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningListVersionsOffEnabledSuspended()
 		{
+			TestId = 29;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestVersioningListVersionsOffEnabledSuspended";
@@ -1236,6 +1265,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningListVersionsOffEnabledSuspendedDifferentKeys()
 		{
+			TestId = 30;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var keyOff = "TestVersioningListVersionsOff";
@@ -1294,6 +1324,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningDeleteNullVersionAfterSuspend()
 		{
+			TestId = 31;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestVersioningDeleteNullVersionAfterSuspend";
@@ -1330,6 +1361,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestVersioningListVersionsMultipleEnabledThenSuspended()
 		{
+			TestId = 32;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestVersioningListVersionsMultipleEnabledThenSuspended";
@@ -1371,6 +1403,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestVersioningHeadObjectDeleteMarker()
 		{
+			TestId = 33;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestVersioningHeadObjectDeleteMarker";

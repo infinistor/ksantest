@@ -25,6 +25,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestWebsiteGetBuckets()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -39,6 +40,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestWebsitePutBuckets()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -62,6 +64,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestWebsiteDeleteBuckets()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 

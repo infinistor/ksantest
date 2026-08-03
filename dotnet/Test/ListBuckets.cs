@@ -27,6 +27,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketsCreateThenList()
 		{
+			TestId = 1;
 			var Client = GetClient();
 			var BucketNames = new List<string>();
 			for (int i = 0; i < 5; i++)
@@ -53,6 +54,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestListBucketsPrefix()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var prefix = "1111-my-test";
 			var bucketName = S3Utils.MakeBucketName(prefix, GetSuiteId(), 5);
@@ -74,11 +76,12 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestListBucketsMaxBuckets()
 		{
+			TestId = 6;
 			var client = GetClient();
 			for (int i = 0; i < 5; i++) GetNewBucket(client);
 
-			// GetPrefix()는 {random} 치환 때문에 호출마다 값이 달라질 수 있으므로 한 번만 구한다.
-			var prefix = GetPrefix();
+			// {prefix}{suite}-{testId}- 로 한정해 병렬 실행 시 다른 테스트 버킷과 섞이지 않게 함
+			var prefix = GetPrefix() + GetSuiteId() + $"-{TestId}-";
 
 			// 전체 버킷 리스트를 먼저 가져옴
 			var fullBucketList = GetBucketList(client.ListBuckets(prefix: prefix));
@@ -97,11 +100,12 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestListBucketsContinuationToken()
 		{
+			TestId = 7;
 			var client = GetClient();
 			for (int i = 0; i < 5; i++) GetNewBucket(client);
 
-			// GetPrefix()는 {random} 치환 때문에 호출마다 값이 달라질 수 있으므로 한 번만 구한다.
-			var prefix = GetPrefix();
+			// {prefix}{suite}-{testId}- 로 한정해 병렬 실행 시 다른 테스트 버킷과 섞이지 않게 함
+			var prefix = GetPrefix() + GetSuiteId() + $"-{TestId}-";
 
 			// 전체 버킷 리스트를 먼저 가져옴
 			var fullBucketList = GetBucketList(client.ListBuckets(prefix: prefix));
@@ -127,6 +131,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestListBucketsInvalidAuth()
 		{
+			TestId = 2;
 			var BadAuthClient = GetBadAuthClient();
 			var e = Assert.Throws<AggregateException>(() => BadAuthClient.ListBuckets());
 			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
@@ -140,6 +145,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestListBucketsBadAuth()
 		{
+			TestId = 3;
 			var MainAccessKey = Config.MainUser.AccessKey;
 			var BadAuthClient = GetBadAuthClient(accessKey: MainAccessKey);
 
@@ -155,6 +161,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestHeadBucket()
 		{
+			TestId = 4;
 		}
 	}
 }

@@ -27,6 +27,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2Many()
 		{
+			TestId = 1;
 			var bucketName = SetupObjects(["foo", "bar", "baz"]);
 			var client = GetClient();
 
@@ -48,6 +49,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBasicKeyCount()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -65,6 +67,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterBasic()
 		{
+			TestId = 3;
 			var bucketName = SetupObjects(["foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf"]);
 			var client = GetClient();
 
@@ -87,6 +90,7 @@ namespace s3tests.Test
 		[Trait(MainData.Different, MainData.True)]
 		public void TestBucketListV2EncodingBasic()
 		{
+			TestId = 4;
 			var bucketName = SetupObjects(["foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"]);
 			var client = GetClient();
 
@@ -108,6 +112,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterPrefix()
 		{
+			TestId = 5;
 			var bucketName = SetupObjects(["asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla"]);
 
 			string Delimiter = "/";
@@ -136,6 +141,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterPrefixEndsWithDelimiter()
 		{
+			TestId = 6;
 			var bucketName = SetupObjects(["asdf/"], body: "");
 			ValidateListObjcetV2(bucketName, "asdf/", "/", null, 1000, false, ["asdf/"], EmptyList, true);
 		}
@@ -147,6 +153,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterAlt()
 		{
+			TestId = 7;
 			var bucketName = SetupObjects(["bar", "baz", "cab", "foo"]);
 			var client = GetClient();
 
@@ -170,6 +177,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterPrefixUnderscore()
 		{
+			TestId = 8;
 			var bucketName = SetupObjects(["_obj1_", "_under1/bar", "_under1/baz/xyzzy", "_under2/thud", "_under2/bla"]);
 
 			string delim = "/";
@@ -198,6 +206,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterPercentage()
 		{
+			TestId = 9;
 			var bucketName = SetupObjects(["b%ar", "b%az", "c%ab", "foo"]);
 			var client = GetClient();
 
@@ -222,6 +231,7 @@ namespace s3tests.Test
 		[Trait(MainData.Different, MainData.True)]//s3 라이브러리에서 Delimiter가 공백일경우 string.Empty 반환
 		public void TestBucketListV2DelimiterWhitespace()
 		{
+			TestId = 10;
 			var bucketName = SetupObjects(["b ar", "b az", "c ab", "foo"]);
 			var client = GetClient();
 
@@ -245,6 +255,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterDot()
 		{
+			TestId = 11;
 			var bucketName = SetupObjects(["b.ar", "b.az", "c.ab", "foo"]);
 			var client = GetClient();
 
@@ -269,6 +280,7 @@ namespace s3tests.Test
 		[Trait(MainData.Different, MainData.True)]//s3 라이브러리에서 Delimiter가 \x0a일경우 string.Empty 반환
 		public void TestBucketListV2DelimiterUnreadable()
 		{
+			TestId = 12;
 			var KeyNames = new List<string>() { "bar", "baz", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -292,6 +304,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterEmpty()
 		{
+			TestId = 13;
 			var KeyNames = new List<string>() { "bar", "baz", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -315,6 +328,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterNone()
 		{
+			TestId = 14;
 			var KeyNames = new List<string>() { "bar", "baz", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -336,6 +350,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2FetchOwnerNotEmpty()
 		{
+			TestId = 15;
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -353,6 +368,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2FetchOwnerDefaultEmpty()
 		{
+			TestId = 16;
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -370,6 +386,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2FetchOwnerEmpty()
 		{
+			TestId = 17;
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -387,6 +404,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2DelimiterNotExist()
 		{
+			TestId = 18;
 			var KeyNames = new List<string>() { "bar", "baz", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -410,6 +428,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixBasic()
 		{
+			TestId = 19;
 			var bucketName = SetupObjects(["foo/bar", "foo/baz", "quux"]);
 			var client = GetClient();
 
@@ -430,6 +449,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixAlt()
 		{
+			TestId = 20;
 			var bucketName = SetupObjects(["bar", "baz", "foo"]);
 			var client = GetClient();
 
@@ -450,6 +470,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixEmpty()
 		{
+			TestId = 21;
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -471,6 +492,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixNone()
 		{
+			TestId = 22;
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -491,6 +513,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixNotExist()
 		{
+			TestId = 23;
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -513,6 +536,7 @@ namespace s3tests.Test
 		[Trait(MainData.Different, MainData.True)]//s3 라이브러리에서 Delimiter가 \x0a일경우 string.Empty 반환
 		public void TestBucketListV2PrefixUnreadable()
 		{
+			TestId = 24;
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz", "quux" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -534,6 +558,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixDelimiterBasic()
 		{
+			TestId = 25;
 			var KeyNames = new List<string>() { "foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -557,6 +582,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixDelimiterAlt()
 		{
+			TestId = 26;
 			var KeyNames = new List<string>() { "bar", "bazar", "cab", "foo" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -582,6 +608,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixDelimiterPrefixNotExist()
 		{
+			TestId = 27;
 			var bucketName = SetupObjects(["b/a/r", "b/a/c", "b/a/g", "g"]);
 			var client = GetClient();
 
@@ -601,6 +628,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixDelimiterDelimiterNotExist()
 		{
+			TestId = 28;
 			var bucketName = SetupObjects(["b/a/c", "b/a/g", "b/a/r", "g"]);
 			var client = GetClient();
 
@@ -620,6 +648,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2PrefixDelimiterPrefixDelimiterNotExist()
 		{
+			TestId = 29;
 			var bucketName = SetupObjects(["b/a/r", "b/a/c", "b/a/g", "g"]);
 			var client = GetClient();
 
@@ -638,6 +667,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2MaxKeysOne()
 		{
+			TestId = 30;
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -662,6 +692,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2MaxKeysZero()
 		{
+			TestId = 31;
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -680,6 +711,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2MaxKeysNone()
 		{
+			TestId = 32;
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -698,6 +730,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2ContinuationToken()
 		{
+			TestId = 33;
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -720,6 +753,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2BothContinuationTokenStartAfter()
 		{
+			TestId = 34;
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -746,6 +780,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2StartAfterUnreadable()
 		{
+			TestId = 35;
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -767,6 +802,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2StartAfterNotInList()
 		{
+			TestId = 36;
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -787,6 +823,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2StartAfterAfterList()
 		{
+			TestId = 37;
 			var KeyNames = new List<string>() { "bar", "baz", "foo", "quxx" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -807,6 +844,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2ObjectsAnonymous()
 		{
+			TestId = 38;
 			var client = GetClient();
 			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicRead);
 
@@ -821,6 +859,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketListV2ObjectsAnonymousFail()
 		{
+			TestId = 39;
 			var bucketName = GetNewBucket();
 
 			var UnauthenticatedClient = GetUnauthenticatedClient();
@@ -837,6 +876,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketV2NotExist()
 		{
+			TestId = 40;
 			var bucketName = GetNewBucketName(false);
 			var client = GetClient();
 
@@ -852,6 +892,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2FilteringAll()
 		{
+			TestId = 41;
 			var KeyNames = new List<string>() { "test1/f1", "test2/f2", "test3", "test4/f3", "testF4" };
 			var bucketName = SetupObjects(KeyNames);
 			var client = GetClient();
@@ -885,6 +926,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListV2Versioning()
 		{
+			TestId = 42;
 			var KeyNames = new List<string>() { "aaa", "bbb", "ccc" };
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);

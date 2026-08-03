@@ -28,6 +28,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSetCors()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -82,6 +83,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCorsOriginResponse()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			client.PutBucketACL(bucketName, S3CannedACL.PublicRead);
@@ -161,6 +163,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCorsOriginWildcard()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			client.PutBucketACL(bucketName, S3CannedACL.PublicRead);
@@ -192,6 +195,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCorsHeaderOption()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			client.PutBucketACL(bucketName, S3CannedACL.PublicRead);

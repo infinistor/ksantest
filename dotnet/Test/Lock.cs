@@ -29,6 +29,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockPutObjLock()
 		{
+			TestId = 2;
 			var bucketName = GetNewBucketName(false);
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -59,6 +60,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjLockInvalidBucket()
 		{
+			TestId = 3;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
@@ -87,6 +89,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjLockWithDaysAndYears()
 		{
+			TestId = 4;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -116,6 +119,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjLockInvalidDays()
 		{
+			TestId = 5;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -144,6 +148,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjLockInvalidYears()
 		{
+			TestId = 6;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -172,6 +177,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjLockInvalidMode()
 		{
+			TestId = 7;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -200,6 +206,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjLockInvalidStatus()
 		{
+			TestId = 8;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -228,6 +235,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockSuspendVersioning()
 		{
+			TestId = 9;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -244,6 +252,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockGetObjLock()
 		{
+			TestId = 10;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -273,6 +282,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockGetObjLockInvalidBucket()
 		{
+			TestId = 15;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
@@ -289,6 +299,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockPutObjRetention()
 		{
+			TestId = 16;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -315,6 +326,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjRetentionInvalidBucket()
 		{
+			TestId = 17;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
@@ -340,6 +352,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjRetentionInvalidMode()
 		{
+			TestId = 18;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -365,6 +378,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockGetObjRetention()
 		{
+			TestId = 19;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -392,6 +406,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockGetObjRetentionInvalidBucket()
 		{
+			TestId = 20;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
@@ -412,6 +427,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockPutObjRetentionVersionid()
 		{
+			TestId = 21;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -440,6 +456,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockPutObjRetentionOverrideDefaultRetention()
 		{
+			TestId = 22;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -484,6 +501,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockPutObjRetentionIncreasePeriod()
 		{
+			TestId = 23;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -519,6 +537,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjRetentionShortenPeriod()
 		{
+			TestId = 24;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -555,6 +574,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockPutObjRetentionShortenPeriodBypass()
 		{
+			TestId = 25;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -590,6 +610,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockDeleteObjectWithRetention()
 		{
+			TestId = 26;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -619,6 +640,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockPutLegalHold()
 		{
+			TestId = 29;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -642,6 +664,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutLegalHoldInvalidBucket()
 		{
+			TestId = 30;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
@@ -662,6 +685,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutLegalHoldInvalidStatus()
 		{
+			TestId = 31;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -682,6 +706,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockGetLegalHold()
 		{
+			TestId = 32;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -707,6 +732,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockGetLegalHoldInvalidBucket()
 		{
+			TestId = 33;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
@@ -726,6 +752,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockDeleteObjectWithLegalHoldOn()
 		{
+			TestId = 34;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -751,6 +778,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockDeleteObjectWithLegalHoldOff()
 		{
+			TestId = 35;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -773,6 +801,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockGetObjMetadata()
 		{
+			TestId = 36;
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -820,6 +849,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCreatedBucketEnableObjectLock()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -836,6 +866,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockPutObject()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucketName(false);
 			var key = "testObjectLockPutObject";
@@ -863,6 +894,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockCopyObject()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucketName(false);
 			var bucketName2 = GetNewBucketName(false);
@@ -919,6 +951,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockMultipart()
 		{
+			TestId = 13;
 			// Object Lock 버킷의 UploadPart는 Content-MD5 또는 x-amz-checksum-* 헤더가 필수다.
 			// 기본 클라이언트(WHEN_REQUIRED)는 이를 붙이지 않으므로 SDK가 체크섬을 넣도록 WHEN_SUPPORTED를 쓴다.
 			var client = GetClient(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_REQUIRED);
@@ -949,6 +982,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockMD5()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucketName(false);
 			var key = "testObjectLockMD5";
@@ -978,6 +1012,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockDeleteObjectWithRetentionBypass()
 		{
+			TestId = 27;
 			var key = "file1";
 			var client = GetClient();
 			var bucketName = GetNewBucketName(false);
@@ -998,6 +1033,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockDeleteObjectsWithRetentionBypass()
 		{
+			TestId = 28;
 			var client = GetClient();
 			var bucketName = GetNewBucketName(false);
 			var keyVersions = new System.Collections.Generic.List<KeyVersion>();

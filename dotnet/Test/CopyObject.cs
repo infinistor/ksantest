@@ -31,6 +31,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectCopyZeroSize()
 		{
+			TestId = 1;
 			var key = "foo123bar";
 			var newKey = "bar321foo";
 			var bucketName = SetupObjects([key]);
@@ -51,6 +52,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectCopySameBucket()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo123bar";
@@ -72,6 +74,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectCopyVerifyContentType()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo123bar";
@@ -96,6 +99,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectCopyToItself()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo123bar";
@@ -115,6 +119,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectCopyDiffBucket()
 		{
+			TestId = 6;
 			var bucketName1 = GetNewBucket();
 			var bucketName2 = GetNewBucket();
 
@@ -139,6 +144,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectCopyNotOwnedBucket()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var altClient = GetAltClient();
 			var bucketName1 = GetNewBucketName();
@@ -164,6 +170,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectCopyNotOwnedObjectBucket()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var altClient = GetAltClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -201,6 +208,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectCopyCannedAcl()
 		{
+			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 			var altClient = GetAltClient();
@@ -232,6 +240,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectCopyRetainingMetadata()
 		{
+			TestId = 10;
 			foreach (var size in new List<int>() { 3, 1024 * 1024 })
 			{
 				var bucketName = GetNewBucket();
@@ -264,6 +273,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectCopyReplacingMetadata()
 		{
+			TestId = 11;
 			foreach (var size in new List<int>() { 3, 1024 * 1024 })
 			{
 				var bucketName = GetNewBucket();
@@ -302,6 +312,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectCopyBucketNotFound()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -316,6 +327,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectCopyKeyNotFound()
 		{
+			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -330,6 +342,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectCopyVersioningBucket()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
@@ -389,6 +402,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectCopyVersioningUrlEncoding()
 		{
+			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
@@ -409,6 +423,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectCopyVersioningMultipartUpload()
 		{
+			TestId = 16;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
@@ -483,6 +498,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectIfMatchGood()
 		{
+			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -501,6 +517,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectIfMatchFailed()
 		{
+			TestId = 18;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -518,6 +535,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyNorSrcToNorBucketAndObj()
 		{
+			TestId = 36;
 			TestObjectCopy(false, false, false, false, 1024);
 			TestObjectCopy(false, false, false, false, 256 * 1024);
 			TestObjectCopy(false, false, false, false, 1024 * 1024);
@@ -530,6 +548,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyNorSrcToNorBucketEncryptionObj()
 		{
+			TestId = 37;
 			TestObjectCopy(false, false, false, true, 1024);
 			TestObjectCopy(false, false, false, true, 256 * 1024);
 			TestObjectCopy(false, false, false, true, 1024 * 1024);
@@ -542,6 +561,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyNorSrcToEncryptionBucketNorObj()
 		{
+			TestId = 38;
 			TestObjectCopy(false, false, true, false, 1024);
 			TestObjectCopy(false, false, true, false, 256 * 1024);
 			TestObjectCopy(false, false, true, false, 1024 * 1024);
@@ -554,6 +574,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyNorSrcToEncryptionBucketAndObj()
 		{
+			TestId = 39;
 			TestObjectCopy(false, false, true, true, 1024);
 			TestObjectCopy(false, false, true, true, 256 * 1024);
 			TestObjectCopy(false, false, true, true, 1024 * 1024);
@@ -566,6 +587,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionSrcToNorBucketAndObj()
 		{
+			TestId = 40;
 			TestObjectCopy(true, false, false, false, 1024);
 			TestObjectCopy(true, false, false, false, 256 * 1024);
 			TestObjectCopy(true, false, false, false, 1024 * 1024);
@@ -578,6 +600,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionSrcToNorBucketEncryptionObj()
 		{
+			TestId = 41;
 			TestObjectCopy(true, false, false, true, 1024);
 			TestObjectCopy(true, false, false, true, 256 * 1024);
 			TestObjectCopy(true, false, false, true, 1024 * 1024);
@@ -590,6 +613,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionSrcToEncryptionBucketNorObj()
 		{
+			TestId = 42;
 			TestObjectCopy(true, false, true, false, 1024);
 			TestObjectCopy(true, false, true, false, 256 * 1024);
 			TestObjectCopy(true, false, true, false, 1024 * 1024);
@@ -602,6 +626,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionSrcToEncryptionBucketAndObj()
 		{
+			TestId = 43;
 			TestObjectCopy(true, false, true, true, 1024);
 			TestObjectCopy(true, false, true, true, 256 * 1024);
 			TestObjectCopy(true, false, true, true, 1024 * 1024);
@@ -615,6 +640,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionBucketNorObjToNorBucketAndObj()
 		{
+			TestId = 44;
 			TestObjectCopy(false, true, false, false, 1024);
 			TestObjectCopy(false, true, false, false, 256 * 1024);
 			TestObjectCopy(false, true, false, false, 1024 * 1024);
@@ -627,6 +653,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionBucketNorObjToNorBucketEncryptionObj()
 		{
+			TestId = 45;
 			TestObjectCopy(false, true, false, true, 1024);
 			TestObjectCopy(false, true, false, true, 256 * 1024);
 			TestObjectCopy(false, true, false, true, 1024 * 1024);
@@ -639,6 +666,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionBucketNorObjToEncryptionBucketNorObj()
 		{
+			TestId = 46;
 			TestObjectCopy(false, true, true, false, 1024);
 			TestObjectCopy(false, true, true, false, 256 * 1024);
 			TestObjectCopy(false, true, true, false, 1024 * 1024);
@@ -651,6 +679,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionBucketNorObjToEncryptionBucketAndObj()
 		{
+			TestId = 47;
 			TestObjectCopy(false, true, true, true, 1024);
 			TestObjectCopy(false, true, true, true, 256 * 1024);
 			TestObjectCopy(false, true, true, true, 1024 * 1024);
@@ -663,6 +692,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionBucketAndObjToNorBucketAndObj()
 		{
+			TestId = 48;
 			TestObjectCopy(true, true, false, false, 1024);
 			TestObjectCopy(true, true, false, false, 256 * 1024);
 			TestObjectCopy(true, true, false, false, 1024 * 1024);
@@ -675,6 +705,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionBucketAndObjToNorBucketEncryptionObj()
 		{
+			TestId = 49;
 			TestObjectCopy(true, true, false, true, 1024);
 			TestObjectCopy(true, true, false, true, 256 * 1024);
 			TestObjectCopy(true, true, false, true, 1024 * 1024);
@@ -687,6 +718,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionBucketAndObjToEncryptionBucketNorObj()
 		{
+			TestId = 50;
 			TestObjectCopy(true, true, true, false, 1024);
 			TestObjectCopy(true, true, true, false, 256 * 1024);
 			TestObjectCopy(true, true, true, false, 1024 * 1024);
@@ -699,6 +731,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyEncryptionBucketAndObjToEncryptionBucketAndObj()
 		{
+			TestId = 51;
 			TestObjectCopy(true, true, true, true, 1024);
 			TestObjectCopy(true, true, true, true, 256 * 1024);
 			TestObjectCopy(true, true, true, true, 1024 * 1024);
@@ -711,6 +744,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyToNormalSource()
 		{
+			TestId = 52;
 			var size1 = 1024;
 			var size2 = 256 * 1024;
 			var size3 = 1024 * 1024;
@@ -735,6 +769,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyToSseS3Source()
 		{
+			TestId = 53;
 			var size1 = 1024;
 			var size2 = 256 * 1024;
 			var size3 = 1024 * 1024;
@@ -759,6 +794,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyToSseCSource()
 		{
+			TestId = 54;
 			var size1 = 1024;
 			var size2 = 256 * 1024;
 			var size3 = 1024 * 1024;
@@ -783,6 +819,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectCopyToItselfWithMetadata()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo123bar";
@@ -803,6 +840,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectVersioningCopyToItselfWithMetadata()
 		{
+			TestId = 57;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo123bar";
@@ -825,6 +863,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectCopyToItselfWithMetadataOverwrite()
 		{
+			TestId = 58;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo123bar";
@@ -846,6 +885,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectVersioningCopyToItselfWithMetadataOverwrite()
 		{
+			TestId = 59;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo123bar";
@@ -869,6 +909,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectChecksumUseChunkEncoding()
 		{
+			TestId = 61;
 			var bucketName = GetNewBucket();
 			var configs = new (RequestChecksumCalculation Req, ResponseChecksumValidation Resp)[]
 			{
@@ -903,6 +944,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectIfNoneMatchGood()
 		{
+			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfNoneMatchGoodSource";
@@ -922,6 +964,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectIfNoneMatchFailed()
 		{
+			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfNoneMatchFailedSource";
@@ -943,6 +986,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectIfModifiedSinceGood()
 		{
+			TestId = 21;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfModifiedSinceGoodSource";
@@ -964,6 +1008,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectIfModifiedSinceFailed()
 		{
+			TestId = 22;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfModifiedSinceFailedSource";
@@ -991,6 +1036,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectIfUnmodifiedSinceGood()
 		{
+			TestId = 23;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfUnmodifiedSinceGoodSource";
@@ -1012,6 +1058,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectIfUnmodifiedSinceFailed()
 		{
+			TestId = 24;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfUnmodifiedSinceFailedSource";
@@ -1035,6 +1082,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectIfMatchWithIfUnmodifiedSince()
 		{
+			TestId = 25;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfMatchWithIfUnmodifiedSinceSource";
@@ -1057,6 +1105,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectIfNoneMatchWithIfModifiedSince()
 		{
+			TestId = 26;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfNoneMatchWithIfModifiedSinceSource";
@@ -1081,6 +1130,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectIfMatchAndIfNoneMatch()
 		{
+			TestId = 27;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfMatchAndIfNoneMatchSource";
@@ -1102,6 +1152,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectIfMatchAndIfNoneMatchAny()
 		{
+			TestId = 28;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectIfMatchAndIfNoneMatchAnySource";
@@ -1123,6 +1174,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectDestinationIfMatchGood()
 		{
+			TestId = 29;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectDestinationIfMatchGoodSource";
@@ -1143,6 +1195,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectDestinationIfMatchFailed()
 		{
+			TestId = 30;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectDestinationIfMatchFailedSource";
@@ -1169,6 +1222,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectDestinationIfNoneMatchGood()
 		{
+			TestId = 31;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectDestinationIfNoneMatchGoodSource";
@@ -1188,6 +1242,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectDestinationIfNoneMatchFailed()
 		{
+			TestId = 32;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectDestinationIfNoneMatchFailedSource";
@@ -1214,6 +1269,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectDestinationIfMatchAndIfNoneMatch()
 		{
+			TestId = 33;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectDestinationIfMatchAndIfNoneMatchSource";
@@ -1240,6 +1296,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyObjectDestinationIfMatchAndIfNoneMatchAny()
 		{
+			TestId = 34;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectDestinationIfMatchAndIfNoneMatchAnySource";
@@ -1266,6 +1323,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectSourceIfMatchWithDestinationIfNoneMatch()
 		{
+			TestId = 35;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyObjectSourceIfMatchWithDestinationIfNoneMatchSource";
@@ -1285,6 +1343,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectMetadataAndTags()
 		{
+			TestId = 62;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var sourceKey = "testCopyObjectMetadataAndTagsSource";
@@ -1317,6 +1376,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyRevokeSseAlgorithm()
 		{
+			TestId = 60;
 			var client = GetClientHttps();
 			var bucketName = GetNewBucket(client);
 			UnblockSseC(bucketName);
@@ -1353,6 +1413,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyToDeletedObject()
 		{
+			TestId = 55;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyToDeletedObjectSource";
@@ -1374,6 +1435,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCopyToDeleteMarkerObject()
 		{
+			TestId = 56;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testCopyToDeleteMarkerObjectSource";

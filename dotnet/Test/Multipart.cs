@@ -30,6 +30,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestMultipartUploadEmpty()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var Key1 = "mymultipart";
@@ -48,6 +49,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadSmall()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var Key1 = "mymultipart";
@@ -66,6 +68,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartCopySmall()
 		{
+			TestId = 3;
 			var SrcKey = "foo";
 			var SrcBucketName = SetupKeyWithRandomContent(SrcKey);
 
@@ -89,6 +92,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestMultipartCopyInvalidRange()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var SrcKey = "source";
 			var SrcBucketName = SetupKeyWithRandomContent(SrcKey, size: 5);
@@ -109,6 +113,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartCopyWithoutRange()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var SrcKey = "source";
 			var SrcBucketName = SetupKeyWithRandomContent(SrcKey, size: 10);
@@ -135,6 +140,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartCopySpecialNames()
 		{
+			TestId = 6;
 			var SrcBucketName = GetNewBucket();
 			var DestBucketName = GetNewBucket();
 
@@ -160,6 +166,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUpload()
 		{
+			TestId = 7;
 			var bucketName = GetNewBucket();
 			var key = "mymultipart";
 			var ContentType = "text/bla";
@@ -194,6 +201,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartCopyVersioned()
 		{
+			TestId = 8;
 			var SrcBucketName = GetNewBucket();
 			var DestBucketName = GetNewBucket();
 
@@ -231,6 +239,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadResendPart()
 		{
+			TestId = 9;
 			var bucketName = GetNewBucket();
 			var key = "mymultipart";
 			var size = 50 * MainData.MB;
@@ -249,6 +258,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadMultipleSizes()
 		{
+			TestId = 10;
 			var bucketName = GetNewBucket();
 			var key = "mymultipart";
 			var client = GetClient();
@@ -286,6 +296,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartCopyMultipleSizes()
 		{
+			TestId = 11;
 			var SrcKey = "foo";
 			var SrcBucketName = SetupKeyWithRandomContent(SrcKey, size: 12 * MainData.MB);
 
@@ -331,6 +342,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestMultipartUploadSizeTooSmall()
 		{
+			TestId = 12;
 			var bucketName = GetNewBucket();
 			var key = "mymultipart";
 			var client = GetClient();
@@ -349,6 +361,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadContents()
 		{
+			TestId = 13;
 			var bucketName = GetNewBucket();
 			DoTestMultipartUploadContents(bucketName, "mymultipart", 3);
 		}
@@ -360,6 +373,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadOverwriteExistingObject()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "mymultipart";
@@ -395,6 +409,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestAbortMultipartUpload()
 		{
+			TestId = 16;
 			var bucketName = GetNewBucket();
 			var key = "mymultipart";
 			var size = 10 * MainData.MB;
@@ -417,6 +432,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestAbortMultipartUploadNotFound()
 		{
+			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "mymultipart";
@@ -434,6 +450,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestListMultipartUpload()
 		{
+			TestId = 18;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "mymultipart";
@@ -465,6 +482,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestMultipartUploadMissingPart()
 		{
+			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "mymultipart";
@@ -489,6 +507,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestMultipartUploadIncorrectEtag()
 		{
+			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "mymultipart";
@@ -514,6 +533,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestAtomicMultipartUploadWrite()
 		{
+			TestId = 21;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo";
@@ -540,6 +560,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadList()
 		{
+			TestId = 22;
 			var bucketName = GetNewBucket();
 			var key = "mymultipart";
 			var ContentType = "text/bla";
@@ -561,6 +582,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestAbortMultipartUploadList()
 		{
+			TestId = 23;
 			var bucketName = GetNewBucket();
 			var key = "mymultipart";
 			var size = 10 * MainData.MB;
@@ -580,6 +602,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartCopyMany()
 		{
+			TestId = 24;
 			var bucketName = GetNewBucket();
 			var SrcKey = "mymultipart";
 			var size = 10 * MainData.MB;
@@ -623,6 +646,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartListParts()
 		{
+			TestId = 25;
 			var bucketName = GetNewBucket();
 			var key = "mymultipart";
 			var ContentType = "text/bla";
@@ -646,6 +670,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadChecksumUseChunkEncoding()
 		{
+			TestId = 26;
 			var bucketName = GetNewBucket();
 			RunMultipartChecksumConfigs(bucketName, useHttps: true);
 		}
@@ -657,6 +682,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadChecksum()
 		{
+			TestId = 27;
 			var bucketName = GetNewBucket();
 			RunMultipartChecksumConfigs(bucketName, useHttps: false);
 		}
@@ -668,6 +694,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestMultipartUploadChecksumFailure()
 		{
+			TestId = 28;
 			var bucketName = GetNewBucket();
 			var unsupportedFullObject = new[]
 			{
@@ -705,6 +732,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartCopyChecksum()
 		{
+			TestId = 29;
 			var client = GetClientHttpsV4(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_SUPPORTED);
 			var bucketName = GetNewBucket(client);
 			foreach (var checksum in CheckSum.FullObjectAlgorithms)
@@ -752,6 +780,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectOverwriteMultipartUpload()
 		{
+			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testPutObjectOverwriteMultipartUpload";
@@ -781,6 +810,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestcreateMultipartUploadEmptyChecksumAlgorithm()
 		{
+			TestId = 30;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testcreateMultipartUploadEmptyChecksumAlgorithm";
@@ -798,6 +828,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestcreateMultipartUploadEmptyChecksumType()
 		{
+			TestId = 31;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testcreateMultipartUploadEmptyChecksumType";
@@ -835,6 +866,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestUploadPartCopyIfMatchGood()
 		{
+			TestId = 32;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfMatchGoodSource";
@@ -857,6 +889,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestUploadPartCopyIfMatchFailed()
 		{
+			TestId = 33;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfMatchFailedSource";
@@ -880,6 +913,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestUploadPartCopyIfNoneMatchGood()
 		{
+			TestId = 34;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfNoneMatchGoodSource";
@@ -902,6 +936,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestUploadPartCopyIfNoneMatchFailed()
 		{
+			TestId = 35;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfNoneMatchFailedSource";
@@ -925,6 +960,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestUploadPartCopyIfMatchAndIfNoneMatch()
 		{
+			TestId = 36;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfMatchAndIfNoneMatchSource";
@@ -948,6 +984,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestUploadPartCopyIfMatchAndIfNoneMatchAny()
 		{
+			TestId = 37;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfMatchAndIfNoneMatchAnySource";
@@ -971,6 +1008,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestUploadPartCopyIfModifiedSinceGood()
 		{
+			TestId = 38;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfModifiedSinceGoodSource";
@@ -994,6 +1032,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestUploadPartCopyIfModifiedSinceFailed()
 		{
+			TestId = 39;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfModifiedSinceFailedSource";
@@ -1022,6 +1061,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestUploadPartCopyIfUnmodifiedSinceGood()
 		{
+			TestId = 40;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfUnmodifiedSinceGoodSource";
@@ -1045,6 +1085,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestUploadPartCopyIfUnmodifiedSinceFailed()
 		{
+			TestId = 41;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var source = "testUploadPartCopyIfUnmodifiedSinceFailedSource";
@@ -1069,6 +1110,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCompleteMultipartUploadIfMatchGood()
 		{
+			TestId = 42;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testCompleteMultipartUploadIfMatchGood";
@@ -1090,6 +1132,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCompleteMultipartUploadIfMatchFailed()
 		{
+			TestId = 43;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testCompleteMultipartUploadIfMatchFailed";
@@ -1115,6 +1158,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCompleteMultipartUploadIfNoneMatchGood()
 		{
+			TestId = 44;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testCompleteMultipartUploadIfNoneMatchGood";
@@ -1134,6 +1178,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCompleteMultipartUploadIfNoneMatchFailed()
 		{
+			TestId = 45;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testCompleteMultipartUploadIfNoneMatchFailed";
@@ -1159,6 +1204,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCompleteMultipartUploadIfMatchAndIfNoneMatch()
 		{
+			TestId = 46;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testCompleteMultipartUploadIfMatchAndIfNoneMatch";
@@ -1183,6 +1229,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCompleteMultipartUploadIfMatchAndIfNoneMatchAny()
 		{
+			TestId = 47;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testCompleteMultipartUploadIfMatchAndIfNoneMatchAny";
@@ -1207,6 +1254,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestMultipartUploadAbortDuringUpload()
 		{
+			TestId = 48;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testMultipartUploadAbortDuringUpload";

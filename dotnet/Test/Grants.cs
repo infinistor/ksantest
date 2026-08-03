@@ -94,6 +94,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclDefault()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -108,6 +109,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclChanged()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicRead);
 
@@ -127,6 +129,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclPrivate()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.Private);
 
@@ -141,6 +144,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclPublicRead()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicRead);
 
@@ -155,6 +159,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclPublicRW()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
 
@@ -169,6 +174,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclAuthenticatedRead()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.AuthenticatedRead);
 
@@ -183,6 +189,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectAclDefault()
 		{
+			TestId = 7;
 			var key = "testObjectAclDefault";
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -200,6 +207,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectAclChange()
 		{
+			TestId = 8;
 			var key = "testObjectAclChange";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -222,6 +230,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectAclPrivate()
 		{
+			TestId = 9;
 			var key = "testObjectAclPrivate";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -239,6 +248,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectAclPublicRead()
 		{
+			TestId = 10;
 			var key = "testObjectAclPublicRead";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -256,6 +266,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectAclPublicRW()
 		{
+			TestId = 11;
 			var key = "testObjectAclPublicRW";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -273,6 +284,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectAclAuthenticatedRead()
 		{
+			TestId = 12;
 			var key = "testObjectAclAuthenticatedRead";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -291,6 +303,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectAclBucketOwnerRead()
 		{
+			TestId = 13;
 			var key = "testObjectAclBucketOwnerRead";
 			var mainClient = GetClient();
 			var altClient = GetAltClient();
@@ -310,6 +323,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketObjectWriterObjectOwnerFullControl()
 		{
+			TestId = 14;
 			var key = "testBucketObjectWriterObjectOwnerFullControl";
 			var mainClient = GetClient();
 			var altClient = GetAltClient();
@@ -329,6 +343,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketOwnerEnforcedObjectOwnerFullControl()
 		{
+			TestId = 15;
 			var key = "testBucketOwnerEnforcedObjectOwnerFullControl";
 			var mainClient = GetClient();
 			var altClient = GetAltClient();
@@ -347,6 +362,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectAclOwnerNotChange()
 		{
+			TestId = 16;
 			var key = "testObjectAclOwnerNotChange";
 			var mainClient = GetClient();
 			var altClient = GetAltClient();
@@ -371,6 +387,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclChangeNotEffect()
 		{
+			TestId = 17;
 			var key = "testBucketAclChangeNotEffect";
 			var client = GetClient();
 			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
@@ -396,6 +413,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclDuplicated()
 		{
+			TestId = 18;
 			var client = GetClient();
 			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.Private);
 
@@ -408,70 +426,110 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : FULL_CONTROL")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestBucketPermissionFullControl() => CheckBucketPermission(S3Permission.FULL_CONTROL);
+		public void TestBucketPermissionFullControl()
+		{
+			TestId = 19;
+			CheckBucketPermission(S3Permission.FULL_CONTROL);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : WRITE")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestBucketPermissionWrite() => CheckBucketPermission(S3Permission.WRITE);
+		public void TestBucketPermissionWrite()
+		{
+			TestId = 20;
+			CheckBucketPermission(S3Permission.WRITE);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : WRITE_ACP")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestBucketPermissionWriteAcp() => CheckBucketPermission(S3Permission.WRITE_ACP);
+		public void TestBucketPermissionWriteAcp()
+		{
+			TestId = 21;
+			CheckBucketPermission(S3Permission.WRITE_ACP);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : READ")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestBucketPermissionRead() => CheckBucketPermission(S3Permission.READ);
+		public void TestBucketPermissionRead()
+		{
+			TestId = 22;
+			CheckBucketPermission(S3Permission.READ);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "버킷에 설정한 acl 정보가 올바르게 적용되는지 확인 : READ_ACP")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestBucketPermissionReadAcp() => CheckBucketPermission(S3Permission.READ_ACP);
+		public void TestBucketPermissionReadAcp()
+		{
+			TestId = 23;
+			CheckBucketPermission(S3Permission.READ_ACP);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : FULL_CONTROL")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectPermissionFullControl() => CheckObjectPermission(S3Permission.FULL_CONTROL);
+		public void TestObjectPermissionFullControl()
+		{
+			TestId = 24;
+			CheckObjectPermission(S3Permission.FULL_CONTROL);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : WRITE")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectPermissionWrite() => CheckObjectPermission(S3Permission.WRITE);
+		public void TestObjectPermissionWrite()
+		{
+			TestId = 25;
+			CheckObjectPermission(S3Permission.WRITE);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : WRITE_ACP")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectPermissionWriteAcp() => CheckObjectPermission(S3Permission.WRITE_ACP);
+		public void TestObjectPermissionWriteAcp()
+		{
+			TestId = 26;
+			CheckObjectPermission(S3Permission.WRITE_ACP);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : READ")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectPermissionRead() => CheckObjectPermission(S3Permission.READ);
+		public void TestObjectPermissionRead()
+		{
+			TestId = 27;
+			CheckObjectPermission(S3Permission.READ);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Permission")]
 		[Trait(MainData.Explanation, "오브젝트에 설정한 acl 정보가 올바르게 적용되는지 확인 : READ_ACP")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestObjectPermissionReadAcp() => CheckObjectPermission(S3Permission.READ_ACP);
+		public void TestObjectPermissionReadAcp()
+		{
+			TestId = 28;
+			CheckObjectPermission(S3Permission.READ_ACP);
+		}
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
@@ -480,6 +538,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketAclGrantNonExistUser()
 		{
+			TestId = 29;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -501,6 +560,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclNoGrants()
 		{
+			TestId = 30;
 			var key = "testBucketAclNoGrants";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -533,6 +593,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketAclMultiGrants()
 		{
+			TestId = 31;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -552,6 +613,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectAclMultiGrants()
 		{
+			TestId = 32;
 			var key = "testObjectAclMultiGrants";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -573,6 +635,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketAclRevokeAll()
 		{
+			TestId = 33;
 			var key = "testBucketAclRevokeAll";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -591,6 +654,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectAclRevokeAll()
 		{
+			TestId = 34;
 			var key = "testObjectAclRevokeAll";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -609,6 +673,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketAclRevokeAllId()
 		{
+			TestId = 35;
 			var key = "testBucketAclRevokeAllId";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);

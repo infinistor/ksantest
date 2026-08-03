@@ -28,6 +28,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBlockPublicAclAndPolicy()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -66,6 +67,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBlockPublicAcls()
 		{
+			TestId = 2;
 			var key = "testBlockPublicAcls";
 			var client = GetClient();
 			var bucketName = GetNewBucket(client, ObjectOwnership.ObjectWriter);
@@ -99,6 +101,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBlockPublicPolicy()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -124,6 +127,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestIgnorePublicAcls()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 			var altClient = GetAltClient();
@@ -158,6 +162,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeletePublicBlock()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -192,6 +197,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutPublicBlock()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 

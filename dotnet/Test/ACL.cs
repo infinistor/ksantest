@@ -26,6 +26,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPrivateBucketAndObject()
 		{
+			TestId = 1;
 			var mainKey = "testDefaultObjectPutGetMain";
 			var altKey = "testDefaultObjectPutGetAlt";
 			var publicKey = "testDefaultObjectPutGetPublic";
@@ -49,6 +50,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPrivateBucketPublicReadObject()
 		{
+			TestId = 2;
 			var mainKey = "testPrivateBucketPublicObjectMain";
 			var altKey = "testPrivateBucketPublicObjectAlt";
 			var publicKey = "testPrivateBucketPublicObjectPublic";
@@ -72,6 +74,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPrivateBucketPublicRWObject()
 		{
+			TestId = 3;
 			var mainKey = "testPrivateBucketPublicRWObjectMain";
 			var altKey = "testPrivateBucketPublicRWObjectAlt";
 			var publicKey = "testPrivateBucketPublicRWObjectPublic";
@@ -95,6 +98,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPrivateBucketAuthenticatedReadObject()
 		{
+			TestId = 4;
 			var mainKey = "testPrivateBucketAuthenticatedObjectMain";
 			var altKey = "testPrivateBucketAuthenticatedObjectAlt";
 			var publicKey = "testPrivateBucketAuthenticatedObjectPublic";
@@ -118,6 +122,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPrivateBucketBucketOwnerReadObject()
 		{
+			TestId = 5;
 			var mainKey = "testPrivateBucketBucketOwnerReadObjectMain";
 			var altKey = "testPrivateBucketBucketOwnerReadObjectAlt";
 			var publicKey = "testPrivateBucketBucketOwnerReadObjectPublic";
@@ -141,6 +146,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPrivateBucketBucketOwnerReadObjectUploadAltUser()
 		{
+			TestId = 6;
 			var mainKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserMain";
 			var altKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserAlt";
 			var publicKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserPublic";
@@ -165,6 +171,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPrivateBucketBucketOwnerFullControlObject()
 		{
+			TestId = 7;
 			var mainKey = "testPrivateBucketBucketOwnerFullControlObjectMain";
 			var altKey = "testPrivateBucketBucketOwnerFullControlObjectAlt";
 			var publicKey = "testPrivateBucketBucketOwnerFullControlObjectPublic";
@@ -188,6 +195,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicReadBucketPrivateObject()
 		{
+			TestId = 8;
 			var mainKey = "testPublicReadBucketPrivateObjectMain";
 			var altKey = "testPublicReadBucketPrivateObjectAlt";
 			var publicKey = "testPublicReadBucketPrivateObjectPublic";
@@ -211,6 +219,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicReadBucketAndObject()
 		{
+			TestId = 9;
 			var mainKey = "testPublicReadBucketAndObjectMain";
 			var altKey = "testPublicReadBucketAndObjectAlt";
 			var publicKey = "testPublicReadBucketAndObjectPublic";
@@ -234,6 +243,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicReadBucketPublicRWObject()
 		{
+			TestId = 10;
 			var mainKey = "testPublicReadBucketPublicRWObjectMain";
 			var altKey = "testPublicReadBucketPublicRWObjectAlt";
 			var publicKey = "testPublicReadBucketPublicRWObjectPublic";
@@ -257,6 +267,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicReadBucketAuthenticatedReadObject()
 		{
+			TestId = 11;
 			var mainKey = "testPublicReadBucketAuthenticatedReadObjectMain";
 			var altKey = "testPublicReadBucketAuthenticatedReadObjectAlt";
 			var publicKey = "testPublicReadBucketAuthenticatedReadObjectPublic";
@@ -280,6 +291,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicReadBucketBucketOwnerReadObject()
 		{
+			TestId = 12;
 			var mainKey = "testPublicReadBucketBucketOwnerReadObjectMain";
 			var altKey = "testPublicReadBucketBucketOwnerReadObjectAlt";
 			var publicKey = "testPublicReadBucketBucketOwnerReadObjectPublic";
@@ -303,6 +315,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicReadBucketBucketOwnerFullControlObject()
 		{
+			TestId = 13;
 			var mainKey = "testPublicReadBucketBucketOwnerFullControlObjectMain";
 			var altKey = "testPublicReadBucketBucketOwnerFullControlObjectAlt";
 			var publicKey = "testPublicReadBucketBucketOwnerFullControlObjectPublic";
@@ -326,6 +339,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketPrivateObject()
 		{
+			TestId = 14;
 			var mainKey = "testPublicRWBucketPrivateObjectMain";
 			var altKey = "testPublicRWBucketPrivateObjectAlt";
 			var altNewKey = "testPublicRWBucketPrivateObjectAltNew";
@@ -354,6 +368,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketPrivateObjectByAltUser()
 		{
+			TestId = 15;
 			var mainKey = "testPublicRWBucketPrivateObjectByAltUserMain";
 			var altKey = "testPublicRWBucketPrivateObjectByAltUserAlt";
 			var publicKey = "testPublicRWBucketPrivateObjectByAltUserPublic";
@@ -383,6 +398,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketPublicReadObject()
 		{
+			TestId = 16;
 			var mainKey = "testPublicRWBucketPublicReadObjectMain";
 			var altKey = "testPublicRWBucketPublicReadObjectAlt";
 			var altNewKey = "testPublicRWBucketPublicReadObjectAltNew";
@@ -411,6 +427,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketPublicReadObjectByAltUser()
 		{
+			TestId = 17;
 			var mainKey = "testPublicRWBucketPublicReadObjectByAltUserMain";
 			var altKey = "testPublicRWBucketPublicReadObjectByAltUserAlt";
 			var publicKey = "testPublicRWBucketPublicReadObjectByAltUserPublic";
@@ -440,6 +457,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketPublicRWObject()
 		{
+			TestId = 18;
 			var mainKey = "testPublicRWBucketPublicRWObjectMain";
 			var altKey = "testPublicRWBucketPublicRWObjectAlt";
 			var altNewKey = "testPublicRWBucketPublicRWObjectAltNew";
@@ -468,6 +486,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketPublicRWObjectByAltUser()
 		{
+			TestId = 19;
 			var mainKey = "testPublicRWBucketPublicRWObjectByAltUserMain";
 			var altKey = "testPublicRWBucketPublicRWObjectByAltUserAlt";
 			var publicKey = "testPublicRWBucketPublicRWObjectByAltUserPublic";
@@ -494,6 +513,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketAuthenticatedReadObject()
 		{
+			TestId = 20;
 			var mainKey = "testPublicRWBucketAuthenticatedReadObjectMain";
 			var altKey = "testPublicRWBucketAuthenticatedReadObjectAlt";
 			var altNewKey = "testPublicRWBucketAuthenticatedReadObjectAltNew";
@@ -522,6 +542,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketAuthenticatedReadObjectByAltUser()
 		{
+			TestId = 21;
 			var mainKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserMain";
 			var altKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserAlt";
 			var publicKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserPublic";
@@ -548,6 +569,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketBucketOwnerReadObject()
 		{
+			TestId = 22;
 			var mainKey = "testPublicRWBucketBucketOwnerReadObjectMain";
 			var altKey = "testPublicRWBucketBucketOwnerReadObjectAlt";
 			var altNewKey = "testPublicRWBucketBucketOwnerReadObjectAltNew";
@@ -576,6 +598,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketBucketOwnerReadObjectByAltUser()
 		{
+			TestId = 23;
 			var mainKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserMain";
 			var altKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserAlt";
 			var publicKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserPublic";
@@ -602,6 +625,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketBucketOwnerFullControlObject()
 		{
+			TestId = 24;
 			var mainKey = "testPublicRWBucketBucketOwnerFullControlObjectMain";
 			var altKey = "testPublicRWBucketBucketOwnerFullControlObjectAlt";
 			var altNewKey = "testPublicRWBucketBucketOwnerFullControlObjectAltNew";
@@ -630,6 +654,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketBucketOwnerFullControlObjectByAltUser()
 		{
+			TestId = 25;
 			var mainKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserMain";
 			var altKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserAlt";
 			var publicKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserPublic";
@@ -656,6 +681,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferred()
 		{
+			TestId = 26;
 			var mainKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredMain";
 			var altKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredAlt";
 			var altNewKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredAltNew";
@@ -685,6 +711,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestAuthenticatedReadBucketPrivateObject()
 		{
+			TestId = 27;
 			var mainKey = "testAuthenticatedReadBucketPrivateObjectMain";
 			var altKey = "testAuthenticatedReadBucketPrivateObjectAlt";
 			var publicKey = "testAuthenticatedReadBucketPrivateObjectPublic";
@@ -708,6 +735,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestAuthenticatedReadBucketPublicReadObject()
 		{
+			TestId = 28;
 			var mainKey = "testAuthenticatedReadBucketPublicReadObjectMain";
 			var altKey = "testAuthenticatedReadBucketPublicReadObjectAlt";
 			var publicKey = "testAuthenticatedReadBucketPublicReadObjectPublic";
@@ -731,6 +759,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestAuthenticatedReadBucketPublicRWObject()
 		{
+			TestId = 29;
 			var mainKey = "testAuthenticatedReadBucketPublicRWObjectMain";
 			var altKey = "testAuthenticatedReadBucketPublicRWObjectAlt";
 			var publicKey = "testAuthenticatedReadBucketPublicRWObjectPublic";
@@ -754,6 +783,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestAuthenticatedReadBucketAndObject()
 		{
+			TestId = 30;
 			var mainKey = "testAuthenticatedReadBucketAndObjectMain";
 			var altKey = "testAuthenticatedReadBucketAndObjectAlt";
 			var publicKey = "testAuthenticatedReadBucketAndObjectPublic";
@@ -777,6 +807,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestAuthenticatedReadBucketBucketOwnerReadObject()
 		{
+			TestId = 31;
 			var mainKey = "testAuthenticatedReadBucketBucketOwnerReadObjectMain";
 			var altKey = "testAuthenticatedReadBucketBucketOwnerReadObjectAlt";
 			var publicKey = "testAuthenticatedReadBucketBucketOwnerReadObjectPublic";
@@ -800,6 +831,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Access")]
 		public void TestAuthenticatedReadBucketBucketOwnerFullControlObject()
 		{
+			TestId = 32;
 			var mainKey = "testAuthenticatedReadBucketBucketOwnerFullControlObjectMain";
 			var altKey = "testAuthenticatedReadBucketBucketOwnerFullControlObjectAlt";
 			var publicKey = "testAuthenticatedReadBucketBucketOwnerFullControlObjectPublic";
@@ -823,6 +855,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "List")]
 		public void TestPrivateBucketList()
 		{
+			TestId = 33;
 			var keys = new List<string>() { "testPrivateBucketList1", "testPrivateBucketList2", "testPrivateBucketList3" };
 			var client = GetClient();
 			var altClient = GetAltClient();
@@ -839,6 +872,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "List")]
 		public void TestPublicReadBucketList()
 		{
+			TestId = 34;
 			var keys = new List<string>() { "testPublicReadBucketList1", "testPublicReadBucketList2", "testPublicReadBucketList3" };
 			var client = GetClient();
 			var altClient = GetAltClient();
@@ -855,6 +889,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "List")]
 		public void TestPublicRWBucketList()
 		{
+			TestId = 35;
 			var keys = new List<string>() { "testPublicRWBucketList1", "testPublicRWBucketList2", "testPublicRWBucketList3" };
 			var client = GetClient();
 			var altClient = GetAltClient();
@@ -871,6 +906,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "List")]
 		public void TestAuthenticatedReadBucketList()
 		{
+			TestId = 36;
 			var keys = new List<string>() { "testAuthenticatedReadBucketList1", "testAuthenticatedReadBucketList2", "testAuthenticatedReadBucketList3" };
 			var client = GetClient();
 			var altClient = GetAltClient();
@@ -887,6 +923,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestBucketPermissionAltUserFullControl()
 		{
+			TestId = 37;
 			var bucketName = SetupBucketPermission(S3Permission.FULL_CONTROL);
 			var altClient = GetAltClient();
 
@@ -901,6 +938,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestBucketPermissionAltUserRead()
 		{
+			TestId = 38;
 			var bucketName = SetupBucketPermission(S3Permission.READ);
 			var altClient = GetAltClient();
 
@@ -915,6 +953,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestBucketPermissionAltUserReadAcp()
 		{
+			TestId = 39;
 			var bucketName = SetupBucketPermission(S3Permission.READ_ACP);
 			var altClient = GetAltClient();
 
@@ -929,6 +968,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestBucketPermissionAltUserWrite()
 		{
+			TestId = 40;
 			var bucketName = SetupBucketPermission(S3Permission.WRITE);
 			var altClient = GetAltClient();
 
@@ -943,6 +983,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestBucketPermissionAltUserWriteAcp()
 		{
+			TestId = 41;
 			var bucketName = SetupBucketPermission(S3Permission.WRITE_ACP);
 			var altClient = GetAltClient();
 
@@ -957,6 +998,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestObjectPermissionAltUserFullControl()
 		{
+			TestId = 42;
 			var key = "testObjectPermissionAltUserFullControl";
 			var bucketName = SetupObjectPermission(key, S3Permission.FULL_CONTROL);
 			var altClient = GetAltClient();
@@ -972,6 +1014,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestObjectPermissionAltUserRead()
 		{
+			TestId = 43;
 			var key = "testObjectPermissionAltUserRead";
 			var bucketName = SetupObjectPermission(key, S3Permission.READ);
 			var altClient = GetAltClient();
@@ -987,6 +1030,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestObjectPermissionAltUserReadAcp()
 		{
+			TestId = 44;
 			var key = "testObjectPermissionAltUserReadAcp";
 			var bucketName = SetupObjectPermission(key, S3Permission.READ_ACP);
 			var altClient = GetAltClient();
@@ -1002,6 +1046,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestObjectPermissionAltUserWrite()
 		{
+			TestId = 45;
 			var key = "testObjectPermissionAltUserWrite";
 			var bucketName = SetupObjectPermission(key, S3Permission.WRITE);
 			var altClient = GetAltClient();
@@ -1017,6 +1062,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Permission")]
 		public void TestObjectPermissionAltUserWriteAcp()
 		{
+			TestId = 46;
 			var key = "testObjectPermissionAltUserWriteAcp";
 			var bucketName = SetupObjectPermission(key, S3Permission.WRITE_ACP);
 			var altClient = GetAltClient();

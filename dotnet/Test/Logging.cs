@@ -28,6 +28,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLoggingGet()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -43,6 +44,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLoggingSet()
 		{
+			TestId = 2;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();
 			var client = GetClient();
@@ -58,6 +60,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLoggingSetGet()
 		{
+			TestId = 3;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();
 			var client = GetClient();
@@ -76,6 +79,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLoggingPrefix()
 		{
+			TestId = 4;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();
 			var Prefix = "logs/";
@@ -95,6 +99,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLoggingVersioning()
 		{
+			TestId = 5;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();
 			var Prefix = "logs/";
@@ -116,6 +121,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLoggingEncryption()
 		{
+			TestId = 6;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();
 			var Prefix = "logs/";
@@ -150,6 +156,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestLoggingBucketNotFound()
 		{
+			TestId = 7;
 			var SourceBucketName = GetNewBucketName(false);
 			var TargetBucketName = GetNewBucketName(false);
 			var Prefix = "logs/";
@@ -169,6 +176,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestLoggingTargetBucketNotFound()
 		{
+			TestId = 8;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucketName(false);
 			var Prefix = "logs/";

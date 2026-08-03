@@ -52,6 +52,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestListBucketInventory()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -66,6 +67,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutBucketInventory()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -81,6 +83,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCheckBucketInventory()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -99,6 +102,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetBucketInventory()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -117,6 +121,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteBucketInventory()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -137,6 +142,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetBucketInventoryNotExist()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var inventoryId = "my-inventory";
@@ -152,6 +158,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestDeleteBucketInventoryNotExist()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var inventoryId = "my-inventory";
@@ -168,6 +175,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutBucketInventoryNotExist()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucketName();
 			var targetBucketName = GetNewBucket(client);
@@ -186,6 +194,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutBucketInventoryIdNotExist()
 		{
+			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -202,6 +211,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutBucketInventoryIdDuplicate()
 		{
+			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -221,6 +231,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutBucketInventoryTargetNotExist()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucketName();
@@ -239,6 +250,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutBucketInventoryInvalidFormat()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -257,6 +269,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutBucketInventoryInvalidFrequency()
 		{
+			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -278,6 +291,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutBucketInventoryInvalidCase()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -296,6 +310,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutBucketInventoryPrefix()
 		{
+			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -316,6 +331,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutBucketInventoryOptional()
 		{
+			TestId = 16;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);
@@ -339,6 +355,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutBucketInventoryInvalidOptional()
 		{
+			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var targetBucketName = GetNewBucket(client);

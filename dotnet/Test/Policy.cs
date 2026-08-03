@@ -30,6 +30,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketPolicy()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 			var Key = "asdf";
@@ -69,6 +70,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketV2Policy()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 			var Key = "asdf";
@@ -108,6 +110,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketPolicyAcl()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 			var Key = "asdf";
@@ -148,6 +151,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketV2PolicyAcl()
 		{
+			TestId = 4;
 
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
@@ -189,6 +193,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetTagsAclPublic()
 		{
+			TestId = 5;
 			var Key = "testgettagsacl";
 			var client = GetClient();
 			var bucketName = SetupKeyWithRandomContent(Key, bucketName: GetNewBucketCannedAcl(client), client: client);
@@ -215,6 +220,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutTagsAclPublic()
 		{
+			TestId = 6;
 			var Key = "testputtagsacl";
 			var client = GetClient();
 			var bucketName = SetupKeyWithRandomContent(Key, bucketName: GetNewBucketCannedAcl(client), client: client);
@@ -240,6 +246,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteTagsObjPublic()
 		{
+			TestId = 7;
 			var Key = "testdeltagsacl";
 			var client = GetClient();
 			var bucketName = SetupKeyWithRandomContent(Key, bucketName: GetNewBucketCannedAcl(client), client: client);
@@ -269,6 +276,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketPolicyGetObjExistingTag()
 		{
+			TestId = 8;
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
@@ -338,6 +346,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketPolicyGetObjTaggingExistingTag()
 		{
+			TestId = 9;
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
@@ -410,6 +419,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketPolicyPutObjTaggingExistingTag()
 		{
+			TestId = 10;
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
@@ -509,6 +519,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketPolicyPutObjCopySource()
 		{
+			TestId = 11;
 			var public_foo = "public/foo";
 			var public_bar = "public/bar";
 			var private_foo = "private/foo";
@@ -558,6 +569,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketPolicyPutObjCopySourceMeta()
 		{
+			TestId = 12;
 			var public_foo = "public/foo";
 			var public_bar = "public/bar";
 			var client = GetClient();
@@ -606,6 +618,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketPolicyPutObjAcl()
 		{
+			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -644,6 +657,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketPolicyPutObjGrant()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 			var bucketName2 = GetNewBucketCannedAcl(client);
@@ -700,6 +714,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketPolicyGetObjAclExistingTag()
 		{
+			TestId = 15;
 			var publictag = "publictag";
 			var privatetag = "privatetag";
 			var invalidtag = "invalidtag";
@@ -772,6 +787,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketPolicyStatusWithAllUser()
 		{
+			TestId = 16;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -806,6 +822,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketPolicyStatusWithSpecificUserAccess()
 		{
+			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -840,6 +857,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketPolicyStatusWithWideIPRange()
 		{
+			TestId = 18;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -870,6 +888,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketPolicyStatusWithIPRange()
 		{
+			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -900,6 +919,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketPolicyStatusWithTimeCondition()
 		{
+			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -938,6 +958,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketPolicyStatusWithTagCondition()
 		{
+			TestId = 21;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 

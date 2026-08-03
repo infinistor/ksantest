@@ -29,6 +29,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3EncryptedTransfer1b()
 		{
+			TestId = 1;
 			TestEncryptionSSES3ustomerWrite(1);
 		}
 
@@ -39,6 +40,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3EncryptedTransfer1kb()
 		{
+			TestId = 2;
 			TestEncryptionSSES3ustomerWrite(1024);
 		}
 
@@ -49,6 +51,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3EncryptedTransfer1MB()
 		{
+			TestId = 3;
 			TestEncryptionSSES3ustomerWrite(1024 * 1024);
 		}
 
@@ -59,6 +62,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3EncryptedTransfer13b()
 		{
+			TestId = 4;
 			TestEncryptionSSES3ustomerWrite(13);
 		}
 
@@ -69,6 +73,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3EncryptionMethodHead()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testobj";
@@ -91,6 +96,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3EncryptionMultipartUpload()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "multipart_enc";
@@ -129,6 +135,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetBucketEncryption()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -148,6 +155,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutBucketEncryption()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -178,6 +186,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteBucketEncryption()
 		{
+			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -220,6 +229,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutBucketEncryptionAndObjectSetCheck()
 		{
+			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -259,6 +269,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectEncryption1kb()
 		{
+			TestId = 11;
 			TestEncryptionSSES3Copy(1024);
 		}
 
@@ -269,6 +280,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectEncryption256kb()
 		{
+			TestId = 12;
 			TestEncryptionSSES3Copy(256 * 1024);
 		}
 
@@ -279,6 +291,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectEncryption1mb()
 		{
+			TestId = 13;
 			TestEncryptionSSES3Copy(1024 * 1024);
 		}
 
@@ -289,6 +302,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3BucketPutGet()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var Data = new string('A', 1024);
@@ -328,6 +342,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3BucketPutGetUseChunkEncoding()
 		{
+			TestId = 15;
 			var bucketName = GetNewBucket();
 			var client = GetClientV4();
 			var Data = new string('A', 1024);
@@ -367,6 +382,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3BucketPutGetNotChunkEncoding()
 		{
+			TestId = 16;
 			var bucketName = GetNewBucket();
 			var client = GetClientV4();
 			var Data = new string('A', 1024);
@@ -406,6 +422,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3BucketPresignedUrlPutGet()
 		{
+			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo";
@@ -445,6 +462,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3BucketPresignedUrlPutGetV4()
 		{
+			TestId = 18;
 			var bucketName = GetNewBucket();
 			var client = GetClientV4();
 			var key = "foo";
@@ -483,6 +501,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3GetObjectMany()
 		{
+			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo";
@@ -499,6 +518,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3RangeObjectMany()
 		{
+			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo";
@@ -516,6 +536,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3EncryptionMultipartCopyPartUpload()
 		{
+			TestId = 21;
 			var bucketName = GetNewBucket();
 			var client = GetClientHttps();
 			var SrcKey = "multipart_enc";
@@ -555,6 +576,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3EncryptionMultipartCopyMany()
 		{
+			TestId = 22;
 			var bucketName = GetNewBucket();
 			var SrcKey = "mymultipart_enc";
 			var Size = 10 * MainData.MB;
@@ -599,6 +621,7 @@ namespace s3tests.Test
 		//
 		public void TestSseS3NotRetroactive()
 		{
+			TestId = 23;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var PutKey = "PutKey";
@@ -660,6 +683,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3MultipartUploadOverwriteExistingObject()
 		{
+			TestId = 24;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestSseS3MultipartUploadOverwriteExistingObject";
@@ -690,6 +714,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestSseS3PutObjectOverwriteMultipartUpload()
 		{
+			TestId = 25;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestSseS3PutObjectOverwriteMultipartUpload";

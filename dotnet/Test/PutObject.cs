@@ -31,6 +31,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListDistinct()
 		{
+			TestId = 1;
 			var bucket1 = GetNewBucket();
 			var bucket2 = GetNewBucket();
 			var client = GetClient();
@@ -52,6 +53,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectWriteToNonExistBucket()
 		{
+			TestId = 2;
 			var key = "TestObjectWriteToNonexistBucket";
 			var bucketName = "whatchutalkinboutwillis";
 			var client = GetClient();
@@ -68,6 +70,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectHeadZeroBytes()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -85,6 +88,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectWriteCheckEtag()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestObjectWriteCheckEtag";
@@ -101,6 +105,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectWriteCacheControl()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -119,6 +124,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectWriteExpires()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -137,6 +143,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectWriteReadUpdateReadDelete()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -160,6 +167,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectSetGetMetadataNoneToGood()
 		{
+			TestId = 8;
 			var myMeta = "my-meta";
 			var got = SetupMetadata(myMeta);
 			Assert.Equal(myMeta, got);
@@ -172,6 +180,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectSetGetMetadataNoneToEmpty()
 		{
+			TestId = 9;
 			var got = SetupMetadata("");
 			Assert.Empty(got);
 		}
@@ -183,6 +192,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectSetGetMetadataOverwriteToEmpty()
 		{
+			TestId = 10;
 			var bucketName = GetNewBucket();
 
 			var myMeta = "old-mata";
@@ -200,6 +210,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectSetGetNonUtf8Metadata()
 		{
+			TestId = 11;
 			var metadata = "\x04my-meta";
 			var e = TestMetadataUnreadable(metadata);
 			Assert.True(ErrorCheck(e.StatusCode));
@@ -212,6 +223,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectSetGetMetadataEmptyToUnreadablePrefix()
 		{
+			TestId = 12;
 			var metadata = "\x04w";
 			var e = TestMetadataUnreadable(metadata);
 			Assert.True(ErrorCheck(e.StatusCode));
@@ -224,6 +236,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectSetGetMetadataEmptyToUnreadableSuffix()
 		{
+			TestId = 13;
 			var metadata = "h\x04";
 			var e = TestMetadataUnreadable(metadata);
 			Assert.True(ErrorCheck(e.StatusCode));
@@ -236,6 +249,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectMetadataReplacedOnPut()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var metadataList = new List<KeyValuePair<string, string>>
@@ -259,6 +273,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectWriteFile()
 		{
+			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestObjectWriteFile";
@@ -277,6 +292,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketCreateSpecialKeyNames()
 		{
+			TestId = 16;
 			var keyNames = new List<string>() { " ", "\"", "$", "%", "&", "'", "<", ">", "_", "_ ", "_ _", "__", };
 
 			// 키별로 PutObjectACL을 호출하므로 ACL이 허용되는 버킷이어야 한다.
@@ -302,6 +318,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestBucketListSpecialPrefix()
 		{
+			TestId = 17;
 			var keyNames = new List<string>() { "_bla/1", "_bla/2", "_bla/3", "_bla/4", "abcd" };
 
 			var bucketName = SetupObjects(keyNames);
@@ -321,6 +338,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectLockUploadingObj()
 		{
+			TestId = 18;
 			var bucketName = GetNewBucketName();
 			var client = GetClient();
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -349,6 +367,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectInfixSpace()
 		{
+			TestId = 19;
 			var keyNames = new List<string>() { "a a/", "b b/f1", "c/f 2", "d d/f 3" };
 			var bucketName = SetupObjects(keyNames, body: "");
 			var client = GetClient();
@@ -366,6 +385,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectSuffixSpace()
 		{
+			TestId = 20;
 			var keyNames = new List<string>() { "a /", "b /f1", "c/f2 ", "d /f3 " };
 			var bucketName = SetupObjects(keyNames, body: "");
 			var client = GetClient();
@@ -383,6 +403,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectSpecialCharacters()
 		{
+			TestId = 21;
 			var keyNames = SpecialCharacterKeys();
 			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: true);
 			var client = GetClientV4();
@@ -400,6 +421,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectSpecialCharactersUseChunkEncoding()
 		{
+			TestId = 22;
 			var keyNames = SpecialCharacterKeys();
 			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: true);
 			var client = GetClientV4();
@@ -417,6 +439,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectUseSpecialCharactersChunkEncodingAndDisablePayloadSigning()
 		{
+			TestId = 23;
 			var keyNames = SpecialCharacterKeys();
 			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: true, disablePayloadSigning: true);
 			var client = GetClientHttpsV4();
@@ -434,6 +457,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectSpecialCharactersNotChunkEncoding()
 		{
+			TestId = 24;
 			var keyNames = SpecialCharacterKeys();
 			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: false);
 			var client = GetClientV4();
@@ -451,6 +475,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectSpecialCharactersNotChunkEncodingAndDisablePayloadSigning()
 		{
+			TestId = 25;
 			var keyNames = SpecialCharacterKeys();
 			var bucketName = SetupObjectsV4(keyNames, useChunkEncoding: false, disablePayloadSigning: true);
 			var client = GetClientHttpsV4();
@@ -468,6 +493,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectDirAndFile()
 		{
+			TestId = 26;
 			// file first
 			var bucketName = GetNewBucket();
 			var objectName = "aaa";
@@ -510,6 +536,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectOverwrite()
 		{
+			TestId = 27;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestObjectOverwrite";
@@ -530,6 +557,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectEmoji()
 		{
+			TestId = 28;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestObjectEmoji";
@@ -547,6 +575,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectChecksumUseChunkEncoding()
 		{
+			TestId = 30;
 			var bucketName = GetNewBucket();
 			var configs = new (RequestChecksumCalculation Req, ResponseChecksumValidation Resp)[]
 			{
@@ -576,6 +605,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectChecksum()
 		{
+			TestId = 31;
 			var bucketName = GetNewBucket();
 			var configs = new (RequestChecksumCalculation Req, ResponseChecksumValidation Resp)[]
 			{
@@ -605,6 +635,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectChecksumWithValue()
 		{
+			TestId = 32;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			foreach (var checksum in CheckSum.AllAlgorithms)
@@ -623,6 +654,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutObjectChecksumFailure()
 		{
+			TestId = 33;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			foreach (var checksum in CheckSum.AllAlgorithms)
@@ -657,6 +689,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestObjectSetGetMetadataUtf8()
 		{
+			TestId = 29;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo";
@@ -681,6 +714,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectIfMatchGood()
 		{
+			TestId = 34;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testPutObjectIfMatchGood";
@@ -700,6 +734,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutObjectIfMatchFailed()
 		{
+			TestId = 35;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testPutObjectIfMatchFailed";
@@ -723,6 +758,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectIfNoneMatchGood()
 		{
+			TestId = 36;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testPutObjectIfNoneMatchGood";
@@ -740,6 +776,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutObjectIfNoneMatchFailed()
 		{
+			TestId = 37;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testPutObjectIfNoneMatchFailed";
@@ -763,6 +800,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutObjectIfMatchAndIfNoneMatch()
 		{
+			TestId = 38;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testPutObjectIfMatchAndIfNoneMatch";
@@ -786,6 +824,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectKeyMinLength()
 		{
+			TestId = 40;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "a";
@@ -805,6 +844,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectKeyMaxLength()
 		{
+			TestId = 39;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = S3Utils.RandomObjectName(MainData.MAX_KEY_LENGTH);
@@ -824,6 +864,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutObjectKeyTooLong()
 		{
+			TestId = 41;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = S3Utils.RandomObjectName(MainData.MAX_KEY_LENGTH + 1);
@@ -841,6 +882,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectKeyBoundaryLengths()
 		{
+			TestId = 48;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var testCases = new List<int>()
@@ -872,6 +914,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectKeySpecialCharactersAtStart()
 		{
+			TestId = 42;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			// '/'는 제외한다. path style 요청에서 키가 '/'로 시작하면 경로가 '/{bucket}//key'가 되어
@@ -905,6 +948,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectKeySpecialCharactersAtEnd()
 		{
+			TestId = 43;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var specialChars = new List<string>()
@@ -936,6 +980,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectKeyUnicodeCharacters()
 		{
+			TestId = 44;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var unicodeChars = new List<string>() { "한", "中", "日", "а", "α", "ع", "т", "ф" };
@@ -966,6 +1011,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutObjectKeyUnicodeCharactersTooLong()
 		{
+			TestId = 45;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var unicodeChars = new List<string>() { "한", "中", "日", "а", "α", "ع", "т", "ф" };
@@ -993,6 +1039,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectKeyWithConsecutiveSlashes()
 		{
+			TestId = 47;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			// '/'로 시작하는 키는 제외한다. path style 요청에서 경로가 '/{bucket}//key'가 되어
@@ -1024,6 +1071,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectKeyWithLeadingAndTrailingSpaces()
 		{
+			TestId = 46;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var testCases = new List<int>() { 1, 2, 3, 5 };

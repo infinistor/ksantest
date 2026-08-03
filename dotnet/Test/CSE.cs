@@ -28,6 +28,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCseEncryptedTransfer1b()
 		{
+			TestId = 1;
 			TestEncryptionCSEWrite(1);
 		}
 
@@ -38,6 +39,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCseEncryptedTransfer1kb()
 		{
+			TestId = 2;
 			TestEncryptionCSEWrite(1024);
 		}
 
@@ -48,6 +50,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCseEncryptedTransfer1MB()
 		{
+			TestId = 3;
 			TestEncryptionCSEWrite(1024 * 1024);
 		}
 
@@ -58,6 +61,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCseEncryptedTransfer13b()
 		{
+			TestId = 4;
 			TestEncryptionCSEWrite(13);
 		}
 
@@ -68,6 +72,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCseEncryptionMethodHead()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testobj";
@@ -93,6 +98,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCseEncryptionNonDecryption()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testobj";
@@ -118,6 +124,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestCseNonEncryptionDecryption()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testobj";
@@ -143,6 +150,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCseEncryptionRangeRead()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testobj";
@@ -171,6 +179,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCseEncryptionMultipartUpload()
 		{
+			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "multipart_enc";
@@ -215,6 +224,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCseGetObjectMany()
 		{
+			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo";
@@ -234,6 +244,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCseRangeObjectMany()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "foo";

@@ -29,6 +29,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultiObjectDelete()
 		{
+			TestId = 1;
 			var keyNames = new List<string>() { "key0", "key1", "key2" };
 			var bucketName = SetupObjects(keyNames);
 			var client = GetClient();
@@ -60,6 +61,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultiObjectV2Delete()
 		{
+			TestId = 2;
 			var keyNames = new List<string>() { "key0", "key1", "key2" };
 			var bucketName = SetupObjects(keyNames);
 			var client = GetClient();
@@ -91,6 +93,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultiObjectDeleteVersions()
 		{
+			TestId = 3;
 			var keyNames = new List<string>() { "key0", "key1", "key2" };
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -126,6 +129,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultiObjectDeleteQuiet()
 		{
+			TestId = 4;
 			var keyNames = new List<string>() { "key0", "key1", "key2" };
 			var bucketName = SetupObjects(keyNames);
 			var client = GetClient();
@@ -149,6 +153,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDirectoryDelete()
 		{
+			TestId = 5;
 			var keyNames = new List<string>() { "a/b/", "a/b/c/d/obj1", "a/b/c/d/obj2", "1/2/", "1/2/3/4/obj1", "q/w/e/r/obj" };
 			var bucketName = SetupObjects(keyNames, body: "");
 			var client = GetClient();
@@ -178,6 +183,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDirectoryDeleteVersions()
 		{
+			TestId = 6;
 			var keyNames = new List<string>() { "a/", "a/obj1", "a/obj2", "b/", "b/obj1" };
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -217,6 +223,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "DeleteObjects")]
 		public void TestDeleteObjects()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			const int keyCount = 100;
@@ -251,6 +258,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Versioning")]
 		public void TestDeleteObjectsWithVersioning()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			const string methodName = "testDeleteObjectsWithVersioning";
@@ -308,6 +316,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Versioning")]
 		public void TestDeleteObjectsWithVersioningDeleteMarker()
 		{
+			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testDeleteObjectsWithVersioningDeleteMarker";
@@ -326,6 +335,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Versioning")]
 		public void TestVersioningMultiObjectDeleteWithMarker()
 		{
+			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var keyNames = new List<string>
@@ -351,6 +361,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Versioning")]
 		public void TestVersioningMultiObjectDeleteWithMarkerCreate()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testVersioningMultiObjectDeleteWithMarkerCreate";
@@ -369,6 +380,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Versioning")]
 		public void TestVersioningMultiObjectDeleteWithMarkerCreateObjects()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testVersioningMultiObjectDeleteWithMarkerCreateObjects";
@@ -387,6 +399,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfMatch")]
 		public void TestDeleteObjectIfMatchGood()
 		{
+			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testDeleteObjectIfMatchGood";
@@ -403,6 +416,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfMatch")]
 		public void TestDeleteObjectIfMatchFailed()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testDeleteObjectIfMatchFailed";
@@ -422,6 +436,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfMatch")]
 		public void TestDeleteObjectIfMatchAny()
 		{
+			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testDeleteObjectIfMatchAny";
@@ -438,6 +453,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfMatch")]
 		public void TestDeleteObjectIfMatchAndIfNoneMatch()
 		{
+			TestId = 16;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testDeleteObjectIfMatchAndIfNoneMatch";
@@ -457,6 +473,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfMatch")]
 		public void TestDeleteObjectIfMatchAndIfNoneMatchAny()
 		{
+			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testDeleteObjectIfMatchAndIfNoneMatchAny";
@@ -476,6 +493,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfMatch")]
 		public void TestDeleteObjectsIfMatchGood()
 		{
+			TestId = 18;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var keyNames = new List<string> { "testDeleteObjectsIfMatchGood0", "testDeleteObjectsIfMatchGood1" };
@@ -499,6 +517,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfMatch")]
 		public void TestDeleteObjectsIfMatchMixed()
 		{
+			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			const string goodKey = "testDeleteObjectsIfMatchMixedGood";
@@ -534,6 +553,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfMatch")]
 		public void TestDeleteObjectsIfMatchAndIfNoneMatch()
 		{
+			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testDeleteObjectsIfMatchAndIfNoneMatch";
@@ -558,6 +578,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfMatch")]
 		public void TestDeleteObjectsIfMatchAndIfNoneMatchAny()
 		{
+			TestId = 21;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testDeleteObjectsIfMatchAndIfNoneMatchAny";

@@ -29,6 +29,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectReadNotExist()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestObjectReadNotExist";
@@ -45,6 +46,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectIfMatchGood()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectIfMatchGood";
@@ -64,6 +66,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetObjectIfMatchFailed()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectIfMatchFailed";
@@ -82,6 +85,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetObjectIfNoneMatchGood()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectIfNoneMatchGood";
@@ -101,6 +105,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectIfNoneMatchFailed()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectIfNoneMatchFailed";
@@ -120,6 +125,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectIfModifiedSinceGood()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectIfModifiedSinceGood";
@@ -139,6 +145,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetObjectIfModifiedSinceFailed()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectIfModifiedSinceFailed";
@@ -159,6 +166,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifmatch")]
 		public void TestGetObjectIfMatchWithIfUnmodifiedSince()
 		{
+			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectIfMatchWithIfUnmodifiedSince";
@@ -173,6 +181,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifnonematch")]
 		public void TestGetObjectIfNoneMatchWithIfModifiedSince()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectIfNoneMatchWithIfModifiedSince";
@@ -187,6 +196,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifmatch")]
 		public void TestGetObjectIfMatchAndIfNoneMatch()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectIfMatchAndIfNoneMatch";
@@ -201,6 +211,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifmatch")]
 		public void TestGetObjectIfMatchAndIfNoneMatchAny()
 		{
+			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectIfMatchAndIfNoneMatchAny";
@@ -215,6 +226,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifmatch")]
 		public void TestHeadObjectIfMatchGood()
 		{
+			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testHeadObjectIfMatchGood";
@@ -229,6 +241,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifmatch")]
 		public void TestHeadObjectIfMatchFailed()
 		{
+			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testHeadObjectIfMatchFailed";
@@ -243,6 +256,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifnonematch")]
 		public void TestHeadObjectIfNoneMatchGood()
 		{
+			TestId = 16;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testHeadObjectIfNoneMatchGood";
@@ -257,6 +271,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifnonematch")]
 		public void TestHeadObjectIfNoneMatchFailed()
 		{
+			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testHeadObjectIfNoneMatchFailed";
@@ -271,6 +286,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifmodifiedsince")]
 		public void TestHeadObjectIfModifiedSinceGood()
 		{
+			TestId = 18;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testHeadObjectIfModifiedSinceGood";
@@ -285,6 +301,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Ifmodifiedsince")]
 		public void TestHeadObjectIfModifiedSinceFailed()
 		{
+			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testHeadObjectIfModifiedSinceFailed";
@@ -303,6 +320,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfUnmodifiedSince")]
 		public void TestHeadObjectIfUnmodifiedSinceGood()
 		{
+			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testHeadObjectIfUnmodifiedSinceGood";
@@ -317,6 +335,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfUnmodifiedSince")]
 		public void TestHeadObjectIfUnmodifiedSinceFailed()
 		{
+			TestId = 21;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testHeadObjectIfUnmodifiedSinceFailed";
@@ -331,6 +350,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Header")]
 		public void TestObjectResponseHeaders()
 		{
+			TestId = 30;
 			var key = "testObjectResponseHeaders";
 			var client = GetClient();
 			var bucketName = SetupObjects(new List<string> { key }, body: key);
@@ -355,6 +375,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Range")]
 		public void TestMultipartObjectRange()
 		{
+			TestId = 31;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testMultipartObjectRange";
@@ -369,6 +390,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Get")]
 		public void TestGetObjectIgnore()
 		{
+			TestId = 32;
 			var key = "testObjectIgnore";
 			var client = GetClient();
 			var bucketName = SetupObjects(new List<string> { key }, body: key);
@@ -382,6 +404,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		public void TestGetObjectAfterDelete()
 		{
+			TestId = 33;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAfterDelete";
@@ -404,6 +427,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		public void TestGetObjectAfterDeleteVersioning()
 		{
+			TestId = 34;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectAfterDeleteVersioning";
@@ -428,6 +452,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Versioning")]
 		public void TestGetObjectDeleteMarker()
 		{
+			TestId = 35;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "testGetObjectDeleteMarker";
@@ -462,6 +487,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfUnmodifiedSince")]
 		public void TestGetObjectIfUnmodifiedSinceGood()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectIfUnmodifiedSinceGood";
@@ -478,6 +504,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "IfUnmodifiedSince")]
 		public void TestGetObjectIfUnmodifiedSinceFailed()
 		{
+			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectIfUnmodifiedSinceFailed";
@@ -493,6 +520,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Range")]
 		public void TestRangedRequestResponseCode()
 		{
+			TestId = 22;
 			var key = "TestRangedRequestResponseCode";
 			var content = "testcontent";
 
@@ -511,6 +539,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Range")]
 		public void TestRangedBigRequestResponseCode()
 		{
+			TestId = 23;
 			var key = "TestRangedBigRequestResponseCode";
 			var content = S3Utils.RandomTextToLong(8 * MainData.MB);
 
@@ -529,6 +558,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Range")]
 		public void TestRangedRequestSkipLeadingBytesResponseCode()
 		{
+			TestId = 24;
 			var key = "TestRangedRequestSkipLeadingBytesResponseCode";
 			var content = "testcontent";
 
@@ -547,6 +577,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Range")]
 		public void TestRangedRequestReturnTrailingBytesResponseCode()
 		{
+			TestId = 25;
 			var key = "TestRangedRequestReturnTrailingBytesResponseCode";
 			var content = "testcontent";
 
@@ -565,6 +596,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Range")]
 		public void TestRangedRequestInvalidRange()
 		{
+			TestId = 26;
 			var key = "TestRangedRequestInvalidRange";
 			var content = "testcontent";
 
@@ -582,6 +614,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Range")]
 		public void TestRangedRequestEmptyObject()
 		{
+			TestId = 27;
 			var key = "TestRangedRequestEmptyObject";
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
@@ -597,6 +630,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Get")]
 		public void TestGetObjectMany()
 		{
+			TestId = 28;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestGetObjectMany";
@@ -611,6 +645,7 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Get")]
 		public void TestRangeObjectMany()
 		{
+			TestId = 29;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "TestRangeObjectMany";

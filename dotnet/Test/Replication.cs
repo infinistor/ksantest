@@ -29,6 +29,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestReplicationSet()
 		{
+			TestId = 1;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();
 			var Client = GetClient();
@@ -73,6 +74,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestReplicationInvalidSourceBucketName()
 		{
+			TestId = 2;
 			var SourceBucketName = GetNewBucketName(false);
 			var TargetBucketName = GetNewBucketName(false);
 			var Client = GetClient();
@@ -107,6 +109,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestReplicationInvalidSourceBucketVersioning()
 		{
+			TestId = 3;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucketName(false);
 			var Client = GetClient();
@@ -141,6 +144,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestReplicationInvalidTargetBucketName()
 		{
+			TestId = 4;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucketName(false);
 			var Client = GetClient();
@@ -175,6 +179,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestReplicationInvalidTargetBucketVersioning()
 		{
+			TestId = 5;
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();
 			var Client = GetClient();
@@ -208,6 +213,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestReplicationBucketVersioningSuspend()
 		{
+			TestId = 6;
 			var Prefix = "test/";
 			var SourceBucketName = GetNewBucket();
 			var TargetBucketName = GetNewBucket();

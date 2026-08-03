@@ -32,6 +32,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectAnonymousRequest()
 		{
+			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
@@ -59,6 +60,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectAuthenticatedRequest()
 		{
+			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var contentType = "text/plain";
@@ -102,6 +104,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectAuthenticatedNoContentType()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 			var contentType = "text/plain";
@@ -143,6 +146,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectAuthenticatedRequestBadAccessKey()
 		{
+			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
@@ -186,6 +190,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectSetSuccessCode()
 		{
+			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
@@ -214,6 +219,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectSetInvalidSuccessCode()
 		{
+			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
@@ -242,6 +248,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectUploadLargerThanChunk()
 		{
+			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -289,6 +296,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectSetKeyFromFilename()
 		{
+			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -333,6 +341,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectIgnoredHeader()
 		{
+			TestId = 9;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -375,6 +384,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectCaseInsensitiveConditionFields()
 		{
+			TestId = 10;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -416,6 +426,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectEscapedFieldValues()
 		{
+			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -460,6 +471,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectSuccessRedirectAction()
 		{
+			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
@@ -510,6 +522,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectInvalidSignature()
 		{
+			TestId = 13;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -552,6 +565,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectInvalidAccessKey()
 		{
+			TestId = 14;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -594,6 +608,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectInvalidDateFormat()
 		{
+			TestId = 15;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -634,6 +649,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectNoKeySpecified()
 		{
+			TestId = 16;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -671,6 +687,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectMissingSignature()
 		{
+			TestId = 17;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -713,6 +730,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectMissingPolicyCondition()
 		{
+			TestId = 18;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -752,6 +770,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPostObjectUserSpecifiedHeader()
 		{
+			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -798,6 +817,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectRequestMissingPolicySpecifiedField()
 		{
+			TestId = 20;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -839,6 +859,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectConditionIsCaseSensitive()
 		{
+			TestId = 21;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -879,6 +900,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectExpiresIsCaseSensitive()
 		{
+			TestId = 22;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -919,6 +941,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectExpiredPolicy()
 		{
+			TestId = 23;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -959,6 +982,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectInvalidRequestFieldValue()
 		{
+			TestId = 24;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -1001,6 +1025,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectMissingExpiresCondition()
 		{
+			TestId = 25;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -1040,6 +1065,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectMissingConditionsList()
 		{
+			TestId = 26;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -1071,6 +1097,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectUploadSizeLimitExceeded()
 		{
+			TestId = 27;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -1111,6 +1138,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectMissingContentLengthArgument()
 		{
+			TestId = 28;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -1151,6 +1179,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectInvalidContentLengthArgument()
 		{
+			TestId = 29;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -1191,6 +1220,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectUploadSizeBelowMinimum()
 		{
+			TestId = 30;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -1231,6 +1261,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectEmptyConditions()
 		{
+			TestId = 31;
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
@@ -1266,6 +1297,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPostObjectWrongBucket()
 		{
+			TestId = 36;
 			var bucketName = GetNewBucketName();
 			var badBucketName = GetNewBucketName();
 
@@ -1309,6 +1341,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPresignedUrlPutGet()
 		{
+			TestId = 32;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var Key = "foo";
@@ -1332,6 +1365,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectV4()
 		{
+			TestId = 33;
 			var bucketName = GetNewBucket();
 			var ContentType = "text/plain";
 			var Key = "foo";
@@ -1351,6 +1385,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectChunkedV4()
 		{
+			TestId = 34;
 			var bucketName = GetNewBucket();
 			var ContentType = "text/plain";
 			var Key = "foo";
@@ -1370,6 +1405,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectV4()
 		{
+			TestId = 35;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var Key = "foo";

@@ -26,6 +26,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketDeleteNotExist()
 		{
+			TestId = 1;
 			var bucketName = GetNewBucketName(false);
 			var client = GetClient();
 
@@ -40,6 +41,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketDeleteNonempty()
 		{
+			TestId = 2;
 			var bucketName = SetupObjects(["foo"]);
 			var client = GetClient();
 
@@ -55,6 +57,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestBucketCreateDelete()
 		{
+			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 

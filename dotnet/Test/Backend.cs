@@ -43,6 +43,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObject()
 		{
+			TestId = 1;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -67,6 +68,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObject()
 		{
+			TestId = 2;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -90,6 +92,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteObject()
 		{
+			TestId = 3;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -116,6 +119,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObject()
 		{
+			TestId = 4;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -145,6 +149,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUpload()
 		{
+			TestId = 5;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -171,6 +176,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectAcl()
 		{
+			TestId = 6;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -197,6 +203,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAcl()
 		{
+			TestId = 7;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -219,6 +226,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectTagging()
 		{
+			TestId = 8;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -248,6 +256,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectTagging()
 		{
+			TestId = 9;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -273,6 +282,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteObjectTagging()
 		{
+			TestId = 10;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -300,6 +310,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectVersioning()
 		{
+			TestId = 11;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -327,6 +338,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectVersioningWithVersionId()
 		{
+			TestId = 12;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -365,6 +377,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectVersioning()
 		{
+			TestId = 13;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -392,6 +405,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteObjectVersioning()
 		{
+			TestId = 14;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -431,6 +445,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteObjectsVersioning()
 		{
+			TestId = 15;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -483,6 +498,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestHeadObjectVersioning()
 		{
+			TestId = 16;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -511,6 +527,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectVersioning()
 		{
+			TestId = 17;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -553,6 +570,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadVersioning()
 		{
+			TestId = 18;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -582,6 +600,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectAclVersioning()
 		{
+			TestId = 19;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -612,6 +631,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectAclVersioning()
 		{
+			TestId = 20;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -637,6 +657,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectTaggingVersioning()
 		{
+			TestId = 21;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -669,6 +690,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestGetObjectTaggingVersioning()
 		{
+			TestId = 22;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -697,6 +719,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteObjectTaggingVersioning()
 		{
+			TestId = 23;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -727,6 +750,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectRetentionVersioning()
 		{
+			TestId = 24;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -762,6 +786,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetObjectRetentionVersioning()
 		{
+			TestId = 25;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -790,6 +815,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutAndGetObjectRetentionVersioning()
 		{
+			TestId = 26;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -832,6 +858,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectReplication()
 		{
+			TestId = 27;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -865,6 +892,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectWithTaggingReplication()
 		{
+			TestId = 28;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -902,6 +930,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectWithMetadataReplication()
 		{
+			TestId = 29;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -937,6 +966,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectReplication()
 		{
+			TestId = 30;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -973,6 +1003,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectWithTaggingReplication()
 		{
+			TestId = 31;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -1013,6 +1044,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectWithMetadataReplication()
 		{
+			TestId = 32;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -1051,6 +1083,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectMetadataReplaceReplication()
 		{
+			TestId = 33;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -1091,6 +1124,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadReplication()
 		{
+			TestId = 34;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -1125,6 +1159,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadWithTaggingReplication()
 		{
+			TestId = 35;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -1173,6 +1208,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestMultipartUploadWithMetadataReplication()
 		{
+			TestId = 36;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -1213,6 +1249,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectAclReplication()
 		{
+			TestId = 37;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -1256,6 +1293,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectTaggingReplication()
 		{
+			TestId = 38;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -1296,6 +1334,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteObjectReplication()
 		{
+			TestId = 39;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
@@ -1342,6 +1381,7 @@ namespace s3tests.Test
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestDeleteObjectTaggingReplication()
 		{
+			TestId = 40;
 			SkipIfAws();
 			var client = GetClient();
 			var backendClient = GetBackendClient();
