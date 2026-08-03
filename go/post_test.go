@@ -812,22 +812,22 @@ func TestPutObjectV4(t *testing.T) {
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	body := deterministicBody(100)
-	putObjectMaybeChunked(t, s.client, bucket, "foo", body, false)
+	putBytes(t, s.client, bucket, "foo", body)
 	assertObjectBytes(t, s.client, bucket, "foo", body)
 }
 
-// [SignatureVersion4] post 방식으로 내용을 암호화 하여 오브젝트 업로드 성공 확인
+// [SignatureVersion4] SDK 기본 전송 방식으로 오브젝트 업로드 성공 확인
 func TestPutObjectChunkedV4(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
 	bucket := s.bucket(t)
 	body := deterministicBody(100)
-	putObjectMaybeChunked(t, s.client, bucket, "foo", body, true)
-	assertObjectBytes(t, s.client, bucket, "foo", body)
+	putBytes(t, s.client, bucket, "chunked", body)
+	assertObjectBytes(t, s.client, bucket, "chunked", body)
 }
 
-// [SignatureVersion4] post 방식으로 오브젝트 다운로드 성공 확인
+// [SignatureVersion4] 오브젝트 다운로드 성공 확인
 func TestGetObjectV4(t *testing.T) {
 	t.Parallel()
 
@@ -835,7 +835,15 @@ func TestGetObjectV4(t *testing.T) {
 	bucket := s.bucket(t)
 	body := deterministicBody(100)
 	putBytes(t, s.client, bucket, "foo", body)
-	assertObjectBytes(t, s.client, bucket, "foo", body)
+	out, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	got, err := io.ReadAll(out.Body)
+	if err != nil || !bytes.Equal(got, body) {
+		t.Fatalf("body mismatch err=%v", err)
+	}
 }
 
 // [policy에 설정된 버킷과 다른 버킷으로 업로드할 경우] post 방식으로 로그인정보를 포함한 파일 업로드시 실패하는지 확인

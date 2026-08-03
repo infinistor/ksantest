@@ -220,7 +220,7 @@ func TestDeleteObjectsWithVersioningDeleteMarker(t *testing.T) {
 }
 
 // 버저닝된 버킷에서 여러 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
-func TestVersioningMultiObjectDeleteWithMarker(t *testing.T) {
+func TestDeleteObjectsVersioningMultiObjectDeleteWithMarker(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t)
@@ -237,7 +237,7 @@ func TestVersioningMultiObjectDeleteWithMarker(t *testing.T) {
 }
 
 // 버저닝된 버킷에서 존재하지 않는 오브젝트를 반복 삭제할 경우 DeleteMarker가 생성되는지 확인
-func TestVersioningMultiObjectDeleteWithMarkerCreate(t *testing.T) {
+func TestDeleteObjectsVersioningMultiObjectDeleteWithMarkerCreate(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t)
@@ -255,7 +255,7 @@ func TestVersioningMultiObjectDeleteWithMarkerCreate(t *testing.T) {
 }
 
 // 버저닝된 버킷에서 존재하지 않는 여러개의 오브젝트를 삭제할 경우 DeleteMarker가 생성되는지 확인
-func TestVersioningMultiObjectDeleteWithMarkerCreateObjects(t *testing.T) {
+func TestDeleteObjectsVersioningMultiObjectDeleteWithMarkerCreateObjects(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t)

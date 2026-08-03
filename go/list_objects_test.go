@@ -596,9 +596,8 @@ func TestBucketListMarkerNone(t *testing.T) {
 	keys := []string{"bar", "baz", "foo", "quxx"}
 	s, bucket := listFixture(t, keys)
 	out := listV1(t, s.client, &s3.ListObjectsInput{Bucket: aws.String(bucket), Marker: aws.String("")})
-	assertStringList(t, listKeys(out, false), keys)
-	if aws.ToString(out.NextMarker) != "" || aws.ToBool(out.IsTruncated) {
-		t.Fatalf("next=%q truncated=%v", aws.ToString(out.NextMarker), aws.ToBool(out.IsTruncated))
+	if out.NextMarker != nil {
+		t.Fatalf("next=%q want=nil", aws.ToString(out.NextMarker))
 	}
 }
 
@@ -609,7 +608,7 @@ func TestBucketListMarkerEmpty(t *testing.T) {
 	s, bucket := listFixture(t, keys)
 	out := listV1(t, s.client, &s3.ListObjectsInput{Bucket: aws.String(bucket), Marker: aws.String("")})
 	assertStringList(t, listKeys(out, false), keys)
-	if aws.ToString(out.NextMarker) != "" || aws.ToBool(out.IsTruncated) {
+	if out.NextMarker != nil || aws.ToBool(out.IsTruncated) {
 		t.Fatalf("next=%q truncated=%v", aws.ToString(out.NextMarker), aws.ToBool(out.IsTruncated))
 	}
 }

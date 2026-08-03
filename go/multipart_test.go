@@ -439,32 +439,19 @@ func TestMultipartListParts(t *testing.T) {
 // UseChunkEncoding을 사용하는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
 func TestMultipartUploadChecksumUseChunkEncoding(t *testing.T) {
 	t.Parallel()
-	s := newSuite(t)
-	b := s.bucket(t)
-	name := "test_multipart_upload_checksum_use_chunk_encoding"
-	algorithm := types.ChecksumAlgorithmCrc32
-	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(name), ChecksumAlgorithm: algorithm, ChecksumType: types.ChecksumTypeComposite})
-	if err != nil {
-		t.Fatal(err)
-	}
-	body := bytes.Repeat([]byte("c"), 5*1024*1024)
-	value := checksumValue(algorithm, body)
-	part, err := s.client.UploadPart(context.Background(), &s3.UploadPartInput{Bucket: aws.String(b), Key: aws.String(name), UploadId: created.UploadId, PartNumber: aws.Int32(1), Body: bytes.NewReader(body), ChecksumAlgorithm: algorithm, ChecksumCRC32: aws.String(value)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err = s.client.CompleteMultipartUpload(context.Background(), &s3.CompleteMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(name), UploadId: created.UploadId, ChecksumType: types.ChecksumTypeComposite, MultipartUpload: &types.CompletedMultipartUpload{Parts: []types.CompletedPart{{ETag: part.ETag, PartNumber: aws.Int32(1), ChecksumCRC32: part.ChecksumCRC32}}}}); err != nil {
-		t.Fatal(err)
-	}
-	assertObjectBytes(t, s.client, b, name, body)
+	testMultipartUploadChecksum(t, "test_multipart_upload_checksum_use_chunk_encoding")
 }
 
 // UseChunkEncoding을 사용하지 않는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
 func TestMultipartUploadChecksum(t *testing.T) {
 	t.Parallel()
+	testMultipartUploadChecksum(t, "test_multipart_upload_checksum")
+}
+
+func testMultipartUploadChecksum(t *testing.T, name string) {
+	t.Helper()
 	s := newSuite(t)
 	b := s.bucket(t)
-	name := "test_multipart_upload_checksum"
 	algorithm := types.ChecksumAlgorithmCrc32
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(name), ChecksumAlgorithm: algorithm, ChecksumType: types.ChecksumTypeComposite})
 	if err != nil {
@@ -867,18 +854,17 @@ func TestCompleteMultipartUploadIfMatchAndIfNoneMatchAny(t *testing.T) {
 func TestMultipartUploadAbortDuringUpload(t *testing.T) {
 	t.Parallel()
 	f := newMultipartFixture(t, "test_multipart_upload_abort_during_upload")
-	uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("x"), 5*1024*1024))
-	listed, err := f.s.client.ListMultipartUploads(context.Background(), &s3.ListMultipartUploadsInput{Bucket: aws.String(f.bucket)})
-	if err != nil || len(listed.Uploads) == 0 {
-		t.Fatalf("uploads=%v err=%v", listed.Uploads, err)
-	}
-	if _, err = f.s.client.AbortMultipartUpload(context.Background(), &s3.AbortMultipartUploadInput{Bucket: aws.String(f.bucket), Key: aws.String(f.key), UploadId: f.created.UploadId}); err != nil {
+	if _, err := f.s.client.AbortMultipartUpload(context.Background(), &s3.AbortMultipartUploadInput{Bucket: aws.String(f.bucket), Key: aws.String(f.key), UploadId: f.created.UploadId}); err != nil {
 		t.Fatal(err)
 	}
-	listed, _ = f.s.client.ListMultipartUploads(context.Background(), &s3.ListMultipartUploadsInput{Bucket: aws.String(f.bucket)})
-	if len(listed.Uploads) != 0 {
-		t.Fatalf("uploads=%v", listed.Uploads)
-	}
+	_, err := f.s.client.UploadPart(context.Background(), &s3.UploadPartInput{
+		Bucket:     aws.String(f.bucket),
+		Key:        aws.String(f.key),
+		UploadId:   f.created.UploadId,
+		PartNumber: aws.Int32(1),
+		Body:       bytes.NewReader(bytes.Repeat([]byte("x"), 5*1024*1024)),
+	})
+	assertS3Error(t, err, 404, "NoSuchUpload")
 }
 
 type multipartFixture struct {

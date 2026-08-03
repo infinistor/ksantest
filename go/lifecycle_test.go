@@ -256,11 +256,59 @@ func TestLifecycleSetExpirationZero(t *testing.T) {
 	assertS3Error(t, err, 400, "InvalidArgument")
 }
 
-// Lifecycle 규칙을 적용할 경우 오브젝트의 만료기한이 설정되는지 확인
+// Lifecycle 규칙을 적용한 오브젝트의 만료 시각을 HeadObject와 GetObject에서 확인
 func TestLifecycleSetExpiration(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("Java SDK V2에서는 expires값을 재대로 가져오지 못함")
+	s := newSuite(t)
+	bucket, key := s.bucket(t), "test1/a"
+	putLifecycle(t, s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled)})
+	put(t, s, bucket, key, "test", nil)
+
+	head, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if head.LastModified == nil {
+		t.Fatal("HeadObject LastModified is nil")
+	}
+	headExpiration := parseLifecycleExpiration(t, aws.ToString(head.Expiration))
+	expected := head.LastModified.Add(24 * time.Hour)
+	if s.cfg.Endpoint() == "" {
+		expected = head.LastModified.Add(48 * time.Hour).UTC().Truncate(24 * time.Hour)
+	}
+	if !headExpiration.Equal(expected) {
+		t.Fatalf("HeadObject expiration=%s want=%s header=%q", headExpiration, expected, aws.ToString(head.Expiration))
+	}
+
+	object, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer object.Body.Close()
+	getExpiration := parseLifecycleExpiration(t, aws.ToString(object.Expiration))
+	if !getExpiration.Equal(expected) {
+		t.Fatalf("GetObject expiration=%s want=%s header=%q", getExpiration, expected, aws.ToString(object.Expiration))
+	}
+}
+
+func parseLifecycleExpiration(t *testing.T, value string) time.Time {
+	t.Helper()
+	const prefix = `expiry-date="`
+	start := strings.Index(value, prefix)
+	if start < 0 {
+		t.Fatalf("invalid lifecycle expiration header %q", value)
+	}
+	start += len(prefix)
+	end := strings.IndexByte(value[start:], '"')
+	if end < 0 {
+		t.Fatalf("invalid lifecycle expiration header %q", value)
+	}
+	expiration, err := time.Parse(time.RFC1123, value[start:start+end])
+	if err != nil {
+		t.Fatalf("parse lifecycle expiration %q: %v", value, err)
+	}
+	return expiration
 }
 
 func lifecycleRule(id, prefix string, days int32, status types.ExpirationStatus) types.LifecycleRule {

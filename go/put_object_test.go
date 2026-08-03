@@ -288,6 +288,14 @@ func TestObjectLockUploadingObj(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err = s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket:                    aws.String(bucket),
+		Key:                       aws.String(key),
+		VersionId:                 out.VersionId,
+		BypassGovernanceRetention: aws.Bool(true),
+	}); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // 오브젝트의 중간에 공백문자가 들어갔을 경우 올바르게 동작하는지 확인
@@ -368,7 +376,9 @@ func TestPutObjectSpecialCharacters(t *testing.T) {
 	}
 }
 
-// [AWS SDK V2, UseChunkEncoding = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
+// [AWS SDK V2] 특수문자를 포함한 오브젝트 업로드 성공 확인 (UseChunkEncoding = true)
+// UseChunkEncoding = true는 aws-sdk-go-v2의 기본 전송 방식이므로 별도 토글 없이 일반 업로드로 검증한다.
+// (java testPutObjectSpecialCharactersUseChunkEncoding 대응)
 func TestPutObjectSpecialCharactersUseChunkEncoding(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -394,83 +404,13 @@ func TestPutObjectSpecialCharactersUseChunkEncoding(t *testing.T) {
 	}
 }
 
-// [AWS SDK V2, UseChunkEncoding = true, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
-func TestPutObjectUseSpecialCharactersChunkEncodingAndDisablePayloadSigning(t *testing.T) {
-	t.Parallel()
-	s := newSuite(t)
-	ctx := context.Background()
-	bucket := s.bucket(t)
-	keys := []string{"!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]"}
-	for _, key := range keys {
-		body := key
-		if strings.HasSuffix(key, "/") {
-			body = ""
-		}
-		put(t, s, bucket, key, body, nil)
-	}
-	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(bucket)})
-	if err != nil || len(out.Contents) != len(keys) {
-		t.Fatalf("contents=%d want=%d err=%v", len(out.Contents), len(keys), err)
-	}
-	for _, object := range out.Contents {
-		key := aws.ToString(object.Key)
-		if got := read(t, s, bucket, key); got != strings.TrimSuffix(key, "/") && !(strings.HasSuffix(key, "/") && got == "") {
-			t.Fatalf("key=%q body=%q", key, got)
-		}
-	}
-}
-
-// [AWS SDK V2, UseChunkEncoding = false] 특수문자를 포함한 오브젝트 업로드 성공 확인
-func TestPutObjectSpecialCharactersNotChunkEncoding(t *testing.T) {
-	t.Parallel()
-	s := newSuite(t)
-	ctx := context.Background()
-	bucket := s.bucket(t)
-	keys := []string{"!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]"}
-	for _, key := range keys {
-		body := key
-		if strings.HasSuffix(key, "/") {
-			body = ""
-		}
-		put(t, s, bucket, key, body, nil)
-	}
-	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(bucket)})
-	if err != nil || len(out.Contents) != len(keys) {
-		t.Fatalf("contents=%d want=%d err=%v", len(out.Contents), len(keys), err)
-	}
-	for _, object := range out.Contents {
-		key := aws.ToString(object.Key)
-		if got := read(t, s, bucket, key); got != strings.TrimSuffix(key, "/") && !(strings.HasSuffix(key, "/") && got == "") {
-			t.Fatalf("key=%q body=%q", key, got)
-		}
-	}
-}
-
-// [AWS SDK V2, UseChunkEncoding = false, DisablePayloadSigning = true] 특수문자를 포함한 오브젝트 업로드 성공 확인
-func TestPutObjectSpecialCharactersNotChunkEncodingAndDisablePayloadSigning(t *testing.T) {
-	t.Parallel()
-	s := newSuite(t)
-	ctx := context.Background()
-	bucket := s.bucket(t)
-	keys := []string{"!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]"}
-	for _, key := range keys {
-		body := key
-		if strings.HasSuffix(key, "/") {
-			body = ""
-		}
-		put(t, s, bucket, key, body, nil)
-	}
-	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(bucket)})
-	if err != nil || len(out.Contents) != len(keys) {
-		t.Fatalf("contents=%d want=%d err=%v", len(out.Contents), len(keys), err)
-	}
-	for _, object := range out.Contents {
-		key := aws.ToString(object.Key)
-		if got := read(t, s, bucket, key); got != strings.TrimSuffix(key, "/") && !(strings.HasSuffix(key, "/") && got == "") {
-			t.Fatalf("key=%q body=%q", key, got)
-		}
-	}
-}
+// 아래 3개 테스트(java testV2 PutObject)는 aws-sdk-go-v2로 재현할 수 없어 미구현한다.
+//   - testPutObjectSpecialCharactersNotChunkEncoding
+//   - testPutObjectSpecialCharactersNotChunkEncodingAndDisablePayloadSigning
+//   - testPutObjectUseSpecialCharactersChunkEncodingAndDisablePayloadSigning
+// 사유: java SDK v2의 S3Configuration.chunkedEncodingEnabled(false) / disablePayloadSigning에
+// 대응하는 클라이언트 옵션이 aws-sdk-go-v2 s3.Options에 존재하지 않는다. 청크 인코딩 비활성화와
+// 페이로드 서명 비활성화 토글을 표현할 방법이 없어 UseChunkEncoding(기본 동작) 변형만 구현했다.
 
 // 폴더의 이름과 동일한 오브젝트 업로드가 가능한지 확인
 func TestPutObjectDirAndFile(t *testing.T) {
@@ -531,53 +471,54 @@ func TestObjectSetGetMetadataUtf8(t *testing.T) {
 	}
 }
 
-// useChunkEncoding을 사용하는 오브젝트 업로드 시 체크섬 계산 및 검증 확인
-func TestPutObjectChecksumUseChunkEncoding(t *testing.T) {
-	t.Parallel()
-	s := newSuite(t)
-	bucket := s.bucket(t)
-	algorithms := []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmSha1, types.ChecksumAlgorithmSha256}
-	for _, algorithm := range algorithms {
-		algorithm := algorithm
-		t.Run(string(algorithm), func(t *testing.T) {
-			key := "test_put_object_checksum_use_chunk_encoding/" + string(algorithm)
-			body := []byte(key)
-			input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(body), ChecksumAlgorithm: algorithm}
-			setPutChecksum(input, algorithm, body, false)
-			out, err := s.client.PutObject(context.Background(), input)
-			if err != nil {
-				t.Fatal(err)
-			}
-			want := checksumValue(algorithm, body)
-			got := map[types.ChecksumAlgorithm]string{types.ChecksumAlgorithmCrc32: aws.ToString(out.ChecksumCRC32), types.ChecksumAlgorithmCrc32c: aws.ToString(out.ChecksumCRC32C), types.ChecksumAlgorithmSha1: aws.ToString(out.ChecksumSHA1), types.ChecksumAlgorithmSha256: aws.ToString(out.ChecksumSHA256)}[algorithm]
-			if got != want {
-				t.Fatalf("checksum=%q want=%q", got, want)
-			}
-		})
-	}
-}
-
-// useChunkEncoding을 사용하지 않는 오브젝트 업로드 시 체크섬 계산 및 검증 확인
+// 체크섬 계산 및 검증 클라이언트 옵션 조합별 오브젝트 업로드 성공 확인
 func TestPutObjectChecksum(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t)
+	configs := []struct {
+		name     string
+		request  aws.RequestChecksumCalculation
+		response aws.ResponseChecksumValidation
+	}{
+		{"required-required", aws.RequestChecksumCalculationWhenRequired, aws.ResponseChecksumValidationWhenRequired},
+		{"required-supported", aws.RequestChecksumCalculationWhenRequired, aws.ResponseChecksumValidationWhenSupported},
+		{"supported-required", aws.RequestChecksumCalculationWhenSupported, aws.ResponseChecksumValidationWhenRequired},
+		{"supported-supported", aws.RequestChecksumCalculationWhenSupported, aws.ResponseChecksumValidationWhenSupported},
+	}
 	algorithms := []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmSha1, types.ChecksumAlgorithmSha256}
-	for _, algorithm := range algorithms {
-		algorithm := algorithm
-		t.Run(string(algorithm), func(t *testing.T) {
-			key := "test_put_object_checksum/" + string(algorithm)
-			body := []byte(key)
-			input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(body), ChecksumAlgorithm: algorithm}
-			setPutChecksum(input, algorithm, body, false)
-			out, err := s.client.PutObject(context.Background(), input)
-			if err != nil {
-				t.Fatal(err)
-			}
-			want := checksumValue(algorithm, body)
-			got := map[types.ChecksumAlgorithm]string{types.ChecksumAlgorithmCrc32: aws.ToString(out.ChecksumCRC32), types.ChecksumAlgorithmCrc32c: aws.ToString(out.ChecksumCRC32C), types.ChecksumAlgorithmSha1: aws.ToString(out.ChecksumSHA1), types.ChecksumAlgorithmSha256: aws.ToString(out.ChecksumSHA256)}[algorithm]
-			if got != want {
-				t.Fatalf("checksum=%q want=%q", got, want)
+	for _, config := range configs {
+		config := config
+		t.Run(config.name, func(t *testing.T) {
+			for _, algorithm := range algorithms {
+				algorithm := algorithm
+				t.Run(string(algorithm), func(t *testing.T) {
+					key := "test_put_object_checksum/" + config.name + "/" + string(algorithm)
+					body := []byte(key)
+					input := &s3.PutObjectInput{
+						Bucket:            aws.String(bucket),
+						Key:               aws.String(key),
+						Body:              bytes.NewReader(body),
+						ChecksumAlgorithm: algorithm,
+					}
+					out, err := s.client.PutObject(context.Background(), input, func(options *s3.Options) {
+						options.RequestChecksumCalculation = config.request
+						options.ResponseChecksumValidation = config.response
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					want := checksumValue(algorithm, body)
+					got := map[types.ChecksumAlgorithm]string{
+						types.ChecksumAlgorithmCrc32:  aws.ToString(out.ChecksumCRC32),
+						types.ChecksumAlgorithmCrc32c: aws.ToString(out.ChecksumCRC32C),
+						types.ChecksumAlgorithmSha1:   aws.ToString(out.ChecksumSHA1),
+						types.ChecksumAlgorithmSha256: aws.ToString(out.ChecksumSHA256),
+					}[algorithm]
+					if got != want {
+						t.Fatalf("checksum=%q want=%q", got, want)
+					}
+				})
 			}
 		})
 	}
@@ -604,6 +545,62 @@ func TestPutObjectChecksumWithValue(t *testing.T) {
 			got := map[types.ChecksumAlgorithm]string{types.ChecksumAlgorithmCrc32: aws.ToString(out.ChecksumCRC32), types.ChecksumAlgorithmCrc32c: aws.ToString(out.ChecksumCRC32C), types.ChecksumAlgorithmSha1: aws.ToString(out.ChecksumSHA1), types.ChecksumAlgorithmSha256: aws.ToString(out.ChecksumSHA256)}[algorithm]
 			if got != want {
 				t.Fatalf("checksum=%q want=%q", got, want)
+			}
+		})
+	}
+}
+
+// 체크섬 계산/검증 설정 조합에서 모든 알고리즘의 PutObject 체크섬이 올바른지 확인 (UseChunkEncoding = true)
+// UseChunkEncoding = true는 aws-sdk-go-v2의 기본 전송 방식이므로 별도 토글 없이 검증한다.
+// java testPutObjectChecksumUseChunkEncoding은 동일 시나리오를 동기/비동기 클라이언트로 각각 수행하나,
+// aws-sdk-go-v2에는 별도의 S3AsyncClient가 없어 동기 경로만 구현한다.
+func TestPutObjectChecksumUseChunkEncoding(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	configs := []struct {
+		name     string
+		request  aws.RequestChecksumCalculation
+		response aws.ResponseChecksumValidation
+	}{
+		{"required-required", aws.RequestChecksumCalculationWhenRequired, aws.ResponseChecksumValidationWhenRequired},
+		{"required-supported", aws.RequestChecksumCalculationWhenRequired, aws.ResponseChecksumValidationWhenSupported},
+		{"supported-required", aws.RequestChecksumCalculationWhenSupported, aws.ResponseChecksumValidationWhenRequired},
+		{"supported-supported", aws.RequestChecksumCalculationWhenSupported, aws.ResponseChecksumValidationWhenSupported},
+	}
+	algorithms := []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmSha1, types.ChecksumAlgorithmSha256}
+	for _, config := range configs {
+		config := config
+		t.Run(config.name, func(t *testing.T) {
+			for _, algorithm := range algorithms {
+				algorithm := algorithm
+				t.Run(string(algorithm), func(t *testing.T) {
+					key := "test_put_object_checksum_use_chunk_encoding/" + config.name + "/" + string(algorithm)
+					body := []byte(key)
+					input := &s3.PutObjectInput{
+						Bucket:            aws.String(bucket),
+						Key:               aws.String(key),
+						Body:              bytes.NewReader(body),
+						ChecksumAlgorithm: algorithm,
+					}
+					out, err := s.client.PutObject(context.Background(), input, func(options *s3.Options) {
+						options.RequestChecksumCalculation = config.request
+						options.ResponseChecksumValidation = config.response
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					want := checksumValue(algorithm, body)
+					got := map[types.ChecksumAlgorithm]string{
+						types.ChecksumAlgorithmCrc32:  aws.ToString(out.ChecksumCRC32),
+						types.ChecksumAlgorithmCrc32c: aws.ToString(out.ChecksumCRC32C),
+						types.ChecksumAlgorithmSha1:   aws.ToString(out.ChecksumSHA1),
+						types.ChecksumAlgorithmSha256: aws.ToString(out.ChecksumSHA256),
+					}[algorithm]
+					if got != want {
+						t.Fatalf("checksum=%q want=%q", got, want)
+					}
+				})
 			}
 		})
 	}
@@ -740,10 +737,18 @@ func TestPutObjectKeyMinLength(t *testing.T) {
 	}
 }
 
-// 최대 길이(1024자)를 초과하는 오브젝트 키로 업로드 실패 확인
+// 최대 길이(1024바이트)를 초과하는 오브젝트 키로 업로드 실패 확인
 func TestPutObjectKeyTooLong(t *testing.T) {
 	t.Parallel()
-	t.Skip("KSAN accepts keys longer than 1024; Java intentional failure")
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	key := strings.Repeat("a", 1025)
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   bytes.NewReader([]byte("test-too-long")),
+	})
+	assertS3Error(t, err, 400, "KeyTooLongError")
 }
 
 // 특수문자로 시작하는 오브젝트 키로 업로드 성공 확인
@@ -802,10 +807,24 @@ func TestPutObjectKeyUnicodeCharacters(t *testing.T) {
 	}
 }
 
-// 1024바이트를 초과하는 키로 업로드 실패 확인
+// 1024바이트를 초과하는 유니코드 키로 업로드 실패 확인
 func TestPutObjectKeyUnicodeCharactersTooLong(t *testing.T) {
 	t.Parallel()
-	t.Skip("KSAN accepts oversize unicode keys; Java intentional failure")
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	for _, char := range []string{"한", "中", "日", "а", "α", "ع", "т", "ф"} {
+		charBytes := len([]byte(char))
+		key := strings.Repeat(char, 1024/charBytes+1)
+		if len([]byte(key)) <= 1024 {
+			t.Fatalf("key bytes=%d want >1024 char=%q", len([]byte(key)), char)
+		}
+		_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+			Body:   bytes.NewReader([]byte("unicode-test-fail-" + char)),
+		})
+		assertS3Error(t, err, 400, "KeyTooLongError")
+	}
 }
 
 // 앞뒤 공백문자를 포함한 오브젝트 키로 업로드 성공 확인

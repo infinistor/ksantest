@@ -287,3 +287,11 @@ func getAttributes(t *testing.T, client *s3.Client, input *s3.GetObjectAttribute
 	}
 	return out
 }
+
+// 아래 2개 테스트(java testV2 GetObjectAttributes)는 aws-sdk-go-v2로 재현할 수 없어 미구현한다.
+//   - testGetObjectAttributesAsync
+//   - testGetObjectAttributesAsyncError
+// 사유: 두 테스트는 java의 S3AsyncClient(비동기 클라이언트)로 GetObjectAttributes를 호출해
+// CompletableFuture 동작을 검증한다. aws-sdk-go-v2에는 별도의 비동기 S3 클라이언트가 없고
+// 모든 오퍼레이션이 context 기반 동기 호출이므로, 비동기 클라이언트 전용 시나리오를 재현할 수 없다.
+// (동기 경로는 TestGetObjectAttributesBasic / TestGetObjectAttributesNonExistentBucket 등에서 이미 검증)

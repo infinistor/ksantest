@@ -332,6 +332,5 @@ func s3Client(cfg testconfig.Config, user testconfig.User) *s3.Client {
 	if endpoint := cfg.Endpoint(); endpoint != "" {
 		options.BaseEndpoint = aws.String(endpoint)
 	}
-	applyCompatibleS3Options(&options)
 	return s3.New(options)
 }

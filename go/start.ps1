@@ -77,9 +77,14 @@ if (-not (Test-Path $JsonPath -PathType Leaf)) {
 }
 
 Write-Host "`n=== Generating HTML report ===" -ForegroundColor Cyan
-Get-Content $JsonPath | & go run ./cmd/junit-report "-output=$XmlPath"
-if ($LASTEXITCODE -ne 0) {
-    throw "JUnit XML generation failed with exit code $LASTEXITCODE"
+try {
+    Get-Content $JsonPath | & go run ./cmd/junit-report "-output=$XmlPath"
+    if ($LASTEXITCODE -ne 0) {
+        throw "JUnit XML generation failed with exit code $LASTEXITCODE"
+    }
+}
+finally {
+    Remove-Item $JsonPath -ErrorAction SilentlyContinue
 }
 
 Push-Location $XunitDir

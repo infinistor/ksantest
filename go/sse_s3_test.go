@@ -225,11 +225,11 @@ func TestSseS3BucketPutGet(t *testing.T) {
 	putAESBucketEncryption(t, s.client, bucket)
 	getAndAssertAESBucketEncryption(t, s.client, bucket)
 	body := deterministicBody(1000)
-	putObjectMaybeChunked(t, s.client, bucket, "bar", body, false)
+	putBytes(t, s.client, bucket, "bar", body)
 	assertSSEObject(t, s, bucket, "bar", body, true)
 }
 
-// [버킷에 SSE-S3 설정, UseChunkEncoding = true] 업로드, 다운로드 성공 확인
+// [버킷에 SSE-S3 설정, UseChunkEncoding = true] SDK 기본 전송 방식으로 업로드, 다운로드 성공 확인
 func TestSseS3BucketPutGetUseChunkEncoding(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -237,8 +237,8 @@ func TestSseS3BucketPutGetUseChunkEncoding(t *testing.T) {
 	putAESBucketEncryption(t, s.client, bucket)
 	getAndAssertAESBucketEncryption(t, s.client, bucket)
 	body := deterministicBody(1000)
-	putObjectMaybeChunked(t, s.client, bucket, "bar", body, true)
-	assertSSEObject(t, s, bucket, "bar", body, true)
+	putBytes(t, s.client, bucket, "bar-chunked", body)
+	assertSSEObject(t, s, bucket, "bar-chunked", body, true)
 }
 
 // [버킷에 SSE-S3 설정]PresignedURL로 오브젝트 업로드, 다운로드 성공 확인
@@ -287,6 +287,60 @@ func TestSseS3BucketPresignedUrlPutGet(t *testing.T) {
 		t.Fatalf("presigned GET status=%d body=%q err=%v", response.StatusCode, got, readErr)
 	}
 }
+
+// [PresignedURL, SignatureV4] SSE-S3 설정 버킷에 업로드, 다운로드 성공 확인
+// aws-sdk-go-v2의 presign은 항상 SigV4를 사용하므로 V4 변형은 기본 presign 동작과 동일하다.
+// (java testSseS3BucketPresignedUrlPutGetV4 대응)
+func TestSseS3BucketPresignedUrlPutGetV4(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t)
+	putAESBucketEncryption(t, s.client, bucket)
+	getAndAssertAESBucketEncryption(t, s.client, bucket)
+	presign := s3.NewPresignClient(s.client)
+	body := []byte("foo")
+	putURL, err := presign.PresignPutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	request, err := http.NewRequest(http.MethodPut, putURL.URL, bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, values := range putURL.SignedHeader {
+		if strings.EqualFold(name, "Host") {
+			request.Host = values[0]
+		} else {
+			request.Header[name] = append([]string(nil), values...)
+		}
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("presigned PUT status=%d", response.StatusCode)
+	}
+	getURL, err := presign.PresignGetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err = http.Get(getURL.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	got, readErr := io.ReadAll(response.Body)
+	if response.StatusCode != http.StatusOK || readErr != nil || !bytes.Equal(got, body) {
+		t.Fatalf("presigned GET status=%d body=%q err=%v", response.StatusCode, got, readErr)
+	}
+}
+
+// java testV2 testSseS3BucketPutGetNotChunkEncoding은 aws-sdk-go-v2로 재현할 수 없어 미구현한다.
+// 사유: java SDK v2의 S3Configuration.chunkedEncodingEnabled(false)에 대응하는 클라이언트 옵션이
+// aws-sdk-go-v2 s3.Options에 존재하지 않는다. 청크 인코딩 비활성화 전송을 표현할 방법이 없어
+// UseChunkEncoding(기본 동작) 변형(TestSseS3BucketPutGetUseChunkEncoding)만 구현했다.
 
 // SSE-S3설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 func TestSseS3GetObjectMany(t *testing.T) {

@@ -9,9 +9,9 @@ Java SDK V2 is the primary source. Each Java `@Test` method maps to a top-level 
 | `Grants.testBucketAclDefault` | `TestBucketAclDefault` in `grants_test.go` |
 | `DeleteBucket.testBucketDeleteNotExist` | `TestBucketDeleteNotExist` |
 
-Package-level collisions (same method name in two Java classes) use a class prefix, e.g. `Versioning.testVersioningObjListMarker` → `TestVersioning_ObjListMarker` while `ListObjectsVersions` keeps `TestVersioningObjListMarker`.
+Package-level collisions (same method name in two Java classes) keep the clean `TestXxx` name for the primary class and give the colliding copy a class prefix, e.g. `Versioning.testVersioningObjListMarker` → `TestVersioningObjListMarker` while `ListObjectsVersions.testVersioningObjListMarker` → `TestListObjectsVersionsVersioningObjListMarker` (and `DeleteObjects.testVersioningMultiObjectDeleteWithMarker*` → `TestDeleteObjectsVersioningMultiObjectDeleteWithMarker*`).
 
-Final static audit: 38 classes, 811 Java scenarios, 808 Python scenarios, and 808 executable/skip Go tests. Cors Python gap (3), empty KMS (1), and SSE_S3 SigV4-only duplicates (2) are intentional. `start-function` accepts Java camelCase and Python snake_case.
+Final static audit: 38 classes, 811 Java scenarios, 808 Python scenarios, and 808 executable/skip Go tests. Cors Python gap (3) and empty KMS (1) are intentional. The remaining Go gaps are aws-sdk-go-v2-inexpressible and commented with reasons: PutObject chunk-encoding/payload-signing (3), SSE_S3 chunk-encoding (1), GetObjectAttributes async-client (2). The `UseChunkEncoding` / presigned-SigV4 variants are implemented as normal calls since that is the go-v2 default. `start-function` accepts Java camelCase and Python snake_case.
 
 `go vet ./...` and `go test -run '^$' ./...` pass. Accelerate (4), Analytics (6), Payment (3), and SelectObjectContent (7) SKIP every scenario. Backend reports 30 scenarios (Java wrapper-aligned; basic 10 disabled). Live S3 comparison remains pending.
 
@@ -69,7 +69,7 @@ Examples:
 |---|---|
 | `testBucketDeleteNotExist` | `TestBucketDeleteNotExist` |
 | `testBucketAclDefault` | `TestBucketAclDefault` |
-| `testVersioningObjListMarker` (Versioning) | `TestVersioning_ObjListMarker` |
-| `testVersioningObjListMarker` (ListObjectsVersions) | `TestVersioningObjListMarker` |
+| `testVersioningObjListMarker` (Versioning) | `TestVersioningObjListMarker` |
+| `testVersioningObjListMarker` (ListObjectsVersions) | `TestListObjectsVersionsVersioningObjListMarker` |
 
 `resolve-test <Class> <method>` returns the Go function name. JUnit classname is `s3tests.{Class}` with case name equal to the Go function.

@@ -48,9 +48,10 @@ GO_TEST_PARALLEL=8 ./start.sh awstests
 
 결과 파일:
 
-- Go 원본 이벤트: `go/test-results.json`
 - JUnit XML: `xunit-to-html/Result_go.xml`
 - HTML: `xunit-to-html/Result_go.html`
+
+(`test-results.json`은 리포트 생성용 임시 파일이며, 종료 시 삭제됩니다.)
 
 `-NoOpen`을 지정하지 않으면 PowerShell 스크립트가 HTML을 자동으로 엽니다.
 
@@ -69,7 +70,7 @@ Python 및 Java 실행 스크립트와 동일하게 설정, 테스트 클래스,
 ./start-function.sh awstests Versioning testVersioningObjMixPutAndMultipart
 ```
 
-Go는 Java와 같이 **클래스(파일)당 시나리오=최상위 `TestXxx` 함수 1:1**입니다. 위 명령은 `TestBucketCreateNamingBadIp` 같은 `go test -run` 대상으로 변환됩니다. 패키지 전역 이름 충돌이 있는 일부 케이스만 `TestVersioning_ObjListMarker`처럼 클래스 접두사를 붙입니다.
+Go는 Java와 같이 **클래스(파일)당 시나리오=최상위 `TestXxx` 함수 1:1**입니다. 위 명령은 `TestBucketCreateNamingBadIp` 같은 `go test -run` 대상으로 변환됩니다. 패키지 전역 이름 충돌이 있는 일부 케이스만 충돌한 쪽에 클래스 접두사를 붙입니다(예: `ListObjectsVersions`의 `TestListObjectsVersionsVersioningObjListMarker`, `DeleteObjects`의 `TestDeleteObjectsVersioningMultiObjectDeleteWithMarker`).
 
 ## HTML 리포트 준비
 

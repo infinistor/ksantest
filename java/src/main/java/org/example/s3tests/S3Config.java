@@ -18,7 +18,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.example.Data.UserData;
 
 public class S3Config {
-	public static final String STR_FILENAME = "config.ini";
+	public static final String STR_FILENAME = "config.ini";// NOSONAR
+	// public static final String STR_FILENAME = "228.ini";// NOSONAR
+	// public static final String STR_FILENAME = "227.ini";// NOSONAR
+	// public static final String STR_FILENAME = "11.151.ini";// NOSONAR
+	// public static final String STR_FILENAME = "awstests.ini"; // NOSONAR
+	// public static final String STR_FILENAME = "ksan.ini"; // NOSONAR
 
 	public static final String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
 	public static final String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";
@@ -82,7 +87,7 @@ public class S3Config {
 			sslPort = readKeyToInt(STR_S3, STR_SSL_PORT);
 			regionName = readKeyToString(STR_S3, STR_REGION);
 			signatureVersion = readKeyToString(STR_S3, STR_SIGNATURE_VERSION);
-			isSecure = readKeyToBoolean(STR_S3, STR_IS_SECURE);
+			isSecure = readKeyToBoolean(STR_FIXTURES, STR_IS_SECURE);
 			bucketPrefix = readKeyToString(STR_FIXTURES, STR_BUCKET_PREFIX);
 			notDelete = readKeyToBoolean(STR_FIXTURES, STR_BUCKET_DELETE);
 

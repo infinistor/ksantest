@@ -695,7 +695,7 @@ func TestVersioningBucketListFilteringAll(t *testing.T) {
 }
 
 // 버전 목록이 VersionId 기준으로 올바르게 정렬되어 반환되는지 확인
-func TestVersioningObjListMarker(t *testing.T) {
+func TestListObjectsVersionsVersioningObjListMarker(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t)

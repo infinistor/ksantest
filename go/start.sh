@@ -49,7 +49,15 @@ fi
 
 echo
 echo "=== Generating HTML report ==="
+set +e
 go run ./cmd/junit-report -output "${XML_PATH}" < test-results.json
+REPORT_EXIT=$?
+rm -f test-results.json
+set -e
+if [[ "${REPORT_EXIT}" -ne 0 ]]; then
+  echo "JUnit XML generation failed with exit code ${REPORT_EXIT}" >&2
+  exit "${REPORT_EXIT}"
+fi
 (
   cd "${XUNIT_DIR}"
   java -jar "${SAXON_JAR}" -o:Result_go.html -s:Result_go.xml -xsl:"${XSL_FILE}"
