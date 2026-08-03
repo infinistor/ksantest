@@ -22,7 +22,7 @@ func TestBucketListEmpty(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 1)
 	out, err := s.client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
 	if err != nil {
 		t.Fatalf("ListObjectsV2: %v", err)
@@ -216,7 +216,7 @@ func TestBucketCreateExists(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 17)
 	_, err := s.client.CreateBucket(context.Background(), createBucketInput(s.cfg, bucket))
 	assertAPIErrorCode(t, err, "BucketAlreadyOwnedByYou")
 }
@@ -229,7 +229,7 @@ func TestBucketCreateExistsNonowner(t *testing.T) {
 	if s.cfg.Alt.AccessKey == "" || s.cfg.Alt.SecretKey == "" {
 		t.Skip("configure Alt User credentials in config.ini")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 18)
 	altClient := s3Client(s.cfg, s.cfg.Alt)
 	_, err := altClient.CreateBucket(context.Background(), createBucketInput(s.cfg, bucket))
 	assertAPIErrorCode(t, err, "BucketAlreadyExists")
@@ -240,7 +240,7 @@ func TestBucketRecreateNotOverriding(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 23)
 	want := []string{"my_key1", "my_key2"}
 	for _, key := range want {
 		put(t, s, bucket, key, key, nil)
@@ -267,7 +267,7 @@ func TestGetBucketLocation(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 24)
 	if _, err := s.client.GetBucketLocation(context.Background(), &s3.GetBucketLocationInput{Bucket: aws.String(bucket)}); err != nil {
 		t.Fatalf("GetBucketLocation: %v", err)
 	}

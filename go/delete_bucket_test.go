@@ -24,7 +24,7 @@ func TestBucketDeleteNonempty(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 2)
 	put(t, s, bucket, "foo", "foo", nil)
 	_, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
 	assertS3Error(t, err, 409, "BucketNotEmpty")
@@ -35,7 +35,7 @@ func TestBucketCreateDelete(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 3)
 	if _, err := s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String(bucket)}); err != nil {
 		t.Fatalf("first DeleteBucket: %v", err)
 	}

@@ -17,7 +17,7 @@ func TestBlockPublicAclAndPolicy(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 1)
 	configuration := publicAccessConfiguration(true, false, true, false)
 	putPublicAccessBlock(t, s, bucket, configuration)
 	assertPublicAccessBlock(t, s, bucket, configuration)
@@ -32,7 +32,7 @@ func TestBlockPublicAcls(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 2)
 	configuration := publicAccessConfiguration(true, false, false, false)
 	putPublicAccessBlock(t, s, bucket, configuration)
 	assertPublicAccessBlock(t, s, bucket, configuration)
@@ -47,7 +47,7 @@ func TestBlockPublicPolicy(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 3)
 	putPublicAccessBlock(t, s, bucket, publicAccessConfiguration(false, false, true, false))
 	policy := fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"s3:GetObject","Resource":"arn:aws:s3:::%s/*"}]}`, bucket)
 	_, err := s.client.PutBucketPolicy(context.Background(), &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(policy)})
@@ -59,7 +59,7 @@ func TestDeletePublicBlock(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 4)
 	configuration := publicAccessConfiguration(true, true, true, false)
 	putPublicAccessBlock(t, s, bucket, configuration)
 	assertPublicAccessBlock(t, s, bucket, configuration)
@@ -78,7 +78,7 @@ func TestIgnorePublicAcls(t *testing.T) {
 	if s.cfg.Alt.AccessKey == "" || s.cfg.Alt.SecretKey == "" {
 		t.Skip("configure Alt User credentials in config.ini")
 	}
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 5)
 	key := "testIgnorePublicAcls"
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
 	if err != nil {
@@ -110,7 +110,7 @@ func TestPutPublicBlock(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 6)
 	configuration := publicAccessConfiguration(true, true, true, false)
 	putPublicAccessBlock(t, s, bucket, configuration)
 	assertPublicAccessBlock(t, s, bucket, configuration)

@@ -18,7 +18,7 @@ func TestObjectReadNotExist(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(s.bucket(t)), Key: aws.String("foo")})
+	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(s.bucket(t, 1)), Key: aws.String("foo")})
 	assertS3Error(t, err, 404, "NoSuchKey")
 }
 
@@ -26,7 +26,7 @@ func TestObjectReadNotExist(t *testing.T) {
 func TestGetObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_match_good"
+	bucket, key := s.bucket(t, 2), "test_get_object_if_match_good"
 	created := put(t, s, bucket, key, "bar", nil)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfMatch = created.ETag
@@ -45,7 +45,7 @@ func TestGetObjectIfMatchGood(t *testing.T) {
 func TestGetObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_match_failed"
+	bucket, key := s.bucket(t, 3), "test_get_object_if_match_failed"
 	put(t, s, bucket, key, "bar", nil)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -57,7 +57,7 @@ func TestGetObjectIfMatchFailed(t *testing.T) {
 func TestGetObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_none_match_good"
+	bucket, key := s.bucket(t, 4), "test_get_object_if_none_match_good"
 	created := put(t, s, bucket, key, "bar", nil)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfNoneMatch = created.ETag
@@ -69,7 +69,7 @@ func TestGetObjectIfNoneMatchGood(t *testing.T) {
 func TestGetObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_none_match_failed"
+	bucket, key := s.bucket(t, 5), "test_get_object_if_none_match_failed"
 	put(t, s, bucket, key, "bar", nil)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfNoneMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -88,7 +88,7 @@ func TestGetObjectIfNoneMatchFailed(t *testing.T) {
 func TestGetObjectIfModifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_modified_since_good"
+	bucket, key := s.bucket(t, 6), "test_get_object_if_modified_since_good"
 	put(t, s, bucket, key, "bar", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
@@ -108,7 +108,7 @@ func TestGetObjectIfModifiedSinceGood(t *testing.T) {
 func TestGetObjectIfModifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_modified_since_failed"
+	bucket, key := s.bucket(t, 7), "test_get_object_if_modified_since_failed"
 	put(t, s, bucket, key, "bar", nil)
 	head := headObject(t, s.client, bucket, key)
 	after := head.LastModified.Add(time.Second)
@@ -123,7 +123,7 @@ func TestGetObjectIfModifiedSinceFailed(t *testing.T) {
 func TestGetObjectIfUnmodifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_unmodified_since_good"
+	bucket, key := s.bucket(t, 8), "test_get_object_if_unmodified_since_good"
 	put(t, s, bucket, key, "bar", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
@@ -136,7 +136,7 @@ func TestGetObjectIfUnmodifiedSinceGood(t *testing.T) {
 func TestGetObjectIfUnmodifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_unmodified_since_failed"
+	bucket, key := s.bucket(t, 9), "test_get_object_if_unmodified_since_failed"
 	put(t, s, bucket, key, "bar", nil)
 	future := time.Date(2100, 9, 29, 19, 43, 31, 0, time.UTC)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
@@ -156,7 +156,7 @@ func TestGetObjectIfUnmodifiedSinceFailed(t *testing.T) {
 func TestGetObjectIfMatchWithIfUnmodifiedSince(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_match_with_if_unmodified_since"
+	bucket, key := s.bucket(t, 10), "test_get_object_if_match_with_if_unmodified_since"
 	created := put(t, s, bucket, key, "bar", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
@@ -176,7 +176,7 @@ func TestGetObjectIfMatchWithIfUnmodifiedSince(t *testing.T) {
 func TestGetObjectIfNoneMatchWithIfModifiedSince(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_none_match_with_if_modified_since"
+	bucket, key := s.bucket(t, 11), "test_get_object_if_none_match_with_if_modified_since"
 	created := put(t, s, bucket, key, "bar", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
@@ -189,7 +189,7 @@ func TestGetObjectIfNoneMatchWithIfModifiedSince(t *testing.T) {
 func TestGetObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_match_and_if_none_match"
+	bucket, key := s.bucket(t, 12), "test_get_object_if_match_and_if_none_match"
 	created := put(t, s, bucket, key, "bar", nil)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfMatch, input.IfNoneMatch = created.ETag, created.ETag
@@ -201,7 +201,7 @@ func TestGetObjectIfMatchAndIfNoneMatch(t *testing.T) {
 func TestGetObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_get_object_if_match_and_if_none_match_any"
+	bucket, key := s.bucket(t, 13), "test_get_object_if_match_and_if_none_match_any"
 	created := put(t, s, bucket, key, "bar", nil)
 	input := &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfMatch, input.IfNoneMatch = created.ETag, aws.String("*")
@@ -213,7 +213,7 @@ func TestGetObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
 func TestHeadObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_head_object_if_match_good"
+	bucket, key := s.bucket(t, 14), "test_head_object_if_match_good"
 	created := put(t, s, bucket, key, "bar", nil)
 	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfMatch = created.ETag
@@ -227,7 +227,7 @@ func TestHeadObjectIfMatchGood(t *testing.T) {
 func TestHeadObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_head_object_if_match_failed"
+	bucket, key := s.bucket(t, 15), "test_head_object_if_match_failed"
 	put(t, s, bucket, key, "bar", nil)
 	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -239,7 +239,7 @@ func TestHeadObjectIfMatchFailed(t *testing.T) {
 func TestHeadObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_head_object_if_none_match_good"
+	bucket, key := s.bucket(t, 16), "test_head_object_if_none_match_good"
 	created := put(t, s, bucket, key, "bar", nil)
 	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfNoneMatch = created.ETag
@@ -251,7 +251,7 @@ func TestHeadObjectIfNoneMatchGood(t *testing.T) {
 func TestHeadObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_head_object_if_none_match_failed"
+	bucket, key := s.bucket(t, 17), "test_head_object_if_none_match_failed"
 	put(t, s, bucket, key, "bar", nil)
 	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
 	input.IfNoneMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -265,7 +265,7 @@ func TestHeadObjectIfNoneMatchFailed(t *testing.T) {
 func TestHeadObjectIfModifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_head_object_if_modified_since_good"
+	bucket, key := s.bucket(t, 18), "test_head_object_if_modified_since_good"
 	put(t, s, bucket, key, "bar", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
 	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
@@ -280,7 +280,7 @@ func TestHeadObjectIfModifiedSinceGood(t *testing.T) {
 func TestHeadObjectIfModifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_head_object_if_modified_since_failed"
+	bucket, key := s.bucket(t, 19), "test_head_object_if_modified_since_failed"
 	put(t, s, bucket, key, "bar", nil)
 	head := headObject(t, s.client, bucket, key)
 	after := head.LastModified.Add(time.Second)
@@ -295,7 +295,7 @@ func TestHeadObjectIfModifiedSinceFailed(t *testing.T) {
 func TestHeadObjectIfUnmodifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_head_object_if_unmodified_since_good"
+	bucket, key := s.bucket(t, 20), "test_head_object_if_unmodified_since_good"
 	put(t, s, bucket, key, "bar", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
 	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
@@ -308,7 +308,7 @@ func TestHeadObjectIfUnmodifiedSinceGood(t *testing.T) {
 func TestHeadObjectIfUnmodifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_head_object_if_unmodified_since_failed"
+	bucket, key := s.bucket(t, 21), "test_head_object_if_unmodified_since_failed"
 	put(t, s, bucket, key, "bar", nil)
 	future := time.Date(2100, 9, 29, 19, 43, 31, 0, time.UTC)
 	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
@@ -323,7 +323,7 @@ func TestHeadObjectIfUnmodifiedSinceFailed(t *testing.T) {
 func TestRangedRequestResponseCode(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "obj"
+	bucket, key := s.bucket(t, 22), "obj"
 	content, requestRange, want, wantRange := "contentData", "bytes=4-7", "entD", "bytes 4-7/11"
 	put(t, s, bucket, key, content, nil)
 	out, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String(requestRange)})
@@ -341,7 +341,7 @@ func TestRangedRequestResponseCode(t *testing.T) {
 func TestRangedBigRequestResponseCode(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "obj"
+	bucket, key := s.bucket(t, 23), "obj"
 	content := stringsRepeatPattern(8 * 1024 * 1024)
 	requestRange := "bytes=3145728-5242880"
 	want := content[3145728:5242881]
@@ -362,7 +362,7 @@ func TestRangedBigRequestResponseCode(t *testing.T) {
 func TestRangedRequestSkipLeadingBytesResponseCode(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "obj"
+	bucket, key := s.bucket(t, 24), "obj"
 	content := "contentData"
 	requestRange, want, wantRange := "bytes=4-", content[4:], "bytes 4-10/11"
 	put(t, s, bucket, key, content, nil)
@@ -381,7 +381,7 @@ func TestRangedRequestSkipLeadingBytesResponseCode(t *testing.T) {
 func TestRangedRequestReturnTrailingBytesResponseCode(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "obj"
+	bucket, key := s.bucket(t, 25), "obj"
 	content := "contentData"
 	requestRange, want, wantRange := "bytes=-7", content[len(content)-7:], "bytes 4-10/11"
 	put(t, s, bucket, key, content, nil)
@@ -400,7 +400,7 @@ func TestRangedRequestReturnTrailingBytesResponseCode(t *testing.T) {
 func TestRangedRequestInvalidRange(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "obj"
+	bucket, key := s.bucket(t, 26), "obj"
 	put(t, s, bucket, key, "contentData", nil)
 	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String("bytes=40-50")})
 	assertS3Error(t, err, 416, "InvalidRange")
@@ -410,7 +410,7 @@ func TestRangedRequestInvalidRange(t *testing.T) {
 func TestRangedRequestEmptyObject(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "obj"
+	bucket, key := s.bucket(t, 27), "obj"
 	put(t, s, bucket, key, "", nil)
 	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Range: aws.String("bytes=40-50")})
 	assertS3Error(t, err, 416, "InvalidRange")
@@ -420,7 +420,7 @@ func TestRangedRequestEmptyObject(t *testing.T) {
 func TestGetObjectMany(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 28), "foo"
 	data := stringsRepeatPattern(15 * 1024 * 1024)
 	put(t, s, bucket, key, data, nil)
 	for i := 0; i < 50; i++ {
@@ -439,7 +439,7 @@ func TestGetObjectMany(t *testing.T) {
 func TestRangeObjectMany(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 29), "foo"
 	data := stringsRepeatPattern(15 * 1024 * 1024)
 	put(t, s, bucket, key, data, nil)
 	for i := 0; i < 50; i++ {
@@ -459,7 +459,7 @@ func TestRangeObjectMany(t *testing.T) {
 func TestObjectResponseHeaders(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "testObjectResponseHeaders"
+	bucket, key := s.bucket(t, 30), "testObjectResponseHeaders"
 	put(t, s, bucket, key, key, nil)
 	expires := time.Now().UTC().Truncate(time.Second)
 	out := getObject(t, s.client, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), ResponseCacheControl: aws.String("no-cache"), ResponseContentDisposition: aws.String("bla"), ResponseContentEncoding: aws.String("aaa"), ResponseContentLanguage: aws.String("esperanto"), ResponseContentType: aws.String("foo/bar"), ResponseExpires: &expires})
@@ -473,7 +473,7 @@ func TestObjectResponseHeaders(t *testing.T) {
 func TestMultipartObjectRange(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "testMultipartObjectRange"
+	bucket, key := s.bucket(t, 31), "testMultipartObjectRange"
 	ctx := context.Background()
 	data := bytes.Repeat([]byte("m"), 5*1024*1024)
 	created, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -501,7 +501,7 @@ func TestGetObjectIgnore(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "testObjectIgnore"
+	bucket, key := s.bucket(t, 32), "testObjectIgnore"
 	put(t, s, bucket, key, key, nil)
 	out := getObject(t, s.client, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if aws.ToInt64(out.ContentLength) != int64(len(key)) {
@@ -514,7 +514,7 @@ func TestGetObjectIgnore(t *testing.T) {
 func TestGetObjectAfterDelete(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key, body := s.bucket(t), "deleted", "testContent"
+	bucket, key, body := s.bucket(t, 33), "deleted", "testContent"
 	put(t, s, bucket, key, body, nil)
 	if read(t, s, bucket, key) != body {
 		t.Fatal("initial body mismatch")
@@ -531,7 +531,7 @@ func TestGetObjectAfterDelete(t *testing.T) {
 func TestGetObjectAfterDeleteVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key, body := s.bucket(t), "deleted", "testContent"
+	bucket, key, body := s.bucket(t, 34), "deleted", "testContent"
 	enableVersioning(t, s, bucket)
 	put(t, s, bucket, key, body, nil)
 	if read(t, s, bucket, key) != body {
@@ -549,7 +549,7 @@ func TestGetObjectAfterDeleteVersioning(t *testing.T) {
 func TestGetObjectDeleteMarker(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key, body := s.bucket(t), "marker", "testContent"
+	bucket, key, body := s.bucket(t, 35), "marker", "testContent"
 	enableVersioning(t, s, bucket)
 	put(t, s, bucket, key, body, nil)
 	_, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})

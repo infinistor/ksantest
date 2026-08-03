@@ -18,7 +18,7 @@ func TestVersioningBucketCreateSuspend(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 1)
 	enableVersioning(t, s, b)
 	out, err := s.client.GetBucketVersioning(context.Background(), &s3.GetBucketVersioningInput{Bucket: aws.String(b)})
 	if err != nil || out.Status != types.BucketVersioningStatusEnabled {
@@ -36,7 +36,7 @@ func TestVersioningObjCreateReadRemove(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 2)
 	enableVersioning(t, s, b)
 	key := "key"
 	putOut := put(t, s, b, key, "body", nil)
@@ -63,7 +63,7 @@ func TestVersioningObjPlainNullVersionRemoval(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 4)
 	key := "foo"
 	put(t, s, b, key, "foo data", nil)
 	enableVersioning(t, s, b)
@@ -83,7 +83,7 @@ func TestVersioningObjPlainNullVersionOverwrite(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 5)
 	key := "foo"
 	put(t, s, b, key, "foo zzz", nil)
 	enableVersioning(t, s, b)
@@ -113,7 +113,7 @@ func TestVersioningObjPlainNullVersionOverwriteSuspended(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 6)
 	key := "foo"
 	put(t, s, b, key, "foo zzz", nil)
 	enableVersioning(t, s, b)
@@ -138,7 +138,7 @@ func TestVersioningObjSuspendVersions(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 7)
 	enableVersioning(t, s, b)
 	key := "obj"
 	versionIDs := make([]string, 0, 8)
@@ -193,7 +193,7 @@ func TestVersioningObjCreateVersionsRemoveAll(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 8)
 	enableVersioning(t, s, b)
 	key := "test_versioning_obj_create_versions_remove_all"
 	ids := make([]string, 0, 10)
@@ -217,7 +217,7 @@ func TestVersioningObjCreateVersionsRemoveSpecialNames(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 9)
 	enableVersioning(t, s, b)
 	for _, key := range []string{"_", ":", " "} {
 		ids := make([]string, 0, 10)
@@ -242,7 +242,7 @@ func TestVersioningObjCreateOverwriteMultipart(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 10)
 	enableVersioning(t, s, b)
 	key := "test_versioning_obj_create_overwrite_multipart"
 	versionIDs := make([]string, 0, 3)
@@ -280,7 +280,7 @@ func TestVersioningObjMixPutAndMultipart(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 33)
 	enableVersioning(t, s, b)
 	key := "test_versioning_obj_mix_put_and_multipart"
 	versionIDs := make([]string, 0, 4)
@@ -337,7 +337,7 @@ func TestVersioningObjListMarker(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 11)
 	enableVersioning(t, s, b)
 	key1, key2 := "obj", "obj-1"
 	ids1, ids2 := make([]string, 0, 5), make([]string, 0, 5)
@@ -382,7 +382,7 @@ func TestVersioningCopyObjVersion(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 12)
 	enableVersioning(t, s, b)
 	key := "obj"
 	versionIDs := make([]string, 0, 3)
@@ -400,7 +400,7 @@ func TestVersioningCopyObjVersion(t *testing.T) {
 			t.Fatalf("same-bucket copy[%d] body mismatch", i)
 		}
 	}
-	other := s.bucket(t)
+	other := s.bucket(t, 12)
 	for i, id := range versionIDs {
 		target := fmt.Sprintf("key_%d", i)
 		copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(other), Key: aws.String(target), CopySource: copySource(b, key, id)})
@@ -419,7 +419,7 @@ func TestVersioningMultiObjectDelete(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 13)
 	enableVersioning(t, s, b)
 	key := "key"
 	objects := make([]types.ObjectIdentifier, 0, 2)
@@ -452,7 +452,7 @@ func TestVersioningMultiObjectDeleteWithMarker(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 14)
 	enableVersioning(t, s, b)
 	key := "key"
 	for i := 0; i < 2; i++ {
@@ -497,7 +497,7 @@ func TestVersioningMultiObjectDeleteWithMarkerCreate(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 15)
 	enableVersioning(t, s, b)
 	key := "key"
 	if _, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)}); err != nil {
@@ -514,7 +514,7 @@ func TestVersionedObjectAcl(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 16)
 	enableVersioning(t, s, b)
 	versionIDs := make([]string, 0, 3)
 	for i := 0; i < 3; i++ {
@@ -539,7 +539,7 @@ func TestVersionedObjectAclNoVersionSpecified(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 17)
 	enableVersioning(t, s, b)
 	for i := 0; i < 3; i++ {
 		put(t, s, b, "xyz", fmt.Sprintf("content-%d", i), nil)
@@ -569,7 +569,7 @@ func TestVersionedConcurrentObjectCreateAndRemove(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 18)
 	enableVersioning(t, s, b)
 	key := "my_obj"
 	for round := 0; round < 3; round++ {
@@ -623,7 +623,7 @@ func TestVersioningBucketAtomicUploadReturnVersionId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 19)
 	enableVersioning(t, s, b)
 	key := "test_versioning_bucket_atomic_upload_return_version_id"
 	putOut := put(t, s, b, key, "bar", nil)
@@ -641,7 +641,7 @@ func TestVersioningBucketMultipartUploadReturnVersionId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 20)
 	enableVersioning(t, s, b)
 	key := "test_versioning_bucket_multipart_upload_return_version_id"
 	out := completeVersionedMultipart(t, s.client, b, key, deterministicBody(50*1024*1024), map[string]string{"foo": "baz"})
@@ -659,7 +659,7 @@ func TestVersioningGetObjectHead(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 21)
 	enableVersioning(t, s, b)
 	key := "test_versioning_get_object_head"
 	versionIDs := make([]string, 0, 5)
@@ -680,7 +680,7 @@ func TestVersioningLatest(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 22)
 	enableVersioning(t, s, b)
 	key := "test_versioning_latest"
 	versionIDs := make([]string, 0, 5)
@@ -705,7 +705,7 @@ func TestVersioningInvalidVersionId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 23)
 	enableVersioning(t, s, b)
 	put(t, s, b, "key", "body", nil)
 
@@ -718,7 +718,7 @@ func TestVersioningCopyObject(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 24)
 	enableVersioning(t, s, b)
 	sourceKey, targetKey, content := "source", "target", "content-version1"
 	source := put(t, s, b, sourceKey, content, nil)
@@ -769,7 +769,7 @@ func TestVersioningUnversionedAllVersionId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 25)
 	key := "test_versioning_unversioned_all_version_id"
 	multipartKey, copyKey, content := key+"-multipart", key+"-copy", "testContent"
 	putOut := put(t, s, b, key, content, nil)
@@ -817,7 +817,7 @@ func TestVersioningEnabledAllVersionId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 26)
 	enableVersioning(t, s, b)
 	key := "test_versioning_enabled_all_version_id"
 	multipartKey, copyKey, content := key+"-multipart", key+"-copy", "testContent"
@@ -877,7 +877,7 @@ func TestVersioningSuspendedAllVersionId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 27)
 	suspendVersioning(t, s, b)
 	key := "test_versioning_suspended_all_version_id"
 	multipartKey, copyKey, content := key+"-multipart", key+"-copy", "testContent"
@@ -926,7 +926,7 @@ func TestVersioningListVersionsOffEnabledSuspended(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 28)
 	key := "test_versioning_list_versions_off_enabled_suspended"
 	contentOff, contentEnabled, contentSuspended := "content-off", "content-enabled", "content-suspended"
 	off := put(t, s, b, key, contentOff, nil)
@@ -995,7 +995,7 @@ func TestVersioningListVersionsOffEnabledSuspendedDifferentKeys(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 29)
 	keyOff := "test_versioning_list_versions_off"
 	keyEnabled := "test_versioning_list_versions_enabled"
 	keySuspended := "test_versioning_list_versions_suspended"
@@ -1069,7 +1069,7 @@ func TestVersioningDeleteNullVersionAfterSuspend(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 30)
 	key := "foo"
 	put(t, s, b, key, "content-off", nil)
 	enableVersioning(t, s, b)
@@ -1101,7 +1101,7 @@ func TestVersioningListVersionsMultipleEnabledThenSuspended(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 31)
 	key := "test_versioning_list_versions_multiple_enabled_then_suspended"
 	put(t, s, b, key, "content-off", nil)
 
@@ -1152,7 +1152,7 @@ func TestVersioningHeadObjectDeleteMarker(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 32)
 	enableVersioning(t, s, b)
 	key := "key"
 	putOut := put(t, s, b, key, "body", nil)

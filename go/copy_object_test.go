@@ -19,7 +19,7 @@ func TestObjectCopyZeroSize(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 1)
 	source, target := "test_object_copy_zero_size-source", "test_object_copy_zero_size-target"
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(""))}); err != nil {
 		t.Fatal(err)
@@ -37,7 +37,7 @@ func TestObjectCopySameBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 2)
 	source, target := "test_object_copy_same_bucket-source", "test_object_copy_same_bucket-target"
 	body := source
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
@@ -55,7 +55,7 @@ func TestObjectCopyVerifyContentType(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 3)
 	source, target := "test_object_copy_verify_content_type-source", "test_object_copy_verify_content_type-target"
 	body, contentType := source, "audio/ogg"
 	metadata := map[string]string{"source": "value1", "target": "value2"}
@@ -81,7 +81,7 @@ func TestObjectCopyToItself(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 4)
 	source := "test_object_copy_to_itself-source"
 	body := source
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
@@ -96,7 +96,7 @@ func TestObjectCopyToItselfWithMetadata(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 5)
 	source := "test_object_copy_to_itself_with_metadata-source"
 	body := source
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
@@ -118,7 +118,7 @@ func TestObjectCopyDiffBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	sourceBucket, targetBucket := s.bucket(t), s.bucket(t)
+	sourceBucket, targetBucket := s.bucket(t, 6), s.bucket(t, 6)
 	source, target := "test_object_copy_diff_bucket-source", "test_object_copy_diff_bucket-target"
 	body := source
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(sourceBucket), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
@@ -137,7 +137,7 @@ func TestObjectCopyNotOwnedBucket(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 7)
 	source := "test_object_copy_not_owned_bucket-source"
 	body := source
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
@@ -165,7 +165,7 @@ func TestObjectCopyNotOwnedObjectBucket(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
 	ctx := context.Background()
-	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 8)
 	source, target := "test_object_copy_not_owned_object_bucket-source", "test_object_copy_not_owned_object_bucket-target"
 	body := source
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
@@ -190,7 +190,7 @@ func TestObjectCopyCannedAcl(t *testing.T) {
 	s := newSuite(t)
 	requireAltUser(t, s)
 	ctx := context.Background()
-	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 9)
 	source, target := "test_object_copy_canned_acl-source", "test_object_copy_canned_acl-target"
 	body := source
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
@@ -222,7 +222,7 @@ func TestObjectCopyRetainingMetadata(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	for _, size := range []int{3, 1024 * 1024} {
-		b := s.bucket(t)
+		b := s.bucket(t, 10)
 		source, target := "test_object_copy_retaining_metadata-source", "test_object_copy_retaining_metadata-target"
 		body, contentType := deterministicBody(size), "audio/ogg"
 		metadata := map[string]string{"source": "value1", "target": "value2"}
@@ -244,7 +244,7 @@ func TestObjectCopyReplacingMetadata(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	for _, size := range []int{3, 1024 * 1024} {
-		b := s.bucket(t)
+		b := s.bucket(t, 11)
 		source, target := "test_object_copy_replacing_metadata-source", "test_object_copy_replacing_metadata-target"
 		body, contentType := deterministicBody(size), "audio/ogg"
 		metadata := map[string]string{"source": "value1", "target": "value2"}
@@ -270,7 +270,7 @@ func TestObjectCopyBucketNotFound(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 12)
 	source := "test_object_copy_bucket_not_found-source"
 	body := source
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
@@ -285,7 +285,7 @@ func TestObjectCopyKeyNotFound(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 13)
 	source := "test_object_copy_key_not_found-source"
 	body := source
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
@@ -300,7 +300,7 @@ func TestObjectCopyVersioningBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 14)
 	enableVersioning(t, s, b)
 	source, target := "test_object_copy_versioning_bucket-source", "test_object_copy_versioning_bucket-target"
 	body := string(deterministicBody(5))
@@ -323,13 +323,13 @@ func TestObjectCopyVersioningBucket(t *testing.T) {
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target2), CopySource: copySource(b, target, targetVersion)})
 	assertCopied(t, s.client, b, target2, body, nil)
 
-	targetBucket := s.bucket(t)
+	targetBucket := s.bucket(t, 14)
 	enableVersioning(t, s, targetBucket)
 	target3 := target + "-3"
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(targetBucket), Key: aws.String(target3), CopySource: copySource(b, source, sourceVersion)})
 	assertCopied(t, s.client, targetBucket, target3, body, nil)
 
-	thirdBucket := s.bucket(t)
+	thirdBucket := s.bucket(t, 14)
 	enableVersioning(t, s, thirdBucket)
 	target4 := target + "-4"
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(thirdBucket), Key: aws.String(target4), CopySource: copySource(b, source, sourceVersion)})
@@ -345,7 +345,7 @@ func TestObjectCopyVersioningUrlEncoding(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 15)
 	enableVersioning(t, s, b)
 	source, target := "source?encoded", "target&encoded"
 	body := "test_object_copy_versioning_url_encoding-source"
@@ -368,7 +368,7 @@ func TestObjectCopyVersioningUrlEncoding(t *testing.T) {
 func TestObjectCopyVersioningMultipartUpload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	sourceBucket := s.bucket(t)
+	sourceBucket := s.bucket(t, 16)
 	enableVersioning(t, s, sourceBucket)
 	body := deterministicBody(50 * 1024 * 1024)
 	metadata := map[string]string{"foo": "bar"}
@@ -396,12 +396,12 @@ func TestObjectCopyVersioningMultipartUpload(t *testing.T) {
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(sourceBucket), Key: aws.String("target-2"), CopySource: copySource(sourceBucket, "target", aws.ToString(targetHead.VersionId))})
 	assertTarget(sourceBucket, "target-2")
 
-	targetBucket := s.bucket(t)
+	targetBucket := s.bucket(t, 16)
 	enableVersioning(t, s, targetBucket)
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(targetBucket), Key: aws.String("target-3"), CopySource: copySource(sourceBucket, "source", sourceVersion)})
 	assertTarget(targetBucket, "target-3")
 
-	thirdBucket := s.bucket(t)
+	thirdBucket := s.bucket(t, 16)
 	enableVersioning(t, s, thirdBucket)
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(thirdBucket), Key: aws.String("target-4"), CopySource: copySource(sourceBucket, "source", sourceVersion)})
 	assertTarget(thirdBucket, "target-4")
@@ -414,7 +414,7 @@ func TestObjectCopyVersioningMultipartUpload(t *testing.T) {
 func TestCopyObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 17)
 	source, target := "test_copy_object_if_match_good-source", "test_copy_object_if_match_good-target"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -429,7 +429,7 @@ func TestCopyObjectIfMatchGood(t *testing.T) {
 func TestCopyObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 18)
 	source, target := "test_copy_object_if_match_failed-source", "test_copy_object_if_match_failed-target"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -442,7 +442,7 @@ func TestCopyObjectIfMatchFailed(t *testing.T) {
 func TestCopyObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 19)
 	source, target := "test_copy_object_if_none_match_good-source", "test_copy_object_if_none_match_good-target"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -457,7 +457,7 @@ func TestCopyObjectIfNoneMatchGood(t *testing.T) {
 func TestCopyObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 20)
 	source, target := "test_copy_object_if_none_match_failed-source", "test_copy_object_if_none_match_failed-target"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -470,7 +470,7 @@ func TestCopyObjectIfNoneMatchFailed(t *testing.T) {
 func TestCopyObjectIfModifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 21)
 	source, target := "test_copy_object_if_modified_since_good-source", "test_copy_object_if_modified_since_good-target"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -486,7 +486,7 @@ func TestCopyObjectIfModifiedSinceGood(t *testing.T) {
 func TestCopyObjectIfModifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 22)
 	source, target := "test_copy_object_if_modified_since_failed-source", "test_copy_object_if_modified_since_failed-target"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -502,7 +502,7 @@ func TestCopyObjectIfModifiedSinceFailed(t *testing.T) {
 func TestCopyObjectIfUnmodifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 23)
 	source, target := "test_copy_object_if_unmodified_since_good-source", "test_copy_object_if_unmodified_since_good-target"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -518,7 +518,7 @@ func TestCopyObjectIfUnmodifiedSinceGood(t *testing.T) {
 func TestCopyObjectIfUnmodifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 24)
 	source, target := "test_copy_object_if_unmodified_since_failed-source", "test_copy_object_if_unmodified_since_failed-target"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -532,7 +532,7 @@ func TestCopyObjectIfUnmodifiedSinceFailed(t *testing.T) {
 func TestCopyObjectIfMatchWithIfUnmodifiedSince(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 25)
 	source, target := "test_copy_object_if_match_with_if_unmodified_since-source", "test_copy_object_if_match_with_if_unmodified_since-target"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -548,7 +548,7 @@ func TestCopyObjectIfMatchWithIfUnmodifiedSince(t *testing.T) {
 func TestCopyObjectIfNoneMatchWithIfModifiedSince(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 26)
 	source, target := "test_copy_object_if_none_match_with_if_modified_since-source", "test_copy_object_if_none_match_with_if_modified_since-target"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -562,7 +562,7 @@ func TestCopyObjectIfNoneMatchWithIfModifiedSince(t *testing.T) {
 func TestCopyObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 27)
 	source, target := "test_copy_object_if_match_and_if_none_match-source", "test_copy_object_if_match_and_if_none_match-target"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -575,7 +575,7 @@ func TestCopyObjectIfMatchAndIfNoneMatch(t *testing.T) {
 func TestCopyObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 28)
 	source, target := "test_copy_object_if_match_and_if_none_match_any-source", "test_copy_object_if_match_and_if_none_match_any-target"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -588,7 +588,7 @@ func TestCopyObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
 func TestCopyObjectDestinationIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 29)
 	source, target := "test_copy_object_destination_if_match_good-source", "test_copy_object_destination_if_match_good-target"
 	put(t, s, b, source, source, nil)
 	dst := put(t, s, b, target, "old", nil)
@@ -603,7 +603,7 @@ func TestCopyObjectDestinationIfMatchGood(t *testing.T) {
 func TestCopyObjectDestinationIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 30)
 	source, target := "test_copy_object_destination_if_match_failed-source", "test_copy_object_destination_if_match_failed-target"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -617,7 +617,7 @@ func TestCopyObjectDestinationIfMatchFailed(t *testing.T) {
 func TestCopyObjectDestinationIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 31)
 	source, target := "test_copy_object_destination_if_none_match_good-source", "test_copy_object_destination_if_none_match_good-target-new"
 	put(t, s, b, source, source, nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), IfNoneMatch: aws.String("*")}
@@ -631,7 +631,7 @@ func TestCopyObjectDestinationIfNoneMatchGood(t *testing.T) {
 func TestCopyObjectDestinationIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 32)
 	source, target := "test_copy_object_destination_if_none_match_failed-source", "test_copy_object_destination_if_none_match_failed-target"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
@@ -645,7 +645,7 @@ func TestCopyObjectDestinationIfNoneMatchFailed(t *testing.T) {
 func TestCopyObjectDestinationIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 33)
 	source, target := "test_copy_object_destination_if_match_and_if_none_match-source", "test_copy_object_destination_if_match_and_if_none_match-target"
 	put(t, s, b, source, source, nil)
 	dst := put(t, s, b, target, "old", nil)
@@ -659,7 +659,7 @@ func TestCopyObjectDestinationIfMatchAndIfNoneMatch(t *testing.T) {
 func TestCopyObjectDestinationIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 34)
 	source, target := "test_copy_object_destination_if_match_and_if_none_match_any-source", "test_copy_object_destination_if_match_and_if_none_match_any-target"
 	put(t, s, b, source, source, nil)
 	dst := put(t, s, b, target, "old", nil)
@@ -673,7 +673,7 @@ func TestCopyObjectDestinationIfMatchAndIfNoneMatchAny(t *testing.T) {
 func TestCopyObjectSourceIfMatchWithDestinationIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 35)
 	source, target := "test_copy_object_source_if_match_with_destination_if_none_match-source", "test_copy_object_source_if_match_with_destination_if_none_match-target-new"
 	src := put(t, s, b, source, source, nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), CopySourceIfMatch: src.ETag, IfNoneMatch: aws.String("*")}
@@ -686,135 +686,135 @@ func TestCopyObjectSourceIfMatchWithDestinationIfNoneMatch(t *testing.T) {
 // [source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyNorSrcToNorBucketAndObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, false, false, false, false, 1024)
-	testCopyObjectEncryption(t, false, false, false, false, 256*1024)
-	testCopyObjectEncryption(t, false, false, false, false, 1024*1024)
+	testCopyObjectEncryption(t, false, false, false, false, 1024, 36)
+	testCopyObjectEncryption(t, false, false, false, false, 256*1024, 36)
+	testCopyObjectEncryption(t, false, false, false, false, 1024*1024, 36)
 }
 
 // [source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyNorSrcToNorBucketEncryptionObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, false, false, false, true, 1024)
-	testCopyObjectEncryption(t, false, false, false, true, 256*1024)
-	testCopyObjectEncryption(t, false, false, false, true, 1024*1024)
+	testCopyObjectEncryption(t, false, false, false, true, 1024, 37)
+	testCopyObjectEncryption(t, false, false, false, true, 256*1024, 37)
+	testCopyObjectEncryption(t, false, false, false, true, 1024*1024, 37)
 }
 
 // [source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyNorSrcToEncryptionBucketNorObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, false, false, true, false, 1024)
-	testCopyObjectEncryption(t, false, false, true, false, 256*1024)
-	testCopyObjectEncryption(t, false, false, true, false, 1024*1024)
+	testCopyObjectEncryption(t, false, false, true, false, 1024, 38)
+	testCopyObjectEncryption(t, false, false, true, false, 256*1024, 38)
+	testCopyObjectEncryption(t, false, false, true, false, 1024*1024, 38)
 }
 
 // [source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyNorSrcToEncryptionBucketAndObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, false, false, true, true, 1024)
-	testCopyObjectEncryption(t, false, false, true, true, 256*1024)
-	testCopyObjectEncryption(t, false, false, true, true, 1024*1024)
+	testCopyObjectEncryption(t, false, false, true, true, 1024, 39)
+	testCopyObjectEncryption(t, false, false, true, true, 256*1024, 39)
+	testCopyObjectEncryption(t, false, false, true, true, 1024*1024, 39)
 }
 
 // [source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionSrcToNorBucketAndObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, true, false, false, false, 1024)
-	testCopyObjectEncryption(t, true, false, false, false, 256*1024)
-	testCopyObjectEncryption(t, true, false, false, false, 1024*1024)
+	testCopyObjectEncryption(t, true, false, false, false, 1024, 40)
+	testCopyObjectEncryption(t, true, false, false, false, 256*1024, 40)
+	testCopyObjectEncryption(t, true, false, false, false, 1024*1024, 40)
 }
 
 // [source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionSrcToNorBucketEncryptionObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, true, false, false, true, 1024)
-	testCopyObjectEncryption(t, true, false, false, true, 256*1024)
-	testCopyObjectEncryption(t, true, false, false, true, 1024*1024)
+	testCopyObjectEncryption(t, true, false, false, true, 1024, 41)
+	testCopyObjectEncryption(t, true, false, false, true, 256*1024, 41)
+	testCopyObjectEncryption(t, true, false, false, true, 1024*1024, 41)
 }
 
 // [source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionSrcToEncryptionBucketNorObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, true, false, true, false, 1024)
-	testCopyObjectEncryption(t, true, false, true, false, 256*1024)
-	testCopyObjectEncryption(t, true, false, true, false, 1024*1024)
+	testCopyObjectEncryption(t, true, false, true, false, 1024, 42)
+	testCopyObjectEncryption(t, true, false, true, false, 256*1024, 42)
+	testCopyObjectEncryption(t, true, false, true, false, 1024*1024, 42)
 }
 
 // [source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionSrcToEncryptionBucketAndObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, true, false, true, true, 1024)
-	testCopyObjectEncryption(t, true, false, true, true, 256*1024)
-	testCopyObjectEncryption(t, true, false, true, true, 1024*1024)
+	testCopyObjectEncryption(t, true, false, true, true, 1024, 43)
+	testCopyObjectEncryption(t, true, false, true, true, 256*1024, 43)
+	testCopyObjectEncryption(t, true, false, true, true, 1024*1024, 43)
 }
 
 // [source bucket : encryption, source obj : normal, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketNorObjToNorBucketAndObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, false, true, false, false, 1024)
-	testCopyObjectEncryption(t, false, true, false, false, 256*1024)
-	testCopyObjectEncryption(t, false, true, false, false, 1024*1024)
+	testCopyObjectEncryption(t, false, true, false, false, 1024, 44)
+	testCopyObjectEncryption(t, false, true, false, false, 256*1024, 44)
+	testCopyObjectEncryption(t, false, true, false, false, 1024*1024, 44)
 }
 
 // [source bucket : encryption, source obj : normal, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketNorObjToNorBucketEncryptionObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, false, true, false, true, 1024)
-	testCopyObjectEncryption(t, false, true, false, true, 256*1024)
-	testCopyObjectEncryption(t, false, true, false, true, 1024*1024)
+	testCopyObjectEncryption(t, false, true, false, true, 1024, 45)
+	testCopyObjectEncryption(t, false, true, false, true, 256*1024, 45)
+	testCopyObjectEncryption(t, false, true, false, true, 1024*1024, 45)
 }
 
 // [source bucket : encryption, source obj : normal, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketNorObjToEncryptionBucketNorObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, false, true, true, false, 1024)
-	testCopyObjectEncryption(t, false, true, true, false, 256*1024)
-	testCopyObjectEncryption(t, false, true, true, false, 1024*1024)
+	testCopyObjectEncryption(t, false, true, true, false, 1024, 46)
+	testCopyObjectEncryption(t, false, true, true, false, 256*1024, 46)
+	testCopyObjectEncryption(t, false, true, true, false, 1024*1024, 46)
 }
 
 // [source bucket : encryption, source obj : normal, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketNorObjToEncryptionBucketAndObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, false, true, true, true, 1024)
-	testCopyObjectEncryption(t, false, true, true, true, 256*1024)
-	testCopyObjectEncryption(t, false, true, true, true, 1024*1024)
+	testCopyObjectEncryption(t, false, true, true, true, 1024, 47)
+	testCopyObjectEncryption(t, false, true, true, true, 256*1024, 47)
+	testCopyObjectEncryption(t, false, true, true, true, 1024*1024, 47)
 }
 
 // [source bucket : encryption, source obj : encryption, dest bucket : normal, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketAndObjToNorBucketAndObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, true, true, false, false, 1024)
-	testCopyObjectEncryption(t, true, true, false, false, 256*1024)
-	testCopyObjectEncryption(t, true, true, false, false, 1024*1024)
+	testCopyObjectEncryption(t, true, true, false, false, 1024, 48)
+	testCopyObjectEncryption(t, true, true, false, false, 256*1024, 48)
+	testCopyObjectEncryption(t, true, true, false, false, 1024*1024, 48)
 }
 
 // [source bucket : encryption, source obj : encryption, dest bucket : normal, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketAndObjToNorBucketEncryptionObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, true, true, false, true, 1024)
-	testCopyObjectEncryption(t, true, true, false, true, 256*1024)
-	testCopyObjectEncryption(t, true, true, false, true, 1024*1024)
+	testCopyObjectEncryption(t, true, true, false, true, 1024, 49)
+	testCopyObjectEncryption(t, true, true, false, true, 256*1024, 49)
+	testCopyObjectEncryption(t, true, true, false, true, 1024*1024, 49)
 }
 
 // [source bucket : encryption, source obj : encryption, dest bucket : encryption, dest obj : normal] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketAndObjToEncryptionBucketNorObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, true, true, true, false, 1024)
-	testCopyObjectEncryption(t, true, true, true, false, 256*1024)
-	testCopyObjectEncryption(t, true, true, true, false, 1024*1024)
+	testCopyObjectEncryption(t, true, true, true, false, 1024, 50)
+	testCopyObjectEncryption(t, true, true, true, false, 256*1024, 50)
+	testCopyObjectEncryption(t, true, true, true, false, 1024*1024, 50)
 }
 
 // [source bucket : encryption, source obj : encryption, dest bucket : encryption, dest obj : encryption] 오브젝트 복사 성공을 확인하는 테스트
 func TestCopyEncryptionBucketAndObjToEncryptionBucketAndObj(t *testing.T) {
 	t.Parallel()
-	testCopyObjectEncryption(t, true, true, true, true, 1024)
-	testCopyObjectEncryption(t, true, true, true, true, 256*1024)
-	testCopyObjectEncryption(t, true, true, true, true, 1024*1024)
+	testCopyObjectEncryption(t, true, true, true, true, 1024, 51)
+	testCopyObjectEncryption(t, true, true, true, true, 256*1024, 51)
+	testCopyObjectEncryption(t, true, true, true, true, 1024*1024, 51)
 }
 
-func testCopyObjectEncryption(t *testing.T, sourceObjectEncryption, sourceBucketEncryption, targetBucketEncryption, targetObjectEncryption bool, size int) {
+func testCopyObjectEncryption(t *testing.T, sourceObjectEncryption, sourceBucketEncryption, targetBucketEncryption, targetObjectEncryption bool, size int, id ...int) {
 	t.Helper()
 	s := newSuite(t)
-	sourceBucket, targetBucket := s.bucket(t), s.bucket(t)
+	sourceBucket, targetBucket := s.bucket(t, id...), s.bucket(t, id...)
 	source, target := "source", "target"
 	body := bytes.Repeat([]byte("a"), size)
 
@@ -866,7 +866,7 @@ func TestCopyToNormalSource(t *testing.T) {
 	s := newSuite(t)
 	for _, targetMode := range []string{"normal", "sse-s3", "sse-c"} {
 		for _, size := range []int{1024, 256 * 1024, 1024 * 1024} {
-			sourceBucket, targetBucket := s.bucket(t), s.bucket(t)
+			sourceBucket, targetBucket := s.bucket(t, 52), s.bucket(t, 52)
 			if targetMode == "sse-c" {
 				unblockSseC(t, s, targetBucket)
 			}
@@ -919,7 +919,7 @@ func TestCopyToSseS3Source(t *testing.T) {
 	s := newSuite(t)
 	for _, targetMode := range []string{"normal", "sse-s3", "sse-c"} {
 		for _, size := range []int{1024, 256 * 1024, 1024 * 1024} {
-			sourceBucket, targetBucket := s.bucket(t), s.bucket(t)
+			sourceBucket, targetBucket := s.bucket(t, 53), s.bucket(t, 53)
 			if targetMode == "sse-c" {
 				unblockSseC(t, s, targetBucket)
 			}
@@ -972,7 +972,7 @@ func TestCopyToSseCSource(t *testing.T) {
 	s := newSuite(t)
 	for _, targetMode := range []string{"normal", "sse-s3", "sse-c"} {
 		for _, size := range []int{1024, 256 * 1024, 1024 * 1024} {
-			sourceBucket, targetBucket := s.bucket(t), s.bucket(t)
+			sourceBucket, targetBucket := s.bucket(t, 54), s.bucket(t, 54)
 			unblockSseC(t, s, sourceBucket)
 			if targetMode == "sse-c" {
 				unblockSseC(t, s, targetBucket)
@@ -1027,7 +1027,7 @@ func TestCopyToSseCSource(t *testing.T) {
 func TestCopyToDeletedObject(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 55)
 	put(t, s, b, "source", "body", nil)
 	if _, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String("source")}); err != nil {
 		t.Fatal(err)
@@ -1040,7 +1040,7 @@ func TestCopyToDeletedObject(t *testing.T) {
 func TestCopyToDeleteMarkerObject(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 56)
 	enableVersioning(t, s, b)
 	put(t, s, b, "source", "body", nil)
 	if _, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String("source")}); err != nil {
@@ -1055,7 +1055,7 @@ func TestObjectVersioningCopyToItselfWithMetadata(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 57)
 	enableVersioning(t, s, b)
 	source := "test_object_versioning_copy_to_itself_with_metadata-source"
 	body := source
@@ -1087,7 +1087,7 @@ func TestObjectCopyToItselfWithMetadataOverwrite(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 58)
 	source := "test_object_copy_to_itself_with_metadata_overwrite-source"
 	body := source
 	metadata := map[string]string{"foo": "bar"}
@@ -1115,7 +1115,7 @@ func TestObjectVersioningCopyToItselfWithMetadataOverwrite(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	b := s.bucket(t)
+	b := s.bucket(t, 59)
 	enableVersioning(t, s, b)
 	source := "test_object_versioning_copy_to_itself_with_metadata_overwrite-source"
 	body := source
@@ -1152,7 +1152,7 @@ func TestObjectVersioningCopyToItselfWithMetadataOverwrite(t *testing.T) {
 func TestCopyRevokeSseAlgorithm(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := ssecBucket(t, s)
+	b := ssecBucket(t, s, 60)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(b, "source", []byte("body"))); err != nil {
 		t.Fatal(err)
 	}
@@ -1164,7 +1164,7 @@ func TestCopyRevokeSseAlgorithm(t *testing.T) {
 func TestCopyObjectChecksumUseChunkEncoding(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 61)
 	for _, algorithm := range []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmSha1, types.ChecksumAlgorithmSha256} {
 		body := []byte(string(algorithm))
 		input := &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String("source-" + string(algorithm)), Body: bytes.NewReader(body), ChecksumAlgorithm: algorithm}
@@ -1193,7 +1193,7 @@ func TestCopyObjectChecksumUseChunkEncoding(t *testing.T) {
 func TestCopyObjectMetadataAndTags(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 62)
 	source, target := "source", "target"
 	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source)), Metadata: map[string]string{"foo": "bar"}, Tagging: aws.String("tag1=value1")}); err != nil {
 		t.Fatal(err)
@@ -1251,4 +1251,3 @@ func assertCopied(t *testing.T, client *s3.Client, bucket, key, want string, inp
 		t.Fatalf("body=%q want=%q err=%v", body, want, err)
 	}
 }
-

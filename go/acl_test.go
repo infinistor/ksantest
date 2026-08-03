@@ -34,7 +34,7 @@ func TestPrivateBucketAndObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 1)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestPrivateBucketPublicReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 2)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestPrivateBucketPublicRWObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 3)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -217,7 +217,7 @@ func TestPrivateBucketAuthenticatedReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 4)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -278,7 +278,7 @@ func TestPrivateBucketBucketOwnerReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 5)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -339,7 +339,7 @@ func TestPrivateBucketBucketOwnerReadObjectUploadAltUser(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 6)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -400,7 +400,7 @@ func TestPrivateBucketBucketOwnerFullControlObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 7)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -461,7 +461,7 @@ func TestPublicReadBucketPrivateObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 8)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -522,7 +522,7 @@ func TestPublicReadBucketAndObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 9)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -583,7 +583,7 @@ func TestPublicReadBucketPublicRWObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 10)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -644,7 +644,7 @@ func TestPublicReadBucketAuthenticatedReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 11)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -705,7 +705,7 @@ func TestPublicReadBucketBucketOwnerReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 12)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -766,7 +766,7 @@ func TestPublicReadBucketBucketOwnerFullControlObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 13)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -827,7 +827,7 @@ func TestPublicRWBucketPrivateObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 14)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -888,7 +888,7 @@ func TestPublicRWBucketPrivateObjectByAltUser(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 15)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -949,7 +949,7 @@ func TestPublicRWBucketPublicReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 16)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1010,7 +1010,7 @@ func TestPublicRWBucketPublicReadObjectByAltUser(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 17)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1071,7 +1071,7 @@ func TestPublicRWBucketPublicRWObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 18)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1132,7 +1132,7 @@ func TestPublicRWBucketPublicRWObjectByAltUser(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 19)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1193,7 +1193,7 @@ func TestPublicRWBucketAuthenticatedReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 20)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1254,7 +1254,7 @@ func TestPublicRWBucketAuthenticatedReadObjectByAltUser(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 21)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1315,7 +1315,7 @@ func TestPublicRWBucketBucketOwnerReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 22)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1376,7 +1376,7 @@ func TestPublicRWBucketBucketOwnerReadObjectByAltUser(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 23)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1437,7 +1437,7 @@ func TestPublicRWBucketBucketOwnerFullControlObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 24)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1498,7 +1498,7 @@ func TestPublicRWBucketBucketOwnerFullControlObjectByAltUser(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 25)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1559,7 +1559,7 @@ func TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferred
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 26)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1620,7 +1620,7 @@ func TestAuthenticatedReadBucketPrivateObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 27)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1681,7 +1681,7 @@ func TestAuthenticatedReadBucketPublicReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 28)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1742,7 +1742,7 @@ func TestAuthenticatedReadBucketPublicRWObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 29)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1803,7 +1803,7 @@ func TestAuthenticatedReadBucketAndObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 30)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1864,7 +1864,7 @@ func TestAuthenticatedReadBucketBucketOwnerReadObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 31)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1925,7 +1925,7 @@ func TestAuthenticatedReadBucketBucketOwnerFullControlObject(t *testing.T) {
 	if tc.ownerFirst {
 		ownership = types.ObjectOwnershipBucketOwnerPreferred
 	}
-	bucket := ownershipBucket(t, s, ownership)
+	bucket := ownershipBucket(t, s, ownership, 32)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: tc.bucketACL}); err != nil {
 		t.Fatalf("PutBucketAcl: %v", err)
 	}
@@ -1979,7 +1979,7 @@ func TestPrivateBucketList(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 33)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPrivate}); err != nil {
 		t.Fatal(err)
 	}
@@ -1998,7 +1998,7 @@ func TestPublicReadBucketList(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 34)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicRead}); err != nil {
 		t.Fatal(err)
 	}
@@ -2017,7 +2017,7 @@ func TestPublicRWBucketList(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 35)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
@@ -2036,7 +2036,7 @@ func TestAuthenticatedReadBucketList(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 36)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLAuthenticatedRead}); err != nil {
 		t.Fatal(err)
 	}
@@ -2055,7 +2055,7 @@ func TestBucketPermissionAltUserFullControl(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 37)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), AccessControlPolicy: aclPolicy(s, types.PermissionFullControl)}); err != nil {
 		t.Fatal(err)
 	}
@@ -2068,7 +2068,7 @@ func TestBucketPermissionAltUserRead(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 38)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), AccessControlPolicy: aclPolicy(s, types.PermissionRead)}); err != nil {
 		t.Fatal(err)
 	}
@@ -2081,7 +2081,7 @@ func TestBucketPermissionAltUserReadAcp(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 39)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), AccessControlPolicy: aclPolicy(s, types.PermissionReadAcp)}); err != nil {
 		t.Fatal(err)
 	}
@@ -2094,7 +2094,7 @@ func TestBucketPermissionAltUserWrite(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 40)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), AccessControlPolicy: aclPolicy(s, types.PermissionWrite)}); err != nil {
 		t.Fatal(err)
 	}
@@ -2107,7 +2107,7 @@ func TestBucketPermissionAltUserWriteAcp(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 41)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), AccessControlPolicy: aclPolicy(s, types.PermissionWriteAcp)}); err != nil {
 		t.Fatal(err)
 	}
@@ -2120,7 +2120,7 @@ func TestObjectPermissionAltUserFullControl(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 42)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
@@ -2149,7 +2149,7 @@ func TestObjectPermissionAltUserRead(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 43)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
@@ -2178,7 +2178,7 @@ func TestObjectPermissionAltUserReadAcp(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 44)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
@@ -2207,7 +2207,7 @@ func TestObjectPermissionAltUserWrite(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 45)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
@@ -2236,7 +2236,7 @@ func TestObjectPermissionAltUserWriteAcp(t *testing.T) {
 
 	s := newSuite(t)
 	requireAltUser(t, s)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 46)
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}

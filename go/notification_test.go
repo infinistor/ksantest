@@ -15,7 +15,7 @@ func TestNotificationGetEmpty(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 1)
 	out, err := s.client.GetBucketNotificationConfiguration(context.Background(), &s3.GetBucketNotificationConfigurationInput{Bucket: aws.String(bucket)})
 	if err != nil {
 		t.Fatalf("GetBucketNotificationConfiguration: %v", err)
@@ -24,34 +24,37 @@ func TestNotificationGetEmpty(t *testing.T) {
 		t.Fatalf("empty notification configuration = %#v", out)
 	}
 }
+
 // 버킷에 알람 설정이 가능한지 확인
 func TestNotificationPut(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
 	skipNotificationOnAWS(t, s)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 2)
 	putNotification(t, s, bucket, notificationConfiguration(s))
 }
+
 // 버킷에 알람 설정이 되어있는지 확인
 func TestNotificationGet(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
 	skipNotificationOnAWS(t, s)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 3)
 	want := notificationConfiguration(s)
 	putNotification(t, s, bucket, want)
 	out := getNotification(t, s, bucket)
 	assertNotification(t, out, want.LambdaFunctionConfigurations[0])
 }
+
 // 버킷에 알람 설정이 삭제되는지 확인
 func TestNotificationDelete(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
 	skipNotificationOnAWS(t, s)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 4)
 	want := notificationConfiguration(s)
 	putNotification(t, s, bucket, want)
 	assertNotification(t, getNotification(t, s, bucket), want.LambdaFunctionConfigurations[0])

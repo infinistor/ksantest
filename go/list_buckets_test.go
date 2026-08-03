@@ -55,7 +55,7 @@ func TestHeadBucket(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 4)
 	if _, err := s.client.HeadBucket(context.Background(), &s3.HeadBucketInput{Bucket: aws.String(bucket)}); err != nil {
 		t.Fatalf("HeadBucket: %v", err)
 	}

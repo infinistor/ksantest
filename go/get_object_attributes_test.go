@@ -21,7 +21,7 @@ func TestGetObjectAttributesBasic(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_object_attributes_basic"
+	b, key := s.bucket(t, 1), "test_get_object_attributes_basic"
 	putOut, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key))})
 	if err != nil {
 		t.Fatal(err)
@@ -40,7 +40,7 @@ func TestGetObjectAttributesSpecificAttributes(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_object_attributes_specific_attributes"
+	b, key := s.bucket(t, 2), "test_get_object_attributes_specific_attributes"
 	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key))}); err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestGetObjectAttributesMultipart(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_object_attributes_multipart"
+	b, key := s.bucket(t, 3), "test_get_object_attributes_multipart"
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key)})
 	if err != nil {
 		t.Fatal(err)
@@ -88,7 +88,7 @@ func TestGetObjectAttributesWithChecksum(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_object_attributes_with_checksum"
+	b, key := s.bucket(t, 4), "test_get_object_attributes_with_checksum"
 	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ChecksumAlgorithm: types.ChecksumAlgorithmSha256}); err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestGetObjectAttributesNonExistentObject(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 5)
 	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String("missing"), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
 	assertS3Error(t, err, 404, "NoSuchKey")
 }
@@ -122,7 +122,7 @@ func TestGetObjectAttributesNoAttributes(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 7)
 	put(t, s, b, "key", "body", nil)
 	_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String("key")})
 	if err == nil {
@@ -146,7 +146,7 @@ func TestGetObjectAttributesWithVersionId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 8)
 	enableVersioning(t, s, b)
 	first := put(t, s, b, "key", "first", nil)
 	second := put(t, s, b, "key", "second-version", nil)
@@ -162,7 +162,7 @@ func TestGetObjectAttributesInvalidVersionId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 9)
 	enableVersioning(t, s, b)
 	put(t, s, b, "key", "first", nil)
 	put(t, s, b, "key", "second-version", nil)
@@ -180,7 +180,7 @@ func TestGetObjectAttributesLargeMultipart(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_object_attributes_large_multipart"
+	b, key := s.bucket(t, 10), "test_get_object_attributes_large_multipart"
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key)})
 	if err != nil {
 		t.Fatal(err)
@@ -209,7 +209,7 @@ func TestGetObjectAttributesWithMetadata(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_object_attributes_with_metadata"
+	b, key := s.bucket(t, 11), "test_get_object_attributes_with_metadata"
 	putOut, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), Metadata: map[string]string{"custom-key1": "custom-value1", "custom-key2": "custom-value2"}})
 	if err != nil {
 		t.Fatal(err)
@@ -232,7 +232,7 @@ func TestGetObjectAttributesWithSSES3(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_object_attributes_with_sse_s3"
+	b, key := s.bucket(t, 12), "test_get_object_attributes_with_sse_s3"
 	putOut, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ServerSideEncryption: types.ServerSideEncryptionAes256})
 	if err != nil {
 		t.Fatal(err)
@@ -255,7 +255,7 @@ func TestGetObjectAttributesAllAttributes(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_object_attributes_all_attributes"
+	b, key := s.bucket(t, 15), "test_get_object_attributes_all_attributes"
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), ChecksumAlgorithm: types.ChecksumAlgorithmCrc64nvme, ChecksumType: types.ChecksumTypeFullObject})
 	if err != nil {
 		t.Fatal(err)

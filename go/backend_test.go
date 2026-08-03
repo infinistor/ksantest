@@ -37,7 +37,7 @@ func TestPutObjectVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket, key, body := s.bucket(t), "test_put_object_versioning", "test content"
+	bucket, key, body := s.bucket(t, 11), "test_put_object_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	out := mustBackendPut(t, backend, bucket, key, []byte(body), nil, "")
 	versionID := aws.ToString(out.VersionId)
@@ -54,7 +54,7 @@ func TestPutObjectVersioningWithVersionId(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 12)
 	sourceKey, targetKey := "test_put_object_versioning_with_version_id_source", "test_put_object_versioning_with_version_id_target"
 	enableVersioning(t, s, bucket)
 	source := put(t, s, bucket, sourceKey, "test content", nil)
@@ -73,7 +73,7 @@ func TestGetObjectVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket, key, body := s.bucket(t), "test_get_object_versioning", "test content"
+	bucket, key, body := s.bucket(t, 13), "test_get_object_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	source := put(t, s, bucket, key, body, nil)
 	versionID := aws.ToString(source.VersionId)
@@ -91,7 +91,7 @@ func TestDeleteObjectVersioning(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, key, body := s.bucket(t), "test_delete_object_versioning", "test content"
+	bucket, key, body := s.bucket(t, 14), "test_delete_object_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	source := put(t, s, bucket, key, body, nil)
 	versionID := aws.ToString(source.VersionId)
@@ -124,7 +124,7 @@ func TestDeleteObjectsVersioning(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, prefix, body := s.bucket(t), "test_delete_objects_versioning", "test content"
+	bucket, prefix, body := s.bucket(t, 15), "test_delete_objects_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	keys := make([]string, 5)
 	objects := make([]types.ObjectIdentifier, 5)
@@ -175,7 +175,7 @@ func TestHeadObjectVersioning(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, key, body := s.bucket(t), "test_head_object_versioning", "test content"
+	bucket, key, body := s.bucket(t, 16), "test_head_object_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	source := put(t, s, bucket, key, body, nil)
 	versionID := aws.ToString(source.VersionId)
@@ -199,7 +199,7 @@ func TestCopyObjectVersioning(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	sourceBucket, targetBucket := s.bucket(t), s.bucket(t)
+	sourceBucket, targetBucket := s.bucket(t, 17), s.bucket(t, 17)
 	sourceKey, intermediateKey, targetKey, body := "source_key", "source_key_2", "target_key", "test content"
 	enableVersioning(t, s, sourceBucket)
 	enableVersioning(t, s, targetBucket)
@@ -234,7 +234,7 @@ func TestMultipartUploadVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket, key := s.bucket(t), "test_multipart_upload_versioning"
+	bucket, key := s.bucket(t, 18), "test_multipart_upload_versioning"
 	enableVersioning(t, s, bucket)
 	body := backendPayload(backendObjectSize)
 	versionID := backendMultipart(t, backend, bucket, key, body, nil, "")
@@ -253,7 +253,7 @@ func TestPutObjectAclVersioning(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, key, body := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter), "test_put_object_acl_versioning", "test content"
+	bucket, key, body := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 19), "test_put_object_acl_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	source := put(t, s, bucket, key, body, nil)
 	versionID := aws.ToString(source.VersionId)
@@ -275,7 +275,7 @@ func TestGetObjectAclVersioning(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, key, body := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter), "test_get_object_acl_versioning", "test content"
+	bucket, key, body := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 20), "test_get_object_acl_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	source, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(body)), ACL: types.ObjectCannedACLPublicRead,
@@ -297,7 +297,7 @@ func TestPutObjectTaggingVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket, key, body := s.bucket(t), "test_put_object_tagging_versioning", "test content"
+	bucket, key, body := s.bucket(t, 21), "test_put_object_tagging_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	source := put(t, s, bucket, key, body, nil)
 	versionID := aws.ToString(source.VersionId)
@@ -315,7 +315,7 @@ func TestGetObjectTaggingVersioning(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket, key, body := s.bucket(t), "test_get_object_tagging_versioning", "test content"
+	bucket, key, body := s.bucket(t, 22), "test_get_object_tagging_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	source := put(t, s, bucket, key, body, nil)
 	versionID := aws.ToString(source.VersionId)
@@ -334,7 +334,7 @@ func TestDeleteObjectTaggingVersioning(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, key, body := s.bucket(t), "test_delete_object_tagging_versioning", "test content"
+	bucket, key, body := s.bucket(t, 23), "test_delete_object_tagging_versioning", "test content"
 	enableVersioning(t, s, bucket)
 	source := put(t, s, bucket, key, body, nil)
 	versionID := aws.ToString(source.VersionId)
@@ -439,7 +439,7 @@ func TestPutObjectReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	sourceBucket, targetBucket, key := s.bucket(t), s.bucket(t), "test_backend_replication"
+	sourceBucket, targetBucket, key := s.bucket(t, 27), s.bucket(t, 27), "test_backend_replication"
 	enableVersioning(t, s, sourceBucket)
 	enableVersioning(t, s, targetBucket)
 	putOut := put(t, s, sourceBucket, key, "test content", nil)
@@ -458,7 +458,7 @@ func TestPutObjectWithTaggingReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	sourceBucket, targetBucket, key := s.bucket(t), s.bucket(t), "test_backend_replication_tagging"
+	sourceBucket, targetBucket, key := s.bucket(t, 28), s.bucket(t, 28), "test_backend_replication_tagging"
 	enableVersioning(t, s, sourceBucket)
 	enableVersioning(t, s, targetBucket)
 	putOut := put(t, s, sourceBucket, key, "test content", nil)
@@ -480,7 +480,7 @@ func TestPutObjectWithMetadataReplication(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	sourceBucket, targetBucket, key := s.bucket(t), s.bucket(t), "test_backend_replication_metadata"
+	sourceBucket, targetBucket, key := s.bucket(t, 29), s.bucket(t, 29), "test_backend_replication_metadata"
 	enableVersioning(t, s, sourceBucket)
 	enableVersioning(t, s, targetBucket)
 	metadata := map[string]string{"testkey": "testValue"}
@@ -509,7 +509,7 @@ func TestCopyObjectReplication(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t), "source_key", "source_key_2", "target_key"
+	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t, 30), "source_key", "source_key_2", "target_key"
 	enableVersioning(t, s, bucket)
 	versionID := prepareBackendCopy(t, backendCopySetup{
 		client: s.client, bucket: bucket, sourceKey: sourceKey, targetKey: intermediateKey, body: []byte("test content"),
@@ -534,7 +534,7 @@ func TestCopyObjectWithTaggingReplication(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t), "source_key", "source_key_2", "target_key"
+	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t, 31), "source_key", "source_key_2", "target_key"
 	enableVersioning(t, s, bucket)
 	versionID := prepareBackendCopy(t, backendCopySetup{
 		client: s.client, bucket: bucket, sourceKey: sourceKey, targetKey: intermediateKey,
@@ -561,7 +561,7 @@ func TestCopyObjectWithMetadataReplication(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t), "source_key", "source_key_2", "target_key"
+	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t, 32), "source_key", "source_key_2", "target_key"
 	enableVersioning(t, s, bucket)
 	metadata := map[string]string{"testkey": "testValue"}
 	versionID := prepareBackendCopy(t, backendCopySetup{
@@ -589,7 +589,7 @@ func TestCopyObjectMetadataReplaceReplication(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t), "source_key", "source_key_2", "target_key"
+	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t, 33), "source_key", "source_key_2", "target_key"
 	enableVersioning(t, s, bucket)
 	replacement := map[string]string{"testkey2": "testValue2"}
 	versionID := prepareBackendCopyReplace(t, backendCopySetup{
@@ -618,7 +618,7 @@ func TestMultipartUploadReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket, sourceKey, targetKey := s.bucket(t), "test_multipart_upload_replication-source", "test_multipart_upload_replication-target"
+	bucket, sourceKey, targetKey := s.bucket(t, 34), "test_multipart_upload_replication-source", "test_multipart_upload_replication-target"
 	enableVersioning(t, s, bucket)
 	body := backendPayload(backendObjectSize)
 	versionID := backendMultipart(t, s.client, bucket, sourceKey, body, nil, "")
@@ -636,7 +636,7 @@ func TestMultipartUploadWithTaggingReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket, sourceKey, targetKey := s.bucket(t), "test_multipart_upload_with_tagging_replication-source", "test_multipart_upload_with_tagging_replication-target"
+	bucket, sourceKey, targetKey := s.bucket(t, 35), "test_multipart_upload_with_tagging_replication-source", "test_multipart_upload_with_tagging_replication-target"
 	enableVersioning(t, s, bucket)
 	body := backendPayload(backendObjectSize)
 	versionID := backendMultipart(t, s.client, bucket, sourceKey, body, nil, backendTaggingQuery())
@@ -656,7 +656,7 @@ func TestMultipartUploadWithMetadataReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket, sourceKey, targetKey := s.bucket(t), "test_multipart_upload_with_metadata_replication-source", "test_multipart_upload_with_metadata_replication-target"
+	bucket, sourceKey, targetKey := s.bucket(t, 36), "test_multipart_upload_with_metadata_replication-source", "test_multipart_upload_with_metadata_replication-target"
 	enableVersioning(t, s, bucket)
 	body := backendPayload(backendObjectSize)
 	metadata := map[string]string{"testkey": "testValue"}
@@ -678,7 +678,7 @@ func TestPutObjectAclReplication(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, sourceKey, targetKey := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter), "test_put_object_acl_replication_source", "test_put_object_acl_replication_target"
+	bucket, sourceKey, targetKey := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 37), "test_put_object_acl_replication_source", "test_put_object_acl_replication_target"
 	enableVersioning(t, s, bucket)
 	putOut := put(t, s, bucket, sourceKey, "test content", nil)
 	versionID := aws.ToString(putOut.VersionId)
@@ -701,7 +701,7 @@ func TestPutObjectTaggingReplication(t *testing.T) {
 	}
 	backend := newBackendClient(t, s)
 
-	bucket, sourceKey, targetKey := s.bucket(t), "test_put_object_tagging_replication-source", "test_put_object_tagging_replication-target"
+	bucket, sourceKey, targetKey := s.bucket(t, 38), "test_put_object_tagging_replication-source", "test_put_object_tagging_replication-target"
 	enableVersioning(t, s, bucket)
 	putOut := put(t, s, bucket, sourceKey, "test content", nil)
 	versionID := aws.ToString(putOut.VersionId)
@@ -723,7 +723,7 @@ func TestDeleteObjectReplication(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, sourceKey, targetKey := s.bucket(t), "test_delete_object_replication-source", "test_delete_object_replication-target"
+	bucket, sourceKey, targetKey := s.bucket(t, 39), "test_delete_object_replication-source", "test_delete_object_replication-target"
 	enableVersioning(t, s, bucket)
 	putOut := put(t, s, bucket, sourceKey, "test content", nil)
 	versionID := aws.ToString(putOut.VersionId)
@@ -764,7 +764,7 @@ func TestDeleteObjectTaggingReplication(t *testing.T) {
 	backend := newBackendClient(t, s)
 
 	ctx := context.Background()
-	bucket, sourceKey, targetKey := s.bucket(t), "test_delete_object_tagging_replication-source", "test_delete_object_tagging_replication-target"
+	bucket, sourceKey, targetKey := s.bucket(t, 40), "test_delete_object_tagging_replication-source", "test_delete_object_tagging_replication-target"
 	enableVersioning(t, s, bucket)
 	putOut := put(t, s, bucket, sourceKey, "test content", nil)
 	versionID := aws.ToString(putOut.VersionId)
@@ -1162,7 +1162,7 @@ func prepareBackendCopyReplace(t *testing.T, setup backendCopySetup, replacement
 	copyOut, err := setup.client.CopyObject(context.Background(), &s3.CopyObjectInput{
 		Bucket: aws.String(setup.bucket), Key: aws.String(setup.targetKey),
 		CopySource: aws.String(backendCopySource(setup.bucket, setup.sourceKey, sourceVersionID)),
-		Metadata: replacement, MetadataDirective: types.MetadataDirectiveReplace,
+		Metadata:   replacement, MetadataDirective: types.MetadataDirectiveReplace,
 	})
 	if err != nil {
 		t.Fatal(err)

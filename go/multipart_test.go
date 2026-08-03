@@ -15,7 +15,7 @@ import (
 // 비어있는 오브젝트를 멀티파트로 업로드 실패 확인
 func TestMultipartUploadEmpty(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_empty")
+	f := newMultipartFixture(t, "test_multipart_upload_empty", 1)
 	_, err := f.s.client.CompleteMultipartUpload(context.Background(), &s3.CompleteMultipartUploadInput{Bucket: aws.String(f.bucket), Key: aws.String(f.key), UploadId: f.created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{}})
 	assertHTTPError(t, err, 400)
 }
@@ -23,7 +23,7 @@ func TestMultipartUploadEmpty(t *testing.T) {
 // 파트 크기보다 작은 오브젝트를 멀티파트 업로드시 성공확인
 func TestMultipartUploadSmall(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_small")
+	f := newMultipartFixture(t, "test_multipart_upload_small", 2)
 	body := bytes.Repeat([]byte{'a'}, 1024)
 	part := uploadMultipartPart(t, f, 1, body)
 	completeMultipartParts(t, f, []types.CompletedPart{{ETag: part.ETag, PartNumber: aws.Int32(1)}})
@@ -34,7 +34,7 @@ func TestMultipartUploadSmall(t *testing.T) {
 func TestMultipartCopySmall(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 3)
 	source, target := "test_multipart_copy_small?source", "test_multipart_copy_small&target"
 	body := []byte("small")
 	put(t, s, b, source, string(body), nil)
@@ -57,7 +57,7 @@ func TestMultipartCopySmall(t *testing.T) {
 func TestMultipartCopyInvalidRange(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 4)
 	source, target := "test_multipart_copy_invalid_range?source", "test_multipart_copy_invalid_range&target"
 	body := deterministicBody(6 * 1024 * 1024)
 	put(t, s, b, source, string(body), nil)
@@ -76,7 +76,7 @@ func TestMultipartCopyInvalidRange(t *testing.T) {
 func TestMultipartCopyWithoutRange(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 5)
 	source, target := "test_multipart_copy_without_range?source", "test_multipart_copy_without_range&target"
 	body := deterministicBody(6 * 1024 * 1024)
 	put(t, s, b, source, string(body), nil)
@@ -99,7 +99,7 @@ func TestMultipartCopyWithoutRange(t *testing.T) {
 func TestMultipartCopySpecialNames(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 6)
 	source, target := "test_multipart_copy_special_names?source", "test_multipart_copy_special_names&target"
 	body := deterministicBody(6 * 1024 * 1024)
 	put(t, s, b, source, string(body), nil)
@@ -121,7 +121,7 @@ func TestMultipartCopySpecialNames(t *testing.T) {
 // 멀티파트 업로드 확인
 func TestMultipartUpload(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload")
+	f := newMultipartFixture(t, "test_multipart_upload", 7)
 	body := bytes.Repeat([]byte{'a'}, 5*1024*1024)
 	part := uploadMultipartPart(t, f, 1, body)
 	completeMultipartParts(t, f, []types.CompletedPart{{ETag: part.ETag, PartNumber: aws.Int32(1)}})
@@ -132,7 +132,7 @@ func TestMultipartUpload(t *testing.T) {
 func TestMultipartCopyVersioned(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 8)
 	source, target := "test_multipart_copy_versioned?source", "test_multipart_copy_versioned&target"
 	body := deterministicBody(6 * 1024 * 1024)
 	put(t, s, b, source, string(body), nil)
@@ -156,7 +156,7 @@ func TestMultipartCopyVersioned(t *testing.T) {
 // 멀티파트 업로드중 같은 파츠를 여러번 업로드시 성공 확인
 func TestMultipartUploadResendPart(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_resend_part")
+	f := newMultipartFixture(t, "test_multipart_upload_resend_part", 9)
 	size := 5 * 1024 * 1024
 	original := bytes.Repeat([]byte{'a'}, size)
 	uploadMultipartPart(t, f, 1, original)
@@ -169,7 +169,7 @@ func TestMultipartUploadResendPart(t *testing.T) {
 // 한 오브젝트에 대해 다양한 크기의 멀티파트 업로드 성공 확인
 func TestMultipartUploadMultipleSizes(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_multiple_sizes")
+	f := newMultipartFixture(t, "test_multipart_upload_multiple_sizes", 10)
 	sizes := []int{5 * 1024 * 1024, 6 * 1024 * 1024, 1024}
 	parts := make([]types.CompletedPart, 0, len(sizes))
 	var want []byte
@@ -187,7 +187,7 @@ func TestMultipartUploadMultipleSizes(t *testing.T) {
 func TestMultipartCopyMultipleSizes(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 11)
 	source, target := "test_multipart_copy_multiple_sizes?source", "test_multipart_copy_multiple_sizes&target"
 	body := deterministicBody(6 * 1024 * 1024)
 	put(t, s, b, source, string(body), nil)
@@ -209,7 +209,7 @@ func TestMultipartCopyMultipleSizes(t *testing.T) {
 // 멀티파트 업로드시에 파츠의 크기가 너무 작을 경우 업로드 실패 확인
 func TestMultipartUploadSizeTooSmall(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_size_too_small")
+	f := newMultipartFixture(t, "test_multipart_upload_size_too_small", 12)
 	one := uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("a"), 1024))
 	two := uploadMultipartPart(t, f, 2, bytes.Repeat([]byte("b"), 1024))
 	_, err := f.s.client.CompleteMultipartUpload(context.Background(), &s3.CompleteMultipartUploadInput{Bucket: aws.String(f.bucket), Key: aws.String(f.key), UploadId: f.created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: []types.CompletedPart{{ETag: one.ETag, PartNumber: aws.Int32(1)}, {ETag: two.ETag, PartNumber: aws.Int32(2)}}}})
@@ -219,7 +219,7 @@ func TestMultipartUploadSizeTooSmall(t *testing.T) {
 // 내용물을 채운 멀티파트 업로드 성공 확인
 func TestMultipartUploadContents(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_contents")
+	f := newMultipartFixture(t, "test_multipart_upload_contents", 13)
 	body := bytes.Repeat([]byte{'a'}, 5*1024*1024)
 	part := uploadMultipartPart(t, f, 1, body)
 	completeMultipartParts(t, f, []types.CompletedPart{{ETag: part.ETag, PartNumber: aws.Int32(1)}})
@@ -230,7 +230,7 @@ func TestMultipartUploadContents(t *testing.T) {
 func TestMultipartUploadOverwriteExistingObject(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 14)
 	key := "testMultipartUploadOverwriteExistingObject"
 	partBody := bytes.Repeat([]byte("a"), 5*1024*1024)
 	put(t, s, bucket, key, string(partBody), nil)
@@ -263,7 +263,7 @@ func TestMultipartUploadOverwriteExistingObject(t *testing.T) {
 func TestPutObjectOverwriteMultipartUpload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 48)
 	key := "test_put_object_overwrite_multipart_upload"
 	completeMultipart(t, s.client, bucket, key, deterministicBody(10*1024*1024), false, nil)
 	content := deterministicBody(1 * 1024 * 1024)
@@ -279,7 +279,7 @@ func TestPutObjectOverwriteMultipartUpload(t *testing.T) {
 // 멀티파트 업로드하는 도중 중단 성공 확인
 func TestAbortMultipartUpload(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_abort_multipart_upload")
+	f := newMultipartFixture(t, "test_abort_multipart_upload", 15)
 	uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("x"), 5*1024*1024))
 	listed, err := f.s.client.ListMultipartUploads(context.Background(), &s3.ListMultipartUploadsInput{Bucket: aws.String(f.bucket)})
 	if err != nil || len(listed.Uploads) == 0 {
@@ -297,7 +297,7 @@ func TestAbortMultipartUpload(t *testing.T) {
 // 존재하지 않은 멀티파트 업로드 중단 실패 확인
 func TestAbortMultipartUploadNotFound(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_abort_multipart_upload_not_found")
+	f := newMultipartFixture(t, "test_abort_multipart_upload_not_found", 16)
 	uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("x"), 5*1024*1024))
 	_, err := f.s.client.AbortMultipartUpload(context.Background(), &s3.AbortMultipartUploadInput{Bucket: aws.String(f.bucket), Key: aws.String(f.key), UploadId: aws.String("nonexistent")})
 	assertS3Error(t, err, 404, "NoSuchUpload")
@@ -306,7 +306,7 @@ func TestAbortMultipartUploadNotFound(t *testing.T) {
 // 멀티파트 업로드 중인 목록 확인
 func TestListMultipartUpload(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_list_multipart_upload")
+	f := newMultipartFixture(t, "test_list_multipart_upload", 17)
 	uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("x"), 5*1024*1024))
 	listed, err := f.s.client.ListMultipartUploads(context.Background(), &s3.ListMultipartUploadsInput{Bucket: aws.String(f.bucket)})
 	if err != nil || len(listed.Uploads) == 0 {
@@ -317,7 +317,7 @@ func TestListMultipartUpload(t *testing.T) {
 // 업로드 하지 않은 파츠가 있는 상태에서 멀티파트 완료 함수 실패 확인
 func TestMultipartUploadMissingPart(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_missing_part")
+	f := newMultipartFixture(t, "test_multipart_upload_missing_part", 18)
 	one := uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("a"), 1024))
 	parts := []types.CompletedPart{
 		{ETag: one.ETag, PartNumber: aws.Int32(1)},
@@ -332,7 +332,7 @@ func TestMultipartUploadMissingPart(t *testing.T) {
 // 잘못된 eTag값을 입력한 멀티파트 완료 함수 실패 확인
 func TestMultipartUploadIncorrectEtag(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_incorrect_etag")
+	f := newMultipartFixture(t, "test_multipart_upload_incorrect_etag", 19)
 	uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("a"), 1024))
 	parts := []types.CompletedPart{{ETag: aws.String(`"incorrect"`), PartNumber: aws.Int32(1)}}
 	_, err := f.s.client.CompleteMultipartUpload(context.Background(), &s3.CompleteMultipartUploadInput{Bucket: aws.String(f.bucket), Key: aws.String(f.key), UploadId: f.created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts}})
@@ -345,7 +345,7 @@ func TestMultipartUploadIncorrectEtag(t *testing.T) {
 func TestAtomicMultipartUploadWrite(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 20)
 	key := "testAtomicMultipartUploadWrite"
 	put(t, s, bucket, key, "bar", nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -362,7 +362,7 @@ func TestAtomicMultipartUploadWrite(t *testing.T) {
 // 멀티파트 업로드 목록 확인
 func TestMultipartUploadList(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_list")
+	f := newMultipartFixture(t, "test_multipart_upload_list", 21)
 	uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("x"), 5*1024*1024))
 	listed, err := f.s.client.ListMultipartUploads(context.Background(), &s3.ListMultipartUploadsInput{Bucket: aws.String(f.bucket)})
 	if err != nil || len(listed.Uploads) == 0 {
@@ -373,7 +373,7 @@ func TestMultipartUploadList(t *testing.T) {
 // 멀티파트 업로드하는 도중 중단 성공 확인
 func TestAbortMultipartUploadList(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_abort_multipart_upload_list")
+	f := newMultipartFixture(t, "test_abort_multipart_upload_list", 22)
 	uploadMultipartPart(t, f, 1, bytes.Repeat([]byte("x"), 5*1024*1024))
 	listed, err := f.s.client.ListMultipartUploads(context.Background(), &s3.ListMultipartUploadsInput{Bucket: aws.String(f.bucket)})
 	if err != nil || len(listed.Uploads) == 0 {
@@ -392,7 +392,7 @@ func TestAbortMultipartUploadList(t *testing.T) {
 func TestMultipartCopyMany(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 23)
 	source, target := "test_multipart_copy_many?source", "test_multipart_copy_many&target"
 	body := deterministicBody(6 * 1024 * 1024)
 	put(t, s, b, source, string(body), nil)
@@ -414,7 +414,7 @@ func TestMultipartCopyMany(t *testing.T) {
 // 멀티파트 목록 확인
 func TestMultipartListParts(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "parts")
+	f := newMultipartFixture(t, "parts", 24)
 	for i := int32(1); i <= 20; i++ {
 		uploadMultipartPart(t, f, i, bytes.Repeat([]byte{byte(i)}, 1024))
 	}
@@ -439,19 +439,19 @@ func TestMultipartListParts(t *testing.T) {
 // UseChunkEncoding을 사용하는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
 func TestMultipartUploadChecksumUseChunkEncoding(t *testing.T) {
 	t.Parallel()
-	testMultipartUploadChecksum(t, "test_multipart_upload_checksum_use_chunk_encoding")
+	testMultipartUploadChecksum(t, "test_multipart_upload_checksum_use_chunk_encoding", 25)
 }
 
 // UseChunkEncoding을 사용하지 않는 멀티파트 업로드 시 체크섬 계산 및 검증 확인
 func TestMultipartUploadChecksum(t *testing.T) {
 	t.Parallel()
-	testMultipartUploadChecksum(t, "test_multipart_upload_checksum")
+	testMultipartUploadChecksum(t, "test_multipart_upload_checksum", 26)
 }
 
-func testMultipartUploadChecksum(t *testing.T, name string) {
+func testMultipartUploadChecksum(t *testing.T, name string, id ...int) {
 	t.Helper()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, id...)
 	algorithm := types.ChecksumAlgorithmCrc32
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(name), ChecksumAlgorithm: algorithm, ChecksumType: types.ChecksumTypeComposite})
 	if err != nil {
@@ -473,7 +473,7 @@ func testMultipartUploadChecksum(t *testing.T, name string) {
 func TestMultipartUploadChecksumFailure(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 27)
 	name := "test_multipart_upload_checksum_failure"
 	_, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{
 		Bucket:            aws.String(b),
@@ -488,7 +488,7 @@ func TestMultipartUploadChecksumFailure(t *testing.T) {
 func TestMultipartCopyChecksum(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 28)
 	body := bytes.Repeat([]byte("q"), 5*1024*1024)
 	putInput := &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String("source"), Body: bytes.NewReader(body), ChecksumAlgorithm: types.ChecksumAlgorithmCrc32}
 	setPutChecksum(putInput, types.ChecksumAlgorithmCrc32, body, false)
@@ -513,7 +513,7 @@ func TestMultipartCopyChecksum(t *testing.T) {
 func TestCreateMultipartUploadEmptyChecksumAlgorithm(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 29)
 	_, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String("test_create_multipart_upload_empty_checksum_algorithm"), ChecksumType: types.ChecksumTypeFullObject})
 	assertHTTPError(t, err, 400)
 }
@@ -522,7 +522,7 @@ func TestCreateMultipartUploadEmptyChecksumAlgorithm(t *testing.T) {
 func TestCreateMultipartUploadEmptyChecksumType(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 30)
 	name := "test_create_multipart_upload_empty_checksum_type"
 	algorithm := types.ChecksumAlgorithmCrc32
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(name), ChecksumAlgorithm: algorithm})
@@ -545,7 +545,7 @@ func TestCreateMultipartUploadEmptyChecksumType(t *testing.T) {
 func TestUploadPartCopyIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 31)
 	source, target := "test_upload_part_copy_if_match_good-source", "test_upload_part_copy_if_match_good-target"
 	createdSource := put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -562,7 +562,7 @@ func TestUploadPartCopyIfMatchGood(t *testing.T) {
 func TestUploadPartCopyIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 32)
 	source, target := "test_upload_part_copy_if_match_failed-source", "test_upload_part_copy_if_match_failed-target"
 	put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -578,7 +578,7 @@ func TestUploadPartCopyIfMatchFailed(t *testing.T) {
 func TestUploadPartCopyIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 33)
 	source, target := "test_upload_part_copy_if_none_match_good-source", "test_upload_part_copy_if_none_match_good-target"
 	put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -595,7 +595,7 @@ func TestUploadPartCopyIfNoneMatchGood(t *testing.T) {
 func TestUploadPartCopyIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 34)
 	source, target := "test_upload_part_copy_if_none_match_failed-source", "test_upload_part_copy_if_none_match_failed-target"
 	createdSource := put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -611,7 +611,7 @@ func TestUploadPartCopyIfNoneMatchFailed(t *testing.T) {
 func TestUploadPartCopyIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 35)
 	source, target := "test_upload_part_copy_if_match_and_if_none_match-source", "test_upload_part_copy_if_match_and_if_none_match-target"
 	createdSource := put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -627,7 +627,7 @@ func TestUploadPartCopyIfMatchAndIfNoneMatch(t *testing.T) {
 func TestUploadPartCopyIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 36)
 	source, target := "test_upload_part_copy_if_match_and_if_none_match_any-source", "test_upload_part_copy_if_match_and_if_none_match_any-target"
 	createdSource := put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -643,7 +643,7 @@ func TestUploadPartCopyIfMatchAndIfNoneMatchAny(t *testing.T) {
 func TestUploadPartCopyIfModifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 37)
 	source, target := "test_upload_part_copy_if_modified_since_good-source", "test_upload_part_copy_if_modified_since_good-target"
 	put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -661,7 +661,7 @@ func TestUploadPartCopyIfModifiedSinceGood(t *testing.T) {
 func TestUploadPartCopyIfModifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 38)
 	source, target := "test_upload_part_copy_if_modified_since_failed-source", "test_upload_part_copy_if_modified_since_failed-target"
 	put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -680,7 +680,7 @@ func TestUploadPartCopyIfModifiedSinceFailed(t *testing.T) {
 func TestUploadPartCopyIfUnmodifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 39)
 	source, target := "test_upload_part_copy_if_unmodified_since_good-source", "test_upload_part_copy_if_unmodified_since_good-target"
 	put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -698,7 +698,7 @@ func TestUploadPartCopyIfUnmodifiedSinceGood(t *testing.T) {
 func TestUploadPartCopyIfUnmodifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 40)
 	source, target := "test_upload_part_copy_if_unmodified_since_failed-source", "test_upload_part_copy_if_unmodified_since_failed-target"
 	put(t, s, b, source, source, nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(target)})
@@ -715,7 +715,7 @@ func TestUploadPartCopyIfUnmodifiedSinceFailed(t *testing.T) {
 func TestCompleteMultipartUploadIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 41)
 	key := "test_complete_multipart_upload_if_match_good"
 	existing := put(t, s, bucket, key, "old", nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -739,7 +739,7 @@ func TestCompleteMultipartUploadIfMatchGood(t *testing.T) {
 func TestCompleteMultipartUploadIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 42)
 	key := "test_complete_multipart_upload_if_match_failed"
 	put(t, s, bucket, key, "old", nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -762,7 +762,7 @@ func TestCompleteMultipartUploadIfMatchFailed(t *testing.T) {
 func TestCompleteMultipartUploadIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 43)
 	key := "test_complete_multipart_upload_if_none_match_good"
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil {
@@ -785,7 +785,7 @@ func TestCompleteMultipartUploadIfNoneMatchGood(t *testing.T) {
 func TestCompleteMultipartUploadIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 44)
 	key := "test_complete_multipart_upload_if_none_match_failed"
 	put(t, s, bucket, key, "old", nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -808,7 +808,7 @@ func TestCompleteMultipartUploadIfNoneMatchFailed(t *testing.T) {
 func TestCompleteMultipartUploadIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 45)
 	key := "test_complete_multipart_upload_if_match_and_if_none_match"
 	existing := put(t, s, bucket, key, "old", nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -831,7 +831,7 @@ func TestCompleteMultipartUploadIfMatchAndIfNoneMatch(t *testing.T) {
 func TestCompleteMultipartUploadIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 46)
 	key := "test_complete_multipart_upload_if_match_and_if_none_match_any"
 	existing := put(t, s, bucket, key, "old", nil)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -853,7 +853,7 @@ func TestCompleteMultipartUploadIfMatchAndIfNoneMatchAny(t *testing.T) {
 // 멀티파티 업로드 abort 이후 uploadPart가 실패하는지 확인
 func TestMultipartUploadAbortDuringUpload(t *testing.T) {
 	t.Parallel()
-	f := newMultipartFixture(t, "test_multipart_upload_abort_during_upload")
+	f := newMultipartFixture(t, "test_multipart_upload_abort_during_upload", 47)
 	if _, err := f.s.client.AbortMultipartUpload(context.Background(), &s3.AbortMultipartUploadInput{Bucket: aws.String(f.bucket), Key: aws.String(f.key), UploadId: f.created.UploadId}); err != nil {
 		t.Fatal(err)
 	}
@@ -874,10 +874,10 @@ type multipartFixture struct {
 	created *s3.CreateMultipartUploadOutput
 }
 
-func newMultipartFixture(t *testing.T, key string) *multipartFixture {
+func newMultipartFixture(t *testing.T, key string, id ...int) *multipartFixture {
 	t.Helper()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, id...)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key)})
 	if err != nil {
 		t.Fatal(err)
@@ -905,4 +905,3 @@ func completeMultipartParts(t *testing.T, f *multipartFixture, parts []types.Com
 	}
 	return out
 }
-

@@ -14,7 +14,7 @@ func TestListBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	out, err := s.client.ListBucketInventoryConfigurations(context.Background(), &s3.ListBucketInventoryConfigurationsInput{Bucket: aws.String(s.bucket(t))})
+	out, err := s.client.ListBucketInventoryConfigurations(context.Background(), &s3.ListBucketInventoryConfigurationsInput{Bucket: aws.String(s.bucket(t, 1))})
 	if err != nil || len(out.InventoryConfigurationList) != 0 {
 		t.Fatalf("configurations=%d err=%v", len(out.InventoryConfigurationList), err)
 	}
@@ -25,7 +25,7 @@ func TestPutBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 2), s.bucket(t, 2)
 	putInventory(t, s, source, "my-inventory-v2", standardInventory("my-inventory-v2", target))
 }
 
@@ -34,7 +34,7 @@ func TestCheckBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 3), s.bucket(t, 3)
 	putInventory(t, s, source, "my-inventory", standardInventory("my-inventory", target))
 	out, err := s.client.ListBucketInventoryConfigurations(context.Background(), &s3.ListBucketInventoryConfigurationsInput{Bucket: aws.String(source)})
 	if err != nil || len(out.InventoryConfigurationList) != 1 {
@@ -47,7 +47,7 @@ func TestGetBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target, id := s.bucket(t), s.bucket(t), "my-inventory"
+	source, target, id := s.bucket(t, 4), s.bucket(t, 4), "my-inventory"
 	putInventory(t, s, source, id, inventoryConfiguration(id, target, "a/", nil, types.InventoryIncludedObjectVersionsCurrent, types.InventoryFrequencyDaily, types.InventoryFormatCsv))
 	out, err := s.client.GetBucketInventoryConfiguration(context.Background(), &s3.GetBucketInventoryConfigurationInput{Bucket: aws.String(source), Id: aws.String(id)})
 	if err != nil || out.InventoryConfiguration == nil || aws.ToString(out.InventoryConfiguration.Id) != id {
@@ -60,7 +60,7 @@ func TestDeleteBucketInventory(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target, id := s.bucket(t), s.bucket(t), "my-inventory"
+	source, target, id := s.bucket(t, 5), s.bucket(t, 5), "my-inventory"
 	putInventory(t, s, source, id, standardInventory(id, target))
 	if _, err := s.client.DeleteBucketInventoryConfiguration(context.Background(), &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(source), Id: aws.String(id)}); err != nil {
 		t.Fatal(err)
@@ -76,7 +76,7 @@ func TestGetBucketInventoryNotExist(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	_, err := s.client.GetBucketInventoryConfiguration(context.Background(), &s3.GetBucketInventoryConfigurationInput{Bucket: aws.String(s.bucket(t)), Id: aws.String("my-inventory")})
+	_, err := s.client.GetBucketInventoryConfiguration(context.Background(), &s3.GetBucketInventoryConfigurationInput{Bucket: aws.String(s.bucket(t, 6)), Id: aws.String("my-inventory")})
 	assertS3Error(t, err, 404, "NoSuchConfiguration")
 }
 
@@ -85,7 +85,7 @@ func TestDeleteBucketInventoryNotExist(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	_, err := s.client.DeleteBucketInventoryConfiguration(context.Background(), &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(s.bucket(t)), Id: aws.String("my-inventory")})
+	_, err := s.client.DeleteBucketInventoryConfiguration(context.Background(), &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(s.bucket(t, 7)), Id: aws.String("my-inventory")})
 	assertS3Error(t, err, 404, "NoSuchConfiguration")
 }
 
@@ -94,7 +94,7 @@ func TestPutBucketInventoryNotExist(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	target := s.bucket(t)
+	target := s.bucket(t, 8)
 	bucket := "missing-" + uniqueBucketSuffix(t)
 	_, err := putInventoryError(s, bucket, "my-inventory", standardInventory("my-inventory", target))
 	assertS3Error(t, err, 404, "NoSuchBucket")
@@ -105,7 +105,7 @@ func TestPutBucketInventoryIdNotExist(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 9), s.bucket(t, 9)
 	_, err := putInventoryError(s, source, "", standardInventory("", target))
 	assertS3Error(t, err, 400, "MalformedXML")
 }
@@ -115,7 +115,7 @@ func TestPutBucketInventoryIdDuplicate(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target, id := s.bucket(t), s.bucket(t), "my-inventory"
+	source, target, id := s.bucket(t, 10), s.bucket(t, 10), "my-inventory"
 	configuration := standardInventory(id, target)
 	putInventory(t, s, source, id, configuration)
 	putInventory(t, s, source, id, configuration)
@@ -134,7 +134,7 @@ func TestPutBucketInventoryTargetNotExist(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("AWS does not validate inventory destination bucket existence")
 	}
-	source := s.bucket(t)
+	source := s.bucket(t, 11)
 	target := "missing-" + uniqueBucketSuffix(t)
 	_, err := putInventoryError(s, source, "my-inventory", standardInventory("my-inventory", target))
 	assertS3Error(t, err, 404, "NoSuchBucket")
@@ -145,7 +145,7 @@ func TestPutBucketInventoryInvalidFormat(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target, id := s.bucket(t), s.bucket(t), "my-inventory"
+	source, target, id := s.bucket(t, 12), s.bucket(t, 12), "my-inventory"
 	configuration := standardInventory(id, target)
 	configuration.Destination.S3BucketDestination.Format = types.InventoryFormat("JSON")
 	_, err := putInventoryError(s, source, id, configuration)
@@ -157,7 +157,7 @@ func TestPutBucketInventoryInvalidFrequency(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target, id := s.bucket(t), s.bucket(t), "my-inventory"
+	source, target, id := s.bucket(t, 13), s.bucket(t, 13), "my-inventory"
 	configuration := standardInventory(id, target)
 	configuration.Schedule.Frequency = types.InventoryFrequency("Hourly")
 	_, err := putInventoryError(s, source, id, configuration)
@@ -169,7 +169,7 @@ func TestPutBucketInventoryInvalidCase(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target, id := s.bucket(t), s.bucket(t), "my-inventory"
+	source, target, id := s.bucket(t, 14), s.bucket(t, 14), "my-inventory"
 	configuration := standardInventory(id, target)
 	configuration.IncludedObjectVersions = types.InventoryIncludedObjectVersions("CUrrENT")
 	_, err := putInventoryError(s, source, id, configuration)
@@ -181,7 +181,7 @@ func TestPutBucketInventoryPrefix(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target, id := s.bucket(t), s.bucket(t), "my-inventory"
+	source, target, id := s.bucket(t, 15), s.bucket(t, 15), "my-inventory"
 	putInventory(t, s, source, id, inventoryConfiguration(id, target, "a/", nil, types.InventoryIncludedObjectVersionsCurrent, types.InventoryFrequencyDaily, types.InventoryFormatCsv))
 	out, err := s.client.GetBucketInventoryConfiguration(context.Background(), &s3.GetBucketInventoryConfigurationInput{Bucket: aws.String(source), Id: aws.String(id)})
 	if err != nil || out.InventoryConfiguration == nil || aws.ToString(out.InventoryConfiguration.Destination.S3BucketDestination.Prefix) != "a/" {
@@ -194,7 +194,7 @@ func TestPutBucketInventoryOptional(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target, id := s.bucket(t), s.bucket(t), "my-inventory"
+	source, target, id := s.bucket(t, 16), s.bucket(t, 16), "my-inventory"
 	want := []types.InventoryOptionalField{types.InventoryOptionalFieldSize, types.InventoryOptionalFieldLastModifiedDate}
 	putInventory(t, s, source, id, inventoryConfiguration(id, target, "a/", want, types.InventoryIncludedObjectVersionsCurrent, types.InventoryFrequencyDaily, types.InventoryFormatCsv))
 	out, err := s.client.GetBucketInventoryConfiguration(context.Background(), &s3.GetBucketInventoryConfigurationInput{Bucket: aws.String(source), Id: aws.String(id)})
@@ -213,7 +213,7 @@ func TestPutBucketInventoryInvalidOptional(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target, id := s.bucket(t), s.bucket(t), "my-inventory"
+	source, target, id := s.bucket(t, 17), s.bucket(t, 17), "my-inventory"
 	configuration := standardInventory(id, target)
 	configuration.OptionalFields = []types.InventoryOptionalField{"SIZE", "--"}
 	configuration.Destination.S3BucketDestination.Prefix = aws.String("a/")

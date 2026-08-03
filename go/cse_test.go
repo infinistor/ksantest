@@ -21,7 +21,7 @@ import (
 func TestCseEncryptedTransfer1b(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 1)
 	key := deterministicBody(32)
 	plain := deterministicBody(1)
 	encoded := cseEncrypt(t, plain, key)
@@ -37,7 +37,7 @@ func TestCseEncryptedTransfer1b(t *testing.T) {
 func TestCseEncryptedTransfer1kb(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 2)
 	key := deterministicBody(32)
 	plain := deterministicBody(1024)
 	encoded := cseEncrypt(t, plain, key)
@@ -53,7 +53,7 @@ func TestCseEncryptedTransfer1kb(t *testing.T) {
 func TestCseEncryptedTransfer1MB(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 3)
 	key := deterministicBody(32)
 	plain := deterministicBody(1024 * 1024)
 	encoded := cseEncrypt(t, plain, key)
@@ -69,7 +69,7 @@ func TestCseEncryptedTransfer1MB(t *testing.T) {
 func TestCseEncryptedTransfer13b(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 4)
 	key := deterministicBody(32)
 	plain := deterministicBody(13)
 	encoded := cseEncrypt(t, plain, key)
@@ -85,7 +85,7 @@ func TestCseEncryptedTransfer13b(t *testing.T) {
 func TestCseEncryptionMethodHead(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 5)
 	key := deterministicBody(32)
 	encoded := cseEncrypt(t, deterministicBody(1000), key)
 	metadata := map[string]string{"key": string(key)}
@@ -100,7 +100,7 @@ func TestCseEncryptionMethodHead(t *testing.T) {
 func TestCseEncryptionNonDecryption(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 6)
 	plain, key := deterministicBody(1000), deterministicBody(32)
 	encoded := cseEncrypt(t, plain, key)
 	putCSEBytes(t, s.client, bucket, "testCseEncryptionNonDecryption/obj", encoded, nil)
@@ -113,7 +113,7 @@ func TestCseEncryptionNonDecryption(t *testing.T) {
 func TestCseNonEncryptionDecryption(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 7)
 	plain, key := deterministicBody(1000), deterministicBody(32)
 	putCSEBytes(t, s.client, bucket, "testCseNonEncryptionDecryption", plain, nil)
 	stored := getObjectBytes(t, s.client, bucket, "testCseNonEncryptionDecryption")
@@ -126,7 +126,7 @@ func TestCseNonEncryptionDecryption(t *testing.T) {
 func TestCseEncryptionRangeRead(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 8)
 	encoded := cseEncrypt(t, deterministicBody(1024*1024), deterministicBody(32))
 	putCSEBytes(t, s.client, bucket, "testCseEncryptionRangeRead", encoded, map[string]string{"x-amz-meta-key": string(deterministicBody(32))})
 	start := 397
@@ -137,7 +137,7 @@ func TestCseEncryptionRangeRead(t *testing.T) {
 func TestCseEncryptionMultipartUpload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 9)
 	key := deterministicBody(32)
 	encoded := cseEncrypt(t, deterministicBody(50*1024*1024), key)
 	metadata := map[string]string{"key": string(key)}
@@ -162,7 +162,7 @@ func TestCseEncryptionMultipartUpload(t *testing.T) {
 func TestCseGetObjectMany(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 10)
 	plain, key := deterministicBody(15*1024*1024), deterministicBody(32)
 	encoded := cseEncrypt(t, plain, key)
 	putCSEBytes(t, s.client, bucket, "testCseGetObjectMany", encoded, nil)
@@ -181,7 +181,7 @@ func TestCseGetObjectMany(t *testing.T) {
 func TestCseRangeObjectMany(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 11)
 	plain, key := deterministicBody(15*1024*1024), deterministicBody(32)
 	encoded := cseEncrypt(t, plain, key)
 	putCSEBytes(t, s.client, bucket, "testCseRangeObjectMany", encoded, nil)

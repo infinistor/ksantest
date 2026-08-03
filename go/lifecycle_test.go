@@ -16,7 +16,7 @@ func TestLifecycleSet(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled), lifecycleRule("rule2", "test2/", 2, types.ExpirationStatusDisabled)})
+	putLifecycle(t, s, s.bucket(t, 1), []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled), lifecycleRule("rule2", "test2/", 2, types.ExpirationStatusDisabled)})
 }
 
 // 버킷에 설정한 Lifecycle 규칙을 가져올 수 있는지 확인
@@ -24,7 +24,7 @@ func TestLifecycleGet(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 2)
 	want := []types.LifecycleRule{lifecycleRule("rule1", "test1/", 31, types.ExpirationStatusEnabled), lifecycleRule("rule2", "test2/", 120, types.ExpirationStatusEnabled)}
 	putLifecycle(t, s, bucket, want)
 	got := getLifecycle(t, s, bucket)
@@ -36,7 +36,7 @@ func TestLifecycleGetNoId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 3)
 	rules := []types.LifecycleRule{lifecycleRule("", "test1/", 31, types.ExpirationStatusEnabled), lifecycleRule("", "test2/", 120, types.ExpirationStatusEnabled)}
 	for index := range rules {
 		rules[index].ID = nil
@@ -58,7 +58,7 @@ func TestLifecycleExpirationVersioningEnabled(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 4)
 	enableVersioning(t, s, bucket)
 	put(t, s, bucket, "test1/a", "one", nil)
 	if _, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("test1/a")}); err != nil {
@@ -76,7 +76,7 @@ func TestLifecycleIdTooLong(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 5)
 	rule := lifecycleRule(strings.Repeat("a", 256), "test1/", 2, types.ExpirationStatusEnabled)
 	_, err := putLifecycleError(s, bucket, []types.LifecycleRule{rule})
 	assertS3Error(t, err, 400, "InvalidArgument")
@@ -87,7 +87,7 @@ func TestLifecycleSameId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 6)
 	_, err := putLifecycleError(s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled), lifecycleRule("rule1", "test2/", 2, types.ExpirationStatusDisabled)})
 	assertS3Error(t, err, 400, "InvalidArgument")
 }
@@ -97,7 +97,7 @@ func TestLifecycleInvalidStatus(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 7)
 	_, err := putLifecycleError(s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 2, types.ExpirationStatus("invalid"))})
 	assertS3Error(t, err, 400, "MalformedXML")
 }
@@ -107,7 +107,7 @@ func TestLifecycleSetDate(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 8)
 	date := time.Date(2099, 11, 10, 0, 0, 0, 0, time.UTC)
 	rule := lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled)
 	rule.Expiration = &types.LifecycleExpiration{Date: &date}
@@ -119,7 +119,7 @@ func TestLifecycleSetInvalidDate(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 9)
 	date := time.Date(2099, 11, 10, 12, 0, 0, 0, time.UTC)
 	rule := lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled)
 	rule.Expiration = &types.LifecycleExpiration{Date: &date}
@@ -132,7 +132,7 @@ func TestLifecycleSetNoncurrent(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 10)
 	put(t, s, bucket, "past/foo", "past", nil)
 	put(t, s, bucket, "future/bar", "future", nil)
 	putLifecycle(t, s, bucket, []types.LifecycleRule{noncurrentRule("rule1", "past/", 2), noncurrentRule("rule2", "future/", 3)})
@@ -143,7 +143,7 @@ func TestLifecycleNoncurrentExpiration(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 11)
 	enableVersioning(t, s, bucket)
 	for _, key := range []string{"test1/a", "test2/abc"} {
 		for version := 0; version < 3; version++ {
@@ -162,7 +162,7 @@ func TestLifecycleSetDeleteMarker(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{deleteMarkerRule("test1/")})
+	putLifecycle(t, s, s.bucket(t, 12), []types.LifecycleRule{deleteMarkerRule("test1/")})
 }
 
 // Lifecycle 규칙에 필터링값을 설정 할 수 있는지 확인
@@ -170,7 +170,7 @@ func TestLifecycleSetFilter(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{deleteMarkerRule("foo")})
+	putLifecycle(t, s, s.bucket(t, 13), []types.LifecycleRule{deleteMarkerRule("foo")})
 }
 
 // Lifecycle 규칙에 필터링에 비어있는 값을 설정 할 수 있는지 확인
@@ -178,7 +178,7 @@ func TestLifecycleSetEmptyFilter(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{deleteMarkerRule("")})
+	putLifecycle(t, s, s.bucket(t, 14), []types.LifecycleRule{deleteMarkerRule("")})
 }
 
 // DeleteMarker에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
@@ -186,7 +186,7 @@ func TestLifecycleDeleteMarkerExpiration(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 15)
 	enableVersioning(t, s, bucket)
 	for _, key := range []string{"test1/a", "test2/abc"} {
 		put(t, s, bucket, key, key, nil)
@@ -208,7 +208,7 @@ func TestLifecycleSetMultipart(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	putLifecycle(t, s, s.bucket(t), []types.LifecycleRule{multipartLifecycleRule("rule1", "test1/", 2), multipartLifecycleRule("rule2", "test2/", 3)})
+	putLifecycle(t, s, s.bucket(t, 16), []types.LifecycleRule{multipartLifecycleRule("rule1", "test1/", 2), multipartLifecycleRule("rule2", "test2/", 3)})
 }
 
 // AbortIncompleteMultipartUpload에 대한 Lifecycle 규칙이 올바르게 동작하는지 확인
@@ -216,7 +216,7 @@ func TestLifecycleMultipartExpiration(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 17)
 	for _, key := range []string{"test1/a", "test2/b"} {
 		created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 		if err != nil {
@@ -239,7 +239,7 @@ func TestLifecycleDelete(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 18)
 	putLifecycle(t, s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled), lifecycleRule("rule2", "test2/", 2, types.ExpirationStatusDisabled)})
 	if _, err := s.client.DeleteBucketLifecycle(context.Background(), &s3.DeleteBucketLifecycleInput{Bucket: aws.String(bucket)}); err != nil {
 		t.Fatal(err)
@@ -251,7 +251,7 @@ func TestLifecycleSetExpirationZero(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 19)
 	_, err := putLifecycleError(s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 0, types.ExpirationStatusEnabled)})
 	assertS3Error(t, err, 400, "InvalidArgument")
 }
@@ -261,7 +261,7 @@ func TestLifecycleSetExpiration(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test1/a"
+	bucket, key := s.bucket(t, 20), "test1/a"
 	putLifecycle(t, s, bucket, []types.LifecycleRule{lifecycleRule("rule1", "test1/", 1, types.ExpirationStatusEnabled)})
 	put(t, s, bucket, key, "test", nil)
 

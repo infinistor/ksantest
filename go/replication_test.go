@@ -16,7 +16,7 @@ func TestReplicationSet(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 1), s.bucket(t, 1)
 	enableVersioning(t, s, source)
 	enableVersioning(t, s, target)
 	want := replicationConfiguration(target, "test/")
@@ -48,7 +48,7 @@ func TestReplicationInvalidSourceBucketVersioning(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 3), s.bucket(t, 3)
 	_, err := putReplicationError(s, source, replicationConfiguration(target, ""))
 	assertS3Error(t, err, 400, "InvalidRequest")
 }
@@ -58,7 +58,7 @@ func TestReplicationInvalidTargetBucketName(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source := s.bucket(t)
+	source := s.bucket(t, 4)
 	enableVersioning(t, s, source)
 	target := "missing-target-" + uniqueBucketSuffix(t)
 	_, err := putReplicationError(s, source, replicationConfiguration(target, "test/"))
@@ -70,7 +70,7 @@ func TestReplicationInvalidTargetBucketVersioning(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 5), s.bucket(t, 5)
 	enableVersioning(t, s, source)
 	_, err := putReplicationError(s, source, replicationConfiguration(target, "test/"))
 	assertS3Error(t, err, 400, "InvalidRequest")
@@ -81,7 +81,7 @@ func TestReplicationBucketVersioningSuspend(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 6), s.bucket(t, 6)
 	enableVersioning(t, s, source)
 	enableVersioning(t, s, target)
 	putReplication(t, s, source, replicationConfiguration(target, "test/"))

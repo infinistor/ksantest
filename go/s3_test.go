@@ -9,7 +9,9 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -22,8 +24,9 @@ import (
 )
 
 type suite struct {
-	client *s3.Client
-	cfg    testconfig.Config
+	client  *s3.Client
+	cfg     testconfig.Config
+	suiteID string
 }
 
 func newSuite(t *testing.T) *suite {
@@ -51,12 +54,66 @@ func newSuite(t *testing.T) *suite {
 	if ep := cfg.Endpoint(); ep != "" {
 		opt.BaseEndpoint = aws.String(ep)
 	}
-	return &suite{s3.New(opt), cfg}
+	return &suite{client: s3.New(opt), cfg: cfg, suiteID: callerSuiteID()}
 }
 
-func (s *suite) bucket(t *testing.T) string {
+// callerSuiteID는 newSuite를 호출한 *_test.go 파일에서 java식 suite id를 파생한다.
+// 버킷 생성 헬퍼도 자신의 도메인 파일에 있으므로 파일명이 곧 java 클래스(suite)와 일치한다.
+// java Utils.toSuiteId(클래스 simpleName 소문자·영숫자)와 동일한 결과를 낸다.
+func callerSuiteID() string {
+	for skip := 2; skip < 10; skip++ {
+		_, file, _, ok := runtime.Caller(skip)
+		if !ok {
+			break
+		}
+		base := filepath.Base(file)
+		if !strings.HasSuffix(base, "_test.go") {
+			continue
+		}
+		if id := suiteIDFromFile(base); id != "" {
+			return id
+		}
+	}
+	return "x"
+}
+
+// suiteIDFromFile: "put_object_test.go" -> "putobject" (java toSuiteId와 동일 규칙)
+func suiteIDFromFile(base string) string {
+	name := strings.TrimSuffix(base, "_test.go")
+	var b strings.Builder
+	for _, r := range strings.ToLower(name) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// buildBucketName은 java Utils.getNewBucketName과 동일한 형식을 만든다:
+// id가 있으면 {prefix}{suite}-{id}-{random}, 없으면 {prefix}{suite}-{random}. 62자 캡.
+func buildBucketName(prefix, suite string, id ...int) string {
+	const maxLen = 62 // BUCKET_MAX_LENGTH - 1
+	if suite == "" {
+		suite = "x"
+	}
+	head := prefix + suite + "-"
+	if len(id) > 0 {
+		head += strconv.Itoa(id[0]) + "-"
+	}
+	randomLen := maxLen - len(head)
+	if randomLen < 6 {
+		return randomBucketName(prefix)
+	}
+	name := head + randomText(randomLen)
+	if len(name) > maxLen {
+		name = name[:maxLen]
+	}
+	return name
+}
+
+func (s *suite) bucket(t *testing.T, id ...int) string {
 	t.Helper()
-	name := newBucketName(s.cfg.BucketPrefix)
+	name := buildBucketName(s.cfg.BucketPrefix, s.suiteID, id...)
 	_, err := s.client.CreateBucket(context.Background(), createBucketInput(s.cfg, name))
 	if err != nil {
 		t.Fatalf("CreateBucket: %v", err)

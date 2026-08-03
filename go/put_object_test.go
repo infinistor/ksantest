@@ -23,7 +23,7 @@ func TestBucketListDistinct(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	first, second := s.bucket(t), s.bucket(t)
+	first, second := s.bucket(t, 1), s.bucket(t, 1)
 	put(t, s, first, "foo", "bar", nil)
 	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(second)})
 	if err != nil || len(out.Contents) != 0 {
@@ -45,7 +45,7 @@ func TestObjectHeadZeroBytes(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 3)
 	put(t, s, bucket, "foo", "", nil)
 	out, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")})
 	if err != nil || aws.ToInt64(out.ContentLength) != 0 {
@@ -57,7 +57,7 @@ func TestObjectHeadZeroBytes(t *testing.T) {
 func TestObjectWriteCheckEtag(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	out := put(t, s, s.bucket(t), "foo", "bar", nil)
+	out := put(t, s, s.bucket(t, 4), "foo", "bar", nil)
 	if strings.Trim(aws.ToString(out.ETag), `"`) != "37b51d194a7513e45b56f6524f2d51f2" {
 		t.Fatalf("ETag=%q", aws.ToString(out.ETag))
 	}
@@ -68,7 +68,7 @@ func TestObjectWriteCacheControl(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, value := s.bucket(t), "public, max-age=14HttpStatus.SC_BAD_REQUEST"
+	bucket, value := s.bucket(t, 5), "public, max-age=14HttpStatus.SC_BAD_REQUEST"
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo"), Body: bytes.NewReader([]byte("bar")), ContentLength: aws.Int64(3), ContentType: aws.String("text/plain"), CacheControl: aws.String(value)})
 	if err != nil {
 		t.Fatal(err)
@@ -90,7 +90,7 @@ func TestObjectWriteReadUpdateReadDelete(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 7)
 	put(t, s, bucket, "foo", "bar", nil)
 	if read(t, s, bucket, "foo") != "bar" {
 		t.Fatal("initial body mismatch")
@@ -109,7 +109,7 @@ func TestObjectSetGetMetadataNoneToGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 8), "foo"
 	put(t, s, bucket, key, key, map[string]string{"meta1": "my"})
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	got, ok := head.Metadata["meta1"]
@@ -123,7 +123,7 @@ func TestObjectSetGetMetadataNoneToEmpty(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 9), "foo"
 	put(t, s, bucket, key, key, map[string]string{"meta1": ""})
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	got, ok := head.Metadata["meta1"]
@@ -137,7 +137,7 @@ func TestObjectSetGetMetadataOverwriteToEmpty(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 10), "foo"
 	put(t, s, bucket, key, key, map[string]string{"meta1": "my"})
 	put(t, s, bucket, key, key, map[string]string{"meta1": ""})
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -152,7 +152,7 @@ func TestObjectSetGetNonUtf8Metadata(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 11), "foo"
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("bar")), Metadata: map[string]string{"meta1": "\nmy_meta"}})
 	if err == nil {
 		t.Fatal("invalid metadata was accepted")
@@ -164,7 +164,7 @@ func TestObjectSetGetMetadataEmptyToUnreadablePrefix(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 12), "foo"
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("bar")), Metadata: map[string]string{"meta1": "\nasdf"}})
 	if err == nil {
 		t.Fatal("invalid metadata was accepted")
@@ -176,7 +176,7 @@ func TestObjectSetGetMetadataEmptyToUnreadableSuffix(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 13), "foo"
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("bar")), Metadata: map[string]string{"meta1": "asdf\n"}})
 	if err == nil {
 		t.Fatal("invalid metadata was accepted")
@@ -188,7 +188,7 @@ func TestObjectMetadataReplacedOnPut(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 14), "foo"
 	put(t, s, bucket, key, "bar", map[string]string{"meta1": "bar"})
 	put(t, s, bucket, key, "bar", nil)
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -201,7 +201,7 @@ func TestObjectMetadataReplacedOnPut(t *testing.T) {
 func TestObjectWriteFile(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 15)
 	put(t, s, bucket, "foo", string([]byte{'b', 'a', 'r'}), nil)
 	if read(t, s, bucket, "foo") != "bar" {
 		t.Fatal("ASCII body mismatch")
@@ -213,7 +213,7 @@ func TestBucketCreateSpecialKeyNames(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 16)
 	keys := []string{"!", "-", "_", ".", "'", "()", "&", "$", "@", "=", ";", "/", ":", "+", "  ", ",", "?", "{}", "^", "%", "`", "[]", "<>", "~", "#", "|"}
 	for _, key := range keys {
 		body := key
@@ -239,7 +239,7 @@ func TestBucketListSpecialPrefix(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 17)
 	keys := []string{"Bla/1", "Bla/2", "Bla/3", "Bla/4", "abcd"}
 	for _, key := range keys {
 		put(t, s, bucket, key, key, nil)
@@ -303,7 +303,7 @@ func TestObjectInfixSpace(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 19)
 	keys := []string{"a a/", "b b/f1", "c/f 2", "d d/f 3"}
 	for _, key := range keys {
 		body := key
@@ -329,7 +329,7 @@ func TestObjectSuffixSpace(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 20)
 	keys := []string{"a /", "b /f1", "c/f2 ", "d /f3 "}
 	for _, key := range keys {
 		body := key
@@ -355,7 +355,7 @@ func TestPutObjectSpecialCharacters(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 21)
 	keys := []string{"!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]"}
 	for _, key := range keys {
 		body := key
@@ -383,7 +383,7 @@ func TestPutObjectSpecialCharactersUseChunkEncoding(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 22)
 	keys := []string{"!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]"}
 	for _, key := range keys {
 		body := key
@@ -418,7 +418,7 @@ func TestPutObjectDirAndFile(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	for _, keys := range [][]string{{"aaa", "aaa/"}, {"aaa/", "aaa"}, {"aaa", "aaa/bbb/ccc"}} {
-		bucket := s.bucket(t)
+		bucket := s.bucket(t, 26)
 		for _, key := range keys {
 			put(t, s, bucket, key, strings.TrimSuffix(key, "/"), nil)
 		}
@@ -433,7 +433,7 @@ func TestPutObjectDirAndFile(t *testing.T) {
 func TestObjectOverwrite(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 27)
 	put(t, s, bucket, "temp", strings.Repeat("a", 10*1024), nil)
 	want := strings.Repeat("b", 1024*1024)
 	put(t, s, bucket, "temp", want, nil)
@@ -447,7 +447,7 @@ func TestObjectEmoji(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t), "test❤🍕🍔🚗"
+	bucket, key := s.bucket(t, 28), "test❤🍕🍔🚗"
 	put(t, s, bucket, key, key, nil)
 	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(bucket)})
 	if err != nil || len(out.Contents) != 1 || aws.ToString(out.Contents[0].Key) != key {
@@ -460,7 +460,7 @@ func TestObjectSetGetMetadataUtf8(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t), "foo"
+	bucket, key := s.bucket(t, 29), "foo"
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("bar")), ContentType: aws.String("text/plain; charset=UTF-8"), Metadata: map[string]string{"meta1": "utf-8", "meta2": "UTF-8"}})
 	if err != nil {
 		t.Fatal(err)
@@ -475,7 +475,7 @@ func TestObjectSetGetMetadataUtf8(t *testing.T) {
 func TestPutObjectChecksum(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 31)
 	configs := []struct {
 		name     string
 		request  aws.RequestChecksumCalculation
@@ -528,7 +528,7 @@ func TestPutObjectChecksum(t *testing.T) {
 func TestPutObjectChecksumWithValue(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 32)
 	algorithms := []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmSha1, types.ChecksumAlgorithmSha256}
 	for _, algorithm := range algorithms {
 		algorithm := algorithm
@@ -557,7 +557,7 @@ func TestPutObjectChecksumWithValue(t *testing.T) {
 func TestPutObjectChecksumUseChunkEncoding(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 30)
 	configs := []struct {
 		name     string
 		request  aws.RequestChecksumCalculation
@@ -610,7 +610,7 @@ func TestPutObjectChecksumUseChunkEncoding(t *testing.T) {
 func TestPutObjectChecksumFailure(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 33)
 	algorithms := []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmSha1, types.ChecksumAlgorithmSha256}
 	for _, algorithm := range algorithms {
 		algorithm := algorithm
@@ -629,7 +629,7 @@ func TestPutObjectChecksumFailure(t *testing.T) {
 func TestPutObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_put_object_if_match_good"
+	bucket, key := s.bucket(t, 34), "test_put_object_if_match_good"
 	first := put(t, s, bucket, key, "old", nil)
 	ctx := context.Background()
 	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("new"))}
@@ -647,7 +647,7 @@ func TestPutObjectIfMatchGood(t *testing.T) {
 func TestPutObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_put_object_if_match_failed"
+	bucket, key := s.bucket(t, 35), "test_put_object_if_match_failed"
 	put(t, s, bucket, key, "old", nil)
 	ctx := context.Background()
 	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("new"))}
@@ -663,7 +663,7 @@ func TestPutObjectIfMatchFailed(t *testing.T) {
 func TestPutObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 36)
 	origKey := "test_put_object_if_none_match_good"
 	put(t, s, bucket, origKey, "old", nil)
 	ctx := context.Background()
@@ -683,7 +683,7 @@ func TestPutObjectIfNoneMatchGood(t *testing.T) {
 func TestPutObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_put_object_if_none_match_failed"
+	bucket, key := s.bucket(t, 37), "test_put_object_if_none_match_failed"
 	put(t, s, bucket, key, "old", nil)
 	ctx := context.Background()
 	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("new"))}
@@ -699,7 +699,7 @@ func TestPutObjectIfNoneMatchFailed(t *testing.T) {
 func TestPutObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t), "test_put_object_if_match_and_if_none_match"
+	bucket, key := s.bucket(t, 38), "test_put_object_if_match_and_if_none_match"
 	first := put(t, s, bucket, key, "old", nil)
 	ctx := context.Background()
 	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("new"))}
@@ -716,7 +716,7 @@ func TestPutObjectIfMatchAndIfNoneMatch(t *testing.T) {
 func TestPutObjectKeyMaxLength(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 39)
 	key := strings.Repeat("a", 1024)
 	body := "test-max-length"
 	out := put(t, s, bucket, key, body, nil)
@@ -729,7 +729,7 @@ func TestPutObjectKeyMaxLength(t *testing.T) {
 func TestPutObjectKeyMinLength(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 40)
 	key, body := "a", "test-min-length"
 	out := put(t, s, bucket, key, body, nil)
 	if aws.ToString(out.ETag) == "" || read(t, s, bucket, key) != body {
@@ -741,7 +741,7 @@ func TestPutObjectKeyMinLength(t *testing.T) {
 func TestPutObjectKeyTooLong(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 41)
 	key := strings.Repeat("a", 1025)
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
@@ -755,7 +755,7 @@ func TestPutObjectKeyTooLong(t *testing.T) {
 func TestPutObjectKeySpecialCharactersAtStart(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 42)
 	specialChars := []string{"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{", "}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`"}
 	for _, specialChar := range specialChars {
 		remaining := 1024 - len(specialChar)
@@ -775,7 +775,7 @@ func TestPutObjectKeySpecialCharactersAtStart(t *testing.T) {
 func TestPutObjectKeySpecialCharactersAtEnd(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 43)
 	specialChars := []string{"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "[", "]", "{", "}", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`"}
 	for _, specialChar := range specialChars {
 		remaining := 1024 - len(specialChar)
@@ -795,7 +795,7 @@ func TestPutObjectKeySpecialCharactersAtEnd(t *testing.T) {
 func TestPutObjectKeyUnicodeCharacters(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 44)
 	for _, char := range []string{"한", "中", "日", "а", "α", "ع", "т", "ф"} {
 		count := 200/len([]byte(char)) - 1
 		key := strings.Repeat(char, count)
@@ -811,7 +811,7 @@ func TestPutObjectKeyUnicodeCharacters(t *testing.T) {
 func TestPutObjectKeyUnicodeCharactersTooLong(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 45)
 	for _, char := range []string{"한", "中", "日", "а", "α", "ع", "т", "ф"} {
 		charBytes := len([]byte(char))
 		key := strings.Repeat(char, 1024/charBytes+1)
@@ -831,7 +831,7 @@ func TestPutObjectKeyUnicodeCharactersTooLong(t *testing.T) {
 func TestPutObjectKeyWithLeadingAndTrailingSpaces(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 46)
 	for _, n := range []int{1, 2, 3, 5} {
 		key := strings.Repeat(" ", n) + strings.Repeat("a", 1024-2*n) + strings.Repeat(" ", n)
 		body := fmt.Sprintf("space-%d", n)
@@ -846,7 +846,7 @@ func TestPutObjectKeyWithLeadingAndTrailingSpaces(t *testing.T) {
 func TestPutObjectKeyWithConsecutiveSlashes(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 47)
 	for _, key := range []string{"folder//double-slash", "folder///triple-slash", "//leading-double-slash", "trailing-double-slash//", "folder////multiple-slashes"} {
 		body := "slash-" + strings.ReplaceAll(key, "/", "-")
 		out := put(t, s, bucket, key, body, nil)
@@ -860,7 +860,7 @@ func TestPutObjectKeyWithConsecutiveSlashes(t *testing.T) {
 func TestPutObjectKeyBoundaryLengths(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 48)
 	for _, n := range []int{1023, 1024, 500, 100, 50} {
 		key := strings.Repeat("a", n)
 		body := fmt.Sprintf("boundary-%d", n)

@@ -18,7 +18,7 @@ import (
 func TestCreatedBucketEnableObjectLock(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 1)
 	enableVersioning(t, s, b)
 	if err := putLockConfiguration(t, s, b, &types.ObjectLockConfiguration{ObjectLockEnabled: types.ObjectLockEnabledEnabled}); err != nil {
 		t.Fatal(err)
@@ -44,7 +44,7 @@ func TestObjectLockPutObjLock(t *testing.T) {
 func TestObjectLockPutObjLockInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 3)
 	err := putLockConfiguration(t, s, b, lockConfiguration(types.ObjectLockRetentionModeGovernance, 0, 1))
 	assertS3Error(t, err, 409, "InvalidBucketState")
 }
@@ -151,7 +151,7 @@ func TestObjectLockPutObject(t *testing.T) {
 func TestObjectLockCopyObject(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	locked, plain := newLockBucket(t, s), s.bucket(t)
+	locked, plain := newLockBucket(t, s), s.bucket(t, 12)
 	if err := putLockConfiguration(t, s, locked, lockConfiguration(types.ObjectLockRetentionModeGovernance, 1, 0)); err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +219,7 @@ func TestObjectLockMD5(t *testing.T) {
 func TestObjectLockGetObjLockInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 15)
 	_, err := s.client.GetObjectLockConfiguration(context.Background(), &s3.GetObjectLockConfigurationInput{Bucket: aws.String(b)})
 	assertS3Error(t, err, 404, "ObjectLockConfigurationNotFoundError")
 }
@@ -243,7 +243,7 @@ func TestObjectLockPutObjRetention(t *testing.T) {
 func TestObjectLockPutObjRetentionInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 17)
 	key := "test_object_lock_put_obj_retention_invalid_bucket"
 	put(t, s, b, key, key, nil)
 	early := time.Now().UTC().Add(48 * time.Hour)
@@ -286,7 +286,7 @@ func TestObjectLockGetObjRetention(t *testing.T) {
 func TestObjectLockGetObjRetentionInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 20)
 	key := "test_object_lock_get_obj_retention_invalid_bucket"
 	put(t, s, b, key, key, nil)
 	_, err := s.client.GetObjectRetention(context.Background(), &s3.GetObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key)})
@@ -475,7 +475,7 @@ func TestObjectLockPutLegalHold(t *testing.T) {
 func TestObjectLockPutLegalHoldInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 30)
 	key := "test_object_lock_put_legal_hold_invalid_bucket"
 	put(t, s, b, key, key, nil)
 	_, err := s.client.PutObjectLegalHold(context.Background(), &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatusOn}})
@@ -519,7 +519,7 @@ func TestObjectLockGetLegalHold(t *testing.T) {
 func TestObjectLockGetLegalHoldInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 33)
 	key := "test_object_lock_get_legal_hold_invalid_bucket"
 	put(t, s, b, key, key, nil)
 	_, err := s.client.GetObjectLegalHold(context.Background(), &s3.GetObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key)})

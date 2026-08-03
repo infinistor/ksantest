@@ -13,7 +13,7 @@ import (
 func TestLoggingGet(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	out, err := s.client.GetBucketLogging(context.Background(), &s3.GetBucketLoggingInput{Bucket: aws.String(s.bucket(t))})
+	out, err := s.client.GetBucketLogging(context.Background(), &s3.GetBucketLoggingInput{Bucket: aws.String(s.bucket(t, 1))})
 	if err != nil || out.LoggingEnabled != nil {
 		t.Fatalf("LoggingEnabled=%#v err=%v", out.LoggingEnabled, err)
 	}
@@ -23,7 +23,7 @@ func TestLoggingGet(t *testing.T) {
 func TestLoggingSet(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 2), s.bucket(t, 2)
 	putLogging(t, s, source, target, "")
 }
 
@@ -31,7 +31,7 @@ func TestLoggingSet(t *testing.T) {
 func TestLoggingSetGet(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 3), s.bucket(t, 3)
 	putLogging(t, s, source, target, "")
 	out, err := s.client.GetBucketLogging(context.Background(), &s3.GetBucketLoggingInput{Bucket: aws.String(source)})
 	if err != nil || out.LoggingEnabled == nil || aws.ToString(out.LoggingEnabled.TargetBucket) != target || aws.ToString(out.LoggingEnabled.TargetPrefix) != "" {
@@ -43,7 +43,7 @@ func TestLoggingSetGet(t *testing.T) {
 func TestLoggingPrefix(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 4), s.bucket(t, 4)
 	putLogging(t, s, source, target, "logs/")
 	out, err := s.client.GetBucketLogging(context.Background(), &s3.GetBucketLoggingInput{Bucket: aws.String(source)})
 	if err != nil || out.LoggingEnabled == nil || aws.ToString(out.LoggingEnabled.TargetBucket) != target || aws.ToString(out.LoggingEnabled.TargetPrefix) != "logs/" {
@@ -55,7 +55,7 @@ func TestLoggingPrefix(t *testing.T) {
 func TestLoggingVersioning(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 5), s.bucket(t, 5)
 	enableVersioning(t, s, source)
 	putLogging(t, s, source, target, "logs/")
 	out, err := s.client.GetBucketLogging(context.Background(), &s3.GetBucketLoggingInput{Bucket: aws.String(source)})
@@ -68,7 +68,7 @@ func TestLoggingVersioning(t *testing.T) {
 func TestLoggingEncryption(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	source, target := s.bucket(t), s.bucket(t)
+	source, target := s.bucket(t, 6), s.bucket(t, 6)
 	putAESBucketEncryption(t, s.client, source)
 	getAndAssertAESBucketEncryption(t, s.client, source)
 	putLogging(t, s, source, target, "logs/")
@@ -91,7 +91,7 @@ func TestLoggingBucketNotFound(t *testing.T) {
 func TestLoggingTargetBucketNotFound(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	source := s.bucket(t)
+	source := s.bucket(t, 8)
 	target := "missing-target-" + uniqueBucketSuffix(t)
 	_, err := putLoggingError(s, source, target, "logs/")
 	assertS3Error(t, err, 400, "InvalidTargetBucketForLogging")

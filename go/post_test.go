@@ -48,7 +48,7 @@ func TestPostObjectAuthenticatedRequest(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 2)
 	fields, policy := postV4Fields(s, bucket, "text/plain", "foo", 0, 1024, nil)
 	fields["key"], fields["acl"], fields["Content-Type"] = "foo.txt", "private", "text/plain"
 	fields["policy"] = policy
@@ -101,7 +101,7 @@ func TestPostObjectAuthenticatedNoContentType(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 3)
 	key, contentType, fileBody := "foo.txt", "text/plain", []byte("bar")
 	keyPrefix := "foo"
 	document := map[string]any{
@@ -130,7 +130,7 @@ func TestPostObjectAuthenticatedRequestBadAccessKey(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 4)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := "foo"
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -154,7 +154,7 @@ func TestPostObjectUploadLargerThanChunk(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 7)
 	key, contentType := "foo.txt", "text/plain"
 	keyPrefix := "foo"
 	fileBody := deterministicBody(5 * 1024 * 1024)
@@ -182,7 +182,7 @@ func TestPostObjectSetKeyFromFilename(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 8)
 	key, contentType, fileBody := "foo.txt", "text/plain", []byte("bar")
 	keyPrefix := "foo"
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -209,7 +209,7 @@ func TestPostObjectIgnoredHeader(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 9)
 	key, contentType, fileBody := "foo.txt", "text/plain", []byte("bar")
 	keyPrefix := "foo"
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -236,7 +236,7 @@ func TestPostObjectCaseInsensitiveConditionFields(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 10)
 	key, contentType, fileBody := "foo.txt", "text/plain", []byte("bar")
 	document := map[string]any{
 		"expiration": time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339),
@@ -264,7 +264,7 @@ func TestPostObjectEscapedFieldValues(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 11)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -319,7 +319,7 @@ func TestPostObjectInvalidSignature(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 13)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -343,7 +343,7 @@ func TestPostObjectInvalidAccessKey(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 14)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -367,7 +367,7 @@ func TestPostObjectInvalidDateFormat(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 15)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -392,7 +392,7 @@ func TestPostObjectNoKeySpecified(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 16)
 	contentType, fileBody := "text/plain", []byte("bar")
 	document := map[string]any{
 		"expiration": time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339),
@@ -417,7 +417,7 @@ func TestPostObjectMissingSignature(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 17)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -440,7 +440,7 @@ func TestPostObjectMissingPolicyCondition(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 18)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -464,7 +464,7 @@ func TestPostObjectUserSpecifiedHeader(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 19)
 	key, contentType, fileBody := "foo.txt", "text/plain", []byte("bar")
 	keyPrefix := "foo"
 	conditions := append(postV2Conditions(bucket, contentType, keyPrefix, 0, 1024), []string{"starts-with", "$x-amz-meta-foo", "bar"})
@@ -495,7 +495,7 @@ func TestPostObjectRequestMissingPolicySpecifiedField(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 20)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -519,7 +519,7 @@ func TestPostObjectConditionIsCaseSensitive(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 21)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -543,7 +543,7 @@ func TestPostObjectExpiresIsCaseSensitive(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 22)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -567,7 +567,7 @@ func TestPostObjectExpiredPolicy(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 23)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -591,7 +591,7 @@ func TestPostObjectInvalidRequestFieldValue(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 24)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -615,7 +615,7 @@ func TestPostObjectMissingExpiresCondition(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 25)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -639,7 +639,7 @@ func TestPostObjectMissingConditionsList(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 26)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	document := map[string]any{"expiration": time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339)}
 	fields := map[string]string{"key": key, "acl": "private", "Content-Type": contentType}
@@ -661,7 +661,7 @@ func TestPostObjectUploadSizeLimitExceeded(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 27)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	document := map[string]any{"expiration": time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339), "conditions": postV2Conditions(bucket, contentType, keyPrefix, 0, 0)}
@@ -684,7 +684,7 @@ func TestPostObjectMissingContentLengthArgument(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 28)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, 1024)
@@ -708,7 +708,7 @@ func TestPostObjectInvalidContentLengthArgument(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 29)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	document := map[string]any{"expiration": time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339), "conditions": postV2Conditions(bucket, contentType, keyPrefix, -1, 0)}
@@ -731,7 +731,7 @@ func TestPostObjectUploadSizeBelowMinimum(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 30)
 	key, contentType, fileBody := `\$foo.txt`, "text/plain", []byte("bar")
 	keyPrefix := `\$foo`
 	document := map[string]any{"expiration": time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339), "conditions": postV2Conditions(bucket, contentType, keyPrefix, 512, 1024)}
@@ -754,7 +754,7 @@ func TestPostObjectEmptyConditions(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("source scenario uses SigV2 or compatibility-specific POST behavior")
 	}
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 31)
 	key, contentType, fileBody := "foo.txt", "text/plain", []byte("bar")
 	document := map[string]any{"expiration": time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339), "conditions": []any{}}
 	fields := map[string]string{"key": key, "acl": "private", "Content-Type": contentType}
@@ -773,7 +773,7 @@ func TestPresignedUrlPutGet(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 32)
 	presign := s3.NewPresignClient(s.client)
 	body := []byte("foo")
 	putURL, err := presign.PresignPutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")})
@@ -810,7 +810,7 @@ func TestPutObjectV4(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 33)
 	body := deterministicBody(100)
 	putBytes(t, s.client, bucket, "foo", body)
 	assertObjectBytes(t, s.client, bucket, "foo", body)
@@ -821,7 +821,7 @@ func TestPutObjectChunkedV4(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 34)
 	body := deterministicBody(100)
 	putBytes(t, s.client, bucket, "chunked", body)
 	assertObjectBytes(t, s.client, bucket, "chunked", body)
@@ -832,7 +832,7 @@ func TestGetObjectV4(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 35)
 	body := deterministicBody(100)
 	putBytes(t, s.client, bucket, "foo", body)
 	out, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")})

@@ -21,7 +21,7 @@ func TestSetTagging(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 1)
 	_, err := s.client.GetBucketTagging(context.Background(), &s3.GetBucketTaggingInput{Bucket: aws.String(b)})
 	assertS3Error(t, err, 404, "NoSuchTagSet")
 	want := []types.Tag{{Key: aws.String("Hello"), Value: aws.String("World")}}
@@ -41,12 +41,13 @@ func TestSetTagging(t *testing.T) {
 	_, err = s.client.GetBucketTagging(context.Background(), &s3.GetBucketTaggingInput{Bucket: aws.String(b)})
 	assertS3Error(t, err, 404, "NoSuchTagSet")
 }
+
 // 오브젝트에 태그 설정이 올바르게 적용되는지 확인
 func TestGetObjTagging(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_obj_tagging"
+	b, key := s.bucket(t, 2), "test_get_obj_tagging"
 	put(t, s, b, key, "", nil)
 	want := tags(2, 0, 0)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -54,12 +55,13 @@ func TestGetObjTagging(t *testing.T) {
 	}
 	assertTags(t, getObjectTags(t, s, b, key), want)
 }
+
 // 오브젝트에 태그 설정이 올바르게 적용되는지 헤더정보를 통해 확인
 func TestGetObjHeadTagging(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_obj_head_tagging"
+	b, key := s.bucket(t, 3), "test_get_obj_head_tagging"
 	put(t, s, b, key, "", nil)
 	want := tags(2, 0, 0)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -70,12 +72,13 @@ func TestGetObjHeadTagging(t *testing.T) {
 		t.Fatalf("TagCount=%v err=%v", head.TagCount, err)
 	}
 }
+
 // 추가가능한 최대갯수까지 태그를 입력할 수 있는지 확인(max = 10)
 func TestPutMaxTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_put_max_tags"
+	b, key := s.bucket(t, 4), "test_put_max_tags"
 	put(t, s, b, key, "", nil)
 	want := tags(10, 0, 0)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -83,23 +86,25 @@ func TestPutMaxTags(t *testing.T) {
 	}
 	assertTags(t, getObjectTags(t, s, b, key), want)
 }
+
 // 추가가능한 최대갯수를 넘겨서 태그를 입력할때 에러 확인
 func TestPutExcessTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_put_excess_tags"
+	b, key := s.bucket(t, 5), "test_put_excess_tags"
 	put(t, s, b, key, "", nil)
 	err := taggingsPutObjectTags(t, s, b, key, tags(11, 0, 0))
 	assertS3Error(t, err, 400, "BadRequest")
 	assertTags(t, getObjectTags(t, s, b, key), nil)
 }
+
 // 태그의 key값의 길이가 최대(128) value값의 길이가 최대(256)일때 태그를 입력할 수 있는지 확인
 func TestPutMaxSizeTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_put_max_size_tags"
+	b, key := s.bucket(t, 6), "test_put_max_size_tags"
 	put(t, s, b, key, "", nil)
 	want := tags(10, 128, 256)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -107,34 +112,37 @@ func TestPutMaxSizeTags(t *testing.T) {
 	}
 	assertTags(t, getObjectTags(t, s, b, key), want)
 }
+
 // 태그의 key값의 길이가 최대(129) value값의 길이가 최대(256)일때 태그 입력 실패 확인
 func TestPutExcessKeyTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_put_excess_key_tags"
+	b, key := s.bucket(t, 7), "test_put_excess_key_tags"
 	put(t, s, b, key, "", nil)
 	err := taggingsPutObjectTags(t, s, b, key, tags(10, 129, 256))
 	assertS3Error(t, err, 400, "InvalidTag")
 	assertTags(t, getObjectTags(t, s, b, key), nil)
 }
+
 // 태그의 key값의 길이가 최대(128) value값의 길이가 최대(257)일때 태그 입력 실패 확인
 func TestPutExcessValTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_put_excess_val_tags"
+	b, key := s.bucket(t, 8), "test_put_excess_val_tags"
 	put(t, s, b, key, "", nil)
 	err := taggingsPutObjectTags(t, s, b, key, tags(10, 128, 259))
 	assertS3Error(t, err, 400, "InvalidTag")
 	assertTags(t, getObjectTags(t, s, b, key), nil)
 }
+
 // 오브젝트의 태그목록을 덮어쓰기 가능한지 확인
 func TestPutModifyTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_put_modify_tags"
+	b, key := s.bucket(t, 9), "test_put_modify_tags"
 	put(t, s, b, key, "", nil)
 	first, second := tags(2, 0, 0), tags(1, 128, 128)
 	if err := taggingsPutObjectTags(t, s, b, key, first); err != nil {
@@ -146,12 +154,13 @@ func TestPutModifyTags(t *testing.T) {
 	}
 	assertTags(t, getObjectTags(t, s, b, key), second)
 }
+
 // 오브젝트의 태그를 삭제 가능한지 확인
 func TestPutDeleteTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_put_delete_tags"
+	b, key := s.bucket(t, 10), "test_put_delete_tags"
 	put(t, s, b, key, "", nil)
 	want := tags(2, 0, 0)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -163,12 +172,13 @@ func TestPutDeleteTags(t *testing.T) {
 	}
 	assertTags(t, getObjectTags(t, s, b, key), nil)
 }
+
 // 헤더에 태그정보를 포함한 오브젝트 업로드 성공 확인
 func TestPutObjWithTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test tag obj1"
+	b, key := s.bucket(t, 11), "test tag obj1"
 	body := strings.Repeat("x", 100)
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(body)), Tagging: aws.String("foo=bar&bar=")})
 	if err != nil {
@@ -179,6 +189,7 @@ func TestPutObjWithTags(t *testing.T) {
 	}
 	assertTags(t, getObjectTags(t, s, b, key), []types.Tag{{Key: aws.String("bar"), Value: aws.String("")}, {Key: aws.String("foo"), Value: aws.String("bar")}})
 }
+
 // 로그인 정보가 있는 Post방식으로 태그정보, ACL을 포함한 오브젝트를 업로드 가능한지 확인
 func TestPostObjectTagsAuthenticatedRequest(t *testing.T) {
 	t.Parallel()
@@ -187,7 +198,7 @@ func TestPostObjectTagsAuthenticatedRequest(t *testing.T) {
 	if s.cfg.Endpoint() == "" {
 		t.Skip("authenticated POST tagging is disabled on AWS")
 	}
-	b := s.bucket(t)
+	b := s.bucket(t, 12)
 	expiration := time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339)
 	document := map[string]any{"expiration": expiration, "conditions": []any{map[string]string{"bucket": b}, []string{"starts-with", "$key", "foo"}, map[string]string{"acl": "private"}, []string{"starts-with", "$Content-Type", "text/plain"}, []any{"content-length-range", 0, 1024}, []string{"starts-with", "$tagging", ""}}}
 	encoded, _ := json.Marshal(document)
@@ -202,12 +213,13 @@ func TestPostObjectTagsAuthenticatedRequest(t *testing.T) {
 	}
 	assertTags(t, getObjectTags(t, s, b, "foo.txt"), tags(2, 0, 0))
 }
+
 // 업로드시 오브젝트의 태그 정보를 빈 값으로 올릴 경우 성공 확인
 func TestGetObjNonTagging(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t), "test_get_obj_non_tagging"
+	b, key := s.bucket(t, 13), "test_get_obj_non_tagging"
 	put(t, s, b, key, "", nil)
 	assertTags(t, getObjectTags(t, s, b, key), nil)
 }

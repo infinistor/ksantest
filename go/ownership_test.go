@@ -15,55 +15,60 @@ func TestGetBucketOwnership(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced, 1)
 	if _, err := s.client.GetBucketOwnershipControls(context.Background(), &s3.GetBucketOwnershipControlsInput{Bucket: aws.String(bucket)}); err != nil {
 		t.Fatalf("GetBucketOwnershipControls: %v", err)
 	}
 }
+
 // 버킷을 생성할때 소유권 설정 확인
 func TestCreateBucketWithOwnership(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced, 2)
 	assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
 }
+
 // 버킷의 소유권 변경 확인
 func TestChangeBucketOwnership(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced, 3)
 	assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
 	putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerPreferred)
 	assertOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerPreferred)
 }
+
 // [BucketOwnerEnforced] 버킷 ACL 설정이 실패하는지 확인
 func TestBucketOwnershipDenyACL(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced, 4)
 	_, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicRead})
 	assertS3Error(t, err, 403, "AccessDenied")
 }
+
 // [BucketOwnerEnforced] 오브젝트 ACL 설정이 실패하는지 확인
 func TestBucketOwnershipDenyObjectACL(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced, 5)
 	key := "testBucketOwnershipDenyObjectACL"
 	put(t, s, bucket, key, key, nil)
 	_, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPublicRead})
 	assertS3Error(t, err, 403, "AccessDenied")
 }
+
 // ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경해도 접근 가능한지 확인
 func TestObjectOwnershipDenyChange(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 6)
 	key := "testObjectOwnershipDenyChange"
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
 	if err != nil {
@@ -74,12 +79,13 @@ func TestObjectOwnershipDenyChange(t *testing.T) {
 	putOwnership(t, s, bucket, types.ObjectOwnershipBucketOwnerEnforced)
 	headPublic(t, public, bucket, key)
 }
+
 // ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경할경우 ACL 설정이 실패하는지 확인
 func TestObjectOwnershipDenyACL(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 7)
 	key := "testObjectOwnershipDenyACL"
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
 	if err != nil {
@@ -90,9 +96,9 @@ func TestObjectOwnershipDenyACL(t *testing.T) {
 	assertS3Error(t, err, 400, "AccessControlListNotSupported")
 }
 
-func ownershipBucket(t *testing.T, s *suite, ownership types.ObjectOwnership) string {
+func ownershipBucket(t *testing.T, s *suite, ownership types.ObjectOwnership, id ...int) string {
 	t.Helper()
-	name := newBucketName(s.cfg.BucketPrefix)
+	name := buildBucketName(s.cfg.BucketPrefix, s.suiteID, id...)
 	input := createBucketInput(s.cfg, name)
 	input.ObjectOwnership = ownership
 	_, err := s.client.CreateBucket(context.Background(), input)

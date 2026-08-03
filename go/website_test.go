@@ -14,16 +14,17 @@ func TestWebsiteGetBuckets(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 1)
 	_, err := s.client.GetBucketWebsite(context.Background(), &s3.GetBucketWebsiteInput{Bucket: aws.String(bucket)})
 	assertS3Error(t, err, 404, "NoSuchWebsiteConfiguration")
 }
+
 // 버킷의 Website 설정이 가능한지 확인
 func TestWebsitePutBuckets(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 2)
 	want := websiteConfiguration()
 	putWebsite(t, s, bucket, want)
 	out, err := s.client.GetBucketWebsite(context.Background(), &s3.GetBucketWebsiteInput{Bucket: aws.String(bucket)})
@@ -34,12 +35,13 @@ func TestWebsitePutBuckets(t *testing.T) {
 		t.Fatalf("website configuration = %#v, want %#v", out, want)
 	}
 }
+
 // 버킷의 Website 설정이 삭제가능한지 확인
 func TestWebsiteDeleteBuckets(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 3)
 	putWebsite(t, s, bucket, websiteConfiguration())
 	if _, err := s.client.DeleteBucketWebsite(context.Background(), &s3.DeleteBucketWebsiteInput{Bucket: aws.String(bucket)}); err != nil {
 		t.Fatalf("DeleteBucketWebsite: %v", err)

@@ -15,7 +15,7 @@ import (
 // 버킷의 오브젝트 목록을 올바르게 가져오는지 확인
 func TestBucketListVersionsMany(t *testing.T) {
 	t.Parallel()
-	s, b := listFixture(t, []string{"foo", "bar", "baz"})
+	s, b := listFixture(t, []string{"foo", "bar", "baz"}, 1)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), MaxKeys: aws.Int32(2)})
 	assertStringList(t, versionKeys(out, false), []string{"bar", "baz"})
 	if !aws.ToBool(out.IsTruncated) {
@@ -34,7 +34,7 @@ func TestBucketListVersionsDelimiterBasic(t *testing.T) {
 	keys := []string{"foo/bar", "foo/bars/xyzzy", "quux/thud", "asdf"}
 	wantKeys := []string{"asdf"}
 	wantPrefixes := []string{"foo/", "quux/"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 2)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("/")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -54,7 +54,7 @@ func TestBucketListVersionsEncodingBasic(t *testing.T) {
 	keys := []string{"foo+1/bar", "foo/bar/xyzzy", "quux ab/thud", "asdf+b"}
 	wantKeys := []string{"asdf+b"}
 	wantPrefixes := []string{"foo+1/", "foo/", "quux ab/"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 3)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("/"), EncodingType: types.EncodingTypeUrl})
 	gotK, gotP := versionKeys(out, true), versionPrefixes(out, true)
 	sort.Strings(gotK)
@@ -73,7 +73,7 @@ func TestBucketListVersionsDelimiterPrefix(t *testing.T) {
 	t.Parallel()
 	keys := []string{"asdf", "boo/bar", "boo/baz/xyzzy", "cquux/thud", "cquux/bla"}
 	object, p1, p2, nested, nestedP := "asdf", "boo/", "cquux/", "boo/bar", "boo/baz/"
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 4)
 	check := func(prefix, marker string, max int32, wk, wp []string, truncated bool, wantNext string) string {
 		out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String(prefix), Delimiter: aws.String("/"), KeyMarker: aws.String(marker), MaxKeys: aws.Int32(max)})
 		assertStringList(t, versionKeys(out, false), wk)
@@ -98,7 +98,7 @@ func TestBucketListVersionsDelimiterPrefixEndsWithDelimiter(t *testing.T) {
 	t.Parallel()
 	keys := []string{"asdf/"}
 	wantKeys := []string{"asdf/"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 5)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("/"), Prefix: aws.String("asdf/")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -120,7 +120,7 @@ func TestBucketListVersionsDelimiterAlt(t *testing.T) {
 	keys := []string{"bar", "baz", "cab", "foo"}
 	wantKeys := []string{"foo"}
 	wantPrefixes := []string{"ba", "ca"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 6)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("a")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -139,7 +139,7 @@ func TestBucketListVersionsDelimiterPrefixUnderscore(t *testing.T) {
 	t.Parallel()
 	keys := []string{"Obj1_", "Under1/bar", "Under1/baz/xyzzy", "Under2/thud", "Under2/bla"}
 	object, p1, p2, nested, nestedP := "Obj1_", "Under1/", "Under2/", "Under1/bar", "Under1/baz/"
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 7)
 	check := func(prefix, marker string, max int32, wk, wp []string, truncated bool, wantNext string) string {
 		out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String(prefix), Delimiter: aws.String("/"), KeyMarker: aws.String(marker), MaxKeys: aws.Int32(max)})
 		assertStringList(t, versionKeys(out, false), wk)
@@ -165,7 +165,7 @@ func TestBucketListVersionsDelimiterPercentage(t *testing.T) {
 	keys := []string{"b%ar", "b%az", "c%ab", "foo"}
 	wantKeys := []string{"foo"}
 	wantPrefixes := []string{"b%", "c%"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 8)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("%")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -185,7 +185,7 @@ func TestBucketListVersionsDelimiterWhitespace(t *testing.T) {
 	keys := []string{"b ar", "b az", "c ab", "foo"}
 	wantKeys := []string{"foo"}
 	wantPrefixes := []string{"b ", "c "}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 9)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String(" ")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -205,7 +205,7 @@ func TestBucketListVersionsDelimiterDot(t *testing.T) {
 	keys := []string{"b.ar", "b.az", "c.ab", "foo"}
 	wantKeys := []string{"foo"}
 	wantPrefixes := []string{"b.", "c."}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 10)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String(".")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -224,7 +224,7 @@ func TestBucketListVersionsDelimiterUnreadable(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "cab", "foo"}
 	wantKeys := []string{"bar", "baz", "cab", "foo"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 11)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("\n")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -242,7 +242,7 @@ func TestBucketListVersionsDelimiterEmpty(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "cab", "foo"}
 	wantKeys := []string{"bar", "baz", "cab", "foo"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 12)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -260,7 +260,7 @@ func TestBucketListVersionsDelimiterNone(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "cab", "foo"}
 	wantKeys := []string{"bar", "baz", "cab", "foo"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 13)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -275,7 +275,7 @@ func TestBucketListVersionsDelimiterNotExist(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "cab", "foo"}
 	wantKeys := []string{"bar", "baz", "cab", "foo"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 14)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("/")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -297,7 +297,7 @@ func TestBucketListVersionsDelimiterNotSkipSpecial(t *testing.T) {
 	}
 	tail := []string{"1999", "1999#", "1999+", "2000"}
 	keys = append(keys, tail...)
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 15)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("/")})
 	assertStringList(t, versionKeys(out, false), tail)
 	assertStringList(t, versionPrefixes(out, false), []string{"0/"})
@@ -308,7 +308,7 @@ func TestBucketListVersionsPrefixBasic(t *testing.T) {
 	t.Parallel()
 	keys := []string{"foo/bar", "foo/baz", "quux"}
 	wantKeys := []string{"foo/bar", "foo/baz"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 16)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("foo/")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -326,7 +326,7 @@ func TestBucketListVersionsPrefixAlt(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "foo"}
 	wantKeys := []string{"bar", "baz"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 17)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("ba")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -344,7 +344,7 @@ func TestBucketListVersionsPrefixEmpty(t *testing.T) {
 	t.Parallel()
 	keys := []string{"foo/bar", "foo/baz", "quux"}
 	wantKeys := []string{"foo/bar", "foo/baz", "quux"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 18)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -362,7 +362,7 @@ func TestBucketListVersionsPrefixNone(t *testing.T) {
 	t.Parallel()
 	keys := []string{"foo/bar", "foo/baz", "quux"}
 	wantKeys := []string{"foo/bar", "foo/baz", "quux"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 19)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -377,7 +377,7 @@ func TestBucketListVersionsPrefixNotExist(t *testing.T) {
 	t.Parallel()
 	keys := []string{"foo/bar", "foo/baz", "quux"}
 	wantKeys := []string{}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 20)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("d")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -395,7 +395,7 @@ func TestBucketListVersionsPrefixUnreadable(t *testing.T) {
 	t.Parallel()
 	keys := []string{"foo/bar", "foo/baz", "quux"}
 	wantKeys := []string{}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 21)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("\n")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -414,7 +414,7 @@ func TestBucketListVersionsPrefixDelimiterBasic(t *testing.T) {
 	keys := []string{"foo/bar", "foo/baz/xyzzy", "quux/thud", "asdf"}
 	wantKeys := []string{"foo/bar"}
 	wantPrefixes := []string{"foo/baz/"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 22)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("foo/"), Delimiter: aws.String("/")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -437,7 +437,7 @@ func TestBucketListVersionsPrefixDelimiterAlt(t *testing.T) {
 	keys := []string{"bar", "bazar", "cab", "foo"}
 	wantKeys := []string{"bar"}
 	wantPrefixes := []string{"baza"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 23)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("ba"), Delimiter: aws.String("a")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -459,7 +459,7 @@ func TestBucketListVersionsPrefixDelimiterPrefixNotExist(t *testing.T) {
 	t.Parallel()
 	keys := []string{"b/a/r", "b/a/c", "b/a/g", "g"}
 	wantKeys := []string{}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 24)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("/"), Delimiter: aws.String("d")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -480,7 +480,7 @@ func TestBucketListVersionsPrefixDelimiterDelimiterNotExist(t *testing.T) {
 	t.Parallel()
 	keys := []string{"b/a/c", "b/a/g", "b/a/r", "g"}
 	wantKeys := []string{"b/a/c", "b/a/g", "b/a/r"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 25)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("b"), Delimiter: aws.String("z")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -501,7 +501,7 @@ func TestBucketListVersionsPrefixDelimiterPrefixDelimiterNotExist(t *testing.T) 
 	t.Parallel()
 	keys := []string{"b/a/r", "b/a/c", "b/a/g", "g"}
 	wantKeys := []string{}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 26)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String("y"), Delimiter: aws.String("z")})
 	gotK, gotP := versionKeys(out, false), versionPrefixes(out, false)
 	sort.Strings(gotK)
@@ -521,7 +521,7 @@ func TestBucketListVersionsPrefixDelimiterPrefixDelimiterNotExist(t *testing.T) 
 func TestBucketListVersionsMaxKeysOne(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "foo", "quxx"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 27)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), MaxKeys: aws.Int32(1)})
 	assertStringList(t, versionKeys(out, false), keys[:1])
 	if !aws.ToBool(out.IsTruncated) {
@@ -535,7 +535,7 @@ func TestBucketListVersionsMaxKeysOne(t *testing.T) {
 func TestBucketListVersionsMaxKeysZero(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "foo", "quxx"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 28)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), MaxKeys: aws.Int32(0)})
 	if len(out.Versions) != 0 || aws.ToBool(out.IsTruncated) {
 		t.Fatalf("versions=%v truncated=%v", out.Versions, out.IsTruncated)
@@ -546,7 +546,7 @@ func TestBucketListVersionsMaxKeysZero(t *testing.T) {
 func TestBucketListVersionsMaxKeysNone(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "foo", "quxx"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 29)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
 	assertStringList(t, versionKeys(out, false), keys)
 	if aws.ToInt32(out.MaxKeys) != 1000 {
@@ -558,7 +558,7 @@ func TestBucketListVersionsMaxKeysNone(t *testing.T) {
 func TestBucketListVersionsMarkerNone(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "foo", "quxx"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 30)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), KeyMarker: aws.String("")})
 	if out.NextKeyMarker != nil {
 		t.Fatalf("next=%q", aws.ToString(out.NextKeyMarker))
@@ -569,7 +569,7 @@ func TestBucketListVersionsMarkerNone(t *testing.T) {
 func TestBucketListVersionsMarkerEmpty(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "foo", "quxx"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 31)
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), KeyMarker: aws.String("")})
 	assertStringList(t, versionKeys(out, false), keys)
 	if aws.ToString(out.NextKeyMarker) != "" || aws.ToBool(out.IsTruncated) {
@@ -581,7 +581,7 @@ func TestBucketListVersionsMarkerEmpty(t *testing.T) {
 func TestBucketListVersionsMarkerUnreadable(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "foo", "quxx"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 32)
 	marker := "\n"
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), KeyMarker: aws.String(marker)})
 	assertStringList(t, versionKeys(out, false), keys)
@@ -597,7 +597,7 @@ func TestBucketListVersionsMarkerUnreadable(t *testing.T) {
 func TestBucketListVersionsMarkerNotInList(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "foo", "quxx"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 33)
 	marker := "blah"
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), KeyMarker: aws.String(marker)})
 	assertStringList(t, versionKeys(out, false), []string{"foo", "quxx"})
@@ -613,7 +613,7 @@ func TestBucketListVersionsMarkerNotInList(t *testing.T) {
 func TestBucketListVersionsMarkerAfterList(t *testing.T) {
 	t.Parallel()
 	keys := []string{"bar", "baz", "foo", "quxx"}
-	s, b := listFixture(t, keys)
+	s, b := listFixture(t, keys, 34)
 	marker := "zzz"
 	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), KeyMarker: aws.String(marker)})
 	assertStringList(t, versionKeys(out, false), []string{})
@@ -629,7 +629,7 @@ func TestBucketListVersionsMarkerAfterList(t *testing.T) {
 func TestBucketListVersionsReturnData(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 35)
 	enableVersioning(t, s, b)
 	for _, key := range []string{"bar", "baz", "foo"} {
 		put(t, s, b, key, key, nil)
@@ -647,7 +647,7 @@ func TestBucketListVersionsReturnData(t *testing.T) {
 func TestBucketListVersionsObjectsAnonymous(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter)
+	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 36)
 	_, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(b), ACL: types.BucketCannedACLPublicRead})
 	if err != nil {
 		t.Fatal(err)
@@ -662,7 +662,7 @@ func TestBucketListVersionsObjectsAnonymous(t *testing.T) {
 func TestBucketListVersionsObjectsAnonymousFail(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 37)
 	_, err := anonymousClient(s).ListObjectVersions(context.Background(), &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
 	assertS3Error(t, err, 403, "AccessDenied")
 }
@@ -679,7 +679,7 @@ func TestBucketListVersionsNotExist(t *testing.T) {
 // delimiter, prefix, max-keys, marker를 조합하여 오브젝트 목록을 가져올때 올바르게 가져오는지 확인
 func TestVersioningBucketListFilteringAll(t *testing.T) {
 	t.Parallel()
-	s, b := listFixture(t, []string{"test1/f1", "test2/f2", "test3", "test4/f3", "testF4"})
+	s, b := listFixture(t, []string{"test1/f1", "test2/f2", "test3", "test4/f3", "testF4"}, 39)
 	input := &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("/"), MaxKeys: aws.Int32(3)}
 	one := listVersions(t, s.client, input)
 	assertStringList(t, versionKeys(one, false), []string{"test3"})
@@ -698,7 +698,7 @@ func TestVersioningBucketListFilteringAll(t *testing.T) {
 func TestListObjectsVersionsVersioningObjListMarker(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	b := s.bucket(t)
+	b := s.bucket(t, 40)
 	enableVersioning(t, s, b)
 	key := "testVersioningObjListMarker"
 	want := make([]string, 0, 10)

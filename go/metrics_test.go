@@ -14,7 +14,7 @@ func TestMetrics(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	out, err := s.client.ListBucketMetricsConfigurations(context.Background(), &s3.ListBucketMetricsConfigurationsInput{Bucket: aws.String(s.bucket(t))})
+	out, err := s.client.ListBucketMetricsConfigurations(context.Background(), &s3.ListBucketMetricsConfigurationsInput{Bucket: aws.String(s.bucket(t, 1))})
 	if err != nil || len(out.MetricsConfigurationList) != 0 {
 		t.Fatalf("configurations=%d err=%v", len(out.MetricsConfigurationList), err)
 	}
@@ -25,7 +25,7 @@ func TestPutMetrics(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	putMetrics(t, s, s.bucket(t), "metrics-id", metricsConfiguration("metrics-id", nil))
+	putMetrics(t, s, s.bucket(t, 2), "metrics-id", metricsConfiguration("metrics-id", nil))
 }
 
 // 버킷에 Metrics 설정이 되었는지 확인
@@ -33,7 +33,7 @@ func TestCheckMetrics(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket := s.bucket(t)
+	bucket := s.bucket(t, 3)
 	putMetrics(t, s, bucket, "metrics-id", metricsConfiguration("metrics-id", nil))
 	out, err := s.client.ListBucketMetricsConfigurations(context.Background(), &s3.ListBucketMetricsConfigurationsInput{Bucket: aws.String(bucket)})
 	if err != nil || len(out.MetricsConfigurationList) != 1 {
@@ -46,7 +46,7 @@ func TestGetMetrics(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket, id := s.bucket(t), "metrics-id"
+	bucket, id := s.bucket(t, 4), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, nil))
 	out := getMetrics(t, s, bucket, id)
 	if aws.ToString(out.Id) != id {
@@ -59,7 +59,7 @@ func TestDeleteMetrics(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket, id := s.bucket(t), "metrics-id"
+	bucket, id := s.bucket(t, 5), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, nil))
 	if _, err := s.client.DeleteBucketMetricsConfiguration(context.Background(), &s3.DeleteBucketMetricsConfigurationInput{Bucket: aws.String(bucket), Id: aws.String(id)}); err != nil {
 		t.Fatal(err)
@@ -75,7 +75,7 @@ func TestGetMetricsNotExist(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	_, err := s.client.GetBucketMetricsConfiguration(context.Background(), &s3.GetBucketMetricsConfigurationInput{Bucket: aws.String(s.bucket(t)), Id: aws.String("metrics-id")})
+	_, err := s.client.GetBucketMetricsConfiguration(context.Background(), &s3.GetBucketMetricsConfigurationInput{Bucket: aws.String(s.bucket(t, 6)), Id: aws.String("metrics-id")})
 	assertS3Error(t, err, 404, "NoSuchConfiguration")
 }
 
@@ -84,7 +84,7 @@ func TestDeleteMetricsNotExist(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	_, err := s.client.DeleteBucketMetricsConfiguration(context.Background(), &s3.DeleteBucketMetricsConfigurationInput{Bucket: aws.String(s.bucket(t)), Id: aws.String("metrics-id")})
+	_, err := s.client.DeleteBucketMetricsConfiguration(context.Background(), &s3.DeleteBucketMetricsConfigurationInput{Bucket: aws.String(s.bucket(t, 7)), Id: aws.String("metrics-id")})
 	assertS3Error(t, err, 404, "NoSuchConfiguration")
 }
 
@@ -102,7 +102,7 @@ func TestPutMetricsEmptyId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	_, err := putMetricsError(s, s.bucket(t), "", metricsConfiguration("", nil))
+	_, err := putMetricsError(s, s.bucket(t, 9), "", metricsConfiguration("", nil))
 	assertS3Error(t, err, 400, "InvalidConfigurationId")
 }
 
@@ -111,7 +111,7 @@ func TestPutMetricsNoId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	_, err := s.client.PutBucketMetricsConfiguration(context.Background(), &s3.PutBucketMetricsConfigurationInput{Bucket: aws.String(s.bucket(t))})
+	_, err := s.client.PutBucketMetricsConfiguration(context.Background(), &s3.PutBucketMetricsConfigurationInput{Bucket: aws.String(s.bucket(t, 10))})
 	if err == nil {
 		t.Fatal("PutBucketMetricsConfiguration without Id unexpectedly succeeded")
 	}
@@ -122,7 +122,7 @@ func TestPutMetricsDuplicateId(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket, id := s.bucket(t), "metrics-id"
+	bucket, id := s.bucket(t, 11), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, &types.MetricsFilterMemberPrefix{Value: "test1"}))
 	assertMetricsPrefix(t, getMetrics(t, s, bucket, id), "test1")
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, &types.MetricsFilterMemberPrefix{Value: "test2"}))
@@ -138,7 +138,7 @@ func TestMetricsPrefix(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket, id := s.bucket(t), "metrics-id"
+	bucket, id := s.bucket(t, 12), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, &types.MetricsFilterMemberPrefix{Value: "test"}))
 	assertMetricsPrefix(t, getMetrics(t, s, bucket, id), "test")
 }
@@ -148,7 +148,7 @@ func TestMetricsTag(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket, id := s.bucket(t), "metrics-id"
+	bucket, id := s.bucket(t, 13), "metrics-id"
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, &types.MetricsFilterMemberTag{Value: types.Tag{Key: aws.String("key"), Value: aws.String("value")}}))
 	out := getMetrics(t, s, bucket, id)
 	tag, ok := out.Filter.(*types.MetricsFilterMemberTag)
@@ -162,7 +162,7 @@ func TestMetricsFilter(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	bucket, id := s.bucket(t), "metrics-id"
+	bucket, id := s.bucket(t, 14), "metrics-id"
 	filter := &types.MetricsFilterMemberAnd{Value: types.MetricsAndOperator{Prefix: aws.String("test"), Tags: []types.Tag{{Key: aws.String("key"), Value: aws.String("value")}}}}
 	putMetrics(t, s, bucket, id, metricsConfiguration(id, filter))
 	out := getMetrics(t, s, bucket, id)
