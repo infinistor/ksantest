@@ -21,6 +21,7 @@ import java.util.Calendar;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
+import org.example.Utility.CheckSum;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -516,6 +517,25 @@ public class GetObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(data));
 		checkContentUsingRandomRange(bucketName, key, data, 50);
+	}
+
+	@Test
+	@Tag("Range")
+	@Tag("checksum")
+	public void testRangeGetChecksum() {
+		var client = getClient();
+		var bucketName = createBucket(client, 36);
+		var data = Utils.randomTextToLong(5 * MainData.MB);
+
+		for (var checksum : CheckSum.ALL_ALGORITHMS) {
+			var key = "testRangeGetChecksum/" + checksum.name();
+			var response = client.putObject(
+					p -> CheckSum.applyChecksum(p.bucket(bucketName).key(key), checksum, data),
+					RequestBody.fromString(data));
+
+			checksumCompare(checksum, data, response);
+			checkContentUsingRandomRange(bucketName, key, data, 50);
+		}
 	}
 
 	@Test

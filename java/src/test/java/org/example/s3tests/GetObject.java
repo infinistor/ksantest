@@ -313,6 +313,16 @@ class GetObject {
 	}
 
 	/**
+	 * 모든 체크섬 알고리즘으로 업로드한 오브젝트의 Range 다운로드 내용 확인
+	 */
+	@Test
+	@Tag("Range")
+	@Tag("checksum")
+	void testRangeGetChecksum() {
+		testV2.testRangeGetChecksum();
+	}
+
+	/**
 	 * GetObject의 반환헤더값을 설정하여 업로드 할 경우 적용되었는지 확인
 	 */
 	@Test

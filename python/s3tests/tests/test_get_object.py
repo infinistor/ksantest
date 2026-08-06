@@ -9,7 +9,7 @@ from botocore.exceptions import ClientError
 
 from s3tests.data import main_data as md
 from s3tests.test_base import S3TestBase
-from s3tests.utils import utils
+from s3tests.utils import checksum, utils
 
 PAST_DATE = datetime(1994, 9, 29, 19, 43, 31, tzinfo=timezone.utc)
 FUTURE_DATE = datetime(2100, 9, 29, 19, 43, 31, tzinfo=timezone.utc)
@@ -324,6 +324,22 @@ class TestGetObject(S3TestBase):
         data = utils.random_text_to_long(15 * md.MB)
         client.put_object(Bucket=bucket_name, Key=key, Body=data.encode("utf-8"))
         self.check_content_using_random_range(bucket_name, key, data, 50)
+
+    @pytest.mark.tag("Range")
+    @pytest.mark.tag("checksum")
+    def test_range_get_checksum(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 36)
+        data = utils.random_text_to_long(5 * md.MB)
+
+        for algorithm in checksum.ALL_ALGORITHMS:
+            key = f"testRangeGetChecksum/{algorithm}"
+            params = {"Bucket": bucket_name, "Key": key, "Body": data.encode("utf-8")}
+            checksum.apply_put_checksum_params(params, algorithm, data)
+            response = client.put_object(**params)
+
+            checksum.checksum_compare(algorithm, data, response)
+            self.check_content_using_random_range(bucket_name, key, data, 50)
 
     @pytest.mark.tag("Header")
     def test_object_response_headers(self):

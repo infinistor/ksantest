@@ -455,6 +455,63 @@ func TestRangeObjectMany(t *testing.T) {
 	}
 }
 
+// 모든 체크섬 알고리즘으로 업로드한 오브젝트의 Range 다운로드 내용 확인
+func TestRangeGetChecksum(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t, 36)
+	data := []byte(stringsRepeatPattern(5 * 1024 * 1024))
+	algorithms := []types.ChecksumAlgorithm{
+		types.ChecksumAlgorithmCrc32,
+		types.ChecksumAlgorithmCrc32c,
+		types.ChecksumAlgorithmSha1,
+		types.ChecksumAlgorithmSha256,
+	}
+
+	for _, algorithm := range algorithms {
+		algorithm := algorithm
+		t.Run(string(algorithm), func(t *testing.T) {
+			key := "testRangeGetChecksum/" + string(algorithm)
+			out, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{
+				Bucket:            aws.String(bucket),
+				Key:               aws.String(key),
+				Body:              bytes.NewReader(data),
+				ChecksumAlgorithm: algorithm,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			want := checksumValue(algorithm, data)
+			got := map[types.ChecksumAlgorithm]string{
+				types.ChecksumAlgorithmCrc32:   aws.ToString(out.ChecksumCRC32),
+				types.ChecksumAlgorithmCrc32c:  aws.ToString(out.ChecksumCRC32C),
+				types.ChecksumAlgorithmSha1:    aws.ToString(out.ChecksumSHA1),
+				types.ChecksumAlgorithmSha256:  aws.ToString(out.ChecksumSHA256),
+			}[algorithm]
+			if got != want {
+				t.Fatalf("checksum=%q want=%q", got, want)
+			}
+
+			for i := 0; i < 50; i++ {
+				start := (i * 7919) % (len(data) - 65536)
+				end := start + 65535
+				input := &s3.GetObjectInput{
+					Bucket: aws.String(bucket),
+					Key:    aws.String(key),
+					Range:  aws.String(fmt.Sprintf("bytes=%d-%d", start, end)),
+				}
+				response := getObject(t, s.client, input)
+				body, readErr := io.ReadAll(response.Body)
+				response.Body.Close()
+				if readErr != nil || !bytes.Equal(body, data[start:end+1]) {
+					t.Fatalf("iteration=%d range=%d-%d length=%d err=%v", i, start, end, len(body), readErr)
+				}
+			}
+		})
+	}
+}
+
 // GetObject의 반환헤더값을 설정하여 업로드 할 경우 적용되었는지 확인
 func TestObjectResponseHeaders(t *testing.T) {
 	t.Parallel()

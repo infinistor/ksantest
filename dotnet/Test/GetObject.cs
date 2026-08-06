@@ -655,5 +655,26 @@ namespace s3tests.Test
 			CheckContentUsingRandomRange(client, bucketName, key, data, 100);
 		}
 
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "checksum")]
+		[Trait(MainData.Explanation, "모든 체크섬 알고리즘으로 업로드한 오브젝트의 Range 다운로드 내용 확인")]
+		public void TestRangeGetChecksum()
+		{
+			TestId = 36;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var data = S3Utils.RandomTextToLong(5 * 1024 * 1024);
+
+			foreach (var checksum in CheckSum.AllAlgorithms)
+			{
+				var key = $"TestRangeGetChecksum/{checksum.Value}";
+				var response = client.PutObject(bucketName, key, body: data, checksumAlgorithm: checksum);
+
+				ChecksumCompare(checksum, data, response);
+				CheckContentUsingRandomRange(client, bucketName, key, data, 50);
+			}
+		}
+
 	}
 }
