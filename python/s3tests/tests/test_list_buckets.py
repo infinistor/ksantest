@@ -74,11 +74,14 @@ class TestListBuckets(S3TestBase):
         for _ in range(5):
             self.create_bucket(client, 6)
 
-        full_response = client.list_buckets(Prefix=self.get_prefix())
+        # {prefix}{suite}-{testId}- 로 한정해 병렬 실행 시 다른 테스트 버킷과 섞이지 않게 함
+        prefix = f"{self.get_prefix()}{self.get_suite_id()}-6-"
+
+        full_response = client.list_buckets(Prefix=prefix)
         full_bucket_list = self.get_bucket_list(full_response)
         full_bucket_list.sort()
 
-        response = client.list_buckets(Prefix=self.get_prefix(), MaxBuckets=2)
+        response = client.list_buckets(Prefix=prefix, MaxBuckets=2)
         bucket_list = self.get_bucket_list(response)
         assert len(bucket_list) == 2
         assert bucket_list == full_bucket_list[:2]
@@ -89,17 +92,20 @@ class TestListBuckets(S3TestBase):
         for _ in range(5):
             self.create_bucket(client, 7)
 
-        full_response = client.list_buckets(Prefix=self.get_prefix())
+        # {prefix}{suite}-{testId}- 로 한정해 병렬 실행 시 다른 테스트 버킷과 섞이지 않게 함
+        prefix = f"{self.get_prefix()}{self.get_suite_id()}-7-"
+
+        full_response = client.list_buckets(Prefix=prefix)
         full_bucket_list = self.get_bucket_list(full_response)
         full_bucket_list.sort()
 
-        response = client.list_buckets(Prefix=self.get_prefix(), MaxBuckets=2)
+        response = client.list_buckets(Prefix=prefix, MaxBuckets=2)
         bucket_list = self.get_bucket_list(response)
         assert len(bucket_list) == 2
         assert bucket_list == full_bucket_list[:2]
 
         response2 = client.list_buckets(
-            Prefix=self.get_prefix(),
+            Prefix=prefix,
             MaxBuckets=2,
             ContinuationToken=response["ContinuationToken"],
         )
