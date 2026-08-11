@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<RunSettings>
-  <RunConfiguration>
-    <EnvironmentVariables>
-      <!-- Cursor / VSTest CWD is bin/Debug/...; point at project-root ini -->
-      <S3TESTS_INI>E:\Code\Git\ksantest\dotnet\11.151.ini</S3TESTS_INI>
-    </EnvironmentVariables>
-  </RunConfiguration>
-</RunSettings>
