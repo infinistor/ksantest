@@ -662,9 +662,14 @@ namespace s3tests.Test
 
 			// SSE-S3 설정 해제
 			Assert.Equal(HttpStatusCode.NoContent, client.DeleteBucketEncryption(bucketName).HttpStatusCode);
-			// AWS는 2023-01부터 버킷 기본 암호화(SSE-S3)를 항상 적용하므로 설정을 지워도 규칙이 비지 않는다.
-			if (!Config.S3.IsAWS)
-				Assert.Empty(client.GetBucketEncryption(bucketName).ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
+			// AWS는 2023-01부터 버킷 기본 암호화(SSE-S3)를 항상 적용하므로 삭제 후에도 기본 설정이 반환됨
+			if (Config.S3.IsAWS)
+			{
+				var EncryptionResponse = client.GetBucketEncryption(bucketName);
+				Assert.Equal(ServerSideEncryptionMethod.AES256,
+					EncryptionResponse.ServerSideEncryptionConfiguration.ServerSideEncryptionRules[0].ServerSideEncryptionByDefault.ServerSideEncryptionAlgorithm);
+			}
+			else CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketEncryption(bucketName));
 
 			// 오브젝트 다운로드 확인
 			Response = client.GetObject(bucketName, PutKey2);
