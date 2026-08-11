@@ -2020,6 +2020,7 @@ namespace s3tests.Test
 		#region Bucket Clear
 		public void BucketClear()
 		{
+			if (Config.NotDelete) return;
 			var client = GetClient();
 			if (client == null) return;
 			if (BucketList == null) return;
