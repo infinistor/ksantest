@@ -2092,9 +2092,6 @@ public class TestBase {
 
 	@AfterEach
 	public void clear(TestInfo testInfo) {
-		System.out.println("Test End : " + testInfo.getDisplayName());
-		for (var bucketName : buckets)
-			System.out.println("Bucket : " + bucketName);
 		if (!config.notDelete)
 			bucketClear();
 	}
