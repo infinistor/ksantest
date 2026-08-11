@@ -1,47 +1,121 @@
-# S3 compatibility test for .Net Core
+# S3 compatibility test for .NET
 
-이 테스트는 아마존에서 제공하는 S3 Api를 사용하여 S3 호환 프로그램에 대한 기능점검 프로그램입니다.
-
-별도의 유틸을 이용하여 보기 쉽게 결과물을 출력하는 기능을 포함하고 있습니다.
+아마존 S3 API를 사용해 S3 호환 구현의 기능을 점검하는 테스트입니다.
+[xunit-to-html](https://github.com/Zir0-93/xunit-to-html)로 HTML 리포트를 생성합니다.
 
 ## 구동환경
 
-*  .Net Core : 7 이상
+- **.NET 9** 이상 (`s3tests.csproj` `TargetFramework` 참고)
+- HTML 리포트용: Java 8+, `xunit-to-html/saxon9he.jar`
+
+## 환경 구성 (Windows)
+
+Windows에서 `start.ps1` / `start-function.ps1` 실행이 막히면, PowerShell을 한 번 열어 실행 정책을 설정합니다.
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### .NET SDK 설치
+
+- 다운로드: [.NET 9](https://dotnet.microsoft.com/download/dotnet/9.0)
+
+Linux(예: RHEL/CentOS 계열) 패키지 설치 예:
+
+```bash
+sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
+sudo yum install -y dotnet-sdk-9.0
+```
+
+배포판별 최신 안내는 [Microsoft 문서](https://learn.microsoft.com/dotnet/core/install/linux)를 참고하세요.
+
+## 설정 파일
+
+우선순위:
+
+1. 환경 변수 `S3TESTS_INI` (스크립트가 설정)
+2. 기본값: `MainConfig.STR_DEF_FILENAME` (현재 `config.ini`)
+
+표준 섹션: `[S3]`, `[Fixtures]`, `[Main User]`, `[Alt User]`, `[Backend User]`
+
+스크립트 기본값은 `config.ini`입니다. (`.\start.ps1` → `config.ini`)
 
 ## How to Build
 
-### dotnet 설치
-
-#### Window 10
-- 설치파일 링크 : [Link](https://dotnet.microsoft.com/en-us/download/dotnet/3.1)
-
-#### CentOS 7
-```
-sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
-sudo yum install -y dotnet-sdk-3.1
+```powershell
+dotnet build s3tests.csproj -c Release
 ```
 
-### Build
-``` shell
-dotnet build -c Release
+## 테스트 실행
+
+### 스크립트 (권장)
+
+```powershell
+cd dotnet
+.\start.ps1
+.\start.ps1 awstests
+.\start.ps1 11.151 -NoOpen
 ```
 
-## 테스트 방법
+Linux:
 
-### 테스트 실행
-``` ps1
-#설정파일 경로
-SET S3TESTS_INI=sample.ini
-dotnet test s3tests.dll --test-adapter-path:. --nologo --logger "junit;"
+```bash
+cd dotnet
+./start.sh
+./start.sh awstests
+./start.sh 11.151
 ```
-### 레포트 출력
-```ps1
-COPY TestResults\TestResults.xml ..\..\..\..\..\xunit-to-html\result_netcore.xml
-cd ..\..\..\..\..\xunit-to-html\
-java -jar saxon9he.jar -o:result_netcore.html -s:result_netcore.xml -xsl:xunit_to_html.xsl
-start result_netcore.html
-```
-## 테스트 결과 레포트 확인
 
-- 테스트 결과 레포트는 [링크](https://github.com/Zir0-93/xunit-to-html)를 사용하여 작성했습니다.
-- 테스트 결과는 **../xunit-to-html-master/result_netcore.html**로 확인 가능합니다.
+리포트: `../xunit-to-html/Result_dotnet.html`
+
+### 단일 테스트 (클래스/메서드)
+
+HTML 리포트 없이 콘솔로만 실행합니다.
+
+```powershell
+.\start-function.ps1 11.151 ACL TestBucketPermissionAltUserReadAcp
+```
+
+```bash
+./start-function.sh 11.151 ACL TestBucketPermissionAltUserReadAcp
+```
+
+### dotnet으로 직접 실행
+
+#### Windows
+
+```powershell
+cd dotnet
+$env:S3TESTS_INI = "$PWD\config.ini"
+dotnet build s3tests.csproj -clp:ErrorsOnly
+dotnet test s3tests.csproj --no-build --logger "junit;LogFilePath=$PWD\TestResults\junit.xml"
+Copy-Item TestResults\junit.xml ..\xunit-to-html\Result_dotnet.xml -Force
+cd ..\xunit-to-html
+java -jar saxon9he.jar -o:Result_dotnet.html -s:Result_dotnet.xml -xsl:xunit_to_html.xsl
+```
+
+#### Linux
+
+```bash
+cd dotnet
+export S3TESTS_INI="$PWD/config.ini"
+dotnet build s3tests.csproj -clp:ErrorsOnly
+dotnet test s3tests.csproj --no-build --logger "junit;LogFilePath=$PWD/TestResults/junit.xml"
+cp TestResults/junit.xml ../xunit-to-html/Result_dotnet.xml
+cd ../xunit-to-html
+java -jar saxon9he.jar -o:Result_dotnet.html -s:Result_dotnet.xml -xsl:xunit_to_html.xsl
+```
+
+## 테스트 결과 레포트
+
+- 도구: [xunit-to-html](https://github.com/Zir0-93/xunit-to-html) (저장소 루트의 Git submodule)
+- 결과 파일: `../xunit-to-html/Result_dotnet.html`
+- **사전 준비**
+  - submodule 초기화: 일반 `git pull`만으로는 `xunit-to-html` 내용이 받아지지 않습니다.
+
+    ```powershell
+    git submodule update --init --recursive
+    ```
+
+    pull 때 함께 받으려면 `git pull --recurse-submodules`, 또는 pull 후 위 명령을 다시 실행합니다.
+  - `xunit-to-html/saxon9he.jar` 필요
