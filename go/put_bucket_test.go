@@ -64,7 +64,18 @@ func TestBucketCreateNamingGoodLong64(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	_, err := s.client.CreateBucket(context.Background(), createBucketInput(s.cfg, strings.Repeat("a", 64)))
+	bucket := strings.Repeat("a", 64)
+	_, err := s.client.CreateBucket(context.Background(), createBucketInput(s.cfg, bucket))
+	if err == nil {
+		t.Cleanup(func() {
+			if !s.cfg.NotDelete {
+				_, _ = s.client.DeleteBucket(
+					context.Background(),
+					&s3.DeleteBucketInput{Bucket: aws.String(bucket)},
+				)
+			}
+		})
+	}
 	assertAPIError(t, err)
 }
 
