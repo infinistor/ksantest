@@ -4,6 +4,5 @@ obj/
 *.ini
 s3tests_*
 !sample.ini
-*.sh
 suwon*
 TestResults/
