@@ -26,6 +26,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,6 +52,7 @@ import org.example.Data.RangeSet;
 import org.example.Data.UserData;
 import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
+import org.example.auth.AWS4SignerBase;
 import org.example.s3tests.S3Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
@@ -617,6 +619,65 @@ public class TestBase {
 		var time = Calendar.getInstance();
 		time.add(Calendar.MINUTE, minutes);
 		return myFormat.format(time.getTime());
+	}
+
+	protected static class SigV4Post {
+		final String amzDate;
+		final String dateStamp;
+		final String region;
+		final String credential;
+		final String secretKey;
+
+		SigV4Post(String accessKey, String secretKey, String regionName) {
+			this.amzDate = AWS4SignerBase.getAmzDate();
+			this.dateStamp = amzDate.substring(0, 8);
+			this.region = AWS4SignerBase.getPostRegion(regionName);
+			this.credential = accessKey + "/" + dateStamp + "/" + this.region + "/s3/aws4_request";
+			this.secretKey = secretKey;
+		}
+
+		String sign(String policy) {
+			return AWS4SignerBase.getPostPolicySignature(secretKey, dateStamp, region, policy);
+		}
+
+		void addConditions(JsonArray conditions) {
+			var algorithmCondition = new JsonObject();
+			algorithmCondition.addProperty("x-amz-algorithm", "AWS4-HMAC-SHA256");
+			conditions.add(algorithmCondition);
+
+			var credentialCondition = new JsonObject();
+			credentialCondition.addProperty("x-amz-credential", credential);
+			conditions.add(credentialCondition);
+
+			var dateCondition = new JsonObject();
+			dateCondition.addProperty("x-amz-date", amzDate);
+			conditions.add(dateCondition);
+		}
+
+		void putFormFields(Map<String, String> payload, String signature) {
+			payload.put("x-amz-algorithm", "AWS4-HMAC-SHA256");
+			payload.put("x-amz-credential", credential);
+			payload.put("x-amz-date", amzDate);
+			payload.put("x-amz-signature", signature);
+		}
+
+		void putFormFields(Map<String, String> payload) {
+			payload.put("x-amz-algorithm", "AWS4-HMAC-SHA256");
+			payload.put("x-amz-credential", credential);
+			payload.put("x-amz-date", amzDate);
+		}
+	}
+
+	protected SigV4Post createSigV4Post() {
+		return new SigV4Post(config.mainUser.accessKey, config.mainUser.secretKey, config.regionName);
+	}
+
+	protected SigV4Post createSigV4Post(String accessKey) {
+		return new SigV4Post(accessKey, config.mainUser.secretKey, config.regionName);
+	}
+
+	protected String encodePostPolicy(JsonObject policyDocument) {
+		return Base64.getEncoder().encodeToString(policyDocument.toString().getBytes());
 	}
 
 	public AccessControlList addBucketUserGrant(String bucketName, Grant grant) {

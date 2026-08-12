@@ -12,10 +12,8 @@ package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.net.MalformedURLException;
-import java.util.Base64;
 import java.util.HashMap;
 
 import org.example.Data.FormFile;
@@ -23,7 +21,6 @@ import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
-import org.example.auth.AWS2SignerBase;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -256,7 +253,6 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Post")
 	public void testPostObjectTagsAuthenticatedRequest() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client, 12);
 		var contentType = "text/plain";
@@ -302,23 +298,21 @@ public class Taggings extends TestBase {
 		starts3.add("");
 		conditions.add(starts3);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
 		payload.put("tagging", xmlInputTagSet);
 		payload.put("x-ignore-foo", "bar");
 		payload.put("Content-Type", contentType);
+		auth.putFormFields(payload, signature);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());

@@ -13,11 +13,9 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 
 import org.apache.hc.core5.http.HttpStatus;
@@ -25,7 +23,6 @@ import org.example.Data.FormFile;
 import org.example.Data.MainData;
 import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
-import org.example.auth.AWS2SignerBase;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -288,9 +285,9 @@ public class SSE_C extends TestBase { // NOSONAR
 	@Test
 	@Tag("Post")
 	public void testEncryptionSseCPostObjectAuthenticatedRequest() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var client = getClientHttps(false);
 		var bucketName = createBucket(client, 14);
+		unblockSseC(bucketName);
 
 		var contentType = "text/plain";
 		var key = "foo.txt";
@@ -343,28 +340,26 @@ public class SSE_C extends TestBase { // NOSONAR
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
+		auth.putFormFields(payload, signature);
 		payload.put("x-amz-server-side-encryption-customer-algorithm", SSE_ALGORITHM);
 		payload.put("x-amz-server-side-encryption-customer-key", SSE_KEY);
 		payload.put("x-amz-server-side-encryption-customer-key-md5", SSE_KEY_MD5);
 
-		var sendURL = createURL(bucketName);
+		var sendURL = createURL(bucketName, true);
 		var result = NetUtils.postUpload(sendURL, payload, fileData);
-		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode);
+		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
 
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
 				.sseCustomerKey(SSE_KEY));

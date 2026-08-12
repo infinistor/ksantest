@@ -12,11 +12,9 @@ package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.net.MalformedURLException;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.HashMap;
 
 import org.example.Data.FormFile;
@@ -24,7 +22,6 @@ import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
-import org.example.auth.AWS2SignerBase;
 import org.example.auth.AWS4SignerBase;
 import org.example.auth.AWS4SignerForAuthorizationHeader;
 import org.example.auth.AWS4SignerForChunkedUpload;
@@ -112,41 +109,19 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
-		// AWS 신규 리전은 SigV2 POST를 지원하지 않으므로 SigV4 방식으로 서명
-		var amzDate = AWS4SignerBase.getAmzDate();
-		var dateStamp = amzDate.substring(0, 8);
-		var region = config.regionName == null || config.regionName.isBlank() ? "us-east-1" : config.regionName;
-		var credential = config.mainUser.accessKey + "/" + dateStamp + "/" + region + "/s3/aws4_request";
-
-		var algorithmCondition = new JsonObject();
-		algorithmCondition.addProperty("x-amz-algorithm", "AWS4-HMAC-SHA256");
-		conditions.add(algorithmCondition);
-
-		var credentialCondition = new JsonObject();
-		credentialCondition.addProperty("x-amz-credential", credential);
-		conditions.add(credentialCondition);
-
-		var dateCondition = new JsonObject();
-		dateCondition.addProperty("x-amz-date", amzDate);
-		conditions.add(dateCondition);
-
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS4SignerBase.getPostPolicySignature(config.mainUser.secretKey, dateStamp, region, policy);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
 		payload.put("acl", "private");
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
-		payload.put("x-amz-algorithm", "AWS4-HMAC-SHA256");
-		payload.put("x-amz-credential", credential);
-		payload.put("x-amz-date", amzDate);
-		payload.put("x-amz-signature", signature);
+		auth.putFormFields(payload, signature);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
@@ -159,7 +134,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Upload")
 	public void testPostObjectAuthenticatedNoContentType() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var key = "foo.txt";
 		var contentType = "text/plain";
 
@@ -191,20 +165,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_NO_CONTENT, result.statusCode, result.getErrorCode());
@@ -216,7 +188,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectAuthenticatedRequestBadAccessKey() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var key = "foo.txt";
 		var contentType = "text/plain";
 
@@ -254,20 +225,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post("foo");
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", "foo");
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -325,7 +294,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Upload")
 	public void testPostObjectUploadLargerThanChunk() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var key = "foo.txt";
 		var contentType = "text/plain";
 		var size = 5 * 1024 * 1024;
@@ -365,20 +333,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(size);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, data);
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -392,7 +358,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Upload")
 	public void testPostObjectSetKeyFromFilename() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var contentType = "text/plain";
 		var key = "foo.txt";
 
@@ -430,20 +395,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -457,7 +420,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Upload")
 	public void testPostObjectIgnoredHeader() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(9);
 
 		var contentType = "text/plain";
@@ -493,20 +455,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("x-ignore-foo", "bar");
 		payload.put("Content-Type", contentType);
 
@@ -517,7 +477,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Upload")
 	public void testPostObjectCaseInsensitiveConditionFields() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(10);
 
 		var contentType = "text/plain";
@@ -553,20 +512,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("kEy", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("aCl", "private");
-		payload.put("signature", signature);
 		payload.put("pOLICy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -576,7 +533,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Upload")
 	public void testPostObjectEscapedFieldValues() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var key = "\\$foo.txt";
 		var contentType = "text/plain";
 
@@ -614,20 +570,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -641,7 +595,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Upload")
 	public void testPostObjectSuccessRedirectAction() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var key = "foo.txt";
 		var contentType = "text/plain";
 
@@ -677,7 +630,7 @@ public class Post extends TestBase {
 
 		var starts3 = new JsonArray();
 		starts3.add("eq");
-		starts3.add("$successActionRedirect");
+		starts3.add("$success_action_redirect");
 		starts3.add(redirectURL.toString());
 		conditions.add(starts3);
 
@@ -687,22 +640,20 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
-		payload.put("successActionRedirect", redirectURL.toString());
+		payload.put("success_action_redirect", redirectURL.toString());
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_OK, result.statusCode, result.getErrorCode());
@@ -715,7 +666,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectInvalidSignature() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(13);
 
 		var contentType = "text/plain";
@@ -751,20 +701,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature.substring(0, signature.length() - 1));
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature.substring(0, signature.length() - 1));
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -774,7 +722,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectInvalidAccessKey() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(14);
 
 		var contentType = "text/plain";
@@ -811,20 +758,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post(config.mainUser.accessKey.substring(0, config.mainUser.accessKey.length() - 1));
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey.substring(0, config.mainUser.accessKey.length() - 1));
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -834,7 +779,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectInvalidDateFormat() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(15);
 
 		var contentType = "text/plain";
@@ -871,20 +815,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -894,7 +836,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectNoKeySpecified() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(16);
 
 		var contentType = "text/plain";
@@ -924,19 +865,17 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile("", contentType, "bar");
 		var payload = new HashMap<String, String>();
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -946,7 +885,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectMissingSignature() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(17);
 
 		var contentType = "text/plain";
@@ -983,18 +921,17 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
+		var policy = encodePostPolicy(policyDocument);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
 		payload.put("policy", policy);
+		auth.putFormFields(payload);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1004,7 +941,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectMissingPolicyCondition() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(18);
 
 		var contentType = "text/plain";
@@ -1037,20 +973,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1060,7 +994,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("Metadata")
 	public void testPostObjectUserSpecifiedHeader() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var key = "foo.txt";
 		var contentType = "text/plain";
 
@@ -1104,20 +1037,18 @@ public class Post extends TestBase {
 		starts3.add("bar");
 		conditions.add(starts3);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("x-amz-meta-foo", "bar-clamp");
 		payload.put("Content-Type", contentType);
 
@@ -1131,7 +1062,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectRequestMissingPolicySpecifiedField() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(20);
 
 		var contentType = "text/plain";
@@ -1174,20 +1104,18 @@ public class Post extends TestBase {
 		starts3.add("bar");
 		conditions.add(starts3);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1197,7 +1125,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectConditionIsCaseSensitive() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(21);
 
 		var contentType = "text/plain";
@@ -1234,20 +1161,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("CONDITIONS", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1257,7 +1182,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectExpiresIsCaseSensitive() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(22);
 
 		var contentType = "text/plain";
@@ -1294,20 +1218,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1317,7 +1239,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectExpiredPolicy() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(23);
 
 		var contentType = "text/plain";
@@ -1354,20 +1275,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1377,7 +1296,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectInvalidRequestFieldValue() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(24);
 
 		var contentType = "text/plain";
@@ -1419,20 +1337,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("x-amz-meta-foo", "bar-clamp");
 		payload.put("Content-Type", contentType);
 
@@ -1443,7 +1359,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectMissingExpiresCondition() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(25);
 
 		var contentType = "text/plain";
@@ -1478,20 +1393,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
@@ -1500,7 +1413,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectMissingConditionsList() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(26);
 
 		var contentType = "text/plain";
@@ -1508,18 +1420,15 @@ public class Post extends TestBase {
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var auth = createSigV4Post();
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_BAD_REQUEST, result.statusCode, result.getErrorCode());
@@ -1528,7 +1437,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectUploadSizeLimitExceeded() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(27);
 
 		var contentType = "text/plain";
@@ -1565,20 +1473,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(0);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1588,7 +1494,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectMissingContentLengthArgument() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(28);
 
 		var contentType = "text/plain";
@@ -1624,20 +1529,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(0);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1647,7 +1550,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectInvalidContentLengthArgument() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(29);
 
 		var contentType = "text/plain";
@@ -1684,20 +1586,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(0);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1707,7 +1607,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectUploadSizeBelowMinimum() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(30);
 
 		var contentType = "text/plain";
@@ -1744,20 +1643,18 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1767,7 +1664,6 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectEmptyConditions() throws MalformedURLException {
-		assumeFalse(config.isAWS());
 		var bucketName = createBucket(31);
 
 		var contentType = "text/plain";
@@ -1777,18 +1673,15 @@ public class Post extends TestBase {
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 		policyDocument.add("conditions", new JsonArray());
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS2SignerBase.GetBase64EncodedSHA1Hash(policy, config.mainUser.secretKey);
+		var auth = createSigV4Post();
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
-		payload.put("AWSAccessKeyId", config.mainUser.accessKey);
 		payload.put("acl", "private");
-		payload.put("signature", signature);
 		payload.put("policy", policy);
+		auth.putFormFields(payload, signature);
 		payload.put("Content-Type", contentType);
 
 		var result = NetUtils.postUpload(createURL(bucketName), payload, fileData);
@@ -1900,8 +1793,8 @@ public class Post extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testPostObjectWrongBucket() throws MalformedURLException {
-		var bucketName = getNewBucketName(36);
-		var badBucketName = getNewBucketName(36);
+		var bucketName = getNewBucketNameOnly(36);
+		var badBucketName = getNewBucketNameOnly(36);
 
 		var contentType = "text/plain";
 		var key = "\\$foo.txt";
@@ -1937,31 +1830,12 @@ public class Post extends TestBase {
 		contentLengthRange.add(1024);
 		conditions.add(contentLengthRange);
 
-		// AWS 신규 리전은 SigV2 POST를 지원하지 않으므로 SigV4 방식으로 서명
-		var amzDate = AWS4SignerBase.getAmzDate();
-		var dateStamp = amzDate.substring(0, 8);
-		var region = config.regionName == null || config.regionName.isBlank() ? "us-east-1" : config.regionName;
-		var credential = config.mainUser.accessKey + "/" + dateStamp + "/" + region + "/s3/aws4_request";
-
-		var algorithmCondition = new JsonObject();
-		algorithmCondition.addProperty("x-amz-algorithm", "AWS4-HMAC-SHA256");
-		conditions.add(algorithmCondition);
-
-		var credentialCondition = new JsonObject();
-		credentialCondition.addProperty("x-amz-credential", credential);
-		conditions.add(credentialCondition);
-
-		var dateCondition = new JsonObject();
-		dateCondition.addProperty("x-amz-date", amzDate);
-		conditions.add(dateCondition);
-
+		var auth = createSigV4Post();
+		auth.addConditions(conditions);
 		policyDocument.add("conditions", conditions);
 
-		var bytesJsonPolicyDocument = policyDocument.toString().getBytes();
-		var encoder = Base64.getEncoder();
-		var policy = encoder.encodeToString(bytesJsonPolicyDocument);
-
-		var signature = AWS4SignerBase.getPostPolicySignature(config.mainUser.secretKey, dateStamp, region, policy);
+		var policy = encodePostPolicy(policyDocument);
+		var signature = auth.sign(policy);
 		var fileData = new FormFile(key, contentType, "bar");
 		var payload = new HashMap<String, String>();
 		payload.put("key", key);
@@ -1969,10 +1843,7 @@ public class Post extends TestBase {
 		payload.put("acl", "private");
 		payload.put("policy", policy);
 		payload.put("Content-Type", contentType);
-		payload.put("x-amz-algorithm", "AWS4-HMAC-SHA256");
-		payload.put("x-amz-credential", credential);
-		payload.put("x-amz-date", amzDate);
-		payload.put("x-amz-signature", signature);
+		auth.putFormFields(payload, signature);
 
 		var result = NetUtils.postUpload(createURL(badBucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_NOT_FOUND, result.statusCode, result.getErrorCode());

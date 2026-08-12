@@ -39,7 +39,7 @@ public abstract class AWS4SignerBase {
 	protected final SimpleDateFormat dateTimeFormat;
 	protected final SimpleDateFormat dateStampFormat;
 
-	public AWS4SignerBase(URL endpointUrl, String httpMethod, String serviceName, String regionName) {
+	protected AWS4SignerBase(URL endpointUrl, String httpMethod, String serviceName, String regionName) {
 		this.endpointUrl = endpointUrl;
 		this.httpMethod = httpMethod;
 		this.serviceName = serviceName;
@@ -58,7 +58,7 @@ public abstract class AWS4SignerBase {
 
 		StringBuilder buffer = new StringBuilder();
 		for (String header : sortedHeaders) {
-			if (buffer.length() > 0)
+			if (!buffer.isEmpty())
 				buffer.append(";");
 			buffer.append(header.toLowerCase());
 		}
@@ -85,7 +85,9 @@ public abstract class AWS4SignerBase {
 		// space.
 		StringBuilder buffer = new StringBuilder();
 		for (String key : sortedHeaders) {
-			buffer.append(key.toLowerCase().replaceAll("\\s+", " ") + ":" + headers.get(key).replaceAll("\\s+", " "));
+			buffer.append(key.toLowerCase().replaceAll("\\s+", " "));
+			buffer.append(":");
+			buffer.append(headers.get(key).replaceAll("\\s+", " "));
 			buffer.append("\n");
 		}
 
@@ -224,6 +226,11 @@ public abstract class AWS4SignerBase {
 		var format = new SimpleDateFormat(ISO8601_BASIC_FORMAT);
 		format.setTimeZone(new SimpleTimeZone(0, "UTC"));
 		return format.format(new java.util.Date());
+	}
+
+	/** POST 정책 서명에 사용할 리전을 반환한다. 미설정 시 us-east-1을 사용한다. */
+	public static String getPostRegion(String regionName) {
+		return regionName == null || regionName.isBlank() ? "us-east-1" : regionName;
 	}
 
 	/** base64 인코딩된 POST policy를 SigV4 방식으로 서명하여 hex 문자열로 반환한다. */
