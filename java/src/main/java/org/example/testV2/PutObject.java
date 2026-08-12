@@ -558,6 +558,28 @@ public class PutObject extends TestBase {
 	}
 
 	@Test
+	@Tag("metadata")
+	public void testObjectSetGetMetadataMixedCaseKey() {
+		var client = getClient();
+		var bucketName = createBucket(client, 49);
+		var key = "foo";
+		var metadata = new HashMap<String, String>();
+		metadata.put("Meta1", "value1");
+		metadata.put("META2", "value2");
+		metadata.put("mEtA3", "value3");
+
+		client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata), RequestBody.fromString(key));
+
+		var expected = new HashMap<String, String>();
+		expected.put("meta1", "value1");
+		expected.put("meta2", "value2");
+		expected.put("meta3", "value3");
+
+		var response = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(expected, response.metadata());
+	}
+
+	@Test
 	@Tag("checksum")
 	public void testPutObjectChecksumUseChunkEncoding() {
 		record TestConfig(

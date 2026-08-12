@@ -220,7 +220,7 @@ public class Backend extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 
 		// Backend 클라이언트로 태그 설정
-		var tag = Tag.builder().key("testKey").value("testValue").build();
+		var tag = Tag.builder().key("test-key").value("testValue").build();
 		var tagging = Tagging.builder().tagSet(tag).build();
 		var response = backendClient.putObjectTagging(p -> p.bucket(bucketName).key(key).tagging(tagging));
 		assertEquals(200, response.sdkHttpResponse().statusCode());
@@ -228,7 +228,7 @@ public class Backend extends TestBase {
 		// 일반 클라이언트로 태그 확인
 		var getResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(key));
 		assertEquals(1, getResponse.tagSet().size());
-		assertEquals("testKey", getResponse.tagSet().get(0).key());
+		assertEquals("test-key", getResponse.tagSet().get(0).key());
 		assertEquals("testValue", getResponse.tagSet().get(0).value());
 	}
 
@@ -242,7 +242,7 @@ public class Backend extends TestBase {
 		var bucketName = createBucket(client, 9);
 		var key = "testGetObjectTagging";
 		var content = "test content";
-		var tag = Tag.builder().key("testKey").value("testValue").build();
+		var tag = Tag.builder().key("test-key").value("testValue").build();
 
 		// 일반 클라이언트로 업로드 및 태그 설정
 		var tagging = Tagging.builder().tagSet(tag).build();
@@ -251,7 +251,7 @@ public class Backend extends TestBase {
 		// Backend 클라이언트로 태그 조회
 		var response = backendClient.getObjectTagging(g -> g.bucket(bucketName).key(key));
 		assertEquals(1, response.tagSet().size());
-		assertEquals("testKey", response.tagSet().get(0).key());
+		assertEquals("test-key", response.tagSet().get(0).key());
 		assertEquals("testValue", response.tagSet().get(0).value());
 	}
 
@@ -265,7 +265,7 @@ public class Backend extends TestBase {
 		var bucketName = createBucket(client, 10);
 		var key = "testDeleteObjectTagging";
 		var content = "test content";
-		var tag = Tag.builder().key("testKey").value("testValue").build();
+		var tag = Tag.builder().key("test-key").value("testValue").build();
 
 		// 일반 클라이언트로 업로드 및 태그 설정
 		var tagging = Tagging.builder().tagSet(tag).build();
@@ -637,7 +637,7 @@ public class Backend extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 
 		// Backend 클라이언트로 태그 설정
-		var tag = Tag.builder().key("testKey").value("testValue").build();
+		var tag = Tag.builder().key("test-key").value("testValue").build();
 		var tagging = Tagging.builder().tagSet(tag).build();
 		var response = backendClient.putObjectTagging(p -> p.bucket(bucketName).key(key).tagging(tagging));
 		assertEquals(200, response.sdkHttpResponse().statusCode());
@@ -645,7 +645,7 @@ public class Backend extends TestBase {
 		// 일반 클라이언트로 태그 확인
 		var getResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(key));
 		assertEquals(1, getResponse.tagSet().size());
-		assertEquals("testKey", getResponse.tagSet().get(0).key());
+		assertEquals("test-key", getResponse.tagSet().get(0).key());
 		assertEquals("testValue", getResponse.tagSet().get(0).value());
 	}
 
@@ -659,7 +659,7 @@ public class Backend extends TestBase {
 		var bucketName = createBucket(client, 22);
 		var key = "testGetObjectTaggingVersioning";
 		var content = "test content";
-		var tag = Tag.builder().key("testKey").value("testValue").build();
+		var tag = Tag.builder().key("test-key").value("testValue").build();
 
 		// 버저닝 활성화
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
@@ -671,7 +671,7 @@ public class Backend extends TestBase {
 		// Backend 클라이언트로 태그 조회
 		var response = backendClient.getObjectTagging(g -> g.bucket(bucketName).key(key));
 		assertEquals(1, response.tagSet().size());
-		assertEquals("testKey", response.tagSet().get(0).key());
+		assertEquals("test-key", response.tagSet().get(0).key());
 		assertEquals("testValue", response.tagSet().get(0).value());
 	}
 
@@ -685,7 +685,7 @@ public class Backend extends TestBase {
 		var bucketName = createBucket(client, 23);
 		var key = "testDeleteObjectTaggingVersioning";
 		var content = "test content";
-		var tag = Tag.builder().key("testKey").value("testValue").build();
+		var tag = Tag.builder().key("test-key").value("testValue").build();
 
 		// 버저닝 활성화
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
@@ -839,7 +839,7 @@ public class Backend extends TestBase {
 		var targetBucketName = createBucket(client, 28);
 		var key = "testBackendReplicationTagging";
 		var content = "test content";
-		var tagging = Tagging.builder().tagSet(Tag.builder().key("testKey").value("testValue").build()).build();
+		var tagging = Tagging.builder().tagSet(Tag.builder().key("test-key").value("testValue").build()).build();
 
 		// 버저닝 활성화
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
@@ -875,7 +875,7 @@ public class Backend extends TestBase {
 		var key = "testBackendReplicationMetadata";
 		var content = "test content";
 		var metadata = new HashMap<String, String>();
-		metadata.put("testKey", "testValue");
+		metadata.put("test-key", "testValue");
 
 		// 버저닝 활성화
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
@@ -947,7 +947,7 @@ public class Backend extends TestBase {
 		var sourceKey2 = "sourceKey2";
 		var targetKey = "targetKey";
 		var content = "test content";
-		var tagging = Tagging.builder().tagSet(Tag.builder().key("testKey").value("testValue").build()).build();
+		var tagging = Tagging.builder().tagSet(Tag.builder().key("test-key").value("testValue").build()).build();
 
 		// 버킷에 버저닝 활성화
 		checkConfigureVersioningRetry(bucket, BucketVersioningStatus.ENABLED);
@@ -991,7 +991,7 @@ public class Backend extends TestBase {
 		var targetKey = "targetKey";
 		var content = "test content";
 		var metadata = new HashMap<String, String>();
-		metadata.put("testKey", "testValue");
+		metadata.put("test-key", "testValue");
 
 		// 버킷에 버저닝 활성화
 		checkConfigureVersioningRetry(bucket, BucketVersioningStatus.ENABLED);
@@ -1033,9 +1033,9 @@ public class Backend extends TestBase {
 		var targetKey = "targetKey";
 		var content = "test content";
 		var metadata = new HashMap<String, String>();
-		metadata.put("testKey", "testValue");
+		metadata.put("test-key", "testValue");
 		var metadata2 = new HashMap<String, String>();
-		metadata2.put("testKey2", "testValue2");
+		metadata2.put("test-key2", "testValue2");
 
 		// 버킷에 버저닝 활성화
 		checkConfigureVersioningRetry(bucket, BucketVersioningStatus.ENABLED);
@@ -1112,7 +1112,7 @@ public class Backend extends TestBase {
 		var targetKey = "testMultipartUploadTaggingReplicationTarget";
 
 		var size = 10 * MainData.MB;
-		var tagging = Tagging.builder().tagSet(Tag.builder().key("testKey").value("testValue").build()).build();
+		var tagging = Tagging.builder().tagSet(Tag.builder().key("test-key").value("testValue").build()).build();
 
 		// 버저닝 활성화
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
@@ -1163,7 +1163,7 @@ public class Backend extends TestBase {
 
 		var size = 10 * MainData.MB;
 		var metadata = new HashMap<String, String>();
-		metadata.put("testKey", "testValue");
+		metadata.put("test-key", "testValue");
 
 		// 버저닝 활성화
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
@@ -1242,7 +1242,7 @@ public class Backend extends TestBase {
 		var sourceKey = "testPutObjectTaggingReplicationSource";
 		var targetKey = "testPutObjectTaggingReplicationTarget";
 		var content = "test content";
-		var tagging = Tagging.builder().tagSet(Tag.builder().key("testKey").value("testValue").build()).build();
+		var tagging = Tagging.builder().tagSet(Tag.builder().key("test-key").value("testValue").build()).build();
 
 		// 버저닝 활성화
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
@@ -1323,7 +1323,7 @@ public class Backend extends TestBase {
 		var sourceKey = "testDeleteObjectTaggingReplicationSource";
 		var targetKey = "testDeleteObjectTaggingReplicationTarget";
 		var content = "test content";
-		var tagging = Tagging.builder().tagSet(Tag.builder().key("testKey").value("testValue").build()).build();
+		var tagging = Tagging.builder().tagSet(Tag.builder().key("test-key").value("testValue").build()).build();
 
 		// 버저닝 활성화
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);

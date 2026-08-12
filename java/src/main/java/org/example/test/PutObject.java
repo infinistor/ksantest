@@ -552,6 +552,29 @@ public class PutObject extends TestBase {
 	}
 
 	@Test
+	@Tag("metadata")
+	public void testObjectSetGetMetadataMixedCaseKey() {
+		var client = getClient();
+		var bucketName = createBucket(client, 43);
+		var key = "foo";
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("Meta1", "value1");
+		metadata.addUserMetadata("META2", "value2");
+		metadata.addUserMetadata("mEtA3", "value3");
+
+		client.putObject(bucketName, key, createBody(key), metadata);
+
+		var response = client.getObjectMetadata(bucketName, key);
+		var got = response.getUserMetadata();
+		for (var metadataKey : got.keySet()) {
+			assertEquals(metadataKey.toLowerCase(), metadataKey);
+		}
+		assertEquals("value1", got.get("meta1"));
+		assertEquals("value2", got.get("meta2"));
+		assertEquals("value3", got.get("meta3"));
+	}
+
+	@Test
 	@Tag("KeyLength")
 	public void testPutObjectKeyMaxLength() {
 		var client = getClient();

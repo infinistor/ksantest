@@ -319,6 +319,14 @@ class PutObject {
 	}
 
 	@Test
+	@Tag("Metadata")
+	// 유저 메타데이터 키가 대소문자가 섞여 있어도 소문자로 반환되는지 확인
+	void testObjectSetGetMetadataMixedCaseKey() {
+		test.testObjectSetGetMetadataMixedCaseKey();
+		testV2.testObjectSetGetMetadataMixedCaseKey();
+	}
+
+	@Test
 	@Tag("checksum")
 	// useChunkEncoding을 사용하는 오브젝트 업로드 시 체크섬 계산 및 검증 확인
 	void testPutObjectChecksumUseChunkEncoding() {
