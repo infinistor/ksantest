@@ -284,7 +284,7 @@ class TestSseC(S3TestBase):
         self.unblock_sse_c(bucket_name)
 
         content_type = "text/plain"
-        key = "test_encryption_sse_c_post_object_authenticated_request"
+        key = "test_encryption_sse_c_post_object_authenticated_request.txt"
         amz_date = get_amz_date()
         date_stamp = amz_date[:8]
         region = self.config.region_name if self.config.region_name else "us-east-1"

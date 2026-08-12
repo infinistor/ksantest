@@ -190,13 +190,13 @@ func TestEncryptionSseCPostObjectAuthenticatedRequest(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 14)
-	key := "foo.txt"
+	key := "TestEncryptionSseCPostObjectAuthenticatedRequest.txt"
 	extra := []any{
 		[]string{"starts-with", "$x-amz-server-side-encryption-customer-algorithm", sseCAlgorithm},
 		[]string{"starts-with", "$x-amz-server-side-encryption-customer-key", sseCKey},
 		[]string{"starts-with", "$x-amz-server-side-encryption-customer-key-md5", sseCKeyMD5},
 	}
-	fields, policy := postV4Fields(s, bucket, "text/plain", "foo", 0, 1024, extra)
+	fields, policy := postV4Fields(s, bucket, "text/plain", "TestEncryptionSseCPostObjectAuthenticatedRequest", 0, 1024, extra)
 	fields["key"] = key
 	fields["acl"] = "private"
 	fields["Content-Type"] = "text/plain"

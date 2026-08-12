@@ -290,7 +290,7 @@ public class SSE_C extends TestBase { // NOSONAR
 		unblockSseC(bucketName);
 
 		var contentType = "text/plain";
-		var key = "foo.txt";
+		var key = "testEncryptionSseCPostObjectAuthenticatedRequest.txt";
 		var policyDocument = new JsonObject();
 		policyDocument.addProperty("expiration", getTimeToAddMinutes(100));
 
@@ -303,7 +303,7 @@ public class SSE_C extends TestBase { // NOSONAR
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
-		starts1.add("foo");
+		starts1.add("testEncryptionSseCPostObjectAuthenticatedRequest");
 		conditions.add(starts1);
 
 		var acl = new JsonObject();

@@ -79,7 +79,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "testobj";
+			var key = "TestEncryptionSseCMethodHead";
 			var body = new string('A', 1000);
 
 			var sseC = new SSECustomerKey()
@@ -109,7 +109,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "testobj";
+			var key = "TestEncryptionSseCPresent";
 			var body = new string('A', 1000);
 
 			var sseC = new SSECustomerKey()
@@ -136,7 +136,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "testobj";
+			var key = "TestEncryptionSseCOtherKey";
 			var body = new string('A', 100);
 
 			var sseC = new SSECustomerKey()
@@ -170,7 +170,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "testobj";
+			var key = "TestEncryptionSseCInvalidMd5";
 			var body = new string('A', 100);
 
 			var sseC = new SSECustomerKey()
@@ -197,7 +197,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "testobj";
+			var key = "TestEncryptionSseCNoMd5";
 			var body = new string('A', 100);
 
 			var sseC = new SSECustomerKey()
@@ -222,7 +222,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "testobj";
+			var key = "TestEncryptionSseCNoKey";
 			var body = new string('A', 100);
 
 
@@ -246,7 +246,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "testobj";
+			var key = "TestEncryptionKeyNoSseC";
 			var body = new string('A', 100);
 			var sseC = new SSECustomerKey()
 			{
@@ -270,7 +270,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "multipart_enc";
+			var key = "TestEncryptionSseCMultipartUpload";
 			var Size = 50 * MainData.MB;
 			var Metadata = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar"), };
 			var ContentType = "text/plain";
@@ -315,7 +315,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "multipart_enc";
+			var key = "TestEncryptionSseCMultipartBadDownload";
 			var Size = 50 * MainData.MB;
 			var Metadata = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar"), };
 			var ContentType = "text/plain";
@@ -363,7 +363,7 @@ namespace s3tests.Test
 			var Client = GetClientHttps();
 
 			var ContentType = "text/plain";
-			var key = "foo.txt";
+			var key = "TestEncryptionSseCPostObjectAuthenticatedRequest.txt";
 
 			var sseC = new SSECustomerKey()
 			{
@@ -378,7 +378,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", "TestEncryptionSseCPostObjectAuthenticatedRequest" } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "starts-with", "$x-amz-server-side-encryption-customer-algorithm", "AES256" } },
@@ -423,7 +423,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "foo";
+			var key = "TestEncryptionSseCGetObjectMany";
 			var body = S3Utils.RandomTextToLong(15 * 1024 * 1024);
 			var sseC = new SSECustomerKey()
 			{
@@ -447,7 +447,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var key = "foo";
+			var key = "TestEncryptionSseCRangeObjectMany";
 			var Size = 15 * 1024 * 1024;
 			var body = S3Utils.RandomTextToLong(Size);
 			var sseC = new SSECustomerKey()
@@ -472,7 +472,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var Client = GetClientHttps();
-			var SrcKey = "multipart_enc";
+			var SrcKey = "TestSseCEncryptionMultipartCopyPartUploadSource";
 			var Size = 50 * MainData.MB;
 			var Metadata = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar"), };
 			var ContentType = "text/plain";
@@ -502,7 +502,7 @@ namespace s3tests.Test
 			Assert.Equal(Size, GetResponse.ContentLength);
 
 			// 멀티파트 복사
-			var DestKey = "multipart_enc_copy";
+			var DestKey = "TestSseCEncryptionMultipartCopyPartUploadDestination";
 			UploadData = SetupMultipartCopy(Client, bucketName, SrcKey, bucketName, DestKey, Size, srcCustomerKey: sseC, destCustomerKey: sseC);
 			Client.CompleteMultipartUpload(bucketName, DestKey, UploadData.UploadId, UploadData.Parts);
 			CheckCopyContent(Client, bucketName, SrcKey, bucketName, DestKey, srcCustomerKey: sseC, destCustomerKey: sseC);
@@ -518,7 +518,7 @@ namespace s3tests.Test
 			TestId = 18;
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
-			var SrcKey = "mymultipart_enc";
+			var SrcKey = "TestSseCEncryptionMultipartCopyManySource";
 			var Size = 10 * MainData.MB;
 			var Client = GetClientHttps();
 			var body = "";
@@ -538,7 +538,7 @@ namespace s3tests.Test
 			CheckContent(Client, bucketName, SrcKey, body, sseC: sseC);
 
 			// 멀티파트 카피
-			var DestKey1 = "mymultipart1_enc";
+			var DestKey1 = "TestSseCEncryptionMultipartCopyManyDestination-000";
 			UploadData = SetupMultipartCopy(Client, bucketName, SrcKey, bucketName, DestKey1, Size, srcCustomerKey: sseC, destCustomerKey: sseC);
 			// 추가파츠 업로드
 			UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, DestKey1, Size, uploadData: UploadData, sseCustomerKey: sseC);
@@ -549,7 +549,7 @@ namespace s3tests.Test
 			CheckContent(Client, bucketName, DestKey1, body, sseC: sseC);
 
 			// 멀티파트 카피
-			var DestKey2 = "mymultipart2_enc";
+			var DestKey2 = "TestSseCEncryptionMultipartCopyManyDestination-001";
 			UploadData = SetupMultipartCopy(Client, bucketName, DestKey1, bucketName, DestKey2, Size * 2, srcCustomerKey: sseC, destCustomerKey: sseC);
 			// 추가파츠 업로드
 			UploadData = S3Utils.SetupMultipartUpload(Client, bucketName, DestKey2, Size, uploadData: UploadData, sseCustomerKey: sseC);
