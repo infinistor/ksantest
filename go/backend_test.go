@@ -949,13 +949,17 @@ func backendReplicateMultipart(t *testing.T, client *s3.Client, sourceBucket, so
 		if err != nil {
 			t.Fatal(err)
 		}
+		body, readErr := io.ReadAll(source.Body)
+		closeErr := source.Body.Close()
+		if readErr != nil || closeErr != nil {
+			t.Fatalf("read err=%v close err=%v", readErr, closeErr)
+		}
 		part, uploadErr := client.UploadPart(ctx, &s3.UploadPartInput{
 			Bucket: aws.String(targetBucket), Key: aws.String(targetKey), UploadId: created.UploadId,
-			PartNumber: aws.Int32(partNumber), Body: source.Body, ContentLength: source.ContentLength,
+			PartNumber: aws.Int32(partNumber), Body: bytes.NewReader(body), ContentLength: aws.Int64(int64(len(body))),
 		})
-		closeErr := source.Body.Close()
-		if uploadErr != nil || closeErr != nil {
-			t.Fatalf("upload err=%v close err=%v", uploadErr, closeErr)
+		if uploadErr != nil {
+			t.Fatal(uploadErr)
 		}
 		parts = append(parts, types.CompletedPart{ETag: part.ETag, PartNumber: aws.Int32(partNumber)})
 	}
