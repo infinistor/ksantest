@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -75,45 +74,6 @@ public class Versioning extends TestBase {
 
 		doTestCreateRemoveVersions(client, bucketName, key, numVersions, 0, 0);
 		doTestCreateRemoveVersions(client, bucketName, key, numVersions, 4, -1);
-	}
-
-	@Test
-	@Disabled("JAVA에서는 DeleteObject API를 이용하여 오브젝트를 삭제할 경우 반환값이 없어 삭제된 오브젝트의 버전 정보를 받을 수 없음으로 테스트 불가")
-	@Tag("Object")
-	public void testVersioningObjCreateReadRemoveHead() {
-		var client = getClient();
-		var bucketName = createBucket(client, 3);
-
-		client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(bucketName,
-				new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED)));
-		var key = "obj";
-		var numVersions = 5;
-
-		var versionIds = new ArrayList<String>();
-		var contents = new ArrayList<String>();
-		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
-
-		var removedVersionID = versionIds.get(0);
-		versionIds.remove(0);
-		contents.remove(0);
-		numVersions--;
-
-		client.deleteVersion(bucketName, key, removedVersionID);
-
-		var getResponse = client.getObject(bucketName, key);
-		var body = getBody(getResponse.getObjectContent());
-		assertEquals(contents.get(contents.size() - 1), body);
-
-		client.deleteObject(bucketName, key);
-
-		var deleteMarkerVersionId = getResponse.getObjectMetadata().getVersionId();
-		versionIds.add(deleteMarkerVersionId);
-
-		var listResponse = client.listVersions(bucketName, "");
-		assertEquals(numVersions, getVersions(listResponse.getVersionSummaries()).size());
-		assertEquals(1, getDeleteMarkers(listResponse.getVersionSummaries()).size());
-
-		assertEquals(deleteMarkerVersionId, getDeleteMarkers(listResponse.getVersionSummaries()).get(0).getVersionId());
 	}
 
 	@Test

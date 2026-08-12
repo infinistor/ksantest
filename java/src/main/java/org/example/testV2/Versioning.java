@@ -24,7 +24,6 @@ import java.util.HashMap;
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -72,7 +71,6 @@ public class Versioning extends TestBase {
 	}
 
 	@Test
-	@Disabled("JAVA에서는 DeleteObject API를 이용하여 오브젝트를 삭제할 경우 반환값이 없어 삭제된 오브젝트의 버전 정보를 받을 수 없음으로 테스트 불가")
 	@Tag("Object")
 	public void testVersioningObjCreateReadRemoveHead() {
 		var client = getClient();
@@ -98,9 +96,10 @@ public class Versioning extends TestBase {
 		var body = getBody(getResponse);
 		assertEquals(contents.get(contents.size() - 1), body);
 
-		client.deleteObject(d -> d.bucket(bucketName).key(key));
+		var deleteResponse = client.deleteObject(d -> d.bucket(bucketName).key(key));
+		assertEquals(true, deleteResponse.deleteMarker());
 
-		var deleteMarkerVersionId = getResponse.response().versionId();
+		var deleteMarkerVersionId = deleteResponse.versionId();
 		versionIds.add(deleteMarkerVersionId);
 
 		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));

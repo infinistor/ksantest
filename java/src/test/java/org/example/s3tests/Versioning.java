@@ -12,7 +12,6 @@ package org.example.s3tests;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -59,10 +58,8 @@ class Versioning {
 	 * 버저닝 오브젝트의 해더 정보를 사용하여 읽기/쓰기/삭제확인
 	 */
 	@Test
-	@Disabled("JAVA에서는 DeleteObject API를 이용하여 오브젝트를 삭제할 경우 반환값이 없어 삭제된 오브젝트의 버전 정보를 받을 수 없음으로 테스트 불가")
 	@Tag("Object")
 	void testVersioningObjCreateReadRemoveHead() {
-		test.testVersioningObjCreateReadRemoveHead();
 		testV2.testVersioningObjCreateReadRemoveHead();
 	}
 
