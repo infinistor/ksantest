@@ -123,9 +123,8 @@ func (s *suite) bucket(t *testing.T, id ...int) string {
 			return
 		}
 		ctx := context.Background()
-		var keyMarker, versionMarker *string
 		for {
-			listed, err := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(name), KeyMarker: keyMarker, VersionIdMarker: versionMarker})
+			listed, err := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(name)})
 			if err != nil || listed == nil {
 				break
 			}
@@ -137,14 +136,18 @@ func (s *suite) bucket(t *testing.T, id ...int) string {
 				ids = append(ids, types.ObjectIdentifier{Key: v.Key, VersionId: v.VersionId})
 			}
 			if len(ids) > 0 {
-				_, _ = s.client.DeleteObjects(ctx, &s3.DeleteObjectsInput{Bucket: aws.String(name), Delete: &types.Delete{Objects: ids, Quiet: aws.Bool(true)}})
+				if _, err := s.client.DeleteObjects(ctx, &s3.DeleteObjectsInput{Bucket: aws.String(name), Delete: &types.Delete{Objects: ids, Quiet: aws.Bool(true)}}); err != nil {
+					t.Logf("DeleteObjects cleanup %s: %v", name, err)
+					break
+				}
 			}
 			if !aws.ToBool(listed.IsTruncated) {
 				break
 			}
-			keyMarker, versionMarker = listed.NextKeyMarker, listed.NextVersionIdMarker
 		}
-		_, _ = s.client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(name)})
+		if _, err := s.client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(name)}); err != nil {
+			t.Logf("DeleteBucket cleanup %s: %v", name, err)
+		}
 	})
 	return name
 }

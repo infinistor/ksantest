@@ -2031,11 +2031,14 @@ namespace s3tests.Test
 
 				try
 				{
-					var objectList = client.ListObjectsV2(bucketName);
-					foreach (var obj in objectList.S3Objects) client.DeleteObject(bucketName, obj.Key);
-
-					var versions = client.ListVersions(bucketName);
-					foreach (var obj in versions.Versions) client.DeleteObject(bucketName, obj.Key, versionId: obj.VersionId);
+					bool isTruncated;
+					do
+					{
+						var versions = client.ListVersions(bucketName, maxKeys: 1000);
+						foreach (var obj in versions.Versions)
+							client.DeleteObject(bucketName, obj.Key, versionId: obj.VersionId);
+						isTruncated = versions.IsTruncated == true;
+					} while (isTruncated);
 
 					client.DeleteBucket(bucketName);
 				}

@@ -30,7 +30,7 @@ namespace s3tests.Test
 		public void TestObjectLockPutObjLock()
 		{
 			TestId = 2;
-			var bucketName = GetNewBucketName(false);
+			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
@@ -868,7 +868,7 @@ namespace s3tests.Test
 		{
 			TestId = 11;
 			var client = GetClient();
-			var bucketName = GetNewBucketName(false);
+			var bucketName = GetNewBucketName();
 			var key = "testObjectLockPutObject";
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
@@ -896,8 +896,8 @@ namespace s3tests.Test
 		{
 			TestId = 12;
 			var client = GetClient();
-			var bucketName = GetNewBucketName(false);
-			var bucketName2 = GetNewBucketName(false);
+			var bucketName = GetNewBucketName();
+			var bucketName2 = GetNewBucketName();
 			var key = "testObjectLockCopyObject-lock";
 			var keyCopy = key + "-copy";
 			var key2 = "testObjectLockCopyObject";
@@ -955,7 +955,7 @@ namespace s3tests.Test
 			// Object Lock 버킷의 UploadPart는 Content-MD5 또는 x-amz-checksum-* 헤더가 필수다.
 			// 기본 클라이언트(WHEN_REQUIRED)는 이를 붙이지 않으므로 SDK가 체크섬을 넣도록 WHEN_SUPPORTED를 쓴다.
 			var client = GetClient(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_REQUIRED);
-			var bucketName = GetNewBucketName(false);
+			var bucketName = GetNewBucketName();
 			var key = "testObjectLockMultipart";
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
@@ -984,7 +984,7 @@ namespace s3tests.Test
 		{
 			TestId = 14;
 			var client = GetClient();
-			var bucketName = GetNewBucketName(false);
+			var bucketName = GetNewBucketName();
 			var key = "testObjectLockMD5";
 			var content = S3Utils.RandomTextToLong(1 * MainData.MB);
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -1015,7 +1015,7 @@ namespace s3tests.Test
 			TestId = 27;
 			var key = "file1";
 			var client = GetClient();
-			var bucketName = GetNewBucketName(false);
+			var bucketName = GetNewBucketName();
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
 			var putResponse = client.PutObject(bucketName, key, body: key);
@@ -1035,7 +1035,7 @@ namespace s3tests.Test
 		{
 			TestId = 28;
 			var client = GetClient();
-			var bucketName = GetNewBucketName(false);
+			var bucketName = GetNewBucketName();
 			var keyVersions = new System.Collections.Generic.List<KeyVersion>();
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
