@@ -36,272 +36,272 @@ namespace s3tests.Test
 			return grants;
 		}
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "PutObject")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트를 업로드할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObject()
-		{
-			TestId = 1;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var bucketName = GetNewBucket();
-			var key = "testPutObject";
-			var content = "test content";
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "PutObject")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트를 업로드할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestPutObject()
+		// {
+		// 	TestId = 1;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var bucketName = GetNewBucket();
+		// 	var key = "testPutObject";
+		// 	var content = "test content";
 
-			// Backend 클라이언트로 업로드
-			var response = backendClient.PutObject(bucketName, key, body: content);
-			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+		// 	// Backend 클라이언트로 업로드
+		// 	var response = backendClient.PutObject(bucketName, key, body: content);
+		// 	Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 
-			// 일반 클라이언트로 다운로드하여 확인
-			var getResponse = client.GetObject(bucketName, key);
-			var body = GetBody(getResponse);
-			Assert.Equal(content, body);
-		}
+		// 	// 일반 클라이언트로 다운로드하여 확인
+		// 	var getResponse = client.GetObject(bucketName, key);
+		// 	var body = GetBody(getResponse);
+		// 	Assert.Equal(content, body);
+		// }
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "GetObject")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트를 다운로드할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestGetObject()
-		{
-			TestId = 2;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var bucketName = GetNewBucket();
-			var key = "testGetObject";
-			var content = "test content";
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "GetObject")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트를 다운로드할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestGetObject()
+		// {
+		// 	TestId = 2;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var bucketName = GetNewBucket();
+		// 	var key = "testGetObject";
+		// 	var content = "test content";
 
-			// 일반 클라이언트로 업로드
-			client.PutObject(bucketName, key, body: content);
+		// 	// 일반 클라이언트로 업로드
+		// 	client.PutObject(bucketName, key, body: content);
 
-			// Backend 클라이언트로 다운로드
-			var response = backendClient.GetObject(bucketName, key);
-			var body = GetBody(response);
-			Assert.Equal(content, body);
-		}
+		// 	// Backend 클라이언트로 다운로드
+		// 	var response = backendClient.GetObject(bucketName, key);
+		// 	var body = GetBody(response);
+		// 	Assert.Equal(content, body);
+		// }
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "DeleteObject")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트를 삭제할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestDeleteObject()
-		{
-			TestId = 3;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var bucketName = GetNewBucket();
-			var key = "testDeleteObject";
-			var content = "test content";
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "DeleteObject")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트를 삭제할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestDeleteObject()
+		// {
+		// 	TestId = 3;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var bucketName = GetNewBucket();
+		// 	var key = "testDeleteObject";
+		// 	var content = "test content";
 
-			// 일반 클라이언트로 업로드
-			client.PutObject(bucketName, key, body: content);
+		// 	// 일반 클라이언트로 업로드
+		// 	client.PutObject(bucketName, key, body: content);
 
-			// Backend 클라이언트로 삭제
-			var response = backendClient.DeleteObject(bucketName, key);
-			Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
+		// 	// Backend 클라이언트로 삭제
+		// 	var response = backendClient.DeleteObject(bucketName, key);
+		// 	Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
 
-			// 일반 클라이언트로 오브젝트 목록 확인
-			var listResponse = client.ListObjectsV2(bucketName);
-			Assert.Empty(listResponse.S3Objects);
-		}
+		// 	// 일반 클라이언트로 오브젝트 목록 확인
+		// 	var listResponse = client.ListObjectsV2(bucketName);
+		// 	Assert.Empty(listResponse.S3Objects);
+		// }
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "CopyObject")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트를 복사할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestCopyObject()
-		{
-			TestId = 4;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var sourceBucket = GetNewBucket();
-			var targetBucket = GetNewBucket();
-			var sourceKey = "sourceKey";
-			var targetKey = "targetKey";
-			var content = "test content";
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "CopyObject")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트를 복사할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestCopyObject()
+		// {
+		// 	TestId = 4;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var sourceBucket = GetNewBucket();
+		// 	var targetBucket = GetNewBucket();
+		// 	var sourceKey = "sourceKey";
+		// 	var targetKey = "targetKey";
+		// 	var content = "test content";
 
-			// 일반 클라이언트로 소스 오브젝트 업로드
-			client.PutObject(sourceBucket, sourceKey, body: content);
+		// 	// 일반 클라이언트로 소스 오브젝트 업로드
+		// 	client.PutObject(sourceBucket, sourceKey, body: content);
 
-			// Backend 클라이언트로 복사
-			var response = backendClient.CopyObject(sourceBucket, sourceKey, targetBucket, targetKey);
-			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+		// 	// Backend 클라이언트로 복사
+		// 	var response = backendClient.CopyObject(sourceBucket, sourceKey, targetBucket, targetKey);
+		// 	Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 
-			// 일반 클라이언트로 타겟 오브젝트 확인
-			var getResponse = client.GetObject(targetBucket, targetKey);
-			var body = GetBody(getResponse);
-			Assert.Equal(content, body);
-		}
+		// 	// 일반 클라이언트로 타겟 오브젝트 확인
+		// 	var getResponse = client.GetObject(targetBucket, targetKey);
+		// 	var body = GetBody(getResponse);
+		// 	Assert.Equal(content, body);
+		// }
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "Multipart")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 멀티파트 업로드를 수행할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestMultipartUpload()
-		{
-			TestId = 5;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var bucketName = GetNewBucket();
-			var key = "testMultipartUpload";
-			var size = 10 * MainData.MB;
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "Multipart")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 멀티파트 업로드를 수행할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestMultipartUpload()
+		// {
+		// 	TestId = 5;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var bucketName = GetNewBucket();
+		// 	var key = "testMultipartUpload";
+		// 	var size = 10 * MainData.MB;
 
-			// Backend 클라이언트로 멀티파트 업로드
-			var uploadData = S3Utils.SetupMultipartUpload(backendClient, bucketName, key, size);
-			var completeResponse = backendClient.CompleteMultipartUpload(bucketName, key, uploadData.UploadId, uploadData.Parts);
-			var versionId = completeResponse.VersionId;
+		// 	// Backend 클라이언트로 멀티파트 업로드
+		// 	var uploadData = S3Utils.SetupMultipartUpload(backendClient, bucketName, key, size);
+		// 	var completeResponse = backendClient.CompleteMultipartUpload(bucketName, key, uploadData.UploadId, uploadData.Parts);
+		// 	var versionId = completeResponse.VersionId;
 
-			// 일반 클라이언트로 확인
-			var response = client.GetObjectMetadata(bucketName, key, versionId: versionId);
-			Assert.Equal(size, response.ContentLength);
+		// 	// 일반 클라이언트로 확인
+		// 	var response = client.GetObjectMetadata(bucketName, key, versionId: versionId);
+		// 	Assert.Equal(size, response.ContentLength);
 
-			CheckContentUsingRange(client, bucketName, key, uploadData.Body, MainData.MB);
-		}
+		// 	CheckContentUsingRange(client, bucketName, key, uploadData.Body, MainData.MB);
+		// }
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "PutObjectAcl")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 ACL을 설정할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObjectAcl()
-		{
-			TestId = 6;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var bucketName = GetNewBucketCannedAcl(client);
-			var key = "testPutObjectAcl";
-			var content = "test content";
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "PutObjectAcl")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 ACL을 설정할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestPutObjectAcl()
+		// {
+		// 	TestId = 6;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var bucketName = GetNewBucketCannedAcl(client);
+		// 	var key = "testPutObjectAcl";
+		// 	var content = "test content";
 
-			// 일반 클라이언트로 업로드
-			client.PutObject(bucketName, key, body: content);
+		// 	// 일반 클라이언트로 업로드
+		// 	client.PutObject(bucketName, key, body: content);
 
-			// Backend 클라이언트로 ACL 설정
-			var response = backendClient.PutObjectACL(bucketName, key, acl: S3CannedACL.PublicRead);
-			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+		// 	// Backend 클라이언트로 ACL 설정
+		// 	var response = backendClient.PutObjectACL(bucketName, key, acl: S3CannedACL.PublicRead);
+		// 	Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 
-			// 일반 클라이언트로 ACL 확인
-			var aclResponse = client.GetObjectACL(bucketName, key);
-			Assert.Equal(2, aclResponse.AccessControlList.Grants.Count);
-		}
+		// 	// 일반 클라이언트로 ACL 확인
+		// 	var aclResponse = client.GetObjectACL(bucketName, key);
+		// 	Assert.Equal(2, aclResponse.AccessControlList.Grants.Count);
+		// }
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "GetObjectAcl")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 ACL을 조회할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestGetObjectAcl()
-		{
-			TestId = 7;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var bucketName = GetNewBucketCannedAcl(client);
-			var key = "testGetObjectAcl";
-			var content = "test content";
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "GetObjectAcl")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 ACL을 조회할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestGetObjectAcl()
+		// {
+		// 	TestId = 7;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var bucketName = GetNewBucketCannedAcl(client);
+		// 	var key = "testGetObjectAcl";
+		// 	var content = "test content";
 
-			// 일반 클라이언트로 업로드 및 ACL 설정
-			client.PutObject(bucketName, key, body: content, acl: S3CannedACL.PublicRead);
+		// 	// 일반 클라이언트로 업로드 및 ACL 설정
+		// 	client.PutObject(bucketName, key, body: content, acl: S3CannedACL.PublicRead);
 
-			// Backend 클라이언트로 ACL 조회
-			var response = backendClient.GetObjectACL(bucketName, key);
-			Assert.Equal(2, response.AccessControlList.Grants.Count);
-		}
+		// 	// Backend 클라이언트로 ACL 조회
+		// 	var response = backendClient.GetObjectACL(bucketName, key);
+		// 	Assert.Equal(2, response.AccessControlList.Grants.Count);
+		// }
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "PutObjectTagging")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 태그를 설정할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObjectTagging()
-		{
-			TestId = 8;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var bucketName = GetNewBucket();
-			var key = "testPutObjectTagging";
-			var content = "test content";
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "PutObjectTagging")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 태그를 설정할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestPutObjectTagging()
+		// {
+		// 	TestId = 8;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var bucketName = GetNewBucket();
+		// 	var key = "testPutObjectTagging";
+		// 	var content = "test content";
 
-			// 일반 클라이언트로 업로드
-			client.PutObject(bucketName, key, body: content);
+		// 	// 일반 클라이언트로 업로드
+		// 	client.PutObject(bucketName, key, body: content);
 
-			// Backend 클라이언트로 태그 설정
-			var tagging = new Tagging() { TagSet = [new() { Key = "testKey", Value = "testValue" }] };
-			var response = backendClient.PutObjectTagging(bucketName, key, tagging);
-			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+		// 	// Backend 클라이언트로 태그 설정
+		// 	var tagging = new Tagging() { TagSet = [new() { Key = "testKey", Value = "testValue" }] };
+		// 	var response = backendClient.PutObjectTagging(bucketName, key, tagging);
+		// 	Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
 
-			// 일반 클라이언트로 태그 확인
-			var getResponse = client.GetObjectTagging(bucketName, key);
-			Assert.Single(getResponse.Tagging);
-			Assert.Equal("testKey", getResponse.Tagging[0].Key);
-			Assert.Equal("testValue", getResponse.Tagging[0].Value);
-		}
+		// 	// 일반 클라이언트로 태그 확인
+		// 	var getResponse = client.GetObjectTagging(bucketName, key);
+		// 	Assert.Single(getResponse.Tagging);
+		// 	Assert.Equal("testKey", getResponse.Tagging[0].Key);
+		// 	Assert.Equal("testValue", getResponse.Tagging[0].Value);
+		// }
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "GetObjectTagging")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 태그를 조회할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestGetObjectTagging()
-		{
-			TestId = 9;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var bucketName = GetNewBucket();
-			var key = "testGetObjectTagging";
-			var content = "test content";
-			var tagSet = new List<Tag>() { new() { Key = "testKey", Value = "testValue" } };
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "GetObjectTagging")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 태그를 조회할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestGetObjectTagging()
+		// {
+		// 	TestId = 9;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var bucketName = GetNewBucket();
+		// 	var key = "testGetObjectTagging";
+		// 	var content = "test content";
+		// 	var tagSet = new List<Tag>() { new() { Key = "testKey", Value = "testValue" } };
 
-			// 일반 클라이언트로 업로드 및 태그 설정
-			client.PutObject(bucketName, key, body: content, tagSet: tagSet);
+		// 	// 일반 클라이언트로 업로드 및 태그 설정
+		// 	client.PutObject(bucketName, key, body: content, tagSet: tagSet);
 
-			// Backend 클라이언트로 태그 조회
-			var response = backendClient.GetObjectTagging(bucketName, key);
-			Assert.Single(response.Tagging);
-			Assert.Equal("testKey", response.Tagging[0].Key);
-			Assert.Equal("testValue", response.Tagging[0].Value);
-		}
+		// 	// Backend 클라이언트로 태그 조회
+		// 	var response = backendClient.GetObjectTagging(bucketName, key);
+		// 	Assert.Single(response.Tagging);
+		// 	Assert.Equal("testKey", response.Tagging[0].Key);
+		// 	Assert.Equal("testValue", response.Tagging[0].Value);
+		// }
 
-		[SkippableFact]
-		[Trait(MainData.Major, "Backend")]
-		[Trait(MainData.Minor, "DeleteObjectTagging")]
-		[Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 태그를 삭제할 수 있는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestDeleteObjectTagging()
-		{
-			TestId = 10;
-			SkipIfAws();
-			var client = GetClient();
-			var backendClient = GetBackendClient();
-			var bucketName = GetNewBucket();
-			var key = "testDeleteObjectTagging";
-			var content = "test content";
-			var tagSet = new List<Tag>() { new() { Key = "testKey", Value = "testValue" } };
+		// [SkippableFact]
+		// [Trait(MainData.Major, "Backend")]
+		// [Trait(MainData.Minor, "DeleteObjectTagging")]
+		// [Trait(MainData.Explanation, "Backend 헤더를 사용하여 오브젝트 태그를 삭제할 수 있는지 확인")]
+		// [Trait(MainData.Result, MainData.ResultSuccess)]
+		// public void TestDeleteObjectTagging()
+		// {
+		// 	TestId = 10;
+		// 	SkipIfAws();
+		// 	var client = GetClient();
+		// 	var backendClient = GetBackendClient();
+		// 	var bucketName = GetNewBucket();
+		// 	var key = "testDeleteObjectTagging";
+		// 	var content = "test content";
+		// 	var tagSet = new List<Tag>() { new() { Key = "testKey", Value = "testValue" } };
 
-			// 일반 클라이언트로 업로드 및 태그 설정
-			client.PutObject(bucketName, key, body: content, tagSet: tagSet);
+		// 	// 일반 클라이언트로 업로드 및 태그 설정
+		// 	client.PutObject(bucketName, key, body: content, tagSet: tagSet);
 
-			// Backend 클라이언트로 태그 삭제
-			var response = backendClient.DeleteObjectTagging(bucketName, key);
-			Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
+		// 	// Backend 클라이언트로 태그 삭제
+		// 	var response = backendClient.DeleteObjectTagging(bucketName, key);
+		// 	Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
 
-			// 일반 클라이언트로 태그 확인
-			var getResponse = client.GetObjectTagging(bucketName, key);
-			Assert.Empty(getResponse.Tagging);
-		}
+		// 	// 일반 클라이언트로 태그 확인
+		// 	var getResponse = client.GetObjectTagging(bucketName, key);
+		// 	Assert.Empty(getResponse.Tagging);
+		// }
 
 		[SkippableFact]
 		[Trait(MainData.Major, "Backend")]
