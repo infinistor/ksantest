@@ -6,8 +6,8 @@ GB = 1024 * MB
 
 MAX_KEY_LENGTH = 1024
 
-HTTP = "http://"
-HTTPS = "https://"
+HTTP = "http://" #NOSONAR
+HTTPS = "https://" #NOSONAR
 
 POLICY_VERSION = "Version"
 POLICY_VERSION_DATE = "2012-10-17"
@@ -66,7 +66,5 @@ KEY_TOO_LONG = "KeyTooLongError"
 NOT_MATCHED = "Source does not match target"
 METHOD_NOT_ALLOWED = "MethodNotAllowed"
 
-ALL_USERS = "http://acs.amazonaws.com/groups/global/AllUsers"
-AUTHENTICATED_USERS = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
-
-S3TESTS_INI = "S3TESTS_INI"
+ALL_USERS = "http://acs.amazonaws.com/groups/global/AllUsers" #NOSONAR
+AUTHENTICATED_USERS = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers" #NOSONAR
