@@ -71,7 +71,6 @@ if (-not (Test-Path $configPath)) {
 }
 
 $python = Resolve-Python312
-$env:S3TESTS_INI = $configPath
 
 $ResultsDir = Join-Path $PSScriptRoot "results"
 $XunitDir = Join-Path (Split-Path $PSScriptRoot -Parent) "xunit-to-html"
@@ -96,7 +95,7 @@ Write-Host "Config : $configPath"
 & $python -c "import sys; print(f'Version: {sys.version}')"
 
 Write-Host "`n=== Running pytest (parallel) ===" -ForegroundColor Cyan
-& $python -m pytest -v -n auto "--junitxml=$JunitXml" s3tests\tests
+& $python -m pytest -v -n auto "--s3tests-ini=$configPath" "--junitxml=$JunitXml" s3tests\tests
 $pytestExit = $LASTEXITCODE
 
 if (-not (Test-Path $JunitXml)) {

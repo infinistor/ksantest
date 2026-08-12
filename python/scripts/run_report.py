@@ -21,12 +21,17 @@ def main() -> int:
     results_dir.mkdir(exist_ok=True)
     junit_xml = results_dir / "junit.xml"
 
-    env = {**dict(**__import__("os").environ), "S3TESTS_INI": str(root / args.config)}
-
     subprocess.run(
-        [sys.executable, "-m", "pytest", "-v", f"--junitxml={junit_xml}", "s3tests/tests"],
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-v",
+            f"--s3tests-ini={root / args.config}",
+            f"--junitxml={junit_xml}",
+            "s3tests/tests",
+        ],
         cwd=root,
-        env=env,
         check=True,
     )
 

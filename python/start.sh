@@ -36,18 +36,16 @@ INI_FILE="${1:-config.ini}"
 if [[ "${INI_FILE}" != *.ini ]]; then
   INI_FILE="${INI_FILE}.ini"
 fi
-export S3TESTS_INI="${INI_FILE}"
-
 mkdir -p results
 rm -f results/*.xml ../xunit-to-html/Result_python.html ../xunit-to-html/Result_python.xml
 
 echo "Python : ${PYTHON}"
-echo "Config : ${S3TESTS_INI}"
+echo "Config : ${INI_FILE}"
 "${PYTHON}" -c 'import sys; print("Version:", sys.version)'
 
 set +e
 echo "=== Running pytest (parallel) ==="
-"${PYTHON}" -m pytest -v -n auto --junitxml=results/junit.xml s3tests/tests
+"${PYTHON}" -m pytest -v -n auto "--s3tests-ini=${INI_FILE}" --junitxml=results/junit.xml s3tests/tests
 PYTEST_EXIT=$?
 set -e
 

@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import configparser
-import os
 from pathlib import Path
 
-from s3tests.data.main_data import S3TESTS_INI
 from s3tests.data.user_data import UserData
 
 STR_FILENAME = "config.ini"
@@ -27,12 +25,6 @@ def resolve_config_path(file_name: str | None = None) -> str:
         return file_name
     if _config_path_override:
         return _config_path_override
-    env_path = os.environ.get(S3TESTS_INI)
-    if env_path:
-        return env_path
-    prop_path = os.environ.get("S3TESTS_INI_PROP")
-    if prop_path:
-        return prop_path
     return STR_FILENAME
 
 

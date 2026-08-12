@@ -34,17 +34,15 @@ INI_FILE="$1"
 if [[ "${INI_FILE}" != *.ini ]]; then
   INI_FILE="${INI_FILE}.ini"
 fi
-export S3TESTS_INI="${INI_FILE}"
-
 CLASS_ARG="$2"
 METHOD_ARG="$3"
 TEST_TARGET="$("${PYTHON}" scripts/resolve_test_target.py "${CLASS_ARG}" "${METHOD_ARG}")"
 
 echo "Python : ${PYTHON}"
-echo "Config : ${S3TESTS_INI}"
+echo "Config : ${INI_FILE}"
 echo "Class  : ${CLASS_ARG}"
 echo "Method : ${METHOD_ARG}"
 echo "Target : ${TEST_TARGET}"
 "${PYTHON}" -c 'import sys; print("Version:", sys.version)'
 
-"${PYTHON}" -m pytest -v "${TEST_TARGET}"
+"${PYTHON}" -m pytest -v "--s3tests-ini=${INI_FILE}" "${TEST_TARGET}"

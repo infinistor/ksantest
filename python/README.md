@@ -149,10 +149,7 @@ python3.12 -m venv .venv   # Rocky 10.1은 python3 -m venv .venv
 
 Java와 동일한 INI 형식을 사용합니다.
 
-우선순위:
-
-1. `S3TESTS_INI` 환경변수
-2. `config.ini` (현재 디렉터리)
+`--s3tests-ini` pytest 옵션으로 설정 파일을 지정하며, 생략하면 현재 디렉터리의 `config.ini`를 사용합니다.
 
 표준 섹션: `[S3]`, `[Fixtures]`, `[Main User]`, `[Alt User]`, `[Backend User]`
 
@@ -161,8 +158,7 @@ Java와 동일한 INI 형식을 사용합니다.
 가상환경 활성화 후:
 
 ```powershell
-$env:S3TESTS_INI="config.ini"
-pytest -v s3tests/tests
+pytest -v --s3tests-ini=config.ini s3tests/tests
 ```
 
 단일 모듈:
@@ -190,8 +186,7 @@ Java와 동일한 xunit-to-html 파이프라인을 사용합니다.
 또는 수동:
 
 ```powershell
-$env:S3TESTS_INI="config.ini"
-pytest -v --junitxml=results/junit.xml s3tests/tests
+pytest -v --s3tests-ini=config.ini --junitxml=results/junit.xml s3tests/tests
 copy results\junit.xml ..\xunit-to-html\Result_python.xml
 cd ..\xunit-to-html
 java -jar saxon9he.jar -o:Result_python.html -s:Result_python.xml -xsl:xunit_to_html.xsl

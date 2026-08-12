@@ -77,8 +77,6 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($pytestTarget)) {
 }
 $pytestTarget = $pytestTarget.Trim()
 
-$env:S3TESTS_INI = $configPath
-
 Write-Host "Python : $python"
 Write-Host "Config : $configPath"
 Write-Host "Class  : $TestClass"
@@ -87,5 +85,5 @@ Write-Host "Target : $pytestTarget"
 & $python -c "import sys; print(f'Version: {sys.version}')"
 
 Write-Host "`n=== Running pytest ===" -ForegroundColor Cyan
-& $python -m pytest -v $pytestTarget
+& $python -m pytest -v "--s3tests-ini=$configPath" $pytestTarget
 exit $LASTEXITCODE
