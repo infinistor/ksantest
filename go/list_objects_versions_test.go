@@ -700,7 +700,7 @@ func TestListObjectsVersionsVersioningObjListMarker(t *testing.T) {
 	s := newSuite(t)
 	b := s.bucket(t, 40)
 	enableVersioning(t, s, b)
-	key := "testVersioningObjListMarker"
+	key := "TestListObjectsVersionsVersioningObjListMarker"
 	want := make([]string, 0, 10)
 	for i := 0; i < 10; i++ {
 		out := put(t, s, b, key, key+strconv.Itoa(i), nil)

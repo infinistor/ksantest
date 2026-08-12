@@ -21,7 +21,7 @@ func TestSseS3EncryptedTransfer1b(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 1)
-	body := deterministicBody(1)
+	body := randomTextToLong(1)
 	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("test"), Body: bytes.NewReader(body), ServerSideEncryption: types.ServerSideEncryptionAes256}); err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestSseS3EncryptedTransfer1kb(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 2)
-	body := deterministicBody(1024)
+	body := randomTextToLong(1024)
 	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("test"), Body: bytes.NewReader(body), ServerSideEncryption: types.ServerSideEncryptionAes256}); err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func TestSseS3EncryptedTransfer1MB(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 3)
-	body := deterministicBody(1024 * 1024)
+	body := randomTextToLong(1024 * 1024)
 	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("test"), Body: bytes.NewReader(body), ServerSideEncryption: types.ServerSideEncryptionAes256}); err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestSseS3EncryptedTransfer13b(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 4)
-	body := deterministicBody(13)
+	body := randomTextToLong(13)
 	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("test"), Body: bytes.NewReader(body), ServerSideEncryption: types.ServerSideEncryptionAes256}); err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestSseS3EncryptionMethodHead(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 5)
-	body := deterministicBody(1000)
+	body := randomTextToLong(1000)
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj"), Body: bytes.NewReader(body), Metadata: map[string]string{"foo": "bar"}, ServerSideEncryption: types.ServerSideEncryptionAes256})
 	if err != nil {
 		t.Fatal(err)
@@ -88,7 +88,7 @@ func TestSseS3EncryptionMultipartUpload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 6)
-	body := deterministicBody(50 * 1024 * 1024)
+	body := randomTextToLong(50 * 1024 * 1024)
 	completeMultipart(t, s.client, bucket, "multipartEnc", body, true, map[string]string{"foo": "bar"})
 	head, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String("multipartEnc")})
 	if err != nil {
@@ -169,7 +169,7 @@ func TestCopyObjectEncryption1kb(t *testing.T) {
 	s := newSuite(t)
 	bucket := s.bucket(t, 11)
 	putAESBucketEncryption(t, s.client, bucket)
-	body := deterministicBody(1024)
+	body := randomTextToLong(1024)
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("bar"), Body: bytes.NewReader(body)})
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +187,7 @@ func TestCopyObjectEncryption256kb(t *testing.T) {
 	s := newSuite(t)
 	bucket := s.bucket(t, 12)
 	putAESBucketEncryption(t, s.client, bucket)
-	body := deterministicBody(256 * 1024)
+	body := randomTextToLong(256 * 1024)
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("bar"), Body: bytes.NewReader(body)})
 	if err != nil {
 		t.Fatal(err)
@@ -205,7 +205,7 @@ func TestCopyObjectEncryption1mb(t *testing.T) {
 	s := newSuite(t)
 	bucket := s.bucket(t, 13)
 	putAESBucketEncryption(t, s.client, bucket)
-	body := deterministicBody(1024 * 1024)
+	body := randomTextToLong(1024 * 1024)
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("bar"), Body: bytes.NewReader(body)})
 	if err != nil {
 		t.Fatal(err)
@@ -224,7 +224,7 @@ func TestSseS3BucketPutGet(t *testing.T) {
 	bucket := s.bucket(t, 14)
 	putAESBucketEncryption(t, s.client, bucket)
 	getAndAssertAESBucketEncryption(t, s.client, bucket)
-	body := deterministicBody(1000)
+	body := randomTextToLong(1000)
 	putBytes(t, s.client, bucket, "bar", body)
 	assertSSEObject(t, s, bucket, "bar", body, true)
 }
@@ -236,7 +236,7 @@ func TestSseS3BucketPutGetUseChunkEncoding(t *testing.T) {
 	bucket := s.bucket(t, 15)
 	putAESBucketEncryption(t, s.client, bucket)
 	getAndAssertAESBucketEncryption(t, s.client, bucket)
-	body := deterministicBody(1000)
+	body := randomTextToLong(1000)
 	putBytes(t, s.client, bucket, "bar-chunked", body)
 	assertSSEObject(t, s, bucket, "bar-chunked", body, true)
 }
@@ -265,7 +265,7 @@ func TestSseS3BucketPresignedUrlPutGet(t *testing.T) {
 			request.Header[name] = append([]string(nil), values...)
 		}
 	}
-	response, err := http.DefaultClient.Do(request)
+	response, err := insecureHTTPClient().Do(request)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,7 +277,7 @@ func TestSseS3BucketPresignedUrlPutGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	response, err = http.Get(getURL.URL)
+	response, err = insecureHTTPClient().Get(getURL.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,7 +314,7 @@ func TestSseS3BucketPresignedUrlPutGetV4(t *testing.T) {
 			request.Header[name] = append([]string(nil), values...)
 		}
 	}
-	response, err := http.DefaultClient.Do(request)
+	response, err := insecureHTTPClient().Do(request)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,7 +326,7 @@ func TestSseS3BucketPresignedUrlPutGetV4(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	response, err = http.Get(getURL.URL)
+	response, err = insecureHTTPClient().Get(getURL.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +348,7 @@ func TestSseS3GetObjectMany(t *testing.T) {
 	s := newSuite(t)
 	bucket := s.bucket(t, 19)
 	putAESBucketEncryption(t, s.client, bucket)
-	body := deterministicBody(15 * 1024 * 1024)
+	body := randomTextToLong(15 * 1024 * 1024)
 	putBytes(t, s.client, bucket, "foo", body)
 	for i := 0; i < 50; i++ {
 		assertSSEObject(t, s, bucket, "foo", body, true)
@@ -361,7 +361,7 @@ func TestSseS3RangeObjectMany(t *testing.T) {
 	s := newSuite(t)
 	bucket := s.bucket(t, 20)
 	putAESBucketEncryption(t, s.client, bucket)
-	body := deterministicBody(15 * 1024 * 1024)
+	body := randomTextToLong(15 * 1024 * 1024)
 	putBytes(t, s.client, bucket, "foo", body)
 	for i := 0; i < 100; i++ {
 		length := 1 + (i*7919)%65536
@@ -375,7 +375,7 @@ func TestSseS3EncryptionMultipartCopyPartUpload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 21)
-	body := deterministicBody(50 * 1024 * 1024)
+	body := randomTextToLong(50 * 1024 * 1024)
 	completeMultipart(t, s.client, bucket, "multipartEnc", body, true, map[string]string{"foo": "bar"})
 	copyMultipart(t, s.client, bucket, "multipartEnc", "multipartEncCopy", len(body), map[string]string{"foo": "bar"})
 	assertObjectRanges(t, s.client, bucket, "multipartEncCopy", body, []int{1024 * 1024})
@@ -386,7 +386,7 @@ func TestSseS3EncryptionMultipartCopyMany(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 22)
-	body := deterministicBody(10 * 1024 * 1024)
+	body := randomTextToLong(10 * 1024 * 1024)
 	completeMultipart(t, s.client, bucket, "multipartEnc", body, true, nil)
 	first := append(append([]byte(nil), body...), body...)
 	copyThenUpload(t, s.client, bucket, "multipartEnc", "my_multipart1", len(body), body)
@@ -401,22 +401,23 @@ func TestSseS3NotRetroactive(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 23)
-	plain := deterministicBody(1000)
+	plain := randomTextToLong(1000)
 	putBytes(t, s.client, bucket, "put", plain)
 	if _, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String("copy"), CopySource: aws.String(bucket + "/put")}); err != nil {
 		t.Fatal(err)
 	}
-	completeMultipart(t, s.client, bucket, "multi", deterministicBody(ssePartSize), false, nil)
+	multiBody := randomTextToLong(ssePartSize)
+	completeMultipart(t, s.client, bucket, "multi", multiBody, false, nil)
 	putAESBucketEncryption(t, s.client, bucket)
 	assertObjectBytes(t, s.client, bucket, "put", plain)
 	assertObjectBytes(t, s.client, bucket, "copy", plain)
-	assertObjectBytes(t, s.client, bucket, "multi", deterministicBody(ssePartSize))
-	encrypted := deterministicBody(1000)
+	assertObjectBytes(t, s.client, bucket, "multi", multiBody)
+	encrypted := randomTextToLong(1000)
 	putBytes(t, s.client, bucket, "put2", encrypted)
 	if _, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String("copy2"), CopySource: aws.String(bucket + "/put2")}); err != nil {
 		t.Fatal(err)
 	}
-	multipartBody := deterministicBody(ssePartSize)
+	multipartBody := randomTextToLong(ssePartSize)
 	completeMultipart(t, s.client, bucket, "multi2", multipartBody, false, nil)
 	if _, err := s.client.DeleteBucketEncryption(context.Background(), &s3.DeleteBucketEncryptionInput{Bucket: aws.String(bucket)}); err != nil {
 		t.Fatal(err)
@@ -431,9 +432,9 @@ func TestSseS3MultipartUploadOverwriteExistingObject(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 24)
-	key := "test_sse_s3_multipart_upload_overwrite_existing_object"
+	key := "TestSseS3MultipartUploadOverwriteExistingObject"
 	putAESBucketEncryption(t, s.client, bucket)
-	partBody := deterministicBody(5 * 1024 * 1024)
+	partBody := randomTextToLong(5 * 1024 * 1024)
 	putBytes(t, s.client, bucket, key, partBody)
 	created, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil {
@@ -460,10 +461,10 @@ func TestSseS3PutObjectOverwriteMultipartUpload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 25)
-	key := "test_sse_s3_put_object_overwrite_multipart_upload"
+	key := "TestSseS3PutObjectOverwriteMultipartUpload"
 	putAESBucketEncryption(t, s.client, bucket)
-	completeMultipart(t, s.client, bucket, key, deterministicBody(10*1024*1024), false, nil)
-	content := deterministicBody(1 * 1024 * 1024)
+	completeMultipart(t, s.client, bucket, key, randomTextToLong(10*1024*1024), false, nil)
+	content := randomTextToLong(1 * 1024 * 1024)
 	putBytes(t, s.client, bucket, key, content)
 	head, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil || aws.ToInt64(head.ContentLength) != int64(len(content)) || head.ServerSideEncryption != types.ServerSideEncryptionAes256 {
@@ -471,15 +472,6 @@ func TestSseS3PutObjectOverwriteMultipartUpload(t *testing.T) {
 	}
 	assertSSEObject(t, s, bucket, key, content, true)
 	assertObjectRanges(t, s.client, bucket, key, content, []int{1024})
-}
-
-func deterministicBody(size int) []byte {
-	pattern := []byte("0123456789abcdefghijklmnopqrstuvwxyz")
-	body := make([]byte, size)
-	for index := range body {
-		body[index] = pattern[index%len(pattern)]
-	}
-	return body
 }
 
 func aesBucketConfiguration() *types.ServerSideEncryptionConfiguration {

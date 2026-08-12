@@ -24,7 +24,8 @@ func TestBucketListDistinct(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	first, second := s.bucket(t, 1), s.bucket(t, 1)
-	put(t, s, first, "foo", "bar", nil)
+	key := "TestBucketListDistinct"
+	put(t, s, first, key, key, nil)
 	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(second)})
 	if err != nil || len(out.Contents) != 0 {
 		t.Fatalf("contents=%v err=%v", out.Contents, err)
@@ -36,7 +37,8 @@ func TestObjectWriteToNonExistBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t)), Key: aws.String("foo"), Body: bytes.NewReader([]byte("bar"))})
+	key := "TestObjectWriteToNonExistBucket"
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String("missing-" + uniqueBucketSuffix(t)), Key: aws.String(key), Body: bytes.NewReader([]byte(key))})
 	assertS3Error(t, err, 404, "NoSuchBucket")
 }
 
@@ -46,8 +48,9 @@ func TestObjectHeadZeroBytes(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	bucket := s.bucket(t, 3)
-	put(t, s, bucket, "foo", "", nil)
-	out, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")})
+	key := "TestObjectHeadZeroBytes"
+	put(t, s, bucket, key, "", nil)
+	out, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil || aws.ToInt64(out.ContentLength) != 0 {
 		t.Fatalf("length=%v err=%v", out.ContentLength, err)
 	}
@@ -57,7 +60,7 @@ func TestObjectHeadZeroBytes(t *testing.T) {
 func TestObjectWriteCheckEtag(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	out := put(t, s, s.bucket(t, 4), "foo", "bar", nil)
+	out := put(t, s, s.bucket(t, 4), "TestObjectWriteCheckEtag", "bar", nil)
 	if strings.Trim(aws.ToString(out.ETag), `"`) != "37b51d194a7513e45b56f6524f2d51f2" {
 		t.Fatalf("ETag=%q", aws.ToString(out.ETag))
 	}
@@ -68,13 +71,13 @@ func TestObjectWriteCacheControl(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, value := s.bucket(t, 5), "public, max-age=14HttpStatus.SC_BAD_REQUEST"
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo"), Body: bytes.NewReader([]byte("bar")), ContentLength: aws.Int64(3), ContentType: aws.String("text/plain"), CacheControl: aws.String(value)})
+	bucket, key, value := s.bucket(t, 5), "TestObjectWriteCacheControl", "public, max-age=14HttpStatus.SC_BAD_REQUEST"
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ContentLength: aws.Int64(int64(len(key))), ContentType: aws.String("text/plain"), CacheControl: aws.String(value)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")})
-	if err != nil || aws.ToString(head.CacheControl) != value || read(t, s, bucket, "foo") != "bar" {
+	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil || aws.ToString(head.CacheControl) != value || read(t, s, bucket, key) != key {
 		t.Fatalf("cache=%q err=%v", aws.ToString(head.CacheControl), err)
 	}
 }
@@ -91,15 +94,17 @@ func TestObjectWriteReadUpdateReadDelete(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	bucket := s.bucket(t, 7)
-	put(t, s, bucket, "foo", "bar", nil)
-	if read(t, s, bucket, "foo") != "bar" {
+	key := "TestObjectWriteReadUpdateReadDelete"
+	put(t, s, bucket, key, key, nil)
+	if read(t, s, bucket, key) != key {
 		t.Fatal("initial body mismatch")
 	}
-	put(t, s, bucket, "foo", "soup", nil)
-	if read(t, s, bucket, "foo") != "soup" {
+	updated := key + "Updated"
+	put(t, s, bucket, key, updated, nil)
+	if read(t, s, bucket, key) != updated {
 		t.Fatal("updated body mismatch")
 	}
-	if _, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")}); err != nil {
+	if _, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -109,7 +114,7 @@ func TestObjectSetGetMetadataNoneToGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t, 8), "foo"
+	bucket, key := s.bucket(t, 8), "TestObjectSetGetMetadataNoneToGood"
 	put(t, s, bucket, key, key, map[string]string{"meta1": "my"})
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	got, ok := head.Metadata["meta1"]
@@ -123,7 +128,7 @@ func TestObjectSetGetMetadataNoneToEmpty(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t, 9), "foo"
+	bucket, key := s.bucket(t, 9), "TestObjectSetGetMetadataNoneToEmpty"
 	put(t, s, bucket, key, key, map[string]string{"meta1": ""})
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	got, ok := head.Metadata["meta1"]
@@ -137,7 +142,7 @@ func TestObjectSetGetMetadataOverwriteToEmpty(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t, 10), "foo"
+	bucket, key := s.bucket(t, 10), "TestObjectSetGetMetadataOverwriteToEmpty"
 	put(t, s, bucket, key, key, map[string]string{"meta1": "my"})
 	put(t, s, bucket, key, key, map[string]string{"meta1": ""})
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
@@ -152,8 +157,8 @@ func TestObjectSetGetNonUtf8Metadata(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t, 11), "foo"
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("bar")), Metadata: map[string]string{"meta1": "\nmy_meta"}})
+	bucket, key := s.bucket(t, 11), "TestObjectSetGetNonUtf8Metadata"
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), Metadata: map[string]string{"meta1": "\nmy_meta"}})
 	if err == nil {
 		t.Fatal("invalid metadata was accepted")
 	}
@@ -164,8 +169,8 @@ func TestObjectSetGetMetadataEmptyToUnreadablePrefix(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t, 12), "foo"
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("bar")), Metadata: map[string]string{"meta1": "\nasdf"}})
+	bucket, key := s.bucket(t, 12), "TestObjectSetGetMetadataEmptyToUnreadablePrefix"
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), Metadata: map[string]string{"meta1": "\nasdf"}})
 	if err == nil {
 		t.Fatal("invalid metadata was accepted")
 	}
@@ -176,8 +181,8 @@ func TestObjectSetGetMetadataEmptyToUnreadableSuffix(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t, 13), "foo"
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("bar")), Metadata: map[string]string{"meta1": "asdf\n"}})
+	bucket, key := s.bucket(t, 13), "TestObjectSetGetMetadataEmptyToUnreadableSuffix"
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), Metadata: map[string]string{"meta1": "asdf\n"}})
 	if err == nil {
 		t.Fatal("invalid metadata was accepted")
 	}
@@ -188,9 +193,9 @@ func TestObjectMetadataReplacedOnPut(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	ctx := context.Background()
-	bucket, key := s.bucket(t, 14), "foo"
-	put(t, s, bucket, key, "bar", map[string]string{"meta1": "bar"})
-	put(t, s, bucket, key, "bar", nil)
+	bucket, key := s.bucket(t, 14), "TestObjectMetadataReplacedOnPut"
+	put(t, s, bucket, key, key, map[string]string{"meta1": "bar"})
+	put(t, s, bucket, key, key, nil)
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
 	if err != nil || len(head.Metadata) != 0 {
 		t.Fatalf("metadata=%v err=%v", head.Metadata, err)
@@ -202,8 +207,9 @@ func TestObjectWriteFile(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 15)
-	put(t, s, bucket, "foo", string([]byte{'b', 'a', 'r'}), nil)
-	if read(t, s, bucket, "foo") != "bar" {
+	key := "TestObjectWriteFile"
+	put(t, s, bucket, key, string([]byte(key)), nil)
+	if read(t, s, bucket, key) != key {
 		t.Fatal("ASCII body mismatch")
 	}
 }
@@ -216,11 +222,7 @@ func TestBucketCreateSpecialKeyNames(t *testing.T) {
 	bucket := s.bucket(t, 16)
 	keys := []string{"!", "-", "_", ".", "'", "()", "&", "$", "@", "=", ";", "/", ":", "+", "  ", ",", "?", "{}", "^", "%", "`", "[]", "<>", "~", "#", "|"}
 	for _, key := range keys {
-		body := key
-		if strings.HasSuffix(key, "/") {
-			body = ""
-		}
-		put(t, s, bucket, key, body, nil)
+		put(t, s, bucket, key, strings.TrimSuffix(key, "/"), nil)
 	}
 	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(bucket)})
 	if err != nil || len(out.Contents) != len(keys) {
@@ -273,7 +275,7 @@ func TestObjectLockUploadingObj(t *testing.T) {
 			cleanupBucket(t, s, bucket)
 		}
 	})
-	key := "testObjectLockUploadingObjV2"
+	key := "TestObjectLockUploadingObj"
 	retain := time.Date(2030, 2, 1, 0, 0, 0, 0, time.UTC)
 	digest := md5.Sum([]byte(key))
 	out, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ContentMD5: aws.String(base64.StdEncoding.EncodeToString(digest[:])), ContentType: aws.String("text/plain"), ObjectLockMode: types.ObjectLockModeGovernance, ObjectLockRetainUntilDate: &retain, ObjectLockLegalHoldStatus: types.ObjectLockLegalHoldStatusOn})
@@ -306,11 +308,7 @@ func TestObjectInfixSpace(t *testing.T) {
 	bucket := s.bucket(t, 19)
 	keys := []string{"a a/", "b b/f1", "c/f 2", "d d/f 3"}
 	for _, key := range keys {
-		body := key
-		if strings.HasSuffix(key, "/") {
-			body = ""
-		}
-		put(t, s, bucket, key, body, nil)
+		put(t, s, bucket, key, strings.TrimSuffix(key, "/"), nil)
 	}
 	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(bucket)})
 	if err != nil || len(out.Contents) != len(keys) {
@@ -332,11 +330,7 @@ func TestObjectSuffixSpace(t *testing.T) {
 	bucket := s.bucket(t, 20)
 	keys := []string{"a /", "b /f1", "c/f2 ", "d /f3 "}
 	for _, key := range keys {
-		body := key
-		if strings.HasSuffix(key, "/") {
-			body = ""
-		}
-		put(t, s, bucket, key, body, nil)
+		put(t, s, bucket, key, strings.TrimSuffix(key, "/"), nil)
 	}
 	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(bucket)})
 	if err != nil || len(out.Contents) != len(keys) {
@@ -358,11 +352,7 @@ func TestPutObjectSpecialCharacters(t *testing.T) {
 	bucket := s.bucket(t, 21)
 	keys := []string{"!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]"}
 	for _, key := range keys {
-		body := key
-		if strings.HasSuffix(key, "/") {
-			body = ""
-		}
-		put(t, s, bucket, key, body, nil)
+		put(t, s, bucket, key, strings.TrimSuffix(key, "/"), nil)
 	}
 	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(bucket)})
 	if err != nil || len(out.Contents) != len(keys) {
@@ -386,11 +376,7 @@ func TestPutObjectSpecialCharactersUseChunkEncoding(t *testing.T) {
 	bucket := s.bucket(t, 22)
 	keys := []string{"!", "!/", "!/!", "$", "$/", "$/$", "'", "'/", "'/'", "(", "(/", "(/(", ")", ")/", ")/)", "*", "*/", "*/*", ":", ":/", ":/:", "[", "[/", "[/[", "]", "]/", "]/]"}
 	for _, key := range keys {
-		body := key
-		if strings.HasSuffix(key, "/") {
-			body = ""
-		}
-		put(t, s, bucket, key, body, nil)
+		put(t, s, bucket, key, strings.TrimSuffix(key, "/"), nil)
 	}
 	out, err := s.client.ListObjects(ctx, &s3.ListObjectsInput{Bucket: aws.String(bucket)})
 	if err != nil || len(out.Contents) != len(keys) {
@@ -509,7 +495,7 @@ func TestPutObjectChecksum(t *testing.T) {
 			for _, algorithm := range algorithms {
 				algorithm := algorithm
 				t.Run(string(algorithm), func(t *testing.T) {
-					key := "test_put_object_checksum/" + config.name + "/" + string(algorithm)
+					key := "TestPutObjectChecksum/" + config.name + "/" + string(algorithm)
 					body := []byte(key)
 					input := &s3.PutObjectInput{
 						Bucket:            aws.String(bucket),
@@ -549,7 +535,7 @@ func TestPutObjectChecksumWithValue(t *testing.T) {
 	for _, algorithm := range algorithms {
 		algorithm := algorithm
 		t.Run(string(algorithm), func(t *testing.T) {
-			key := "test_put_object_checksum_with_value/" + string(algorithm)
+			key := "TestPutObjectChecksumWithValue/" + string(algorithm)
 			body := []byte(key)
 			input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(body), ChecksumAlgorithm: algorithm}
 			setPutChecksum(input, algorithm, body, false)
@@ -591,7 +577,7 @@ func TestPutObjectChecksumUseChunkEncoding(t *testing.T) {
 			for _, algorithm := range algorithms {
 				algorithm := algorithm
 				t.Run(string(algorithm), func(t *testing.T) {
-					key := "test_put_object_checksum_use_chunk_encoding/" + config.name + "/" + string(algorithm)
+					key := "TestPutObjectChecksumUseChunkEncoding/" + config.name + "/" + string(algorithm)
 					body := []byte(key)
 					input := &s3.PutObjectInput{
 						Bucket:            aws.String(bucket),
@@ -631,7 +617,7 @@ func TestPutObjectChecksumFailure(t *testing.T) {
 	for _, algorithm := range algorithms {
 		algorithm := algorithm
 		t.Run(string(algorithm), func(t *testing.T) {
-			key := "test_put_object_checksum_failure/" + string(algorithm)
+			key := "TestPutObjectChecksumFailure/" + string(algorithm)
 			body := []byte(key)
 			input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(body), ChecksumAlgorithm: algorithm}
 			setPutChecksum(input, algorithm, body, true)
@@ -645,7 +631,7 @@ func TestPutObjectChecksumFailure(t *testing.T) {
 func TestPutObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t, 34), "test_put_object_if_match_good"
+	bucket, key := s.bucket(t, 34), "TestPutObjectIfMatchGood"
 	first := put(t, s, bucket, key, "old", nil)
 	ctx := context.Background()
 	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("new"))}
@@ -663,7 +649,7 @@ func TestPutObjectIfMatchGood(t *testing.T) {
 func TestPutObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t, 35), "test_put_object_if_match_failed"
+	bucket, key := s.bucket(t, 35), "TestPutObjectIfMatchFailed"
 	put(t, s, bucket, key, "old", nil)
 	ctx := context.Background()
 	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("new"))}
@@ -680,7 +666,7 @@ func TestPutObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := s.bucket(t, 36)
-	origKey := "test_put_object_if_none_match_good"
+	origKey := "TestPutObjectIfNoneMatchGood"
 	put(t, s, bucket, origKey, "old", nil)
 	ctx := context.Background()
 	key := origKey + "-new"
@@ -699,7 +685,7 @@ func TestPutObjectIfNoneMatchGood(t *testing.T) {
 func TestPutObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t, 37), "test_put_object_if_none_match_failed"
+	bucket, key := s.bucket(t, 37), "TestPutObjectIfNoneMatchFailed"
 	put(t, s, bucket, key, "old", nil)
 	ctx := context.Background()
 	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("new"))}
@@ -715,7 +701,7 @@ func TestPutObjectIfNoneMatchFailed(t *testing.T) {
 func TestPutObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	bucket, key := s.bucket(t, 38), "test_put_object_if_match_and_if_none_match"
+	bucket, key := s.bucket(t, 38), "TestPutObjectIfMatchAndIfNoneMatch"
 	first := put(t, s, bucket, key, "old", nil)
 	ctx := context.Background()
 	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte("new"))}

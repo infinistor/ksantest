@@ -79,7 +79,7 @@ func TestIgnorePublicAcls(t *testing.T) {
 		t.Skip("configure Alt User credentials in config.ini")
 	}
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 5)
-	key := "testIgnorePublicAcls"
+	key := "TestIgnorePublicAcls"
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
 	if err != nil {
 		t.Fatalf("PutObject public-read: %v", err)

@@ -158,7 +158,7 @@ func TestPostObjectUploadLargerThanChunk(t *testing.T) {
 	bucket := s.bucket(t, 7)
 	key, contentType := "foo.txt", "text/plain"
 	keyPrefix := "foo"
-	fileBody := deterministicBody(5 * 1024 * 1024)
+	fileBody := randomTextToLong(5 * 1024 * 1024)
 	conditions := postV2Conditions(bucket, contentType, keyPrefix, 0, len(fileBody))
 	document := map[string]any{"expiration": time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339), "conditions": conditions}
 	fields := map[string]string{"key": key, "acl": "private", "Content-Type": contentType}
@@ -783,7 +783,7 @@ func TestPresignedUrlPutGet(t *testing.T) {
 	}
 	request, _ := http.NewRequest(http.MethodPut, putURL.URL, bytes.NewReader(body))
 	copySignedHeaders(request, putURL.SignedHeader)
-	response, err := http.DefaultClient.Do(request)
+	response, err := insecureHTTPClient().Do(request)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -795,7 +795,7 @@ func TestPresignedUrlPutGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	response, err = http.Get(getURL.URL)
+	response, err = insecureHTTPClient().Get(getURL.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -812,7 +812,7 @@ func TestPutObjectV4(t *testing.T) {
 
 	s := newSuite(t)
 	bucket := s.bucket(t, 33)
-	body := deterministicBody(100)
+	body := randomTextToLong(100)
 	putBytes(t, s.client, bucket, "foo", body)
 	assertObjectBytes(t, s.client, bucket, "foo", body)
 }
@@ -823,7 +823,7 @@ func TestPutObjectChunkedV4(t *testing.T) {
 
 	s := newSuite(t)
 	bucket := s.bucket(t, 34)
-	body := deterministicBody(100)
+	body := randomTextToLong(100)
 	putBytes(t, s.client, bucket, "chunked", body)
 	assertObjectBytes(t, s.client, bucket, "chunked", body)
 }
@@ -834,7 +834,7 @@ func TestGetObjectV4(t *testing.T) {
 
 	s := newSuite(t)
 	bucket := s.bucket(t, 35)
-	body := deterministicBody(100)
+	body := randomTextToLong(100)
 	putBytes(t, s.client, bucket, "foo", body)
 	out, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String("foo")})
 	if err != nil {
@@ -962,7 +962,7 @@ func sendPostForm(t *testing.T, url string, fields map[string]string, filename, 
 		t.Fatal(err)
 	}
 	request.Header.Set("Content-Type", writer.FormDataContentType())
-	response, err := http.DefaultClient.Do(request)
+	response, err := insecureHTTPClient().Do(request)
 	if err != nil {
 		t.Fatal(err)
 	}

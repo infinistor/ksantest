@@ -130,7 +130,7 @@ func TestObjectLockPutObject(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	name := "test_object_lock_put_object"
+	name := "TestObjectLockPutObject"
 	if err := putLockConfiguration(t, s, b, lockConfiguration(types.ObjectLockRetentionModeGovernance, 1, 0)); err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +229,7 @@ func TestObjectLockPutObjRetention(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_put_obj_retention"
+	key := "TestObjectLockPutObjRetention"
 	out := put(t, s, b, key, key, nil)
 	early := time.Now().UTC().Add(48 * time.Hour)
 	version := out.VersionId
@@ -244,7 +244,7 @@ func TestObjectLockPutObjRetentionInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 17)
-	key := "test_object_lock_put_obj_retention_invalid_bucket"
+	key := "TestObjectLockPutObjRetentionInvalidBucket"
 	put(t, s, b, key, key, nil)
 	early := time.Now().UTC().Add(48 * time.Hour)
 	_, err := s.client.PutObjectRetention(context.Background(), &s3.PutObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key), Retention: retention(types.ObjectLockRetentionModeGovernance, early)})
@@ -256,7 +256,7 @@ func TestObjectLockPutObjRetentionInvalidMode(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_put_obj_retention_invalid_mode"
+	key := "TestObjectLockPutObjRetentionInvalidMode"
 	put(t, s, b, key, key, nil)
 	early := time.Now().UTC().Add(48 * time.Hour)
 	_, err := s.client.PutObjectRetention(context.Background(), &s3.PutObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key), Retention: retention(types.ObjectLockRetentionMode("invalid"), early)})
@@ -268,7 +268,7 @@ func TestObjectLockGetObjRetention(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_get_obj_retention"
+	key := "TestObjectLockGetObjRetention"
 	out := put(t, s, b, key, key, nil)
 	early := time.Now().UTC().Add(48 * time.Hour)
 	version := out.VersionId
@@ -287,7 +287,7 @@ func TestObjectLockGetObjRetentionInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 20)
-	key := "test_object_lock_get_obj_retention_invalid_bucket"
+	key := "TestObjectLockGetObjRetentionInvalidBucket"
 	put(t, s, b, key, key, nil)
 	_, err := s.client.GetObjectRetention(context.Background(), &s3.GetObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key)})
 	assertS3Error(t, err, 400, "InvalidRequest")
@@ -298,7 +298,7 @@ func TestObjectLockPutObjRetentionVersionid(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_put_obj_retention_versionid"
+	key := "TestObjectLockPutObjRetentionVersionid"
 	out := put(t, s, b, key, key, nil)
 	early := time.Now().UTC().Add(48 * time.Hour)
 	version := out.VersionId
@@ -314,7 +314,7 @@ func TestObjectLockPutObjRetentionOverrideDefaultRetention(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_put_obj_retention_override_default_retention"
+	key := "TestObjectLockPutObjRetentionOverrideDefaultRetention"
 	if err := putLockConfiguration(t, s, b, lockConfiguration(types.ObjectLockRetentionModeGovernance, 1, 0)); err != nil {
 		t.Fatal(err)
 	}
@@ -336,7 +336,7 @@ func TestObjectLockPutObjRetentionIncreasePeriod(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_put_obj_retention_increase_period"
+	key := "TestObjectLockPutObjRetentionIncreasePeriod"
 	out := put(t, s, b, key, key, nil)
 	late := time.Now().UTC().Add(96 * time.Hour)
 	version := out.VersionId
@@ -358,7 +358,7 @@ func TestObjectLockPutObjRetentionShortenPeriod(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_put_obj_retention_shorten_period"
+	key := "TestObjectLockPutObjRetentionShortenPeriod"
 	out := put(t, s, b, key, key, nil)
 	early, late := time.Now().UTC().Add(48*time.Hour), time.Now().UTC().Add(96*time.Hour)
 	version := out.VersionId
@@ -376,7 +376,7 @@ func TestObjectLockPutObjRetentionShortenPeriodBypass(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_put_obj_retention_shorten_period_bypass"
+	key := "TestObjectLockPutObjRetentionShortenPeriodBypass"
 	out := put(t, s, b, key, key, nil)
 	early, late := time.Now().UTC().Add(48*time.Hour), time.Now().UTC().Add(96*time.Hour)
 	version := out.VersionId
@@ -399,7 +399,7 @@ func TestObjectLockDeleteObjectWithRetention(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_delete_object_with_retention"
+	key := "TestObjectLockDeleteObjectWithRetention"
 	out := put(t, s, b, key, key, nil)
 	early := time.Now().UTC().Add(48 * time.Hour)
 	version := out.VersionId
@@ -416,7 +416,7 @@ func TestObjectLockDeleteObjectWithRetentionBypass(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_delete_object_with_retention_bypass"
+	key := "TestObjectLockDeleteObjectWithRetentionBypass"
 	out := put(t, s, b, key, key, nil)
 	early := time.Now().UTC().Add(48 * time.Hour)
 	version := out.VersionId
@@ -431,7 +431,7 @@ func TestObjectLockDeleteObjectsWithRetentionBypass(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_delete_objects_with_retention_bypass"
+	key := "TestObjectLockDeleteObjectsWithRetentionBypass"
 	out := put(t, s, b, key, key, nil)
 	early := time.Now().UTC().Add(48 * time.Hour)
 	version := out.VersionId
@@ -458,7 +458,7 @@ func TestObjectLockPutLegalHold(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_put_legal_hold"
+	key := "TestObjectLockPutLegalHold"
 	out := put(t, s, b, key, key, nil)
 	if _, err := s.client.PutObjectLegalHold(context.Background(), &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: out.VersionId, LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatusOn}}); err != nil {
 		t.Fatal(err)
@@ -476,7 +476,7 @@ func TestObjectLockPutLegalHoldInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 30)
-	key := "test_object_lock_put_legal_hold_invalid_bucket"
+	key := "TestObjectLockPutLegalHoldInvalidBucket"
 	put(t, s, b, key, key, nil)
 	_, err := s.client.PutObjectLegalHold(context.Background(), &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatusOn}})
 	assertS3Error(t, err, 400, "InvalidRequest")
@@ -487,7 +487,7 @@ func TestObjectLockPutLegalHoldInvalidStatus(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_put_legal_hold_invalid_status"
+	key := "TestObjectLockPutLegalHoldInvalidStatus"
 	out := put(t, s, b, key, key, nil)
 	_, err := s.client.PutObjectLegalHold(context.Background(), &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: out.VersionId, LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatus("abc")}})
 	assertS3Error(t, err, 400, "MalformedXML")
@@ -498,7 +498,7 @@ func TestObjectLockGetLegalHold(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_get_legal_hold"
+	key := "TestObjectLockGetLegalHold"
 	out := put(t, s, b, key, key, nil)
 	if _, err := s.client.PutObjectLegalHold(context.Background(), &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: out.VersionId, LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatusOn}}); err != nil {
 		t.Fatal(err)
@@ -520,7 +520,7 @@ func TestObjectLockGetLegalHoldInvalidBucket(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 33)
-	key := "test_object_lock_get_legal_hold_invalid_bucket"
+	key := "TestObjectLockGetLegalHoldInvalidBucket"
 	put(t, s, b, key, key, nil)
 	_, err := s.client.GetObjectLegalHold(context.Background(), &s3.GetObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key)})
 	assertS3Error(t, err, 400, "InvalidRequest")
@@ -531,7 +531,7 @@ func TestObjectLockDeleteObjectWithLegalHoldOn(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_delete_object_with_legal_hold_on"
+	key := "TestObjectLockDeleteObjectWithLegalHoldOn"
 	out := put(t, s, b, key, key, nil)
 	if _, err := s.client.PutObjectLegalHold(context.Background(), &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: out.VersionId, LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatusOn}}); err != nil {
 		t.Fatal(err)
@@ -551,7 +551,7 @@ func TestObjectLockDeleteObjectWithLegalHoldOff(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	key := "test_object_lock_delete_object_with_legal_hold_off"
+	key := "TestObjectLockDeleteObjectWithLegalHoldOff"
 	out := put(t, s, b, key, key, nil)
 	if _, err := s.client.PutObjectLegalHold(context.Background(), &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: out.VersionId, LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatusOn}}); err != nil {
 		t.Fatal(err)
@@ -569,7 +569,7 @@ func TestObjectLockGetObjMetadata(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := newLockBucket(t, s)
-	name := "test_object_lock_get_obj_metadata"
+	name := "TestObjectLockGetObjMetadata"
 	out, until := putLockedObject(t, s, b, name)
 	head, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(name), VersionId: out.VersionId})
 	if err != nil || head.ObjectLockMode != types.ObjectLockModeGovernance || head.ObjectLockRetainUntilDate == nil {

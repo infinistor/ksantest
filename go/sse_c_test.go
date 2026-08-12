@@ -37,7 +37,7 @@ func TestEncryptedTransfer1b(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 1)
-	body := deterministicBody(1)
+	body := randomTextToLong(1)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "test", body)); err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestEncryptedTransfer1kb(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 2)
-	body := deterministicBody(1024)
+	body := randomTextToLong(1024)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "test", body)); err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestEncryptedTransfer1MB(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 3)
-	body := deterministicBody(1024 * 1024)
+	body := randomTextToLong(1024 * 1024)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "test", body)); err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestEncryptedTransfer13b(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 4)
-	body := deterministicBody(13)
+	body := randomTextToLong(13)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "test", body)); err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestEncryptionSseCMethodHead(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 5)
-	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "obj", deterministicBody(1000))); err != nil {
+	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "obj", randomTextToLong(1000))); err != nil {
 		t.Fatal(err)
 	}
 	_, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj")})
@@ -99,7 +99,7 @@ func TestEncryptionSseCMethodHead(t *testing.T) {
 // SSE-C 설정하여 업로드한 오브젝트를 SSE-C 설정없이 다운로드 실패 확인
 func TestEncryptionSseCPresent(t *testing.T) {
 	t.Parallel()
-	s, bucket := newSSECObject(t, 1000, 6)
+	s, bucket, _ := newSSECObject(t, 1000, 6)
 	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj")})
 	assertHTTPError(t, err, 400)
 }
@@ -107,7 +107,7 @@ func TestEncryptionSseCPresent(t *testing.T) {
 // SSE-C 설정하여 업로드한 오브젝트와 다른 SSE-C 설정으로 다운로드 실패 확인
 func TestEncryptionSseCOtherKey(t *testing.T) {
 	t.Parallel()
-	s, bucket := newSSECObject(t, 100, 7)
+	s, bucket, _ := newSSECObject(t, 100, 7)
 	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj"), SSECustomerAlgorithm: aws.String(sseCAlgorithm), SSECustomerKey: aws.String(sseCOtherKey), SSECustomerKeyMD5: aws.String(sseCOtherMD5)})
 	assertHTTPError(t, err, 403)
 }
@@ -117,7 +117,7 @@ func TestEncryptionSseCInvalidMd5(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 8)
-	input := sseCPutInput(bucket, "obj", deterministicBody(100))
+	input := sseCPutInput(bucket, "obj", randomTextToLong(100))
 	input.SSECustomerKeyMD5 = aws.String("AAAAAAAAAAAAAAAAAAAAAA==")
 	_, err := s.client.PutObject(context.Background(), input)
 	assertHTTPError(t, err, 400)
@@ -128,7 +128,7 @@ func TestEncryptionSseCNoMd5(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 9)
-	input := sseCPutInput(bucket, "obj", deterministicBody(100))
+	input := sseCPutInput(bucket, "obj", randomTextToLong(100))
 	input.SSECustomerKeyMD5 = nil
 	_, err := s.client.PutObject(context.Background(), input, func(options *s3.Options) {
 		options.APIOptions = append(options.APIOptions, func(stack *middleware.Stack) error {
@@ -149,7 +149,7 @@ func TestEncryptionSseCNoKey(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 10)
-	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj"), Body: bytes.NewReader(deterministicBody(100)), SSECustomerKeyMD5: aws.String(sseCKeyMD5)})
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj"), Body: bytes.NewReader(randomTextToLong(100)), SSECustomerKeyMD5: aws.String(sseCKeyMD5)})
 	assertHTTPError(t, err, 400)
 }
 
@@ -158,7 +158,7 @@ func TestEncryptionKeyNoSseC(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 11)
-	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj"), Body: bytes.NewReader(deterministicBody(100)), SSECustomerKey: aws.String(sseCKey), SSECustomerKeyMD5: aws.String(sseCKeyMD5)})
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("obj"), Body: bytes.NewReader(randomTextToLong(100)), SSECustomerKey: aws.String(sseCKey), SSECustomerKeyMD5: aws.String(sseCKeyMD5)})
 	assertHTTPError(t, err, 400)
 }
 
@@ -167,7 +167,7 @@ func TestEncryptionSseCMultipartUpload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 12)
-	body := deterministicBody(50 * 1024 * 1024)
+	body := randomTextToLong(50 * 1024 * 1024)
 	completeSSECMultipart(t, s.client, bucket, "multipartEnc", body, map[string]string{"foo": "bar"})
 	headSSEC(t, s.client, bucket, "multipartEnc", map[string]string{"foo": "bar"})
 	assertSSECRanges(t, s.client, bucket, "multipartEnc", body, []int{1024 * 1024, 10 * 1024 * 1024})
@@ -178,7 +178,7 @@ func TestEncryptionSseCMultipartBadDownload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 13)
-	body := deterministicBody(50 * 1024 * 1024)
+	body := randomTextToLong(50 * 1024 * 1024)
 	completeSSECMultipart(t, s.client, bucket, "multipartEnc", body, map[string]string{"foo": "bar"})
 	headSSEC(t, s.client, bucket, "multipartEnc", map[string]string{"foo": "bar"})
 	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String("multipartEnc"), SSECustomerAlgorithm: aws.String(sseCAlgorithm), SSECustomerKey: aws.String(sseCOtherKey), SSECustomerKeyMD5: aws.String(sseCOtherMD5)})
@@ -214,8 +214,7 @@ func TestEncryptionSseCPostObjectAuthenticatedRequest(t *testing.T) {
 // SSE-C설정한 오브젝트를 여러번 반복하여 다운로드 성공 확인
 func TestEncryptionSseCGetObjectMany(t *testing.T) {
 	t.Parallel()
-	s, bucket := newSSECObject(t, 15*1024*1024, 15)
-	body := deterministicBody(15 * 1024 * 1024)
+	s, bucket, body := newSSECObject(t, 15*1024*1024, 15)
 	for i := 0; i < 50; i++ {
 		assertSSECObject(t, s.client, bucket, "obj", body)
 	}
@@ -224,8 +223,7 @@ func TestEncryptionSseCGetObjectMany(t *testing.T) {
 // SSE-C설정한 오브젝트를 여러번 반복하여 Range 다운로드 성공 확인
 func TestEncryptionSseCRangeObjectMany(t *testing.T) {
 	t.Parallel()
-	s, bucket := newSSECObject(t, 15*1024*1024, 16)
-	body := deterministicBody(15 * 1024 * 1024)
+	s, bucket, body := newSSECObject(t, 15*1024*1024, 16)
 	assertSSECObject(t, s.client, bucket, "obj", body)
 	for i := 0; i < 50; i++ {
 		length := 1 + (i*7919)%65536
@@ -239,7 +237,7 @@ func TestSseCEncryptionMultipartCopyPartUpload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 17)
-	body := deterministicBody(50 * 1024 * 1024)
+	body := randomTextToLong(50 * 1024 * 1024)
 	completeSSECMultipart(t, s.client, bucket, "multipartEnc", body, nil)
 	copySSECMultipart(t, s.client, bucket, "multipartEnc", "multipartEncCopy", len(body))
 	assertSSECObject(t, s.client, bucket, "multipartEncCopy", body)
@@ -250,7 +248,7 @@ func TestSseCEncryptionMultipartCopyMany(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 18)
-	body := deterministicBody(10 * 1024 * 1024)
+	body := randomTextToLong(10 * 1024 * 1024)
 	completeMultipart(t, s.client, bucket, "multipartEnc", body, false, nil)
 	copyThenUpload(t, s.client, bucket, "multipartEnc", "my_multipart1", len(body), body)
 	first := append(append([]byte(nil), body...), body...)
@@ -265,8 +263,8 @@ func TestEncryptionSseCMultipartUploadOverwriteExistingObject(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 19)
-	key := "test_encryption_sse_c_multipart_upload_overwrite_existing_object"
-	partBody := deterministicBody(5 * 1024 * 1024)
+	key := "TestEncryptionSseCMultipartUploadOverwriteExistingObject"
+	partBody := randomTextToLong(5 * 1024 * 1024)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, key, partBody)); err != nil {
 		t.Fatal(err)
 	}
@@ -295,9 +293,9 @@ func TestEncryptionSseCPutObjectOverwriteMultipartUpload(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, 20)
-	key := "test_encryption_sse_c_put_object_overwrite_multipart_upload"
-	completeSSECMultipart(t, s.client, bucket, key, deterministicBody(10*1024*1024), nil)
-	content := deterministicBody(1 * 1024 * 1024)
+	key := "TestEncryptionSseCPutObjectOverwriteMultipartUpload"
+	completeSSECMultipart(t, s.client, bucket, key, randomTextToLong(10*1024*1024), nil)
+	content := randomTextToLong(1 * 1024 * 1024)
 	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, key, content)); err != nil {
 		t.Fatal(err)
 	}
@@ -395,14 +393,15 @@ func sseCGetInput(bucket, key string) *s3.GetObjectInput {
 	return &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), SSECustomerAlgorithm: aws.String(sseCAlgorithm), SSECustomerKey: aws.String(sseCKey), SSECustomerKeyMD5: aws.String(sseCKeyMD5)}
 }
 
-func newSSECObject(t *testing.T, size int, id ...int) (*suite, string) {
+func newSSECObject(t *testing.T, size int, id ...int) (*suite, string, []byte) {
 	t.Helper()
 	s := newSuite(t)
 	bucket := ssecBucket(t, s, id...)
-	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "obj", deterministicBody(size))); err != nil {
+	body := randomTextToLong(size)
+	if _, err := s.client.PutObject(context.Background(), sseCPutInput(bucket, "obj", body)); err != nil {
 		t.Fatal(err)
 	}
-	return s, bucket
+	return s, bucket, body
 }
 
 func completeSSECMultipart(t *testing.T, client *s3.Client, bucket, key string, body []byte, metadata map[string]string) {

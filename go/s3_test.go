@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"crypto/tls"
 	"encoding/hex"
 	"io"
 	"math/rand/v2"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -27,6 +29,15 @@ type suite struct {
 	client  *s3.Client
 	cfg     testconfig.Config
 	suiteID string
+}
+
+// insecureHTTPClient는 Python/Java 테스트와 같이 사설 CA·self-signed TLS를 허용한다.
+func insecureHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // test only
+		},
+	}
 }
 
 func newSuite(t *testing.T) *suite {
@@ -166,6 +177,18 @@ func randomText(length int) string {
 		b[i] = letters[rand.IntN(len(letters))]
 	}
 	return string(b)
+}
+
+func randomTextToLong(length int) []byte {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	if length <= 0 {
+		return nil
+	}
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letters[rand.IntN(len(letters))]
+	}
+	return b
 }
 
 func randomBucketName(prefix string) string {

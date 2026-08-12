@@ -15,7 +15,7 @@ func TestMultiObjectDelete(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 1)
-	keys := []string{"test_multi_object_delete0", "test_multi_object_delete1", "test_multi_object_delete2"}
+	keys := []string{"TestMultiObjectDelete-0", "TestMultiObjectDelete-1", "TestMultiObjectDelete-2"}
 	for _, key := range keys {
 		put(t, s, b, key, key, nil)
 	}
@@ -38,7 +38,7 @@ func TestMultiObjectV2Delete(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 2)
-	keys := []string{"test_multi_object_v2_delete0", "test_multi_object_v2_delete1", "test_multi_object_v2_delete2"}
+	keys := []string{"TestMultiObjectV2Delete-0", "TestMultiObjectV2Delete-1", "TestMultiObjectV2Delete-2"}
 	for _, key := range keys {
 		put(t, s, b, key, key, nil)
 	}
@@ -61,7 +61,7 @@ func TestMultiObjectDeleteVersions(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 3)
-	keys := []string{"test_multi_object_delete_versions0", "test_multi_object_delete_versions1", "test_multi_object_delete_versions2"}
+	keys := []string{"TestMultiObjectDeleteVersions-0", "TestMultiObjectDeleteVersions-1", "TestMultiObjectDeleteVersions-2"}
 	enableVersioning(t, s, b)
 	for _, key := range keys {
 		for i := 0; i < 3; i++ {
@@ -83,7 +83,7 @@ func TestMultiObjectDeleteQuiet(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 4)
-	keys := []string{"test_multi_object_delete_quiet0", "test_multi_object_delete_quiet1", "test_multi_object_delete_quiet2"}
+	keys := []string{"TestMultiObjectDeleteQuiet-0", "TestMultiObjectDeleteQuiet-1", "TestMultiObjectDeleteQuiet-2"}
 	for _, key := range keys {
 		put(t, s, b, key, key, nil)
 	}
@@ -274,7 +274,7 @@ func TestDeleteObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 13)
-	key := "test_delete_object_if_match_good"
+	key := "TestDeleteObjectIfMatchGood"
 	created := put(t, s, b, key, key, nil)
 	input := &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)}
 	input.IfMatch = created.ETag
@@ -296,7 +296,7 @@ func TestDeleteObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 14)
-	key := "test_delete_object_if_match_failed"
+	key := "TestDeleteObjectIfMatchFailed"
 	put(t, s, b, key, key, nil)
 	input := &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)}
 	input.IfMatch = aws.String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -316,7 +316,7 @@ func TestDeleteObjectIfMatchAny(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 15)
-	key := "test_delete_object_if_match_any"
+	key := "TestDeleteObjectIfMatchAny"
 	put(t, s, b, key, key, nil)
 	input := &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)}
 	input.IfMatch = aws.String("*")
@@ -338,7 +338,7 @@ func TestDeleteObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 16)
-	key := "test_delete_object_if_match_and_if_none_match"
+	key := "TestDeleteObjectIfMatchAndIfNoneMatch"
 	created := put(t, s, b, key, key, nil)
 	input := &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)}
 	input.IfMatch = created.ETag
@@ -360,7 +360,7 @@ func TestDeleteObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 17)
-	key := "test_delete_object_if_match_and_if_none_match_any"
+	key := "TestDeleteObjectIfMatchAndIfNoneMatchAny"
 	created := put(t, s, b, key, key, nil)
 	input := &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)}
 	input.IfMatch = created.ETag

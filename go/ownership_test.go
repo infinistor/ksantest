@@ -57,7 +57,7 @@ func TestBucketOwnershipDenyObjectACL(t *testing.T) {
 
 	s := newSuite(t)
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerEnforced, 5)
-	key := "testBucketOwnershipDenyObjectACL"
+	key := "TestBucketOwnershipDenyObjectACL"
 	put(t, s, bucket, key, key, nil)
 	_, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPublicRead})
 	assertS3Error(t, err, 403, "AccessDenied")
@@ -69,7 +69,7 @@ func TestObjectOwnershipDenyChange(t *testing.T) {
 
 	s := newSuite(t)
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 6)
-	key := "testObjectOwnershipDenyChange"
+	key := "TestObjectOwnershipDenyChange"
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +86,7 @@ func TestObjectOwnershipDenyACL(t *testing.T) {
 
 	s := newSuite(t)
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 7)
-	key := "testObjectOwnershipDenyACL"
+	key := "TestObjectOwnershipDenyACL"
 	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLPublicRead})
 	if err != nil {
 		t.Fatal(err)

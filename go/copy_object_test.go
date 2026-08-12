@@ -20,7 +20,7 @@ func TestObjectCopyZeroSize(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	b := s.bucket(t, 1)
-	source, target := "test_object_copy_zero_size-source", "test_object_copy_zero_size-target"
+	source, target := "TestObjectCopyZeroSizeSource", "TestObjectCopyZeroSizeTarget"
 	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(""))}); err != nil {
 		t.Fatal(err)
 	}
@@ -38,13 +38,12 @@ func TestObjectCopySameBucket(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	b := s.bucket(t, 2)
-	source, target := "test_object_copy_same_bucket-source", "test_object_copy_same_bucket-target"
-	body := source
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
+	source, target := "TestObjectCopySameBucketSource", "TestObjectCopySameBucketTarget"
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
 		t.Fatal(err)
 	}
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, "")})
-	assertCopied(t, s.client, b, target, body, nil)
+	assertCopied(t, s.client, b, target, source, nil)
 	if _, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(target)}); err != nil {
 		t.Fatal(err)
 	}
@@ -56,14 +55,14 @@ func TestObjectCopyVerifyContentType(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	b := s.bucket(t, 3)
-	source, target := "test_object_copy_verify_content_type-source", "test_object_copy_verify_content_type-target"
-	body, contentType := source, "audio/ogg"
+	source, target := "TestObjectCopyVerifyContentTypeSource", "TestObjectCopyVerifyContentTypeTarget"
+	contentType := "audio/ogg"
 	metadata := map[string]string{"source": "value1", "target": "value2"}
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body)), Metadata: metadata, ContentType: aws.String(contentType)}); err != nil {
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source)), Metadata: metadata, ContentType: aws.String(contentType)}); err != nil {
 		t.Fatal(err)
 	}
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, "")})
-	assertCopied(t, s.client, b, target, body, nil)
+	assertCopied(t, s.client, b, target, source, nil)
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(target)})
 	if err != nil {
 		t.Fatal(err)
@@ -82,9 +81,8 @@ func TestObjectCopyToItself(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	b := s.bucket(t, 4)
-	source := "test_object_copy_to_itself-source"
-	body := source
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
+	source := "TestObjectCopyToItselfSource"
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
 		t.Fatal(err)
 	}
 	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(source), CopySource: copySource(b, source, "")})
@@ -97,13 +95,12 @@ func TestObjectCopyToItselfWithMetadata(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	b := s.bucket(t, 5)
-	source := "test_object_copy_to_itself_with_metadata-source"
-	body := source
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
+	source := "TestObjectCopyToItselfWithMetadataSource"
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
 		t.Fatal(err)
 	}
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(source), CopySource: copySource(b, source, ""), Metadata: map[string]string{"foo": "bar"}, MetadataDirective: types.MetadataDirectiveReplace})
-	assertCopied(t, s.client, b, source, body, nil)
+	assertCopied(t, s.client, b, source, source, nil)
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(source)})
 	if err != nil {
 		t.Fatal(err)
@@ -119,13 +116,12 @@ func TestObjectCopyDiffBucket(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	sourceBucket, targetBucket := s.bucket(t, 6), s.bucket(t, 6)
-	source, target := "test_object_copy_diff_bucket-source", "test_object_copy_diff_bucket-target"
-	body := source
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(sourceBucket), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
+	source, target := "TestObjectCopyDiffBucketSource", "TestObjectCopyDiffBucketTarget"
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(sourceBucket), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
 		t.Fatal(err)
 	}
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(targetBucket), Key: aws.String(target), CopySource: copySource(sourceBucket, source, "")})
-	assertCopied(t, s.client, targetBucket, target, body, nil)
+	assertCopied(t, s.client, targetBucket, target, source, nil)
 	if _, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(targetBucket), Key: aws.String(target)}); err != nil {
 		t.Fatal(err)
 	}
@@ -138,9 +134,8 @@ func TestObjectCopyNotOwnedBucket(t *testing.T) {
 	requireAltUser(t, s)
 	ctx := context.Background()
 	b := s.bucket(t, 7)
-	source := "test_object_copy_not_owned_bucket-source"
-	body := source
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
+	source := "TestObjectCopyNotOwnedBucketSource"
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
 		t.Fatal(err)
 	}
 	alt := s3Client(s.cfg, s.cfg.Alt)
@@ -148,7 +143,7 @@ func TestObjectCopyNotOwnedBucket(t *testing.T) {
 	if _, err := alt.CreateBucket(ctx, createBucketInput(s.cfg, altBucket)); err != nil {
 		t.Fatal(err)
 	}
-	target := "test_object_copy_not_owned_bucket-target"
+	target := "TestObjectCopyNotOwnedBucketTarget"
 	t.Cleanup(func() {
 		if !s.cfg.NotDelete {
 			_, _ = alt.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(altBucket), Key: aws.String(target)})
@@ -166,9 +161,8 @@ func TestObjectCopyNotOwnedObjectBucket(t *testing.T) {
 	requireAltUser(t, s)
 	ctx := context.Background()
 	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 8)
-	source, target := "test_object_copy_not_owned_object_bucket-source", "test_object_copy_not_owned_object_bucket-target"
-	body := source
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
+	source, target := "TestObjectCopyNotOwnedObjectBucketSource", "TestObjectCopyNotOwnedObjectBucketTarget"
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
 		t.Fatal(err)
 	}
 	policy := aclPolicy(s, types.PermissionFullControl)
@@ -179,9 +173,9 @@ func TestObjectCopyNotOwnedObjectBucket(t *testing.T) {
 		t.Fatal(err)
 	}
 	alt := s3Client(s.cfg, s.cfg.Alt)
-	assertCopied(t, alt, b, source, body, nil)
+	assertCopied(t, alt, b, source, source, nil)
 	copyCall(t, alt, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, "")})
-	assertCopied(t, alt, b, target, body, nil)
+	assertCopied(t, alt, b, target, source, nil)
 }
 
 // 권한정보를 포함하여 복사할때 올바르게 적용되는지 확인하는 테스트
@@ -191,14 +185,13 @@ func TestObjectCopyCannedAcl(t *testing.T) {
 	requireAltUser(t, s)
 	ctx := context.Background()
 	b := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 9)
-	source, target := "test_object_copy_canned_acl-source", "test_object_copy_canned_acl-target"
-	body := source
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
+	source, target := "TestObjectCopyCannedAclSource", "TestObjectCopyCannedAclTarget"
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
 		t.Fatal(err)
 	}
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), ACL: types.ObjectCannedACLPublicRead})
 	alt := s3Client(s.cfg, s.cfg.Alt)
-	assertCopied(t, alt, b, target, body, nil)
+	assertCopied(t, alt, b, target, source, nil)
 
 	metadata := map[string]string{"abc": "def"}
 	copyCall(t, s.client, &s3.CopyObjectInput{
@@ -209,7 +202,7 @@ func TestObjectCopyCannedAcl(t *testing.T) {
 		Metadata:          metadata,
 		MetadataDirective: types.MetadataDirectiveReplace,
 	})
-	assertCopied(t, alt, b, source, body, nil)
+	assertCopied(t, alt, b, source, source, nil)
 	head, err := alt.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(source)})
 	if err != nil || len(head.Metadata) != 1 || head.Metadata["abc"] != "def" {
 		t.Fatalf("metadata=%v err=%v", head.Metadata, err)
@@ -223,8 +216,8 @@ func TestObjectCopyRetainingMetadata(t *testing.T) {
 	ctx := context.Background()
 	for _, size := range []int{3, 1024 * 1024} {
 		b := s.bucket(t, 10)
-		source, target := "test_object_copy_retaining_metadata-source", "test_object_copy_retaining_metadata-target"
-		body, contentType := deterministicBody(size), "audio/ogg"
+		source, target := "TestObjectCopyRetainingMetadataSource", "TestObjectCopyRetainingMetadataTarget"
+		body, contentType := randomTextToLong(size), "audio/ogg"
 		metadata := map[string]string{"source": "value1", "target": "value2"}
 		if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader(body), Metadata: metadata, ContentType: aws.String(contentType), ContentLength: aws.Int64(int64(size))}); err != nil {
 			t.Fatal(err)
@@ -245,8 +238,8 @@ func TestObjectCopyReplacingMetadata(t *testing.T) {
 	ctx := context.Background()
 	for _, size := range []int{3, 1024 * 1024} {
 		b := s.bucket(t, 11)
-		source, target := "test_object_copy_replacing_metadata-source", "test_object_copy_replacing_metadata-target"
-		body, contentType := deterministicBody(size), "audio/ogg"
+		source, target := "TestObjectCopyReplacingMetadataSource", "TestObjectCopyReplacingMetadataTarget"
+		body, contentType := randomTextToLong(size), "audio/ogg"
 		metadata := map[string]string{"source": "value1", "target": "value2"}
 		if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader(body), Metadata: metadata, ContentType: aws.String(contentType), ContentLength: aws.Int64(int64(size))}); err != nil {
 			t.Fatal(err)
@@ -271,12 +264,11 @@ func TestObjectCopyBucketNotFound(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	b := s.bucket(t, 12)
-	source := "test_object_copy_bucket_not_found-source"
-	body := source
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
+	source := "TestObjectCopyBucketNotFoundSource"
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
 		t.Fatal(err)
 	}
-	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("test_object_copy_bucket_not_found-target"), CopySource: copySource(b+"-fake", source, "")})
+	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("TestObjectCopyBucketNotFoundTarget"), CopySource: copySource(b+"-fake", source, "")})
 	assertS3Error(t, err, 404, "NoSuchBucket")
 }
 
@@ -286,12 +278,11 @@ func TestObjectCopyKeyNotFound(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	b := s.bucket(t, 13)
-	source := "test_object_copy_key_not_found-source"
-	body := source
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))}); err != nil {
+	source := "TestObjectCopyKeyNotFoundSource"
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
 		t.Fatal(err)
 	}
-	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("test_object_copy_key_not_found-target"), CopySource: copySource(b, "missing", "")})
+	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("TestObjectCopyKeyNotFoundTarget"), CopySource: copySource(b, "missing", "")})
 	assertS3Error(t, err, 404, "NoSuchKey")
 }
 
@@ -301,10 +292,19 @@ func TestObjectCopyVersioningBucket(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	b := s.bucket(t, 14)
+	size := 5 * 1024
+	data := randomTextToLong(size)
+	source := "TestObjectCopyVersioningBucketSource"
+	target := "TestObjectCopyVersioningBucketTarget"
+
 	enableVersioning(t, s, b)
-	source, target := "test_object_copy_versioning_bucket-source", "test_object_copy_versioning_bucket-target"
-	body := string(deterministicBody(5))
-	putOut, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))})
+
+	putOut, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:        aws.String(b),
+		Key:           aws.String(source),
+		Body:          bytes.NewReader(data),
+		ContentLength: aws.Int64(int64(size)),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,32 +312,63 @@ func TestObjectCopyVersioningBucket(t *testing.T) {
 	if sourceVersion == "" {
 		t.Fatal("missing source VersionId")
 	}
-	copyOut := copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, sourceVersion)})
-	assertCopied(t, s.client, b, target, body, nil)
+
+	copyOut := copyCall(t, s.client, &s3.CopyObjectInput{
+		Bucket:     aws.String(b),
+		Key:        aws.String(target),
+		CopySource: copySource(b, source, sourceVersion),
+	})
 	targetVersion := aws.ToString(copyOut.VersionId)
 	if targetVersion == "" {
 		t.Fatal("missing target VersionId")
 	}
 
-	target2 := target + "-2"
-	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target2), CopySource: copySource(b, target, targetVersion)})
-	assertCopied(t, s.client, b, target2, body, nil)
+	assertCopy := func(bucket, key string) {
+		t.Helper()
+		assertObjectBytes(t, s.client, bucket, key, data)
+		head, headErr := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+		if headErr != nil || aws.ToInt64(head.ContentLength) != int64(size) {
+			t.Fatalf("%s/%s contentLength=%d want=%d err=%v", bucket, key, aws.ToInt64(head.ContentLength), size, headErr)
+		}
+	}
+
+	assertCopy(b, target)
+
+	target2 := "TestObjectCopyVersioningBucketTarget2"
+	copyCall(t, s.client, &s3.CopyObjectInput{
+		Bucket:     aws.String(b),
+		Key:        aws.String(target2),
+		CopySource: copySource(b, target, targetVersion),
+	})
+	assertCopy(b, target2)
 
 	targetBucket := s.bucket(t, 14)
 	enableVersioning(t, s, targetBucket)
-	target3 := target + "-3"
-	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(targetBucket), Key: aws.String(target3), CopySource: copySource(b, source, sourceVersion)})
-	assertCopied(t, s.client, targetBucket, target3, body, nil)
+	target3 := "TestObjectCopyVersioningBucketTarget3"
+	copyCall(t, s.client, &s3.CopyObjectInput{
+		Bucket:     aws.String(targetBucket),
+		Key:        aws.String(target3),
+		CopySource: copySource(b, source, sourceVersion),
+	})
+	assertCopy(targetBucket, target3)
 
-	thirdBucket := s.bucket(t, 14)
-	enableVersioning(t, s, thirdBucket)
-	target4 := target + "-4"
-	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(thirdBucket), Key: aws.String(target4), CopySource: copySource(b, source, sourceVersion)})
-	assertCopied(t, s.client, thirdBucket, target4, body, nil)
+	bucketName3 := s.bucket(t, 14)
+	enableVersioning(t, s, bucketName3)
+	target4 := "TestObjectCopyVersioningBucketTarget4"
+	copyCall(t, s.client, &s3.CopyObjectInput{
+		Bucket:     aws.String(bucketName3),
+		Key:        aws.String(target4),
+		CopySource: copySource(b, source, sourceVersion),
+	})
+	assertCopy(bucketName3, target4)
 
-	target5 := target + "-5"
-	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target5), CopySource: copySource(thirdBucket, target4, "")})
-	assertCopied(t, s.client, b, target5, body, nil)
+	target5 := "TestObjectCopyVersioningBucketTarget5"
+	copyCall(t, s.client, &s3.CopyObjectInput{
+		Bucket:     aws.String(b),
+		Key:        aws.String(target5),
+		CopySource: copySource(bucketName3, target4, ""),
+	})
+	assertCopy(b, target5)
 }
 
 // [버킷이 버저닝 가능하고 오브젝트이름에 특수문자가 들어갔을 경우] 오브젝트 복사 성공을 확인하는 테스트
@@ -347,9 +378,10 @@ func TestObjectCopyVersioningUrlEncoding(t *testing.T) {
 	ctx := context.Background()
 	b := s.bucket(t, 15)
 	enableVersioning(t, s, b)
-	source, target := "source?encoded", "target&encoded"
-	body := "test_object_copy_versioning_url_encoding-source"
-	putOut, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))})
+	source := "TestObjectCopyVersioningUrlEncoding?Source"
+	target := "TestObjectCopyVersioningUrlEncoding&Target"
+	body := randomTextToLong(1024)
+	putOut, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader(body)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -358,7 +390,7 @@ func TestObjectCopyVersioningUrlEncoding(t *testing.T) {
 		input.CopySource = copySource(b, source, aws.ToString(putOut.VersionId))
 	}
 	copyCall(t, s.client, input)
-	assertCopied(t, s.client, b, target, body, nil)
+	assertObjectBytes(t, s.client, b, target, body)
 	if _, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(target)}); err != nil {
 		t.Fatal(err)
 	}
@@ -370,7 +402,7 @@ func TestObjectCopyVersioningMultipartUpload(t *testing.T) {
 	s := newSuite(t)
 	sourceBucket := s.bucket(t, 16)
 	enableVersioning(t, s, sourceBucket)
-	body := deterministicBody(50 * 1024 * 1024)
+	body := randomTextToLong(50 * 1024 * 1024)
 	metadata := map[string]string{"foo": "bar"}
 	completeMultipart(t, s.client, sourceBucket, "source", body, false, metadata)
 	head, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(sourceBucket), Key: aws.String("source")})
@@ -415,7 +447,7 @@ func TestCopyObjectIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 17)
-	source, target := "test_copy_object_if_match_good-source", "test_copy_object_if_match_good-target"
+	source, target := "TestCopyObjectIfMatchGoodSource", "TestCopyObjectIfMatchGoodTarget"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), CopySourceIfMatch: src.ETag}
@@ -430,7 +462,7 @@ func TestCopyObjectIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 18)
-	source, target := "test_copy_object_if_match_failed-source", "test_copy_object_if_match_failed-target"
+	source, target := "TestCopyObjectIfMatchFailedSource", "TestCopyObjectIfMatchFailedTarget"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), CopySourceIfMatch: aws.String("bad")}
@@ -443,7 +475,7 @@ func TestCopyObjectIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 19)
-	source, target := "test_copy_object_if_none_match_good-source", "test_copy_object_if_none_match_good-target"
+	source, target := "TestCopyObjectIfNoneMatchGoodSource", "TestCopyObjectIfNoneMatchGoodTarget"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), CopySourceIfNoneMatch: aws.String("bad")}
@@ -458,7 +490,7 @@ func TestCopyObjectIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 20)
-	source, target := "test_copy_object_if_none_match_failed-source", "test_copy_object_if_none_match_failed-target"
+	source, target := "TestCopyObjectIfNoneMatchFailedSource", "TestCopyObjectIfNoneMatchFailedTarget"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), CopySourceIfNoneMatch: src.ETag}
@@ -471,7 +503,7 @@ func TestCopyObjectIfModifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 21)
-	source, target := "test_copy_object_if_modified_since_good-source", "test_copy_object_if_modified_since_good-target"
+	source, target := "TestCopyObjectIfModifiedSinceGoodSource", "TestCopyObjectIfModifiedSinceGoodTarget"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
@@ -487,7 +519,7 @@ func TestCopyObjectIfModifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 22)
-	source, target := "test_copy_object_if_modified_since_failed-source", "test_copy_object_if_modified_since_failed-target"
+	source, target := "TestCopyObjectIfModifiedSinceFailedSource", "TestCopyObjectIfModifiedSinceFailedTarget"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	head := headObject(t, s.client, b, source)
@@ -503,7 +535,7 @@ func TestCopyObjectIfUnmodifiedSinceGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 23)
-	source, target := "test_copy_object_if_unmodified_since_good-source", "test_copy_object_if_unmodified_since_good-target"
+	source, target := "TestCopyObjectIfUnmodifiedSinceGoodSource", "TestCopyObjectIfUnmodifiedSinceGoodTarget"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	future := time.Date(2100, 9, 29, 19, 43, 31, 0, time.UTC)
@@ -519,7 +551,7 @@ func TestCopyObjectIfUnmodifiedSinceFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 24)
-	source, target := "test_copy_object_if_unmodified_since_failed-source", "test_copy_object_if_unmodified_since_failed-target"
+	source, target := "TestCopyObjectIfUnmodifiedSinceFailedSource", "TestCopyObjectIfUnmodifiedSinceFailedTarget"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
@@ -533,7 +565,7 @@ func TestCopyObjectIfMatchWithIfUnmodifiedSince(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 25)
-	source, target := "test_copy_object_if_match_with_if_unmodified_since-source", "test_copy_object_if_match_with_if_unmodified_since-target"
+	source, target := "TestCopyObjectIfMatchWithIfUnmodifiedSinceSource", "TestCopyObjectIfMatchWithIfUnmodifiedSinceTarget"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
@@ -549,7 +581,7 @@ func TestCopyObjectIfNoneMatchWithIfModifiedSince(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 26)
-	source, target := "test_copy_object_if_none_match_with_if_modified_since-source", "test_copy_object_if_none_match_with_if_modified_since-target"
+	source, target := "TestCopyObjectIfNoneMatchWithIfModifiedSinceSource", "TestCopyObjectIfNoneMatchWithIfModifiedSinceTarget"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	past := time.Date(1994, 9, 29, 19, 43, 31, 0, time.UTC)
@@ -563,7 +595,7 @@ func TestCopyObjectIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 27)
-	source, target := "test_copy_object_if_match_and_if_none_match-source", "test_copy_object_if_match_and_if_none_match-target"
+	source, target := "TestCopyObjectIfMatchAndIfNoneMatchSource", "TestCopyObjectIfMatchAndIfNoneMatchTarget"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), CopySourceIfMatch: src.ETag, CopySourceIfNoneMatch: src.ETag}
@@ -576,7 +608,7 @@ func TestCopyObjectIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 28)
-	source, target := "test_copy_object_if_match_and_if_none_match_any-source", "test_copy_object_if_match_and_if_none_match_any-target"
+	source, target := "TestCopyObjectIfMatchAndIfNoneMatchAnySource", "TestCopyObjectIfMatchAndIfNoneMatchAnyTarget"
 	src := put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), CopySourceIfMatch: src.ETag, CopySourceIfNoneMatch: aws.String("*")}
@@ -589,7 +621,7 @@ func TestCopyObjectDestinationIfMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 29)
-	source, target := "test_copy_object_destination_if_match_good-source", "test_copy_object_destination_if_match_good-target"
+	source, target := "TestCopyObjectDestinationIfMatchGoodSource", "TestCopyObjectDestinationIfMatchGoodTarget"
 	put(t, s, b, source, source, nil)
 	dst := put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), IfMatch: dst.ETag}
@@ -604,7 +636,7 @@ func TestCopyObjectDestinationIfMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 30)
-	source, target := "test_copy_object_destination_if_match_failed-source", "test_copy_object_destination_if_match_failed-target"
+	source, target := "TestCopyObjectDestinationIfMatchFailedSource", "TestCopyObjectDestinationIfMatchFailedTarget"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), IfMatch: aws.String("bad")}
@@ -618,7 +650,7 @@ func TestCopyObjectDestinationIfNoneMatchGood(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 31)
-	source, target := "test_copy_object_destination_if_none_match_good-source", "test_copy_object_destination_if_none_match_good-target-new"
+	source, target := "TestCopyObjectDestinationIfNoneMatchGoodSource", "TestCopyObjectDestinationIfNoneMatchGoodTargetNew"
 	put(t, s, b, source, source, nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), IfNoneMatch: aws.String("*")}
 	if _, err := s.client.CopyObject(context.Background(), input); err != nil {
@@ -632,7 +664,7 @@ func TestCopyObjectDestinationIfNoneMatchFailed(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 32)
-	source, target := "test_copy_object_destination_if_none_match_failed-source", "test_copy_object_destination_if_none_match_failed-target"
+	source, target := "TestCopyObjectDestinationIfNoneMatchFailedSource", "TestCopyObjectDestinationIfNoneMatchFailedTarget"
 	put(t, s, b, source, source, nil)
 	put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), IfNoneMatch: aws.String("*")}
@@ -646,7 +678,7 @@ func TestCopyObjectDestinationIfMatchAndIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 33)
-	source, target := "test_copy_object_destination_if_match_and_if_none_match-source", "test_copy_object_destination_if_match_and_if_none_match-target"
+	source, target := "TestCopyObjectDestinationIfMatchAndIfNoneMatchSource", "TestCopyObjectDestinationIfMatchAndIfNoneMatchTarget"
 	put(t, s, b, source, source, nil)
 	dst := put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), IfMatch: dst.ETag, IfNoneMatch: aws.String("*")}
@@ -660,7 +692,7 @@ func TestCopyObjectDestinationIfMatchAndIfNoneMatchAny(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 34)
-	source, target := "test_copy_object_destination_if_match_and_if_none_match_any-source", "test_copy_object_destination_if_match_and_if_none_match_any-target"
+	source, target := "TestCopyObjectDestinationIfMatchAndIfNoneMatchAnySource", "TestCopyObjectDestinationIfMatchAndIfNoneMatchAnyTarget"
 	put(t, s, b, source, source, nil)
 	dst := put(t, s, b, target, "old", nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), IfMatch: dst.ETag, IfNoneMatch: dst.ETag}
@@ -674,7 +706,7 @@ func TestCopyObjectSourceIfMatchWithDestinationIfNoneMatch(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
 	b := s.bucket(t, 35)
-	source, target := "test_copy_object_source_if_match_with_destination_if_none_match-source", "test_copy_object_source_if_match_with_destination_if_none_match-target-new"
+	source, target := "TestCopyObjectSourceIfMatchWithDestinationIfNoneMatchSource", "TestCopyObjectSourceIfMatchWithDestinationIfNoneMatchTargetNew"
 	src := put(t, s, b, source, source, nil)
 	input := &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), CopySourceIfMatch: src.ETag, IfNoneMatch: aws.String("*")}
 	if _, err := s.client.CopyObject(context.Background(), input); err != nil {
@@ -871,7 +903,7 @@ func TestCopyToNormalSource(t *testing.T) {
 				unblockSseC(t, s, targetBucket)
 			}
 			source, target := "source", "target"
-			body := deterministicBody(size)
+			body := randomTextToLong(size)
 			putInput := &s3.PutObjectInput{Bucket: aws.String(sourceBucket), Key: aws.String(source), Body: bytes.NewReader(body)}
 			if _, err := s.client.PutObject(context.Background(), putInput); err != nil {
 				t.Fatal(err)
@@ -924,7 +956,7 @@ func TestCopyToSseS3Source(t *testing.T) {
 				unblockSseC(t, s, targetBucket)
 			}
 			source, target := "source", "target"
-			body := deterministicBody(size)
+			body := randomTextToLong(size)
 			putInput := &s3.PutObjectInput{Bucket: aws.String(sourceBucket), Key: aws.String(source), Body: bytes.NewReader(body), ServerSideEncryption: types.ServerSideEncryptionAes256}
 			if _, err := s.client.PutObject(context.Background(), putInput); err != nil {
 				t.Fatal(err)
@@ -978,7 +1010,7 @@ func TestCopyToSseCSource(t *testing.T) {
 				unblockSseC(t, s, targetBucket)
 			}
 			source, target := "source", "target"
-			body := deterministicBody(size)
+			body := randomTextToLong(size)
 			putInput := sseCPutInput(sourceBucket, source, body)
 			if _, err := s.client.PutObject(context.Background(), putInput); err != nil {
 				t.Fatal(err)
@@ -1057,9 +1089,8 @@ func TestObjectVersioningCopyToItselfWithMetadata(t *testing.T) {
 	ctx := context.Background()
 	b := s.bucket(t, 57)
 	enableVersioning(t, s, b)
-	source := "test_object_versioning_copy_to_itself_with_metadata-source"
-	body := source
-	putOut, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body))})
+	source := "TestObjectVersioningCopyToItselfWithMetadataSource"
+	putOut, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1068,7 +1099,7 @@ func TestObjectVersioningCopyToItselfWithMetadata(t *testing.T) {
 		input.CopySource = copySource(b, source, aws.ToString(putOut.VersionId))
 	}
 	copyCall(t, s.client, input)
-	assertCopied(t, s.client, b, source, body, nil)
+	assertCopied(t, s.client, b, source, source, nil)
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(source)})
 	if err != nil {
 		t.Fatal(err)
@@ -1088,10 +1119,9 @@ func TestObjectCopyToItselfWithMetadataOverwrite(t *testing.T) {
 	s := newSuite(t)
 	ctx := context.Background()
 	b := s.bucket(t, 58)
-	source := "test_object_copy_to_itself_with_metadata_overwrite-source"
-	body := source
+	source := "TestObjectCopyToItselfWithMetadataOverwriteSource"
 	metadata := map[string]string{"foo": "bar"}
-	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body)), Metadata: metadata}); err != nil {
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source)), Metadata: metadata}); err != nil {
 		t.Fatal(err)
 	}
 	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(source)})
@@ -1100,7 +1130,7 @@ func TestObjectCopyToItselfWithMetadataOverwrite(t *testing.T) {
 	}
 	metadata["foo"] = "bar2"
 	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(source), CopySource: copySource(b, source, ""), Metadata: metadata, MetadataDirective: types.MetadataDirectiveReplace})
-	assertCopied(t, s.client, b, source, body, nil)
+	assertCopied(t, s.client, b, source, source, nil)
 	head, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(source)})
 	if err != nil {
 		t.Fatal(err)
@@ -1117,10 +1147,9 @@ func TestObjectVersioningCopyToItselfWithMetadataOverwrite(t *testing.T) {
 	ctx := context.Background()
 	b := s.bucket(t, 59)
 	enableVersioning(t, s, b)
-	source := "test_object_versioning_copy_to_itself_with_metadata_overwrite-source"
-	body := source
+	source := "TestObjectVersioningCopyToItselfWithMetadataOverwriteSource"
 	metadata := map[string]string{"foo": "bar"}
-	putOut, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(body)), Metadata: metadata})
+	putOut, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source)), Metadata: metadata})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1134,7 +1163,7 @@ func TestObjectVersioningCopyToItselfWithMetadataOverwrite(t *testing.T) {
 		input.CopySource = copySource(b, source, aws.ToString(putOut.VersionId))
 	}
 	copyCall(t, s.client, input)
-	assertCopied(t, s.client, b, source, body, nil)
+	assertCopied(t, s.client, b, source, source, nil)
 	head, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(source)})
 	if err != nil {
 		t.Fatal(err)

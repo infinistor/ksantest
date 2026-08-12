@@ -47,7 +47,7 @@ func TestGetObjTagging(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 2), "test_get_obj_tagging"
+	b, key := s.bucket(t, 2), "TestGetObjTagging"
 	put(t, s, b, key, "", nil)
 	want := tags(2, 0, 0)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -61,7 +61,7 @@ func TestGetObjHeadTagging(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 3), "test_get_obj_head_tagging"
+	b, key := s.bucket(t, 3), "TestGetObjHeadTagging"
 	put(t, s, b, key, "", nil)
 	want := tags(2, 0, 0)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -78,7 +78,7 @@ func TestPutMaxTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 4), "test_put_max_tags"
+	b, key := s.bucket(t, 4), "TestPutMaxTags"
 	put(t, s, b, key, "", nil)
 	want := tags(10, 0, 0)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -92,7 +92,7 @@ func TestPutExcessTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 5), "test_put_excess_tags"
+	b, key := s.bucket(t, 5), "TestPutExcessTags"
 	put(t, s, b, key, "", nil)
 	err := taggingsPutObjectTags(t, s, b, key, tags(11, 0, 0))
 	assertS3Error(t, err, 400, "BadRequest")
@@ -104,7 +104,7 @@ func TestPutMaxSizeTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 6), "test_put_max_size_tags"
+	b, key := s.bucket(t, 6), "TestPutMaxSizeTags"
 	put(t, s, b, key, "", nil)
 	want := tags(10, 128, 256)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -118,7 +118,7 @@ func TestPutExcessKeyTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 7), "test_put_excess_key_tags"
+	b, key := s.bucket(t, 7), "TestPutExcessKeyTags"
 	put(t, s, b, key, "", nil)
 	err := taggingsPutObjectTags(t, s, b, key, tags(10, 129, 256))
 	assertS3Error(t, err, 400, "InvalidTag")
@@ -130,7 +130,7 @@ func TestPutExcessValTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 8), "test_put_excess_val_tags"
+	b, key := s.bucket(t, 8), "TestPutExcessValTags"
 	put(t, s, b, key, "", nil)
 	err := taggingsPutObjectTags(t, s, b, key, tags(10, 128, 259))
 	assertS3Error(t, err, 400, "InvalidTag")
@@ -142,7 +142,7 @@ func TestPutModifyTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 9), "test_put_modify_tags"
+	b, key := s.bucket(t, 9), "TestPutModifyTags"
 	put(t, s, b, key, "", nil)
 	first, second := tags(2, 0, 0), tags(1, 128, 128)
 	if err := taggingsPutObjectTags(t, s, b, key, first); err != nil {
@@ -160,7 +160,7 @@ func TestPutDeleteTags(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 10), "test_put_delete_tags"
+	b, key := s.bucket(t, 10), "TestPutDeleteTags"
 	put(t, s, b, key, "", nil)
 	want := tags(2, 0, 0)
 	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
@@ -219,7 +219,7 @@ func TestGetObjNonTagging(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	b, key := s.bucket(t, 13), "test_get_obj_non_tagging"
+	b, key := s.bucket(t, 13), "TestGetObjNonTagging"
 	put(t, s, b, key, "", nil)
 	assertTags(t, getObjectTags(t, s, b, key), nil)
 }

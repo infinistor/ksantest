@@ -2124,7 +2124,7 @@ func TestObjectPermissionAltUserFullControl(t *testing.T) {
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
-	key := "object-permission"
+	key := "TestObjectPermissionAltUserFullControl"
 	put(t, s, bucket, key, key, nil)
 	if _, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), AccessControlPolicy: aclPolicy(s, types.PermissionFullControl)}); err != nil {
 		t.Fatal(err)
@@ -2153,7 +2153,7 @@ func TestObjectPermissionAltUserRead(t *testing.T) {
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
-	key := "object-permission"
+	key := "TestObjectPermissionAltUserRead"
 	put(t, s, bucket, key, key, nil)
 	if _, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), AccessControlPolicy: aclPolicy(s, types.PermissionRead)}); err != nil {
 		t.Fatal(err)
@@ -2182,7 +2182,7 @@ func TestObjectPermissionAltUserReadAcp(t *testing.T) {
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
-	key := "object-permission"
+	key := "TestObjectPermissionAltUserReadAcp"
 	put(t, s, bucket, key, key, nil)
 	if _, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), AccessControlPolicy: aclPolicy(s, types.PermissionReadAcp)}); err != nil {
 		t.Fatal(err)
@@ -2211,7 +2211,7 @@ func TestObjectPermissionAltUserWrite(t *testing.T) {
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
-	key := "object-permission"
+	key := "TestObjectPermissionAltUserWrite"
 	put(t, s, bucket, key, key, nil)
 	if _, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), AccessControlPolicy: aclPolicy(s, types.PermissionWrite)}); err != nil {
 		t.Fatal(err)
@@ -2240,7 +2240,7 @@ func TestObjectPermissionAltUserWriteAcp(t *testing.T) {
 	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPublicReadWrite}); err != nil {
 		t.Fatal(err)
 	}
-	key := "object-permission"
+	key := "TestObjectPermissionAltUserWriteAcp"
 	put(t, s, bucket, key, key, nil)
 	if _, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), AccessControlPolicy: aclPolicy(s, types.PermissionWriteAcp)}); err != nil {
 		t.Fatal(err)

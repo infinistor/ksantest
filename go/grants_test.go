@@ -81,7 +81,7 @@ func TestObjectAclDefault(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	key := "object-canned"
+	key := "TestObjectAclDefault"
 	bucket := s.bucket(t, 7)
 	put(t, s, bucket, key, key, nil)
 	assertGrants(t, getObjectGrants(t, s, bucket, key), "", nil)
@@ -92,7 +92,7 @@ func TestObjectAclPrivate(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	key := "object-canned"
+	key := "TestObjectAclPrivate"
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 9)
 	putObjectWithACL(t, s, bucket, key, types.ObjectCannedACLPrivate)
 	assertGrants(t, getObjectGrants(t, s, bucket, key), "", nil)
@@ -103,7 +103,7 @@ func TestObjectAclPublicRead(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	key := "object-canned"
+	key := "TestObjectAclPublicRead"
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 10)
 	putObjectWithACL(t, s, bucket, key, types.ObjectCannedACLPublicRead)
 	assertGrants(t, getObjectGrants(t, s, bucket, key), allUsersURI, []types.Permission{types.PermissionRead})
@@ -114,7 +114,7 @@ func TestObjectAclPublicRW(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	key := "object-canned"
+	key := "TestObjectAclPublicRW"
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 11)
 	putObjectWithACL(t, s, bucket, key, types.ObjectCannedACLPublicReadWrite)
 	assertGrants(t, getObjectGrants(t, s, bucket, key), allUsersURI, []types.Permission{types.PermissionRead, types.PermissionWrite})
@@ -125,7 +125,7 @@ func TestObjectAclAuthenticatedRead(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-	key := "object-canned"
+	key := "TestObjectAclAuthenticatedRead"
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 12)
 	putObjectWithACL(t, s, bucket, key, types.ObjectCannedACLAuthenticatedRead)
 	assertGrants(t, getObjectGrants(t, s, bucket, key), authUsersURI, []types.Permission{types.PermissionRead})
@@ -298,7 +298,7 @@ func TestObjectAclBucketOwnerRead(t *testing.T) {
 	requireAltUser(t, s)
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 13)
 	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPublicReadWrite)
-	key := "owner-grant"
+	key := "TestObjectAclBucketOwnerRead"
 	alt := s3Client(s.cfg, s.cfg.Alt)
 	if _, err := alt.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLBucketOwnerRead}); err != nil {
 		t.Fatal(err)
@@ -322,7 +322,7 @@ func TestBucketObjectWriterObjectOwnerFullControl(t *testing.T) {
 	requireAltUser(t, s)
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 14)
 	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPublicReadWrite)
-	key := "owner-grant"
+	key := "TestBucketObjectWriterObjectOwnerFullControl"
 	alt := s3Client(s.cfg, s.cfg.Alt)
 	if _, err := alt.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLBucketOwnerFullControl}); err != nil {
 		t.Fatal(err)
@@ -346,7 +346,7 @@ func TestBucketOwnerEnforcedObjectOwnerFullControl(t *testing.T) {
 	requireAltUser(t, s)
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipBucketOwnerPreferred, 15)
 	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPublicReadWrite)
-	key := "owner-grant"
+	key := "TestBucketOwnerEnforcedObjectOwnerFullControl"
 	alt := s3Client(s.cfg, s.cfg.Alt)
 	if _, err := alt.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), ACL: types.ObjectCannedACLBucketOwnerFullControl}); err != nil {
 		t.Fatal(err)
@@ -370,7 +370,7 @@ func TestObjectAclOwnerNotChange(t *testing.T) {
 	requireAltUser(t, s)
 	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 16)
 	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPublicReadWrite)
-	key := "owner-not-change"
+	key := "TestObjectAclOwnerNotChange"
 	put(t, s, bucket, key, key, nil)
 	if _, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), AccessControlPolicy: aclPolicy(s, types.PermissionFullControl)}); err != nil {
 		t.Fatal(err)
