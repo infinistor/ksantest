@@ -375,7 +375,7 @@ public class SSE_C extends TestBase { // NOSONAR
 		var bucketName = createBucket(client, 15);
 		unblockSseC(bucketName);
 		var key = "obj";
-		var size = 15 * 1024 * 1024;
+		var size = 15 * MainData.MB;
 		var data = Utils.randomTextToLong(size);
 
 		client.putObject(p -> p.bucket(bucketName).key(key)

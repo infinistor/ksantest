@@ -316,7 +316,7 @@ public class CopyObject extends TestBase {
 	public void testObjectCopyVersioningBucket() {
 		var client = getClient();
 		var bucketName = createBucket(client, 14);
-		var size = 1 * 5;
+		var size = 5 * MainData.KB;
 		var data = Utils.randomTextToLong(size);
 		var source = "testObjectCopyVersionedBucketSource";
 		var target = "testObjectCopyVersionedBucketTarget";
