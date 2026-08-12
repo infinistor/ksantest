@@ -170,7 +170,7 @@ public class Inventory extends TestBase {
 	@Tag("Error")
 	public void testPutBucketInventoryNotExist() {
 		var client = getClient();
-		var bucketName = getNewBucketName(8);
+		var bucketName = getNewBucketNameOnly(8);
 		var targetBucketName = createBucket(client, 8);
 		var inventoryId = "my-inventory";
 

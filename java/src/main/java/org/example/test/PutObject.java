@@ -65,7 +65,7 @@ public class PutObject extends TestBase {
 	public void testObjectWriteToNonExistBucket() {
 		var key = "foo";
 		var client = getClient();
-		var bucketName = getNewBucketName(2);
+		var bucketName = getNewBucketNameOnly(2);
 
 		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());

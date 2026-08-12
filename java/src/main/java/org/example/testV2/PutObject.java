@@ -66,7 +66,7 @@ public class PutObject extends TestBase {
 	public void testObjectWriteToNonExistBucket() {
 		var key = "foo";
 		var client = getClient();
-		var bucketName = getNewBucketName(2);
+		var bucketName = getNewBucketNameOnly(2);
 
 		var e = assertThrows(AwsServiceException.class, () -> client.putObject(p -> p.bucket(bucketName).key(key),
 				RequestBody.fromString("bar")));
