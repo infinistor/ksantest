@@ -18,12 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.example.Data.UserData;
 
 public class S3Config {
-	public static final String STR_FILENAME = "config.ini";// NOSONAR
-	// public static final String STR_FILENAME = "228.ini";// NOSONAR
-	// public static final String STR_FILENAME = "227.ini";// NOSONAR
-	// public static final String STR_FILENAME = "11.151.ini";// NOSONAR
-	// public static final String STR_FILENAME = "awstests.ini"; // NOSONAR
-	// public static final String STR_FILENAME = "ksan.ini"; // NOSONAR
+	public static final String STR_FILENAME = "config.ini";
 
 	public static final String STR_SIGNATURE_VERSION_V2 = "S3SignerType";
 	public static final String STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType";
