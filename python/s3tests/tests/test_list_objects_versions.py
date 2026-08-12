@@ -534,7 +534,7 @@ class TestListObjectsVersions(S3TestBase):
 
     @pytest.mark.tag("Filtering")
     def test_versioning_bucket_list_filtering_all(self):
-        key_names = ["test1/f1", "test2/f2", "test3", "test4/f3", "testF4"]
+        key_names = ["test1/f1", "test2/f2", "test3", "test4/f3", "test_f4"]
         client = self.get_client()
         bucket_name = self.create_objects(client, 39, key_names)
 
@@ -566,7 +566,7 @@ class TestListObjectsVersions(S3TestBase):
     def test_versioning_obj_list_marker(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 40)
-        key_name = "testVersioningObjListMarker"
+        key_name = "test_versioning_obj_list_marker"
         objects = []
 
         self.check_configure_versioning_retry(bucket_name, "Enabled")

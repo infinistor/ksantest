@@ -36,7 +36,7 @@ class TestSseC(S3TestBase):
 
     @pytest.mark.tag("metadata")
     def test_encryption_sse_c_method_head(self):
-        key = "obj"
+        key = "test_encryption_sse_c_method_head"
         size = 1000
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 5)
@@ -67,7 +67,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 6)
         self.unblock_sse_c(bucket_name)
-        key = "obj"
+        key = "test_encryption_sse_c_present"
         size = 1000
         data = utils.random_text_to_long(size)
 
@@ -87,7 +87,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 7)
         self.unblock_sse_c(bucket_name)
-        key = "obj"
+        key = "test_encryption_sse_c_other_key"
         size = 100
         data = utils.random_text_to_long(size)
 
@@ -116,7 +116,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 8)
         self.unblock_sse_c(bucket_name)
-        key = "obj"
+        key = "test_encryption_sse_c_invalid_md5"
         size = 100
         body = utils.random_text_to_long(size).encode("utf-8")
 
@@ -136,7 +136,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 9)
         self.unblock_sse_c(bucket_name)
-        key = "obj"
+        key = "test_encryption_sse_c_no_md5"
         size = 100
         data = utils.random_text_to_long(size)
 
@@ -166,7 +166,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 10)
         self.unblock_sse_c(bucket_name)
-        key = "obj"
+        key = "test_encryption_sse_c_no_key"
         size = 100
         data = utils.random_text_to_long(size)
 
@@ -186,7 +186,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 11)
         self.unblock_sse_c(bucket_name)
-        key = "obj"
+        key = "test_encryption_key_no_sse_c"
         size = 100
         data = utils.random_text_to_long(size)
 
@@ -207,7 +207,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 12)
         self.unblock_sse_c(bucket_name)
-        key = "multipartEnc"
+        key = "test_encryption_sse_c_multipart_upload"
         size = 50 * md.MB
         metadata = {"foo": "bar"}
 
@@ -238,7 +238,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 13)
         self.unblock_sse_c(bucket_name)
-        key = "multipartEnc"
+        key = "test_encryption_sse_c_multipart_bad_download"
         size = 50 * md.MB
         metadata = {"foo": "bar"}
 
@@ -284,7 +284,7 @@ class TestSseC(S3TestBase):
         self.unblock_sse_c(bucket_name)
 
         content_type = "text/plain"
-        key = "foo.txt"
+        key = "test_encryption_sse_c_post_object_authenticated_request"
         amz_date = get_amz_date()
         date_stamp = amz_date[:8]
         region = self.config.region_name if self.config.region_name else "us-east-1"
@@ -293,7 +293,7 @@ class TestSseC(S3TestBase):
             "expiration": self.get_time_to_add_minutes(100),
             "conditions": [
                 {"bucket": bucket_name},
-                ["starts-with", "$key", "foo"],
+                ["starts-with", "$key", "test_encryption_sse_c_post_object_authenticated_request"],
                 {"acl": "private"},
                 ["starts-with", "$Content-Type", content_type],
                 ["starts-with", "$x-amz-server-side-encryption-customer-algorithm", SSE_ALGORITHM],
@@ -342,7 +342,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 15)
         self.unblock_sse_c(bucket_name)
-        key = "obj"
+        key = "test_encryption_sse_c_get_object_many"
         size = 15 * 1024 * 1024
         data = utils.random_text_to_long(size)
 
@@ -360,7 +360,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 16)
         self.unblock_sse_c(bucket_name)
-        key = "obj"
+        key = "test_encryption_sse_c_range_object_many"
         size = 15 * 1024 * 1024
         data = utils.random_text_to_long(size)
 
@@ -383,7 +383,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 17)
         self.unblock_sse_c(bucket_name)
-        source_key = "multipartEnc"
+        source_key = "test_sse_c_encryption_multipart_copy_part_upload"
         size = 50 * md.MB
 
         upload_data = self.setup_sse_c_multipart_upload(client, bucket_name, source_key, size, None)
@@ -401,7 +401,7 @@ class TestSseC(S3TestBase):
         head_response = client.head_object(Bucket=bucket_name, Key=source_key, **self.sse_c_extra_args())
         assert head_response["SSECustomerAlgorithm"] == SSE_ALGORITHM
 
-        target_key = "multipartEncCopy"
+        target_key = "test_sse_c_encryption_multipart_copy_part_upload_target"
         upload_data2 = self.multipart_copy_sse_c(
             client, bucket_name, source_key, bucket_name, target_key, size
         )
@@ -418,7 +418,7 @@ class TestSseC(S3TestBase):
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 18)
         self.unblock_sse_c(bucket_name)
-        source_key = "multipartEnc"
+        source_key = "test_sse_c_encryption_multipart_copy_many_source"
         size = 10 * md.MB
         body = ""
 
@@ -433,7 +433,7 @@ class TestSseC(S3TestBase):
         body += upload_data.body
         self.check_content_using_range(bucket_name, source_key, body, md.MB)
 
-        target_key1 = "my_multipart1"
+        target_key1 = "test_sse_c_encryption_multipart_copy_many_target1"
         upload_data2 = self.multipart_copy(
             client, bucket_name, source_key, bucket_name, target_key1, size, None
         )
@@ -448,7 +448,7 @@ class TestSseC(S3TestBase):
         body += copy_data1.body
         self.check_content_using_range(bucket_name, target_key1, body, md.MB)
 
-        target_key2 = "my_multipart2"
+        target_key2 = "test_sse_c_encryption_multipart_copy_many_target2"
         upload_data3 = self.multipart_copy(
             client, bucket_name, target_key1, bucket_name, target_key2, size * 2, None
         )
@@ -465,7 +465,7 @@ class TestSseC(S3TestBase):
 
     @pytest.mark.tag("OverWrite")
     def test_encryption_sse_c_multipart_upload_overwrite_existing_object(self):
-        key = "testEncryptionSseCMultipartUploadOverwriteExistingObject"
+        key = "test_encryption_sse_c_multipart_upload_overwrite_existing_object"
         part_count = 2
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 19)
@@ -509,7 +509,7 @@ class TestSseC(S3TestBase):
 
     @pytest.mark.tag("OverWrite")
     def test_encryption_sse_c_put_object_overwrite_multipart_upload(self):
-        key = "testEncryptionSseCPutObjectOverwriteMultipartUpload"
+        key = "test_encryption_sse_c_put_object_overwrite_multipart_upload"
         multipart_size = 10 * md.MB
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 20)

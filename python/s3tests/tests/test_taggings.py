@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from s3tests.auth.aws2_signer import get_base64_encoded_sha1_hash
+from s3tests.auth.aws4_signer_base import get_amz_date, get_post_policy_signature
 from s3tests.data import main_data as md
 from s3tests.data.form_file import FormFile
 from s3tests.test_base import S3TestBase
@@ -43,7 +43,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Check")
     def test_get_obj_tagging(self):
-        key = "obj"
+        key = "test_get_obj_tagging"
         client = self.get_client()
         bucket_name = self.create_key_with_random_content(client, key, 0, test_id=2)
         input_tag_set = self.make_simple_tag_set(2)
@@ -59,7 +59,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Check")
     def test_get_obj_head_tagging(self):
-        key = "obj"
+        key = "test_get_obj_head_tagging"
         client = self.get_client()
         bucket_name = self.create_key_with_random_content(client, key, 0, test_id=3)
         count = 2
@@ -76,7 +76,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Max")
     def test_put_max_tags(self):
-        key = "obj"
+        key = "test_put_max_tags"
         client = self.get_client()
         bucket_name = self.create_key_with_random_content(client, key, 0, test_id=4)
         input_tag_set = self.make_simple_tag_set(10)
@@ -92,7 +92,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Overflow")
     def test_put_excess_tags(self):
-        key = "test put max tags"
+        key = "test_put_excess_tags"
         client = self.get_client()
         bucket_name = self.create_key_with_random_content(client, key, 0, test_id=5)
         input_tag_set = self.make_simple_tag_set(11)
@@ -112,7 +112,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Max")
     def test_put_max_size_tags(self):
-        key = "test put max key size"
+        key = "test_put_max_size_tags"
         client = self.get_client()
         bucket_name = self.create_key_with_random_content(client, key, 0, test_id=6)
         input_tag_set = self.make_detail_tag_set(10, 128, 256)
@@ -128,7 +128,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Overflow")
     def test_put_excess_key_tags(self):
-        key = "test put excess key tags"
+        key = "test_put_excess_key_tags"
         client = self.get_client()
         bucket_name = self.create_key_with_random_content(client, key, 0, test_id=7)
         input_tag_set = self.make_detail_tag_set(10, 129, 256)
@@ -148,7 +148,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Overflow")
     def test_put_excess_val_tags(self):
-        key = "test put excess value tags"
+        key = "test_put_excess_val_tags"
         client = self.get_client()
         bucket_name = self.create_key_with_random_content(client, key, 0, test_id=8)
         input_tag_set = self.make_detail_tag_set(10, 128, 259)
@@ -168,7 +168,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Overwrite")
     def test_put_modify_tags(self):
-        key = "test put modify tags"
+        key = "test_put_modify_tags"
         client = self.get_client()
         bucket_name = self.create_key_with_random_content(client, key, 0, test_id=9)
         input_tag_set = self.make_simple_tag_set(2)
@@ -194,7 +194,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Delete")
     def test_put_delete_tags(self):
-        key = "test delete tags"
+        key = "test_put_delete_tags"
         client = self.get_client()
         bucket_name = self.create_key_with_random_content(client, key, 0, test_id=10)
         input_tag_set = self.make_simple_tag_set(2)
@@ -217,7 +217,7 @@ class TestTaggings(S3TestBase):
     def test_put_obj_with_tags(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 11)
-        key = "test tag obj1"
+        key = "test_put_obj_with_tags"
         data = utils.random_text_to_long(100)
 
         client.put_object(
@@ -237,13 +237,11 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Post")
     def test_post_object_tags_authenticated_request(self):
-        if self.config.is_aws():
-            pytest.skip("Post object tagging test is disabled on AWS")
 
         client = self.get_client()
         bucket_name = self.create_bucket(client, 12)
         content_type = "text/plain"
-        key = "foo.txt"
+        key = "test_post_object_tags_authenticated_request"
 
         tags = self.make_simple_tag_set(2)
         xml_input_tag_set = (
@@ -251,29 +249,41 @@ class TestTaggings(S3TestBase):
             "<Tag><Key>1</Key><Value>1</Value></Tag></TagSet></Tagging>"
         )
 
+        amz_date = get_amz_date()
+        date_stamp = amz_date[:8]
+        region = self.config.region_name if self.config.region_name else "us-east-1"
+        credential = f"{self.config.main_user.access_key}/{date_stamp}/{region}/s3/aws4_request"
+
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
             "conditions": [
                 {"bucket": bucket_name},
-                ["starts-with", "$key", "foo"],
+                ["starts-with", "$key", key],
                 {"acl": "private"},
                 ["starts-with", "$Content-Type", content_type],
                 ["content-length-range", 0, 1024],
                 ["starts-with", "$tagging", ""],
+                {"x-amz-algorithm": "AWS4-HMAC-SHA256"},
+                {"x-amz-credential": credential},
+                {"x-amz-date": amz_date},
             ],
         }
         policy = base64.b64encode(json.dumps(policy_document).encode("utf-8")).decode("ascii")
-        signature = get_base64_encoded_sha1_hash(policy, self.config.main_user.secret_key)
+        signature = get_post_policy_signature(
+            self.config.main_user.secret_key, date_stamp, region, policy
+        )
 
         payload = {
             "key": key,
-            "AWSAccessKeyId": self.config.main_user.access_key,
             "acl": "private",
-            "signature": signature,
             "policy": policy,
             "tagging": xml_input_tag_set,
             "x-ignore-foo": "bar",
             "Content-Type": content_type,
+            "x-amz-algorithm": "AWS4-HMAC-SHA256",
+            "x-amz-credential": credential,
+            "x-amz-date": amz_date,
+            "x-amz-signature": signature,
         }
         file_data = FormFile(key, content_type, "bar")
 
@@ -288,7 +298,7 @@ class TestTaggings(S3TestBase):
 
     @pytest.mark.tag("Check")
     def test_get_obj_non_tagging(self):
-        key = "obj"
+        key = "test_get_obj_non_tagging"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 13)
 

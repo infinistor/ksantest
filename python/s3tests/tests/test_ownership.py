@@ -51,7 +51,7 @@ class TestOwnership(S3TestBase):
     def test_bucket_ownership_deny_object_acl(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 5, object_ownership="BucketOwnerEnforced")
-        key = "testBucketOwnershipDenyObjectACL"
+        key = "test_bucket_ownership_deny_object_acl"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         with pytest.raises(ClientError) as exc_info:
             client.put_object_acl(Bucket=bucket_name, Key=key, ACL="public-read")
@@ -62,7 +62,7 @@ class TestOwnership(S3TestBase):
     def test_object_ownership_deny_change(self):
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 6)
-        key = "testObjectOwnershipDenyChange"
+        key = "test_object_ownership_deny_change"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), ACL="public-read")
         public_client = self.get_public_client()
         public_client.head_object(Bucket=bucket_name, Key=key)
@@ -76,7 +76,7 @@ class TestOwnership(S3TestBase):
     def test_object_ownership_deny_acl(self):
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 7)
-        key = "testObjectOwnershipDenyACL"
+        key = "test_object_ownership_deny_acl"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), ACL="public-read")
         client.put_bucket_ownership_controls(
             Bucket=bucket_name,

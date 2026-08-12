@@ -15,25 +15,25 @@ from s3tests.utils import utils
 class TestCSE(S3TestBase):
     @pytest.mark.tag("PutGet")
     def test_cse_encrypted_transfer_1b(self):
-        self.encryption_cse_write("testCseEncryptedTransfer1b", 1, 1)
+        self.encryption_cse_write("test_cse_encrypted_transfer1b", 1, 1)
 
     @pytest.mark.tag("PutGet")
     def test_cse_encrypted_transfer_1kb(self):
-        self.encryption_cse_write("testCseEncryptedTransfer1kb", 1024, 2)
+        self.encryption_cse_write("test_cse_encrypted_transfer1kb", 1024, 2)
 
     @pytest.mark.tag("PutGet")
     def test_cse_encrypted_transfer_1mb(self):
-        self.encryption_cse_write("testCseEncryptedTransfer1MB", 1024 * 1024, 3)
+        self.encryption_cse_write("test_cse_encrypted_transfer1_mb", 1024 * 1024, 3)
 
     @pytest.mark.tag("PutGet")
     def test_cse_encrypted_transfer_13b(self):
-        self.encryption_cse_write("testCseEncryptedTransfer13b", 13, 4)
+        self.encryption_cse_write("test_cse_encrypted_transfer13b", 13, 4)
 
     @pytest.mark.tag("Metadata")
     def test_cse_encryption_method_head(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 5)
-        key = "testCseEncryptionMethodHead/obj"
+        key = "test_cse_encryption_method_head/obj"
         size = 1000
         content_type = "text/plain"
         data = utils.random_text_to_long(size)
@@ -57,7 +57,7 @@ class TestCSE(S3TestBase):
     def test_cse_encryption_non_decryption(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 6)
-        key = "testCseEncryptionNonDecryption/obj"
+        key = "test_cse_encryption_non_decryption/obj"
         size = 1000
         content_type = "text/plain"
         data = utils.random_text_to_long(size)
@@ -80,7 +80,7 @@ class TestCSE(S3TestBase):
     def test_cse_non_encryption_decryption(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 7)
-        key = "testCseNonEncryptionDecryption"
+        key = "test_cse_non_encryption_decryption"
         size = 1000
         content_type = "text/plain"
         data = utils.random_text_to_long(size)
@@ -102,7 +102,7 @@ class TestCSE(S3TestBase):
     def test_cse_encryption_range_read(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 8)
-        key = "testCseEncryptionRangeRead"
+        key = "test_cse_encryption_range_read"
         content_type = "text/plain"
         aes_key = utils.random_text_to_long(32)
 
@@ -133,7 +133,7 @@ class TestCSE(S3TestBase):
     def test_cse_encryption_multipart_upload(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 9)
-        key = "testCseEncryptionMultipartUpload"
+        key = "test_cse_encryption_multipart_upload"
         size = 50 * md.MB
         content_type = "text/plain"
         data = utils.random_text_to_long(size)
@@ -185,7 +185,7 @@ class TestCSE(S3TestBase):
     def test_cse_get_object_many(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 10)
-        key = "testCseGetObjectMany"
+        key = "test_cse_get_object_many"
         content_type = "text/plain"
         aes_key = utils.random_text_to_long(32)
         data = utils.random_text_to_long(15 * md.MB)
@@ -210,7 +210,7 @@ class TestCSE(S3TestBase):
     def test_cse_range_object_many(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 11)
-        key = "testCseRangeObjectMany"
+        key = "test_cse_range_object_many"
         content_type = "text/plain"
         aes_key = utils.random_text_to_long(32)
         file_size = 15 * 1024 * 1024

@@ -194,7 +194,7 @@ class TestMultipart(S3TestBase):
     def test_multipart_upload_empty(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 1)
-        key = "testMultipartUploadEmpty"
+        key = "test_multipart_upload_empty"
         size = 0
 
         upload_data = self.setup_multipart_upload(client, bucket_name, key, size)
@@ -214,7 +214,7 @@ class TestMultipart(S3TestBase):
     def test_multipart_upload_small(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 2)
-        key = "testMultipartUploadSmall"
+        key = "test_multipart_upload_small"
         size = 1
 
         upload_data = self.setup_multipart_upload(client, bucket_name, key, size)
@@ -229,8 +229,8 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("Copy")
     def test_multipart_copy_small(self):
-        source_key = "foo"
-        target_key = "testMultipartCopySmall"
+        source_key = "test_multipart_copy_small_source_key"
+        target_key = "test_multipart_copy_small_target_key"
         size = 1
 
         client = self.get_client()
@@ -250,10 +250,10 @@ class TestMultipart(S3TestBase):
     @pytest.mark.tag("ERROR")
     def test_multipart_copy_invalid_range(self):
         client = self.get_client()
-        source_key = "source"
+        source_key = "test_multipart_copy_invalid_range_source_key"
         bucket_name = self.create_key_with_random_content(client, source_key, 5, test_id=4)
 
-        target_key = "testMultipartCopyInvalidRange"
+        target_key = "test_multipart_copy_invalid_range_target_key"
         response = client.create_multipart_upload(Bucket=bucket_name, Key=target_key)
         upload_id = response["UploadId"]
 
@@ -275,10 +275,10 @@ class TestMultipart(S3TestBase):
     @pytest.mark.tag("Range")
     def test_multipart_copy_without_range(self):
         client = self.get_client()
-        source_key = "source"
+        source_key = "test_multipart_copy_without_range_source_key"
         source_bucket_name = self.create_key_with_random_content(client, source_key, 10, test_id=5)
         target_bucket_name = self.create_bucket(client, 5)
-        target_key = "testMultipartCopyWithoutRange"
+        target_key = "test_multipart_copy_without_range_target_key"
 
         init_response = client.create_multipart_upload(Bucket=target_bucket_name, Key=target_key)
         upload_id = init_response["UploadId"]
@@ -306,7 +306,7 @@ class TestMultipart(S3TestBase):
     @pytest.mark.tag("SpecialNames")
     def test_multipart_copy_special_names(self):
         source_keys = [" ", "_", "__", "?versionId"]
-        target_key = "testMultipartCopySpecialNames"
+        target_key = "test_multipart_copy_special_names"
         size = 10 * md.MB
         client = self.get_client()
         source_bucket_name = self.create_bucket(client, 6)
@@ -327,7 +327,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("Put")
     def test_multipart_upload(self):
-        key = "testMultipartUpload"
+        key = "test_multipart_upload"
         size = 50 * md.MB
         metadata = {"foo": "bar"}
         client = self.get_client()
@@ -355,8 +355,8 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("Copy")
     def test_multipart_copy_versioned(self):
-        target_key = "testMultipartCopyVersioned"
-        source_key = "foo"
+        source_key = "test_multipart_copy_versioned_source_key"
+        target_key = "test_multipart_copy_versioned_target_key"
         size = 15 * md.MB
         client = self.get_client()
         source_bucket_name = self.create_bucket(client, 8)
@@ -393,7 +393,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("Duplicate")
     def test_multipart_upload_resend_part(self):
-        key = "testMultipartUploadResendPart"
+        key = "test_multipart_upload_resend_part"
         size = 50 * md.MB
         client = self.get_client()
         bucket_name = self.create_bucket(client, 9)
@@ -406,7 +406,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("Put")
     def test_multipart_upload_multiple_sizes(self):
-        key = "testMultipartUploadMultipleSizes"
+        key = "test_multipart_upload_multiple_sizes"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 10)
 
@@ -430,8 +430,8 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("Copy")
     def test_multipart_copy_multiple_sizes(self):
-        source_key = "source"
-        target_key = "testMultipartCopyMultipleSizes"
+        source_key = "test_multipart_copy_multiple_sizes_source_key"
+        target_key = "test_multipart_copy_multiple_sizes_target_key"
         client = self.get_client()
         source_bucket_name = self.create_key_with_random_content(client, source_key, 12 * md.MB, test_id=11)
         target_bucket_name = self.create_bucket(client, 11)
@@ -457,7 +457,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("ERROR")
     def test_multipart_upload_size_too_small(self):
-        key = "testMultipartUploadSizeTooSmall"
+        key = "test_multipart_upload_size_too_small"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 12)
         content = utils.random_text_to_long(10 * md.KB)
@@ -492,11 +492,11 @@ class TestMultipart(S3TestBase):
     @pytest.mark.tag("Check")
     def test_multipart_upload_contents(self):
         bucket_name = self.create_bucket(13)
-        self.do_test_multipart_upload_contents(bucket_name, "testMultipartUploadContents", 3)
+        self.do_test_multipart_upload_contents(bucket_name, "test_multipart_upload_contents", 3)
 
     @pytest.mark.tag("OverWrite")
     def test_multipart_upload_overwrite_existing_object(self):
-        key = "testMultipartUploadOverwriteExistingObject"
+        key = "test_multipart_upload_overwrite_existing_object"
         part_count = 2
         client = self.get_client()
         bucket_name = self.create_bucket(client, 14)
@@ -534,7 +534,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("OverWrite")
     def test_put_object_overwrite_multipart_upload(self):
-        key = "testPutObjectOverwriteMultipartUpload"
+        key = "test_put_object_overwrite_multipart_upload"
         multipart_size = 10 * md.MB
         client = self.get_client()
         bucket_name = self.create_bucket(client, 48)
@@ -562,7 +562,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("Cancel")
     def test_abort_multipart_upload(self):
-        key = "testAbortMultipartUpload"
+        key = "test_abort_multipart_upload"
         size = 10 * md.MB
         client = self.get_client()
         bucket_name = self.create_bucket(client, 15)
@@ -576,7 +576,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("ERROR")
     def test_abort_multipart_upload_not_found(self):
-        key = "testAbortMultipartUploadNotFound"
+        key = "test_abort_multipart_upload_not_found"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 16)
         client.put_object(Bucket=bucket_name, Key=key, Body=b"")
@@ -589,8 +589,8 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("List")
     def test_list_multipart_upload(self):
-        key = "testListMultipartUpload"
-        key2 = "testListMultipartUpload2"
+        key = "test_list_multipart_upload"
+        key2 = "test_list_multipart_upload2"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 17)
 
@@ -612,7 +612,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("ERROR")
     def test_multipart_upload_missing_part(self):
-        key = "testMultipartUploadMissingPart"
+        key = "test_multipart_upload_missing_part"
         body = "test"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 18)
@@ -644,7 +644,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("ERROR")
     def test_multipart_upload_incorrect_etag(self):
-        key = "testMultipartUploadIncorrectEtag"
+        key = "test_multipart_upload_incorrect_etag"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 19)
 
@@ -677,7 +677,7 @@ class TestMultipart(S3TestBase):
     def test_atomic_multipart_upload_write(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 20)
-        key = "testAtomicMultipartUploadWrite"
+        key = "test_atomic_multipart_upload_write"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
 
         init_response = client.create_multipart_upload(Bucket=bucket_name, Key=key)
@@ -695,7 +695,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("List")
     def test_multipart_upload_list(self):
-        key = "testMultipartUploadList"
+        key = "test_multipart_upload_list"
         size = 50 * md.MB
         client = self.get_client()
         bucket_name = self.create_bucket(client, 21)
@@ -709,7 +709,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("Cancel")
     def test_abort_multipart_upload_list(self):
-        key = "testAbortMultipartUploadList"
+        key = "test_abort_multipart_upload_list"
         size = 10 * md.MB
         client = self.get_client()
         bucket_name = self.create_bucket(client, 22)
@@ -722,7 +722,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("Copy")
     def test_multipart_copy_many(self):
-        source_key = "testMultipartCopyMany"
+        source_key = "test_multipart_copy_many"
         size = 10 * md.MB
         client = self.get_client()
         bucket_name = self.create_bucket(client, 23)
@@ -738,7 +738,7 @@ class TestMultipart(S3TestBase):
         body += upload_data.body
         self.check_content_using_range(bucket_name, source_key, body, md.MB)
 
-        target_key1 = "testMultipartCopyMany1"
+        target_key1 = "test_multipart_copy_many1"
         upload_data2 = self.multipart_copy(client, bucket_name, source_key, bucket_name, target_key1, size)
         copy_data1 = self.multipart_upload(client, bucket_name, target_key1, size, DEFAULT_PART_SIZE, upload_data2)
         client.complete_multipart_upload(
@@ -750,7 +750,7 @@ class TestMultipart(S3TestBase):
         body += copy_data1.body
         self.check_content_using_range(bucket_name, target_key1, body, md.MB)
 
-        target_key2 = "testMultipartCopyMany2"
+        target_key2 = "test_multipart_copy_many2"
         upload_data3 = self.multipart_copy(client, bucket_name, target_key1, bucket_name, target_key2, size * 2)
         copy_data2 = self.multipart_upload(client, bucket_name, target_key2, size, DEFAULT_PART_SIZE, upload_data3)
         client.complete_multipart_upload(
@@ -764,7 +764,7 @@ class TestMultipart(S3TestBase):
 
     @pytest.mark.tag("List")
     def test_multipart_list_parts(self):
-        key = "testMultipartListParts"
+        key = "test_multipart_list_parts"
         size = 50 * md.MB
         client = self.get_client()
         bucket_name = self.create_bucket(client, 24)
@@ -879,7 +879,7 @@ class TestMultipart(S3TestBase):
     def test_create_multipart_upload_empty_checksum_algorithm(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 29)
-        key = "testcreateMultipartUploadEmptyChecksumAlgorithm"
+        key = "test_create_multipart_upload_empty_checksum_algorithm"
         checksum_type = "FULL_OBJECT"
 
         self.assert_client_error(
@@ -896,7 +896,7 @@ class TestMultipart(S3TestBase):
     def test_create_multipart_upload_empty_checksum_type(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 30)
-        key = "testcreateMultipartUploadEmptyChecksumType"
+        key = "test_create_multipart_upload_empty_checksum_type"
         size = 10 * md.MB
         part_size = 5 * md.MB
         checksum_type = "COMPOSITE"
@@ -937,8 +937,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 31)
-        source = "testUploadPartCopyIfMatchGoodSource"
-        target = "testUploadPartCopyIfMatchGoodTarget"
+        source = "test_upload_part_copy_if_match_good_source"
+        target = "test_upload_part_copy_if_match_good_target"
 
         etag = client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))["ETag"]
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -966,8 +966,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 32)
-        source = "testUploadPartCopyIfMatchFailedSource"
-        target = "testUploadPartCopyIfMatchFailedTarget"
+        source = "test_upload_part_copy_if_match_failed_source"
+        target = "test_upload_part_copy_if_match_failed_target"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -990,8 +990,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_none_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 33)
-        source = "testUploadPartCopyIfNoneMatchGoodSource"
-        target = "testUploadPartCopyIfNoneMatchGoodTarget"
+        source = "test_upload_part_copy_if_none_match_good_source"
+        target = "test_upload_part_copy_if_none_match_good_target"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -1019,8 +1019,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_none_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 34)
-        source = "testUploadPartCopyIfNoneMatchFailedSource"
-        target = "testUploadPartCopyIfNoneMatchFailedTarget"
+        source = "test_upload_part_copy_if_none_match_failed_source"
+        target = "test_upload_part_copy_if_none_match_failed_target"
 
         etag = client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))["ETag"]
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -1044,8 +1044,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_match_and_if_none_match(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 35)
-        source = "testUploadPartCopyIfMatchAndIfNoneMatchSource"
-        target = "testUploadPartCopyIfMatchAndIfNoneMatchTarget"
+        source = "test_upload_part_copy_if_match_and_if_none_match_source"
+        target = "test_upload_part_copy_if_match_and_if_none_match_target"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -1070,8 +1070,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_match_and_if_none_match_any(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 36)
-        source = "testUploadPartCopyIfMatchAndIfNoneMatchAnySource"
-        target = "testUploadPartCopyIfMatchAndIfNoneMatchAnyTarget"
+        source = "test_upload_part_copy_if_match_and_if_none_match_any_source"
+        target = "test_upload_part_copy_if_match_and_if_none_match_any_target"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -1095,8 +1095,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_modified_since_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 37)
-        source = "testUploadPartCopyIfModifiedSinceGoodSource"
-        target = "testUploadPartCopyIfModifiedSinceGoodTarget"
+        source = "test_upload_part_copy_if_modified_since_good_source"
+        target = "test_upload_part_copy_if_modified_since_good_target"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -1124,8 +1124,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_modified_since_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 38)
-        source = "testUploadPartCopyIfModifiedSinceFailedSource"
-        target = "testUploadPartCopyIfModifiedSinceFailedTarget"
+        source = "test_upload_part_copy_if_modified_since_failed_source"
+        target = "test_upload_part_copy_if_modified_since_failed_target"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -1153,8 +1153,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_unmodified_since_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 39)
-        source = "testUploadPartCopyIfUnmodifiedSinceGoodSource"
-        target = "testUploadPartCopyIfUnmodifiedSinceGoodTarget"
+        source = "test_upload_part_copy_if_unmodified_since_good_source"
+        target = "test_upload_part_copy_if_unmodified_since_good_target"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -1182,8 +1182,8 @@ class TestMultipart(S3TestBase):
     def test_upload_part_copy_if_unmodified_since_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 40)
-        source = "testUploadPartCopyIfUnmodifiedSinceFailedSource"
-        target = "testUploadPartCopyIfUnmodifiedSinceFailedTarget"
+        source = "test_upload_part_copy_if_unmodified_since_failed_source"
+        target = "test_upload_part_copy_if_unmodified_since_failed_target"
 
         client.put_object(Bucket=bucket_name, Key=source, Body=source.encode("utf-8"))
         upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=target)["UploadId"]
@@ -1206,7 +1206,7 @@ class TestMultipart(S3TestBase):
     def test_complete_multipart_upload_if_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 41)
-        key = "testCompleteMultipartUploadIfMatchGood"
+        key = "test_complete_multipart_upload_if_match_good"
         size = 5 * md.MB
 
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"old")["ETag"]
@@ -1227,7 +1227,7 @@ class TestMultipart(S3TestBase):
     def test_complete_multipart_upload_if_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 42)
-        key = "testCompleteMultipartUploadIfMatchFailed"
+        key = "test_complete_multipart_upload_if_match_failed"
         size = 5 * md.MB
 
         client.put_object(Bucket=bucket_name, Key=key, Body=b"old")
@@ -1250,7 +1250,7 @@ class TestMultipart(S3TestBase):
     def test_complete_multipart_upload_if_none_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 43)
-        key = "testCompleteMultipartUploadIfNoneMatchGood"
+        key = "test_complete_multipart_upload_if_none_match_good"
         size = 5 * md.MB
 
         upload_data = self.setup_multipart_upload(client, bucket_name, key, size)
@@ -1269,7 +1269,7 @@ class TestMultipart(S3TestBase):
     def test_complete_multipart_upload_if_none_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 44)
-        key = "testCompleteMultipartUploadIfNoneMatchFailed"
+        key = "test_complete_multipart_upload_if_none_match_failed"
         size = 5 * md.MB
 
         client.put_object(Bucket=bucket_name, Key=key, Body=b"old")
@@ -1293,7 +1293,7 @@ class TestMultipart(S3TestBase):
     def test_complete_multipart_upload_if_match_and_if_none_match(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 45)
-        key = "testCompleteMultipartUploadIfMatchAndIfNoneMatch"
+        key = "test_complete_multipart_upload_if_match_and_if_none_match"
         size = 5 * md.MB
 
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"old")["ETag"]
@@ -1320,7 +1320,7 @@ class TestMultipart(S3TestBase):
     def test_complete_multipart_upload_if_match_and_if_none_match_any(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 46)
-        key = "testCompleteMultipartUploadIfMatchAndIfNoneMatchAny"
+        key = "test_complete_multipart_upload_if_match_and_if_none_match_any"
         size = 5 * md.MB
 
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"old")["ETag"]
@@ -1346,7 +1346,7 @@ class TestMultipart(S3TestBase):
     def test_multipart_upload_abort_during_upload(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 47)
-        key = "testMultipartUploadAbortDuringUpload"
+        key = "test_multipart_upload_abort_during_upload"
         part_body = utils.random_text_to_long(5 * md.MB)
 
         init_response = client.create_multipart_upload(Bucket=bucket_name, Key=key)

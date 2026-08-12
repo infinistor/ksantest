@@ -20,17 +20,18 @@ class TestPutObject(S3TestBase):
         client = self.get_client()
         bucket_name1 = self.create_bucket(client, 1)
         bucket_name2 = self.create_bucket(client, 1)
-        client.put_object(Bucket=bucket_name1, Key="foo", Body=b"bar")
+        key = "test_bucket_list_distinct"
+        client.put_object(Bucket=bucket_name1, Key=key, Body=key.encode("utf-8"))
         response = client.list_objects(Bucket=bucket_name2)
         assert len(response.get("Contents", [])) == 0
 
     @pytest.mark.tag("ERROR")
     def test_object_write_to_non_exist_bucket(self):
-        key = "foo"
+        key = "test_object_write_to_non_exist_bucket"
         client = self.get_client()
         bucket_name = self.get_new_bucket_name(2)
         with pytest.raises(ClientError) as exc_info:
-            client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
+            client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
         assert exc_info.value.response["Error"]["Code"] == md.NO_SUCH_BUCKET
 
@@ -38,7 +39,7 @@ class TestPutObject(S3TestBase):
     def test_object_head_zero_bytes(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 3)
-        key = "foo"
+        key = "test_object_head_zero_bytes"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"")
         response = client.head_object(Bucket=bucket_name, Key=key)
         assert response["ContentLength"] == 0
@@ -47,45 +48,43 @@ class TestPutObject(S3TestBase):
     def test_object_write_check_etag(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 4)
-        response = client.put_object(Bucket=bucket_name, Key="foo", Body=b"bar")
+        response = client.put_object(Bucket=bucket_name, Key="test_object_write_check_etag", Body=b"bar")
         assert response["ETag"].replace('"', "") == "37b51d194a7513e45b56f6524f2d51f2"
 
     @pytest.mark.tag("cacheControl")
     def test_object_write_cache_control(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 5)
-        key = "foo"
-        body = "bar"
+        key = "test_object_write_cache_control"
         cache_control = "public, max-age=14HttpStatus.SC_BAD_REQUEST"
         content_type = "text/plain"
         client.put_object(
             Bucket=bucket_name,
             Key=key,
-            Body=body.encode("utf-8"),
+            Body=key.encode("utf-8"),
             CacheControl=cache_control,
             ContentType=content_type,
-            ContentLength=len(body),
+            ContentLength=len(key),
         )
         head_response = client.head_object(Bucket=bucket_name, Key=key)
         assert head_response["CacheControl"] == cache_control
         get_response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(get_response) == body
+        assert self.get_body(get_response) == key
 
     @pytest.mark.skip(reason="Java @Disabled: JAVA에서는 헤더만료일시 설정이 내부전용으로 되어있어 설정되지 않음")
     @pytest.mark.tag("Expires")
     def test_object_write_expires(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 6)
-        key = "foo"
-        body = "bar"
+        key = "test_object_write_expires"
         expires = self.get_time_to_add_seconds(6000)
         client.put_object(
             Bucket=bucket_name,
             Key=key,
-            Body=body.encode("utf-8"),
+            Body=key.encode("utf-8"),
             Expires=expires,
             ContentType="text/plain",
-            ContentLength=len(body),
+            ContentLength=len(key),
         )
         response = client.head_object(Bucket=bucket_name, Key=key)
         assert response["Expires"] == expires
@@ -94,12 +93,11 @@ class TestPutObject(S3TestBase):
     def test_object_write_read_update_read_delete(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 7)
-        key = "foo"
-        body = "bar"
-        client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+        key = "test_object_write_read_update_read_delete"
+        client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         get_response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(get_response) == body
-        body2 = "soup"
+        assert self.get_body(get_response) == key
+        body2 = f"{key}-updated"
         client.put_object(Bucket=bucket_name, Key=key, Body=body2.encode("utf-8"))
         get_response = client.get_object(Bucket=bucket_name, Key=key)
         assert self.get_body(get_response) == body2
@@ -109,7 +107,7 @@ class TestPutObject(S3TestBase):
     def test_object_set_get_metadata_none_to_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 8)
-        key = "foo"
+        key = "test_object_set_get_metadata_none_to_good"
         metadata = {"meta1": "my"}
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
         response = client.head_object(Bucket=bucket_name, Key=key)
@@ -119,7 +117,7 @@ class TestPutObject(S3TestBase):
     def test_object_set_get_metadata_none_to_empty(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 9)
-        key = "foo"
+        key = "test_object_set_get_metadata_none_to_empty"
         metadata = {"meta1": ""}
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
         response = client.head_object(Bucket=bucket_name, Key=key)
@@ -129,7 +127,7 @@ class TestPutObject(S3TestBase):
     def test_object_set_get_metadata_overwrite_to_empty(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 10)
-        key = "foo"
+        key = "test_object_set_get_metadata_overwrite_to_empty"
         metadata = {"meta1": "my"}
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
         response = client.head_object(Bucket=bucket_name, Key=key)
@@ -144,10 +142,10 @@ class TestPutObject(S3TestBase):
     def test_object_set_get_non_utf8_metadata(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 11)
-        key = "foo"
+        key = "test_object_set_get_non_utf8_metadata"
         metadata = {"meta1": "\nmy_meta"}
         with pytest.raises(ClientError) as exc_info:
-            client.put_object(Bucket=bucket_name, Key=key, Body=b"bar", Metadata=metadata)
+            client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] in (400, 403, 500)
 
     @pytest.mark.skip(reason="Java @Disabled: JAVA에서는 메타데이터에 특수문자 사용시 예외처리되어 에러가 발생하지 않음")
@@ -155,10 +153,10 @@ class TestPutObject(S3TestBase):
     def test_object_set_get_metadata_empty_to_unreadable_prefix(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 12)
-        key = "foo"
+        key = "test_object_set_get_metadata_empty_to_unreadable_prefix"
         metadata = {"meta1": "\nasdf"}
         with pytest.raises(ClientError) as exc_info:
-            client.put_object(Bucket=bucket_name, Key=key, Body=b"bar", Metadata=metadata)
+            client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] in (400, 403, 500)
 
     @pytest.mark.skip(reason="Java @Disabled: JAVA에서는 메타데이터에 특수문자 사용시 예외처리되어 에러가 발생하지 않음")
@@ -166,27 +164,26 @@ class TestPutObject(S3TestBase):
     def test_object_set_get_metadata_empty_to_unreadable_suffix(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 13)
-        key = "foo"
+        key = "test_object_set_get_metadata_empty_to_unreadable_suffix"
         metadata = {"meta1": "asdf\n"}
         with pytest.raises(ClientError) as exc_info:
-            client.put_object(Bucket=bucket_name, Key=key, Body=b"bar", Metadata=metadata)
+            client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] in (400, 403, 500)
 
     @pytest.mark.tag("metadata")
     def test_object_metadata_replaced_on_put(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 14)
-        key = "foo"
-        body = "bar"
+        key = "test_object_metadata_replaced_on_put"
         metadata = {"meta1": "bar"}
         client.put_object(
             Bucket=bucket_name,
             Key=key,
-            Body=body.encode("utf-8"),
+            Body=key.encode("utf-8"),
             ContentType="text/plain",
             Metadata=metadata,
         )
-        client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+        client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         response = client.get_object(Bucket=bucket_name, Key=key)
         assert len(response.get("Metadata", {})) == 0
 
@@ -194,12 +191,11 @@ class TestPutObject(S3TestBase):
     def test_object_write_file(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 15)
-        key = "foo"
-        data_str = "bar"
-        data = data_str.encode("us-ascii").decode("us-ascii")
+        key = "test_object_write_file"
+        data = key.encode("us-ascii").decode("us-ascii")
         client.put_object(Bucket=bucket_name, Key=key, Body=data.encode("us-ascii"))
         response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(response) == data_str
+        assert self.get_body(response) == key
 
     @pytest.mark.tag("SpecialKeyName")
     def test_bucket_create_special_key_names(self):
@@ -257,7 +253,7 @@ class TestPutObject(S3TestBase):
     def test_object_lock_uploading_obj(self):
         client = self.get_client()
         bucket_name = self.create_bucket_object_lock(client, 18)
-        key = "testObjectLockUploadingObjV2"
+        key = "test_object_lock_uploading_obj"
         content_md5 = utils.get_md5(key)
         put_response = client.put_object(
             Bucket=bucket_name,
@@ -484,8 +480,8 @@ class TestPutObject(S3TestBase):
 
     @pytest.mark.tag("Directory")
     def test_put_object_dir_and_file(self):
-        key = "aaa"
-        directory_name = "aaa/"
+        key = "test_put_object_dir_and_file"
+        directory_name = "test_put_object_dir_and_file/"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 26)
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
@@ -502,7 +498,7 @@ class TestPutObject(S3TestBase):
         assert len(keys) == 2
 
         bucket_name3 = self.create_bucket(client, 26)
-        new_key = "aaa/bbb/ccc"
+        new_key = "test_put_object_dir_and_file/aaa/bbb/ccc"
         client.put_object(Bucket=bucket_name3, Key=key, Body=key.encode("utf-8"))
         client.put_object(Bucket=bucket_name3, Key=new_key, Body=new_key.encode("utf-8"))
         response = client.list_objects(Bucket=bucket_name3)
@@ -513,7 +509,7 @@ class TestPutObject(S3TestBase):
     def test_object_overwrite(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 27)
-        key = "temp"
+        key = "test_object_overwrite"
         content1 = utils.random_text_to_long(10 * md.KB)
         content2 = utils.random_text_to_long(1 * md.MB)
         client.put_object(Bucket=bucket_name, Key=key, Body=content1.encode("utf-8"))
@@ -527,7 +523,7 @@ class TestPutObject(S3TestBase):
     def test_object_emoji(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 28)
-        key = "test❤🍕🍔🚗"
+        key = "test_object_emoji❤🍕🍔🚗"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         response = client.list_objects(Bucket=bucket_name)
         assert len(response.get("Contents", [])) == 1
@@ -536,7 +532,7 @@ class TestPutObject(S3TestBase):
     def test_object_set_get_metadata_utf8(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 29)
-        key = "foo"
+        key = "test_object_set_get_metadata_utf8"
         metadata_key1 = "meta1"
         metadata_key2 = "meta2"
         metadata1 = "utf-8"
@@ -546,7 +542,7 @@ class TestPutObject(S3TestBase):
         client.put_object(
             Bucket=bucket_name,
             Key=key,
-            Body=b"bar",
+            Body=key.encode("utf-8"),
             ContentType=content_type,
             Metadata=metadata,
         )
@@ -558,7 +554,7 @@ class TestPutObject(S3TestBase):
     def test_object_set_get_metadata_mixed_case_key(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 49)
-        key = "foo"
+        key = "test_object_set_get_metadata_mixed_case_key"
         metadata = {"Meta1": "value1", "META2": "value2", "mEtA3": "value3"}
         expected = {"meta1": "value1", "meta2": "value2", "meta3": "value3"}
 
@@ -667,102 +663,108 @@ class TestPutObject(S3TestBase):
     def test_put_object_if_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 34)
-        key = "testPutObjectIfMatchGood"
-        etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"old")["ETag"]
-        client.put_object(Bucket=bucket_name, Key=key, Body=b"new", IfMatch=etag)
+        key = "test_put_object_if_match_good"
+        body2 = f"{key}-updated"
+        etag = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["ETag"]
+        client.put_object(Bucket=bucket_name, Key=key, Body=body2.encode("utf-8"), IfMatch=etag)
         response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(response) == "new"
+        assert self.get_body(response) == body2
 
     @pytest.mark.tag("IfMatch")
     def test_put_object_if_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 35)
-        key = "testPutObjectIfMatchFailed"
-        client.put_object(Bucket=bucket_name, Key=key, Body=b"old")
+        key = "test_put_object_if_match_failed"
+        client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
+        body = f"{key}-updated".encode("utf-8")
         with pytest.raises(ClientError) as exc_info:
             client.put_object(
                 Bucket=bucket_name,
                 Key=key,
-                Body=b"new",
+                Body=body,
                 IfMatch="ABCDEFGHIJKLMNOPQRSTUVWXYZ",
             )
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 412
         assert exc_info.value.response["Error"]["Code"] == md.PRECONDITION_FAILED
         response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(response) == "old"
+        assert self.get_body(response) == key
 
     @pytest.mark.tag("IfNoneMatch")
     def test_put_object_if_none_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 36)
-        key = "testPutObjectIfNoneMatchGood"
-        client.put_object(Bucket=bucket_name, Key=key, Body=b"bar", IfNoneMatch="*")
+        key = "test_put_object_if_none_match_good"
+        client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), IfNoneMatch="*")
         response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(response) == "bar"
+        assert self.get_body(response) == key
 
     @pytest.mark.tag("IfNoneMatch")
     def test_put_object_if_none_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 37)
-        key = "testPutObjectIfNoneMatchFailed"
-        client.put_object(Bucket=bucket_name, Key=key, Body=b"old")
+        key = "test_put_object_if_none_match_failed"
+        client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
+        body = f"{key}-updated".encode("utf-8")
         with pytest.raises(ClientError) as exc_info:
-            client.put_object(Bucket=bucket_name, Key=key, Body=b"new", IfNoneMatch="*")
+            client.put_object(
+                Bucket=bucket_name,
+                Key=key,
+                Body=body,
+                IfNoneMatch="*",
+            )
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 412
         assert exc_info.value.response["Error"]["Code"] == md.PRECONDITION_FAILED
         response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(response) == "old"
+        assert self.get_body(response) == key
 
     @pytest.mark.tag("IfMatch")
     @pytest.mark.tag("IfNoneMatch")
     def test_put_object_if_match_and_if_none_match(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 38)
-        key = "testPutObjectIfMatchAndIfNoneMatch"
-        etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"old")["ETag"]
+        key = "test_put_object_if_match_and_if_none_match"
+        etag = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["ETag"]
+        body = f"{key}-updated".encode("utf-8")
         with pytest.raises(ClientError) as exc_info:
             client.put_object(
                 Bucket=bucket_name,
                 Key=key,
-                Body=b"new",
+                Body=body,
                 IfMatch=etag,
                 IfNoneMatch="*",
             )
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 501
         assert exc_info.value.response["Error"]["Code"] == md.NOT_IMPLEMENTED
         response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(response) == "old"
+        assert self.get_body(response) == key
 
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_max_length(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 39)
         key = utils.random_object_name(md.MAX_KEY_LENGTH)
-        body = "test-max-length"
-        response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+        response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         assert response["ETag"] is not None
         get_response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(get_response) == body
+        assert self.get_body(get_response) == key
 
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_min_length(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 40)
         key = "a"
-        body = "test-min-length"
-        response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+        response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         assert response["ETag"] is not None
         get_response = client.get_object(Bucket=bucket_name, Key=key)
-        assert self.get_body(get_response) == body
+        assert self.get_body(get_response) == key
 
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_too_long(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 41)
         key = utils.random_object_name(md.MAX_KEY_LENGTH + 1)
-        body = "test-too-long"
         with pytest.raises(ClientError) as exc_info:
-            client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+            client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
         assert exc_info.value.response["Error"]["Code"] == md.KEY_TOO_LONG
 
@@ -807,12 +809,11 @@ class TestPutObject(S3TestBase):
         for special_char in special_chars:
             remaining_length = md.MAX_KEY_LENGTH - len(special_char)
             key = special_char + utils.random_object_name(remaining_length)
-            body = f"test-body-{special_char}"
             assert len(key) == md.MAX_KEY_LENGTH
-            response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+            response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
             assert response["ETag"] is not None
             get_response = client.get_object(Bucket=bucket_name, Key=key)
-            assert self.get_body(get_response) == body
+            assert self.get_body(get_response) == key
 
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_special_characters_at_end(self):
@@ -855,12 +856,11 @@ class TestPutObject(S3TestBase):
         for special_char in special_chars:
             remaining_length = md.MAX_KEY_LENGTH - len(special_char)
             key = utils.random_object_name(remaining_length) + special_char
-            body = f"test-body-{special_char}"
             assert len(key) == md.MAX_KEY_LENGTH
-            response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+            response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
             assert response["ETag"] is not None
             get_response = client.get_object(Bucket=bucket_name, Key=key)
-            assert self.get_body(get_response) == body
+            assert self.get_body(get_response) == key
 
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_unicode_characters(self):
@@ -872,11 +872,10 @@ class TestPutObject(S3TestBase):
             max_length = 200 // single_char_bytes
             safe_length = max(1, max_length - 1)
             key = unicode_char * safe_length
-            body = f"unicode-test-{unicode_char}"
-            response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+            response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
             assert response["ETag"] is not None
             get_response = client.get_object(Bucket=bucket_name, Key=key)
-            assert self.get_body(get_response) == body
+            assert self.get_body(get_response) == key
 
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_unicode_characters_too_long(self):
@@ -888,9 +887,8 @@ class TestPutObject(S3TestBase):
             max_length = 1024 // single_char_bytes
             too_long_length = max_length + 1
             key = unicode_char * too_long_length
-            body = f"unicode-test-fail-{unicode_char}"
             with pytest.raises(ClientError) as exc_info:
-                client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+                client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
             assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
             assert exc_info.value.response["Error"]["Code"] == md.KEY_TOO_LONG
 
@@ -904,12 +902,11 @@ class TestPutObject(S3TestBase):
             middle_length = md.MAX_KEY_LENGTH - (space_count * 2)
             middle = utils.random_object_name(middle_length)
             key = spaces + middle + spaces
-            body = f"space-test-{space_count}"
             assert len(key) == md.MAX_KEY_LENGTH
-            response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+            response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
             assert response["ETag"] is not None
             get_response = client.get_object(Bucket=bucket_name, Key=key)
-            assert self.get_body(get_response) == body
+            assert self.get_body(get_response) == key
 
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_with_consecutive_slashes(self):
@@ -923,11 +920,10 @@ class TestPutObject(S3TestBase):
             "folder////multiple-slashes",
         ]
         for key in keys:
-            body = "slash-test-" + key.replace("/", "-")
-            response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+            response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
             assert response["ETag"] is not None
             get_response = client.get_object(Bucket=bucket_name, Key=key)
-            assert self.get_body(get_response) == body
+            assert self.get_body(get_response) == key
 
     @pytest.mark.tag("KeyLength")
     def test_put_object_key_boundary_lengths(self):
@@ -936,8 +932,7 @@ class TestPutObject(S3TestBase):
         test_cases = [md.MAX_KEY_LENGTH - 1, md.MAX_KEY_LENGTH, 500, 100, 50]
         for length in test_cases:
             key = utils.random_object_name(length)
-            body = f"boundary-test-{length}"
-            response = client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
+            response = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
             assert response["ETag"] is not None
             get_response = client.get_object(Bucket=bucket_name, Key=key)
-            assert self.get_body(get_response) == body
+            assert self.get_body(get_response) == key

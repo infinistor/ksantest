@@ -65,7 +65,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_object_acl_default(self):
-        key = "testObjectAclDefault"
+        key = "test_object_acl_default"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 7)
 
@@ -76,7 +76,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_object_acl_change(self):
-        key = "testObjectAclCanned"
+        key = "test_object_acl_change"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 8)
 
@@ -97,7 +97,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_object_acl_private(self):
-        key = "testObjectAclCannedPrivate"
+        key = "test_object_acl_private"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 9)
 
@@ -113,7 +113,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_object_acl_public_read(self):
-        key = "testObjectAclCannedDuringCreate"
+        key = "test_object_acl_public_read"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 10)
 
@@ -128,7 +128,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_object_acl_public_rw(self):
-        key = "testObjectAclCannedPublicRW"
+        key = "test_object_acl_public_rw"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 11)
 
@@ -144,7 +144,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_object_acl_authenticated_read(self):
-        key = "testObjectAclCannedAuthenticatedRead"
+        key = "test_object_acl_authenticated_read"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 12)
 
@@ -160,7 +160,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_object_acl_bucket_owner_read(self):
-        key = "testObjectAclBucketOwnerRead"
+        key = "test_object_acl_bucket_owner_read"
         main_client = self.get_client()
         alt_client = self.get_alt_client()
         bucket_name = self.create_bucket_canned_acl(main_client, 13, "public-read-write")
@@ -184,7 +184,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_bucket_object_writer_object_owner_full_control(self):
-        key = "testBucketObjectWriterBucketOwnerFullControl"
+        key = "test_bucket_object_writer_object_owner_full_control"
         main_client = self.get_client()
         alt_client = self.get_alt_client()
         bucket_name = self.create_bucket(
@@ -208,7 +208,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_bucket_owner_enforced_object_owner_full_control(self):
-        key = "testBucketOwnerEnforcedBucketOwnerFullControl"
+        key = "test_bucket_owner_enforced_object_owner_full_control"
         main_client = self.get_client()
         alt_client = self.get_alt_client()
         bucket_name = self.create_bucket(
@@ -227,7 +227,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Object")
     def test_object_acl_owner_not_change(self):
-        key = "testObjectAclOwnerNotChange"
+        key = "test_object_acl_owner_not_change"
         main_client = self.get_client()
         alt_client = self.get_alt_client()
         bucket_name = self.create_bucket_canned_acl(main_client, 16, "public-read-write")
@@ -245,7 +245,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Effect")
     def test_bucket_acl_change_not_effect(self):
-        key = "testBucketAclChangeNotEffect"
+        key = "test_bucket_acl_change_not_effect"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 17, "public-read-write")
 
@@ -327,7 +327,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("ERROR")
     def test_bucket_acl_no_grants(self):
-        key = "testBucketAclNoGrants"
+        key = "test_bucket_acl_no_grants"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 30)
 
@@ -367,7 +367,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Grant")
     def test_object_acl_multi_grants(self):
-        key = "testObjectAclMultiGrants"
+        key = "test_object_acl_multi_grants"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 32)
         acl = self.create_acl(
@@ -388,7 +388,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Delete")
     def test_bucket_acl_revoke_all(self):
-        key = "testBucketAclRevokeAll"
+        key = "test_bucket_acl_revoke_all"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 33)
 
@@ -403,7 +403,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Delete")
     def test_object_acl_revoke_all(self):
-        key = "testObjectAclRevokeAll"
+        key = "test_object_acl_revoke_all"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 34)
 
@@ -419,7 +419,7 @@ class TestGrants(S3TestBase):
 
     @pytest.mark.tag("Error")
     def test_bucket_acl_revoke_all_id(self):
-        key = "testBucketAclRevokeAllId"
+        key = "test_bucket_acl_revoke_all_id"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 35)
 

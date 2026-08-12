@@ -14,7 +14,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_basic(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 1)
-        key = "testGetObjectAttributesBasic"
+        key = "test_get_object_attributes_basic"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
@@ -32,7 +32,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_specific_attributes(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 2)
-        key = "testGetObjectAttributesSpecificAttributes"
+        key = "test_get_object_attributes_specific_attributes"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
@@ -58,7 +58,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_multipart(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 3)
-        key = "testGetObjectAttributesMultipart"
+        key = "test_get_object_attributes_multipart"
         size = 10 * md.MB
 
         upload_data = self.setup_multipart_upload(client, bucket_name, key, size)
@@ -86,7 +86,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_with_checksum(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 4)
-        key = "testGetObjectAttributesWithChecksum"
+        key = "test_get_object_attributes_with_checksum"
 
         client.put_object(
             Bucket=bucket_name,
@@ -107,7 +107,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_non_existent_object(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 5)
-        key = "testGetObjectAttributesNonExistentObject"
+        key = "test_get_object_attributes_non_existent_object"
 
         self.assert_client_error(
             lambda: client.get_object_attributes(
@@ -123,7 +123,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_non_existent_bucket(self):
         client = self.get_client()
         bucket_name = f"non-existent-bucket-{utils.random_text(10).lower()}"
-        key = "testGetObjectAttributesNonExistentBucket"
+        key = "test_get_object_attributes_non_existent_bucket"
 
         self.assert_client_error(
             lambda: client.get_object_attributes(
@@ -141,7 +141,7 @@ class TestGetObjectAttributes(S3TestBase):
 
         client = self.get_client()
         bucket_name = self.create_bucket(client, 7)
-        key = "testGetObjectAttributesNoAttributes"
+        key = "test_get_object_attributes_no_attributes"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
@@ -157,7 +157,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_with_version_id(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 8)
-        key = "testGetObjectAttributesWithVersionId"
+        key = "test_get_object_attributes_with_version_id"
 
         self.check_configure_versioning_retry(bucket_name, "Enabled")
 
@@ -192,7 +192,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_invalid_version_id(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 9)
-        key = "testGetObjectAttributesInvalidVersionId"
+        key = "test_get_object_attributes_invalid_version_id"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
@@ -211,7 +211,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_large_multipart(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 10)
-        key = "testGetObjectAttributesLargeMultipart"
+        key = "test_get_object_attributes_large_multipart"
         size = 100 * md.MB
         part_size = 5 * md.MB
 
@@ -251,7 +251,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_with_metadata(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 11)
-        key = "testGetObjectAttributesWithMetadata"
+        key = "test_get_object_attributes_with_metadata"
         metadata = {
             "custom-key1": "custom-value1",
             "custom-key2": "custom-value2",
@@ -279,7 +279,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_with_sse_s3(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 12)
-        key = "testGetObjectAttributesWithSSES3"
+        key = "test_get_object_attributes_with_sse_s3"
 
         client.put_object(
             Bucket=bucket_name,
@@ -303,7 +303,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_async(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 13)
-        key = "testGetObjectAttributesAsync"
+        key = "test_get_object_attributes_async"
 
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
@@ -320,7 +320,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_async_error(self):
         client = self.get_client()
         bucket_name = self.get_new_bucket_name_only(14)
-        key = "testGetObjectAttributesAsyncError"
+        key = "test_get_object_attributes_async_error"
 
         self.assert_client_error(
             lambda: client.get_object_attributes(
@@ -336,7 +336,7 @@ class TestGetObjectAttributes(S3TestBase):
     def test_get_object_attributes_all_attributes(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 15)
-        key = "testGetObjectAttributesAllAttributes"
+        key = "test_get_object_attributes_all_attributes"
         size = 10 * md.MB
         checksum_type = "FULL_OBJECT"
         checksum_algorithm = "CRC64NVME"

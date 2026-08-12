@@ -759,7 +759,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("PresignedURL")
     def test_presigned_url_put_get(self):
         bucket_name = self.create_bucket(32)
-        key = "foo"
+        key = "test_presigned_url_put_get"
 
         put_url = self.generate_presigned_put_url(bucket_name, key)
         assert self.put_object_url(put_url, key) == 200
@@ -770,7 +770,7 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("signV4")
     def test_put_object_v4(self):
         bucket_name = self.create_bucket(33)
-        key = "foo"
+        key = "test_put_object_v4"
         content = utils.random_text_to_long(100)
         result = self.put_object_v4(bucket_name, key, content)
         assert result.status_code == 200, result.get_error_code()
@@ -778,14 +778,14 @@ class TestPost(S3TestBase):
     @pytest.mark.tag("signV4")
     def test_put_object_chunked_v4(self):
         bucket_name = self.create_bucket(34)
-        key = "foo"
+        key = "test_put_object_chunked_v4"
         content = utils.random_text_to_long(100)
         result = self.put_object_chunked_v4(bucket_name, key, content)
         assert result.status_code == 200, result.get_error_code()
 
     @pytest.mark.tag("signV4")
     def test_get_object_v4(self):
-        key = "foo"
+        key = "test_get_object_v4"
         size = 100
         client = self.get_client()
         bucket_name = self.create_bucket(client, 35)

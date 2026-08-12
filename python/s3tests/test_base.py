@@ -831,7 +831,7 @@ class S3TestBase:
     def check_object_acl(self, permission: str, test_id: Optional[int] = None) -> None:
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, test_id)
-        key = f"testObjectPermission{permission}"
+        key = f"test_object_permission_{permission}"
         acl = self.create_acl(
             self.config.main_user.to_owner(),
             self.config.main_user.to_grantee(),
@@ -991,13 +991,13 @@ class S3TestBase:
 
     @staticmethod
     def check_bucket_acl_allow_write(client: Any, bucket_name: str) -> None:
-        key = "checkBucketAclAllowWrite"
+        key = "check_bucket_acl_allow_write"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         client.delete_object(Bucket=bucket_name, Key=key)
 
     @staticmethod
     def check_bucket_acl_deny_write(client: Any, bucket_name: str) -> None:
-        key = "checkBucketAclDenyWrite"
+        key = "check_bucket_acl_deny_write"
         S3TestBase.assert_client_error(
             lambda: client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8")),
             403,
@@ -2281,7 +2281,7 @@ class S3TestBase:
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, test_id)
         self.unblock_sse_c(bucket_name)
-        key = "test"
+        key = "test_encryption_sse_customer_write"
         data = utils.random_text_to_long(file_size)
         client.put_object(Bucket=bucket_name, Key=key, Body=data.encode("utf-8"), **self.sse_c_extra_args())
         response = client.get_object(Bucket=bucket_name, Key=key, **self.sse_c_extra_args())
@@ -2292,8 +2292,8 @@ class S3TestBase:
         client = self.get_client()
         bucket_name = self.create_bucket(client, test_id)
         data = utils.random_text_to_long(file_size)
-        client.put_object(Bucket=bucket_name, Key="test", Body=data.encode("utf-8"), ServerSideEncryption="AES256")
-        response = client.get_object(Bucket=bucket_name, Key="test")
+        client.put_object(Bucket=bucket_name, Key="test_encryption_sse_s3_write", Body=data.encode("utf-8"), ServerSideEncryption="AES256")
+        response = client.get_object(Bucket=bucket_name, Key="test_encryption_sse_s3_write")
         assert self.get_body(response) == data, md.NOT_MATCHED
         assert response.get("ServerSideEncryption") == "AES256"
 
@@ -2306,12 +2306,12 @@ class S3TestBase:
                 "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}, "BucketKeyEnabled": False}]
             },
         )
-        source_key = "bar"
+        source_key = "test_encryption_sse_s3_copy_source"
         client.put_object(Bucket=bucket_name, Key=source_key, Body=utils.random_text_to_long(file_size).encode("utf-8"))
         source_response = client.get_object(Bucket=bucket_name, Key=source_key)
         source_body = self.get_body(source_response)
         assert source_response.get("ServerSideEncryption") == "AES256"
-        target_key = "foo"
+        target_key = "test_encryption_sse_s3_copy_target"
         client.copy_object(
             Bucket=bucket_name, Key=target_key, CopySource={"Bucket": bucket_name, "Key": source_key}
         )

@@ -482,7 +482,7 @@ class TestListObjectsV2(S3TestBase):
 
     @pytest.mark.tag("Filtering")
     def test_bucket_list_v2_filtering_all(self):
-        key_names = ["test1/f1", "test2/f2", "test3", "test4/f3", "testF4"]
+        key_names = ["test1/f1", "test2/f2", "test3", "test4/f3", "test_f4"]
         client = self.get_client()
         bucket_name = self.create_objects(client, 41, key_names)
 

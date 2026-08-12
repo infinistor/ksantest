@@ -12,7 +12,7 @@ from s3tests.test_base import S3TestBase
 class TestDeleteObjects(S3TestBase):
     @pytest.mark.tag("ListObject")
     def test_multi_object_delete(self):
-        key_names = ["testMultiObjectDelete0", "testMultiObjectDelete1", "testMultiObjectDelete2"]
+        key_names = ["test_multi_object_delete0", "test_multi_object_delete1", "test_multi_object_delete2"]
         client = self.get_client()
         bucket_name = self.create_objects_keys(client, 1, key_names)
 
@@ -34,7 +34,7 @@ class TestDeleteObjects(S3TestBase):
 
     @pytest.mark.tag("ListObjectsV2")
     def test_multi_object_v2_delete(self):
-        key_names = ["testMultiObjectV2Delete0", "testMultiObjectV2Delete1", "testMultiObjectV2Delete2"]
+        key_names = ["test_multi_object_v2_delete0", "test_multi_object_v2_delete1", "test_multi_object_v2_delete2"]
         client = self.get_client()
         bucket_name = self.create_objects_keys(client, 2, key_names)
 
@@ -57,9 +57,9 @@ class TestDeleteObjects(S3TestBase):
     @pytest.mark.tag("Versioning")
     def test_multi_object_delete_versions(self):
         key_names = [
-            "testMultiObjectDeleteVersions0",
-            "testMultiObjectDeleteVersions1",
-            "testMultiObjectDeleteVersions2",
+            "test_multi_object_delete_versions0",
+            "test_multi_object_delete_versions1",
+            "test_multi_object_delete_versions2",
         ]
         client = self.get_client()
         bucket_name = self.create_bucket(client, 3)
@@ -86,9 +86,9 @@ class TestDeleteObjects(S3TestBase):
     @pytest.mark.tag("quiet")
     def test_multi_object_delete_quiet(self):
         key_names = [
-            "testMultiObjectDeleteQuiet0",
-            "testMultiObjectDeleteQuiet1",
-            "testMultiObjectDeleteQuiet2",
+            "test_multi_object_delete_quiet0",
+            "test_multi_object_delete_quiet1",
+            "test_multi_object_delete_quiet2",
         ]
         client = self.get_client()
         bucket_name = self.create_objects_keys(client, 4, key_names)
@@ -202,7 +202,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_objects_with_versioning(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 8)
-        method_name = "testDeleteObjectsWithVersioning"
+        method_name = "test_delete_objects_with_versioning"
         key_names = [f"{method_name}-{index}" for index in range(5)]
 
         self.check_configure_versioning_retry(bucket_name, "Enabled")
@@ -248,7 +248,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_objects_with_versioning_delete_marker(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 9)
-        key = "testDeleteObjectsWithVersioningDeleteMarker"
+        key = "test_delete_objects_with_versioning_delete_marker"
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         client.delete_object(Bucket=bucket_name, Key=key)
@@ -261,9 +261,9 @@ class TestDeleteObjects(S3TestBase):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 10)
         key_names = [
-            "testVersioningMultiObjectDeleteWithMarker-0",
-            "testVersioningMultiObjectDeleteWithMarker-1",
-            "testVersioningMultiObjectDeleteWithMarker-2",
+            "test_versioning_multi_object_delete_with_marker-0",
+            "test_versioning_multi_object_delete_with_marker-1",
+            "test_versioning_multi_object_delete_with_marker-2",
         ]
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         for key in key_names:
@@ -280,7 +280,7 @@ class TestDeleteObjects(S3TestBase):
     def test_versioning_multi_object_delete_with_marker_create(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 11)
-        key = "testVersioningMultiObjectDeleteWithMarkerCreate"
+        key = "test_versioning_multi_object_delete_with_marker_create"
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         for _ in range(10):
             client.delete_object(Bucket=bucket_name, Key=key)
@@ -292,7 +292,7 @@ class TestDeleteObjects(S3TestBase):
     def test_versioning_multi_object_delete_with_marker_create_objects(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 12)
-        key = "testVersioningMultiObjectDeleteWithMarkerCreateObjects"
+        key = "test_versioning_multi_object_delete_with_marker_create_objects"
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         for _ in range(10):
             object_list = self.get_key_versions([key])
@@ -305,7 +305,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_object_if_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 13)
-        key = "testDeleteObjectIfMatchGood"
+        key = "test_delete_object_if_match_good"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["ETag"]
         client.delete_object(Bucket=bucket_name, Key=key, IfMatch=etag)
         list_response = client.list_objects(Bucket=bucket_name)
@@ -315,7 +315,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_object_if_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 14)
-        key = "testDeleteObjectIfMatchFailed"
+        key = "test_delete_object_if_match_failed"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         with pytest.raises(ClientError) as exc_info:
             client.delete_object(Bucket=bucket_name, Key=key, IfMatch="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -328,7 +328,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_object_if_match_any(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 15)
-        key = "testDeleteObjectIfMatchAny"
+        key = "test_delete_object_if_match_any"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
         client.delete_object(Bucket=bucket_name, Key=key, IfMatch="*")
         list_response = client.list_objects(Bucket=bucket_name)
@@ -339,7 +339,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_object_if_match_and_if_none_match(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 16)
-        key = "testDeleteObjectIfMatchAndIfNoneMatch"
+        key = "test_delete_object_if_match_and_if_none_match"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["ETag"]
         with pytest.raises(ClientError) as exc_info:
             self.delete_object_with_headers(
@@ -359,7 +359,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_object_if_match_and_if_none_match_any(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 17)
-        key = "testDeleteObjectIfMatchAndIfNoneMatchAny"
+        key = "test_delete_object_if_match_and_if_none_match_any"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["ETag"]
         with pytest.raises(ClientError) as exc_info:
             self.delete_object_with_headers(
@@ -378,7 +378,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_objects_if_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 18)
-        key_names = ["testDeleteObjectsIfMatchGood0", "testDeleteObjectsIfMatchGood1"]
+        key_names = ["test_delete_objects_if_match_good0", "test_delete_objects_if_match_good1"]
         object_list = []
         for key in key_names:
             etag = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["ETag"]
@@ -392,8 +392,8 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_objects_if_match_mixed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 19)
-        good_key = "testDeleteObjectsIfMatchMixedGood"
-        bad_key = "testDeleteObjectsIfMatchMixedBad"
+        good_key = "test_delete_objects_if_match_mixed_good"
+        bad_key = "test_delete_objects_if_match_mixed_bad"
         good_etag = client.put_object(Bucket=bucket_name, Key=good_key, Body=good_key.encode("utf-8"))["ETag"]
         client.put_object(Bucket=bucket_name, Key=bad_key, Body=bad_key.encode("utf-8"))
         object_list = [
@@ -415,7 +415,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_objects_if_match_and_if_none_match(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 20)
-        key = "testDeleteObjectsIfMatchAndIfNoneMatch"
+        key = "test_delete_objects_if_match_and_if_none_match"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["ETag"]
         object_list = [{"Key": key}]
         with pytest.raises(ClientError) as exc_info:
@@ -435,7 +435,7 @@ class TestDeleteObjects(S3TestBase):
     def test_delete_objects_if_match_and_if_none_match_any(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 21)
-        key = "testDeleteObjectsIfMatchAndIfNoneMatchAny"
+        key = "test_delete_objects_if_match_and_if_none_match_any"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["ETag"]
         object_list = [{"Key": key}]
         with pytest.raises(ClientError) as exc_info:

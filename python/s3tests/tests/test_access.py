@@ -40,7 +40,7 @@ class TestAccess(S3TestBase):
 
     @pytest.mark.tag("Denied")
     def test_block_public_acls(self):
-        key = "testBlockPublicAcls"
+        key = "test_block_public_acls"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 2, object_ownership="ObjectWriter")
 
@@ -127,7 +127,7 @@ class TestAccess(S3TestBase):
 
     @pytest.mark.tag("Denied")
     def test_ignore_public_acls(self):
-        key = "testIgnorePublicAcls"
+        key = "test_ignore_public_acls"
         client = self.get_client()
         alt_client = self.get_alt_client()
         bucket_name = self.create_bucket_canned_acl(client, 5)

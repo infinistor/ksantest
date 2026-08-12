@@ -21,7 +21,7 @@ class TestGetObject(S3TestBase):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 1)
         with pytest.raises(ClientError) as exc_info:
-            client.get_object(Bucket=bucket_name, Key="foo")
+            client.get_object(Bucket=bucket_name, Key="test_object_read_not_exist")
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
         assert exc_info.value.response["Error"]["Code"] == md.NO_SUCH_KEY
 
@@ -29,7 +29,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 2)
-        key = "foo"
+        key = "test_get_object_if_match_good"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")["ETag"]
         response = client.get_object(Bucket=bucket_name, Key=key, IfMatch=etag)
         assert self.get_body(response) == "bar"
@@ -38,7 +38,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 3)
-        key = "foo"
+        key = "test_get_object_if_match_failed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         with pytest.raises(ClientError) as exc_info:
             client.get_object(Bucket=bucket_name, Key=key, IfMatch="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -49,7 +49,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_none_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 4)
-        key = "foo"
+        key = "test_get_object_if_none_match_good"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")["ETag"]
         with pytest.raises(ClientError) as exc_info:
             client.get_object(Bucket=bucket_name, Key=key, IfNoneMatch=etag)
@@ -60,7 +60,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_none_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 5)
-        key = "foo"
+        key = "test_get_object_if_none_match_failed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         response = client.get_object(Bucket=bucket_name, Key=key, IfNoneMatch="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
         assert self.get_body(response) == "bar"
@@ -69,7 +69,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_modified_since_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 6)
-        key = "foo"
+        key = "test_get_object_if_modified_since_good"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         response = client.get_object(Bucket=bucket_name, Key=key, IfModifiedSince=PAST_DATE)
         assert self.get_body(response) == "bar"
@@ -78,7 +78,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_modified_since_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 7)
-        key = "foo"
+        key = "test_get_object_if_modified_since_failed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         response = client.get_object(Bucket=bucket_name, Key=key)
         after = response["LastModified"] + timedelta(seconds=1)
@@ -92,7 +92,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_unmodified_since_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 8)
-        key = "foo"
+        key = "test_get_object_if_unmodified_since_good"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         with pytest.raises(ClientError) as exc_info:
             client.get_object(Bucket=bucket_name, Key=key, IfUnmodifiedSince=PAST_DATE)
@@ -103,7 +103,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_unmodified_since_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 9)
-        key = "foo"
+        key = "test_get_object_if_unmodified_since_failed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         response = client.get_object(Bucket=bucket_name, Key=key, IfUnmodifiedSince=FUTURE_DATE)
         assert self.get_body(response) == "bar"
@@ -112,7 +112,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_match_with_if_unmodified_since(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 10)
-        key = "testGetObjectIfMatchWithIfUnmodifiedSince"
+        key = "test_get_object_if_match_with_if_unmodified_since"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")["ETag"]
         response = client.get_object(
             Bucket=bucket_name,
@@ -126,7 +126,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_none_match_with_if_modified_since(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 11)
-        key = "testGetObjectIfNoneMatchWithIfModifiedSince"
+        key = "test_get_object_if_none_match_with_if_modified_since"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")["ETag"]
         with pytest.raises(ClientError) as exc_info:
             client.get_object(
@@ -142,7 +142,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_match_and_if_none_match(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 12)
-        key = "testGetObjectIfMatchAndIfNoneMatch"
+        key = "test_get_object_if_match_and_if_none_match"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")["ETag"]
         with pytest.raises(ClientError) as exc_info:
             client.get_object(Bucket=bucket_name, Key=key, IfMatch=etag, IfNoneMatch=etag)
@@ -154,7 +154,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_if_match_and_if_none_match_any(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 13)
-        key = "testGetObjectIfMatchAndIfNoneMatchAny"
+        key = "test_get_object_if_match_and_if_none_match_any"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")["ETag"]
         with pytest.raises(ClientError) as exc_info:
             client.get_object(Bucket=bucket_name, Key=key, IfMatch=etag, IfNoneMatch="*")
@@ -165,7 +165,7 @@ class TestGetObject(S3TestBase):
     def test_head_object_if_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 14)
-        key = "testHeadObjectIfMatchGood"
+        key = "test_head_object_if_match_good"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")["ETag"]
         response = client.head_object(Bucket=bucket_name, Key=key, IfMatch=etag)
         assert response["ETag"] == etag
@@ -174,7 +174,7 @@ class TestGetObject(S3TestBase):
     def test_head_object_if_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 15)
-        key = "testHeadObjectIfMatchFailed"
+        key = "test_head_object_if_match_failed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         with pytest.raises(ClientError) as exc_info:
             client.head_object(Bucket=bucket_name, Key=key, IfMatch="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -184,7 +184,7 @@ class TestGetObject(S3TestBase):
     def test_head_object_if_none_match_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 16)
-        key = "testHeadObjectIfNoneMatchGood"
+        key = "test_head_object_if_none_match_good"
         etag = client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")["ETag"]
         with pytest.raises(ClientError) as exc_info:
             client.head_object(Bucket=bucket_name, Key=key, IfNoneMatch=etag)
@@ -194,7 +194,7 @@ class TestGetObject(S3TestBase):
     def test_head_object_if_none_match_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 17)
-        key = "testHeadObjectIfNoneMatchFailed"
+        key = "test_head_object_if_none_match_failed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         response = client.head_object(Bucket=bucket_name, Key=key, IfNoneMatch="ABCDEFGHIJKLMNOPQRSTUVWXYZ")
         assert response["ContentLength"] == 3
@@ -203,7 +203,7 @@ class TestGetObject(S3TestBase):
     def test_head_object_if_modified_since_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 18)
-        key = "testHeadObjectIfModifiedSinceGood"
+        key = "test_head_object_if_modified_since_good"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         response = client.head_object(Bucket=bucket_name, Key=key, IfModifiedSince=PAST_DATE)
         assert response["ContentLength"] == 3
@@ -212,7 +212,7 @@ class TestGetObject(S3TestBase):
     def test_head_object_if_modified_since_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 19)
-        key = "testHeadObjectIfModifiedSinceFailed"
+        key = "test_head_object_if_modified_since_failed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         response = client.head_object(Bucket=bucket_name, Key=key)
         after = response["LastModified"] + timedelta(seconds=1)
@@ -225,7 +225,7 @@ class TestGetObject(S3TestBase):
     def test_head_object_if_unmodified_since_good(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 20)
-        key = "testHeadObjectIfUnmodifiedSinceGood"
+        key = "test_head_object_if_unmodified_since_good"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         with pytest.raises(ClientError) as exc_info:
             client.head_object(Bucket=bucket_name, Key=key, IfUnmodifiedSince=PAST_DATE)
@@ -235,14 +235,14 @@ class TestGetObject(S3TestBase):
     def test_head_object_if_unmodified_since_failed(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 21)
-        key = "testHeadObjectIfUnmodifiedSinceFailed"
+        key = "test_head_object_if_unmodified_since_failed"
         client.put_object(Bucket=bucket_name, Key=key, Body=b"bar")
         response = client.head_object(Bucket=bucket_name, Key=key, IfUnmodifiedSince=FUTURE_DATE)
         assert response["ContentLength"] == 3
 
     @pytest.mark.tag("Range")
     def test_ranged_request_response_code(self):
-        key = "obj"
+        key = "test_ranged_request_response_code"
         content = "contentData"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 22)
@@ -253,7 +253,7 @@ class TestGetObject(S3TestBase):
 
     @pytest.mark.tag("Range")
     def test_ranged_big_request_response_code(self):
-        key = "obj"
+        key = "test_ranged_big_request_response_code"
         content = utils.random_text_to_long(8 * md.MB)
         client = self.get_client()
         bucket_name = self.create_bucket(client, 23)
@@ -264,7 +264,7 @@ class TestGetObject(S3TestBase):
 
     @pytest.mark.tag("Range")
     def test_ranged_request_skip_leading_bytes_response_code(self):
-        key = "obj"
+        key = "test_ranged_request_skip_leading_bytes_response_code"
         content = "contentData"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 24)
@@ -275,7 +275,7 @@ class TestGetObject(S3TestBase):
 
     @pytest.mark.tag("Range")
     def test_ranged_request_return_trailing_bytes_response_code(self):
-        key = "obj"
+        key = "test_ranged_request_return_trailing_bytes_response_code"
         content = "contentData"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 25)
@@ -286,7 +286,7 @@ class TestGetObject(S3TestBase):
 
     @pytest.mark.tag("Range")
     def test_ranged_request_invalid_range(self):
-        key = "obj"
+        key = "test_ranged_request_invalid_range"
         content = "contentData"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 26)
@@ -298,7 +298,7 @@ class TestGetObject(S3TestBase):
 
     @pytest.mark.tag("Range")
     def test_ranged_request_empty_object(self):
-        key = "obj"
+        key = "test_ranged_request_empty_object"
         client = self.get_client()
         bucket_name = self.create_bucket(client, 27)
         client.put_object(Bucket=bucket_name, Key=key, Body=b"")
@@ -311,7 +311,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_many(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 28)
-        key = "foo"
+        key = "test_get_object_many"
         data = utils.random_text_to_long(15 * md.MB)
         client.put_object(Bucket=bucket_name, Key=key, Body=data.encode("utf-8"))
         self.check_content(bucket_name, key, data, 50)
@@ -320,7 +320,7 @@ class TestGetObject(S3TestBase):
     def test_range_object_many(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 29)
-        key = "foo"
+        key = "test_range_object_many"
         data = utils.random_text_to_long(15 * md.MB)
         client.put_object(Bucket=bucket_name, Key=key, Body=data.encode("utf-8"))
         self.check_content_using_random_range(bucket_name, key, data, 50)
@@ -333,7 +333,7 @@ class TestGetObject(S3TestBase):
         data = utils.random_text_to_long(5 * md.MB)
 
         for algorithm in checksum.ALL_ALGORITHMS:
-            key = f"testRangeGetChecksum/{algorithm}"
+            key = f"test_range_get_checksum/{algorithm}"
             params = {"Bucket": bucket_name, "Key": key, "Body": data.encode("utf-8")}
             checksum.apply_put_checksum_params(params, algorithm, data)
             response = client.put_object(**params)
@@ -343,7 +343,7 @@ class TestGetObject(S3TestBase):
 
     @pytest.mark.tag("Header")
     def test_object_response_headers(self):
-        key = "testObjectResponseHeaders"
+        key = "test_object_response_headers"
         client = self.get_client()
         bucket_name = self.create_objects_keys(client, 30, [key])
         response = client.get_object(
@@ -366,7 +366,7 @@ class TestGetObject(S3TestBase):
     def test_multipart_object_range(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 31)
-        key = "testMultipartObjectRange"
+        key = "test_multipart_object_range"
         multipart_upload_data = self.complete_multipart_upload_data(client, bucket_name, key, 5 * md.MB, 5 * md.MB)
         response = client.get_object(Bucket=bucket_name, Key=key, PartNumber=1)
         body = self.get_body(response)
@@ -374,7 +374,7 @@ class TestGetObject(S3TestBase):
 
     @pytest.mark.tag("Get")
     def test_get_object_ignore(self):
-        key = "testObjectIgnore"
+        key = "test_get_object_ignore"
         client = self.get_client()
         bucket_name = self.create_objects_keys(client, 32, [key])
         response = client.get_object(Bucket=bucket_name, Key=key)
@@ -384,7 +384,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_after_delete(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 33)
-        key = "testGetObjectAfterDelete"
+        key = "test_get_object_after_delete"
         body = "testContent"
         client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
         get_response = client.get_object(Bucket=bucket_name, Key=key)
@@ -400,7 +400,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_after_delete_versioning(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 34)
-        key = "testGetObjectAfterDeleteVersioning"
+        key = "test_get_object_after_delete_versioning"
         body = "testContent"
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))
@@ -417,7 +417,7 @@ class TestGetObject(S3TestBase):
     def test_get_object_delete_marker(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 35)
-        key = "testGetObjectDeleteMarker"
+        key = "test_get_object_delete_marker"
         body = "testContent"
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"))

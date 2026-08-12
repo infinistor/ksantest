@@ -34,7 +34,7 @@ class TestSseS3(S3TestBase):
     def test_sse_s3_encryption_method_head(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 5)
-        key = "obj"
+        key = "test_sse_s3_encryption_method_head"
         data = utils.random_text_to_long(1000)
         metadata = {"foo": "bar"}
 
@@ -54,7 +54,7 @@ class TestSseS3(S3TestBase):
     def test_sse_s3_encryption_multipart_upload(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 6)
-        key = "multipartEnc"
+        key = "test_sse_s3_encryption_multipart_upload"
         size = 50 * md.MB
         content_type = "text/plain"
         metadata = {"foo": "bar"}
@@ -227,7 +227,7 @@ class TestSseS3(S3TestBase):
         rule = response["ServerSideEncryptionConfiguration"]["Rules"][0]
         assert rule["ApplyServerSideEncryptionByDefault"]["SSEAlgorithm"] == SSE_ALGORITHM
 
-        key = "bar"
+        key = "test_sse_s3_bucket_put_get"
         client.put_object(Bucket=bucket_name, Key=key, Body=data.encode("utf-8"))
 
         get_response = client.get_object(Bucket=bucket_name, Key=key)
@@ -256,7 +256,7 @@ class TestSseS3(S3TestBase):
         rule = response["ServerSideEncryptionConfiguration"]["Rules"][0]
         assert rule["ApplyServerSideEncryptionByDefault"]["SSEAlgorithm"] == SSE_ALGORITHM
 
-        key = "bar"
+        key = "test_sse_s3_bucket_put_get_use_chunk_encoding"
         client.put_object(Bucket=bucket_name, Key=key, Body=data.encode("utf-8"))
 
         get_response = client.get_object(Bucket=bucket_name, Key=key)
@@ -285,7 +285,7 @@ class TestSseS3(S3TestBase):
         rule = response["ServerSideEncryptionConfiguration"]["Rules"][0]
         assert rule["ApplyServerSideEncryptionByDefault"]["SSEAlgorithm"] == SSE_ALGORITHM
 
-        key = "bar"
+        key = "test_sse_s3_bucket_put_get_not_chunk_encoding"
         client.put_object(Bucket=bucket_name, Key=key, Body=data.encode("utf-8"))
 
         get_response = client.get_object(Bucket=bucket_name, Key=key)
@@ -297,7 +297,7 @@ class TestSseS3(S3TestBase):
     def test_sse_s3_bucket_presigned_url_put_get(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 17)
-        key = "foo"
+        key = "test_sse_s3_bucket_presigned_url_put_get"
 
         client.put_bucket_encryption(
             Bucket=bucket_name,
@@ -324,7 +324,7 @@ class TestSseS3(S3TestBase):
     def test_sse_s3_bucket_presigned_url_put_get_v4(self):
         client = self.get_client(True)
         bucket_name = self.create_bucket(client, 18)
-        key = "foo"
+        key = "test_sse_s3_bucket_presigned_url_put_get_v4"
 
         client.put_bucket_encryption(
             Bucket=bucket_name,
@@ -351,7 +351,7 @@ class TestSseS3(S3TestBase):
     def test_sse_s3_get_object_many(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 19)
-        key = "foo"
+        key = "test_sse_s3_get_object_many"
         data = utils.random_text_to_long(15 * md.MB)
 
         client.put_bucket_encryption(
@@ -372,7 +372,7 @@ class TestSseS3(S3TestBase):
     def test_sse_s3_range_object_many(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 20)
-        key = "foo"
+        key = "test_sse_s3_range_object_many"
         size = 15 * 1024 * 1024
         data = utils.random_text_to_long(size)
 
@@ -394,7 +394,7 @@ class TestSseS3(S3TestBase):
     def test_sse_s3_encryption_multipart_copy_part_upload(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 21)
-        source_key = "multipartEnc"
+        source_key = "test_sse_s3_encryption_multipart_copy_part_upload"
         size = 50 * md.MB
         metadata = {"foo": "bar"}
 
@@ -416,7 +416,7 @@ class TestSseS3(S3TestBase):
 
         self.check_content_using_range(bucket_name, source_key, upload_data.get_body(), md.MB)
 
-        target_key = "multipartEncCopy"
+        target_key = "test_sse_s3_encryption_multipart_copy_part_upload_target"
         copy_data = self.multipart_copy(
             client, bucket_name, source_key, bucket_name, target_key, size, metadata
         )
@@ -433,7 +433,7 @@ class TestSseS3(S3TestBase):
     def test_sse_s3_encryption_multipart_copy_many(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 22)
-        source_key = "multipartEnc"
+        source_key = "test_sse_s3_encryption_multipart_copy_many_source"
         size = 10 * md.MB
         body = ""
 
@@ -448,7 +448,7 @@ class TestSseS3(S3TestBase):
         body += upload_data.body
         self.check_content_using_range(bucket_name, source_key, body, md.MB)
 
-        target_key1 = "my_multipart1"
+        target_key1 = "test_sse_s3_encryption_multipart_copy_many_1"
         upload_data2 = self.multipart_copy(
             client, bucket_name, source_key, bucket_name, target_key1, size, None
         )
@@ -463,7 +463,7 @@ class TestSseS3(S3TestBase):
         body += upload_data2.body
         self.check_content_using_range(bucket_name, target_key1, body, md.MB)
 
-        target_key2 = "my_multipart2"
+        target_key2 = "test_sse_s3_encryption_multipart_copy_many_2"
         upload_data3 = self.multipart_copy(
             client, bucket_name, target_key1, bucket_name, target_key2, size * 2, None
         )
@@ -484,9 +484,9 @@ class TestSseS3(S3TestBase):
         bucket_name = self.create_bucket(client, 23)
         data = utils.random_text_to_long(1000)
 
-        put_key = "put"
-        copy_key = "copy"
-        multi_key = "multi"
+        put_key = "test_sse_s3_not_retroactive_put"
+        copy_key = "test_sse_s3_not_retroactive_copy"
+        multi_key = "test_sse_s3_not_retroactive_multi"
 
         client.put_object(Bucket=bucket_name, Key=put_key, Body=data.encode("utf-8"))
 
@@ -530,9 +530,9 @@ class TestSseS3(S3TestBase):
 
         self.check_content_using_range(bucket_name, multi_key, upload_data.body, md.MB)
 
-        put_key2 = "put2"
-        copy_key2 = "copy2"
-        multi_key2 = "multi2"
+        put_key2 = "test_sse_s3_not_retroactive_put2"
+        copy_key2 = "test_sse_s3_not_retroactive_copy2"
+        multi_key2 = "test_sse_s3_not_retroactive_multi2"
         data2 = utils.random_text_to_long(1000)
         client.put_object(Bucket=bucket_name, Key=put_key2, Body=data2.encode("utf-8"))
 
@@ -568,7 +568,7 @@ class TestSseS3(S3TestBase):
 
     @pytest.mark.tag("OverWrite")
     def test_sse_s3_multipart_upload_overwrite_existing_object(self):
-        key = "testSseS3MultipartUploadOverwriteExistingObject"
+        key = "test_sse_s3_multipart_upload_overwrite_existing_object"
         part_count = 2
         client = self.get_client()
         bucket_name = self.create_bucket(client, 24)
@@ -618,7 +618,7 @@ class TestSseS3(S3TestBase):
 
     @pytest.mark.tag("OverWrite")
     def test_sse_s3_put_object_overwrite_multipart_upload(self):
-        key = "testSseS3PutObjectOverwriteMultipartUpload"
+        key = "test_sse_s3_put_object_overwrite_multipart_upload"
         multipart_size = 10 * md.MB
         client = self.get_client()
         bucket_name = self.create_bucket(client, 25)

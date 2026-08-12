@@ -84,7 +84,7 @@ class TestLifeCycle(S3TestBase):
     def test_lifecycle_expiration_versioning_enabled(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 4)
-        key = "test1/a"
+        key = "test1/test_lifecycle_expiration_versioning_enabled"
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         self.create_multiple_versions(client, bucket_name, key, 1, True)
         client.delete_object(Bucket=bucket_name, Key=key)
@@ -410,7 +410,7 @@ class TestLifeCycle(S3TestBase):
             }
         ]
         client.put_bucket_lifecycle_configuration(Bucket=bucket_name, LifecycleConfiguration={"Rules": rules})
-        key = "test1/a"
+        key = "test1/test_lifecycle_set_expiration"
         content = "test"
         client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
 

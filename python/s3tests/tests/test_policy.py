@@ -18,7 +18,7 @@ class TestPolicy(S3TestBase):
     def test_bucket_policy(self):
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 1)
-        key = "asdf"
+        key = "test_bucket_policy_key"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
         resource1 = f"arn:aws:s3:::{bucket_name}"
@@ -48,7 +48,7 @@ class TestPolicy(S3TestBase):
     def test_bucket_v2_policy(self):
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 2)
-        key = "asdf"
+        key = "test_bucket_v2_policy_key"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
         resource1 = f"arn:aws:s3:::{bucket_name}"
@@ -78,7 +78,7 @@ class TestPolicy(S3TestBase):
     def test_bucket_policy_acl(self):
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 3)
-        key = "asdf"
+        key = "test_bucket_policy_acl_key"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
         resource1 = f"arn:aws:s3:::{bucket_name}"
@@ -113,7 +113,7 @@ class TestPolicy(S3TestBase):
     def test_bucket_v2_policy_acl(self):
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 4)
-        key = "asdf"
+        key = "test_bucket_v2_policy_acl_key"
         client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
 
         resource1 = f"arn:aws:s3:::{bucket_name}"
@@ -146,7 +146,7 @@ class TestPolicy(S3TestBase):
 
     @pytest.mark.tag("Tagging")
     def test_get_tags_acl_public(self):
-        key = "acl"
+        key = "test_get_tags_acl_public_key"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 5)
         self.create_key_with_random_content(client, key, 0, bucket_name)
@@ -168,7 +168,7 @@ class TestPolicy(S3TestBase):
 
     @pytest.mark.tag("Tagging")
     def test_put_tags_acl_public(self):
-        key = "acl"
+        key = "test_put_tags_acl_public_key"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 6)
         self.create_key_with_random_content(client, key, 0, bucket_name)
@@ -190,7 +190,7 @@ class TestPolicy(S3TestBase):
 
     @pytest.mark.tag("Tagging")
     def test_delete_tags_obj_public(self):
-        key = "acl"
+        key = "test_delete_tags_obj_public_key"
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 7)
         self.create_key_with_random_content(client, key, 0, bucket_name)
@@ -494,10 +494,10 @@ class TestPolicy(S3TestBase):
         policy_document = self.make_json_policy_statements(s1, s2)
         client.put_bucket_policy(Bucket=bucket_name, Policy=policy_document)
 
-        key1 = "private-key"
+        key1 = "test_bucket_policy_put_obj_acl_private"
         alt_client.put_object(Bucket=bucket_name, Key=key1, Body=key1.encode("utf-8"))
 
-        key2 = "public-key"
+        key2 = "test_bucket_policy_put_obj_acl_public"
         self.assert_client_error(
             lambda: alt_client.put_object(
                 Bucket=bucket_name,
@@ -529,7 +529,7 @@ class TestPolicy(S3TestBase):
         client.put_bucket_policy(Bucket=bucket_name2, Policy=policy_document2)
 
         alt_client = self.get_alt_client()
-        key1 = "key1"
+        key1 = "test_bucket_policy_put_obj_grant_private"
         alt_client.put_object(
             Bucket=bucket_name1,
             Key=key1,
@@ -537,7 +537,7 @@ class TestPolicy(S3TestBase):
             GrantFullControl=owner_id,
         )
 
-        key2 = "key2"
+        key2 = "test_bucket_policy_put_obj_grant_public"
         alt_client.put_object(Bucket=bucket_name2, Key=key2, Body=key2.encode("utf-8"))
 
         acl1_response = client.get_object_acl(Bucket=bucket_name1, Key=key1)
