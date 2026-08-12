@@ -20,7 +20,6 @@ import java.util.List;
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -74,7 +73,6 @@ public class Cors extends TestBase {
 	}
 
 	@Test
-	@Disabled
 	@Tag("Post")
 	public void testCorsOriginResponse() {
 		var client = getClient();
@@ -229,7 +227,6 @@ public class Cors extends TestBase {
 	}
 
 	@Test
-	@Disabled
 	@Tag("Post")
 	public void testCorsOriginWildcard() {
 		var client = getClient();
@@ -256,7 +253,6 @@ public class Cors extends TestBase {
 	}
 
 	@Test
-	@Disabled
 	@Tag("Post")
 	public void testCorsHeaderOption() {
 		var client = getClient();
