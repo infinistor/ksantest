@@ -51,7 +51,7 @@ public class Policy extends TestBase {
 	public void testBucketPolicy() {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 1);
-		var key = "asdf";
+		var key = "testBucketPolicy";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
 
 		var resource1 = "arn:aws:s3:::" + bucketName;
@@ -91,7 +91,7 @@ public class Policy extends TestBase {
 	public void testBucketV2Policy() {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 2);
-		var key = "asdf";
+		var key = "testBucketV2Policy";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
 
 		var resource1 = "arn:aws:s3:::" + bucketName;
@@ -130,7 +130,7 @@ public class Policy extends TestBase {
 	public void testBucketPolicyAcl() {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 3);
-		var key = "asdf";
+		var key = "testBucketPolicyAcl";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
 
 		var resource1 = "arn:aws:s3:::" + bucketName;
@@ -176,7 +176,7 @@ public class Policy extends TestBase {
 
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 4);
-		var key = "asdf";
+		var key = "testBucketV2PolicyAcl";
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
 
 		var resource1 = "arn:aws:s3:::" + bucketName;
@@ -219,7 +219,7 @@ public class Policy extends TestBase {
 	@Test
 	@Tag("Tagging")
 	public void testGetTagsAclPublic() {
-		var key = "acl";
+		var key = "testGetTagsAclPublic";
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 5);
 		createKeyWithRandomContent(client, key, 0, bucketName);
@@ -241,7 +241,7 @@ public class Policy extends TestBase {
 	@Test
 	@Tag("Tagging")
 	public void testPutTagsAclPublic() {
-		var key = "acl";
+		var key = "testPutTagsAclPublic";
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 6);
 		createKeyWithRandomContent(client, key, 0, bucketName);
@@ -262,7 +262,7 @@ public class Policy extends TestBase {
 	@Test
 	@Tag("Tagging")
 	public void testDeleteTagsObjPublic() {
-		var key = "acl";
+		var key = "testDeleteTagsObjPublic";
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 7);
 		createKeyWithRandomContent(client, key, 0, bucketName);

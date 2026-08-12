@@ -79,7 +79,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Check")
 	public void testGetObjTagging() {
-		var key = "obj";
+		var key = "testGetObjTagging";
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, 2, key, 0);
 
@@ -94,7 +94,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Check")
 	public void testGetObjHeadTagging() {
-		var key = "obj";
+		var key = "testGetObjHeadTagging";
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, 3, key, 0);
 		var count = 2;
@@ -110,7 +110,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Max")
 	public void testPutMaxTags() {
-		var key = "test put max tags";
+		var key = "testPutMaxTags";
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, 4, key, 0);
 
@@ -125,7 +125,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Overflow")
 	public void testPutExcessTags() {
-		var key = "test put max tags";
+		var key = "testPutExcessTags";
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, 5, key, 0);
 
@@ -143,7 +143,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Max")
 	public void testPutMaxSizeTags() {
-		var key = "test put max key size";
+		var key = "testPutMaxSizeTags";
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, 6, key, 0);
 
@@ -157,7 +157,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Overflow")
 	public void testPutExcessKeyTags() {
-		var key = "test put excess key tags";
+		var key = "testPutExcessKeyTags";
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, 7, key, 0);
 
@@ -175,7 +175,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Overflow")
 	public void testPutExcessValTags() {
-		var key = "test put excess value tags";
+		var key = "testPutExcessValTags";
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, 8, key, 0);
 
@@ -193,7 +193,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Overwrite")
 	public void testPutModifyTags() {
-		var key = "test put modify tags";
+		var key = "testPutModifyTags";
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, 9, key, 0);
 
@@ -215,7 +215,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Delete")
 	public void testPutDeleteTags() {
-		var key = "test delete tags";
+		var key = "testPutDeleteTags";
 		var client = getClient();
 		var bucketName = createKeyWithRandomContent(client, 10, key, 0);
 
@@ -237,7 +237,7 @@ public class Taggings extends TestBase {
 	public void testPutObjWithTags() {
 		var client = getClient();
 		var bucketName = createBucket(client, 11);
-		var key = "test tag obj1";
+		var key = "testPutObjWithTags";
 		var data = Utils.randomTextToLong(100);
 
 		var tags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
@@ -262,7 +262,7 @@ public class Taggings extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 12);
 		var contentType = "text/plain";
-		var key = "foo.txt";
+		var key = "testPostObjectTagsAuthenticatedRequest";
 
 		var tags = makeSimpleTagSet(2);
 		var xmlInputTagSet = "<Tagging><TagSet><Tag><Key>0</Key><Value>0</Value></Tag><Tag><Key>1</Key><Value>1</Value></Tag></TagSet></Tagging>";
@@ -279,7 +279,7 @@ public class Taggings extends TestBase {
 		var starts1 = new JsonArray();
 		starts1.add("starts-with");
 		starts1.add("$key");
-		starts1.add("foo");
+		starts1.add("testPostObjectTagsAuthenticatedRequest");
 		conditions.add(starts1);
 
 		var acl = new JsonObject();
@@ -334,7 +334,7 @@ public class Taggings extends TestBase {
 	@Test
 	@Tag("Check")
 	public void testGetObjNonTagging() {
-		var key = "obj";
+		var key = "testGetObjNonTagging";
 		var client = getClient();
 		var bucketName = createBucket(client, 13);
 

@@ -122,7 +122,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclChange() {
-		var key = "testObjectAclCanned";
+		var key = "testObjectAclChange";
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 8);
 
@@ -141,7 +141,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclPrivate() {
-		var key = "testObjectAclCannedPrivate";
+		var key = "testObjectAclPrivate";
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 9);
 
@@ -155,7 +155,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclPublicRead() {
-		var key = "testObjectAclCannedDuringCreate";
+		var key = "testObjectAclPublicRead";
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 10);
 
@@ -168,7 +168,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclPublicRW() {
-		var key = "testObjectAclCannedPublicRW";
+		var key = "testObjectAclPublicRW";
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 11);
 
@@ -182,7 +182,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testObjectAclAuthenticatedRead() {
-		var key = "testObjectAclCannedAuthenticatedRead";
+		var key = "testObjectAclAuthenticatedRead";
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 12);
 
@@ -213,7 +213,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testBucketObjectWriterObjectOwnerFullControl() {
-		var key = "testBucketObjectWriterBucketOwnerFullControl";
+		var key = "testBucketObjectWriterObjectOwnerFullControl";
 		var mainClient = getClient();
 		var altClient = getAltClient();
 		var bucketName = createBucket(mainClient, 14, ObjectOwnership.OBJECT_WRITER, BucketCannedACL.PUBLIC_READ_WRITE);
@@ -229,7 +229,7 @@ public class Grants extends TestBase {
 	@Test
 	@Tag("Object")
 	public void testBucketOwnerEnforcedObjectOwnerFullControl() {
-		var key = "testBucketOwnerEnforcedBucketOwnerFullControl";
+		var key = "testBucketOwnerEnforcedObjectOwnerFullControl";
 		var mainClient = getClient();
 		var altClient = getAltClient();
 		var bucketName = createBucket(mainClient, 15, ObjectOwnership.BUCKET_OWNER_PREFERRED, BucketCannedACL.PUBLIC_READ_WRITE);

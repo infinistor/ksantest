@@ -54,7 +54,8 @@ public class PutObject extends TestBase {
 		var bucketName1 = createBucket(client, 1);
 		var bucketName2 = createBucket(client, 1);
 
-		client.putObject(bucketName1, "asdf", "str");
+		var key = "testBucketListDistinct";
+		client.putObject(bucketName1, key, key);
 
 		var response = client.listObjects(bucketName2);
 		assertEquals(0, response.getObjectSummaries().size());
@@ -63,7 +64,7 @@ public class PutObject extends TestBase {
 	@Test
 	@Tag("ERROR")
 	public void testObjectWriteToNonExistBucket() {
-		var key = "foo";
+		var key = "testObjectWriteToNonExistBucket";
 		var client = getClient();
 		var bucketName = getNewBucketNameOnly(2);
 
@@ -78,7 +79,7 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 3);
 
-		var key = "foo";
+		var key = "testObjectHeadZeroBytes";
 		client.putObject(bucketName, key, "");
 
 		var response = client.getObjectMetadata(bucketName, key);
@@ -91,7 +92,8 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 4);
 
-		var response = client.putObject(bucketName, "foo", "bar");
+		var key = "testObjectWriteCheckEtag";
+		var response = client.putObject(bucketName, key, "bar");
 		assertEquals("37b51d194a7513e45b56f6524f2d51f2", response.getETag());
 	}
 
@@ -101,21 +103,20 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 5);
 
-		var key = "foo";
-		var body = "bar";
+		var key = "testObjectWriteCacheControl";
 		var cacheControl = "public, max-age=14HttpStatus.SC_BAD_REQUEST";
 		var metadata = new ObjectMetadata();
 		metadata.setCacheControl(cacheControl);
 		metadata.setContentType("text/plain");
-		metadata.setContentLength(body.length());
+		metadata.setContentLength(key.length());
 
-		client.putObject(bucketName, key, createBody(body), metadata);
+		client.putObject(bucketName, key, createBody(key), metadata);
 
 		var response = client.getObjectMetadata(bucketName, key);
 		assertEquals(cacheControl, response.getCacheControl());
 
 		var result = client.getObject(bucketName, key);
-		assertEquals(body, getBody(result.getObjectContent()));
+		assertEquals(key, getBody(result.getObjectContent()));
 	}
 
 	@Test
@@ -125,15 +126,14 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 6);
 
-		var key = "foo";
-		var body = "bar";
+		var key = "testObjectWriteExpires";
 		var expires = getTimeToAddSeconds(6000);
 		var metadata = new ObjectMetadata();
 		metadata.setExpirationTime(expires);
 		metadata.setContentType("text/plain");
-		metadata.setContentLength(body.length());
+		metadata.setContentLength(key.length());
 
-		client.putObject(bucketName, key, createBody(body), metadata);
+		client.putObject(bucketName, key, createBody(key), metadata);
 
 		var response = client.getObjectMetadata(bucketName, key);
 		assertEquals(expires, response.getExpirationTime());
@@ -145,7 +145,7 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 7);
 
-		var key = "foo";
+		var key = "testObjectWriteReadUpdateReadDelete";
 		var body = "bar";
 
 		client.putObject(bucketName, key, body);
@@ -168,14 +168,16 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectSetGetMetadataNoneToGood() {
 		var value = "my";
-		var got = setupMetadata(8, value, null);
+		var key = "testObjectSetGetMetadataNoneToGood";
+		var got = setupMetadata(8, key, value, null);
 		assertEquals(value, got);
 	}
 
 	@Test
 	@Tag("metadata")
 	public void testObjectSetGetMetadataNoneToEmpty() {
-		var got = setupMetadata(9, "", null);
+		var key = "testObjectSetGetMetadataNoneToEmpty";
+		var got = setupMetadata(9, key, "", null);
 		assertEquals("", got);
 	}
 
@@ -183,12 +185,13 @@ public class PutObject extends TestBase {
 	@Tag("metadata")
 	public void testObjectSetGetMetadataOverwriteToEmpty() {
 		var bucketName = createBucket(10);
+		var key = "testObjectSetGetMetadataOverwriteToEmpty";
 
 		var myMeta = "old_meta";
-		var got = setupMetadata(10, myMeta, bucketName);
+		var got = setupMetadata(10, key, myMeta, bucketName);
 		assertEquals(myMeta, got);
 
-		got = setupMetadata(10, "", bucketName);
+		got = setupMetadata(10, key, "", bucketName);
 		assertEquals("", got);
 	}
 
@@ -196,8 +199,9 @@ public class PutObject extends TestBase {
 	@Disabled("JAVA에서는 메타데이터에 특수문자 사용시 예외처리되어 에러가 발생하지 않음")
 	@Tag("metadata")
 	public void testObjectSetGetNonUtf8Metadata() {
+		var key = "testObjectSetGetNonUtf8Metadata";
 		var metadata = "\nmy_meta";
-		var e = setGetMetadataUnreadable(11, metadata, null);
+		var e = setGetMetadataUnreadable(11, key, metadata, null);
 		assertTrue(errorCheck(e.getStatusCode()));
 	}
 
@@ -205,8 +209,9 @@ public class PutObject extends TestBase {
 	@Disabled("JAVA에서는 메타데이터에 특수문자 사용시 예외처리되어 에러가 발생하지 않음")
 	@Tag("metadata")
 	public void testObjectSetGetMetadataEmptyToUnreadablePrefix() {
+		var key = "testObjectSetGetMetadataEmptyToUnreadablePrefix";
 		var metadata = "\nw";
-		var e = setGetMetadataUnreadable(12, metadata, null);
+		var e = setGetMetadataUnreadable(12, key, metadata, null);
 		assertTrue(errorCheck(e.getStatusCode()));
 	}
 
@@ -214,8 +219,9 @@ public class PutObject extends TestBase {
 	@Disabled("JAVA에서는 메타데이터에 특수문자 사용시 예외처리되어 에러가 발생하지 않음")
 	@Tag("metadata")
 	public void testObjectSetGetMetadataEmptyToUnreadableSuffix() {
+		var key = "testObjectSetGetMetadataEmptyToUnreadableSuffix";
 		var metadata = "h\n";
-		var e = setGetMetadataUnreadable(13, metadata, null);
+		var e = setGetMetadataUnreadable(13, key, metadata, null);
 		assertTrue(errorCheck(e.getStatusCode()));
 	}
 
@@ -224,16 +230,15 @@ public class PutObject extends TestBase {
 	public void testObjectMetadataReplacedOnPut() {
 		var client = getClient();
 		var bucketName = createBucket(client, 14);
-		var key = "foo";
-		var body = "bar";
+		var key = "testObjectMetadataReplacedOnPut";
 
 		var metadata = new ObjectMetadata();
 		metadata.addUserMetadata("x-amz-meta-meta1", "bar");
 		metadata.setContentType("text/plain");
-		metadata.setContentLength(body.length());
+		metadata.setContentLength(key.length());
 
-		client.putObject(bucketName, key, createBody(body), metadata);
-		client.putObject(bucketName, key, body);
+		client.putObject(bucketName, key, createBody(key), metadata);
+		client.putObject(bucketName, key, key);
 
 		var response = client.getObject(bucketName, key);
 		var got = response.getObjectMetadata().getUserMetadata();
@@ -533,7 +538,7 @@ public class PutObject extends TestBase {
 	public void testObjectSetGetMetadataUtf8() {
 		var client = getClient();
 		var bucketName = createBucket(client, 32);
-		var key = "foo";
+		var key = "testObjectSetGetMetadataUtf8";
 		var metadataKey1 = "x-amz-meta-meta1";
 		var metadataKey2 = "x-amz-meta-meta2";
 		var metadata1 = "utf-8";
@@ -544,7 +549,7 @@ public class PutObject extends TestBase {
 		metadataList.addUserMetadata(metadataKey2, metadata2);
 		metadataList.setContentType(contentType);
 
-		client.putObject(bucketName, key, createBody("bar"), metadataList);
+		client.putObject(bucketName, key, createBody(key), metadataList);
 
 		var response = client.getObjectMetadata(bucketName, key);
 		assertEquals(metadata1, response.getUserMetaDataOf(metadataKey1));
@@ -556,7 +561,7 @@ public class PutObject extends TestBase {
 	public void testObjectSetGetMetadataMixedCaseKey() {
 		var client = getClient();
 		var bucketName = createBucket(client, 43);
-		var key = "foo";
+		var key = "testObjectSetGetMetadataMixedCaseKey";
 		var metadata = new ObjectMetadata();
 		metadata.addUserMetadata("Meta1", "value1");
 		metadata.addUserMetadata("META2", "value2");
@@ -580,13 +585,12 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 33);
 		var key = Utils.randomObjectName(MainData.MAX_KEY_LENGTH);
-		var body = "test-max-length";
 
-		var response = client.putObject(bucketName, key, body);
+		var response = client.putObject(bucketName, key, key);
 		assertNotNull(response.getETag());
 
 		var getResponse = client.getObject(bucketName, key);
-		assertEquals(body, getBody(getResponse.getObjectContent()));
+		assertEquals(key, getBody(getResponse.getObjectContent()));
 	}
 
 	@Test
@@ -595,13 +599,12 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 34);
 		var key = "a";
-		var body = "test-min-length";
 
-		var response = client.putObject(bucketName, key, body);
+		var response = client.putObject(bucketName, key, key);
 		assertNotNull(response.getETag());
 
 		var getResponse = client.getObject(bucketName, key);
-		assertEquals(body, getBody(getResponse.getObjectContent()));
+		assertEquals(key, getBody(getResponse.getObjectContent()));
 	}
 
 	@Test
@@ -610,9 +613,8 @@ public class PutObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 35);
 		var key = Utils.randomObjectName(MainData.MAX_KEY_LENGTH + 1);
-		var body = "test-too-long";
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, body));
+		var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.KEY_TOO_LONG, e.getErrorCode());
 	}
@@ -629,14 +631,13 @@ public class PutObject extends TestBase {
 			// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
 			var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.length();
 			var key = specialChar + Utils.randomObjectName(remainingLength);
-			var body = "test-body-" + specialChar;
 
 			assertEquals(MainData.MAX_KEY_LENGTH, key.length());
-			var response = client.putObject(bucketName, key, body);
+			var response = client.putObject(bucketName, key, key);
 			assertNotNull(response.getETag());
 
 			var getResponse = client.getObject(bucketName, key);
-			assertEquals(body, getBody(getResponse.getObjectContent()));
+			assertEquals(key, getBody(getResponse.getObjectContent()));
 		}
 	}
 
@@ -652,14 +653,13 @@ public class PutObject extends TestBase {
 			// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
 			var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.length();
 			var key = Utils.randomObjectName(remainingLength) + specialChar;
-			var body = "test-body-" + specialChar;
 
 			assertEquals(MainData.MAX_KEY_LENGTH, key.length());
-			var response = client.putObject(bucketName, key, body);
+			var response = client.putObject(bucketName, key, key);
 			assertNotNull(response.getETag());
 
 			var getResponse = client.getObject(bucketName, key);
-			assertEquals(body, getBody(getResponse.getObjectContent()));
+			assertEquals(key, getBody(getResponse.getObjectContent()));
 		}
 	}
 
@@ -678,13 +678,12 @@ public class PutObject extends TestBase {
 			// 안전하게 조금 작은 길이로 시도
 			var safeLength = Math.max(1, maxLength - 1);
 			var key = unicodeChar.repeat(safeLength);
-			var body = "unicode-test-" + unicodeChar;
 
-			var response = client.putObject(bucketName, key, body);
+			var response = client.putObject(bucketName, key, key);
 			assertNotNull(response.getETag());
 
 			var getResponse = client.getObject(bucketName, key);
-			assertEquals(body, getBody(getResponse.getObjectContent()));
+			assertEquals(key, getBody(getResponse.getObjectContent()));
 		}
 	}
 
@@ -703,9 +702,8 @@ public class PutObject extends TestBase {
 			// 1024바이트를 초과하는 길이로 시도
 			var tooLongLength = maxLength + 1;
 			var key = unicodeChar.repeat(tooLongLength);
-			var body = "unicode-test-fail-" + unicodeChar;
 
-			var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, body));
+			var e = assertThrows(AmazonServiceException.class, () -> client.putObject(bucketName, key, key));
 			assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 			assertEquals(MainData.KEY_TOO_LONG, e.getErrorCode());
 		}
@@ -728,14 +726,13 @@ public class PutObject extends TestBase {
 			var middleLength = MainData.MAX_KEY_LENGTH - (spaceCount * 2);
 			var middle = Utils.randomObjectName(middleLength);
 			var key = spaces + middle + spaces;
-			var body = "space-test-" + spaceCount;
 
 			assertEquals(MainData.MAX_KEY_LENGTH, key.length());
-			var response = client.putObject(bucketName, key, body);
+			var response = client.putObject(bucketName, key, key);
 			assertNotNull(response.getETag());
 
 			var getResponse = client.getObject(bucketName, key);
-			assertEquals(body, getBody(getResponse.getObjectContent()));
+			assertEquals(key, getBody(getResponse.getObjectContent()));
 		}
 	}
 
@@ -752,13 +749,11 @@ public class PutObject extends TestBase {
 				"folder////multiple-slashes");
 
 		for (var key : keys) {
-			var body = "slash-test-" + key.replace("/", "-");
-
-			var response = client.putObject(bucketName, key, body);
+			var response = client.putObject(bucketName, key, key);
 			assertNotNull(response.getETag());
 
 			var getResponse = client.getObject(bucketName, key);
-			assertEquals(body, getBody(getResponse.getObjectContent()));
+			assertEquals(key, getBody(getResponse.getObjectContent()));
 		}
 	}
 
@@ -777,13 +772,12 @@ public class PutObject extends TestBase {
 
 		for (var length : testCases) {
 			var key = Utils.randomObjectName(length);
-			var body = "boundary-test-" + length;
 
-			var response = client.putObject(bucketName, key, body);
+			var response = client.putObject(bucketName, key, key);
 			assertNotNull(response.getETag());
 
 			var getResponse = client.getObject(bucketName, key);
-			assertEquals(body, getBody(getResponse.getObjectContent()));
+			assertEquals(key, getBody(getResponse.getObjectContent()));
 		}
 	}
 

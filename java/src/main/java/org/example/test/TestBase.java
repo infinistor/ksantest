@@ -566,19 +566,18 @@ public class TestBase {
 		return client.getBucketLifecycleConfiguration(bucketName);
 	}
 
-	public String setupMetadata(int testId, String meta, String bucketName) {
+	public String setupMetadata(int testId, String key, String meta, String bucketName) {
 		if (StringUtils.isBlank(bucketName))
 			bucketName = createBucket(testId);
 
 		var client = getClient();
-		var key = "foo";
 		var metadataKey = "x-amz-meta-meta1";
 
 		var metadata = new ObjectMetadata();
 		metadata.addUserMetadata(metadataKey, meta);
 		metadata.setContentType("text/plain");
-		metadata.setContentLength(3);
-		client.putObject(bucketName, key, createBody("bar"), metadata);
+		metadata.setContentLength(key.length());
+		client.putObject(bucketName, key, createBody(key), metadata);
 
 		var response = client.getObjectMetadata(bucketName, key);
 		return response.getUserMetaDataOf(metadataKey);
@@ -1461,18 +1460,17 @@ public class TestBase {
 		}
 	}
 
-	public AmazonServiceException setGetMetadataUnreadable(int testId, String metadata, String bucket) {
+	public AmazonServiceException setGetMetadataUnreadable(int testId, String key, String metadata, String bucket) {
 		if (StringUtils.isBlank(bucket))
 			bucket = createBucket(testId);
 		var bucketName = bucket;
 		var client = getClient();
-		var key = "foo";
 		var metadataKey = "x-amz-meta-meta1";
 		var metadataList = new ObjectMetadata();
 		metadataList.addUserMetadata(metadataKey, metadata);
 
 		return assertThrows(AmazonServiceException.class,
-				() -> client.putObject(bucketName, key, createBody("bar"), metadataList));
+				() -> client.putObject(bucketName, key, createBody(key), metadataList));
 	}
 
 	public boolean errorCheck(Integer statusCode) {

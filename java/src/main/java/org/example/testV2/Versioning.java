@@ -63,7 +63,7 @@ public class Versioning extends TestBase {
 		var bucketName = createBucket(client, 2);
 		client.putBucketVersioning(
 				p -> p.bucket(bucketName).versioningConfiguration(v -> v.status(BucketVersioningStatus.ENABLED)));
-		var key = "obj";
+		var key = "testVersioningObjCreateReadRemove";
 		var numVersions = 5;
 
 		doTestCreateRemoveVersions(client, bucketName, key, numVersions, 0, 0);
@@ -78,7 +78,7 @@ public class Versioning extends TestBase {
 
 		client.putBucketVersioning(
 				p -> p.bucket(bucketName).versioningConfiguration(v -> v.status(BucketVersioningStatus.ENABLED)));
-		var key = "obj";
+		var key = "testVersioningObjCreateReadRemoveHead";
 		var numVersions = 5;
 
 		var versionIds = new ArrayList<String>();
@@ -115,7 +115,7 @@ public class Versioning extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 4);
 
-		var key = "foo";
+		var key = "testVersioningObjPlainNullVersionRemoval";
 		var content = "foo data";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
 
@@ -136,7 +136,7 @@ public class Versioning extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 5);
 
-		var key = "foo";
+		var key = "testVersioningObjPlainNullVersionOverwrite";
 		var content = "foo zzz";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
 
@@ -170,7 +170,7 @@ public class Versioning extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 6);
 
-		var key = "foo";
+		var key = "testVersioningObjPlainNullVersionOverwriteSuspended";
 		var content = "foo zzz";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(content));
 
@@ -200,7 +200,7 @@ public class Versioning extends TestBase {
 		var bucketName = createBucket(client, 7);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
-		var key = "obj";
+		var key = "testVersioningObjSuspendVersions";
 		var numVersions = 5;
 
 		var versionIds = new ArrayList<String>();
@@ -238,7 +238,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "obj";
+		var key = "testVersioningObjCreateVersionsRemoveAll";
 		var numVersions = 10;
 
 		var versionIds = new ArrayList<String>();
@@ -284,7 +284,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "obj";
+		var key = "testVersioningObjCreateOverwriteMultipart";
 		var numVersions = 3;
 		var versionIds = new ArrayList<String>();
 		var contents = new ArrayList<String>();
@@ -429,7 +429,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "obj";
+		var key = "testVersioningCopyObjVersion";
 		var numVersions = 3;
 
 		var versionIds = new ArrayList<String>();
@@ -477,7 +477,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "key";
+		var key = "testVersioningMultiObjectDelete";
 		var numVersions = 2;
 
 		var versionIds = new ArrayList<String>();
@@ -508,7 +508,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "key";
+		var key = "testVersioningMultiObjectDeleteWithMarker";
 		var numVersions = 2;
 
 		var versionIds = new ArrayList<String>();
@@ -553,7 +553,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "key";
+		var key = "testVersioningMultiObjectDeleteWithMarkerCreate";
 
 		client.deleteObject(d -> d.bucket(bucketName).key(key));
 
@@ -572,7 +572,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "xyz";
+		var key = "testVersionedObjectAcl";
 		var numVersions = 3;
 
 		var versionIds = new ArrayList<String>();
@@ -601,7 +601,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "xyz";
+		var key = "testVersionedObjectAclNoVersionSpecified";
 		var numVersions = 3;
 		var versionIds = new ArrayList<String>();
 		var contents = new ArrayList<String>();
@@ -629,7 +629,7 @@ public class Versioning extends TestBase {
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "my_obj";
+		var key = "testVersionedConcurrentObjectCreateAndRemove";
 		var numVersions = 3;
 
 		var allTasks = new ArrayList<Thread>();
@@ -668,7 +668,7 @@ public class Versioning extends TestBase {
 	public void testVersioningBucketAtomicUploadReturnVersionId() {
 		var client = getClient();
 		var bucketName = createBucket(client, 19);
-		var key = "bar";
+		var key = "testVersioningBucketAtomicUploadReturnVersionId";
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString("bar"));
@@ -687,7 +687,7 @@ public class Versioning extends TestBase {
 
 		var client = getClient();
 		var bucketName = createBucket(client, 20);
-		var key = "bar";
+		var key = "testVersioningBucketMultipartUploadReturnVersionId";
 		var metadata = new HashMap<String, String>();
 		metadata.put("foo", "baz");
 
@@ -712,7 +712,7 @@ public class Versioning extends TestBase {
 		var bucketName = createBucket(client, 21);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "foo";
+		var key = "testVersioningGetObjectHead";
 		var versions = new ArrayList<String>();
 
 		for (int i = 1; i <= 5; i++) {
@@ -735,7 +735,7 @@ public class Versioning extends TestBase {
 		var bucketName = createBucket(client, 22);
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
-		var key = "foo";
+		var key = "testVersioningLatest";
 		var versions = new ArrayList<String>();
 
 		for (int i = 1; i <= 5; i++) {

@@ -73,7 +73,7 @@ public class SSE_S3 extends TestBase { // NOSONAR
 	public void testSseS3EncryptionMethodHead() {
 		var client = getClient();
 		var bucketName = createBucket(client, 5);
-		var key = "obj";
+		var key = "testSseS3EncryptionMethodHead";
 		var data = Utils.randomTextToLong(1000);
 		var metadata = new HashMap<String, String>();
 		metadata.put("foo", "bar");
@@ -91,7 +91,7 @@ public class SSE_S3 extends TestBase { // NOSONAR
 	public void testSseS3EncryptionMultipartUpload() {
 		var client = getClient();
 		var bucketName = createBucket(client, 6);
-		var key = "multipartEnc";
+		var key = "testSseS3EncryptionMultipartUpload";
 		var size = 50 * MainData.MB;
 		var contentType = "text/plain";
 		var metadata = new HashMap<String, String>();
@@ -243,7 +243,7 @@ public class SSE_S3 extends TestBase { // NOSONAR
 		assertEquals(ServerSideEncryption.AES256, response.serverSideEncryptionConfiguration().rules().get(0)
 				.applyServerSideEncryptionByDefault().sseAlgorithm());
 
-		var key = "bar";
+		var key = "testSseS3BucketPutGet";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(data));
 
 		var getResponse = client.getObject(p -> p.bucket(bucketName).key(key));
@@ -269,7 +269,7 @@ public class SSE_S3 extends TestBase { // NOSONAR
 		assertEquals(ServerSideEncryption.AES256, response.serverSideEncryptionConfiguration().rules().get(0)
 				.applyServerSideEncryptionByDefault().sseAlgorithm());
 
-		var key = "bar";
+		var key = "testSseS3BucketPutGetUseChunkEncoding";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(data));
 
 		var getResponse = client.getObject(p -> p.bucket(bucketName).key(key));
@@ -295,7 +295,7 @@ public class SSE_S3 extends TestBase { // NOSONAR
 		assertEquals(ServerSideEncryption.AES256, response.serverSideEncryptionConfiguration().rules().get(0)
 				.applyServerSideEncryptionByDefault().sseAlgorithm());
 
-		var key = "bar";
+		var key = "testSseS3BucketPutGetNotChunkEncoding";
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(data));
 
 		var getResponse = client.getObject(p -> p.bucket(bucketName).key(key));
@@ -311,7 +311,7 @@ public class SSE_S3 extends TestBase { // NOSONAR
 		var client = getClient();
 		var bucketName = createBucket(client, 17);
 		var signer = getS3Presigner();
-		var key = "foo";
+		var key = "testSseS3BucketPresignedUrlPutGet";
 
 		client.putBucketEncryption(p -> p.bucket(bucketName).serverSideEncryptionConfiguration(
 				s -> s.rules(r -> r
@@ -340,7 +340,7 @@ public class SSE_S3 extends TestBase { // NOSONAR
 		var client = getClient(true);
 		var bucketName = createBucket(client, 18);
 		var signer = getS3Presigner();
-		var key = "foo";
+		var key = "testSseS3BucketPresignedUrlPutGetV4";
 
 		client.putBucketEncryption(p -> p.bucket(bucketName).serverSideEncryptionConfiguration(
 				s -> s.rules(r -> r
@@ -367,7 +367,7 @@ public class SSE_S3 extends TestBase { // NOSONAR
 	public void testSseS3GetObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client, 19);
-		var key = "foo";
+		var key = "testSseS3GetObjectMany";
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
 		client.putBucketEncryption(p -> p.bucket(bucketName).serverSideEncryptionConfiguration(
@@ -384,7 +384,7 @@ public class SSE_S3 extends TestBase { // NOSONAR
 	public void testSseS3RangeObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client, 20);
-		var key = "foo";
+		var key = "testSseS3RangeObjectMany";
 		var size = 15 * 1024 * 1024;
 		var data = Utils.randomTextToLong(size);
 

@@ -48,7 +48,7 @@ public class GetObject extends TestBase {
 		var bucketName = createBucket(client, 1);
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.getObject(g -> g.bucket(bucketName).key("foo")));
+				() -> client.getObject(g -> g.bucket(bucketName).key("testObjectReadNotExist")));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
 	}
@@ -58,7 +58,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfMatchGood() {
 		var client = getClient();
 		var bucketName = createBucket(client, 2);
-		var key = "foo";
+		var key = "testGetObjectIfMatchGood";
 
 		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 		var eTag = putResponse.eTag();
@@ -73,7 +73,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfMatchFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client, 3);
-		var key = "foo";
+		var key = "testGetObjectIfMatchFailed";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 		var e = assertThrows(AwsServiceException.class, () -> client
@@ -88,7 +88,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfNoneMatchGood() {
 		var client = getClient();
 		var bucketName = createBucket(client, 4);
-		var key = "foo";
+		var key = "testGetObjectIfNoneMatchGood";
 
 		var putResponse = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 		var eTag = putResponse.eTag();
@@ -105,7 +105,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfNoneMatchFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client, 5);
-		var key = "foo";
+		var key = "testGetObjectIfNoneMatchFailed";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
@@ -120,7 +120,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfModifiedSinceGood() {
 		var client = getClient();
 		var bucketName = createBucket(client, 6);
-		var key = "foo";
+		var key = "testGetObjectIfModifiedSinceGood";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
@@ -137,7 +137,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfModifiedSinceFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client, 7);
-		var key = "foo";
+		var key = "testGetObjectIfModifiedSinceFailed";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
@@ -159,7 +159,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfUnmodifiedSinceGood() {
 		var client = getClient();
 		var bucketName = createBucket(client, 8);
-		var key = "foo";
+		var key = "testGetObjectIfUnmodifiedSinceGood";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
@@ -178,7 +178,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfUnmodifiedSinceFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client, 9);
-		var key = "foo";
+		var key = "testGetObjectIfUnmodifiedSinceFailed";
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
@@ -396,7 +396,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedRequestResponseCode() {
-		var key = "obj";
+		var key = "testRangedRequestResponseCode";
 		var content = "contentData";
 
 		var client = getClient();
@@ -413,7 +413,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedBigRequestResponseCode() {
-		var key = "obj";
+		var key = "testRangedBigRequestResponseCode";
 		var content = Utils.randomTextToLong(8 * MainData.MB);
 
 		var client = getClient();
@@ -431,7 +431,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedRequestSkipLeadingBytesResponseCode() {
-		var key = "obj";
+		var key = "testRangedRequestSkipLeadingBytesResponseCode";
 		var content = "contentData";
 
 		var client = getClient();
@@ -448,7 +448,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedRequestReturnTrailingBytesResponseCode() {
-		var key = "obj";
+		var key = "testRangedRequestReturnTrailingBytesResponseCode";
 		var content = "contentData";
 
 		var client = getClient();
@@ -465,7 +465,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedRequestInvalidRange() {
-		var key = "obj";
+		var key = "testRangedRequestInvalidRange";
 		var content = "contentData";
 
 		var client = getClient();
@@ -481,7 +481,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedRequestEmptyObject() {
-		var key = "obj";
+		var key = "testRangedRequestEmptyObject";
 		var content = "";
 
 		var client = getClient();
@@ -499,7 +499,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client, 28);
-		var key = "foo";
+		var key = "testGetObjectMany";
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(data));
@@ -511,7 +511,7 @@ public class GetObject extends TestBase {
 	public void testRangeObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client, 29);
-		var key = "foo";
+		var key = "testRangeObjectMany";
 		var fileSize = 1024 * 1024 * 15;
 		var data = Utils.randomTextToLong(fileSize);
 
@@ -581,7 +581,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Get")
 	public void testGetObjectIgnore() {
-		var key = "testObjectIgnore";
+		var key = "testGetObjectIgnore";
 		var client = getClient();
 		var bucketName = createObjects(client, 32, key);
 

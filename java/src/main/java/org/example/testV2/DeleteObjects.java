@@ -213,7 +213,7 @@ public class DeleteObjects extends TestBase {
 
 		// 100개의 오브젝트 생성
 		for (var i = 0; i < keyCount; i++) {
-			var key = String.format("key-%03d", i);
+			var key = String.format("testDeleteObjects-%03d", i);
 
 			keyNames.add(key);
 			client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));

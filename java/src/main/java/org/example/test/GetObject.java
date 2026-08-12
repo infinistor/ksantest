@@ -50,7 +50,8 @@ public class GetObject extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 1);
 
-		var e = assertThrows(AmazonServiceException.class, () -> client.getObject(bucketName, "bar"));
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.getObject(bucketName, "testObjectReadNotExist"));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_KEY, e.getErrorCode());
 	}
@@ -58,7 +59,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("IfMatch")
 	public void testGetObjectIfMatchGood() {
-		var key = "foo";
+		var key = "testGetObjectIfMatchGood";
 		var client = getClient();
 		var bucketName = createBucket(client, 2);
 
@@ -75,7 +76,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfMatchFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client, 3);
-		var key = "foo";
+		var key = "testGetObjectIfMatchFailed";
 
 		client.putObject(bucketName, key, "bar");
 		var response = client.getObject(
@@ -88,7 +89,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfNoneMatchGood() {
 		var client = getClient();
 		var bucketName = createBucket(client, 4);
-		var key = "foo";
+		var key = "testGetObjectIfNoneMatchGood";
 
 		var putResponse = client.putObject(bucketName, key, "bar");
 		var eTag = putResponse.getETag();
@@ -102,7 +103,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfNoneMatchFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client, 5);
-		var key = "foo";
+		var key = "testGetObjectIfNoneMatchFailed";
 
 		client.putObject(bucketName, key, "bar");
 
@@ -118,7 +119,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfModifiedSinceGood() {
 		var client = getClient();
 		var bucketName = createBucket(client, 6);
-		var key = "foo";
+		var key = "testGetObjectIfModifiedSinceGood";
 
 		client.putObject(bucketName, key, "bar");
 
@@ -135,7 +136,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfModifiedSinceFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client, 7);
-		var key = "foo";
+		var key = "testGetObjectIfModifiedSinceFailed";
 
 		client.putObject(bucketName, key, "bar");
 
@@ -157,7 +158,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfUnmodifiedSinceGood() {
 		var client = getClient();
 		var bucketName = createBucket(client, 8);
-		var key = "foo";
+		var key = "testGetObjectIfUnmodifiedSinceGood";
 
 		client.putObject(bucketName, key, "bar");
 
@@ -174,7 +175,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectIfUnmodifiedSinceFailed() {
 		var client = getClient();
 		var bucketName = createBucket(client, 9);
-		var key = "foo";
+		var key = "testGetObjectIfUnmodifiedSinceFailed";
 
 		client.putObject(bucketName, key, "bar");
 
@@ -189,7 +190,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedRequestResponseCode() {
-		var key = "obj";
+		var key = "testRangedRequestResponseCode";
 		var content = "contentData";
 
 		var client = getClient();
@@ -206,7 +207,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedBigRequestResponseCode() {
-		var key = "obj";
+		var key = "testRangedBigRequestResponseCode";
 		var content = Utils.randomTextToLong(8 * MainData.MB);
 
 		var client = getClient();
@@ -224,7 +225,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedRequestSkipLeadingBytesResponseCode() {
-		var key = "obj";
+		var key = "testRangedRequestSkipLeadingBytesResponseCode";
 		var content = "contentData";
 
 		var client = getClient();
@@ -241,7 +242,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedRequestInvalidRange() {
-		var key = "obj";
+		var key = "testRangedRequestInvalidRange";
 		var content = "contentData";
 
 		var client = getClient();
@@ -257,7 +258,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Range")
 	public void testRangedRequestEmptyObject() {
-		var key = "obj";
+		var key = "testRangedRequestEmptyObject";
 		var content = "";
 
 		var client = getClient();
@@ -275,7 +276,7 @@ public class GetObject extends TestBase {
 	public void testGetObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client, 15);
-		var key = "foo";
+		var key = "testGetObjectMany";
 		var data = Utils.randomTextToLong(15 * MainData.MB);
 
 		client.putObject(bucketName, key, data);
@@ -287,7 +288,7 @@ public class GetObject extends TestBase {
 	public void testRangeObjectMany() {
 		var client = getClient();
 		var bucketName = createBucket(client, 16);
-		var key = "foo";
+		var key = "testRangeObjectMany";
 		var fileSize = 1024 * 1024 * 15;
 		var data = Utils.randomTextToLong(fileSize);
 
@@ -325,7 +326,7 @@ public class GetObject extends TestBase {
 	@Test
 	@Tag("Get")
 	public void testGetObjectIgnore() {
-		var key = "testObjectIgnore";
+		var key = "testGetObjectIgnore";
 		var client = getClient();
 		var bucketName = createObjects(client, 18, key);
 

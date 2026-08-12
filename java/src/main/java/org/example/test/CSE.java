@@ -71,7 +71,7 @@ public class CSE extends TestBase {
 	public void testCseEncryptionMethodHead() {
 		var client = getClient();
 		var bucketName = createBucket(client, 5);
-		var key = "testCseEncryptionMethodHead/obj";
+		var key = "testCseEncryptionMethodHead";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
 
@@ -97,7 +97,7 @@ public class CSE extends TestBase {
 	public void testCseEncryptionNonDecryption() {
 		var client = getClient();
 		var bucketName = createBucket(client, 6);
-		var key = "testCseEncryptionNonDecryption/obj";
+		var key = "testCseEncryptionNonDecryption";
 		var size = 1000;
 		var data = Utils.randomTextToLong(size);
 
