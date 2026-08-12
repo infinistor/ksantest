@@ -13,10 +13,20 @@ STR_FILENAME = "config.ini"
 STR_SIGNATURE_VERSION_V2 = "S3SignerType"
 STR_SIGNATURE_VERSION_V4 = "AWSS3V4SignerType"
 
+_config_path_override: str | None = None
+
+
+def set_config_path(file_name: str | None) -> None:
+    """Override the config path for the current pytest process."""
+    global _config_path_override
+    _config_path_override = file_name
+
 
 def resolve_config_path(file_name: str | None = None) -> str:
     if file_name:
         return file_name
+    if _config_path_override:
+        return _config_path_override
     env_path = os.environ.get(S3TESTS_INI)
     if env_path:
         return env_path

@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -917,6 +918,21 @@ func postBucketURL(s *suite, bucket string) string {
 		return "https://" + bucket + ".s3.amazonaws.com/"
 	}
 	return "https://" + bucket + ".s3." + region + ".amazonaws.com/"
+}
+
+// postBucketURLSecure는 Java createURL(bucket, true)와 같이 SSE-C POST용 HTTPS URL을 만든다.
+func postBucketURLSecure(s *suite, bucket string) string {
+	if s.cfg.URL == "" {
+		return postBucketURL(s, bucket)
+	}
+	host := strings.TrimRight(strings.TrimPrefix(strings.TrimPrefix(s.cfg.URL, "http://"), "https://"), "/")
+	if slash := strings.IndexByte(host, '/'); slash >= 0 {
+		host = host[:slash]
+	}
+	if s.cfg.SSLPort <= 0 || s.cfg.SSLPort == 443 {
+		return "https://" + host + "/" + bucket
+	}
+	return fmt.Sprintf("https://%s:%d/%s", host, s.cfg.SSLPort, bucket)
 }
 
 func sendPostForm(t *testing.T, url string, fields map[string]string, filename, contentType string, file []byte) postResult {

@@ -1079,9 +1079,10 @@ class S3TestBase:
         dt = datetime.now(timezone.utc) + timedelta(minutes=minutes)
         return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    def create_url(self, bucket_name: str, key: Optional[str] = None) -> str:
-        protocol = md.HTTPS if self.config.is_secure else md.HTTP
-        port = self.config.ssl_port if self.config.is_secure else self.config.port
+    def create_url(self, bucket_name: str, key: Optional[str] = None, *, is_secure: Optional[bool] = None) -> str:
+        secure = self.config.is_secure if is_secure is None else is_secure
+        protocol = md.HTTPS if secure else md.HTTP
+        port = self.config.ssl_port if secure else self.config.port
         if self.config.is_aws():
             if key:
                 return f"{protocol}{bucket_name}.s3-{self.config.region_name}.amazonaws.com/{key}"
@@ -1089,7 +1090,7 @@ class S3TestBase:
         base = net_utils.append_port_if_non_default(
             f"{protocol}{self.config.url}".rstrip("/"),
             port,
-            443 if self.config.is_secure else 80,
+            443 if secure else 80,
         )
         if key:
             return f"{base}/{bucket_name}/{key}"
@@ -2484,8 +2485,9 @@ class S3TestBase:
         return self.get_keys(response.get("Contents"))
 
     def check_bad_bucket_name(self, bucket_name: str) -> None:
+        client = self.get_client()
         with pytest.raises((ParamValidationError, ClientError, ValueError)):
-            self.get_client().create_bucket(Bucket=bucket_name)
+            client.create_bucket(Bucket=bucket_name)
 
     _PREFIX_DEFAULT = object()
 

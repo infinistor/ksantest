@@ -8,7 +8,7 @@ import json
 import pytest
 from botocore.exceptions import ClientError
 
-from s3tests.auth.aws2_signer import get_base64_encoded_sha1_hash
+from s3tests.auth.aws4_signer_base import get_amz_date, get_post_policy_signature
 from s3tests.data import main_data as md
 from s3tests.data.form_file import FormFile
 from s3tests.test_base import SSE_CUSTOMER_ALGORITHM, SSE_KEY, SSE_KEY_MD5, S3TestBase
@@ -118,13 +118,13 @@ class TestSseC(S3TestBase):
         self.unblock_sse_c(bucket_name)
         key = "obj"
         size = 100
-        data = utils.random_text_to_long(size)
+        body = utils.random_text_to_long(size).encode("utf-8")
 
         with pytest.raises(ClientError) as exc_info:
             client.put_object(
                 Bucket=bucket_name,
                 Key=key,
-                Body=data.encode("utf-8"),
+                Body=body,
                 SSECustomerAlgorithm=SSE_CUSTOMER_ALGORITHM,
                 SSECustomerKey=SSE_KEY,
                 SSECustomerKeyMD5="AAAAAAAAAAAAAAAAAAAAAA==",
@@ -279,14 +279,16 @@ class TestSseC(S3TestBase):
 
     @pytest.mark.tag("Post")
     def test_encryption_sse_c_post_object_authenticated_request(self):
-        if self.config.is_aws():
-            pytest.skip("SSE-C POST object test is not supported on AWS")
-
         client = self.get_client_https(False)
         bucket_name = self.create_bucket(client, 14)
+        self.unblock_sse_c(bucket_name)
 
         content_type = "text/plain"
         key = "foo.txt"
+        amz_date = get_amz_date()
+        date_stamp = amz_date[:8]
+        region = self.config.region_name if self.config.region_name else "us-east-1"
+        credential = f"{self.config.main_user.access_key}/{date_stamp}/{region}/s3/aws4_request"
         policy_document = {
             "expiration": self.get_time_to_add_minutes(100),
             "conditions": [
@@ -298,30 +300,37 @@ class TestSseC(S3TestBase):
                 ["starts-with", "$x-amz-server-side-encryption-customer-key", SSE_KEY],
                 ["starts-with", "$x-amz-server-side-encryption-customer-key-md5", SSE_KEY_MD5],
                 ["content-length-range", 0, 1024],
+                {"x-amz-algorithm": "AWS4-HMAC-SHA256"},
+                {"x-amz-credential": credential},
+                {"x-amz-date": amz_date},
             ],
         }
 
         policy = base64.b64encode(json.dumps(policy_document).encode("utf-8")).decode("ascii")
-        signature = get_base64_encoded_sha1_hash(policy, self.config.main_user.secret_key)
+        signature = get_post_policy_signature(
+            self.config.main_user.secret_key, date_stamp, region, policy
+        )
 
         payload = {
             "key": key,
-            "AWSAccessKeyId": self.config.main_user.access_key,
             "acl": "private",
-            "signature": signature,
             "policy": policy,
             "Content-Type": content_type,
+            "x-amz-algorithm": "AWS4-HMAC-SHA256",
+            "x-amz-credential": credential,
+            "x-amz-date": amz_date,
+            "x-amz-signature": signature,
             "x-amz-server-side-encryption-customer-algorithm": SSE_ALGORITHM,
             "x-amz-server-side-encryption-customer-key": SSE_KEY,
             "x-amz-server-side-encryption-customer-key-md5": SSE_KEY_MD5,
         }
 
         result = net_utils.post_upload(
-            self.create_url(bucket_name),
+            self.create_url(bucket_name, is_secure=True),
             payload,
             FormFile(key, content_type, "bar"),
         )
-        assert result.status_code == 204
+        assert result.status_code == 204, result.get_error_code()
 
         response = client.get_object(Bucket=bucket_name, Key=key, **self.sse_c_extra_args())
         body = self.get_body(response)

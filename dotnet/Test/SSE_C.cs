@@ -354,7 +354,7 @@ namespace s3tests.Test
 		[Trait(MainData.Major, "SSE-C")]
 		[Trait(MainData.Minor, "Post")]
 		[Trait(MainData.Explanation, "Post 방식으로 SSE-C 설정하여 오브젝트 업로드가 올바르게 동작하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestEncryptionSseCPostObjectAuthenticatedRequest()
 		{
 			TestId = 14;
@@ -381,9 +381,9 @@ namespace s3tests.Test
 						{ new JArray() { "starts-with", "$key", "foo" } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
-						{ new JArray() { "starts-with", "$x-amz-server-side-encryption-customer-algorithm", "" } },
-						{ new JArray() { "starts-with", "$x-amz-server-side-encryption-customer-key", "" } },
-						{ new JArray() { "starts-with", "$x-amz-server-side-encryption-customer-key-md5", "" } },
+						{ new JArray() { "starts-with", "$x-amz-server-side-encryption-customer-algorithm", "AES256" } },
+						{ new JArray() { "starts-with", "$x-amz-server-side-encryption-customer-key", sseC.ProvidedKey } },
+						{ new JArray() { "starts-with", "$x-amz-server-side-encryption-customer-key-md5", sseC.MD5 } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
 					}
 				},
@@ -409,6 +409,7 @@ namespace s3tests.Test
 			var Response = Client.GetObject(bucketName, key, sseCustomerKey: sseC);
 			var body = S3Utils.GetBody(Response);
 			Assert.Equal("bar", body);
+			Assert.Equal(ServerSideEncryptionCustomerMethod.AES256, Response.ServerSideEncryptionCustomerMethod);
 		}
 
 		[Fact]

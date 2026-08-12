@@ -3,19 +3,14 @@ package s3tests
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
 	"crypto/md5"
-	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
-	"net/textproto"
 	"strings"
 	"testing"
 	"time"
@@ -194,45 +189,24 @@ func TestEncryptionSseCMultipartBadDownload(t *testing.T) {
 func TestEncryptionSseCPostObjectAuthenticatedRequest(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
-	if s.cfg.Endpoint() == "" {
-		t.Skip("SSE-C POST object test is not supported on AWS")
-	}
-	bucket := s.bucket(t, 14)
+	bucket := ssecBucket(t, s, 14)
 	key := "foo.txt"
-	expiration := time.Now().UTC().Add(100 * time.Minute).Format(time.RFC3339)
-	document := map[string]any{"expiration": expiration, "conditions": []any{map[string]string{"bucket": bucket}, []string{"starts-with", "$key", "foo"}, map[string]string{"acl": "private"}, []string{"starts-with", "$Content-Type", "text/plain"}, []string{"starts-with", "$x-amz-server-side-encryption-customer-algorithm", sseCAlgorithm}, []string{"starts-with", "$x-amz-server-side-encryption-customer-key", sseCKey}, []string{"starts-with", "$x-amz-server-side-encryption-customer-key-md5", sseCKeyMD5}, []any{"content-length-range", 0, 1024}}}
-	encoded, _ := json.Marshal(document)
-	policy := base64.StdEncoding.EncodeToString(encoded)
-	mac := hmac.New(sha1.New, []byte(s.cfg.Main.SecretKey))
-	_, _ = mac.Write([]byte(policy))
-	signature := base64.StdEncoding.EncodeToString(mac.Sum(nil))
-	var payload bytes.Buffer
-	writer := multipart.NewWriter(&payload)
-	fields := map[string]string{"key": key, "AWSAccessKeyId": s.cfg.Main.AccessKey, "acl": "private", "signature": signature, "policy": policy, "Content-Type": "text/plain", "x-amz-server-side-encryption-customer-algorithm": sseCAlgorithm, "x-amz-server-side-encryption-customer-key": sseCKey, "x-amz-server-side-encryption-customer-key-md5": sseCKeyMD5}
-	for name, value := range fields {
-		if err := writer.WriteField(name, value); err != nil {
-			t.Fatal(err)
-		}
+	extra := []any{
+		[]string{"starts-with", "$x-amz-server-side-encryption-customer-algorithm", sseCAlgorithm},
+		[]string{"starts-with", "$x-amz-server-side-encryption-customer-key", sseCKey},
+		[]string{"starts-with", "$x-amz-server-side-encryption-customer-key-md5", sseCKeyMD5},
 	}
-	header := make(textproto.MIMEHeader)
-	header.Set("Content-Disposition", `form-data; name="file"; filename="foo.txt"`)
-	header.Set("Content-Type", "text/plain")
-	part, err := writer.CreatePart(header)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, _ = part.Write([]byte("bar"))
-	_ = writer.Close()
-	url := strings.TrimRight(s.cfg.Endpoint(), "/") + "/" + bucket
-	request, _ := http.NewRequest(http.MethodPost, url, &payload)
-	request.Header.Set("Content-Type", writer.FormDataContentType())
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		t.Fatal(err)
-	}
-	response.Body.Close()
-	if response.StatusCode != http.StatusNoContent {
-		t.Fatalf("POST status=%d", response.StatusCode)
+	fields, policy := postV4Fields(s, bucket, "text/plain", "foo", 0, 1024, extra)
+	fields["key"] = key
+	fields["acl"] = "private"
+	fields["Content-Type"] = "text/plain"
+	fields["policy"] = policy
+	fields["x-amz-server-side-encryption-customer-algorithm"] = sseCAlgorithm
+	fields["x-amz-server-side-encryption-customer-key"] = sseCKey
+	fields["x-amz-server-side-encryption-customer-key-md5"] = sseCKeyMD5
+	result := sendPostForm(t, postBucketURLSecure(s, bucket), fields, key, "text/plain", []byte("bar"))
+	if result.status != http.StatusNoContent {
+		t.Fatalf("POST status=%d body=%s", result.status, result.body)
 	}
 	assertSSECObject(t, s.client, bucket, key, []byte("bar"))
 }
