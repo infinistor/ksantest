@@ -680,7 +680,7 @@ class TestBackend(S3TestBase):
         target_bucket_name = self.create_bucket(client, 29)
         key = "testBackendReplicationMetadata"
         content = "test content"
-        metadata = {"testKey": "testValue"}
+        metadata = {"test-key": "testValue"}
 
         self.check_configure_versioning_retry(source_bucket_name, "Enabled")
         self.check_configure_versioning_retry(target_bucket_name, "Enabled")
@@ -777,7 +777,7 @@ class TestBackend(S3TestBase):
         source_key2 = "sourceKey2"
         target_key = "targetKey"
         content = "test content"
-        metadata = {"testKey": "testValue"}
+        metadata = {"test-key": "testValue"}
 
         self.check_configure_versioning_retry(bucket, "Enabled")
 
@@ -813,8 +813,8 @@ class TestBackend(S3TestBase):
         source_key2 = "sourceKey2"
         target_key = "targetKey"
         content = "test content"
-        metadata = {"testKey": "testValue"}
-        metadata2 = {"testKey2": "testValue2"}
+        metadata = {"test-key": "testValue"}
+        metadata2 = {"test-key2": "testValue2"}
 
         self.check_configure_versioning_retry(bucket, "Enabled")
 
@@ -924,7 +924,7 @@ class TestBackend(S3TestBase):
         source_key = "testMultipartUploadMetadataReplicationSource"
         target_key = "testMultipartUploadMetadataReplicationTarget"
         size = 10 * md.MB
-        metadata = {"testKey": "testValue"}
+        metadata = {"test-key": "testValue"}
 
         self.check_configure_versioning_retry(bucket_name, "Enabled")
 

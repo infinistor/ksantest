@@ -554,6 +554,19 @@ class TestPutObject(S3TestBase):
         assert response["Metadata"][metadata_key1] == metadata1
         assert response["Metadata"][metadata_key2] == metadata2
 
+    @pytest.mark.tag("Metadata")
+    def test_object_set_get_metadata_mixed_case_key(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 49)
+        key = "foo"
+        metadata = {"Meta1": "value1", "META2": "value2", "mEtA3": "value3"}
+        expected = {"meta1": "value1", "meta2": "value2", "meta3": "value3"}
+
+        client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Metadata=metadata)
+
+        response = client.head_object(Bucket=bucket_name, Key=key)
+        assert response.get("Metadata", {}) == expected
+
     def _put_with_checksum(self, client, bucket_name: str, key: str, algorithm: str) -> dict:
         params = {
             "Bucket": bucket_name,

@@ -471,6 +471,22 @@ func TestObjectSetGetMetadataUtf8(t *testing.T) {
 	}
 }
 
+// 유저 메타데이터 키가 대소문자가 섞여 있어도 소문자로 반환되는지 확인
+func TestObjectSetGetMetadataMixedCaseKey(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket, key := s.bucket(t, 49), "foo"
+	put(t, s, bucket, key, key, map[string]string{"Meta1": "value1", "META2": "value2", "mEtA3": "value3"})
+	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil || len(head.Metadata) != 3 ||
+		head.Metadata["meta1"] != "value1" ||
+		head.Metadata["meta2"] != "value2" ||
+		head.Metadata["meta3"] != "value3" {
+		t.Fatalf("metadata=%v err=%v", head.Metadata, err)
+	}
+}
+
 // 체크섬 계산 및 검증 클라이언트 옵션 조합별 오브젝트 업로드 성공 확인
 func TestPutObjectChecksum(t *testing.T) {
 	t.Parallel()

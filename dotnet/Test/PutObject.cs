@@ -709,6 +709,37 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "유저 메타데이터 키가 대소문자가 섞여 있어도 소문자로 반환되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestObjectSetGetMetadataMixedCaseKey()
+		{
+			TestId = 49;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "foo";
+			var metadataList = new List<KeyValuePair<string, string>>()
+			{
+				new("x-amz-meta-Meta1", "value1"),
+				new("x-amz-meta-META2", "value2"),
+				new("x-amz-meta-mEtA3", "value3"),
+			};
+
+			client.PutObject(bucketName, key, body: key, metadataList: metadataList);
+
+			var response = client.GetObjectMetadata(bucketName, key);
+			Assert.Equal("value1", response.Metadata["x-amz-meta-meta1"]);
+			Assert.Equal("value2", response.Metadata["x-amz-meta-meta2"]);
+			Assert.Equal("value3", response.Metadata["x-amz-meta-meta3"]);
+			foreach (var metadataKey in response.Metadata.Keys)
+			{
+				if (metadataKey.StartsWith("x-amz-meta-", StringComparison.OrdinalIgnoreCase))
+					Assert.Equal(metadataKey.ToLowerInvariant(), metadataKey);
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
 		[Trait(MainData.Minor, "IfMatch")]
 		[Trait(MainData.Explanation, "대상 오브젝트와 일치하는 If-Match 조건으로 덮어쓰기 성공 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]

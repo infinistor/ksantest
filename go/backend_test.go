@@ -483,7 +483,7 @@ func TestPutObjectWithMetadataReplication(t *testing.T) {
 	sourceBucket, targetBucket, key := s.bucket(t, 29), s.bucket(t, 29), "test_backend_replication_metadata"
 	enableVersioning(t, s, sourceBucket)
 	enableVersioning(t, s, targetBucket)
-	metadata := map[string]string{"testkey": "testValue"}
+	metadata := map[string]string{"test-key": "testValue"}
 	putOut, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(sourceBucket), Key: aws.String(key), Body: bytes.NewReader([]byte("test content")),
 		Metadata: metadata, ContentType: aws.String("text/plain; charset=utf-8"), CacheControl: aws.String("no-cache"),
@@ -563,7 +563,7 @@ func TestCopyObjectWithMetadataReplication(t *testing.T) {
 	ctx := context.Background()
 	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t, 32), "source_key", "source_key_2", "target_key"
 	enableVersioning(t, s, bucket)
-	metadata := map[string]string{"testkey": "testValue"}
+	metadata := map[string]string{"test-key": "testValue"}
 	versionID := prepareBackendCopy(t, backendCopySetup{
 		client: s.client, bucket: bucket, sourceKey: sourceKey, targetKey: intermediateKey,
 		body: []byte("test content"), metadata: metadata,
@@ -591,10 +591,10 @@ func TestCopyObjectMetadataReplaceReplication(t *testing.T) {
 	ctx := context.Background()
 	bucket, sourceKey, intermediateKey, targetKey := s.bucket(t, 33), "source_key", "source_key_2", "target_key"
 	enableVersioning(t, s, bucket)
-	replacement := map[string]string{"testkey2": "testValue2"}
+	replacement := map[string]string{"test-key2": "testValue2"}
 	versionID := prepareBackendCopyReplace(t, backendCopySetup{
 		client: s.client, bucket: bucket, sourceKey: sourceKey, targetKey: intermediateKey,
-		body: []byte("test content"), metadata: map[string]string{"testkey": "testValue"},
+		body: []byte("test content"), metadata: map[string]string{"test-key": "testValue"},
 	}, replacement)
 	copyInput := &s3.CopyObjectInput{
 		Bucket:            aws.String(bucket),
@@ -659,7 +659,7 @@ func TestMultipartUploadWithMetadataReplication(t *testing.T) {
 	bucket, sourceKey, targetKey := s.bucket(t, 36), "test_multipart_upload_with_metadata_replication-source", "test_multipart_upload_with_metadata_replication-target"
 	enableVersioning(t, s, bucket)
 	body := backendPayload(backendObjectSize)
-	metadata := map[string]string{"testkey": "testValue"}
+	metadata := map[string]string{"test-key": "testValue"}
 	versionID := backendMultipart(t, s.client, bucket, sourceKey, body, metadata, "")
 	assertBackendHead(t, s.client, bucket, sourceKey, versionID, int64(len(body)), metadata)
 	backendReplicateMultipart(t, backend, bucket, sourceKey, bucket, targetKey, versionID)

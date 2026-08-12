@@ -938,7 +938,7 @@ namespace s3tests.Test
 			var targetBucketName = GetNewBucket();
 			var key = "testBackendReplicationMetadata";
 			var content = "test content";
-			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-testkey", "testValue") };
+			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-test-key", "testValue") };
 
 			// 버저닝 활성화
 			CheckConfigureVersioningRetry(sourceBucketName, VersionStatus.Enabled);
@@ -956,7 +956,7 @@ namespace s3tests.Test
 			var body = GetBody(getResponse);
 			Assert.Equal(content, body);
 			Assert.Equal(versionId, getResponse.VersionId);
-			Assert.Equal("testValue", getResponse.Metadata["x-amz-meta-testkey"]);
+			Assert.Equal("testValue", getResponse.Metadata["x-amz-meta-test-key"]);
 		}
 
 		[SkippableFact]
@@ -1053,7 +1053,7 @@ namespace s3tests.Test
 			var sourceKey2 = "sourceKey2";
 			var targetKey = "targetKey";
 			var content = "test content";
-			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-testkey", "testValue") };
+			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-test-key", "testValue") };
 
 			// 버킷에 버저닝 활성화
 			CheckConfigureVersioningRetry(bucket, VersionStatus.Enabled);
@@ -1073,7 +1073,7 @@ namespace s3tests.Test
 			var body = GetBody(getResponse);
 			Assert.Equal(content, body);
 			Assert.Equal(targetVid, getResponse.VersionId);
-			Assert.Equal("testValue", getResponse.Metadata["x-amz-meta-testkey"]);
+			Assert.Equal("testValue", getResponse.Metadata["x-amz-meta-test-key"]);
 		}
 
 		[SkippableFact]
@@ -1092,8 +1092,8 @@ namespace s3tests.Test
 			var sourceKey2 = "sourceKey2";
 			var targetKey = "targetKey";
 			var content = "test content";
-			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-testkey", "testValue") };
-			var metadataList2 = new List<KeyValuePair<string, string>>() { new("x-amz-meta-testkey2", "testValue2") };
+			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-test-key", "testValue") };
+			var metadataList2 = new List<KeyValuePair<string, string>>() { new("x-amz-meta-test-key2", "testValue2") };
 
 			// 버킷에 버저닝 활성화
 			CheckConfigureVersioningRetry(bucket, VersionStatus.Enabled);
@@ -1114,7 +1114,7 @@ namespace s3tests.Test
 			var body = GetBody(getResponse);
 			Assert.Equal(content, body);
 			Assert.Equal(targetVid, getResponse.VersionId);
-			Assert.Equal("testValue2", getResponse.Metadata["x-amz-meta-testkey2"]);
+			Assert.Equal("testValue2", getResponse.Metadata["x-amz-meta-test-key2"]);
 		}
 
 		[SkippableFact]
@@ -1216,7 +1216,7 @@ namespace s3tests.Test
 			var sourceKey = "testMultipartUploadMetadataReplicationSource";
 			var targetKey = "testMultipartUploadMetadataReplicationTarget";
 			var size = 10 * MainData.MB;
-			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-testkey", "testValue") };
+			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-test-key", "testValue") };
 
 			// 버저닝 활성화
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
@@ -1228,7 +1228,7 @@ namespace s3tests.Test
 
 			// 일반 클라이언트로 메타데이터 확인
 			var metadataResponse = client.GetObjectMetadata(bucketName, sourceKey);
-			Assert.Equal("testValue", metadataResponse.Metadata["x-amz-meta-testkey"]);
+			Assert.Equal("testValue", metadataResponse.Metadata["x-amz-meta-test-key"]);
 
 			// Backend 클라이언트로 멀티파트 업로드
 			BackendMultipartUpload(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
@@ -1237,7 +1237,7 @@ namespace s3tests.Test
 			var getResponse = client.GetObjectMetadata(bucketName, targetKey, versionId: versionId);
 			Assert.Equal(size, getResponse.ContentLength);
 			Assert.Equal(versionId, getResponse.VersionId);
-			Assert.Equal("testValue", getResponse.Metadata["x-amz-meta-testkey"]);
+			Assert.Equal("testValue", getResponse.Metadata["x-amz-meta-test-key"]);
 
 			CheckContentUsingRange(client, bucketName, targetKey, uploadData.Body, MainData.MB);
 		}
