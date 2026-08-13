@@ -27,9 +27,9 @@ namespace s3tests.Test
 		public void TestPrivateBucketAndObject()
 		{
 			TestId = 1;
-			var mainKey = "testDefaultObjectPutGetMain";
-			var altKey = "testDefaultObjectPutGetAlt";
-			var publicKey = "testDefaultObjectPutGetPublic";
+			var mainKey = "TestPrivateBucketAndObjectMain";
+			var altKey = "TestPrivateBucketAndObjectAlt";
+			var publicKey = "TestPrivateBucketAndObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.Private, S3CannedACL.Private, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -51,9 +51,9 @@ namespace s3tests.Test
 		public void TestPrivateBucketPublicReadObject()
 		{
 			TestId = 2;
-			var mainKey = "testPrivateBucketPublicObjectMain";
-			var altKey = "testPrivateBucketPublicObjectAlt";
-			var publicKey = "testPrivateBucketPublicObjectPublic";
+			var mainKey = "TestPrivateBucketPublicReadObjectMain";
+			var altKey = "TestPrivateBucketPublicReadObjectAlt";
+			var publicKey = "TestPrivateBucketPublicReadObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.Private, S3CannedACL.PublicRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -75,9 +75,9 @@ namespace s3tests.Test
 		public void TestPrivateBucketPublicRWObject()
 		{
 			TestId = 3;
-			var mainKey = "testPrivateBucketPublicRWObjectMain";
-			var altKey = "testPrivateBucketPublicRWObjectAlt";
-			var publicKey = "testPrivateBucketPublicRWObjectPublic";
+			var mainKey = "TestPrivateBucketPublicRWObjectMain";
+			var altKey = "TestPrivateBucketPublicRWObjectAlt";
+			var publicKey = "TestPrivateBucketPublicRWObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.Private, S3CannedACL.PublicReadWrite, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -99,9 +99,9 @@ namespace s3tests.Test
 		public void TestPrivateBucketAuthenticatedReadObject()
 		{
 			TestId = 4;
-			var mainKey = "testPrivateBucketAuthenticatedObjectMain";
-			var altKey = "testPrivateBucketAuthenticatedObjectAlt";
-			var publicKey = "testPrivateBucketAuthenticatedObjectPublic";
+			var mainKey = "TestPrivateBucketAuthenticatedReadObjectMain";
+			var altKey = "TestPrivateBucketAuthenticatedReadObjectAlt";
+			var publicKey = "TestPrivateBucketAuthenticatedReadObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.Private, S3CannedACL.AuthenticatedRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -123,9 +123,9 @@ namespace s3tests.Test
 		public void TestPrivateBucketBucketOwnerReadObject()
 		{
 			TestId = 5;
-			var mainKey = "testPrivateBucketBucketOwnerReadObjectMain";
-			var altKey = "testPrivateBucketBucketOwnerReadObjectAlt";
-			var publicKey = "testPrivateBucketBucketOwnerReadObjectPublic";
+			var mainKey = "TestPrivateBucketBucketOwnerReadObjectMain";
+			var altKey = "TestPrivateBucketBucketOwnerReadObjectAlt";
+			var publicKey = "TestPrivateBucketBucketOwnerReadObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.Private, S3CannedACL.BucketOwnerRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -147,9 +147,9 @@ namespace s3tests.Test
 		public void TestPrivateBucketBucketOwnerReadObjectUploadAltUser()
 		{
 			TestId = 6;
-			var mainKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserMain";
-			var altKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserAlt";
-			var publicKey = "testPrivateBucketBucketOwnerReadObjectUploadAltUserPublic";
+			var mainKey = "TestPrivateBucketBucketOwnerReadObjectUploadAltUserMain";
+			var altKey = "TestPrivateBucketBucketOwnerReadObjectUploadAltUserAlt";
+			var publicKey = "TestPrivateBucketBucketOwnerReadObjectUploadAltUserPublic";
 			var bucketName = SetupAclObjectsByAlt(S3CannedACL.PublicReadWrite, S3CannedACL.BucketOwnerRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -172,9 +172,9 @@ namespace s3tests.Test
 		public void TestPrivateBucketBucketOwnerFullControlObject()
 		{
 			TestId = 7;
-			var mainKey = "testPrivateBucketBucketOwnerFullControlObjectMain";
-			var altKey = "testPrivateBucketBucketOwnerFullControlObjectAlt";
-			var publicKey = "testPrivateBucketBucketOwnerFullControlObjectPublic";
+			var mainKey = "TestPrivateBucketBucketOwnerFullControlObjectMain";
+			var altKey = "TestPrivateBucketBucketOwnerFullControlObjectAlt";
+			var publicKey = "TestPrivateBucketBucketOwnerFullControlObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.Private, S3CannedACL.BucketOwnerFullControl, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -196,9 +196,9 @@ namespace s3tests.Test
 		public void TestPublicReadBucketPrivateObject()
 		{
 			TestId = 8;
-			var mainKey = "testPublicReadBucketPrivateObjectMain";
-			var altKey = "testPublicReadBucketPrivateObjectAlt";
-			var publicKey = "testPublicReadBucketPrivateObjectPublic";
+			var mainKey = "TestPublicReadBucketPrivateObjectMain";
+			var altKey = "TestPublicReadBucketPrivateObjectAlt";
+			var publicKey = "TestPublicReadBucketPrivateObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicRead, S3CannedACL.Private, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -220,9 +220,9 @@ namespace s3tests.Test
 		public void TestPublicReadBucketAndObject()
 		{
 			TestId = 9;
-			var mainKey = "testPublicReadBucketAndObjectMain";
-			var altKey = "testPublicReadBucketAndObjectAlt";
-			var publicKey = "testPublicReadBucketAndObjectPublic";
+			var mainKey = "TestPublicReadBucketAndObjectMain";
+			var altKey = "TestPublicReadBucketAndObjectAlt";
+			var publicKey = "TestPublicReadBucketAndObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicRead, S3CannedACL.PublicRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -244,9 +244,9 @@ namespace s3tests.Test
 		public void TestPublicReadBucketPublicRWObject()
 		{
 			TestId = 10;
-			var mainKey = "testPublicReadBucketPublicRWObjectMain";
-			var altKey = "testPublicReadBucketPublicRWObjectAlt";
-			var publicKey = "testPublicReadBucketPublicRWObjectPublic";
+			var mainKey = "TestPublicReadBucketPublicRWObjectMain";
+			var altKey = "TestPublicReadBucketPublicRWObjectAlt";
+			var publicKey = "TestPublicReadBucketPublicRWObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicRead, S3CannedACL.PublicReadWrite, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -268,9 +268,9 @@ namespace s3tests.Test
 		public void TestPublicReadBucketAuthenticatedReadObject()
 		{
 			TestId = 11;
-			var mainKey = "testPublicReadBucketAuthenticatedReadObjectMain";
-			var altKey = "testPublicReadBucketAuthenticatedReadObjectAlt";
-			var publicKey = "testPublicReadBucketAuthenticatedReadObjectPublic";
+			var mainKey = "TestPublicReadBucketAuthenticatedReadObjectMain";
+			var altKey = "TestPublicReadBucketAuthenticatedReadObjectAlt";
+			var publicKey = "TestPublicReadBucketAuthenticatedReadObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicRead, S3CannedACL.AuthenticatedRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -292,9 +292,9 @@ namespace s3tests.Test
 		public void TestPublicReadBucketBucketOwnerReadObject()
 		{
 			TestId = 12;
-			var mainKey = "testPublicReadBucketBucketOwnerReadObjectMain";
-			var altKey = "testPublicReadBucketBucketOwnerReadObjectAlt";
-			var publicKey = "testPublicReadBucketBucketOwnerReadObjectPublic";
+			var mainKey = "TestPublicReadBucketBucketOwnerReadObjectMain";
+			var altKey = "TestPublicReadBucketBucketOwnerReadObjectAlt";
+			var publicKey = "TestPublicReadBucketBucketOwnerReadObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicRead, S3CannedACL.BucketOwnerRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -316,9 +316,9 @@ namespace s3tests.Test
 		public void TestPublicReadBucketBucketOwnerFullControlObject()
 		{
 			TestId = 13;
-			var mainKey = "testPublicReadBucketBucketOwnerFullControlObjectMain";
-			var altKey = "testPublicReadBucketBucketOwnerFullControlObjectAlt";
-			var publicKey = "testPublicReadBucketBucketOwnerFullControlObjectPublic";
+			var mainKey = "TestPublicReadBucketBucketOwnerFullControlObjectMain";
+			var altKey = "TestPublicReadBucketBucketOwnerFullControlObjectAlt";
+			var publicKey = "TestPublicReadBucketBucketOwnerFullControlObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicRead, S3CannedACL.BucketOwnerFullControl, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -340,11 +340,11 @@ namespace s3tests.Test
 		public void TestPublicRWBucketPrivateObject()
 		{
 			TestId = 14;
-			var mainKey = "testPublicRWBucketPrivateObjectMain";
-			var altKey = "testPublicRWBucketPrivateObjectAlt";
-			var altNewKey = "testPublicRWBucketPrivateObjectAltNew";
-			var publicKey = "testPublicRWBucketPrivateObjectPublic";
-			var publicNewKey = "testPublicRWBucketPrivateObjectPublicNew";
+			var mainKey = "TestPublicRWBucketPrivateObjectMain";
+			var altKey = "TestPublicRWBucketPrivateObjectAlt";
+			var altNewKey = "TestPublicRWBucketPrivateObjectAltNew";
+			var publicKey = "TestPublicRWBucketPrivateObjectPublic";
+			var publicNewKey = "TestPublicRWBucketPrivateObjectPublicNew";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicReadWrite, S3CannedACL.Private, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -369,10 +369,10 @@ namespace s3tests.Test
 		public void TestPublicRWBucketPrivateObjectByAltUser()
 		{
 			TestId = 15;
-			var mainKey = "testPublicRWBucketPrivateObjectByAltUserMain";
-			var altKey = "testPublicRWBucketPrivateObjectByAltUserAlt";
-			var publicKey = "testPublicRWBucketPrivateObjectByAltUserPublic";
-			var publicNewKey = "testPublicRWBucketPrivateObjectByAltUserPublicNew";
+			var mainKey = "TestPublicRWBucketPrivateObjectByAltUserMain";
+			var altKey = "TestPublicRWBucketPrivateObjectByAltUserAlt";
+			var publicKey = "TestPublicRWBucketPrivateObjectByAltUserPublic";
+			var publicNewKey = "TestPublicRWBucketPrivateObjectByAltUserPublicNew";
 			var bucketName = SetupAclObjectsByAlt(S3CannedACL.PublicReadWrite, S3CannedACL.Private, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -399,11 +399,11 @@ namespace s3tests.Test
 		public void TestPublicRWBucketPublicReadObject()
 		{
 			TestId = 16;
-			var mainKey = "testPublicRWBucketPublicReadObjectMain";
-			var altKey = "testPublicRWBucketPublicReadObjectAlt";
-			var altNewKey = "testPublicRWBucketPublicReadObjectAltNew";
-			var publicKey = "testPublicRWBucketPublicReadObjectPublic";
-			var publicNewKey = "testPublicRWBucketPublicReadObjectPublicNew";
+			var mainKey = "TestPublicRWBucketPublicReadObjectMain";
+			var altKey = "TestPublicRWBucketPublicReadObjectAlt";
+			var altNewKey = "TestPublicRWBucketPublicReadObjectAltNew";
+			var publicKey = "TestPublicRWBucketPublicReadObjectPublic";
+			var publicNewKey = "TestPublicRWBucketPublicReadObjectPublicNew";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicReadWrite, S3CannedACL.PublicRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -428,10 +428,10 @@ namespace s3tests.Test
 		public void TestPublicRWBucketPublicReadObjectByAltUser()
 		{
 			TestId = 17;
-			var mainKey = "testPublicRWBucketPublicReadObjectByAltUserMain";
-			var altKey = "testPublicRWBucketPublicReadObjectByAltUserAlt";
-			var publicKey = "testPublicRWBucketPublicReadObjectByAltUserPublic";
-			var publicNewKey = "testPublicRWBucketPublicReadObjectByAltUserPublicNew";
+			var mainKey = "TestPublicRWBucketPublicReadObjectByAltUserMain";
+			var altKey = "TestPublicRWBucketPublicReadObjectByAltUserAlt";
+			var publicKey = "TestPublicRWBucketPublicReadObjectByAltUserPublic";
+			var publicNewKey = "TestPublicRWBucketPublicReadObjectByAltUserPublicNew";
 			var bucketName = SetupAclObjectsByAlt(S3CannedACL.PublicReadWrite, S3CannedACL.PublicRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -458,11 +458,11 @@ namespace s3tests.Test
 		public void TestPublicRWBucketPublicRWObject()
 		{
 			TestId = 18;
-			var mainKey = "testPublicRWBucketPublicRWObjectMain";
-			var altKey = "testPublicRWBucketPublicRWObjectAlt";
-			var altNewKey = "testPublicRWBucketPublicRWObjectAltNew";
-			var publicKey = "testPublicRWBucketPublicRWObjectPublic";
-			var publicNewKey = "testPublicRWBucketPublicRWObjectPublicNew";
+			var mainKey = "TestPublicRWBucketPublicRWObjectMain";
+			var altKey = "TestPublicRWBucketPublicRWObjectAlt";
+			var altNewKey = "TestPublicRWBucketPublicRWObjectAltNew";
+			var publicKey = "TestPublicRWBucketPublicRWObjectPublic";
+			var publicNewKey = "TestPublicRWBucketPublicRWObjectPublicNew";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicReadWrite, S3CannedACL.PublicReadWrite, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -487,10 +487,10 @@ namespace s3tests.Test
 		public void TestPublicRWBucketPublicRWObjectByAltUser()
 		{
 			TestId = 19;
-			var mainKey = "testPublicRWBucketPublicRWObjectByAltUserMain";
-			var altKey = "testPublicRWBucketPublicRWObjectByAltUserAlt";
-			var publicKey = "testPublicRWBucketPublicRWObjectByAltUserPublic";
-			var publicNewKey = "testPublicRWBucketPublicRWObjectByAltUserPublicNew";
+			var mainKey = "TestPublicRWBucketPublicRWObjectByAltUserMain";
+			var altKey = "TestPublicRWBucketPublicRWObjectByAltUserAlt";
+			var publicKey = "TestPublicRWBucketPublicRWObjectByAltUserPublic";
+			var publicNewKey = "TestPublicRWBucketPublicRWObjectByAltUserPublicNew";
 			var bucketName = SetupAclObjectsByAlt(S3CannedACL.PublicReadWrite, S3CannedACL.PublicReadWrite, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -514,11 +514,11 @@ namespace s3tests.Test
 		public void TestPublicRWBucketAuthenticatedReadObject()
 		{
 			TestId = 20;
-			var mainKey = "testPublicRWBucketAuthenticatedReadObjectMain";
-			var altKey = "testPublicRWBucketAuthenticatedReadObjectAlt";
-			var altNewKey = "testPublicRWBucketAuthenticatedReadObjectAltNew";
-			var publicKey = "testPublicRWBucketAuthenticatedReadObjectPublic";
-			var publicNewKey = "testPublicRWBucketAuthenticatedReadObjectPublicNew";
+			var mainKey = "TestPublicRWBucketAuthenticatedReadObjectMain";
+			var altKey = "TestPublicRWBucketAuthenticatedReadObjectAlt";
+			var altNewKey = "TestPublicRWBucketAuthenticatedReadObjectAltNew";
+			var publicKey = "TestPublicRWBucketAuthenticatedReadObjectPublic";
+			var publicNewKey = "TestPublicRWBucketAuthenticatedReadObjectPublicNew";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicReadWrite, S3CannedACL.AuthenticatedRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -543,10 +543,10 @@ namespace s3tests.Test
 		public void TestPublicRWBucketAuthenticatedReadObjectByAltUser()
 		{
 			TestId = 21;
-			var mainKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserMain";
-			var altKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserAlt";
-			var publicKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserPublic";
-			var publicNewKey = "testPublicRWBucketAuthenticatedReadObjectByAltUserPublicNew";
+			var mainKey = "TestPublicRWBucketAuthenticatedReadObjectByAltUserMain";
+			var altKey = "TestPublicRWBucketAuthenticatedReadObjectByAltUserAlt";
+			var publicKey = "TestPublicRWBucketAuthenticatedReadObjectByAltUserPublic";
+			var publicNewKey = "TestPublicRWBucketAuthenticatedReadObjectByAltUserPublicNew";
 			var bucketName = SetupAclObjectsByAlt(S3CannedACL.PublicReadWrite, S3CannedACL.AuthenticatedRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -570,11 +570,11 @@ namespace s3tests.Test
 		public void TestPublicRWBucketBucketOwnerReadObject()
 		{
 			TestId = 22;
-			var mainKey = "testPublicRWBucketBucketOwnerReadObjectMain";
-			var altKey = "testPublicRWBucketBucketOwnerReadObjectAlt";
-			var altNewKey = "testPublicRWBucketBucketOwnerReadObjectAltNew";
-			var publicKey = "testPublicRWBucketBucketOwnerReadObjectPublic";
-			var publicNewKey = "testPublicRWBucketBucketOwnerReadObjectPublicNew";
+			var mainKey = "TestPublicRWBucketBucketOwnerReadObjectMain";
+			var altKey = "TestPublicRWBucketBucketOwnerReadObjectAlt";
+			var altNewKey = "TestPublicRWBucketBucketOwnerReadObjectAltNew";
+			var publicKey = "TestPublicRWBucketBucketOwnerReadObjectPublic";
+			var publicNewKey = "TestPublicRWBucketBucketOwnerReadObjectPublicNew";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicReadWrite, S3CannedACL.BucketOwnerRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -599,10 +599,10 @@ namespace s3tests.Test
 		public void TestPublicRWBucketBucketOwnerReadObjectByAltUser()
 		{
 			TestId = 23;
-			var mainKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserMain";
-			var altKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserAlt";
-			var publicKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserPublic";
-			var publicNewKey = "testPublicRWBucketBucketOwnerReadObjectByAltUserPublicNew";
+			var mainKey = "TestPublicRWBucketBucketOwnerReadObjectByAltUserMain";
+			var altKey = "TestPublicRWBucketBucketOwnerReadObjectByAltUserAlt";
+			var publicKey = "TestPublicRWBucketBucketOwnerReadObjectByAltUserPublic";
+			var publicNewKey = "TestPublicRWBucketBucketOwnerReadObjectByAltUserPublicNew";
 			var bucketName = SetupAclObjectsByAlt(S3CannedACL.PublicReadWrite, S3CannedACL.BucketOwnerRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -626,11 +626,11 @@ namespace s3tests.Test
 		public void TestPublicRWBucketBucketOwnerFullControlObject()
 		{
 			TestId = 24;
-			var mainKey = "testPublicRWBucketBucketOwnerFullControlObjectMain";
-			var altKey = "testPublicRWBucketBucketOwnerFullControlObjectAlt";
-			var altNewKey = "testPublicRWBucketBucketOwnerFullControlObjectAltNew";
-			var publicKey = "testPublicRWBucketBucketOwnerFullControlObjectPublic";
-			var publicNewKey = "testPublicRWBucketBucketOwnerFullControlObjectPublicNew";
+			var mainKey = "TestPublicRWBucketBucketOwnerFullControlObjectMain";
+			var altKey = "TestPublicRWBucketBucketOwnerFullControlObjectAlt";
+			var altNewKey = "TestPublicRWBucketBucketOwnerFullControlObjectAltNew";
+			var publicKey = "TestPublicRWBucketBucketOwnerFullControlObjectPublic";
+			var publicNewKey = "TestPublicRWBucketBucketOwnerFullControlObjectPublicNew";
 			var bucketName = SetupAclObjects(S3CannedACL.PublicReadWrite, S3CannedACL.BucketOwnerFullControl, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -655,10 +655,10 @@ namespace s3tests.Test
 		public void TestPublicRWBucketBucketOwnerFullControlObjectByAltUser()
 		{
 			TestId = 25;
-			var mainKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserMain";
-			var altKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserAlt";
-			var publicKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserPublic";
-			var publicNewKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserPublicNew";
+			var mainKey = "TestPublicRWBucketBucketOwnerFullControlObjectByAltUserMain";
+			var altKey = "TestPublicRWBucketBucketOwnerFullControlObjectByAltUserAlt";
+			var publicKey = "TestPublicRWBucketBucketOwnerFullControlObjectByAltUserPublic";
+			var publicNewKey = "TestPublicRWBucketBucketOwnerFullControlObjectByAltUserPublicNew";
 			var bucketName = SetupAclObjectsByAlt(S3CannedACL.PublicReadWrite, S3CannedACL.BucketOwnerFullControl, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -682,11 +682,11 @@ namespace s3tests.Test
 		public void TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferred()
 		{
 			TestId = 26;
-			var mainKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredMain";
-			var altKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredAlt";
-			var altNewKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredAltNew";
-			var publicKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredPublic";
-			var publicNewKey = "testPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredPublicNew";
+			var mainKey = "TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredMain";
+			var altKey = "TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredAlt";
+			var altNewKey = "TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredAltNew";
+			var publicKey = "TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredPublic";
+			var publicNewKey = "TestPublicRWBucketBucketOwnerFullControlObjectByAltUserBucketOwnerPreferredPublicNew";
 			var bucketName = SetupAclObjectsByAlt(ObjectOwnership.BucketOwnerPreferred, S3CannedACL.PublicReadWrite,
 				S3CannedACL.BucketOwnerFullControl, mainKey, altKey, publicKey);
 
@@ -712,9 +712,9 @@ namespace s3tests.Test
 		public void TestAuthenticatedReadBucketPrivateObject()
 		{
 			TestId = 27;
-			var mainKey = "testAuthenticatedReadBucketPrivateObjectMain";
-			var altKey = "testAuthenticatedReadBucketPrivateObjectAlt";
-			var publicKey = "testAuthenticatedReadBucketPrivateObjectPublic";
+			var mainKey = "TestAuthenticatedReadBucketPrivateObjectMain";
+			var altKey = "TestAuthenticatedReadBucketPrivateObjectAlt";
+			var publicKey = "TestAuthenticatedReadBucketPrivateObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.AuthenticatedRead, S3CannedACL.Private, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -736,9 +736,9 @@ namespace s3tests.Test
 		public void TestAuthenticatedReadBucketPublicReadObject()
 		{
 			TestId = 28;
-			var mainKey = "testAuthenticatedReadBucketPublicReadObjectMain";
-			var altKey = "testAuthenticatedReadBucketPublicReadObjectAlt";
-			var publicKey = "testAuthenticatedReadBucketPublicReadObjectPublic";
+			var mainKey = "TestAuthenticatedReadBucketPublicReadObjectMain";
+			var altKey = "TestAuthenticatedReadBucketPublicReadObjectAlt";
+			var publicKey = "TestAuthenticatedReadBucketPublicReadObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.AuthenticatedRead, S3CannedACL.PublicRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -760,9 +760,9 @@ namespace s3tests.Test
 		public void TestAuthenticatedReadBucketPublicRWObject()
 		{
 			TestId = 29;
-			var mainKey = "testAuthenticatedReadBucketPublicRWObjectMain";
-			var altKey = "testAuthenticatedReadBucketPublicRWObjectAlt";
-			var publicKey = "testAuthenticatedReadBucketPublicRWObjectPublic";
+			var mainKey = "TestAuthenticatedReadBucketPublicRWObjectMain";
+			var altKey = "TestAuthenticatedReadBucketPublicRWObjectAlt";
+			var publicKey = "TestAuthenticatedReadBucketPublicRWObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.AuthenticatedRead, S3CannedACL.PublicReadWrite, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -784,9 +784,9 @@ namespace s3tests.Test
 		public void TestAuthenticatedReadBucketAndObject()
 		{
 			TestId = 30;
-			var mainKey = "testAuthenticatedReadBucketAndObjectMain";
-			var altKey = "testAuthenticatedReadBucketAndObjectAlt";
-			var publicKey = "testAuthenticatedReadBucketAndObjectPublic";
+			var mainKey = "TestAuthenticatedReadBucketAndObjectMain";
+			var altKey = "TestAuthenticatedReadBucketAndObjectAlt";
+			var publicKey = "TestAuthenticatedReadBucketAndObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.AuthenticatedRead, S3CannedACL.AuthenticatedRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -808,9 +808,9 @@ namespace s3tests.Test
 		public void TestAuthenticatedReadBucketBucketOwnerReadObject()
 		{
 			TestId = 31;
-			var mainKey = "testAuthenticatedReadBucketBucketOwnerReadObjectMain";
-			var altKey = "testAuthenticatedReadBucketBucketOwnerReadObjectAlt";
-			var publicKey = "testAuthenticatedReadBucketBucketOwnerReadObjectPublic";
+			var mainKey = "TestAuthenticatedReadBucketBucketOwnerReadObjectMain";
+			var altKey = "TestAuthenticatedReadBucketBucketOwnerReadObjectAlt";
+			var publicKey = "TestAuthenticatedReadBucketBucketOwnerReadObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.AuthenticatedRead, S3CannedACL.BucketOwnerRead, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -832,9 +832,9 @@ namespace s3tests.Test
 		public void TestAuthenticatedReadBucketBucketOwnerFullControlObject()
 		{
 			TestId = 32;
-			var mainKey = "testAuthenticatedReadBucketBucketOwnerFullControlObjectMain";
-			var altKey = "testAuthenticatedReadBucketBucketOwnerFullControlObjectAlt";
-			var publicKey = "testAuthenticatedReadBucketBucketOwnerFullControlObjectPublic";
+			var mainKey = "TestAuthenticatedReadBucketBucketOwnerFullControlObjectMain";
+			var altKey = "TestAuthenticatedReadBucketBucketOwnerFullControlObjectAlt";
+			var publicKey = "TestAuthenticatedReadBucketBucketOwnerFullControlObjectPublic";
 			var bucketName = SetupAclObjects(S3CannedACL.AuthenticatedRead, S3CannedACL.BucketOwnerFullControl, mainKey, altKey, publicKey);
 
 			var client = GetClient();
@@ -999,7 +999,7 @@ namespace s3tests.Test
 		public void TestObjectPermissionAltUserFullControl()
 		{
 			TestId = 42;
-			var key = "testObjectPermissionAltUserFullControl";
+			var key = "TestObjectPermissionAltUserFullControl";
 			var bucketName = SetupObjectPermission(key, S3Permission.FULL_CONTROL);
 			var altClient = GetAltClient();
 
@@ -1015,7 +1015,7 @@ namespace s3tests.Test
 		public void TestObjectPermissionAltUserRead()
 		{
 			TestId = 43;
-			var key = "testObjectPermissionAltUserRead";
+			var key = "TestObjectPermissionAltUserRead";
 			var bucketName = SetupObjectPermission(key, S3Permission.READ);
 			var altClient = GetAltClient();
 
@@ -1031,7 +1031,7 @@ namespace s3tests.Test
 		public void TestObjectPermissionAltUserReadAcp()
 		{
 			TestId = 44;
-			var key = "testObjectPermissionAltUserReadAcp";
+			var key = "TestObjectPermissionAltUserReadAcp";
 			var bucketName = SetupObjectPermission(key, S3Permission.READ_ACP);
 			var altClient = GetAltClient();
 
@@ -1047,7 +1047,7 @@ namespace s3tests.Test
 		public void TestObjectPermissionAltUserWrite()
 		{
 			TestId = 45;
-			var key = "testObjectPermissionAltUserWrite";
+			var key = "TestObjectPermissionAltUserWrite";
 			var bucketName = SetupObjectPermission(key, S3Permission.WRITE);
 			var altClient = GetAltClient();
 
@@ -1063,7 +1063,7 @@ namespace s3tests.Test
 		public void TestObjectPermissionAltUserWriteAcp()
 		{
 			TestId = 46;
-			var key = "testObjectPermissionAltUserWriteAcp";
+			var key = "TestObjectPermissionAltUserWriteAcp";
 			var bucketName = SetupObjectPermission(key, S3Permission.WRITE_ACP);
 			var altClient = GetAltClient();
 

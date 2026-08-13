@@ -54,7 +54,7 @@ namespace s3tests.Test
 		public void TestObjectWriteToNonExistBucket()
 		{
 			TestId = 2;
-			var key = "TestObjectWriteToNonexistBucket";
+			var key = "TestObjectWriteToNonExistBucket";
 			var bucketName = "whatchutalkinboutwillis";
 			var client = GetClient();
 
@@ -346,7 +346,7 @@ namespace s3tests.Test
 			var key = "TestObjectLockUploadingObj";
 			var body = "abc";
 			var md5 = S3Utils.GetMD5(body);
-			var putResponse = client.PutObject(bucketName, key: key, body: "abc", md5Digest: md5, objectLockMode: ObjectLockMode.Governance,
+			var putResponse = client.PutObject(bucketName, key: key, body: body, md5Digest: md5, objectLockMode: ObjectLockMode.Governance,
 				objectLockRetainUntilDate: new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc),
 				objectLockLegalHoldStatus: ObjectLockLegalHoldStatus.On);
 
@@ -496,8 +496,8 @@ namespace s3tests.Test
 			TestId = 26;
 			// file first
 			var bucketName = GetNewBucket();
-			var objectName = "aaa";
-			var directoryName = "aaa/";
+			var objectName = "TestPutObjectDirAndFile";
+			var directoryName = "TestPutObjectDirAndFile/";
 			var client = GetClient();
 
 			client.PutObject(bucketName, objectName, body: objectName);
@@ -519,7 +519,7 @@ namespace s3tests.Test
 
 			// etc
 			var bucketName3 = GetNewBucket();
-			var newObjectName = "aaa/bbb/ccc";
+			var newObjectName = "TestPutObjectDirAndFile/bbb/ccc";
 
 			client.PutObject(bucketName3, objectName, body: objectName);
 			client.PutObject(bucketName3, newObjectName, body: newObjectName);
@@ -692,14 +692,14 @@ namespace s3tests.Test
 			TestId = 29;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo";
+			var key = "TestObjectSetGetMetadataUtf8";
 			var metadataKey1 = "x-amz-meta-meta1";
 			var metadataKey2 = "x-amz-meta-meta2";
 			var metadata1 = "utf-8";
 			var metadata2 = "UTF-8";
 			var contentType = "text/plain; charset=UTF-8";
 
-			client.PutObject(bucketName, key, body: "bar", contentType: contentType,
+			client.PutObject(bucketName, key, body: key, contentType: contentType,
 				metadataList: [new(metadataKey1, metadata1), new(metadataKey2, metadata2)]);
 
 			var response = client.GetObjectMetadata(bucketName, key);
@@ -717,7 +717,7 @@ namespace s3tests.Test
 			TestId = 49;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo";
+			var key = "TestObjectSetGetMetadataMixedCaseKey";
 			var metadataList = new List<KeyValuePair<string, string>>()
 			{
 				new("x-amz-meta-Meta1", "value1"),
@@ -748,7 +748,7 @@ namespace s3tests.Test
 			TestId = 34;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testPutObjectIfMatchGood";
+			var key = "TestPutObjectIfMatchGood";
 
 			var eTag = client.PutObject(bucketName, key, body: "old").ETag;
 
@@ -768,7 +768,7 @@ namespace s3tests.Test
 			TestId = 35;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testPutObjectIfMatchFailed";
+			var key = "TestPutObjectIfMatchFailed";
 
 			client.PutObject(bucketName, key, body: "old");
 
@@ -792,12 +792,12 @@ namespace s3tests.Test
 			TestId = 36;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testPutObjectIfNoneMatchGood";
+			var key = "TestPutObjectIfNoneMatchGood";
 
-			client.PutObject(bucketName, key, body: "bar", ifNoneMatch: "*");
+			client.PutObject(bucketName, key, body: key, ifNoneMatch: "*");
 
 			var response = client.GetObject(bucketName, key);
-			Assert.Equal("bar", GetBody(response));
+			Assert.Equal(key, GetBody(response));
 		}
 
 		[Fact]
@@ -810,7 +810,7 @@ namespace s3tests.Test
 			TestId = 37;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testPutObjectIfNoneMatchFailed";
+			var key = "TestPutObjectIfNoneMatchFailed";
 
 			client.PutObject(bucketName, key, body: "old");
 
@@ -834,7 +834,7 @@ namespace s3tests.Test
 			TestId = 38;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testPutObjectIfMatchAndIfNoneMatch";
+			var key = "TestPutObjectIfMatchAndIfNoneMatch";
 
 			var eTag = client.PutObject(bucketName, key, body: "old").ETag;
 
@@ -859,13 +859,11 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = "a";
-			var body = "test-min-length";
-
-			var response = client.PutObject(bucketName, key, body: body);
+			var response = client.PutObject(bucketName, key, body: key);
 			Assert.NotNull(response.ETag);
 
 			var getResponse = client.GetObject(bucketName, key);
-			Assert.Equal(body, GetBody(getResponse));
+			Assert.Equal(key, GetBody(getResponse));
 		}
 
 		[Fact]
@@ -879,13 +877,11 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = S3Utils.RandomObjectName(MainData.MAX_KEY_LENGTH);
-			var body = "test-max-length";
-
-			var response = client.PutObject(bucketName, key, body: body);
+			var response = client.PutObject(bucketName, key, body: key);
 			Assert.NotNull(response.ETag);
 
 			var getResponse = client.GetObject(bucketName, key);
-			Assert.Equal(body, GetBody(getResponse));
+			Assert.Equal(key, GetBody(getResponse));
 		}
 
 		[Fact]
@@ -899,9 +895,7 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var key = S3Utils.RandomObjectName(MainData.MAX_KEY_LENGTH + 1);
-			var body = "test-too-long";
-
-			var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: body));
+			var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: key));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.KEY_TOO_LONG, GetErrorCode(e));
 		}
@@ -928,13 +922,11 @@ namespace s3tests.Test
 			foreach (var length in testCases)
 			{
 				var key = S3Utils.RandomObjectName(length);
-				var body = "boundary-test-" + length;
-
-				var response = client.PutObject(bucketName, key, body: body);
+				var response = client.PutObject(bucketName, key, body: key);
 				Assert.NotNull(response.ETag);
 
 				var getResponse = client.GetObject(bucketName, key);
-				Assert.Equal(body, GetBody(getResponse));
+				Assert.Equal(key, GetBody(getResponse));
 			}
 		}
 
@@ -961,14 +953,12 @@ namespace s3tests.Test
 				// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
 				var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.Length;
 				var key = specialChar + S3Utils.RandomObjectName(remainingLength);
-				var body = "test-body-" + specialChar;
-
 				Assert.Equal(MainData.MAX_KEY_LENGTH, key.Length);
-				var response = client.PutObject(bucketName, key, body: body);
+				var response = client.PutObject(bucketName, key, body: key);
 				Assert.NotNull(response.ETag);
 
 				var getResponse = client.GetObject(bucketName, key);
-				Assert.Equal(body, GetBody(getResponse));
+				Assert.Equal(key, GetBody(getResponse));
 			}
 		}
 
@@ -993,14 +983,12 @@ namespace s3tests.Test
 				// 최대 길이에서 특수문자 1자를 뺀 길이로 생성
 				var remainingLength = MainData.MAX_KEY_LENGTH - specialChar.Length;
 				var key = S3Utils.RandomObjectName(remainingLength) + specialChar;
-				var body = "test-body-" + specialChar;
-
 				Assert.Equal(MainData.MAX_KEY_LENGTH, key.Length);
-				var response = client.PutObject(bucketName, key, body: body);
+				var response = client.PutObject(bucketName, key, body: key);
 				Assert.NotNull(response.ETag);
 
 				var getResponse = client.GetObject(bucketName, key);
-				Assert.Equal(body, GetBody(getResponse));
+				Assert.Equal(key, GetBody(getResponse));
 			}
 		}
 
@@ -1025,13 +1013,11 @@ namespace s3tests.Test
 				// 안전하게 조금 작은 길이로 시도
 				var safeLength = Math.Max(1, maxLength - 1);
 				var key = Repeat(unicodeChar, safeLength);
-				var body = "unicode-test-" + unicodeChar;
-
-				var response = client.PutObject(bucketName, key, body: body);
+				var response = client.PutObject(bucketName, key, body: key);
 				Assert.NotNull(response.ETag);
 
 				var getResponse = client.GetObject(bucketName, key);
-				Assert.Equal(body, GetBody(getResponse));
+				Assert.Equal(key, GetBody(getResponse));
 			}
 		}
 
@@ -1055,9 +1041,7 @@ namespace s3tests.Test
 
 				// 1024바이트를 초과하는 길이로 시도
 				var key = Repeat(unicodeChar, maxLength + 1);
-				var body = "unicode-test-fail-" + unicodeChar;
-
-				var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: body));
+				var e = Assert.Throws<AggregateException>(() => client.PutObject(bucketName, key, body: key));
 				Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 				Assert.Equal(MainData.KEY_TOO_LONG, GetErrorCode(e));
 			}
@@ -1085,13 +1069,11 @@ namespace s3tests.Test
 
 			foreach (var key in keys)
 			{
-				var body = "slash-test-" + key.Replace("/", "-");
-
-				var response = client.PutObject(bucketName, key, body: body);
+				var response = client.PutObject(bucketName, key, body: key);
 				Assert.NotNull(response.ETag);
 
 				var getResponse = client.GetObject(bucketName, key);
-				Assert.Equal(body, GetBody(getResponse));
+				Assert.Equal(key, GetBody(getResponse));
 			}
 		}
 
@@ -1113,14 +1095,12 @@ namespace s3tests.Test
 				var middleLength = MainData.MAX_KEY_LENGTH - (spaceCount * 2);
 				var middle = S3Utils.RandomObjectName(middleLength);
 				var key = spaces + middle + spaces;
-				var body = "space-test-" + spaceCount;
-
 				Assert.Equal(MainData.MAX_KEY_LENGTH, key.Length);
-				var response = client.PutObject(bucketName, key, body: body);
+				var response = client.PutObject(bucketName, key, body: key);
 				Assert.NotNull(response.ETag);
 
 				var getResponse = client.GetObject(bucketName, key);
-				Assert.Equal(body, GetBody(getResponse));
+				Assert.Equal(key, GetBody(getResponse));
 			}
 		}
 	}

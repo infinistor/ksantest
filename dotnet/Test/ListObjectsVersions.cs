@@ -917,7 +917,7 @@ namespace s3tests.Test
 			TestId = 40;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var keyName = "testVersioningObjListMarker";
+			var keyName = "TestVersioningObjListMarker";
 			var objects = new List<string>();
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);

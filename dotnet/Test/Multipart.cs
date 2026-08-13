@@ -33,7 +33,7 @@ namespace s3tests.Test
 			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Key1 = "mymultipart";
+			var Key1 = "TestMultipartUploadEmpty-000";
 			var size = 0;
 
 			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, Key1, size);
@@ -52,7 +52,7 @@ namespace s3tests.Test
 			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Key1 = "mymultipart";
+			var Key1 = "TestMultipartUploadSmall-000";
 			var size = 1;
 
 			var UploadData = S3Utils.SetupMultipartUpload(client, bucketName, Key1, size);
@@ -69,11 +69,11 @@ namespace s3tests.Test
 		public void TestMultipartCopySmall()
 		{
 			TestId = 3;
-			var SrcKey = "foo";
+			var SrcKey = "TestMultipartCopySmallSource";
 			var SrcBucketName = SetupKeyWithRandomContent(SrcKey);
 
 			var DestBucketName = GetNewBucket();
-			var DestKey = "mymultipart";
+			var DestKey = "TestMultipartCopySmallDestination";
 			var size = 1;
 			var client = GetClient();
 
@@ -94,10 +94,10 @@ namespace s3tests.Test
 		{
 			TestId = 4;
 			var client = GetClient();
-			var SrcKey = "source";
+			var SrcKey = "TestMultipartCopyInvalidRangeSource";
 			var SrcBucketName = SetupKeyWithRandomContent(SrcKey, size: 5);
 
-			var DestKey = "dest";
+			var DestKey = "TestMultipartCopyInvalidRangeDestination";
 			var Response = client.InitiateMultipartUpload(SrcBucketName, DestKey);
 			var UploadId = Response.UploadId;
 
@@ -115,10 +115,10 @@ namespace s3tests.Test
 		{
 			TestId = 5;
 			var client = GetClient();
-			var SrcKey = "source";
+			var SrcKey = "TestMultipartCopyWithoutRangeSource";
 			var SrcBucketName = SetupKeyWithRandomContent(SrcKey, size: 10);
 			var DestBucketName = GetNewBucket();
-			var DestKey = "mymultipartcopy";
+			var DestKey = "TestMultipartCopyWithoutRangeDestination";
 
 			var InitResponse = client.InitiateMultipartUpload(DestBucketName, DestKey);
 			var UploadId = InitResponse.UploadId;
@@ -144,7 +144,7 @@ namespace s3tests.Test
 			var SrcBucketName = GetNewBucket();
 			var DestBucketName = GetNewBucket();
 
-			var DestKey = "mymultipart";
+			var DestKey = "TestMultipartCopySpecialNamesDestination";
 			var size = 1;
 			var client = GetClient();
 
@@ -168,7 +168,7 @@ namespace s3tests.Test
 		{
 			TestId = 7;
 			var bucketName = GetNewBucket();
-			var key = "mymultipart";
+			var key = "TestMultipartUpload";
 			var ContentType = "text/bla";
 			var size = 50 * MainData.MB;
 			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
@@ -205,10 +205,10 @@ namespace s3tests.Test
 			var SrcBucketName = GetNewBucket();
 			var DestBucketName = GetNewBucket();
 
-			var DestKey = "mymultipart";
+			var DestKey = "TestMultipartCopyVersionedDestination";
 			CheckVersioning(SrcBucketName, VersionStatus.Off);
 
-			var SrcKey = "foo";
+			var SrcKey = "TestMultipartCopyVersionedSource";
 			CheckConfigureVersioningRetry(SrcBucketName, VersionStatus.Enabled);
 
 			var size = 15 * MainData.MB;
@@ -241,7 +241,7 @@ namespace s3tests.Test
 		{
 			TestId = 9;
 			var bucketName = GetNewBucket();
-			var key = "mymultipart";
+			var key = "TestMultipartUploadResendPart";
 			var size = 50 * MainData.MB;
 
 			CheckUploadMultipartResend(bucketName, key, size, [0]);
@@ -260,7 +260,7 @@ namespace s3tests.Test
 		{
 			TestId = 10;
 			var bucketName = GetNewBucket();
-			var key = "mymultipart";
+			var key = "TestMultipartUploadMultipleSizes";
 			var client = GetClient();
 
 			var size = 5 * MainData.MB;
@@ -297,11 +297,11 @@ namespace s3tests.Test
 		public void TestMultipartCopyMultipleSizes()
 		{
 			TestId = 11;
-			var SrcKey = "foo";
+			var SrcKey = "TestMultipartCopyMultipleSizesSource";
 			var SrcBucketName = SetupKeyWithRandomContent(SrcKey, size: 12 * MainData.MB);
 
 			var DestBucketName = GetNewBucket();
-			var DestKey = "mymultipart";
+			var DestKey = "TestMultipartCopyMultipleSizesDestination";
 			var client = GetClient();
 
 			var size = 5 * MainData.MB;
@@ -344,7 +344,7 @@ namespace s3tests.Test
 		{
 			TestId = 12;
 			var bucketName = GetNewBucket();
-			var key = "mymultipart";
+			var key = "TestMultipartUploadSizeTooSmall";
 			var client = GetClient();
 
 			var size = 1 * MainData.MB;
@@ -376,7 +376,7 @@ namespace s3tests.Test
 			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "mymultipart";
+			var key = "TestMultipartUploadOverwriteExistingObject";
 			var Payload = S3Utils.RandomTextToLong(5 * MainData.MB);
 			var NumParts = 2;
 
@@ -411,7 +411,7 @@ namespace s3tests.Test
 		{
 			TestId = 16;
 			var bucketName = GetNewBucket();
-			var key = "mymultipart";
+			var key = "TestAbortMultipartUpload";
 			var size = 10 * MainData.MB;
 			var client = GetClient();
 
@@ -435,7 +435,7 @@ namespace s3tests.Test
 			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "mymultipart";
+			var key = "TestAbortMultipartUploadNotFound";
 			client.PutObject(bucketName, key);
 
 			var e = Assert.Throws<AggregateException>(() => client.AbortMultipartUpload(bucketName, key, "56788"));
@@ -453,8 +453,8 @@ namespace s3tests.Test
 			TestId = 18;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "mymultipart";
-			var Key2 = "mymultipart2";
+			var key = "TestListMultipartUpload";
+			var Key2 = "TestListMultipartUpload-001";
 
 			var UploadIds = new List<string>
 			{
@@ -485,7 +485,7 @@ namespace s3tests.Test
 			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "mymultipart";
+			var key = "TestMultipartUploadMissingPart";
 
 			var InitResponse = client.InitiateMultipartUpload(bucketName, key);
 			var UploadId = InitResponse.UploadId;
@@ -510,7 +510,7 @@ namespace s3tests.Test
 			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "mymultipart";
+			var key = "TestMultipartUploadIncorrectEtag";
 
 			var InitResponse = client.InitiateMultipartUpload(bucketName, key);
 			var UploadId = InitResponse.UploadId;
@@ -536,7 +536,7 @@ namespace s3tests.Test
 			TestId = 21;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo";
+			var key = "TestAtomicMultipartUploadWrite";
 			client.PutObject(bucketName, key, body: "bar");
 
 			var InitResponse = client.InitiateMultipartUpload(bucketName, key);
@@ -562,7 +562,7 @@ namespace s3tests.Test
 		{
 			TestId = 22;
 			var bucketName = GetNewBucket();
-			var key = "mymultipart";
+			var key = "TestMultipartUploadList";
 			var ContentType = "text/bla";
 			var size = 50 * MainData.MB;
 			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
@@ -584,7 +584,7 @@ namespace s3tests.Test
 		{
 			TestId = 23;
 			var bucketName = GetNewBucket();
-			var key = "mymultipart";
+			var key = "TestAbortMultipartUploadList";
 			var size = 10 * MainData.MB;
 			var client = GetClient();
 
@@ -604,7 +604,7 @@ namespace s3tests.Test
 		{
 			TestId = 24;
 			var bucketName = GetNewBucket();
-			var SrcKey = "mymultipart";
+			var SrcKey = "TestMultipartCopyManySource";
 			var size = 10 * MainData.MB;
 			var client = GetClient();
 			var body = "";
@@ -617,7 +617,7 @@ namespace s3tests.Test
 			CheckContent(client, bucketName, SrcKey, body);
 
 			// 멀티파트 카피
-			var DestKey1 = "mymultipart1";
+			var DestKey1 = "TestMultipartCopyManyDestination-000";
 			UploadData = SetupMultipartCopy(client, bucketName, SrcKey, bucketName, DestKey1, size);
 			// 추가파츠 업로드
 			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, DestKey1, size, uploadData: UploadData);
@@ -628,7 +628,7 @@ namespace s3tests.Test
 			CheckContent(client, bucketName, DestKey1, body);
 
 			// 멀티파트 카피
-			var DestKey2 = "mymultipart2";
+			var DestKey2 = "TestMultipartCopyManyDestination-001";
 			UploadData = SetupMultipartCopy(client, bucketName, DestKey1, bucketName, DestKey2, size * 2);
 			// 추가파츠 업로드
 			UploadData = S3Utils.SetupMultipartUpload(client, bucketName, DestKey2, size, uploadData: UploadData);
@@ -648,7 +648,7 @@ namespace s3tests.Test
 		{
 			TestId = 25;
 			var bucketName = GetNewBucket();
-			var key = "mymultipart";
+			var key = "TestMultipartListParts";
 			var ContentType = "text/bla";
 			var size = 50 * MainData.MB;
 			var client = GetClient();
@@ -783,7 +783,7 @@ namespace s3tests.Test
 			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testPutObjectOverwriteMultipartUpload";
+			var key = "TestPutObjectOverwriteMultipartUpload";
 			var multipartSize = 10 * MainData.MB;
 			var content = S3Utils.RandomTextToLong(1 * MainData.MB);
 
@@ -813,7 +813,7 @@ namespace s3tests.Test
 			TestId = 30;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testcreateMultipartUploadEmptyChecksumAlgorithm";
+			var key = "TestcreateMultipartUploadEmptyChecksumAlgorithm";
 
 			var e = Assert.Throws<AggregateException>(() =>
 				client.InitiateMultipartUpload(bucketName, key, checksumType: ChecksumType.FULL_OBJECT));
@@ -831,7 +831,7 @@ namespace s3tests.Test
 			TestId = 31;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testcreateMultipartUploadEmptyChecksumType";
+			var key = "TestcreateMultipartUploadEmptyChecksumType";
 			var size = 10 * MainData.MB;
 			var partSize = 5 * MainData.MB;
 			var checksumType = ChecksumType.COMPOSITE;
@@ -1113,7 +1113,7 @@ namespace s3tests.Test
 			TestId = 42;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testCompleteMultipartUploadIfMatchGood";
+			var key = "TestCompleteMultipartUploadIfMatchGood";
 			var size = 5 * MainData.MB;
 
 			var eTag = client.PutObject(bucketName, key, body: "old").ETag;
@@ -1135,7 +1135,7 @@ namespace s3tests.Test
 			TestId = 43;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testCompleteMultipartUploadIfMatchFailed";
+			var key = "TestCompleteMultipartUploadIfMatchFailed";
 			var size = 5 * MainData.MB;
 
 			client.PutObject(bucketName, key, body: "old");
@@ -1161,7 +1161,7 @@ namespace s3tests.Test
 			TestId = 44;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testCompleteMultipartUploadIfNoneMatchGood";
+			var key = "TestCompleteMultipartUploadIfNoneMatchGood";
 			var size = 5 * MainData.MB;
 
 			var uploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
@@ -1181,7 +1181,7 @@ namespace s3tests.Test
 			TestId = 45;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testCompleteMultipartUploadIfNoneMatchFailed";
+			var key = "TestCompleteMultipartUploadIfNoneMatchFailed";
 			var size = 5 * MainData.MB;
 
 			client.PutObject(bucketName, key, body: "old");
@@ -1207,7 +1207,7 @@ namespace s3tests.Test
 			TestId = 46;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testCompleteMultipartUploadIfMatchAndIfNoneMatch";
+			var key = "TestCompleteMultipartUploadIfMatchAndIfNoneMatch";
 			var size = 5 * MainData.MB;
 
 			var eTag = client.PutObject(bucketName, key, body: "old").ETag;
@@ -1232,7 +1232,7 @@ namespace s3tests.Test
 			TestId = 47;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testCompleteMultipartUploadIfMatchAndIfNoneMatchAny";
+			var key = "TestCompleteMultipartUploadIfMatchAndIfNoneMatchAny";
 			var size = 5 * MainData.MB;
 
 			var eTag = client.PutObject(bucketName, key, body: "old").ETag;
@@ -1257,7 +1257,7 @@ namespace s3tests.Test
 			TestId = 48;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testMultipartUploadAbortDuringUpload";
+			var key = "TestMultipartUploadAbortDuringUpload";
 			var partBody = S3Utils.RandomTextToLong(5 * MainData.MB);
 
 			var uploadId = client.InitiateMultipartUpload(bucketName, key).UploadId;

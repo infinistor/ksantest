@@ -51,7 +51,7 @@ namespace s3tests.Test
 
 		public enum EncryptionType { NORMAL, SSE_S3, SSE_C };
 
-		public TestBase()
+		protected TestBase()
 		{
 			string configFilePath;
 			try
@@ -70,10 +70,23 @@ namespace s3tests.Test
 			BucketList = [];
 		}
 
+		private bool _disposed;
+
 		public void Dispose()
 		{
-			Clear();
+			Dispose(true);
 			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (_disposed)
+				return;
+
+			if (disposing)
+				Clear();
+
+			_disposed = true;
 		}
 		public void Clear() => BucketClear();
 
@@ -86,14 +99,15 @@ namespace s3tests.Test
 
 		#region Get client
 		public S3Client GetClient() => new(Config.S3, Config.IsSecure, Config.MainUser, Output);
+		public S3Client GetClient(RequestChecksumCalculation? requestChecksumCalculation,
+				ResponseChecksumValidation? responseChecksumValidation, bool useHttps = false)
+				=> new(Config.S3, useHttps || Config.IsSecure, Config.MainUser, Output, requestChecksumCalculation, responseChecksumValidation);
+
 		public S3Client GetClientV4() => new(Config.S3, Config.IsSecure, Config.MainUser, Output);
 		public S3Client GetClientHttps() => new(Config.S3, true, Config.MainUser, Output);
 		public S3Client GetClientHttpsV4(RequestChecksumCalculation? requestChecksumCalculation = null,
 		ResponseChecksumValidation? responseChecksumValidation = null) => new(Config.S3, true, Config.MainUser, Output, requestChecksumCalculation, responseChecksumValidation);
 
-		public S3Client GetClient(RequestChecksumCalculation? requestChecksumCalculation,
-			ResponseChecksumValidation? responseChecksumValidation, bool useHttps = false)
-			=> new(Config.S3, useHttps || Config.IsSecure, Config.MainUser, Output, requestChecksumCalculation, responseChecksumValidation);
 		public S3Client GetAltClient() => new(Config.S3, Config.IsSecure, Config.AltUser, Output);
 		public S3Client GetUnauthenticatedClient() => new(Config.S3, Config.IsSecure, null, Output);
 		public S3Client GetPublicClient() => GetUnauthenticatedClient();
@@ -151,9 +165,15 @@ namespace s3tests.Test
 		public string GetURL(string bucketName) => $"{MainData.HTTP}{GetHost(bucketName)}";
 		public string GetURL(string bucketName, string key) => $"{MainData.HTTP}{GetHost(bucketName)}/{key}";
 		/// <summary>SSE-C처럼 TLS가 필수인 요청에 쓴다.</summary>
-		public string GetSecureURL(string bucketName) => $"{MainData.HTTPS}{GetHost(bucketName)}";
-		public string GetHost(string bucketName)
-			=> Config.S3.IsAWS ? $"{bucketName}.s3-{Config.S3.RegionName}.amazonaws.com" : $"{Config.S3.Address}:{Config.S3.Port}/{bucketName}";
+		public string GetSecureURL(string bucketName) => $"{MainData.HTTPS}{GetHost(bucketName, secure: true)}";
+		public string GetHost(string bucketName, bool secure = false)
+		{
+			if (Config.S3.IsAWS)
+				return $"{bucketName}.s3-{Config.S3.RegionName}.amazonaws.com";
+
+			var port = secure ? Config.S3.SSLPort : Config.S3.Port;
+			return $"{Config.S3.Address}:{port}/{bucketName}";
+		}
 
 
 		#endregion
@@ -256,7 +276,11 @@ namespace s3tests.Test
 		{
 			//https://spirit32.tistory.com/21
 			string boundary = DateTime.Now.Ticks.ToString("x");
-			using var client = new HttpClient();
+			var handler = new HttpClientHandler();
+			// Java ignoreSsl / Go insecureHTTPClient와 같이 KSAN self-signed TLS POST를 허용한다.
+			if (secure)
+				handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+			using var client = new HttpClient(handler);
 			using var formData = new MultipartFormDataContent(boundary);
 			var url = secure ? GetSecureURL(bucketName) : GetURL(bucketName);
 
@@ -1132,6 +1156,14 @@ namespace s3tests.Test
 			client.PutBucket(bucketName, objectOwnership: ownership);
 			return bucketName;
 		}
+
+		public string GetNewBucket(S3Client client, ObjectOwnership ownership, S3CannedACL acl)
+		{
+			var bucketName = GetNewBucket(client, ownership);
+			client.PutBucketACL(bucketName, acl: acl);
+			return bucketName;
+		}
+
 		public string GetNewBucketCannedAcl(S3Client client)
 		{
 			var bucketName = GetNewBucket(client, ObjectOwnership.ObjectWriter);
@@ -1203,13 +1235,6 @@ namespace s3tests.Test
 			}
 
 			Assert.Fail($"SSE-C unblock failed : {bucketName}");
-		}
-
-		public string GetNewBucket(S3Client client, ObjectOwnership ownership, S3CannedACL acl)
-		{
-			var bucketName = GetNewBucket(client, ownership);
-			client.PutBucketACL(bucketName, acl: acl);
-			return bucketName;
 		}
 
 		public string SetupMetadata(string metadata, string bucketName = null)
@@ -1632,7 +1657,7 @@ namespace s3tests.Test
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testobj";
+			var key = "TestEncryptionCSEWrite";
 
 			//AES
 			var AES = new AES256();
@@ -1655,7 +1680,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 			UnblockSseC(bucketName);
 			var client = GetClientHttps();
-			var key = "testobj";
+			var key = "TestEncryptionSSECustomerWrite";
 			var data = new string('A', fileSize);
 			var sseC = new SSECustomerKey()
 			{
@@ -1673,7 +1698,7 @@ namespace s3tests.Test
 		{
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testobj";
+			var key = "TestEncryptionSSES3ustomerWrite";
 			var data = new string('A', fileSize);
 
 			client.PutObject(bucketName, key: key, body: data, sseKey: ServerSideEncryptionMethod.AES256);
@@ -1707,14 +1732,14 @@ namespace s3tests.Test
 			var response = client.GetBucketEncryption(bucketName);
 			Assert.Single(response.ServerSideEncryptionConfiguration.ServerSideEncryptionRules);
 
-			var sourceKey = "bar";
+			var sourceKey = "TestEncryptionSSES3CopySource";
 			client.PutObject(bucketName, sourceKey, body: data);
 
 			var sourceResponse = client.GetObject(bucketName, sourceKey);
 			var sourceBody = S3Utils.GetBody(sourceResponse);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, sourceResponse.ServerSideEncryptionMethod);
 
-			var destKey = "foo";
+			var destKey = "TestEncryptionSSES3CopyDestination";
 			client.CopyObject(bucketName, sourceKey, bucketName, destKey);
 			var destResponse = client.GetObject(bucketName, destKey);
 			Assert.Equal(ServerSideEncryptionMethod.AES256, destResponse.ServerSideEncryptionMethod);
@@ -1725,8 +1750,8 @@ namespace s3tests.Test
 
 		public void TestObjectCopy(bool sourceObjectEncryption, bool sourceBucketEncryption, bool destBucketEncryption, bool destObjectEncryption, int fileSize)
 		{
-			var sourceKey = "SourceKey";
-			var destKey = "DestKey";
+			var sourceKey = "TestObjectCopySource";
+			var destKey = "TestObjectCopyDestination";
 			var sourceBucketName = GetNewBucket();
 			var destBucketName = GetNewBucket();
 			var client = GetClient();
@@ -1792,8 +1817,8 @@ namespace s3tests.Test
 
 		public void TestObjectCopy(EncryptionType source, EncryptionType target, int fileSize)
 		{
-			var sourceKey = "SourceKey";
-			var targetKey = "TargetKey";
+			var sourceKey = "TestObjectCopySource";
+			var targetKey = "TestObjectCopyTarget";
 			var bucketName = GetNewBucket();
 			if (source == EncryptionType.SSE_C || target == EncryptionType.SSE_C) UnblockSseC(bucketName);
 			var client = GetClientHttps();
@@ -1873,23 +1898,24 @@ namespace s3tests.Test
 		private static readonly HashSet<string> BackendSkipHeaders = new(StringComparer.OrdinalIgnoreCase)
 		{
 			"content-length", "connection", "keep-alive", "transfer-encoding", "date", "server", "host",
+			"etag", "last-modified", "x-amz-version-id", "x-amz-tagging-count",
 		};
 
 		/// <summary>응답 헤더를 다음 요청에 그대로 전달하기 위해 복사한다. 메타데이터(x-amz-meta-*)는 별도로 복사하므로 제외.</summary>
-		private static List<KeyValuePair<string, string>> CopyBackendHeaders(HeadersCollection headers)
+		private static List<KeyValuePair<string, string>> CopyBackendHeaders(IEnumerable<KeyValuePair<string, string>> headers)
 		{
 			var headerList = new List<KeyValuePair<string, string>>();
 			if (headers == null) return headerList;
 
-			foreach (var key in headers.Keys)
+			foreach (var header in headers)
 			{
-				if (BackendSkipHeaders.Contains(key)) continue;
-				if (key.StartsWith("x-amz-meta-", StringComparison.OrdinalIgnoreCase)) continue;
+				if (BackendSkipHeaders.Contains(header.Key)) continue;
+				if (header.Key.StartsWith("x-amz-meta-", StringComparison.OrdinalIgnoreCase)) continue;
 
-				var value = headers[key] ?? string.Empty;
+				var value = header.Value ?? string.Empty;
 				// UTF-8 서명 에러를 배제하기 위해 소문자로 변경
-				if (key.Equals("content-type", StringComparison.OrdinalIgnoreCase)) value = value.Replace("UTF-8", "utf-8");
-				headerList.Add(new(key, value));
+				if (header.Key.Equals("content-type", StringComparison.OrdinalIgnoreCase)) value = value.Replace("UTF-8", "utf-8");
+				headerList.Add(new(header.Key, value));
 			}
 			return headerList;
 		}
@@ -1909,10 +1935,11 @@ namespace s3tests.Test
 		{
 			// Backend 클라이언트로 다운로드
 			var response = client.GetObject(sourceBucketName, sourceKey, versionId: versionId);
+			var responseHeaders = client.GetRawResponseHeaders();
 			var body = GetBody(response);
 
 			// 헤더 복사 후 버전 정보 추가
-			var headerList = CopyBackendHeaders(response.Headers);
+			var headerList = CopyBackendHeaders(responseHeaders);
 			headerList.Add(new(BackendHeaders.IFS_VERSION_ID, versionId));
 			headerList.Add(new(BackendHeaders.KSAN_VERSION_ID, versionId));
 
@@ -1940,10 +1967,11 @@ namespace s3tests.Test
 
 			// 메타 정보 가져오기
 			var metadata = client.GetObjectMetadata(sourceBucketName, sourceKey, versionId: versionId);
+			var responseHeaders = client.GetRawResponseHeaders();
 
 			// Multipart 등록
 			var initResponse = client.InitiateMultipartUpload(targetBucketName, targetKey,
-				metadataList: CopyBackendMetadata(metadata.Metadata), headerList: CopyBackendHeaders(metadata.Headers));
+				metadataList: CopyBackendMetadata(metadata.Metadata), headerList: CopyBackendHeaders(responseHeaders));
 			var uploadId = initResponse.UploadId;
 
 			// 오브젝트의 사이즈 확인

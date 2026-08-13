@@ -301,7 +301,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket(client);
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectSetKeyFromFilename.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -309,7 +309,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -345,7 +345,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectIgnoredHeader.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -353,7 +353,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -388,7 +388,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectCaseInsensitiveConditionFields.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -396,7 +396,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bUcKeT", bucketName } } },
-						{ new JArray() { "StArTs-WiTh", "$KeY", "foo" } },
+						{ new JArray() { "StArTs-WiTh", "$KeY", Key } },
 						{ new JObject() { { "AcL", "private" } } },
 						{ new JArray() { "StArTs-WiTh", "$CoNtEnT-TyPe", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -431,7 +431,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket(client);
 
 			var ContentType = "text/plain";
-			var Key = "\\$foo.txt";
+			var Key = "\\$TestPostObjectEscapedFieldValues.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -439,7 +439,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "\\$foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -476,7 +476,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectSuccessRedirectAction.txt";
 			var RedirectURL = GetURL(bucketName);
 
 			var PolicyDocument = new JObject()
@@ -485,7 +485,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "eq", "$success_action_redirect", RedirectURL } },
@@ -526,7 +526,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "\\$foo.txt";
+			var Key = "\\$TestPostObjectInvalidSignature.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -534,7 +534,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "\\$foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -569,7 +569,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "\\$foo.txt";
+			var Key = "\\$TestPostObjectInvalidAccessKey.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -577,7 +577,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "\\$foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -612,7 +612,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "\\$foo.txt";
+			var Key = "\\$TestPostObjectInvalidDateFormat.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -620,7 +620,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "\\$foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -691,7 +691,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "\\$foo.txt";
+			var Key = "\\$TestPostObjectMissingSignature.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -699,7 +699,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "\\$foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -734,14 +734,14 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectMissingPolicyCondition.txt";
 
 			var PolicyDocument = new JObject()
 			{
 				{"expiration", DateTime.UtcNow.AddMinutes(100).ToString("yyyy-MM-ddTHH:mm:ssZ") },
 				{ "conditions", new JArray()
 					{
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -775,7 +775,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket(client);
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectUserSpecifiedHeader.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -783,7 +783,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -821,7 +821,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectRequestMissingPolicySpecifiedField.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -829,7 +829,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -863,7 +863,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectConditionIsCaseSensitive.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -871,7 +871,7 @@ namespace s3tests.Test
 				{ "CONDITIONS", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -904,7 +904,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectExpiresIsCaseSensitive.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -912,7 +912,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -945,7 +945,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectExpiredPolicy.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -953,7 +953,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -986,7 +986,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectInvalidRequestFieldValue.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -994,7 +994,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -1029,14 +1029,14 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectMissingExpiresCondition.txt";
 
 			var PolicyDocument = new JObject()
 			{
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -1069,7 +1069,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectMissingConditionsList.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -1101,7 +1101,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectUploadSizeLimitExceeded.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -1109,7 +1109,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 0 } },
@@ -1142,7 +1142,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectMissingContentLengthArgument.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -1150,7 +1150,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0 } },
@@ -1183,7 +1183,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectInvalidContentLengthArgument.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -1191,7 +1191,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", -1, 0 } },
@@ -1224,7 +1224,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectUploadSizeBelowMinimum.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -1232,7 +1232,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 512, 1024 } },
@@ -1265,7 +1265,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket();
 
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectEmptyConditions.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -1302,7 +1302,7 @@ namespace s3tests.Test
 			var badBucketName = GetNewBucketName();
 
 			var ContentType = "text/plain";
-			var Key = "\\$foo.txt";
+			var Key = "\\$TestPostObjectWrongBucket.txt";
 
 			var PolicyDocument = new JObject()
 			{
@@ -1310,7 +1310,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "\\$foo" } },
+						{ new JArray() { "starts-with", "$key", Key } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 512, 1024 } },
@@ -1344,7 +1344,7 @@ namespace s3tests.Test
 			TestId = 32;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Key = "foo";
+			var Key = "TestPresignedUrlPutGet";
 
 			var PutURL = client.GeneratePresignedURL(bucketName, Key, DateTime.Now.AddSeconds(100000), HttpVerb.PUT);
 			var PutResponse = PutObject(PutURL, Key);
@@ -1368,7 +1368,7 @@ namespace s3tests.Test
 			TestId = 33;
 			var bucketName = GetNewBucket();
 			var ContentType = "text/plain";
-			var Key = "foo";
+			var Key = "TestPutObjectV4";
 			var Size = 100;
 			var Content = S3Utils.RandomTextToLong(Size);
 
@@ -1388,7 +1388,7 @@ namespace s3tests.Test
 			TestId = 34;
 			var bucketName = GetNewBucket();
 			var ContentType = "text/plain";
-			var Key = "foo";
+			var Key = "TestPutObjectChunkedV4";
 			var Size = 100;
 			var Content = S3Utils.RandomTextToLong(Size);
 
@@ -1408,7 +1408,7 @@ namespace s3tests.Test
 			TestId = 35;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Key = "foo";
+			var Key = "TestGetObjectV4";
 			var Size = 100;
 			var Content = S3Utils.RandomTextToLong(Size);
 

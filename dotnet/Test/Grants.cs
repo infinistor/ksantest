@@ -190,7 +190,7 @@ namespace s3tests.Test
 		public void TestObjectAclDefault()
 		{
 			TestId = 7;
-			var key = "testObjectAclDefault";
+			var key = "TestObjectAclDefault";
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 
@@ -208,7 +208,7 @@ namespace s3tests.Test
 		public void TestObjectAclChange()
 		{
 			TestId = 8;
-			var key = "testObjectAclChange";
+			var key = "TestObjectAclChange";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -231,7 +231,7 @@ namespace s3tests.Test
 		public void TestObjectAclPrivate()
 		{
 			TestId = 9;
-			var key = "testObjectAclPrivate";
+			var key = "TestObjectAclPrivate";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -249,7 +249,7 @@ namespace s3tests.Test
 		public void TestObjectAclPublicRead()
 		{
 			TestId = 10;
-			var key = "testObjectAclPublicRead";
+			var key = "TestObjectAclPublicRead";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -267,7 +267,7 @@ namespace s3tests.Test
 		public void TestObjectAclPublicRW()
 		{
 			TestId = 11;
-			var key = "testObjectAclPublicRW";
+			var key = "TestObjectAclPublicRW";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -285,7 +285,7 @@ namespace s3tests.Test
 		public void TestObjectAclAuthenticatedRead()
 		{
 			TestId = 12;
-			var key = "testObjectAclAuthenticatedRead";
+			var key = "TestObjectAclAuthenticatedRead";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -304,7 +304,7 @@ namespace s3tests.Test
 		public void TestObjectAclBucketOwnerRead()
 		{
 			TestId = 13;
-			var key = "testObjectAclBucketOwnerRead";
+			var key = "TestObjectAclBucketOwnerRead";
 			var mainClient = GetClient();
 			var altClient = GetAltClient();
 			var bucketName = CreateBucketWithAcl(mainClient, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
@@ -324,7 +324,7 @@ namespace s3tests.Test
 		public void TestBucketObjectWriterObjectOwnerFullControl()
 		{
 			TestId = 14;
-			var key = "testBucketObjectWriterObjectOwnerFullControl";
+			var key = "TestBucketObjectWriterObjectOwnerFullControl";
 			var mainClient = GetClient();
 			var altClient = GetAltClient();
 			var bucketName = CreateBucketWithAcl(mainClient, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
@@ -344,7 +344,7 @@ namespace s3tests.Test
 		public void TestBucketOwnerEnforcedObjectOwnerFullControl()
 		{
 			TestId = 15;
-			var key = "testBucketOwnerEnforcedObjectOwnerFullControl";
+			var key = "TestBucketOwnerEnforcedObjectOwnerFullControl";
 			var mainClient = GetClient();
 			var altClient = GetAltClient();
 			var bucketName = CreateBucketWithAcl(mainClient, ObjectOwnership.BucketOwnerPreferred, S3CannedACL.PublicReadWrite);
@@ -363,7 +363,7 @@ namespace s3tests.Test
 		public void TestObjectAclOwnerNotChange()
 		{
 			TestId = 16;
-			var key = "testObjectAclOwnerNotChange";
+			var key = "TestObjectAclOwnerNotChange";
 			var mainClient = GetClient();
 			var altClient = GetAltClient();
 			var bucketName = CreateBucketWithAcl(mainClient, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
@@ -388,7 +388,7 @@ namespace s3tests.Test
 		public void TestBucketAclChangeNotEffect()
 		{
 			TestId = 17;
-			var key = "testBucketAclChangeNotEffect";
+			var key = "TestBucketAclChangeNotEffect";
 			var client = GetClient();
 			var bucketName = CreateBucketWithAcl(client, ObjectOwnership.ObjectWriter, S3CannedACL.PublicReadWrite);
 
@@ -561,7 +561,7 @@ namespace s3tests.Test
 		public void TestBucketAclNoGrants()
 		{
 			TestId = 30;
-			var key = "testBucketAclNoGrants";
+			var key = "TestBucketAclNoGrants";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -576,7 +576,7 @@ namespace s3tests.Test
 
 			client.PutBucketACL(bucketName, accessControlPolicy: policy);
 
-			client.PutObject(bucketName, key, body: "A");
+			client.PutObject(bucketName, key, body: key);
 
 			var client2 = GetClient();
 			client2.GetBucketACL(bucketName);
@@ -614,7 +614,7 @@ namespace s3tests.Test
 		public void TestObjectAclMultiGrants()
 		{
 			TestId = 32;
-			var key = "testObjectAclMultiGrants";
+			var key = "TestObjectAclMultiGrants";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -636,7 +636,7 @@ namespace s3tests.Test
 		public void TestBucketAclRevokeAll()
 		{
 			TestId = 33;
-			var key = "testBucketAclRevokeAll";
+			var key = "TestBucketAclRevokeAll";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -655,7 +655,7 @@ namespace s3tests.Test
 		public void TestObjectAclRevokeAll()
 		{
 			TestId = 34;
-			var key = "testObjectAclRevokeAll";
+			var key = "TestObjectAclRevokeAll";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
@@ -674,7 +674,7 @@ namespace s3tests.Test
 		public void TestBucketAclRevokeAllId()
 		{
 			TestId = 35;
-			var key = "testBucketAclRevokeAllId";
+			var key = "TestBucketAclRevokeAllId";
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 

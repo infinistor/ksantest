@@ -319,7 +319,7 @@ namespace s3tests.Test
 			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testDeleteObjectsWithVersioningDeleteMarker";
+			var key = "TestDeleteObjectsWithVersioningDeleteMarker";
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 			client.PutObject(bucketName, key, body: key);
@@ -364,7 +364,7 @@ namespace s3tests.Test
 			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testVersioningMultiObjectDeleteWithMarkerCreate";
+			var key = "TestVersioningMultiObjectDeleteWithMarkerCreate";
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 			for (var i = 0; i < 10; i++)
@@ -383,7 +383,7 @@ namespace s3tests.Test
 			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testVersioningMultiObjectDeleteWithMarkerCreateObjects";
+			var key = "TestVersioningMultiObjectDeleteWithMarkerCreateObjects";
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 			for (var i = 0; i < 10; i++)
@@ -402,7 +402,7 @@ namespace s3tests.Test
 			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testDeleteObjectIfMatchGood";
+			var key = "TestDeleteObjectIfMatchGood";
 
 			var eTag = client.PutObject(bucketName, key, body: key).ETag;
 			client.DeleteObject(bucketName, key, ifMatch: eTag);
@@ -419,7 +419,7 @@ namespace s3tests.Test
 			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testDeleteObjectIfMatchFailed";
+			var key = "TestDeleteObjectIfMatchFailed";
 
 			client.PutObject(bucketName, key, body: key);
 
@@ -439,7 +439,7 @@ namespace s3tests.Test
 			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testDeleteObjectIfMatchAny";
+			var key = "TestDeleteObjectIfMatchAny";
 
 			client.PutObject(bucketName, key, body: key);
 			client.DeleteObject(bucketName, key, ifMatch: "*");
@@ -456,7 +456,7 @@ namespace s3tests.Test
 			TestId = 16;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testDeleteObjectIfMatchAndIfNoneMatch";
+			var key = "TestDeleteObjectIfMatchAndIfNoneMatch";
 
 			var eTag = client.PutObject(bucketName, key, body: key).ETag;
 			var e = Assert.Throws<AggregateException>(() => client.DeleteObject(bucketName, key, ifMatch: eTag,
@@ -476,7 +476,7 @@ namespace s3tests.Test
 			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testDeleteObjectIfMatchAndIfNoneMatchAny";
+			var key = "TestDeleteObjectIfMatchAndIfNoneMatchAny";
 
 			var eTag = client.PutObject(bucketName, key, body: key).ETag;
 			var e = Assert.Throws<AggregateException>(() => client.DeleteObject(bucketName, key, ifMatch: eTag,
@@ -556,7 +556,7 @@ namespace s3tests.Test
 			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testDeleteObjectsIfMatchAndIfNoneMatch";
+			var key = "TestDeleteObjectsIfMatchAndIfNoneMatch";
 
 			var eTag = client.PutObject(bucketName, key, body: key).ETag;
 			var objectList = new List<KeyVersion> { new() { Key = key } };
@@ -581,7 +581,7 @@ namespace s3tests.Test
 			TestId = 21;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testDeleteObjectsIfMatchAndIfNoneMatchAny";
+			var key = "TestDeleteObjectsIfMatchAndIfNoneMatchAny";
 
 			var eTag = client.PutObject(bucketName, key, body: key).ETag;
 			var objectList = new List<KeyVersion> { new() { Key = key } };

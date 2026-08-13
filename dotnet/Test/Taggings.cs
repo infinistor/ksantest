@@ -60,7 +60,7 @@ namespace s3tests.Test
 		public void TestGetObjTagging()
 		{
 			TestId = 2;
-			var Key = "testputtags";
+			var Key = "TestGetObjTagging";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
@@ -81,7 +81,7 @@ namespace s3tests.Test
 		public void TestGetObjHeadTagging()
 		{
 			TestId = 3;
-			var Key = "testputtags";
+			var Key = "TestGetObjHeadTagging";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 			var Count = 2;
@@ -104,7 +104,7 @@ namespace s3tests.Test
 		public void TestPutMaxTags()
 		{
 			TestId = 4;
-			var Key = "testputmaxtags";
+			var Key = "TestPutMaxTags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
@@ -125,7 +125,7 @@ namespace s3tests.Test
 		public void TestPutExcessTags()
 		{
 			TestId = 5;
-			var Key = "testputmaxtags";
+			var Key = "TestPutExcessTags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
@@ -147,7 +147,7 @@ namespace s3tests.Test
 		public void TestPutMaxSizeTags()
 		{
 			TestId = 6;
-			var Key = "testputmaxkeysize";
+			var Key = "TestPutMaxSizeTags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
@@ -168,7 +168,7 @@ namespace s3tests.Test
 		public void TestPutExcessKeyTags()
 		{
 			TestId = 7;
-			var Key = "testputexcesskeytags";
+			var Key = "TestPutExcessKeyTags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
@@ -190,7 +190,7 @@ namespace s3tests.Test
 		public void TestPutExcessValTags()
 		{
 			TestId = 8;
-			var Key = "testputexcesskeytags";
+			var Key = "TestPutExcessValTags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
@@ -212,7 +212,7 @@ namespace s3tests.Test
 		public void TestPutModifyTags()
 		{
 			TestId = 9;
-			var Key = "testputmodifytags";
+			var Key = "TestPutModifyTags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
@@ -254,7 +254,7 @@ namespace s3tests.Test
 		public void TestPutDeleteTags()
 		{
 			TestId = 10;
-			var Key = "testputmodifytags";
+			var Key = "TestPutDeleteTags";
 			var bucketName = SetupKeyWithRandomContent(Key);
 			var client = GetClient();
 
@@ -284,7 +284,7 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var ContentType = "text/plain";
-			var Key = "foo.txt";
+			var Key = "TestPostObjectTagsAuthenticatedRequest";
 
 			var InputTagSet = S3Utils.MakeSimpleTagset(2);
 			var XmlInputTagset = "<Tagging><TagSet><Tag><Key>0</Key><Value>0</Value></Tag><Tag><Key>1</Key><Value>1</Value></Tag></TagSet></Tagging>";
@@ -295,7 +295,7 @@ namespace s3tests.Test
 				{ "conditions", new JArray()
 					{
 						{ new JObject() { { "bucket", bucketName } } },
-						{ new JArray() { "starts-with", "$key", "foo" } },
+						{ new JArray() { "starts-with", "$key", "TestPostObjectTagsAuthenticatedRequest" } },
 						{ new JObject() { { "acl", "private" } } },
 						{ new JArray() { "starts-with", "$Content-Type", ContentType } },
 						{ new JArray() { "content-length-range", 0, 1024 } },
@@ -336,7 +336,7 @@ namespace s3tests.Test
 			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Key = "testtagobj1";
+			var Key = "TestPutObjWithTags";
 			var Data = S3Utils.RandomTextToLong(100);
 
 			var TagSet = new List<Tag>()
@@ -368,7 +368,7 @@ namespace s3tests.Test
 			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var Key = "obj";
+			var Key = "TestGetObjNonTagging";
 
 			client.PutObject(bucketName, Key, body: "", tagSet: []);
 		}

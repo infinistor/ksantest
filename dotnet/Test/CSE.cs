@@ -75,7 +75,7 @@ namespace s3tests.Test
 			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testobj";
+			var key = "TestCseEncryptionMethodHead";
 
 			var aes = new AES256();
 			var data = new string('A', 1000);
@@ -101,7 +101,7 @@ namespace s3tests.Test
 			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testobj";
+			var key = "TestCseEncryptionNonDecryption";
 
 			var aes = new AES256();
 			var data = new string('A', 1000);
@@ -127,7 +127,7 @@ namespace s3tests.Test
 			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testobj";
+			var key = "TestCseNonEncryptionDecryption";
 
 			var aes = new AES256();
 			var data = new string('A', 1000);
@@ -153,7 +153,7 @@ namespace s3tests.Test
 			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testobj";
+			var key = "TestCseEncryptionRangeRead";
 
 			var aes = new AES256();
 			var data = S3Utils.RandomTextToLong(1024 * 1024);
@@ -182,7 +182,7 @@ namespace s3tests.Test
 			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "multipart_enc";
+			var key = "TestCseEncryptionMultipartUpload";
 			var size = 50 * MainData.MB;
 			var contentType = "text/plain";
 
@@ -227,7 +227,7 @@ namespace s3tests.Test
 			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo";
+			var key = "TestCseGetObjectMany";
 
 			var aes = new AES256();
 			var data = S3Utils.RandomTextToLong(15 * 1024 * 1024);
@@ -247,7 +247,7 @@ namespace s3tests.Test
 			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo";
+			var key = "TestCseRangeObjectMany";
 
 			var aes = new AES256();
 			var data = S3Utils.RandomTextToLong(15 * 1024 * 1024);

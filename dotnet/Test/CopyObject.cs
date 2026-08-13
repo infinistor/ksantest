@@ -32,8 +32,8 @@ namespace s3tests.Test
 		public void TestObjectCopyZeroSize()
 		{
 			TestId = 1;
-			var key = "foo123bar";
-			var newKey = "bar321foo";
+			var key = "TestObjectCopyZeroSize";
+			var newKey = "TestObjectCopyZeroSizeDestination";
 			var bucketName = SetupObjects([key]);
 			var client = GetClient();
 
@@ -55,8 +55,8 @@ namespace s3tests.Test
 			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo123bar";
-			var newKey = "bar321foo";
+			var key = "TestObjectCopySameBucket";
+			var newKey = "TestObjectCopySameBucketDestination";
 
 			client.PutObject(bucketName, key, body: "foo");
 
@@ -77,8 +77,8 @@ namespace s3tests.Test
 			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo123bar";
-			var newKey = "bar321foo";
+			var key = "TestObjectCopyVerifyContentType";
+			var newKey = "TestObjectCopyVerifyContentTypeDestination";
 			var contentType = "text/bla";
 
 			client.PutObject(bucketName, key, body: "foo", contentType: contentType);
@@ -102,7 +102,7 @@ namespace s3tests.Test
 			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo123bar";
+			var key = "TestObjectCopyToItself";
 			var contentType = "text/bla";
 
 			client.PutObject(bucketName, key, body: "foo", contentType: contentType);
@@ -123,8 +123,8 @@ namespace s3tests.Test
 			var bucketName1 = GetNewBucket();
 			var bucketName2 = GetNewBucket();
 
-			var key1 = "foo123bar";
-			var key2 = "bar321foo";
+			var key1 = "TestObjectCopyDiffBucket-000";
+			var key2 = "TestObjectCopyDiffBucket-001";
 
 			var client = GetClient();
 			client.PutObject(bucketName1, key1, body: "foo");
@@ -153,8 +153,8 @@ namespace s3tests.Test
 			client.PutBucket(bucketName1);
 			altClient.PutBucket(bucketName2);
 
-			var key1 = "foo123bar";
-			var key2 = "bar321foo";
+			var key1 = "TestObjectCopyNotOwnedBucket-000";
+			var key2 = "TestObjectCopyNotOwnedBucket-001";
 
 			client.PutObject(bucketName1, key1, body: "foo");
 
@@ -175,8 +175,8 @@ namespace s3tests.Test
 			var altClient = GetAltClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 
-			var key1 = "foo123bar";
-			var key2 = "bar321foo";
+			var key1 = "TestObjectCopyNotOwnedObjectBucket-000";
+			var key2 = "TestObjectCopyNotOwnedObjectBucket-001";
 
 			client.PutObject(bucketName, key1, body: "foo");
 
@@ -212,8 +212,8 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
 			var altClient = GetAltClient();
-			var key1 = "foo123bar";
-			var key2 = "bar321foo";
+			var key1 = "TestObjectCopyCannedAcl-000";
+			var key2 = "TestObjectCopyCannedAcl-001";
 
 			var response = client.PutObject(bucketName, key1, body: "foo");
 			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
@@ -247,8 +247,8 @@ namespace s3tests.Test
 				var client = GetClient();
 				var contentType = "audio/ogg";
 
-				var key1 = "foo123bar";
-				var key2 = "bar321foo";
+				var key1 = "TestObjectCopyRetainingMetadata-000";
+				var key2 = "TestObjectCopyRetainingMetadata-001";
 
 				var metaData = new List<KeyValuePair<string, string>>()
 				{
@@ -280,8 +280,8 @@ namespace s3tests.Test
 				var client = GetClient();
 				var contentType = "audio/ogg";
 
-				var key1 = "foo123bar";
-				var key2 = "bar321foo";
+				var key1 = "TestObjectCopyReplacingMetadata-000";
+				var key2 = "TestObjectCopyReplacingMetadata-001";
 
 				var metaData = new List<KeyValuePair<string, string>>()
 				{
@@ -348,9 +348,9 @@ namespace s3tests.Test
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 			var size = 1 * 5;
 			var data = S3Utils.RandomTextToLong(size);
-			var key1 = "foo123bar";
-			var key2 = "bar321foo";
-			var key3 = "bar321foo2";
+			var key1 = "TestObjectCopyVersioningBucket-000";
+			var key2 = "TestObjectCopyVersioningBucket-001";
+			var key3 = "TestObjectCopyVersioningBucket-002";
 			client.PutObject(bucketName, key1, body: data);
 
 			var response = client.GetObject(bucketName, key1);
@@ -371,7 +371,7 @@ namespace s3tests.Test
 
 			var bucketName2 = GetNewBucket();
 			CheckConfigureVersioningRetry(bucketName2, VersionStatus.Enabled);
-			var key4 = "bar321foo3";
+			var key4 = "TestObjectCopyVersioningBucket-003";
 			client.CopyObject(bucketName, key1, bucketName2, key4, versionId: versionId);
 			response = client.GetObject(bucketName2, key4);
 			body = S3Utils.GetBody(response);
@@ -380,14 +380,14 @@ namespace s3tests.Test
 
 			var bucketName3 = GetNewBucket();
 			CheckConfigureVersioningRetry(bucketName3, VersionStatus.Enabled);
-			var key5 = "bar321foo4";
+			var key5 = "TestObjectCopyVersioningBucket-004";
 			client.CopyObject(bucketName, key1, bucketName3, key5, versionId: versionId);
 			response = client.GetObject(bucketName3, key5);
 			body = S3Utils.GetBody(response);
 			Assert.Equal(data, body);
 			Assert.Equal(size, response.ContentLength);
 
-			var key6 = "foo123bar2";
+			var key6 = "TestObjectCopyVersioningBucket-005";
 			client.CopyObject(bucketName3, key5, bucketName, key6);
 			response = client.GetObject(bucketName, key6);
 			body = S3Utils.GetBody(response);
@@ -406,12 +406,12 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
-			var srcKey = "foo?bar";
+			var srcKey = "TestObjectCopyVersioningUrlEncoding?Source";
 
 			client.PutObject(bucketName, srcKey);
 			var response = client.GetObject(bucketName, srcKey);
 
-			var dstKey = "bar&foo";
+			var dstKey = "TestObjectCopyVersioningUrlEncoding&Destination";
 			client.CopyObject(bucketName, srcKey, bucketName, dstKey, versionId: response.VersionId);
 			client.GetObject(bucketName, dstKey);
 		}
@@ -428,7 +428,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket(client);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 			var size = 50 * MainData.MB;
-			var key1 = "srcmultipart";
+			var key1 = "TestObjectCopyVersioningMultipartUpload-000";
 			var key1MetaData = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
 			var contentType = "text/bla";
 
@@ -439,7 +439,7 @@ namespace s3tests.Test
 			var key1Size = response.ContentLength;
 			var versionId = response.VersionId;
 
-			var key2 = "dstmultipart";
+			var key2 = "TestObjectCopyVersioningMultipartUpload-001";
 			client.CopyObject(bucketName, key1, bucketName, key2, versionId: versionId);
 			response = client.GetObject(bucketName, key2);
 			var versionId2 = response.VersionId;
@@ -450,7 +450,7 @@ namespace s3tests.Test
 			Assert.Equal(contentType, response.Headers.ContentType);
 
 
-			var key3 = "dstmultipart2";
+			var key3 = "TestObjectCopyVersioningMultipartUpload-002";
 			client.CopyObject(bucketName, key2, bucketName, key3, versionId: versionId2);
 			response = client.GetObject(bucketName, key3);
 			body = S3Utils.GetBody(response);
@@ -461,7 +461,7 @@ namespace s3tests.Test
 
 			var bucketName2 = GetNewBucket();
 			CheckConfigureVersioningRetry(bucketName2, VersionStatus.Enabled);
-			var key4 = "dstmultipart3";
+			var key4 = "TestObjectCopyVersioningMultipartUpload-003";
 			client.CopyObject(bucketName, key1, bucketName2, key4, versionId: versionId);
 			response = client.GetObject(bucketName2, key4);
 			body = S3Utils.GetBody(response);
@@ -472,7 +472,7 @@ namespace s3tests.Test
 
 			var bucketName3 = GetNewBucket();
 			CheckConfigureVersioningRetry(bucketName3, VersionStatus.Enabled);
-			var key5 = "dstmultipart4";
+			var key5 = "TestObjectCopyVersioningMultipartUpload-004";
 			client.CopyObject(bucketName, key1, bucketName3, key5, versionId: versionId);
 			response = client.GetObject(bucketName3, key5);
 			body = S3Utils.GetBody(response);
@@ -481,7 +481,7 @@ namespace s3tests.Test
 			Assert.Equal(key1MetaData, GetMetaData(response.Metadata));
 			Assert.Equal(contentType, response.Headers.ContentType);
 
-			var key6 = "dstmultipart5";
+			var key6 = "TestObjectCopyVersioningMultipartUpload-005";
 			client.CopyObject(bucketName3, key5, bucketName, key6);
 			response = client.GetObject(bucketName, key6);
 			body = S3Utils.GetBody(response);
@@ -822,7 +822,7 @@ namespace s3tests.Test
 			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo123bar";
+			var key = "TestObjectCopyToItselfWithMetadata";
 
 			client.PutObject(bucketName, key, body: "foo");
 
@@ -843,7 +843,7 @@ namespace s3tests.Test
 			TestId = 57;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo123bar";
+			var key = "TestObjectVersioningCopyToItselfWithMetadata";
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
@@ -866,7 +866,7 @@ namespace s3tests.Test
 			TestId = 58;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo123bar";
+			var key = "TestObjectCopyToItselfWithMetadataOverwrite";
 			var metaData = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
 
 			client.PutObject(bucketName, key, body: "foo", metadataList: metaData);
@@ -888,7 +888,7 @@ namespace s3tests.Test
 			TestId = 59;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "foo123bar";
+			var key = "TestObjectVersioningCopyToItselfWithMetadataOverwrite";
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
@@ -1346,8 +1346,8 @@ namespace s3tests.Test
 			TestId = 62;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var sourceKey = "testCopyObjectMetadataAndTagsSource";
-			var targetKey = "testCopyObjectMetadataAndTagsTarget";
+			var sourceKey = "TestCopyObjectMetadataAndTagsSource";
+			var targetKey = "TestCopyObjectMetadataAndTagsTarget";
 
 			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
 			var tagSet = new List<Tag>() { new() { Key = "tag1", Value = "value1" } };
@@ -1380,8 +1380,8 @@ namespace s3tests.Test
 			var client = GetClientHttps();
 			var bucketName = GetNewBucket(client);
 			UnblockSseC(bucketName);
-			var sourceKey = "testCopyRevokeSseAlgorithmSource";
-			var targetKey = "testCopyRevokeSseAlgorithmTarget";
+			var sourceKey = "TestCopyRevokeSseAlgorithmSource";
+			var targetKey = "TestCopyRevokeSseAlgorithmTarget";
 			var data = S3Utils.RandomTextToLong(1024);
 
 			var sseC = new SSECustomerKey()

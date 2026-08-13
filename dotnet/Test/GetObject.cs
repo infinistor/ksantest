@@ -169,7 +169,7 @@ namespace s3tests.Test
 			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectIfMatchWithIfUnmodifiedSince";
+			var key = "TestGetObjectIfMatchWithIfUnmodifiedSince";
 
 			var eTag = client.PutObject(bucketName, key, body: "bar").ETag;
 			var response = client.GetObject(bucketName, key, ifMatch: eTag, ifUnmodifiedSince: "Sat, 29 Oct 1994 19:43:31 GMT");
@@ -184,7 +184,7 @@ namespace s3tests.Test
 			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectIfNoneMatchWithIfModifiedSince";
+			var key = "TestGetObjectIfNoneMatchWithIfModifiedSince";
 
 			var eTag = client.PutObject(bucketName, key, body: "bar").ETag;
 			var e = Assert.Throws<AggregateException>(() => client.GetObject(bucketName, key, ifNoneMatch: eTag, ifModifiedSince: "Sat, 29 Oct 1994 19:43:31 GMT"));
@@ -199,7 +199,7 @@ namespace s3tests.Test
 			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectIfMatchAndIfNoneMatch";
+			var key = "TestGetObjectIfMatchAndIfNoneMatch";
 
 			var eTag = client.PutObject(bucketName, key, body: "bar").ETag;
 			var e = Assert.Throws<AggregateException>(() => client.GetObject(bucketName, key, ifMatch: eTag, ifNoneMatch: eTag));
@@ -214,7 +214,7 @@ namespace s3tests.Test
 			TestId = 13;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectIfMatchAndIfNoneMatchAny";
+			var key = "TestGetObjectIfMatchAndIfNoneMatchAny";
 
 			var eTag = client.PutObject(bucketName, key, body: "bar").ETag;
 			var e = Assert.Throws<AggregateException>(() => client.GetObject(bucketName, key, ifMatch: eTag, ifNoneMatch: "*"));
@@ -229,7 +229,7 @@ namespace s3tests.Test
 			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testHeadObjectIfMatchGood";
+			var key = "TestHeadObjectIfMatchGood";
 
 			var eTag = client.PutObject(bucketName, key, body: "bar").ETag;
 			var response = client.HeadObject(bucketName, key, ifMatch: eTag);
@@ -244,7 +244,7 @@ namespace s3tests.Test
 			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testHeadObjectIfMatchFailed";
+			var key = "TestHeadObjectIfMatchFailed";
 
 			client.PutObject(bucketName, key, body: "bar");
 			var e = Assert.Throws<AggregateException>(() => client.HeadObject(bucketName, key, ifMatch: "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
@@ -259,7 +259,7 @@ namespace s3tests.Test
 			TestId = 16;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testHeadObjectIfNoneMatchGood";
+			var key = "TestHeadObjectIfNoneMatchGood";
 
 			var eTag = client.PutObject(bucketName, key, body: "bar").ETag;
 			var e = Assert.Throws<AggregateException>(() => client.HeadObject(bucketName, key, ifNoneMatch: eTag));
@@ -274,7 +274,7 @@ namespace s3tests.Test
 			TestId = 17;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testHeadObjectIfNoneMatchFailed";
+			var key = "TestHeadObjectIfNoneMatchFailed";
 
 			client.PutObject(bucketName, key, body: "bar");
 			var response = client.HeadObject(bucketName, key, ifNoneMatch: "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -289,7 +289,7 @@ namespace s3tests.Test
 			TestId = 18;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testHeadObjectIfModifiedSinceGood";
+			var key = "TestHeadObjectIfModifiedSinceGood";
 
 			client.PutObject(bucketName, key, body: "bar");
 			var response = client.HeadObject(bucketName, key, ifModifiedSince: "Sat, 29 Oct 1994 19:43:31 GMT");
@@ -304,7 +304,7 @@ namespace s3tests.Test
 			TestId = 19;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testHeadObjectIfModifiedSinceFailed";
+			var key = "TestHeadObjectIfModifiedSinceFailed";
 
 			client.PutObject(bucketName, key, body: "bar");
 			var response = client.HeadObject(bucketName, key);
@@ -323,7 +323,7 @@ namespace s3tests.Test
 			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testHeadObjectIfUnmodifiedSinceGood";
+			var key = "TestHeadObjectIfUnmodifiedSinceGood";
 
 			client.PutObject(bucketName, key, body: "bar");
 			var e = Assert.Throws<AggregateException>(() => client.HeadObject(bucketName, key, ifUnmodifiedSince: "Sat, 29 Oct 1994 19:43:31 GMT"));
@@ -338,7 +338,7 @@ namespace s3tests.Test
 			TestId = 21;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testHeadObjectIfUnmodifiedSinceFailed";
+			var key = "TestHeadObjectIfUnmodifiedSinceFailed";
 
 			client.PutObject(bucketName, key, body: "bar");
 			var response = client.HeadObject(bucketName, key, ifUnmodifiedSince: "Fri, 29 Oct 2100 19:43:31 GMT");
@@ -351,7 +351,7 @@ namespace s3tests.Test
 		public void TestObjectResponseHeaders()
 		{
 			TestId = 30;
-			var key = "testObjectResponseHeaders";
+			var key = "TestObjectResponseHeaders";
 			var client = GetClient();
 			var bucketName = SetupObjects(new List<string> { key }, body: key);
 
@@ -378,7 +378,7 @@ namespace s3tests.Test
 			TestId = 31;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testMultipartObjectRange";
+			var key = "TestMultipartObjectRange";
 
 			var uploadData = MultipartUpload(client, bucketName, key, 5 * MainData.MB, 5 * MainData.MB);
 			var response = client.GetObject(bucketName, key, partNumber: 1);
@@ -391,7 +391,7 @@ namespace s3tests.Test
 		public void TestGetObjectIgnore()
 		{
 			TestId = 32;
-			var key = "testObjectIgnore";
+			var key = "TestGetObjectIgnore";
 			var client = GetClient();
 			var bucketName = SetupObjects(new List<string> { key }, body: key);
 
@@ -407,7 +407,7 @@ namespace s3tests.Test
 			TestId = 33;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAfterDelete";
+			var key = "TestGetObjectAfterDelete";
 			const string body = "testContent";
 
 			client.PutObject(bucketName, key, body: body);
@@ -430,7 +430,7 @@ namespace s3tests.Test
 			TestId = 34;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAfterDeleteVersioning";
+			var key = "TestGetObjectAfterDeleteVersioning";
 			const string body = "testContent";
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
@@ -455,7 +455,7 @@ namespace s3tests.Test
 			TestId = 35;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectDeleteMarker";
+			var key = "TestGetObjectDeleteMarker";
 			const string body = "testContent";
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);

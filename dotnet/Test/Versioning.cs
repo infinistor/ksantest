@@ -51,7 +51,7 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			client.PutBucketVersioning(bucketName, status: VersionStatus.Enabled);
-			var key = "testobj";
+			var key = "TestVersioningObjCreateReadRemove";
 			var numVersions = 5;
 
 			TestCreateRemoveVersions(client, bucketName, key, numVersions, 4, -1);
@@ -70,7 +70,7 @@ namespace s3tests.Test
 
 			var client = GetClient();
 			client.PutBucketVersioning(bucketName, status: VersionStatus.Enabled);
-			var key = "testobj";
+			var key = "TestVersioningObjCreateReadRemoveHead";
 			var numVersions = 5;
 
 			List<string> versionIds = null;
@@ -111,7 +111,7 @@ namespace s3tests.Test
 			CheckVersioning(bucketName, VersionStatus.Off);
 
 			var client = GetClient();
-			var key = "testobjfoo";
+			var key = "TestVersioningObjPlainNullVersionRemoval";
 			var content = "fooz";
 			client.PutObject(bucketName, key, body: content);
 
@@ -139,7 +139,7 @@ namespace s3tests.Test
 			CheckVersioning(bucketName, VersionStatus.Off);
 
 			var client = GetClient();
-			var key = "testobjfoo";
+			var key = "TestVersioningObjPlainNullVersionOverwrite";
 			var content = "fooz";
 			client.PutObject(bucketName, key, body: content);
 
@@ -180,7 +180,7 @@ namespace s3tests.Test
 			CheckVersioning(bucketName, VersionStatus.Off);
 
 			var client = GetClient();
-			var key = "testobjfoo";
+			var key = "TestVersioningObjPlainNullVersionOverwriteSuspended";
 			var content = "fooz";
 			client.PutObject(bucketName, key, body: content);
 
@@ -215,7 +215,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket(client);
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
-			var key = "testobj";
+			var key = "TestVersioningObjSuspendVersions";
 			var numVersions = 5;
 
 			List<string> versionIds = null;
@@ -258,7 +258,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "testobj";
+			var key = "TestVersioningObjCreateVersionsRemoveAll";
 			var numVersions = 10;
 
 			List<string> versionIds = null;
@@ -315,7 +315,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "testobj";
+			var key = "TestVersioningObjCreateOverwriteMultipart";
 			var numVersions = 3;
 			var versionIds = new List<string>();
 			var contents = new List<string>();
@@ -349,8 +349,8 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "testobj";
-			var key2 = "testobj-1";
+			var key = "TestVersioningObjListMarker";
+			var key2 = "TestVersioningObjListMarker-001";
 			var numVersions = 5;
 
 
@@ -414,7 +414,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "testobj";
+			var key = "TestVersioningCopyObjVersion";
 			var numVersions = 3;
 
 
@@ -442,7 +442,7 @@ namespace s3tests.Test
 				Assert.Equal(contents[i], content);
 			}
 
-			var newKeyName2 = "new_key";
+			var newKeyName2 = "TestVersioningCopyObjVersionDestination-001";
 			client.CopyObject(bucketName, key, anotherBucketName, newKeyName2);
 
 			var response = client.GetObject(anotherBucketName, newKeyName2);
@@ -463,7 +463,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "key";
+			var key = "TestVersioningMultiObjectDelete";
 			var numVersions = 2;
 
 			var versionIds = new List<string>();
@@ -500,7 +500,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "key";
+			var key = "TestVersioningMultiObjectDeleteWithMarker";
 			var numVersions = 2;
 
 			var versionIds = new List<string>();
@@ -551,7 +551,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "key";
+			var key = "TestVersioningMultiObjectDeleteWithMarkerCreate";
 
 			var delResponse = client.DeleteObject(bucketName, key);
 			var deleteMarkerVersionId = delResponse.VersionId;
@@ -577,7 +577,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "xyz";
+			var key = "TestVersionedObjectAcl";
 			var numVersions = 3;
 
 			var versionIds = new List<string>();
@@ -625,7 +625,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "xyz";
+			var key = "TestVersionedObjectAclNoVersionSpecified";
 			var numVersions = 3;
 
 			var versionIds = new List<string>();
@@ -706,7 +706,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var key = "myobj";
+			var key = "TestVersionedConcurrentObjectCreateAndRemove";
 			var numVersions = 3;
 
 			var allTasks = new List<Thread>();
@@ -739,7 +739,7 @@ namespace s3tests.Test
 			TestId = 20;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "bar";
+			var key = "TestVersioningBucketAtomicUploadReturnVersionId";
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 			var putResponse = client.PutObject(bucketName, key);
@@ -775,7 +775,7 @@ namespace s3tests.Test
 
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "bar";
+			var key = "TestVersioningBucketMultipartUploadReturnVersionId";
 			var metadata = new List<KeyValuePair<string, string>>() { new("foo", "baz") };
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
@@ -819,7 +819,7 @@ namespace s3tests.Test
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var keyName = "foo";
+			var keyName = "TestVersioningGetObjectHead";
 			var versionList = new List<string>();
 
 			for (int i = 1; i <= 5; i++)
@@ -848,7 +848,7 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket(client);
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
-			var keyName = "foo";
+			var keyName = "TestVersioningLatest";
 			var versionStack = new Stack<string>();
 
 			for (int i = 1; i <= 5; i++)
@@ -963,8 +963,8 @@ namespace s3tests.Test
 			TestId = 25;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var sourceKey = "source";
-			var targetKey = "target";
+			var sourceKey = "TestVersioningCopyObjectSource";
+			var targetKey = "TestVersioningCopyObjectTarget";
 			var content = "content-version1";
 			var expectedVersions = new List<string>();
 
@@ -1268,9 +1268,9 @@ namespace s3tests.Test
 			TestId = 30;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var keyOff = "TestVersioningListVersionsOff";
-			var keyEnabled = "TestVersioningListVersionsEnabled";
-			var keySuspended = "TestVersioningListVersionsSuspended";
+			var keyOff = "TestVersioningListVersionsOffEnabledSuspendedDifferentKeysOff";
+			var keyEnabled = "TestVersioningListVersionsOffEnabledSuspendedDifferentKeysEnabled";
+			var keySuspended = "TestVersioningListVersionsOffEnabledSuspendedDifferentKeysSuspended";
 			var contentOff = "content-off";
 			var contentEnabled = "content-enabled";
 			var contentSuspended = "content-suspended";

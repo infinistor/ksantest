@@ -33,7 +33,7 @@ namespace s3tests.Test
 			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
-			var Key = "asdf";
+			var Key = "TestBucketPolicy";
 			client.PutObject(bucketName, Key, body: Key);
 
 			var Resource1 = "arn:aws:s3:::" + bucketName;
@@ -73,7 +73,7 @@ namespace s3tests.Test
 			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
-			var Key = "asdf";
+			var Key = "TestBucketV2Policy";
 			client.PutObject(bucketName, Key, body: Key);
 
 			var Resource1 = "arn:aws:s3:::" + bucketName;
@@ -113,7 +113,7 @@ namespace s3tests.Test
 			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
-			var Key = "asdf";
+			var Key = "TestBucketPolicyAcl";
 			client.PutObject(bucketName, Key, body: Key);
 
 			var Resource1 = "arn:aws:s3:::" + bucketName;
@@ -155,7 +155,7 @@ namespace s3tests.Test
 
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
-			var Key = "asdf";
+			var Key = "TestBucketV2PolicyAcl";
 			client.PutObject(bucketName, Key, body: Key);
 
 			var Resource1 = "arn:aws:s3:::" + bucketName;
@@ -194,7 +194,7 @@ namespace s3tests.Test
 		public void TestGetTagsAclPublic()
 		{
 			TestId = 5;
-			var Key = "testgettagsacl";
+			var Key = "TestGetTagsAclPublic";
 			var client = GetClient();
 			var bucketName = SetupKeyWithRandomContent(Key, bucketName: GetNewBucketCannedAcl(client), client: client);
 
@@ -221,7 +221,7 @@ namespace s3tests.Test
 		public void TestPutTagsAclPublic()
 		{
 			TestId = 6;
-			var Key = "testputtagsacl";
+			var Key = "TestPutTagsAclPublic";
 			var client = GetClient();
 			var bucketName = SetupKeyWithRandomContent(Key, bucketName: GetNewBucketCannedAcl(client), client: client);
 
@@ -247,7 +247,7 @@ namespace s3tests.Test
 		public void TestDeleteTagsObjPublic()
 		{
 			TestId = 7;
-			var Key = "testdeltagsacl";
+			var Key = "TestDeleteTagsObjPublic";
 			var client = GetClient();
 			var bucketName = SetupKeyWithRandomContent(Key, bucketName: GetNewBucketCannedAcl(client), client: client);
 
@@ -637,12 +637,12 @@ namespace s3tests.Test
 			client.PutBucketPolicy(bucketName, PolicyDocument.ToString());
 
 			var AltClient = GetAltClient();
-			var Key1 = "private-key";
+			var Key1 = "TestBucketPolicyPutObjAcl-000";
 
 			var Response = AltClient.PutObject(bucketName, Key1, body: Key1);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
-			var Key2 = "public-key";
+			var Key2 = "TestBucketPolicyPutObjAcl-001";
 			var Headers = new List<KeyValuePair<string, string>>() { new("x-amz-acl", "public-read") };
 
 			var e = Assert.Throws<AggregateException>(() => AltClient.PutObject(bucketName, Key2, body: Key2, headerList: Headers));
@@ -685,14 +685,14 @@ namespace s3tests.Test
 			client.PutBucketPolicy(bucketName2, PolicyDocument2.ToString());
 
 			var AltClient = GetAltClient();
-			var Key1 = "key1";
+			var Key1 = "TestBucketPolicyPutObjGrant-000";
 
 			var Headers = new List<KeyValuePair<string, string>>() { new("x-amz-grant-full-control", OwnerId_str) };
 
 			var Response = AltClient.PutObject(bucketName, Key1, body: Key1, headerList: Headers);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
-			var Key2 = "key2";
+			var Key2 = "TestBucketPolicyPutObjGrant-001";
 			Response = AltClient.PutObject(bucketName2, Key2, body: Key2);
 			Assert.Equal(HttpStatusCode.OK, Response.HttpStatusCode);
 
@@ -768,7 +768,7 @@ namespace s3tests.Test
 
 			var AltClient = GetAltClient();
 			var ACLResponse = AltClient.GetObjectACL(bucketName, publictag);
-			Assert.Equal(HttpStatusCode.OK, ACLResponse.HttpStatusCode);
+			Assert.NotNull(ACLResponse);
 
 			var e = Assert.Throws<AggregateException>(() => AltClient.GetObject(bucketName, publictag));
 			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));

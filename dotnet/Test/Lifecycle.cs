@@ -478,7 +478,7 @@ namespace s3tests.Test
 			client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules });
 
 			var key = "test1/a";
-			client.PutObject(bucketName, key, body: "test");
+			client.PutObject(bucketName, key, body: key);
 
 			var response = client.GetObjectMetadata(bucketName, key);
 			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);

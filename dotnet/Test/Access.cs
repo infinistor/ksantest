@@ -68,7 +68,7 @@ namespace s3tests.Test
 		public void TestBlockPublicAcls()
 		{
 			TestId = 2;
-			var key = "testBlockPublicAcls";
+			var key = "TestBlockPublicAcls";
 			var client = GetClient();
 			var bucketName = GetNewBucket(client, ObjectOwnership.ObjectWriter);
 
@@ -135,9 +135,10 @@ namespace s3tests.Test
 			client.PutBucketACL(bucketName, acl: S3CannedACL.PublicRead);
 			altClient.ListObjects(bucketName);
 
-			client.PutObject(bucketName, "key1", body: "abcde", acl: S3CannedACL.PublicRead);
-			var response = altClient.GetObject(bucketName, "key1");
-			Assert.Equal("abcde", S3Utils.GetBody(response));
+			var key = nameof(TestIgnorePublicAcls);
+			client.PutObject(bucketName, key, body: key, acl: S3CannedACL.PublicRead);
+			var response = altClient.GetObject(bucketName, key);
+			Assert.Equal(key, S3Utils.GetBody(response));
 
 			PublicAccessBlockConfiguration access = new()
 			{
@@ -152,7 +153,7 @@ namespace s3tests.Test
 
 			var unauthenticatedClient = GetUnauthenticatedClient();
 			Assert.Throws<AggregateException>(() => unauthenticatedClient.ListObjects(bucketName));
-			Assert.Throws<AggregateException>(() => unauthenticatedClient.GetObject(bucketName, "key1"));
+			Assert.Throws<AggregateException>(() => unauthenticatedClient.GetObject(bucketName, key));
 		}
 
 		[Fact]

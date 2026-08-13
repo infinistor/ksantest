@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace s3tests.Test
@@ -34,7 +35,7 @@ namespace s3tests.Test
 			TestId = 1;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesBasic";
+			var key = "TestGetObjectAttributesBasic";
 
 			client.PutObject(bucketName, key, body: key);
 
@@ -61,7 +62,7 @@ namespace s3tests.Test
 			TestId = 2;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesSpecificAttributes";
+			var key = "TestGetObjectAttributesSpecificAttributes";
 
 			client.PutObject(bucketName, key, body: key);
 
@@ -86,7 +87,7 @@ namespace s3tests.Test
 			TestId = 3;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesMultipart";
+			var key = "TestGetObjectAttributesMultipart";
 			var size = 10 * MainData.MB;
 
 			var uploadData = S3Utils.SetupMultipartUpload(client, bucketName, key, size);
@@ -119,7 +120,7 @@ namespace s3tests.Test
 			TestId = 4;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesWithChecksum";
+			var key = "TestGetObjectAttributesWithChecksum";
 			var checksumAlgorithm = ChecksumAlgorithm.SHA256;
 
 			client.PutObject(bucketName, key, body: key, checksumAlgorithm: checksumAlgorithm);
@@ -141,7 +142,7 @@ namespace s3tests.Test
 			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesNonExistentObject";
+			var key = "TestGetObjectAttributesNonExistentObject";
 
 			var e = Assert.Throws<AggregateException>(() => client.GetObjectAttributes(bucketName, key,
 				[ObjectAttributes.ObjectSize]));
@@ -160,7 +161,7 @@ namespace s3tests.Test
 			TestId = 6;
 			var client = GetClient();
 			var bucketName = "non-existent-bucket-" + S3Utils.RandomText(10).ToLowerInvariant();
-			var key = "testGetObjectAttributesNonExistentBucket";
+			var key = "TestGetObjectAttributesNonExistentBucket";
 
 			var e = Assert.Throws<AggregateException>(() => client.GetObjectAttributes(bucketName, key,
 				[ObjectAttributes.ObjectSize]));
@@ -179,7 +180,7 @@ namespace s3tests.Test
 			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesNoAttributes";
+			var key = "TestGetObjectAttributesNoAttributes";
 
 			client.PutObject(bucketName, key, body: key);
 
@@ -199,7 +200,7 @@ namespace s3tests.Test
 			TestId = 8;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesWithVersionId";
+			var key = "TestGetObjectAttributesWithVersionId";
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
@@ -235,7 +236,7 @@ namespace s3tests.Test
 			TestId = 9;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesInvalidVersionId";
+			var key = "TestGetObjectAttributesInvalidVersionId";
 
 			client.PutObject(bucketName, key, body: key);
 
@@ -256,7 +257,7 @@ namespace s3tests.Test
 			TestId = 10;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesLargeMultipart";
+			var key = "TestGetObjectAttributesLargeMultipart";
 			var size = 100 * MainData.MB;
 			var partSize = 5 * MainData.MB;
 
@@ -297,7 +298,7 @@ namespace s3tests.Test
 			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesWithMetadata";
+			var key = "TestGetObjectAttributesWithMetadata";
 			var metadata = new List<KeyValuePair<string, string>>
 			{
 				new("custom-key1", "custom-value1"),
@@ -329,7 +330,7 @@ namespace s3tests.Test
 			TestId = 12;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesWithSSES3";
+			var key = "TestGetObjectAttributesWithSSES3";
 
 			client.PutObject(bucketName, key, body: key, sseKey: ServerSideEncryptionMethod.AES256);
 
@@ -351,14 +352,13 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Async")]
 		[Trait(MainData.Explanation, "비동기 GetObjectAttributes")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestGetObjectAttributesAsync()
+		public async Task TestGetObjectAttributesAsync()
 		{
 			TestId = 13;
 			var client = GetClient();
-			var asyncClient = GetClient(RequestChecksumCalculation.WHEN_REQUIRED,
-				ResponseChecksumValidation.WHEN_REQUIRED);
+			var asyncClient = GetClient(RequestChecksumCalculation.WHEN_REQUIRED, ResponseChecksumValidation.WHEN_REQUIRED);
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesAsync";
+			var key = "TestGetObjectAttributesAsync";
 
 			client.PutObject(bucketName, key, body: key);
 
@@ -368,7 +368,7 @@ namespace s3tests.Test
 				Key = key,
 				ObjectAttributes = [ObjectAttributes.ObjectSize, ObjectAttributes.ETag]
 			};
-			var response = asyncClient.Client.GetObjectAttributesAsync(request).GetAwaiter().GetResult();
+			var response = await asyncClient.Client.GetObjectAttributesAsync(request);
 
 			Assert.NotNull(response);
 			Assert.Equal(key.Length, response.ObjectSize);
@@ -380,13 +380,13 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "비동기 GetObjectAttributes 에러")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestGetObjectAttributesAsyncError()
+		public async Task TestGetObjectAttributesAsyncError()
 		{
 			TestId = 14;
 			var asyncClient = GetClient(RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
 			var bucketName = GetNewBucketName(false);
-			var key = "testGetObjectAttributesAsyncError";
+			var key = "TestGetObjectAttributesAsyncError";
 
 			var request = new GetObjectAttributesRequest
 			{
@@ -395,8 +395,8 @@ namespace s3tests.Test
 				ObjectAttributes = [ObjectAttributes.ObjectSize]
 			};
 
-			var e = Assert.Throws<AmazonS3Exception>(() =>
-				asyncClient.Client.GetObjectAttributesAsync(request).GetAwaiter().GetResult());
+			var e = await Assert.ThrowsAsync<AmazonS3Exception>(() =>
+				asyncClient.Client.GetObjectAttributesAsync(request));
 
 			Assert.Equal(HttpStatusCode.NotFound, e.StatusCode);
 			Assert.Equal(MainData.NO_SUCH_BUCKET, e.ErrorCode);
@@ -412,7 +412,7 @@ namespace s3tests.Test
 			TestId = 15;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
-			var key = "testGetObjectAttributesAllAttributes";
+			var key = "TestGetObjectAttributesAllAttributes";
 			var size = 10 * MainData.MB;
 			var checksumType = ChecksumType.FULL_OBJECT;
 			var checksumAlgorithm = ChecksumAlgorithm.CRC64NVME;

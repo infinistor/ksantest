@@ -18,6 +18,8 @@ using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 
 namespace s3tests.Test
@@ -33,6 +35,8 @@ namespace s3tests.Test
 		private readonly Dictionary<string, string> ClientHeaders = [];
 		/// <summary>요청 단위로 추가할 헤더. SDK v4에서 request.BeforeRequestEvent가 제거되어 요청 인스턴스를 키로 보관한다.</summary>
 		private readonly ConditionalWeakTable<AmazonWebServiceRequest, Dictionary<string, string>> RequestHeaders = [];
+		private readonly object RawResponseHeadersLock = new();
+		private List<KeyValuePair<string, string>> RawResponseHeaders = [];
 
 		/// <summary>이 클라이언트의 요청 체크섬 계산 모드.</summary>
 		private readonly RequestChecksumCalculation RequestChecksum;
@@ -55,15 +59,13 @@ namespace s3tests.Test
 			AWSCredentials credentials = user == null ? new AnonymousAWSCredentials() : new BasicAWSCredentials(user.AccessKey, user.SecretKey);
 			AmazonS3Config s3Config = s3.IsAWS ? new() { RegionEndpoint = s3.GetRegion(), } : new() { ServiceURL = s3.GetURL(isSecure) };
 
+			var httpClientHandler = new HttpClientHandler();
 			// SSL 인증서 검증 설정 추가
 			if (isSecure)
 			{
-				var httpClientHandler = new HttpClientHandler
-				{
-					ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
-				};
-				s3Config.HttpClientFactory = new AmazonS3HttpClientFactory(httpClientHandler);
+				httpClientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
 			}
+			s3Config.HttpClientFactory = new AmazonS3HttpClientFactory(httpClientHandler, CaptureRawResponseHeaders);
 
 			s3Config.Timeout = TimeSpan.FromSeconds(S3_TIMEOUT);
 			s3Config.ForcePathStyle = true;
@@ -102,15 +104,32 @@ namespace s3tests.Test
 		private class AmazonS3HttpClientFactory : HttpClientFactory
 		{
 			private readonly HttpClientHandler _clientHandler;
+			private readonly Action<HttpResponseMessage> _captureResponseHeaders;
 
-			public AmazonS3HttpClientFactory(HttpClientHandler clientHandler)
+			public AmazonS3HttpClientFactory(HttpClientHandler clientHandler, Action<HttpResponseMessage> captureResponseHeaders)
 			{
 				_clientHandler = clientHandler;
+				_captureResponseHeaders = captureResponseHeaders;
 			}
 
 			public override HttpClient CreateHttpClient(IClientConfig clientConfig)
 			{
-				return new HttpClient(_clientHandler, false);
+				return new HttpClient(new RawResponseHeadersHandler(_clientHandler, _captureResponseHeaders), false);
+			}
+		}
+
+		private sealed class RawResponseHeadersHandler : DelegatingHandler
+		{
+			private readonly Action<HttpResponseMessage> _captureResponseHeaders;
+
+			public RawResponseHeadersHandler(HttpMessageHandler innerHandler, Action<HttpResponseMessage> captureResponseHeaders)
+				: base(innerHandler) => _captureResponseHeaders = captureResponseHeaders;
+
+			protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+			{
+				var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+				_captureResponseHeaders(response);
+				return response;
 			}
 		}
 
@@ -243,20 +262,37 @@ namespace s3tests.Test
 
 		public GetACLResponse GetBucketACL(string bucketName)
 		{
-			var request = new GetACLRequest()
+			var request = new GetBucketAclRequest()
 			{
 				BucketName = bucketName
 			};
 
-			return GetACL(request);
+			if (Client == null) return null;
+			var response = Client.GetBucketAclAsync(request);
+			response.Wait();
+			return new GetACLResponse
+			{
+				AccessControlList = new S3AccessControlList
+				{
+					Owner = response.Result.Owner,
+					Grants = response.Result.Grants
+				}
+			};
 		}
 
-		private PutACLResponse PutACL(PutACLRequest request)
+		private void CaptureRawResponseHeaders(HttpResponseMessage response)
 		{
-			if (Client == null) return null;
-			var response = Client.PutACLAsync(request);
-			response.Wait();
-			return response.Result;
+			var headers = new List<KeyValuePair<string, string>>();
+			foreach (var header in response.Headers)
+				headers.Add(new(header.Key, string.Join(",", header.Value)));
+			foreach (var header in response.Content.Headers)
+				headers.Add(new(header.Key, string.Join(",", header.Value)));
+			lock (RawResponseHeadersLock) RawResponseHeaders = headers;
+		}
+
+		public List<KeyValuePair<string, string>> GetRawResponseHeaders()
+		{
+			lock (RawResponseHeadersLock) return [.. RawResponseHeaders];
 		}
 
 		/// <summary>
@@ -1336,16 +1372,9 @@ namespace s3tests.Test
 			return GetObjectMetadata(request);
 		}
 
-		private GetACLResponse GetACL(GetACLRequest request)
-		{
-			if (Client == null) return null;
-			var response = Client.GetACLAsync(request);
-			response.Wait();
-			return response.Result;
-		}
 		public GetACLResponse GetObjectACL(string bucketName, string key, string versionId = null)
 		{
-			var request = new GetACLRequest()
+			var request = new GetObjectAclRequest()
 			{
 				BucketName = bucketName,
 				Key = key
@@ -1353,22 +1382,35 @@ namespace s3tests.Test
 
 			if (versionId != null) request.VersionId = versionId;
 
-			return GetACL(request);
+			if (Client == null) return null;
+			var response = Client.GetObjectAclAsync(request);
+			response.Wait();
+			return new GetACLResponse
+			{
+				AccessControlList = new S3AccessControlList
+				{
+					Owner = response.Result.Owner,
+					Grants = response.Result.Grants
+				}
+			};
 		}
 
-		public PutACLResponse PutObjectACL(string bucketName, string key, S3CannedACL acl = null,
+		public PutObjectAclResponse PutObjectACL(string bucketName, string key, S3CannedACL acl = null,
 			S3AccessControlList accessControlPolicy = null, string versionId = null)
 		{
-			var request = new PutACLRequest()
+			var request = new PutObjectAclRequest()
 			{
 				BucketName = bucketName,
 				Key = key
 			};
-			if (acl != null) request.CannedACL = acl;
-			if (accessControlPolicy != null) request.AccessControlList = accessControlPolicy;
+			if (acl != null) request.ACL = acl;
+			if (accessControlPolicy != null) request.AccessControlPolicy = accessControlPolicy;
 			if (versionId != null) request.VersionId = versionId;
 
-			return PutACL(request);
+			if (Client == null) return null;
+			var response = Client.PutObjectAclAsync(request);
+			response.Wait();
+			return response.Result;
 		}
 
 		private GetObjectTaggingResponse GetObjectTagging(GetObjectTaggingRequest request)

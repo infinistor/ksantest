@@ -102,7 +102,7 @@ namespace s3tests.Test
 			TestId = 5;
 			var client = GetClient();
 			var bucketName = GetNewBucket(client, ObjectOwnership.BucketOwnerEnforced);
-			var key = "testBucketOwnershipDenyObjectACL";
+			var key = "TestBucketOwnershipDenyObjectACL";
 
 			client.PutObject(bucketName, key, body: key);
 
@@ -122,7 +122,7 @@ namespace s3tests.Test
 			TestId = 6;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
-			var key = "testObjectOwnershipDenyChange";
+			var key = "TestObjectOwnershipDenyChange";
 
 			client.PutObject(bucketName, key, body: key, acl: S3CannedACL.PublicRead);
 
@@ -147,7 +147,7 @@ namespace s3tests.Test
 			TestId = 7;
 			var client = GetClient();
 			var bucketName = GetNewBucketCannedAcl(client);
-			var key = "testObjectOwnershipDenyACL";
+			var key = "TestObjectOwnershipDenyACL";
 
 			client.PutObject(bucketName, key, body: key, acl: S3CannedACL.PublicRead);
 

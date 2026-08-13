@@ -303,9 +303,9 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
-			var Key = "file1";
+			var Key = "TestObjectLockPutObjRetention";
 
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 			var VersionId = PutResponse.VersionId;
 
 			var Retention = new ObjectLockRetention()
@@ -330,9 +330,9 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
-			var Key = "file1";
+			var Key = "TestObjectLockPutObjRetentionInvalidBucket";
 
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 
 			var Retention = new ObjectLockRetention()
 			{
@@ -356,9 +356,9 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
-			var Key = "file1";
+			var Key = "TestObjectLockPutObjRetentionInvalidMode";
 
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 
 			var Retention = new ObjectLockRetention()
 			{
@@ -382,9 +382,9 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
-			var Key = "file1";
+			var Key = "TestObjectLockGetObjRetention";
 
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 			var VersionId = PutResponse.VersionId;
 
 			var Retention = new ObjectLockRetention()
@@ -410,9 +410,9 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
-			var Key = "file1";
+			var Key = "TestObjectLockGetObjRetentionInvalidBucket";
 
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 
 			var e = Assert.Throws<AggregateException>(() => Client.GetObjectRetention(bucketName, Key));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
@@ -431,10 +431,10 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
-			var Key = "file1";
+			var Key = "TestObjectLockPutObjRetentionVersionid";
 
-			Client.PutObject(bucketName, Key, body: "abc");
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			Client.PutObject(bucketName, Key, body: Key);
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 			var VersionId = PutResponse.VersionId;
 
 			var Retention = new ObjectLockRetention()
@@ -475,7 +475,7 @@ namespace s3tests.Test
 			};
 			Client.PutObjectLockConfiguration(bucketName, Conf);
 
-			var Key = "file1";
+			var Key = "TestObjectLockPutObjRetentionOverrideDefaultRetention";
 			var body = "abc";
 			var MD5 = S3Utils.GetMD5(body);
 			var PutResponse = Client.PutObject(bucketName, Key, body: body, md5Digest: MD5);
@@ -505,10 +505,10 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
-			var Key = "file1";
+			var Key = "TestObjectLockPutObjRetentionIncreasePeriod";
 
-			Client.PutObject(bucketName, Key, body: "abc");
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			Client.PutObject(bucketName, Key, body: Key);
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 			var VersionId = PutResponse.VersionId;
 
 			var Retention1 = new ObjectLockRetention()
@@ -541,10 +541,10 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
-			var Key = "file1";
+			var Key = "TestObjectLockPutObjRetentionShortenPeriod";
 
-			Client.PutObject(bucketName, Key, body: "abc");
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			Client.PutObject(bucketName, Key, body: Key);
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 			var VersionId = PutResponse.VersionId;
 
 			var Retention1 = new ObjectLockRetention()
@@ -578,10 +578,10 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
-			var Key = "file1";
+			var Key = "TestObjectLockPutObjRetentionShortenPeriodBypass";
 
-			Client.PutObject(bucketName, Key, body: "abc");
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			Client.PutObject(bucketName, Key, body: Key);
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 			var VersionId = PutResponse.VersionId;
 
 			var Retention1 = new ObjectLockRetention()
@@ -614,9 +614,9 @@ namespace s3tests.Test
 			var bucketName = GetNewBucketName();
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
-			var Key = "file1";
+			var Key = "TestObjectLockDeleteObjectWithRetention";
 
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 			var VersionId = PutResponse.VersionId;
 
 			var Retention = new ObjectLockRetention()
@@ -645,8 +645,8 @@ namespace s3tests.Test
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
-			var Key = "file1";
-			Client.PutObject(bucketName, Key, body: "abc");
+			var Key = "TestObjectLockPutLegalHold";
+			Client.PutObject(bucketName, Key, body: Key);
 
 			var LegalHold = new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.On };
 			var Response = Client.PutObjectLegalHold(bucketName, Key, LegalHold);
@@ -669,8 +669,8 @@ namespace s3tests.Test
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
 
-			var Key = "file1";
-			Client.PutObject(bucketName, Key, body: "abc");
+			var Key = "TestObjectLockPutLegalHoldInvalidBucket";
+			Client.PutObject(bucketName, Key, body: Key);
 
 			var LegalHold = new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.On };
 			var e = Assert.Throws<AggregateException>(() => Client.PutObjectLegalHold(bucketName, Key, LegalHold));
@@ -690,8 +690,8 @@ namespace s3tests.Test
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
-			var Key = "file1";
-			Client.PutObject(bucketName, Key, body: "abc");
+			var Key = "TestObjectLockPutLegalHoldInvalidStatus";
+			Client.PutObject(bucketName, Key, body: Key);
 
 			var LegalHold = new ObjectLockLegalHold() { Status = new ObjectLockLegalHoldStatus("abc") };
 			var e = Assert.Throws<AggregateException>(() => Client.PutObjectLegalHold(bucketName, Key, LegalHold));
@@ -711,8 +711,8 @@ namespace s3tests.Test
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
-			var Key = "file1";
-			Client.PutObject(bucketName, Key, body: "abc");
+			var Key = "TestObjectLockGetLegalHold";
+			Client.PutObject(bucketName, Key, body: Key);
 
 			var LegalHold = new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.On };
 			Client.PutObjectLegalHold(bucketName, Key, LegalHold);
@@ -737,8 +737,8 @@ namespace s3tests.Test
 			var Client = GetClient();
 			Client.PutBucket(bucketName);
 
-			var Key = "file1";
-			Client.PutObject(bucketName, Key, body: "abc");
+			var Key = "TestObjectLockGetLegalHoldInvalidBucket";
+			Client.PutObject(bucketName, Key, body: Key);
 
 			var e = Assert.Throws<AggregateException>(() => Client.GetObjectLegalHold(bucketName, Key));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
@@ -757,8 +757,8 @@ namespace s3tests.Test
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
-			var Key = "file1";
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			var Key = "TestObjectLockDeleteObjectWithLegalHoldOn";
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 
 			var LegalHold = new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.On };
 			Client.PutObjectLegalHold(bucketName, Key, LegalHold);
@@ -783,8 +783,8 @@ namespace s3tests.Test
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
-			var Key = "file1";
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			var Key = "TestObjectLockDeleteObjectWithLegalHoldOff";
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 
 			var LegalHold = new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.Off };
 			Client.PutObjectLegalHold(bucketName, Key, LegalHold);
@@ -806,8 +806,8 @@ namespace s3tests.Test
 			var Client = GetClient();
 			Client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
-			var Key = "file1";
-			var PutResponse = Client.PutObject(bucketName, Key, body: "abc");
+			var Key = "TestObjectLockGetObjMetadata";
+			var PutResponse = Client.PutObject(bucketName, Key, body: Key);
 
 			var LegalHold = new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.On };
 			Client.PutObjectLegalHold(bucketName, Key, LegalHold);
@@ -869,7 +869,7 @@ namespace s3tests.Test
 			TestId = 11;
 			var client = GetClient();
 			var bucketName = GetNewBucketName();
-			var key = "testObjectLockPutObject";
+			var key = "TestObjectLockPutObject";
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
 			client.PutObjectLockConfiguration(bucketName, GovernanceLockConfig());
@@ -898,9 +898,9 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucketName();
 			var bucketName2 = GetNewBucketName();
-			var key = "testObjectLockCopyObject-lock";
+			var key = "TestObjectLockCopyObject";
 			var keyCopy = key + "-copy";
-			var key2 = "testObjectLockCopyObject";
+			var key2 = "TestObjectLockCopyObject-001";
 			var key2Copy = key2 + "-copy";
 
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
@@ -956,7 +956,7 @@ namespace s3tests.Test
 			// 기본 클라이언트(WHEN_REQUIRED)는 이를 붙이지 않으므로 SDK가 체크섬을 넣도록 WHEN_SUPPORTED를 쓴다.
 			var client = GetClient(RequestChecksumCalculation.WHEN_SUPPORTED, ResponseChecksumValidation.WHEN_REQUIRED);
 			var bucketName = GetNewBucketName();
-			var key = "testObjectLockMultipart";
+			var key = "TestObjectLockMultipart";
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
 			client.PutObjectLockConfiguration(bucketName, GovernanceLockConfig());
@@ -985,7 +985,7 @@ namespace s3tests.Test
 			TestId = 14;
 			var client = GetClient();
 			var bucketName = GetNewBucketName();
-			var key = "testObjectLockMD5";
+			var key = "TestObjectLockMD5";
 			var content = S3Utils.RandomTextToLong(1 * MainData.MB);
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
 
@@ -1013,7 +1013,7 @@ namespace s3tests.Test
 		public void TestObjectLockDeleteObjectWithRetentionBypass()
 		{
 			TestId = 27;
-			var key = "file1";
+			var key = "TestObjectLockDeleteObjectWithRetentionBypass";
 			var client = GetClient();
 			var bucketName = GetNewBucketName();
 			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
