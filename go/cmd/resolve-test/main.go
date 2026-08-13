@@ -82,24 +82,37 @@ func testsInFile(path string) ([]string, error) {
 	return names, nil
 }
 
-func main() {
-	if len(os.Args) != 3 {
-		fmt.Fprintln(os.Stderr, "usage: resolve-test <test-class> <test-method>")
-		os.Exit(2)
-	}
-	file, ok := classFiles[classKey(os.Args[1])]
+func resolveClassFile(classArg string) (string, []string, error) {
+	file, ok := classFiles[classKey(classArg)]
 	if !ok {
-		fmt.Fprintf(os.Stderr, "unknown test class %q\n", os.Args[1])
-		os.Exit(1)
+		return "", nil, fmt.Errorf("unknown test class %q", classArg)
 	}
 	if _, err := os.Stat(file); err != nil {
-		fmt.Fprintf(os.Stderr, "test file for class %q not found: %v\n", os.Args[1], err)
-		os.Exit(1)
+		return "", nil, fmt.Errorf("test file for class %q not found: %w", classArg, err)
 	}
 	names, err := testsInFile(file)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "parse %s: %v\n", file, err)
+		return "", nil, fmt.Errorf("parse %s: %w", file, err)
+	}
+	if len(names) == 0 {
+		return "", nil, fmt.Errorf("no tests found in %s for class %q", filepath.Base(file), classArg)
+	}
+	return file, names, nil
+}
+
+func main() {
+	if len(os.Args) < 2 || len(os.Args) > 3 {
+		fmt.Fprintln(os.Stderr, "usage: resolve-test <test-class> [<test-method>]")
+		os.Exit(2)
+	}
+	file, names, err := resolveClassFile(os.Args[1])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+	}
+	if len(os.Args) == 2 {
+		fmt.Println(strings.Join(names, "|"))
+		return
 	}
 	want := normalized(os.Args[2])
 	classNorm := classKey(os.Args[1])

@@ -1,4 +1,4 @@
-"""Resolve Java-style (class, method) args to a pytest node id."""
+"""Resolve Java-style class/method args to a pytest node id."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def snake(name: str) -> str:
     if re.fullmatch(r"[A-Z0-9]+", name):
         return name.lower()
     name = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name)
-    name = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", name)
+    name = re.sub(r"([A-Z]+)(?=[A-Z][a-z])", r"\1_", name)
     return name.lower()
 
 
@@ -46,6 +46,36 @@ def _ensure_method(source: str, method: str) -> None:
     methods = set(_METHOD_RE.findall(source))
     if method not in methods:
         raise FileNotFoundError(f"Method '{method}' not found in module")
+
+
+def resolve_class(class_arg: str, tests_root: Path) -> str:
+    class_input = class_arg.strip()
+
+    stem = class_input
+    if stem.startswith("Test") and len(stem) > 4 and stem[4].isupper():
+        stem = stem[4:]
+
+    if stem.startswith("test_"):
+        file_stem = stem
+    else:
+        file_stem = f"test_{snake(stem)}"
+
+    if class_input.startswith("Test") and len(class_input) > 4 and class_input[4].isupper():
+        preferred_class = class_input
+    elif class_input.startswith("test_"):
+        preferred_class = "Test" + pascal(class_input[5:])
+    else:
+        preferred_class = "Test" + pascal(stem)
+
+    rel = Path("s3tests") / "tests" / f"{file_stem}.py"
+    abs_path = tests_root / rel
+    if not abs_path.is_file():
+        raise FileNotFoundError(f"Test file not found for class '{class_arg}': {abs_path}")
+
+    source = abs_path.read_text(encoding="utf-8")
+    pytest_class = _discover_class(source, preferred_class)
+
+    return f"{rel.as_posix()}::{pytest_class}"
 
 
 def resolve(class_arg: str, method_arg: str, tests_root: Path) -> str:
@@ -85,7 +115,7 @@ def resolve(class_arg: str, method_arg: str, tests_root: Path) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("test_class")
-    parser.add_argument("test_method")
+    parser.add_argument("test_method", nargs="?")
     parser.add_argument(
         "--root",
         default=str(Path(__file__).resolve().parents[1]),
@@ -93,7 +123,11 @@ def main() -> int:
     )
     args = parser.parse_args()
     try:
-        print(resolve(args.test_class, args.test_method, Path(args.root)))
+        tests_root = Path(args.root)
+        if args.test_method:
+            print(resolve(args.test_class, args.test_method, tests_root))
+        else:
+            print(resolve_class(args.test_class, tests_root))
     except FileNotFoundError as exc:
         print(str(exc), file=sys.stderr)
         return 1
