@@ -164,6 +164,7 @@ class TestInventory(S3TestBase):
         response = client.list_bucket_inventory_configurations(Bucket=bucket_name)
         assert len(response.get("InventoryConfigurationList", [])) == 1
 
+    @pytest.mark.skip(reason="AWS에서 타깃 버킷이 존재하는지 확인하지 않음")
     @pytest.mark.tag("Error")
     def test_put_bucket_inventory_target_not_exist(self):
         client = self.get_client()
