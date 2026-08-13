@@ -15,8 +15,6 @@ namespace s3tests
 		#region Default Define
 
 		public const string STR_DEF_FILENAME = "config.ini";
-		// public const string STR_DEF_FILENAME = "11.151.ini"; //NOSONAR
-		// public const string STR_DEF_FILENAME = "awstests.ini"; //NOSONAR
 		#endregion
 
 		#region S3 Define
