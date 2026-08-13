@@ -37,16 +37,6 @@ import software.amazon.awssdk.services.s3.model.ObjectLockRetention;
 import software.amazon.awssdk.services.s3.model.ObjectLockRetentionMode;
 
 public class Lock extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Lock V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Lock V2 End");
-	}
-
 	@Test
 	@Tag("Put")
 	public void testCreatedBucketEnableObjectLock() {

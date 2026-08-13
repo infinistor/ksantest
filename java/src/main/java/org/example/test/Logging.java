@@ -30,16 +30,6 @@ import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.SetBucketLoggingConfigurationRequest;
 
 public class Logging extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Logging Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Logging End");
-	}
-
 	@Test
 	@Tag("Put/Get")
 	public void testLoggingGet() {

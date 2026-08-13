@@ -16,12 +16,22 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class Access {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Access Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Access End");
+	}
 
 	org.example.test.Access test = new org.example.test.Access();
 	org.example.testV2.Access testV2 = new org.example.testV2.Access();
 
 	/**
 	 * 테스트 완료 후 정리 작업을 수행합니다.
+	 *
 	 * @param testInfo 테스트 정보
 	 */
 	@AfterEach

@@ -37,17 +37,6 @@ public class SSE_C extends TestBase { // NOSONAR
 	static final String SSE_KEY = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=";
 	static final String SSE_KEY_MD5 = "DWygnHRtgiJ77HCm+1rvHw==";
 	static final String SSE_ALGORITHM = "AES256";
-
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("SSE_C V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("SSE_C V2 End");
-	}
-
 	@Test
 	@Tag("PutGet")
 	public void testEncryptedTransfer1b() {

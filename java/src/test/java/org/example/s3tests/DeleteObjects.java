@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 오브젝트 삭제 기능 테스트
  */
 class DeleteObjects {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("DeleteObjects Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("DeleteObjects End");
+	}
+
 
 	org.example.test.DeleteObjects test = new org.example.test.DeleteObjects();
 	org.example.testV2.DeleteObjects testV2 = new org.example.testV2.DeleteObjects();

@@ -6,6 +6,16 @@
 // import org.junit.jupiter.api.Tag;
 
 // class Payment {
+// 	@org.junit.jupiter.api.BeforeAll
+// 	static void beforeAll() {
+// 		System.out.println("Payment Start");
+// 	}
+//
+// 	@org.junit.jupiter.api.AfterAll
+// 	static void afterAll() {
+// 		System.out.println("Payment End");
+// 	}
+
 	
 // 	org.example.test.Payment test = new org.example.test.Payment();
 // 	org.example.testV2.Payment testV2 = new org.example.testV2.Payment();

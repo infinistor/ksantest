@@ -30,16 +30,6 @@ import com.amazonaws.services.s3.model.SetPublicAccessBlockRequest;
 import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
 
 public class Access extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Access Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Access End");
-	}
-
 	@Test
 	@Tag("Denied")
 	public void testBlockPublicAclAndPolicy() {

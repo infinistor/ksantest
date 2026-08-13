@@ -27,16 +27,6 @@ import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 import software.amazon.awssdk.services.s3.model.PublicAccessBlockConfiguration;
 
 public class Access extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Access V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Access V2 End");
-	}
-
 	@Test
 	@Tag("Denied")
 	public void testBlockPublicAclAndPolicy() {

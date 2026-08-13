@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷의 오브젝트 목록 조회 기능을 테스트하는 클래스 (ListObjectsV2)
  */
 class ListObjectsV2 {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("ListObjectsV2 Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("ListObjectsV2 End");
+	}
+
 
 	org.example.test.ListObjectsV2 test = new org.example.test.ListObjectsV2();
 	org.example.testV2.ListObjectsV2 testV2 = new org.example.testV2.ListObjectsV2();

@@ -27,16 +27,6 @@ import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 
 public class DeleteObjects extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("DeleteObjects V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("DeleteObjects V2 End");
-	}
-
 	@Test
 	@Tag("ListObject")
 	public void testMultiObjectDelete() {

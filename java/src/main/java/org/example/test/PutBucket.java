@@ -24,16 +24,6 @@ import java.util.List;
 import com.amazonaws.AmazonServiceException;
 
 public class PutBucket extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("PutBucket Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("PutBucket End");
-	}
-
 	@Test
 	@Tag("PUT")
 	public void testBucketListEmpty() {

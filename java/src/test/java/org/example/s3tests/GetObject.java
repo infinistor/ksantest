@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 오브젝트 다운로드 기능 테스트
  */
 class GetObject {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("GetObject Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("GetObject End");
+	}
+
 
 	org.example.test.GetObject test = new org.example.test.GetObject();
 	org.example.testV2.GetObject testV2 = new org.example.testV2.GetObject();

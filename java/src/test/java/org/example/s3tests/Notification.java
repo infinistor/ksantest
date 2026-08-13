@@ -9,6 +9,16 @@ import org.junit.jupiter.api.TestInfo;
  * 버킷의 알람 기능을 테스트하는 클래스
  */
 class Notification {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Notification Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Notification End");
+	}
+
 
 	org.example.test.Notification test = new org.example.test.Notification();
 	org.example.testV2.Notification testV2 = new org.example.testV2.Notification();

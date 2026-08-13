@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷의 정책 기능을 테스트하는 클래스
  */
 class Policy {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Policy Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Policy End");
+	}
+
 
 	org.example.test.Policy test = new org.example.test.Policy();
 	org.example.testV2.Policy testV2 = new org.example.testV2.Policy();

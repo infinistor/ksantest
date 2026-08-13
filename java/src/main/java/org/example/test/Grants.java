@@ -29,16 +29,6 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
 
 public class Grants extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Grants Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Grants End");
-	}
-
 	@Test
 	@Tag("Bucket")
 	public void testBucketAclDefault() {

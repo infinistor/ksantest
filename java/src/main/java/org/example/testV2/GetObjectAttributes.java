@@ -38,16 +38,6 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.StorageClass;
 
 public class GetObjectAttributes extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("GetObjectAttributes V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("GetObjectAttributes V2 End");
-	}
-
 	/**
 	 * 기본 GetObjectAttributes 테스트
 	 * 모든 속성을 요청하고 응답이 올바른지 확인

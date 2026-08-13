@@ -29,16 +29,6 @@ import software.amazon.awssdk.services.s3.model.InventoryIncludedObjectVersions;
 import software.amazon.awssdk.services.s3.model.InventoryOptionalField;
 
 public class Inventory extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Inventory V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Inventory V2 End");
-	}
-
 	@Test
 	@Tag("List")
 	public void testListBucketInventory() {

@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷과 오브젝트의 권한 관리 테스트
  */
 class Grants {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Grants Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Grants End");
+	}
+
 
 	org.example.test.Grants test = new org.example.test.Grants();
 	org.example.testV2.Grants testV2 = new org.example.testV2.Grants();

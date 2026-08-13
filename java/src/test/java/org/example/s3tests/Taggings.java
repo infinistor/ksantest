@@ -21,6 +21,16 @@ import org.junit.jupiter.api.Test;
  * 버킷과 오브젝트의 태그 기능을 테스트하는 클래스
  */
 class Taggings {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Taggings Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Taggings End");
+	}
+
 
 	org.example.test.Taggings test = new org.example.test.Taggings();
 	org.example.testV2.Taggings testV2 = new org.example.testV2.Taggings();

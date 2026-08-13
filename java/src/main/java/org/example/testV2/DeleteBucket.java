@@ -21,16 +21,6 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 public class DeleteBucket extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("DeleteBucket V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("DeleteBucket V2 End");
-	}
-
 	@Test
 	@Tag("ERROR")
 	public void testBucketDeleteNotExist() {

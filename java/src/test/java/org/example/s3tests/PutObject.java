@@ -17,6 +17,16 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class PutObject {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("PutObject Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("PutObject End");
+	}
+
 
 	org.example.test.PutObject test = new org.example.test.PutObject();
 	org.example.testV2.PutObject testV2 = new org.example.testV2.PutObject();

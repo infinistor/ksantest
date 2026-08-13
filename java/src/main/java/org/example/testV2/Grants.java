@@ -31,16 +31,6 @@ import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 import software.amazon.awssdk.services.s3.model.Permission;
 
 public class Grants extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Grants V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Grants V2 End");
-	}
-
 	@Test
 	@Tag("Bucket")
 	public void testBucketAclDefault() {

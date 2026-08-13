@@ -29,16 +29,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
 
 public class CSE extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("CSE V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("CSE V2 End");
-	}
-
 	@Test
 	@Tag("PutGet")
 	public void testCseEncryptedTransfer1b() {

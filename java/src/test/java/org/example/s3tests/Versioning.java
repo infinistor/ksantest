@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷의 버전 관리 기능을 테스트하는 클래스
  */
 class Versioning {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Versioning Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Versioning End");
+	}
+
 
 	org.example.test.Versioning test = new org.example.test.Versioning();
 	org.example.testV2.Versioning testV2 = new org.example.testV2.Versioning();

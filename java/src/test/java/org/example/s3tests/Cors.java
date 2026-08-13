@@ -22,6 +22,16 @@ import org.junit.jupiter.api.Test;
  * CORS 테스트
  */
 class Cors {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Cors Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Cors End");
+	}
+
 	org.example.test.Cors test = new org.example.test.Cors();
 	org.example.testV2.Cors testV2 = new org.example.testV2.Cors();
 

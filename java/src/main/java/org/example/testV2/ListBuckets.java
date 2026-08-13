@@ -26,16 +26,6 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 public class ListBuckets extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("ListBuckets V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("ListBuckets V2 End");
-	}
-
 	@Test
 	@Tag("Get")
 	public void testBucketsCreateThenList() {

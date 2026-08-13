@@ -16,11 +16,22 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class ACL {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("ACL Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("ACL End");
+	}
+
 	org.example.test.ACL test = new org.example.test.ACL();
 	org.example.testV2.ACL testV2 = new org.example.testV2.ACL();
 
 	/**
 	 * 테스트 완료 후 정리 작업을 수행합니다.
+	 *
 	 * @param testInfo 테스트 정보
 	 */
 	@AfterEach
@@ -80,7 +91,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = private, Object = bucket-owner-read] Alt 사용자가 업로드한 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = private, Object = bucket-owner-read] Alt 사용자가 업로드한 오브젝트에 접근 가능한지
+	 * 확인하는 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -150,7 +162,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는
+	 * 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -170,7 +183,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = private, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = private, AltUser] 오브젝트에 접근 가능한지 확인하는
+	 * 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -190,7 +204,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = public-read, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = public-read, AltUser] 오브젝트에 접근 가능한지
+	 * 확인하는 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -200,7 +215,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는
+	 * 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -210,7 +226,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = public-read-write, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = public-read-write, AltUser] 오브젝트에 접근
+	 * 가능한지 확인하는 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -220,7 +237,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는
+	 * 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -230,7 +248,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = authenticated-read, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = authenticated-read, AltUser] 오브젝트에 접근
+	 * 가능한지 확인하는 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -240,7 +259,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는
+	 * 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -250,7 +270,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = bucket-owner-read, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = bucket-owner-read, AltUser] 오브젝트에 접근
+	 * 가능한지 확인하는 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -260,7 +281,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = bucket-owner-full-control] 오브젝트에 접근
+	 * 가능한지 확인하는 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -270,7 +292,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, Object = bucket-owner-full-control, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, Object = bucket-owner-full-control, AltUser]
+	 * 오브젝트에 접근 가능한지 확인하는 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -280,7 +303,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = public-read-write, BucketOwnerPreferred, Object = bucket-owner-full-control, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = public-read-write, BucketOwnerPreferred, Object =
+	 * bucket-owner-full-control, AltUser] 오브젝트에 접근 가능한지 확인하는 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -310,7 +334,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = authenticated-read, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = authenticated-read, Object = public-read-write] 오브젝트에 접근 가능한지 확인하는
+	 * 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -320,7 +345,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = authenticated-read, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = authenticated-read, Object = authenticated-read] 오브젝트에 접근 가능한지 확인하는
+	 * 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -330,7 +356,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = authenticated-read, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = authenticated-read, Object = bucket-owner-read] 오브젝트에 접근 가능한지 확인하는
+	 * 테스트
 	 */
 	@Test
 	@Tag("Access")
@@ -340,7 +367,8 @@ class ACL {
 	}
 
 	/**
-	 * [Bucket = authenticated-read, Object = bucket-owner-full-control] 오브젝트에 접근 가능한지 확인하는 테스트
+	 * [Bucket = authenticated-read, Object = bucket-owner-full-control] 오브젝트에 접근
+	 * 가능한지 확인하는 테스트
 	 */
 	@Test
 	@Tag("Access")

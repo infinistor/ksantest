@@ -36,16 +36,6 @@ import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.utils.BinaryUtils;
 
 public class Post extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Post V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Post V2 End");
-	}
-
 	@Test
 	@Tag("Upload")
 	public void testPostObjectAnonymousRequest() throws MalformedURLException {

@@ -41,16 +41,6 @@ import software.amazon.awssdk.services.s3.model.InvalidRequestException;
 import software.amazon.awssdk.services.s3.model.NoSuchUploadException;
 
 public class Multipart extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Multipart V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Multipart V2 End");
-	}
-
 	@Test
 	@Tag("ERROR")
 	public void testMultipartUploadEmpty() {

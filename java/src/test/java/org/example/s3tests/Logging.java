@@ -19,6 +19,16 @@ import org.junit.jupiter.api.TestInfo;
  * 버킷의 로깅 기능을 테스트하는 클래스
  */
 class Logging {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Logging Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Logging End");
+	}
+
 	org.example.test.Logging test = new org.example.test.Logging();
 	org.example.testV2.Logging testV2 = new org.example.testV2.Logging();
 

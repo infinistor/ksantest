@@ -31,16 +31,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 
 public class GetObject extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("GetObject V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("GetObject V2 End");
-	}
-
 	@Test
 	@Tag("ERROR")
 	public void testObjectReadNotExist() {

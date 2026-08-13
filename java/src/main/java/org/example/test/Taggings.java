@@ -39,16 +39,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 public class Taggings extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Taggings Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Taggings End");
-	}
-
 	@Test
 	@Tag("Check")
 	public void testSetTagging() {

@@ -23,6 +23,16 @@
 // * 오브젝트 내용에 SQL을 실행하여 결과를 조회하는 기능 검증
 // */
 // class SelectObjectContent {
+// 	@org.junit.jupiter.api.BeforeAll
+// 	static void beforeAll() {
+// 		System.out.println("SelectObjectContent Start");
+// 	}
+//
+// 	@org.junit.jupiter.api.AfterAll
+// 	static void afterAll() {
+// 		System.out.println("SelectObjectContent End");
+// 	}
+
 
 // org.example.testV2.SelectObjectContent testV2 = new
 // org.example.testV2.SelectObjectContent();

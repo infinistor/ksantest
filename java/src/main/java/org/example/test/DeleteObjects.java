@@ -26,16 +26,6 @@ import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
 
 public class DeleteObjects extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("DeleteObjects Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("DeleteObjects End");
-	}
-
 	@Test
 	@Tag("ListObject")
 	public void testMultiObjectDelete() {

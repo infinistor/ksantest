@@ -28,16 +28,6 @@ import com.amazonaws.services.s3.model.HeadBucketRequest;
 import com.amazonaws.services.s3.model.ListBucketsPaginatedRequest;
 
 public class ListBuckets extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("ListBuckets V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("ListBuckets V2 End");
-	}
-
 	@Test
 	@Tag("Get")
 	public void testBucketsCreateThenList() {

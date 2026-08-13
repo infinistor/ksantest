@@ -21,6 +21,16 @@ import org.junit.jupiter.api.Test;
  * POST 방식의 오브젝트 업로드 기능을 테스트하는 클래스
  */
 class Post {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Post Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Post End");
+	}
+
 
 	org.example.test.Post test = new org.example.test.Post();
 	org.example.testV2.Post testV2 = new org.example.testV2.Post();

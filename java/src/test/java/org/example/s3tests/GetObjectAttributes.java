@@ -16,6 +16,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 class GetObjectAttributes {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("GetObjectAttributes Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("GetObjectAttributes End");
+	}
+
 	org.example.testV2.GetObjectAttributes testV2 = new org.example.testV2.GetObjectAttributes();
 
 	@AfterEach

@@ -27,16 +27,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
 public class Accelerate extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Accelerate Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Accelerate End");
-	}
-
 	@Test
 	@Tag("Put")
 	public void testPutBucketAccelerate() {

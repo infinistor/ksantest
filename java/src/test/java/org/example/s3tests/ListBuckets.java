@@ -16,6 +16,16 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class ListBuckets {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("ListBuckets Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("ListBuckets End");
+	}
+
 
 	org.example.test.ListBuckets test = new org.example.test.ListBuckets();
 	org.example.testV2.ListBuckets testV2 = new org.example.testV2.ListBuckets();

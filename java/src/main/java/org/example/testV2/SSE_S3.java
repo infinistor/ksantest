@@ -33,17 +33,6 @@ import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 @SuppressWarnings("unchecked")
 public class SSE_S3 extends TestBase { // NOSONAR
 	static final String SSE_ALGORITHM = "AES256";
-
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("SSE_S3 V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("SSE_S3 V2 End");
-	}
-
 	@Test
 	@Tag("PutGet")
 	public void testSseS3EncryptedTransfer1b() {

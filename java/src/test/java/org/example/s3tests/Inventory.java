@@ -20,6 +20,16 @@ import org.junit.jupiter.api.Test;
  * 버킷 인벤토리 기능 테스트
  */
 class Inventory {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Inventory Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Inventory End");
+	}
+
 	org.example.test.Inventory test = new org.example.test.Inventory();
 	org.example.testV2.Inventory testV2 = new org.example.testV2.Inventory();
 

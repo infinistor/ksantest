@@ -27,16 +27,6 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CORSRule.AllowedMethods;
 
 public class Cors extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Cors Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Cors End");
-	}
-
 	@Test
 	@Tag("Check")
 	public void testSetCors() {

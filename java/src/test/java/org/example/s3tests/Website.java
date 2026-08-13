@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Tag;
  * 버킷의 웹사이트 기능을 테스트하는 클래스
  */
 class Website {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Website Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Website End");
+	}
+
 	org.example.test.Website test = new org.example.test.Website();
 	org.example.testV2.Website testV2 = new org.example.testV2.Website();
 

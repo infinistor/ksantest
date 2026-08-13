@@ -36,16 +36,6 @@ import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 
 public class Multipart extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Multipart Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Multipart End");
-	}
-
 	@Test
 	@Tag("ERROR")
 	public void testMultipartUploadEmpty() {

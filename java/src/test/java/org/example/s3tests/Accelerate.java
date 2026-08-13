@@ -6,6 +6,16 @@
 // import org.junit.jupiter.api.Tag;
 
 // class Accelerate {
+// @org.junit.jupiter.api.BeforeAll
+// static void beforeAll() {
+// System.out.println("Accelerate Start");
+// }
+
+// @org.junit.jupiter.api.AfterAll
+// static void afterAll() {
+// System.out.println("Accelerate End");
+// }
+
 // org.example.test.Accelerate test = new org.example.test.Accelerate();
 // org.example.testV2.Accelerate testV2 = new org.example.testV2.Accelerate();
 

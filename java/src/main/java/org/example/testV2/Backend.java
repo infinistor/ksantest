@@ -32,17 +32,6 @@ import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.model.Tagging;
 
 public class Backend extends TestBase {
-
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Backend V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Backend V2 End");
-	}
-
 	/**
 	 * Backend 헤더를 사용하여 오브젝트를 업로드할 수 있는지 확인
 	 */

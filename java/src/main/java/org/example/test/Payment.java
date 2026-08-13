@@ -20,16 +20,6 @@ import com.amazonaws.services.s3.model.SetRequestPaymentConfigurationRequest;
 import com.amazonaws.services.s3.model.RequestPaymentConfiguration.Payer;
 
 public class Payment extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Payment Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Payment End");
-	}
-
 	@Test
 	@Tag("Put")
 	public void testPutBucketRequestPayment() {

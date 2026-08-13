@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷의 버전 관리된 오브젝트 목록 조회 기능을 테스트하는 클래스
  */
 class ListObjectsVersions {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("ListObjectsVersions Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("ListObjectsVersions End");
+	}
+
 
 	org.example.test.ListObjectsVersions test = new org.example.test.ListObjectsVersions();
 	org.example.testV2.ListObjectsVersions testV2 = new org.example.testV2.ListObjectsVersions();

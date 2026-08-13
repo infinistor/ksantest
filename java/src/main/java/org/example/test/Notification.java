@@ -23,16 +23,6 @@ import com.amazonaws.services.s3.model.S3Event;
 import com.amazonaws.services.s3.model.SetBucketNotificationConfigurationRequest;
 
 public class Notification extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Notification Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Notification End");
-	}
-
 	@Test
 	@Tag("Get")
 	public void testNotificationGetEmpty() {

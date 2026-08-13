@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷 삭제 기능 테스트
  */
 class DeleteBucket {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("DeleteBucket Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("DeleteBucket End");
+	}
+
 
 	org.example.test.DeleteBucket test = new org.example.test.DeleteBucket();
 	org.example.testV2.DeleteBucket testV2 = new org.example.testV2.DeleteBucket();

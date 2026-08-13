@@ -40,16 +40,6 @@ import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
 
 public class Versioning extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Versioning Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Versioning End");
-	}
-
 	@Test
 	@Tag("Check")
 	public void testVersioningBucketCreateSuspend() {

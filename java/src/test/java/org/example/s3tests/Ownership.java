@@ -9,6 +9,16 @@ import org.junit.jupiter.api.TestInfo;
  * 버킷과 오브젝트의 소유권 기능을 테스트하는 클래스
  */
 class Ownership {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Ownership Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Ownership End");
+	}
+
 
 	org.example.test.Ownership test = new org.example.test.Ownership();
 	org.example.testV2.Ownership testV2 = new org.example.testV2.Ownership();

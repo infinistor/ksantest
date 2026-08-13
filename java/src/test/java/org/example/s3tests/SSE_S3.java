@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * SSE-S3 암호화 기능을 테스트하는 클래스
  */
 class SSE_S3 {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("SSE_S3 Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("SSE_S3 End");
+	}
+
 
 	org.example.test.SSE_S3 test = new org.example.test.SSE_S3();
 	org.example.testV2.SSE_S3 testV2 = new org.example.testV2.SSE_S3();

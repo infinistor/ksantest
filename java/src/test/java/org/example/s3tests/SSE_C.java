@@ -22,6 +22,16 @@ import org.junit.jupiter.api.Test;
  * SDK V1은 SSE-C 차단 해제(BlockedEncryptionTypes)를 지원하지 않아 V2만 테스트한다.
  */
 class SSE_C {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("SSE_C Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("SSE_C End");
+	}
+
 
 	org.example.testV2.SSE_C testV2 = new org.example.testV2.SSE_C();
 

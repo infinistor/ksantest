@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷의 수명 주기(Lifecycle) 관리 기능을 테스트하는 클래스
  */
 class LifeCycle {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("LifeCycle Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("LifeCycle End");
+	}
+
 	org.example.test.LifeCycle test = new org.example.test.LifeCycle();
 	org.example.testV2.LifeCycle testV2 = new org.example.testV2.LifeCycle();
 

@@ -19,6 +19,16 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
 class CopyObject {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("CopyObject Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("CopyObject End");
+	}
+
 	org.example.test.CopyObject test = new org.example.test.CopyObject();
 	org.example.testV2.CopyObject testV2 = new org.example.testV2.CopyObject();
 

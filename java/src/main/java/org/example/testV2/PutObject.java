@@ -38,16 +38,6 @@ import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
 import software.amazon.awssdk.services.s3.model.ObjectLockMode;
 
 public class PutObject extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("PutObject V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("PutObject V2 End");
-	}
-
 	@Test
 	@Tag("PUT")
 	public void testBucketListDistinct() {

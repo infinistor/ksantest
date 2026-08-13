@@ -16,6 +16,16 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class Backend {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Backend Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Backend End");
+	}
+
 	org.example.testV2.Backend testV2 = new org.example.testV2.Backend();
 
 	/**

@@ -35,16 +35,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 public class Post extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Post Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Post End");
-	}
-
 	@Test
 	@Tag("Upload")
 	public void testPostObjectAnonymousRequest() throws MalformedURLException {

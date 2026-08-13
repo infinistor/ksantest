@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * CSE(Client-Side Encryption) 테스트
  */
 class CSE {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("CSE Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("CSE End");
+	}
+
 
 	org.example.test.CSE test = new org.example.test.CSE();
 	org.example.testV2.CSE testV2 = new org.example.testV2.CSE();

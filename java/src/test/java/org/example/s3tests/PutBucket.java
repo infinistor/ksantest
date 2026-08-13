@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷 생성 기능을 테스트하는 클래스
  */
 class PutBucket {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("PutBucket Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("PutBucket End");
+	}
+
 
 	org.example.test.PutBucket test = new org.example.test.PutBucket();
 	org.example.testV2.PutBucket testV2 = new org.example.testV2.PutBucket();

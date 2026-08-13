@@ -26,16 +26,6 @@ import com.amazonaws.services.s3.model.analytics.StorageClassAnalysis;
 import com.amazonaws.services.s3.model.analytics.StorageClassAnalysisDataExport;
 
 public class Analytics extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Analytics Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Analytics End");
-	}
-
 	@Test
 	@Tag("Put")
 	public void testPutBucketAnalytics() {

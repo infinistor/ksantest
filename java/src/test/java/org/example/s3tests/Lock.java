@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷과 오브젝트의 잠금 기능을 테스트하는 클래스
  */
 class Lock {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Lock Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Lock End");
+	}
+
 
 	org.example.test.Lock test = new org.example.test.Lock();
 	org.example.testV2.Lock testV2 = new org.example.testV2.Lock();

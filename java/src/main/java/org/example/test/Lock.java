@@ -53,16 +53,6 @@ import com.amazonaws.services.s3.model.SetObjectRetentionRequest;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 
 public class Lock extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Lock Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Lock End");
-	}
-
 	@Test
 	@Tag("Put")
 	public void testCreatedBucketEnableObjectLock() {

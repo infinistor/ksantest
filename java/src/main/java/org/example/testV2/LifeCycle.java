@@ -33,16 +33,6 @@ import software.amazon.awssdk.services.s3.model.ExpirationStatus;
 import software.amazon.awssdk.services.s3.model.LifecycleRule;
 
 public class LifeCycle extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("LifeCycle V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("LifeCycle V2 End");
-	}
-
 	@Test
 	@Tag("Check")
 	public void testLifecycleSet() {

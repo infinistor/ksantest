@@ -21,16 +21,6 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 public class Analytics extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("Analytics V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("Analytics V2 End");
-	}
-
 	@Test
 	@Tag("Put")
 	public void testPutBucketAnalytics() {

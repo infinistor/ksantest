@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 멀티파트 업로드 기능을 테스트하는 클래스
  */
 class Multipart {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Multipart Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Multipart End");
+	}
+
 
 	org.example.test.Multipart test = new org.example.test.Multipart();
 	org.example.testV2.Multipart testV2 = new org.example.testV2.Multipart();

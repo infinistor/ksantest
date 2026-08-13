@@ -9,6 +9,16 @@ import org.junit.jupiter.api.TestInfo;
  * 버킷의 메트릭스 기능을 테스트하는 클래스
  */
 class Metrics {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Metrics Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Metrics End");
+	}
+
 	org.example.test.Metrics test = new org.example.test.Metrics();
 	org.example.testV2.Metrics testV2 = new org.example.testV2.Metrics();
 

@@ -19,6 +19,16 @@ import org.junit.jupiter.api.Test;
  * 버킷의 복제 기능을 테스트하는 클래스
  */
 class Replication {
+	@org.junit.jupiter.api.BeforeAll
+	static void beforeAll() {
+		System.out.println("Replication Start");
+	}
+
+	@org.junit.jupiter.api.AfterAll
+	static void afterAll() {
+		System.out.println("Replication End");
+	}
+
 
 	org.example.test.Replication test = new org.example.test.Replication();
 	org.example.testV2.Replication testV2 = new org.example.testV2.Replication();

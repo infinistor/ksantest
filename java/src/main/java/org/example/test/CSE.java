@@ -32,16 +32,6 @@ import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 
 public class CSE extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("CSE Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("CSE End");
-	}
-
 	@Test
 	@Tag("PutGet")
 	public void testCseEncryptedTransfer1b() {

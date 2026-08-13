@@ -21,16 +21,6 @@ import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
 
 public class ACL extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("ACL Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("ACL End");
-	}
-
 	@Test
 	@Tag("Access")
 	public void testPrivateBucketAndObject() {

@@ -47,16 +47,6 @@ import software.amazon.awssdk.services.s3.model.SelectObjectContentResponseHandl
  */
 public class SelectObjectContent extends TestBase {
 
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("SelectObjectContent V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("SelectObjectContent V2 End");
-	}
-
 	/**
 	 * CSV 오브젝트에 대해 SelectObjectContent 기본 동작 확인 (select * from s3object)
 	 */

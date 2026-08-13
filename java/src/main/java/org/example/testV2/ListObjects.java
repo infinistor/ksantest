@@ -33,16 +33,6 @@ import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 
 public class ListObjects extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("ListObjects V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("ListObjects V2 End");
-	}
-
 	@Test
 	@Tag("Check")
 	public void testBucketListMany() {

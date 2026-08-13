@@ -34,16 +34,6 @@ import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
 import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
 
 public class GetObject extends TestBase {
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("GetObject Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("GetObject End");
-	}
-
 	@Test
 	@Tag("ERROR")
 	public void testObjectReadNotExist() {
