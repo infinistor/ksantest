@@ -1176,7 +1176,6 @@ class TestCopyObject(S3TestBase):
 
         for request_option, response_option in _CHECKSUM_CONFIGS:
             client = self.get_client_with_checksum(True, request_option, response_option)
-            async_client = self.get_async_client(True, request_option, response_option)
 
             for checksum_algorithm in checksum.ALL_ALGORITHMS:
                 prefix = f"req_{request_option}/resp_{response_option}"
@@ -1202,28 +1201,6 @@ class TestCopyObject(S3TestBase):
                     CopySource={"Bucket": bucket_name, "Key": source_key},
                 )
                 self._checksum_compare_copy(checksum_algorithm, source_key, copy_response)
-
-                async_source_key = f"{prefix}/source/async/{checksum_algorithm}"
-                async_target_key = f"{prefix}/target/async/{checksum_algorithm}"
-
-                async_put_params = checksum.apply_put_checksum_params(
-                    {
-                        "Bucket": bucket_name,
-                        "Key": async_source_key,
-                        "Body": async_source_key.encode("utf-8"),
-                    },
-                    checksum_algorithm,
-                    async_source_key,
-                )
-                async_put_response = async_client.put_object(**async_put_params).join()
-                checksum.checksum_compare(checksum_algorithm, async_source_key, async_put_response)
-
-                async_copy_response = async_client.copy_object(
-                    Bucket=bucket_name,
-                    Key=async_target_key,
-                    CopySource={"Bucket": bucket_name, "Key": async_source_key},
-                ).join()
-                self._checksum_compare_copy(checksum_algorithm, async_source_key, async_copy_response)
 
     @pytest.mark.tag("metadata")
     def test_copy_object_metadata_and_tags(self):

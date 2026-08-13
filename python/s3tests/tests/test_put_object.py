@@ -583,21 +583,11 @@ class TestPutObject(S3TestBase):
         ]
         for request_option, response_option in configs:
             client = self.get_client_with_checksum(True, request_option, response_option)
-            async_client = self.get_async_client(True, request_option, response_option)
             for algorithm in checksum.ALL_ALGORITHMS:
                 prefix = f"req_{request_option}/resp_{response_option}"
                 key = f"{prefix}/sync/{algorithm}"
-                async_key = f"{prefix}/async/{algorithm}"
                 response = self._put_with_checksum(client, bucket_name, key, algorithm)
                 checksum.checksum_compare(algorithm, key, response)
-                async_params = {
-                    "Bucket": bucket_name,
-                    "Key": async_key,
-                    "Body": async_key.encode("utf-8"),
-                }
-                checksum.apply_put_checksum_params(async_params, algorithm, async_key)
-                async_response = async_client.put_object(**async_params).join()
-                checksum.checksum_compare(algorithm, async_key, async_response)
 
     @pytest.mark.tag("checksum")
     def test_put_object_checksum(self):
@@ -610,21 +600,11 @@ class TestPutObject(S3TestBase):
         ]
         for request_option, response_option in configs:
             client = self.get_client_with_checksum(False, request_option, response_option)
-            async_client = self.get_async_client(False, request_option, response_option)
             for algorithm in checksum.ALL_ALGORITHMS:
                 prefix = f"req_{request_option}/resp_{response_option}"
                 key = f"{prefix}/sync/{algorithm}"
-                async_key = f"{prefix}/async/{algorithm}"
                 response = self._put_with_checksum(client, bucket_name, key, algorithm)
                 checksum.checksum_compare(algorithm, key, response)
-                async_params = {
-                    "Bucket": bucket_name,
-                    "Key": async_key,
-                    "Body": async_key.encode("utf-8"),
-                }
-                checksum.apply_put_checksum_params(async_params, algorithm, async_key)
-                async_response = async_client.put_object(**async_params).join()
-                checksum.checksum_compare(algorithm, async_key, async_response)
 
     @pytest.mark.tag("checksum")
     def test_put_object_checksum_with_value(self):

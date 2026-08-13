@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 
 from s3tests.data import main_data as md
 from s3tests.data.multipart_upload_data import MultipartUploadData
-from s3tests.test_base import AsyncS3Client, S3TestBase
+from s3tests.test_base import S3TestBase
 from s3tests.utils import checksum, utils
 
 DEFAULT_PART_SIZE = 5 * md.MB
@@ -43,58 +43,7 @@ _UNSUPPORTED_COMPOSITE_CHECKSUMS = ["CRC64NVME"]
 
 class TestMultipart(S3TestBase):
     def _client_call(self, client: Any, operation: str, **kwargs: Any) -> Dict[str, Any]:
-        if isinstance(client, AsyncS3Client):
-            if operation == "upload_part_copy":
-                return client._executor.submit(client._client.upload_part_copy, **kwargs).result()
-            async_method = getattr(client, operation, None)
-            if async_method is not None:
-                return async_method(**kwargs).join()
-            return getattr(client._client, operation)(**kwargs)
         return getattr(client, operation)(**kwargs)
-
-    def _multipart_upload_checksum_async(
-        self,
-        async_client: AsyncS3Client,
-        bucket_name: str,
-        key: str,
-        checksum_type: str,
-        checksum_algorithm: str,
-    ) -> None:
-        size = 10 * md.MB
-        part_size = 5 * md.MB
-        upload_data = MultipartUploadData()
-        create_response = async_client.create_multipart_upload(
-            Bucket=bucket_name,
-            Key=key,
-            ChecksumType=checksum_type,
-            ChecksumAlgorithm=checksum_algorithm,
-        ).join()
-        upload_data.upload_id = create_response["UploadId"]
-        for part in utils.generate_random_string(size, part_size):
-            upload_data.append_body(part)
-            part_params = checksum.apply_put_checksum_params(
-                {
-                    "Bucket": bucket_name,
-                    "Key": key,
-                    "UploadId": upload_data.upload_id,
-                    "PartNumber": upload_data.next_part_number(),
-                    "Body": part.encode("utf-8"),
-                },
-                checksum_algorithm,
-                part,
-            )
-            part_response = async_client.upload_part(**part_params).join()
-            checksum.checksum_compare_part(checksum_algorithm, part, part_response)
-            upload_data.add_part_with_checksum(checksum_algorithm, part_response)
-        complete_response = async_client.complete_multipart_upload(
-            Bucket=bucket_name,
-            Key=key,
-            UploadId=upload_data.upload_id,
-            ChecksumType=checksum_type,
-            MultipartUpload={"Parts": upload_data.parts},
-        ).join()
-        assert complete_response.get("ChecksumType") == checksum_type
-        checksum.checksum_compare_multipart(checksum_algorithm, upload_data, complete_response)
 
     def _multipart_copy_checksum(
         self,
@@ -796,15 +745,12 @@ class TestMultipart(S3TestBase):
 
         for request_option, response_option, checksum_type, algorithms in _CHECKSUM_TEST_CONFIGS:
             client = self.get_client_with_checksum(True, request_option, response_option)
-            async_client = self.get_async_client(True, request_option, response_option)
 
             for checksum_algorithm in algorithms:
                 prefix = f"req_{request_option}/resp_{response_option}"
                 key = f"{prefix}/sync/{checksum_type.lower()}/{checksum_algorithm}"
-                async_key = f"{prefix}/async/{checksum_type.lower()}/{checksum_algorithm}"
 
                 self.multipart_upload_checksum(client, bucket_name, key, checksum_type, checksum_algorithm)
-                self._multipart_upload_checksum_async(async_client, bucket_name, async_key, checksum_type, checksum_algorithm)
 
     @pytest.mark.tag("checksum")
     def test_multipart_upload_checksum(self):
@@ -812,15 +758,12 @@ class TestMultipart(S3TestBase):
 
         for request_option, response_option, checksum_type, algorithms in _CHECKSUM_TEST_CONFIGS:
             client = self.get_client_with_checksum(False, request_option, response_option)
-            async_client = self.get_async_client(False, request_option, response_option)
 
             for checksum_algorithm in algorithms:
                 prefix = f"req_{request_option}/resp_{response_option}"
                 key = f"{prefix}/sync/{checksum_type.lower()}/{checksum_algorithm}"
-                async_key = f"{prefix}/async/{checksum_type.lower()}/{checksum_algorithm}"
 
                 self.multipart_upload_checksum(client, bucket_name, key, checksum_type, checksum_algorithm)
-                self._multipart_upload_checksum_async(async_client, bucket_name, async_key, checksum_type, checksum_algorithm)
 
     @pytest.mark.tag("checksum-failure")
     def test_multipart_upload_checksum_failure(self):
@@ -839,12 +782,10 @@ class TestMultipart(S3TestBase):
 
         for request_option, response_option, checksum_type, algorithms in failure_configs:
             client = self.get_client_with_checksum(True, request_option, response_option)
-            async_client = self.get_async_client(True, request_option, response_option)
 
             for checksum_algorithm in algorithms:
                 prefix = f"req_{request_option}/resp_{response_option}"
                 key = f"{prefix}/sync/{checksum_type.lower()}/{checksum_algorithm}"
-                async_key = f"{prefix}/async/{checksum_type.lower()}/{checksum_algorithm}"
 
                 self.assert_client_error(
                     lambda c=client, k=key, ct=checksum_type, ca=checksum_algorithm: self.multipart_upload_checksum(c, bucket_name, k, ct, ca),
@@ -852,28 +793,19 @@ class TestMultipart(S3TestBase):
                     md.INVALID_REQUEST,
                 )
 
-                with pytest.raises(ClientError) as exc_info:
-                    self._multipart_upload_checksum_async(async_client, bucket_name, async_key, checksum_type, checksum_algorithm)
-                assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
-                assert exc_info.value.response["Error"]["Code"] == md.INVALID_REQUEST
-
     @pytest.mark.tag("checksum")
     def test_multipart_copy_checksum(self):
         bucket_name = self.create_bucket(28)
 
         for request_option, response_option, checksum_type, algorithms in _CHECKSUM_TEST_CONFIGS:
             client = self.get_client_with_checksum(True, request_option, response_option)
-            async_client = self.get_async_client(True, request_option, response_option)
 
             for checksum_algorithm in algorithms:
                 prefix = f"req_{request_option}/resp_{response_option}"
                 key = f"{prefix}/sync/{checksum_type.lower()}/{checksum_algorithm}"
-                async_key = f"{prefix}/async/{checksum_type.lower()}/{checksum_algorithm}"
 
                 self.multipart_upload_checksum(client, bucket_name, key, checksum_type, checksum_algorithm)
                 self._multipart_copy_checksum(client, bucket_name, key, bucket_name, key, checksum_algorithm)
-                self._multipart_upload_checksum_async(async_client, bucket_name, async_key, checksum_type, checksum_algorithm)
-                self._multipart_copy_checksum(async_client, bucket_name, async_key, bucket_name, async_key, checksum_algorithm)
 
     @pytest.mark.tag("checksum")
     def test_create_multipart_upload_empty_checksum_algorithm(self):

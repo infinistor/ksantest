@@ -7,7 +7,6 @@ import random
 import threading
 import time
 import urllib.request
-from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Sequence, TypeVar
@@ -2438,9 +2437,6 @@ class S3TestBase:
             verify=False,
         )
 
-    def get_async_client(self, use_chunk_encoding: bool, request_option: str, response_option: str) -> "AsyncS3Client":
-        return AsyncS3Client(self.get_client_with_checksum(use_chunk_encoding, request_option, response_option))
-
     def multipart_upload_checksum(
         self, client: Any, bucket_name: str, key: str, checksum_type: str, checksum_algorithm: str
     ) -> None:
@@ -2550,38 +2546,3 @@ class S3TestBase:
             client.meta.events.unregister("before-sign.s3.DeleteObjects", inject)
 
     # endregion
-
-
-class AsyncS3Client:
-    def __init__(self, client: Any) -> None:
-        self._client = client
-        self._executor = ThreadPoolExecutor(max_workers=4)
-
-    def _run(self, func: Callable[..., Any], **kwargs: Any) -> "AsyncResult":
-        return AsyncResult(self._executor.submit(func, **kwargs))
-
-    def create_multipart_upload(self, **kwargs: Any) -> "AsyncResult":
-        return self._run(self._client.create_multipart_upload, **kwargs)
-
-    def upload_part(self, **kwargs: Any) -> "AsyncResult":
-        return self._run(self._client.upload_part, **kwargs)
-
-    def complete_multipart_upload(self, **kwargs: Any) -> "AsyncResult":
-        return self._run(self._client.complete_multipart_upload, **kwargs)
-
-    def put_object(self, **kwargs: Any) -> "AsyncResult":
-        return self._run(self._client.put_object, **kwargs)
-
-    def copy_object(self, **kwargs: Any) -> "AsyncResult":
-        return self._run(self._client.copy_object, **kwargs)
-
-
-class AsyncResult:
-    def __init__(self, future: Future[Any]) -> None:
-        self._future = future
-
-    def result(self) -> Any:
-        return self._future.result()
-
-    def join(self) -> Any:
-        return self.result()
