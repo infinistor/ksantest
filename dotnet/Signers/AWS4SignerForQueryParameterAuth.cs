@@ -125,8 +125,8 @@ namespace s3tests.Signers
 			// Console.WriteLine("\nStringToSign:\n{0}", stringToSign);
 
 			// compute the multi-stage signing key
-			KeyedHashAlgorithm kha = KeyedHashAlgorithm.Create(HMACSHA256);
-			kha.Key = DeriveSigningKey(HMACSHA256, awsSecretKey, Region, dateStamp, Service);
+			using var kha = new HMACSHA256(
+				DeriveSigningKey(HMACSHA256, awsSecretKey, Region, dateStamp, Service));
 
 			// compute the final signature for the request, place into the result and return to the 
 			// user to be embedded in the request as needed

@@ -99,8 +99,8 @@ namespace s3tests.Signers
 			// Console.WriteLine("\nStringToSign:\n{0}", stringToSign);
 
 			// compute the signing key
-			var kha = KeyedHashAlgorithm.Create(HMACSHA256);
-			kha.Key = DeriveSigningKey(HMACSHA256, SecretKey, Region, DateStamp, Service);
+			using var kha = new HMACSHA256(
+				DeriveSigningKey(HMACSHA256, SecretKey, Region, DateStamp, Service));
 
 			// compute the AWS4 signature and return it
 			var signature = kha.ComputeHash(Encoding.UTF8.GetBytes(StringToSign.ToString()));

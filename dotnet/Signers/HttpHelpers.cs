@@ -76,7 +76,9 @@ namespace s3tests.Signers
 														 string httpMethod,
 														 IDictionary<string, string> headers)
 		{
-			var request = (HttpWebRequest)WebRequest.Create(endpointUri);
+#pragma warning disable SYSLIB0014 // 호환용 서명 도우미는 HttpWebRequest를 반환한다.
+			var request = WebRequest.CreateHttp(endpointUri);
+#pragma warning restore SYSLIB0014
 			request.Method = httpMethod;
 
 			foreach (var header in headers.Keys)

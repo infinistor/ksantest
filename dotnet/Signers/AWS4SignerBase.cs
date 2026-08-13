@@ -41,7 +41,7 @@ namespace s3tests.Signers
 
 		// algorithm used to hash the canonical request that is supplied to
 		// the signature computation
-		public static HashAlgorithm CanonicalRequestHashAlgorithm = HashAlgorithm.Create("SHA-256");
+		public static HashAlgorithm CanonicalRequestHashAlgorithm = SHA256.Create();
 
 		/// <summary>
 		/// The service endpoint, including the path to any resource.
@@ -206,8 +206,10 @@ namespace s3tests.Signers
 		/// <returns>Hash of the data</returns>
 		protected static byte[] ComputeKeyedHash(string algorithm, byte[] key, byte[] data)
 		{
-			var kha = KeyedHashAlgorithm.Create(algorithm);
-			kha.Key = key;
+			if (!algorithm.Equals(HMACSHA256, StringComparison.OrdinalIgnoreCase))
+				throw new NotSupportedException($"Unsupported keyed hash algorithm: {algorithm}");
+
+			using var kha = new HMACSHA256(key);
 			return kha.ComputeHash(data);
 		}
 

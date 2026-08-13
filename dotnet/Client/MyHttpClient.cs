@@ -324,7 +324,9 @@ namespace s3tests.Client
 		/// <returns>Initialized HttpWebRequest instance</returns>
 		public static HttpWebRequest ConstructWebRequest(Uri URI, string httpMethod, IDictionary<string, string> headers)
 		{
-			var request = (HttpWebRequest)WebRequest.Create(URI);
+#pragma warning disable SYSLIB0014 // 기존 테스트 클라이언트의 HttpWebRequest 호출 흐름을 유지한다.
+			var request = WebRequest.CreateHttp(URI);
+#pragma warning restore SYSLIB0014
 			request.Method = httpMethod;
 
 			foreach (var header in headers.Keys)
