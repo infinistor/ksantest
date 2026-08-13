@@ -339,7 +339,6 @@ public class Lock extends TestBase {
 
 		// Multipart Upload
 		var uploadData = setupMultipartUploadLock(client, bucketName, key, 1 * MainData.MB);
-		System.out.println(uploadData.uploadId);
 		client.completeMultipartUpload(
 				new CompleteMultipartUploadRequest(bucketName, key, uploadData.uploadId, uploadData.parts));
 

@@ -11,14 +11,4 @@
 package org.example.testV2;
 
 public class KMS extends TestBase { // NOSONAR
-
-	@org.junit.jupiter.api.BeforeAll
-	public static void beforeAll() {
-		System.out.println("KMS V2 Start");
-	}
-
-	@org.junit.jupiter.api.AfterAll
-	public static void afterAll() {
-		System.out.println("KMS V2 End");
-	}
 }
