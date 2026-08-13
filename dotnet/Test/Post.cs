@@ -14,7 +14,6 @@ using s3tests.Client;
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Text;
 using Xunit;
 using s3tests.Data;
 using s3tests.Utils;
