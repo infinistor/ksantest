@@ -762,7 +762,15 @@ namespace s3tests.Test
 
 			request.Headers.Add("Keep-Alive", "true");
 			foreach (var item in headers)
+			{
+				if (item.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+				{
+					request.Content ??= new ByteArrayContent([]);
+					request.Content.Headers.ContentLength = long.Parse(item.Value);
+					continue;
+				}
 				request.Headers.Add(item.Key, item.Value);
+			}
 
 			MyResult result;
 			try

@@ -74,9 +74,7 @@ namespace s3tests.Test
 			}
 		}
 
-		// Java Cors.testCorsOriginResponse는 @Disabled, go도 t.Skip 처리되어 있다.
-		// KSAN의 OPTIONS 응답 기대치가 AWS/Ceph 스위트와 달라 의도적으로 제외한 항목이다.
-		[Fact(Skip = "Java Cors.testCorsOriginResponse is @Disabled")]
+		[Fact]
 		[Trait(MainData.Major, "Cors")]
 		[Trait(MainData.Minor, "Post")]
 		[Trait(MainData.Explanation, "버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인")]
@@ -85,8 +83,7 @@ namespace s3tests.Test
 		{
 			TestId = 2;
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			client.PutBucketACL(bucketName, S3CannedACL.PublicRead);
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicRead);
 
 			var corsConfig = new CORSConfiguration()
 			{
@@ -110,8 +107,7 @@ namespace s3tests.Test
 				]
 			};
 
-			var response = client.GetCORSConfiguration(bucketName);
-			Assert.Null(response.Configuration);
+			AssertNoCors(client, bucketName);
 
 			client.PutCORSConfiguration(bucketName, corsConfig);
 
@@ -155,8 +151,7 @@ namespace s3tests.Test
 			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "foo.put"), new("Access-Control-Request-Method", "PUT")], HttpStatusCode.OK, "foo.put", "PUT");
 		}
 
-		// Java Cors.testCorsOriginWildcard는 @Disabled, go도 t.Skip 처리되어 있다.
-		[Fact(Skip = "Java Cors.testCorsOriginWildcard is @Disabled")]
+		[Fact]
 		[Trait(MainData.Major, "Cors")]
 		[Trait(MainData.Minor, "Post")]
 		[Trait(MainData.Explanation, "와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인")]
@@ -165,8 +160,7 @@ namespace s3tests.Test
 		{
 			TestId = 3;
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			client.PutBucketACL(bucketName, S3CannedACL.PublicRead);
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicRead);
 
 			var corsConfig = new CORSConfiguration()
 			{
@@ -178,8 +172,7 @@ namespace s3tests.Test
 				]
 			};
 
-			var response = client.GetCORSConfiguration(bucketName);
-			Assert.Null(response.Configuration);
+			AssertNoCors(client, bucketName);
 
 			client.PutCORSConfiguration(bucketName, corsConfig);
 
@@ -187,8 +180,7 @@ namespace s3tests.Test
 			CorsRequestAndCheck("Get", bucketName, [new("Origin", "example.origin")], HttpStatusCode.OK, "*", "GET");
 		}
 
-		// Java Cors.testCorsHeaderOption은 @Disabled, go도 t.Skip 처리되어 있다.
-		[Fact(Skip = "Java Cors.testCorsHeaderOption is @Disabled")]
+		[Fact]
 		[Trait(MainData.Major, "Cors")]
 		[Trait(MainData.Minor, "Post")]
 		[Trait(MainData.Explanation, "cors옵션에서 사용자 추가 헤더를 설정하고 존재하지 않는 헤더를 request 설정한 채로 curs호출하면 실패하는지 확인")]
@@ -197,8 +189,7 @@ namespace s3tests.Test
 		{
 			TestId = 4;
 			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			client.PutBucketACL(bucketName, S3CannedACL.PublicRead);
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicRead);
 
 			var corsConfig = new CORSConfiguration()
 			{
@@ -211,8 +202,7 @@ namespace s3tests.Test
 				]
 			};
 
-			var response = client.GetCORSConfiguration(bucketName);
-			Assert.Null(response.Configuration);
+			AssertNoCors(client, bucketName);
 
 			client.PutCORSConfiguration(bucketName, corsConfig);
 
