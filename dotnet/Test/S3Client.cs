@@ -1854,12 +1854,16 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public ListMultipartUploadsResponse ListMultipartUploads(string bucketName)
+		public ListMultipartUploadsResponse ListMultipartUploads(string bucketName, string keyMarker = null,
+			string uploadIdMarker = null)
 		{
 			var request = new ListMultipartUploadsRequest()
 			{
 				BucketName = bucketName
 			};
+
+			if (keyMarker != null) request.KeyMarker = keyMarker;
+			if (uploadIdMarker != null) request.UploadIdMarker = uploadIdMarker;
 
 			return ListMultipartUploads(request);
 		}

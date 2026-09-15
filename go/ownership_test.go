@@ -110,7 +110,7 @@ func ownershipBucket(t *testing.T, s *suite, ownership types.ObjectOwnership, id
 	}
 	t.Cleanup(func() {
 		if !s.cfg.NotDelete {
-			removeOwnedBucket(s, name)
+			removeOwnedBucket(t, s, name)
 		}
 	})
 	return name
@@ -159,8 +159,10 @@ func headPublic(t *testing.T, client *s3.Client, bucket, key string) {
 		t.Fatalf("anonymous HeadObject: %v", err)
 	}
 }
-func removeOwnedBucket(s *suite, bucket string) {
+func removeOwnedBucket(t *testing.T, s *suite, bucket string) {
+	t.Helper()
 	ctx := context.Background()
+	abortBucketMultipartUploads(t, s.client, bucket)
 	listed, _ := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(bucket)})
 	var objects []types.ObjectIdentifier
 	if listed != nil {

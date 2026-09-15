@@ -144,6 +144,7 @@ func (s *suite) bucket(t *testing.T, id ...int) string {
 			return
 		}
 		ctx := context.Background()
+		abortBucketMultipartUploads(t, s.client, name)
 		for {
 			listed, err := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(name)})
 			if err != nil || listed == nil {
@@ -171,6 +172,30 @@ func (s *suite) bucket(t *testing.T, id ...int) string {
 		}
 	})
 	return name
+}
+
+// 버킷에 남아 있는 미완료 멀티파트 업로드를 모두 중단하여 파트를 삭제한다.
+func abortBucketMultipartUploads(t *testing.T, client *s3.Client, bucket string) {
+	t.Helper()
+	ctx := context.Background()
+	input := &s3.ListMultipartUploadsInput{Bucket: aws.String(bucket)}
+	for {
+		listed, err := client.ListMultipartUploads(ctx, input)
+		if err != nil {
+			t.Logf("ListMultipartUploads cleanup %s: %v", bucket, err)
+			return
+		}
+		for _, upload := range listed.Uploads {
+			if _, err := client.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{Bucket: aws.String(bucket), Key: upload.Key, UploadId: upload.UploadId}); err != nil {
+				t.Logf("AbortMultipartUpload cleanup %s/%s: %v", bucket, aws.ToString(upload.Key), err)
+			}
+		}
+		if !aws.ToBool(listed.IsTruncated) {
+			return
+		}
+		input.KeyMarker = listed.NextKeyMarker
+		input.UploadIdMarker = listed.NextUploadIdMarker
+	}
 }
 
 func newBucketName(prefix string) string {

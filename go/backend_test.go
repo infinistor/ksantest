@@ -1278,6 +1278,7 @@ func equalBackendMetadata(got, want map[string]string) bool {
 func cleanupBucket(t *testing.T, s *suite, bucket string) {
 	t.Helper()
 	ctx := context.Background()
+	abortBucketMultipartUploads(t, s.client, bucket)
 	listed, _ := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(bucket)})
 	var objects []types.ObjectIdentifier
 	if listed != nil {

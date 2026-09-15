@@ -2066,6 +2066,7 @@ namespace s3tests.Test
 			BucketList.Remove(bucketName);
 			if (Config.NotDelete || client == null || string.IsNullOrWhiteSpace(bucketName)) return;
 
+			AbortBucketMultipartUploads(client, bucketName);
 			var versions = client.ListVersions(bucketName, maxKeys: 1000);
 			while (true)
 			{
@@ -2078,6 +2079,29 @@ namespace s3tests.Test
 			client.DeleteBucket(bucketName);
 		}
 
+		/// <summary>버킷에 남아 있는 미완료 멀티파트 업로드를 모두 중단하여 파트를 삭제한다.</summary>
+		protected static void AbortBucketMultipartUploads(S3Client client, string bucketName)
+		{
+			try
+			{
+				string keyMarker = null;
+				string uploadIdMarker = null;
+				while (true)
+				{
+					var response = client.ListMultipartUploads(bucketName, keyMarker, uploadIdMarker);
+					foreach (var upload in response.MultipartUploads)
+						client.AbortMultipartUpload(bucketName, upload.Key, upload.UploadId);
+					if (response.IsTruncated != true) break;
+					keyMarker = response.NextKeyMarker;
+					uploadIdMarker = response.NextUploadIdMarker;
+				}
+			}
+			catch (Exception)
+			{
+				Console.WriteLine($"AbortBucketMultipartUploads Error: {bucketName}");
+			}
+		}
+
 		public void BucketClear()
 		{
 			if (Config.NotDelete) return;
@@ -2088,6 +2112,8 @@ namespace s3tests.Test
 			foreach (var bucketName in BucketList)
 			{
 				if (string.IsNullOrWhiteSpace(bucketName)) continue;
+
+				AbortBucketMultipartUploads(client, bucketName);
 
 				try
 				{
