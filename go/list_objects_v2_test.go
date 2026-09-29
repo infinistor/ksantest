@@ -2,6 +2,7 @@ package s3tests
 
 import (
 	"context"
+	"net/url"
 	"sort"
 	"testing"
 
@@ -720,6 +721,77 @@ func TestBucketListV2Versioning(t *testing.T) {
 	}
 	out := listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b)})
 	assertStringList(t, listV2Keys(out), keys)
+}
+
+// encoding-type=url 설정 시 ContinuationToken으로 특수문자 오브젝트 목록을 순서대로 가져오는지 확인
+func TestBucketListV2EncodingContinuationToken(t *testing.T) {
+	t.Parallel()
+	keys := []string{"aa!key", "ab@key", "ac#key", "ad$key", "ae%key", "af^key", "ag&key", "ah*key",
+		"ai(key", "aj)key", "ak-key", "al_key", "am+key", "an=key", "ao[key", "ap]key", "aq{key", "ar}key",
+		"as|key", "at\\key", "au:key", "av;key", "aw\"key", "ax'key", "ay<key", "az>key", "ba,key", "bb.key",
+		"bc?key", "bd/key", "be~key", "bf`key"}
+	s, b := listFixture(t, keys, 43)
+	var token *string
+	for _, key := range keys {
+		out := listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b), MaxKeys: aws.Int32(1), EncodingType: types.EncodingTypeUrl, ContinuationToken: token})
+		assertStringList(t, urlDecodeList(t, listV2Keys(out)), []string{key})
+		token = out.NextContinuationToken
+	}
+}
+
+// encoding-type=url 설정 시 prefix와 ContinuationToken을 함께 사용해 오브젝트 목록을 순서대로 가져오는지 확인
+func TestBucketListV2EncodingContinuationTokenPrefix(t *testing.T) {
+	t.Parallel()
+	prefix := "prefix=/"
+	keys := []string{"aa!key", "ab@key", "ac#key", "ad$key", "ae%key", "af^key", "ag&key", "ah*key",
+		"ai(key", "aj)key", "ak-key", "al_key", "am+key", "an=key", "ao[key", "ap]key", "aq{key", "ar}key",
+		"as|key", "at\\key", "au:key", "av;key", "aw\"key", "ax'key", "ay<key", "az>key", "ba,key", "bb.key",
+		"bc?key", "bd/key", "be~key", "bf`key"}
+	objects := []string{"aaa"}
+	for _, key := range keys {
+		objects = append(objects, prefix+key)
+	}
+	objects = append(objects, "zzz")
+	s, b := listFixture(t, objects, 44)
+	var token *string
+	for _, key := range keys {
+		out := listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b), MaxKeys: aws.Int32(1), Prefix: aws.String(prefix), EncodingType: types.EncodingTypeUrl, ContinuationToken: token})
+		assertStringList(t, urlDecodeList(t, listV2Keys(out)), []string{prefix + key})
+		token = out.NextContinuationToken
+	}
+}
+
+// encoding-type=url 설정 시 delimiter와 ContinuationToken을 함께 사용해 CommonPrefixes를 순서대로 가져오는지 확인
+func TestBucketListV2EncodingContinuationTokenDelimiter(t *testing.T) {
+	t.Parallel()
+	prefixes := []string{"aa!key/", "ab@key/", "ac#key/", "ad$key/", "ae%key/", "af^key/", "ag&key/",
+		"ah*key/", "ai(key/", "aj)key/", "ak-key/", "al_key/", "am+key/", "an=key/", "ao[key/", "ap]key/",
+		"aq{key/", "ar}key/", "as|key/", "at\\key/", "au:key/", "av;key/", "aw\"key/", "ax'key/", "ay<key/",
+		"az>key/", "ba,key/", "bb.key/", "bc?key/", "bd/", "be~key/", "bf`key/"}
+	objects := make([]string, 0, len(prefixes))
+	for _, prefix := range prefixes {
+		objects = append(objects, prefix+"obj")
+	}
+	s, b := listFixture(t, objects, 45)
+	var token *string
+	for _, prefix := range prefixes {
+		out := listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b), MaxKeys: aws.Int32(1), Delimiter: aws.String("/"), EncodingType: types.EncodingTypeUrl, ContinuationToken: token})
+		assertStringList(t, urlDecodeList(t, listV2Prefixes(out)), []string{prefix})
+		token = out.NextContinuationToken
+	}
+}
+
+func urlDecodeList(t *testing.T, values []string) []string {
+	t.Helper()
+	decoded := make([]string, 0, len(values))
+	for _, value := range values {
+		v, err := url.QueryUnescape(value)
+		if err != nil {
+			t.Fatalf("decode %q: %v", value, err)
+		}
+		decoded = append(decoded, v)
+	}
+	return decoded
 }
 
 func listV2(t *testing.T, client *s3.Client, input *s3.ListObjectsV2Input) *s3.ListObjectsV2Output {

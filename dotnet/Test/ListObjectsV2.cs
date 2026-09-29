@@ -941,5 +941,85 @@ namespace s3tests.Test
 			Assert.Equal(3, Response.S3Objects.Count);
 			Assert.Equal(["aaa", "bbb", "ccc"], GetKeys(Response));
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsV2")]
+		[Trait(MainData.Minor, "Encoding")]
+		[Trait(MainData.Explanation, "encoding-type=url 설정 시 ContinuationToken으로 특수문자 오브젝트 목록을 순서대로 가져오는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListV2EncodingContinuationToken()
+		{
+			TestId = 43;
+			var KeyNames = new List<string>() { "aa!key", "ab@key", "ac#key", "ad$key", "ae%key", "af^key", "ag&key", "ah*key",
+				"ai(key", "aj)key", "ak-key", "al_key", "am+key", "an=key", "ao[key", "ap]key", "aq{key", "ar}key",
+				"as|key", "at\\key", "au:key", "av;key", "aw\"key", "ax'key", "ay<key", "az>key", "ba,key", "bb.key",
+				"bc?key", "bd/key", "be~key", "bf`key" };
+			var bucketName = SetupObjects(KeyNames);
+			var client = GetClient();
+
+			string ContinuationToken = null;
+			foreach (var KeyName in KeyNames)
+			{
+				var Response = client.ListObjectsV2(bucketName, continuationToken: ContinuationToken, maxKeys: 1, encodingTypeName: "url");
+				Assert.Equal([KeyName], GetKeys(Response).ConvertAll(UrlDecode));
+
+				ContinuationToken = Response.NextContinuationToken;
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsV2")]
+		[Trait(MainData.Minor, "Encoding")]
+		[Trait(MainData.Explanation, "encoding-type=url 설정 시 prefix와 ContinuationToken을 함께 사용해 오브젝트 목록을 순서대로 가져오는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListV2EncodingContinuationTokenPrefix()
+		{
+			TestId = 44;
+			var Prefix = "prefix=/";
+			var KeyNames = new List<string>() { "aa!key", "ab@key", "ac#key", "ad$key", "ae%key", "af^key", "ag&key", "ah*key",
+				"ai(key", "aj)key", "ak-key", "al_key", "am+key", "an=key", "ao[key", "ap]key", "aq{key", "ar}key",
+				"as|key", "at\\key", "au:key", "av;key", "aw\"key", "ax'key", "ay<key", "az>key", "ba,key", "bb.key",
+				"bc?key", "bd/key", "be~key", "bf`key" };
+			var ObjectNames = new List<string>() { "aaa" };
+			ObjectNames.AddRange(KeyNames.ConvertAll(KeyName => Prefix + KeyName));
+			ObjectNames.Add("zzz");
+			var bucketName = SetupObjects(ObjectNames);
+			var client = GetClient();
+
+			string ContinuationToken = null;
+			foreach (var KeyName in KeyNames)
+			{
+				var Response = client.ListObjectsV2(bucketName, continuationToken: ContinuationToken, maxKeys: 1, prefix: Prefix, encodingTypeName: "url");
+				Assert.Equal([Prefix + KeyName], GetKeys(Response).ConvertAll(UrlDecode));
+
+				ContinuationToken = Response.NextContinuationToken;
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsV2")]
+		[Trait(MainData.Minor, "Encoding")]
+		[Trait(MainData.Explanation, "encoding-type=url 설정 시 delimiter와 ContinuationToken을 함께 사용해 CommonPrefixes를 순서대로 가져오는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListV2EncodingContinuationTokenDelimiter()
+		{
+			TestId = 45;
+			var Delimiter = "/";
+			var PrefixNames = new List<string>() { "aa!key/", "ab@key/", "ac#key/", "ad$key/", "ae%key/", "af^key/", "ag&key/",
+				"ah*key/", "ai(key/", "aj)key/", "ak-key/", "al_key/", "am+key/", "an=key/", "ao[key/", "ap]key/",
+				"aq{key/", "ar}key/", "as|key/", "at\\key/", "au:key/", "av;key/", "aw\"key/", "ax'key/", "ay<key/",
+				"az>key/", "ba,key/", "bb.key/", "bc?key/", "bd/", "be~key/", "bf`key/" };
+			var bucketName = SetupObjects(PrefixNames.ConvertAll(PrefixName => PrefixName + "obj"));
+			var client = GetClient();
+
+			string ContinuationToken = null;
+			foreach (var PrefixName in PrefixNames)
+			{
+				var Response = client.ListObjectsV2(bucketName, delimiter: Delimiter, continuationToken: ContinuationToken, maxKeys: 1, encodingTypeName: "url");
+				Assert.Equal([PrefixName], Response.CommonPrefixes.ConvertAll(UrlDecode));
+
+				ContinuationToken = Response.NextContinuationToken;
+			}
+		}
 	}
 }

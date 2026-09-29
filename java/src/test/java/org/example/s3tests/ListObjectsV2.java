@@ -466,4 +466,34 @@ class ListObjectsV2 {
 		test.testBucketListV2Versioning();
 		testV2.testBucketListV2Versioning();
 	}
+
+	/**
+	 * encoding-type=url 설정 시 ContinuationToken이 인코딩되지 않고 다음 페이지 조회에 올바르게 사용되는지 확인
+	 */
+	@Test
+	@Tag("Encoding")
+	void testBucketListV2EncodingContinuationToken() {
+		test.testBucketListV2EncodingContinuationToken();
+		testV2.testBucketListV2EncodingContinuationToken();
+	}
+
+	/**
+	 * encoding-type=url 설정 시 prefix와 ContinuationToken을 함께 사용해 오브젝트 목록을 순서대로 가져오는지 확인
+	 */
+	@Test
+	@Tag("Encoding")
+	void testBucketListV2EncodingContinuationTokenPrefix() {
+		test.testBucketListV2EncodingContinuationTokenPrefix();
+		testV2.testBucketListV2EncodingContinuationTokenPrefix();
+	}
+
+	/**
+	 * encoding-type=url 설정 시 delimiter와 ContinuationToken을 함께 사용해 CommonPrefixes를 순서대로 가져오는지 확인
+	 */
+	@Test
+	@Tag("Encoding")
+	void testBucketListV2EncodingContinuationTokenDelimiter() {
+		test.testBucketListV2EncodingContinuationTokenDelimiter();
+		testV2.testBucketListV2EncodingContinuationTokenDelimiter();
+	}
 }

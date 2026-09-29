@@ -18,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -165,7 +167,8 @@ public class ListObjectsV2 extends TestBase {
 	@Test
 	@Tag("Filtering")
 	public void testBucketListV2DelimiterPrefixUnderscore() {
-		var bucketName = createObjects(8, List.of("Obj1_", "Under1/bar", "Under1/baz/xyzzy", "Under2/thud", "Under2/bla"));
+		var bucketName = createObjects(8,
+				List.of("Obj1_", "Under1/bar", "Under1/baz/xyzzy", "Under2/thud", "Under2/bla"));
 
 		String delim = "/";
 		String continuationToken = "";
@@ -782,5 +785,77 @@ public class ListObjectsV2 extends TestBase {
 		var response = client.listObjectsV2(bucketName);
 		assertEquals(3, response.getObjectSummaries().size());
 		assertLinesMatch(List.of("aaa", "bbb", "ccc"), getKeys(response.getObjectSummaries()));
+	}
+
+	@Test
+	@Tag("Encoding")
+	public void testBucketListV2EncodingContinuationToken() {
+		var keyNames = List.of("aa!key", "ab@key", "ac#key", "ad$key", "ae%key", "af^key", "ag&key", "ah*key",
+				"ai(key", "aj)key", "ak-key", "al_key", "am+key", "an=key", "ao[key", "ap]key", "aq{key", "ar}key",
+				"as|key", "at\\key", "au:key", "av;key", "aw\"key", "ax'key", "ay<key", "az>key", "ba,key", "bb.key",
+				"bc?key", "bd/key", "be~key", "bf`key");
+		var client = getClient();
+		var bucketName = createObjects(client, 43, keyNames);
+
+		String continuationToken = null;
+		for (var keyName : keyNames) {
+			var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(1)
+					.withEncodingType("URL").withContinuationToken(continuationToken));
+			var keys = getKeys(response.getObjectSummaries()).stream()
+					.map(key -> URLDecoder.decode(key, StandardCharsets.UTF_8)).toList();
+			assertEquals(List.of(keyName), keys);
+
+			continuationToken = response.getNextContinuationToken();
+		}
+	}
+
+	@Test
+	@Tag("Encoding")
+	public void testBucketListV2EncodingContinuationTokenPrefix() {
+		var prefix = "prefix=/";
+		var keyNames = List.of("aa!key", "ab@key", "ac#key", "ad$key", "ae%key", "af^key", "ag&key", "ah*key",
+				"ai(key", "aj)key", "ak-key", "al_key", "am+key", "an=key", "ao[key", "ap]key", "aq{key", "ar}key",
+				"as|key", "at\\key", "au:key", "av;key", "aw\"key", "ax'key", "ay<key", "az>key", "ba,key", "bb.key",
+				"bc?key", "bd/key", "be~key", "bf`key");
+		var objectNames = new ArrayList<String>();
+		objectNames.add("aaa");
+		keyNames.forEach(keyName -> objectNames.add(prefix + keyName));
+		objectNames.add("zzz");
+		var client = getClient();
+		var bucketName = createObjects(client, 44, objectNames);
+
+		String continuationToken = null;
+		for (var keyName : keyNames) {
+			var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(1)
+					.withPrefix(prefix).withEncodingType("URL").withContinuationToken(continuationToken));
+			var keys = getKeys(response.getObjectSummaries()).stream()
+					.map(key -> URLDecoder.decode(key, StandardCharsets.UTF_8)).toList();
+			assertEquals(List.of(prefix + keyName), keys);
+
+			continuationToken = response.getNextContinuationToken();
+		}
+	}
+
+	@Test
+	@Tag("Encoding")
+	public void testBucketListV2EncodingContinuationTokenDelimiter() {
+		var delimiter = "/";
+		var prefixNames = List.of("aa!key/", "ab@key/", "ac#key/", "ad$key/", "ae%key/", "af^key/", "ag&key/",
+				"ah*key/", "ai(key/", "aj)key/", "ak-key/", "al_key/", "am+key/", "an=key/", "ao[key/", "ap]key/",
+				"aq{key/", "ar}key/", "as|key/", "at\\key/", "au:key/", "av;key/", "aw\"key/", "ax'key/", "ay<key/",
+				"az>key/", "ba,key/", "bb.key/", "bc?key/", "bd/", "be~key/", "bf`key/");
+		var client = getClient();
+		var bucketName = createObjects(client, 45, prefixNames.stream().map(prefixName -> prefixName + "obj").toList());
+
+		String continuationToken = null;
+		for (var prefixName : prefixNames) {
+			var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(1)
+					.withDelimiter(delimiter).withEncodingType("URL").withContinuationToken(continuationToken));
+			var prefixes = response.getCommonPrefixes().stream()
+					.map(prefix -> URLDecoder.decode(prefix, StandardCharsets.UTF_8)).toList();
+			assertEquals(List.of(prefixName), prefixes);
+
+			continuationToken = response.getNextContinuationToken();
+		}
 	}
 }

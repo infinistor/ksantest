@@ -523,3 +523,69 @@ class TestListObjectsV2(S3TestBase):
         response = client.list_objects_v2(Bucket=bucket_name)
         assert len(response.get("Contents", [])) == 3
         assert self.get_keys(response.get("Contents")) == key_names
+
+    @pytest.mark.tag("Encoding")
+    def test_bucket_list_v2_encoding_continuation_token(self):
+        key_names = [
+            "aa!key", "ab@key", "ac#key", "ad$key", "ae%key", "af^key", "ag&key", "ah*key",
+            "ai(key", "aj)key", "ak-key", "al_key", "am+key", "an=key", "ao[key", "ap]key", "aq{key", "ar}key",
+            "as|key", "at\\key", "au:key", "av;key", "aw\"key", "ax'key", "ay<key", "az>key", "ba,key", "bb.key",
+            "bc?key", "bd/key", "be~key", "bf`key",
+        ]
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 43, key_names)
+
+        token = None
+        for key_name in key_names:
+            params = {"Bucket": bucket_name, "MaxKeys": 1, "EncodingType": "url"}
+            if token is not None:
+                params["ContinuationToken"] = token
+            response = client.list_objects_v2(**params)
+            assert self.get_keys(response.get("Contents"), "url") == [key_name]
+
+            token = response.get("NextContinuationToken")
+
+    @pytest.mark.tag("Encoding")
+    def test_bucket_list_v2_encoding_continuation_token_prefix(self):
+        prefix = "prefix=/"
+        key_names = [
+            "aa!key", "ab@key", "ac#key", "ad$key", "ae%key", "af^key", "ag&key", "ah*key",
+            "ai(key", "aj)key", "ak-key", "al_key", "am+key", "an=key", "ao[key", "ap]key", "aq{key", "ar}key",
+            "as|key", "at\\key", "au:key", "av;key", "aw\"key", "ax'key", "ay<key", "az>key", "ba,key", "bb.key",
+            "bc?key", "bd/key", "be~key", "bf`key",
+        ]
+        object_names = ["aaa"] + [prefix + key_name for key_name in key_names] + ["zzz"]
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 44, object_names)
+
+        token = None
+        for key_name in key_names:
+            params = {"Bucket": bucket_name, "MaxKeys": 1, "Prefix": prefix, "EncodingType": "url"}
+            if token is not None:
+                params["ContinuationToken"] = token
+            response = client.list_objects_v2(**params)
+            assert self.get_keys(response.get("Contents"), "url") == [prefix + key_name]
+
+            token = response.get("NextContinuationToken")
+
+    @pytest.mark.tag("Encoding")
+    def test_bucket_list_v2_encoding_continuation_token_delimiter(self):
+        delimiter = "/"
+        prefix_names = [
+            "aa!key/", "ab@key/", "ac#key/", "ad$key/", "ae%key/", "af^key/", "ag&key/",
+            "ah*key/", "ai(key/", "aj)key/", "ak-key/", "al_key/", "am+key/", "an=key/", "ao[key/", "ap]key/",
+            "aq{key/", "ar}key/", "as|key/", "at\\key/", "au:key/", "av;key/", "aw\"key/", "ax'key/", "ay<key/",
+            "az>key/", "ba,key/", "bb.key/", "bc?key/", "bd/", "be~key/", "bf`key/",
+        ]
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 45, [prefix_name + "obj" for prefix_name in prefix_names])
+
+        token = None
+        for prefix_name in prefix_names:
+            params = {"Bucket": bucket_name, "MaxKeys": 1, "Delimiter": delimiter, "EncodingType": "url"}
+            if token is not None:
+                params["ContinuationToken"] = token
+            response = client.list_objects_v2(**params)
+            assert self.get_prefix_list(response.get("CommonPrefixes"), "url") == [prefix_name]
+
+            token = response.get("NextContinuationToken")
