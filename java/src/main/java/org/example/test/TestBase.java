@@ -161,6 +161,11 @@ public class TestBase {
 	static final int BUCKET_MAX_LENGTH = 63;
 	static final int MAX_LENGTH = 500;
 	static final Random rand = new Random();// NOSONAR
+
+	static {
+		// HttpURLConnection 클래스 로드 시점에 한 번만 읽히므로 호출 직전 설정은 늦다 (CORS Origin 헤더 전송용)
+		System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
+	}
 	/************************************************************************************************************/
 
 	final ArrayList<String> buckets = new ArrayList<>();
@@ -2094,7 +2099,6 @@ public class TestBase {
 			if (key != null)
 				url = createURL(bucketName, key);
 
-			System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 			var connection = (HttpURLConnection) url.openConnection();
 			for (var Item : headers.entrySet()) {
 				connection.setRequestProperty(Item.getKey(), Item.getValue());

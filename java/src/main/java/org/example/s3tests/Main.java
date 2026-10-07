@@ -23,6 +23,9 @@ import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 public class Main {
 	public static void main(String[] args) {
+		// HttpURLConnection 클래스 로드 시점에 한 번만 읽히므로 가장 먼저 설정 (CORS Origin 헤더 전송용)
+		System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
+
 		// Create command line options
 		Options options = new Options();
 		options.addOption(Option.builder("c")

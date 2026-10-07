@@ -139,6 +139,7 @@
 					<reportsDirectory>${surefireReportsDirectory}</reportsDirectory>
 					<useFile>false</useFile>
 					<trimStackTrace>false</trimStackTrace>
+					<argLine>-Dsun.net.http.allowRestrictedHeaders=true</argLine>
 					<properties>
 						<configurationParameters>
 							junit.jupiter.execution.parallel.enabled = true
