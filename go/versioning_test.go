@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"sync"
 	"testing"
 
@@ -143,6 +144,7 @@ func TestVersioningObjSuspendVersions(t *testing.T) {
 	key := "TestVersioningObjSuspendVersions"
 	versionIDs := make([]string, 0, 8)
 	contents := make([]string, 0, 8)
+	markerIDs := make([]string, 0, 1)
 	for i := 0; i < 5; i++ {
 		body := fmt.Sprintf("content-%d", i)
 		out := put(t, s, b, key, body, nil)
@@ -152,13 +154,13 @@ func TestVersioningObjSuspendVersions(t *testing.T) {
 	assertObjectVersionState(t, s.client, b, key, versionIDs, contents)
 
 	suspendVersioning(t, s, b)
-	deleteSuspendedVersion(t, s.client, b, key, &versionIDs, &contents)
-	deleteSuspendedVersion(t, s.client, b, key, &versionIDs, &contents)
-	overwriteSuspendedVersion(t, s, b, key, "null content 1", &versionIDs, &contents)
-	overwriteSuspendedVersion(t, s, b, key, "null content 2", &versionIDs, &contents)
-	deleteSuspendedVersion(t, s.client, b, key, &versionIDs, &contents)
-	overwriteSuspendedVersion(t, s, b, key, "null content 3", &versionIDs, &contents)
-	deleteSuspendedVersion(t, s.client, b, key, &versionIDs, &contents)
+	deleteSuspendedVersion(t, s.client, b, key, &versionIDs, &contents, &markerIDs)
+	deleteSuspendedVersion(t, s.client, b, key, &versionIDs, &contents, &markerIDs)
+	overwriteSuspendedVersion(t, s, b, key, "null content 1", &versionIDs, &contents, &markerIDs)
+	overwriteSuspendedVersion(t, s, b, key, "null content 2", &versionIDs, &contents, &markerIDs)
+	deleteSuspendedVersion(t, s.client, b, key, &versionIDs, &contents, &markerIDs)
+	overwriteSuspendedVersion(t, s, b, key, "null content 3", &versionIDs, &contents, &markerIDs)
+	deleteSuspendedVersion(t, s.client, b, key, &versionIDs, &contents, &markerIDs)
 
 	enableVersioning(t, s, b)
 	for i := 0; i < 3; i++ {
@@ -182,9 +184,17 @@ func TestVersioningObjSuspendVersions(t *testing.T) {
 		versionIDs, contents = versionIDs[1:], contents[1:]
 		assertObjectVersionState(t, s.client, b, key, versionIDs, contents)
 	}
+
+	// 마지막 null 삭제마커만 남아 있어야 함
+	assertDeleteMarkers(t, s.client, b, key, markerIDs, "null")
+	if _, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
+		Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("null"),
+	}); err != nil {
+		t.Fatal(err)
+	}
 	listed := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Prefix: aws.String(key)})
-	if len(listed.Versions) != 0 {
-		t.Fatalf("versions after full removal=%d", len(listed.Versions))
+	if len(listed.Versions) != 0 || len(listed.DeleteMarkers) != 0 {
+		t.Fatalf("after full removal versions=%d markers=%d", len(listed.Versions), len(listed.DeleteMarkers))
 	}
 }
 
@@ -1241,35 +1251,218 @@ func completeVersionedMultipart(t *testing.T, client *s3.Client, bucket, key str
 	return out
 }
 
-func deleteSuspendedVersion(t *testing.T, client *s3.Client, bucket, key string, versionIDs, contents *[]string) {
+// 버저닝 중단 상태에서 버전 없이 DeleteObject. null 버전(오브젝트/마커)을 null 삭제마커 1개로 대체해야 함
+func deleteSuspendedVersion(t *testing.T, client *s3.Client, bucket, key string, versionIDs, contents, markerIDs *[]string) {
 	t.Helper()
-	if _, err := client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
+	out, err := client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket), Key: aws.String(key),
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
-	removeNullExpectedVersion(versionIDs, contents)
+	if !aws.ToBool(out.DeleteMarker) || aws.ToString(out.VersionId) != "null" {
+		t.Fatalf("suspended DeleteObject DeleteMarker=%v VersionId=%q", aws.ToBool(out.DeleteMarker), aws.ToString(out.VersionId))
+	}
+	replaceNullWithDeleteMarker(versionIDs, contents, markerIDs)
 	assertObjectVersionState(t, client, bucket, key, *versionIDs, *contents)
+	assertDeleteMarkers(t, client, bucket, key, *markerIDs, "null")
 }
 
-func overwriteSuspendedVersion(t *testing.T, s *suite, bucket, key, body string, versionIDs, contents *[]string) {
+// 버저닝 중단 상태에서 버전 없이 DeleteObjects. 동작은 deleteSuspendedVersion과 같아야 함
+func deleteObjectsSuspendedVersion(t *testing.T, client *s3.Client, bucket, key string, versionIDs, contents, markerIDs *[]string) {
+	t.Helper()
+	out := deleteMany(t, client, bucket, deleteIdentifiers([]string{key}), false)
+	if len(out.Errors) != 0 || len(out.Deleted) != 1 {
+		t.Fatalf("suspended DeleteObjects deleted=%d errors=%d", len(out.Deleted), len(out.Errors))
+	}
+	deleted := out.Deleted[0]
+	if aws.ToString(deleted.Key) != key || !aws.ToBool(deleted.DeleteMarker) || aws.ToString(deleted.DeleteMarkerVersionId) != "null" {
+		t.Fatalf("suspended DeleteObjects Key=%q DeleteMarker=%v DeleteMarkerVersionId=%q",
+			aws.ToString(deleted.Key), aws.ToBool(deleted.DeleteMarker), aws.ToString(deleted.DeleteMarkerVersionId))
+	}
+	replaceNullWithDeleteMarker(versionIDs, contents, markerIDs)
+	assertObjectVersionState(t, client, bucket, key, *versionIDs, *contents)
+	assertDeleteMarkers(t, client, bucket, key, *markerIDs, "null")
+}
+
+func overwriteSuspendedVersion(t *testing.T, s *suite, bucket, key, body string, versionIDs, contents, markerIDs *[]string) {
 	t.Helper()
 	out := put(t, s, bucket, key, body, nil)
 	if !isNullVersionID(aws.ToString(out.VersionId)) {
 		t.Fatalf("suspended PutObject VersionId=%q", aws.ToString(out.VersionId))
 	}
-	removeNullExpectedVersion(versionIDs, contents)
+	removeNullExpectedVersion(versionIDs, contents, markerIDs)
 	*versionIDs = append(*versionIDs, "null")
 	*contents = append(*contents, body)
 	assertObjectVersionState(t, s.client, bucket, key, *versionIDs, *contents)
+	assertDeleteMarkers(t, s.client, bucket, key, *markerIDs, "")
 }
 
-func removeNullExpectedVersion(versionIDs, contents *[]string) {
+func replaceNullWithDeleteMarker(versionIDs, contents, markerIDs *[]string) {
+	removeNullExpectedVersion(versionIDs, contents, markerIDs)
+	*markerIDs = append(*markerIDs, "null")
+}
+
+func removeNullExpectedVersion(versionIDs, contents, markerIDs *[]string) {
 	for i := len(*versionIDs) - 1; i >= 0; i-- {
 		if isNullVersionID((*versionIDs)[i]) {
 			*versionIDs = append((*versionIDs)[:i], (*versionIDs)[i+1:]...)
 			*contents = append((*contents)[:i], (*contents)[i+1:]...)
 		}
+	}
+	*markerIDs = slices.DeleteFunc(*markerIDs, isNullVersionID)
+}
+
+// key의 삭제마커 목록이 markerIDs와 일치하는지 확인. latestID가 있으면 해당 마커가 최신이어야 함
+func assertDeleteMarkers(t *testing.T, client *s3.Client, bucket, key string, markerIDs []string, latestID string) {
+	t.Helper()
+	listed := listVersions(t, client, &s3.ListObjectVersionsInput{Bucket: aws.String(bucket), Prefix: aws.String(key)})
+	actual := make([]string, 0, len(listed.DeleteMarkers))
+	latest := make([]string, 0, 1)
+	for _, marker := range listed.DeleteMarkers {
+		if aws.ToString(marker.Key) != key {
+			continue
+		}
+		id := aws.ToString(marker.VersionId)
+		if isNullVersionID(id) {
+			id = "null"
+		}
+		actual = append(actual, id)
+		if aws.ToBool(marker.IsLatest) {
+			latest = append(latest, id)
+		}
+	}
+	want := slices.Clone(markerIDs)
+	slices.Sort(want)
+	slices.Sort(actual)
+	if !slices.Equal(want, actual) {
+		t.Fatalf("delete markers=%v want=%v", actual, want)
+	}
+	if latestID != "" && (len(latest) != 1 || latest[0] != latestID) {
+		t.Fatalf("latest delete markers=%v want=%q", latest, latestID)
+	}
+}
+
+// 버저닝 중단 상태에서 DeleteObject를 반복해도 null 삭제마커가 1개만 남는지 확인
+func TestVersioningSuspendedDeleteRepeatNullMarker(t *testing.T) {
+	t.Parallel()
+	doTestSuspendedDeleteRepeatNullMarker(t, 34, "TestVersioningSuspendedDeleteRepeatNullMarker", false)
+}
+
+// 버저닝 중단 상태에서 DeleteObjects를 반복해도 null 삭제마커가 1개만 남는지 확인
+func TestVersioningSuspendedDeleteObjectsRepeatNullMarker(t *testing.T) {
+	t.Parallel()
+	doTestSuspendedDeleteRepeatNullMarker(t, 35, "TestVersioningSuspendedDeleteObjectsRepeatNullMarker", true)
+}
+
+// 버저닝 중단 상태에서 DeleteObject 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인
+func TestVersioningSuspendedDeleteKeepEnabledVersions(t *testing.T) {
+	t.Parallel()
+	doTestSuspendedDeleteKeepEnabledVersions(t, 36, "TestVersioningSuspendedDeleteKeepEnabledVersions", false)
+}
+
+// 버저닝 중단 상태에서 DeleteObjects 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인
+func TestVersioningSuspendedDeleteObjectsKeepEnabledVersions(t *testing.T) {
+	t.Parallel()
+	doTestSuspendedDeleteKeepEnabledVersions(t, 37, "TestVersioningSuspendedDeleteObjectsKeepEnabledVersions", true)
+}
+
+// 버저닝 중단 상태에서 DeleteObject 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인
+func TestVersioningSuspendedDeleteReplaceNoncurrentNull(t *testing.T) {
+	t.Parallel()
+	doTestSuspendedDeleteReplaceNoncurrentNull(t, 38, "TestVersioningSuspendedDeleteReplaceNoncurrentNull", false)
+}
+
+// 버저닝 중단 상태에서 DeleteObjects 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인
+func TestVersioningSuspendedDeleteObjectsReplaceNoncurrentNull(t *testing.T) {
+	t.Parallel()
+	doTestSuspendedDeleteReplaceNoncurrentNull(t, 39, "TestVersioningSuspendedDeleteObjectsReplaceNoncurrentNull", true)
+}
+
+func doTestSuspendedDeleteRepeatNullMarker(t *testing.T, bucketIndex int, key string, useDeleteObjects bool) {
+	t.Helper()
+	s := newSuite(t)
+	b := s.bucket(t, bucketIndex)
+	var versionIDs, contents, markerIDs []string
+
+	enableVersioning(t, s, b)
+	putVersions(t, s, b, key, 2, &versionIDs, &contents)
+
+	suspendVersioning(t, s, b)
+	for i := 0; i < 3; i++ {
+		deleteSuspended(t, s.client, b, key, &versionIDs, &contents, &markerIDs, useDeleteObjects)
+	}
+	if len(versionIDs) != 2 || !slices.Equal(markerIDs, []string{"null"}) {
+		t.Fatalf("versions=%v markers=%v", versionIDs, markerIDs)
+	}
+}
+
+func doTestSuspendedDeleteKeepEnabledVersions(t *testing.T, bucketIndex int, key string, useDeleteObjects bool) {
+	t.Helper()
+	s := newSuite(t)
+	b := s.bucket(t, bucketIndex)
+	var versionIDs, contents, markerIDs []string
+
+	// ENABLED: 버전 2개 → 버전 있는 삭제마커 → 버전 1개
+	enableVersioning(t, s, b)
+	putVersions(t, s, b, key, 2, &versionIDs, &contents)
+	deleted, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil || !aws.ToBool(deleted.DeleteMarker) || isNullVersionID(aws.ToString(deleted.VersionId)) {
+		t.Fatalf("enabled DeleteObject=%#v err=%v", deleted, err)
+	}
+	markerIDs = append(markerIDs, aws.ToString(deleted.VersionId))
+	putVersions(t, s, b, key, 1, &versionIDs, &contents)
+	assertDeleteMarkers(t, s.client, b, key, markerIDs, "")
+
+	// SUSPENDED: null 삭제마커만 추가/대체되고 ENABLED 시절 버전과 마커는 그대로
+	suspendVersioning(t, s, b)
+	for i := 0; i < 2; i++ {
+		deleteSuspended(t, s.client, b, key, &versionIDs, &contents, &markerIDs, useDeleteObjects)
+	}
+	if len(versionIDs) != 3 || len(markerIDs) != 2 {
+		t.Fatalf("versions=%v markers=%v", versionIDs, markerIDs)
+	}
+}
+
+func doTestSuspendedDeleteReplaceNoncurrentNull(t *testing.T, bucketIndex int, key string, useDeleteObjects bool) {
+	t.Helper()
+	s := newSuite(t)
+	b := s.bucket(t, bucketIndex)
+	var markerIDs []string
+
+	// OFF: null 버전 → ENABLED: 버전 2개 (null 버전은 최신이 아님)
+	put(t, s, b, key, "content-off", nil)
+	versionIDs := []string{"null"}
+	contents := []string{"content-off"}
+
+	enableVersioning(t, s, b)
+	putVersions(t, s, b, key, 2, &versionIDs, &contents)
+
+	// SUSPENDED: 최신이 아닌 null 버전이 삭제되고 null 삭제마커가 최신이 됨
+	suspendVersioning(t, s, b)
+	deleteSuspended(t, s.client, b, key, &versionIDs, &contents, &markerIDs, useDeleteObjects)
+	if len(versionIDs) != 2 || !slices.Equal(markerIDs, []string{"null"}) {
+		t.Fatalf("versions=%v markers=%v", versionIDs, markerIDs)
+	}
+}
+
+func putVersions(t *testing.T, s *suite, bucket, key string, count int, versionIDs, contents *[]string) {
+	t.Helper()
+	for i := 0; i < count; i++ {
+		body := fmt.Sprintf("content-%d", i)
+		out := put(t, s, bucket, key, body, nil)
+		*versionIDs = append(*versionIDs, aws.ToString(out.VersionId))
+		*contents = append(*contents, body)
+	}
+	assertObjectVersionState(t, s.client, bucket, key, *versionIDs, *contents)
+}
+
+func deleteSuspended(t *testing.T, client *s3.Client, bucket, key string, versionIDs, contents, markerIDs *[]string, useDeleteObjects bool) {
+	t.Helper()
+	if useDeleteObjects {
+		deleteObjectsSuspendedVersion(t, client, bucket, key, versionIDs, contents, markerIDs)
+	} else {
+		deleteSuspendedVersion(t, client, bucket, key, versionIDs, contents, markerIDs)
 	}
 }
 

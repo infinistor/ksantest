@@ -705,6 +705,7 @@ namespace s3tests.Test
 		{
 			var response = client.ListVersions(bucketName);
 			var versions = S3Utils.GetVersions(response.Versions);
+			Assert.Equal(versionIds.Count, versions.Count);
 
 			versions.Reverse();
 
@@ -1531,23 +1532,15 @@ namespace s3tests.Test
 
 			if (checkVersion) CheckObjVersions(client, bucketName, key, versionIds, contents);
 		}
-		public static void OverwriteSuspendedVersioningObj(S3Client client, string bucketName, string key, ref List<string> versionIds, ref List<string> contents, string content)
+		public static void OverwriteSuspendedVersioningObj(S3Client client, string bucketName, string key, List<string> versionIds, List<string> contents, List<string> deleteMarkerIds, string content)
 		{
 			client.PutObject(bucketName, key, body: content);
 
-			Assert.Equal(versionIds.Count, contents.Count);
-
-			for (int i = versionIds.Count - 1; i >= 0; i--)
-			{
-				if (versionIds[i] == "null")
-				{
-					versionIds.RemoveAt(i);
-					contents.RemoveAt(i);
-				}
-			}
+			RemoveNullVersion(versionIds, contents, deleteMarkerIds);
 			contents.Add(content);
 			versionIds.Add("null");
-			Thread.Sleep(100);
+			CheckObjVersions(client, bucketName, key, versionIds, contents);
+			CheckDeleteMarkers(client, bucketName, key, deleteMarkerIds, null);
 		}
 
 		public static List<Thread> SetupVersionedObjConcurrent(S3Client client, string bucketName, string key, int num)
@@ -1577,10 +1570,41 @@ namespace s3tests.Test
 			if (versionIds.Count != 0)
 				CheckObjVersions(client, bucketName, key, versionIds, contents);
 		}
-		public static void DeleteSuspendedVersioningObj(S3Client client, string bucketName, string key, ref List<string> versionIds, ref List<string> contents)
+		// 버저닝 중단 상태에서 버전 없이 DeleteObject. null 버전(오브젝트/마커)을 null 삭제마커 1개로 대체해야 함
+		public static void DeleteSuspendedVersioningObj(S3Client client, string bucketName, string key, List<string> versionIds, List<string> contents, List<string> deleteMarkerIds)
 		{
-			client.DeleteObject(bucketName, key);
+			var response = client.DeleteObject(bucketName, key);
+			Assert.Equal("true", response.DeleteMarker);
+			Assert.Equal("null", response.VersionId);
 
+			ReplaceNullWithDeleteMarker(versionIds, contents, deleteMarkerIds);
+			CheckObjVersions(client, bucketName, key, versionIds, contents);
+			CheckDeleteMarkers(client, bucketName, key, deleteMarkerIds, "null");
+		}
+
+		// 버저닝 중단 상태에서 버전 없이 DeleteObjects. 동작은 DeleteSuspendedVersioningObj와 같아야 함
+		public static void DeleteObjectsSuspendedVersioningObj(S3Client client, string bucketName, string key, List<string> versionIds, List<string> contents, List<string> deleteMarkerIds)
+		{
+			var response = client.DeleteObjects(bucketName, [new KeyVersion() { Key = key }]);
+			Assert.Empty(response.DeleteErrors);
+			var deleted = Assert.Single(response.DeletedObjects);
+			Assert.Equal(key, deleted.Key);
+			Assert.True(deleted.DeleteMarker);
+			Assert.Equal("null", deleted.DeleteMarkerVersionId);
+
+			ReplaceNullWithDeleteMarker(versionIds, contents, deleteMarkerIds);
+			CheckObjVersions(client, bucketName, key, versionIds, contents);
+			CheckDeleteMarkers(client, bucketName, key, deleteMarkerIds, "null");
+		}
+
+		private static void ReplaceNullWithDeleteMarker(List<string> versionIds, List<string> contents, List<string> deleteMarkerIds)
+		{
+			RemoveNullVersion(versionIds, contents, deleteMarkerIds);
+			deleteMarkerIds.Add("null");
+		}
+
+		private static void RemoveNullVersion(List<string> versionIds, List<string> contents, List<string> deleteMarkerIds)
+		{
 			Assert.Equal(versionIds.Count, contents.Count);
 
 			for (int i = versionIds.Count - 1; i >= 0; i--)
@@ -1591,7 +1615,23 @@ namespace s3tests.Test
 					contents.RemoveAt(i);
 				}
 			}
-			Thread.Sleep(100);
+			deleteMarkerIds.Remove("null");
+		}
+
+		// key의 삭제마커 목록이 deleteMarkerIds와 일치하는지 확인. latestId가 있으면 해당 마커가 최신이어야 함
+		public static void CheckDeleteMarkers(S3Client client, string bucketName, string key, List<string> deleteMarkerIds, string latestId)
+		{
+			var response = client.ListVersions(bucketName, prefix: key);
+			var markers = GetDeleteMarkers(response.Versions).Where(m => m.Key == key).ToList();
+
+			var actual = markers.Select(m => m.VersionId ?? "null").Order().ToList();
+			Assert.Equal(deleteMarkerIds.Order().ToList(), actual);
+
+			if (latestId != null)
+			{
+				var latest = Assert.Single(markers, m => m.IsLatest == true);
+				Assert.Equal(latestId, latest.VersionId ?? "null");
+			}
 		}
 
 		public static List<Thread> DoClearVersionedBucketConcurrent(S3Client client, string bucketName)

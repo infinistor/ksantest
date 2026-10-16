@@ -1257,6 +1257,7 @@ class S3TestBase:
     ) -> None:
         response = client.list_object_versions(Bucket=bucket_name)
         versions = list(response.get("Versions", []))
+        assert len(versions) == len(version_ids)
         versions.reverse()
         for index, version in enumerate(versions):
             assert version["VersionId"] == version_ids[index]
@@ -1947,14 +1948,42 @@ class S3TestBase:
             idx += idx_inc
 
     def delete_suspended_versioning_obj(
-        self, client: Any, bucket_name: str, key: str, version_ids: List[str], contents: List[str]
+        self,
+        client: Any,
+        bucket_name: str,
+        key: str,
+        version_ids: List[str],
+        contents: List[str],
+        delete_marker_ids: List[str],
     ) -> None:
-        client.delete_object(Bucket=bucket_name, Key=key)
-        assert len(version_ids) == len(contents)
-        for i in range(len(version_ids) - 1, -1, -1):
-            if version_ids[i] == "null":
-                version_ids.pop(i)
-                contents.pop(i)
+        # 버저닝 중단 상태에서 버전 없이 DeleteObject. null 버전(오브젝트/마커)을 null 삭제마커 1개로 대체해야 함
+        response = client.delete_object(Bucket=bucket_name, Key=key)
+        assert response.get("DeleteMarker") is True
+        assert response.get("VersionId") == "null"
+        self._replace_null_with_delete_marker(version_ids, contents, delete_marker_ids)
+        self.check_obj_versions(client, bucket_name, key, version_ids, contents)
+        self.check_delete_markers(client, bucket_name, key, delete_marker_ids, "null")
+
+    def delete_objects_suspended_versioning_obj(
+        self,
+        client: Any,
+        bucket_name: str,
+        key: str,
+        version_ids: List[str],
+        contents: List[str],
+        delete_marker_ids: List[str],
+    ) -> None:
+        # 버저닝 중단 상태에서 버전 없이 DeleteObjects. 동작은 delete_suspended_versioning_obj와 같아야 함
+        response = client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": key}]})
+        assert not response.get("Errors")
+        deleted = response.get("Deleted", [])
+        assert len(deleted) == 1
+        assert deleted[0]["Key"] == key
+        assert deleted[0].get("DeleteMarker") is True
+        assert deleted[0].get("DeleteMarkerVersionId") == "null"
+        self._replace_null_with_delete_marker(version_ids, contents, delete_marker_ids)
+        self.check_obj_versions(client, bucket_name, key, version_ids, contents)
+        self.check_delete_markers(client, bucket_name, key, delete_marker_ids, "null")
 
     def overwrite_suspended_versioning_obj(
         self,
@@ -1963,16 +1992,48 @@ class S3TestBase:
         key: str,
         version_ids: List[str],
         contents: List[str],
+        delete_marker_ids: List[str],
         content: str,
     ) -> None:
         client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+        self._remove_null_version(version_ids, contents, delete_marker_ids)
+        contents.append(content)
+        version_ids.append("null")
+        self.check_obj_versions(client, bucket_name, key, version_ids, contents)
+        self.check_delete_markers(client, bucket_name, key, delete_marker_ids, None)
+
+    def _replace_null_with_delete_marker(
+        self, version_ids: List[str], contents: List[str], delete_marker_ids: List[str]
+    ) -> None:
+        self._remove_null_version(version_ids, contents, delete_marker_ids)
+        delete_marker_ids.append("null")
+
+    @staticmethod
+    def _remove_null_version(version_ids: List[str], contents: List[str], delete_marker_ids: List[str]) -> None:
         assert len(version_ids) == len(contents)
         for i in range(len(version_ids) - 1, -1, -1):
             if version_ids[i] == "null":
                 version_ids.pop(i)
                 contents.pop(i)
-        contents.append(content)
-        version_ids.append("null")
+        if "null" in delete_marker_ids:
+            delete_marker_ids.remove("null")
+
+    def check_delete_markers(
+        self,
+        client: Any,
+        bucket_name: str,
+        key: str,
+        delete_marker_ids: Sequence[str],
+        latest_id: Optional[str],
+    ) -> None:
+        # key의 삭제마커 목록이 delete_marker_ids와 일치하는지 확인. latest_id가 있으면 해당 마커가 최신이어야 함
+        response = client.list_object_versions(Bucket=bucket_name, Prefix=key)
+        markers = [m for m in response.get("DeleteMarkers", []) if m["Key"] == key]
+        actual = sorted(self.norm_version_id(m.get("VersionId")) for m in markers)
+        assert actual == sorted(delete_marker_ids)
+        if latest_id is not None:
+            latest = [self.norm_version_id(m.get("VersionId")) for m in markers if m.get("IsLatest")]
+            assert latest == [latest_id]
 
     def do_create_versioned_obj_concurrent(
         self, client: Any, bucket_name: str, key: str, count: int

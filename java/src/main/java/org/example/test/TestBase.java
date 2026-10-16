@@ -83,6 +83,7 @@ import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.CopyPartRequest;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
 import com.amazonaws.services.s3.model.DeleteVersionRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -975,6 +976,7 @@ public class TestBase {
 			List<String> contents) {
 		var response = client.listVersions(bucketName, "");
 		var versions = getVersions(response.getVersionSummaries());
+		assertEquals(versionIds.size(), versions.size());
 
 		Collections.reverse(versions);
 
@@ -1958,24 +1960,50 @@ public class TestBase {
 		}
 	}
 
+	// 버저닝 중단 상태에서 버전 없이 DeleteObject. null 버전(오브젝트/마커)을 null 삭제마커 1개로 대체해야 함
+	// v1 SDK의 deleteObject는 응답 헤더를 돌려주지 않으므로 목록으로만 확인한다
 	public void deleteSuspendedVersioningObj(AmazonS3 client, String bucketName, String key, List<String> versionIds,
-			List<String> contents) {
+			List<String> contents, List<String> deleteMarkerIds) {
 		client.deleteObject(bucketName, key);
 
-		assertEquals(versionIds.size(), contents.size());
+		replaceNullWithDeleteMarker(versionIds, contents, deleteMarkerIds);
+		checkObjVersions(client, bucketName, key, versionIds, contents);
+		checkDeleteMarkers(client, bucketName, key, deleteMarkerIds, "null");
+	}
 
-		for (int i = versionIds.size() - 1; i >= 0; i--) {
-			if (versionIds.get(i).equals("null")) {
-				versionIds.remove(i);
-				contents.remove(i);
-			}
-		}
+	// 버저닝 중단 상태에서 버전 없이 DeleteObjects. 동작은 deleteSuspendedVersioningObj와 같아야 함
+	public void deleteObjectsSuspendedVersioningObj(AmazonS3 client, String bucketName, String key,
+			List<String> versionIds, List<String> contents, List<String> deleteMarkerIds) {
+		var response = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(key));
+		assertEquals(1, response.getDeletedObjects().size());
+		var deleted = response.getDeletedObjects().get(0);
+		assertEquals(key, deleted.getKey());
+		assertEquals(true, deleted.isDeleteMarker());
+		assertEquals("null", deleted.getDeleteMarkerVersionId());
+
+		replaceNullWithDeleteMarker(versionIds, contents, deleteMarkerIds);
+		checkObjVersions(client, bucketName, key, versionIds, contents);
+		checkDeleteMarkers(client, bucketName, key, deleteMarkerIds, "null");
 	}
 
 	public void overwriteSuspendedVersioningObj(AmazonS3 client, String bucketName, String key, List<String> versionIds,
-			List<String> contents, String content) {
+			List<String> contents, List<String> deleteMarkerIds, String content) {
 		client.putObject(bucketName, key, content);
 
+		removeNullVersion(versionIds, contents, deleteMarkerIds);
+		contents.add(content);
+		versionIds.add("null");
+		checkObjVersions(client, bucketName, key, versionIds, contents);
+		checkDeleteMarkers(client, bucketName, key, deleteMarkerIds, null);
+	}
+
+	private void replaceNullWithDeleteMarker(List<String> versionIds, List<String> contents,
+			List<String> deleteMarkerIds) {
+		removeNullVersion(versionIds, contents, deleteMarkerIds);
+		deleteMarkerIds.add("null");
+	}
+
+	private void removeNullVersion(List<String> versionIds, List<String> contents, List<String> deleteMarkerIds) {
 		assertEquals(versionIds.size(), contents.size());
 
 		for (int i = versionIds.size() - 1; i >= 0; i--) {
@@ -1984,8 +2012,25 @@ public class TestBase {
 				contents.remove(i);
 			}
 		}
-		contents.add(content);
-		versionIds.add("null");
+		deleteMarkerIds.remove("null");
+	}
+
+	// key의 삭제마커 목록이 deleteMarkerIds와 일치하는지 확인. latestId가 있으면 해당 마커가 최신이어야 함
+	public void checkDeleteMarkers(AmazonS3 client, String bucketName, String key, List<String> deleteMarkerIds,
+			String latestId) {
+		var response = client.listVersions(bucketName, key);
+		var markers = getDeleteMarkers(response.getVersionSummaries()).stream()
+				.filter(m -> key.equals(m.getKey())).toList();
+
+		var actual = markers.stream().map(m -> m.getVersionId() == null ? "null" : m.getVersionId()).sorted()
+				.toList();
+		assertEquals(deleteMarkerIds.stream().sorted().toList(), actual);
+
+		if (latestId != null) {
+			var latest = markers.stream().filter(m -> m.isLatest()).toList();
+			assertEquals(1, latest.size());
+			assertEquals(latestId, latest.get(0).getVersionId() == null ? "null" : latest.get(0).getVersionId());
+		}
 	}
 
 	public void removeObjVersion(AmazonS3 client, String bucketName, String key, List<String> versionIds,

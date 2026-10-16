@@ -132,28 +132,36 @@ class TestVersioning(S3TestBase):
         num_versions = 5
         version_ids: list[str] = []
         contents: list[str] = []
+        delete_marker_ids: list[str] = []
         self.create_multiple_versions_track(client, bucket_name, key, num_versions, version_ids, contents, True)
         self.check_configure_versioning_retry(bucket_name, "Suspended")
-        self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents)
-        self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents)
+        self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents, delete_marker_ids)
+        self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents, delete_marker_ids)
         self.overwrite_suspended_versioning_obj(
-            client, bucket_name, key, version_ids, contents, "null content 1"
+            client, bucket_name, key, version_ids, contents, delete_marker_ids, "null content 1"
         )
         self.overwrite_suspended_versioning_obj(
-            client, bucket_name, key, version_ids, contents, "null content 2"
+            client, bucket_name, key, version_ids, contents, delete_marker_ids, "null content 2"
         )
-        self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents)
+        self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents, delete_marker_ids)
         self.overwrite_suspended_versioning_obj(
-            client, bucket_name, key, version_ids, contents, "null content 3"
+            client, bucket_name, key, version_ids, contents, delete_marker_ids, "null content 3"
         )
-        self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents)
+        self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents, delete_marker_ids)
         self.check_configure_versioning_retry(bucket_name, "Enabled")
         self.create_multiple_versions_track(client, bucket_name, key, 3, version_ids, contents, True)
         num_versions += 3
+        self.check_delete_markers(client, bucket_name, key, delete_marker_ids, None)
         for _ in range(num_versions):
             self.remove_obj_version(client, bucket_name, key, version_ids, contents, 0)
         assert len(version_ids) == 0
         assert len(contents) == 0
+        # 마지막 null 삭제마커만 남아 있어야 함
+        self.check_delete_markers(client, bucket_name, key, delete_marker_ids, "null")
+        client.delete_object(Bucket=bucket_name, Key=key, VersionId="null")
+        list_response = client.list_object_versions(Bucket=bucket_name)
+        assert len(list_response.get("Versions", [])) == 0
+        assert len(list_response.get("DeleteMarkers", [])) == 0
 
     @pytest.mark.tag("Object")
     def test_versioning_obj_create_versions_remove_all(self):
@@ -934,3 +942,125 @@ class TestVersioning(S3TestBase):
         assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
         # botocore HeadObject often surfaces Code as "404" (no XML body); Java SDK may report NoSuchKey.
         assert exc_info.value.response["Error"]["Code"] in (md.NO_SUCH_KEY, "404")
+
+    # 버저닝 중단 상태에서 DeleteObject를 반복해도 null 삭제마커가 1개만 남는지 확인
+    @pytest.mark.tag("DeleteMarker")
+    def test_versioning_suspended_delete_repeat_null_marker(self):
+        self._do_test_suspended_delete_repeat_null_marker(
+            34, "test_versioning_suspended_delete_repeat_null_marker", False
+        )
+
+    # 버저닝 중단 상태에서 DeleteObjects를 반복해도 null 삭제마커가 1개만 남는지 확인
+    @pytest.mark.tag("DeleteMarker")
+    def test_versioning_suspended_delete_objects_repeat_null_marker(self):
+        self._do_test_suspended_delete_repeat_null_marker(
+            35, "test_versioning_suspended_delete_objects_repeat_null_marker", True
+        )
+
+    # 버저닝 중단 상태에서 DeleteObject 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인
+    @pytest.mark.tag("DeleteMarker")
+    def test_versioning_suspended_delete_keep_enabled_versions(self):
+        self._do_test_suspended_delete_keep_enabled_versions(
+            36, "test_versioning_suspended_delete_keep_enabled_versions", False
+        )
+
+    # 버저닝 중단 상태에서 DeleteObjects 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인
+    @pytest.mark.tag("DeleteMarker")
+    def test_versioning_suspended_delete_objects_keep_enabled_versions(self):
+        self._do_test_suspended_delete_keep_enabled_versions(
+            37, "test_versioning_suspended_delete_objects_keep_enabled_versions", True
+        )
+
+    # 버저닝 중단 상태에서 DeleteObject 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인
+    @pytest.mark.tag("DeleteMarker")
+    def test_versioning_suspended_delete_replace_noncurrent_null(self):
+        self._do_test_suspended_delete_replace_noncurrent_null(
+            38, "test_versioning_suspended_delete_replace_noncurrent_null", False
+        )
+
+    # 버저닝 중단 상태에서 DeleteObjects 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인
+    @pytest.mark.tag("DeleteMarker")
+    def test_versioning_suspended_delete_objects_replace_noncurrent_null(self):
+        self._do_test_suspended_delete_replace_noncurrent_null(
+            39, "test_versioning_suspended_delete_objects_replace_noncurrent_null", True
+        )
+
+    def _do_test_suspended_delete_repeat_null_marker(self, bucket_index: int, key: str, use_delete_objects: bool):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, bucket_index)
+        version_ids: list[str] = []
+        contents: list[str] = []
+        delete_marker_ids: list[str] = []
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        self.create_multiple_versions_track(client, bucket_name, key, 2, version_ids, contents, True)
+
+        self.check_configure_versioning_retry(bucket_name, "Suspended")
+        for _ in range(3):
+            self._delete_suspended(client, bucket_name, key, version_ids, contents, delete_marker_ids, use_delete_objects)
+
+        assert len(version_ids) == 2
+        assert delete_marker_ids == ["null"]
+
+    def _do_test_suspended_delete_keep_enabled_versions(self, bucket_index: int, key: str, use_delete_objects: bool):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, bucket_index)
+        version_ids: list[str] = []
+        contents: list[str] = []
+        delete_marker_ids: list[str] = []
+
+        # ENABLED: 버전 2개 → 버전 있는 삭제마커 → 버전 1개
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        self.create_multiple_versions_track(client, bucket_name, key, 2, version_ids, contents, True)
+        delete_response = client.delete_object(Bucket=bucket_name, Key=key)
+        assert delete_response.get("DeleteMarker") is True
+        assert delete_response.get("VersionId") not in (None, "null")
+        delete_marker_ids.append(delete_response["VersionId"])
+        self.create_multiple_versions_track(client, bucket_name, key, 1, version_ids, contents, True)
+        self.check_delete_markers(client, bucket_name, key, delete_marker_ids, None)
+
+        # SUSPENDED: null 삭제마커만 추가/대체되고 ENABLED 시절 버전과 마커는 그대로
+        self.check_configure_versioning_retry(bucket_name, "Suspended")
+        for _ in range(2):
+            self._delete_suspended(client, bucket_name, key, version_ids, contents, delete_marker_ids, use_delete_objects)
+
+        assert len(version_ids) == 3
+        assert len(delete_marker_ids) == 2
+
+    def _do_test_suspended_delete_replace_noncurrent_null(self, bucket_index: int, key: str, use_delete_objects: bool):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, bucket_index)
+        delete_marker_ids: list[str] = []
+
+        # OFF: null 버전 → ENABLED: 버전 2개 (null 버전은 최신이 아님)
+        content = "content-off"
+        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"))
+        version_ids: list[str] = ["null"]
+        contents: list[str] = [content]
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        self.create_multiple_versions_track(client, bucket_name, key, 2, version_ids, contents, True)
+
+        # SUSPENDED: 최신이 아닌 null 버전이 삭제되고 null 삭제마커가 최신이 됨
+        self.check_configure_versioning_retry(bucket_name, "Suspended")
+        self._delete_suspended(client, bucket_name, key, version_ids, contents, delete_marker_ids, use_delete_objects)
+
+        assert len(version_ids) == 2
+        assert delete_marker_ids == ["null"]
+
+    def _delete_suspended(
+        self,
+        client,
+        bucket_name: str,
+        key: str,
+        version_ids: list[str],
+        contents: list[str],
+        delete_marker_ids: list[str],
+        use_delete_objects: bool,
+    ):
+        if use_delete_objects:
+            self.delete_objects_suspended_versioning_obj(
+                client, bucket_name, key, version_ids, contents, delete_marker_ids
+            )
+        else:
+            self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents, delete_marker_ids)

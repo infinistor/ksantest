@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.Grant;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
@@ -195,22 +196,27 @@ public class Versioning extends TestBase {
 
 		var versionIds = new ArrayList<String>();
 		var contents = new ArrayList<String>();
+		var deleteMarkerIds = new ArrayList<String>();
 		createMultipleVersions(client, bucketName, key, numVersions, versionIds, contents, true);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
-		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents);
-		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents);
+		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
+		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
 
-		overwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, "null content 1");
-		overwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, "null content 2");
-		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents);
-		overwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, "null content 3");
-		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents);
+		overwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds,
+				"null content 1");
+		overwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds,
+				"null content 2");
+		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
+		overwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds,
+				"null content 3");
+		deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
 
 		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
 
 		createMultipleVersions(client, bucketName, key, 3, versionIds, contents, true);
 		numVersions += 3;
+		checkDeleteMarkers(client, bucketName, key, deleteMarkerIds, null);
 
 		for (int i = 0; i < numVersions; i++)
 			removeObjVersion(client, bucketName, key, versionIds, contents, 0);
@@ -218,6 +224,13 @@ public class Versioning extends TestBase {
 		assertEquals(0, versionIds.size());
 		assertEquals(0, contents.size());
 
+		// 마지막 null 삭제마커만 남아 있어야 함
+		checkDeleteMarkers(client, bucketName, key, deleteMarkerIds, "null");
+		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId("null"));
+
+		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(0, listResponse.versions().size());
+		assertEquals(0, listResponse.deleteMarkers().size());
 	}
 
 	@Test
@@ -1237,5 +1250,125 @@ public class Versioning extends TestBase {
 				() -> client.headObject(h -> h.bucket(bucketName).key(key)));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 		assertEquals(MainData.NO_SUCH_KEY, e.awsErrorDetails().errorCode());
+	}
+
+	// 버저닝 중단 상태에서 DeleteObject를 반복해도 null 삭제마커가 1개만 남는지 확인
+	@Test
+	@Tag("DeleteMarker")
+	public void testVersioningSuspendedDeleteRepeatNullMarker() {
+		doTestSuspendedDeleteRepeatNullMarker(34, "testVersioningSuspendedDeleteRepeatNullMarker", false);
+	}
+
+	// 버저닝 중단 상태에서 DeleteObjects를 반복해도 null 삭제마커가 1개만 남는지 확인
+	@Test
+	@Tag("DeleteMarker")
+	public void testVersioningSuspendedDeleteObjectsRepeatNullMarker() {
+		doTestSuspendedDeleteRepeatNullMarker(35, "testVersioningSuspendedDeleteObjectsRepeatNullMarker", true);
+	}
+
+	// 버저닝 중단 상태에서 DeleteObject 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인
+	@Test
+	@Tag("DeleteMarker")
+	public void testVersioningSuspendedDeleteKeepEnabledVersions() {
+		doTestSuspendedDeleteKeepEnabledVersions(36, "testVersioningSuspendedDeleteKeepEnabledVersions", false);
+	}
+
+	// 버저닝 중단 상태에서 DeleteObjects 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인
+	@Test
+	@Tag("DeleteMarker")
+	public void testVersioningSuspendedDeleteObjectsKeepEnabledVersions() {
+		doTestSuspendedDeleteKeepEnabledVersions(37, "testVersioningSuspendedDeleteObjectsKeepEnabledVersions",
+				true);
+	}
+
+	// 버저닝 중단 상태에서 DeleteObject 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인
+	@Test
+	@Tag("DeleteMarker")
+	public void testVersioningSuspendedDeleteReplaceNoncurrentNull() {
+		doTestSuspendedDeleteReplaceNoncurrentNull(38, "testVersioningSuspendedDeleteReplaceNoncurrentNull", false);
+	}
+
+	// 버저닝 중단 상태에서 DeleteObjects 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인
+	@Test
+	@Tag("DeleteMarker")
+	public void testVersioningSuspendedDeleteObjectsReplaceNoncurrentNull() {
+		doTestSuspendedDeleteReplaceNoncurrentNull(39, "testVersioningSuspendedDeleteObjectsReplaceNoncurrentNull",
+				true);
+	}
+
+	private void doTestSuspendedDeleteRepeatNullMarker(int bucketIndex, String key, boolean useDeleteObjects) {
+		var client = getClient();
+		var bucketName = createBucket(client, bucketIndex);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		var deleteMarkerIds = new ArrayList<String>();
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		createMultipleVersions(client, bucketName, key, 2, versionIds, contents, true);
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
+		for (int i = 0; i < 3; i++)
+			deleteSuspended(client, bucketName, key, versionIds, contents, deleteMarkerIds, useDeleteObjects);
+
+		assertEquals(2, versionIds.size());
+		assertEquals(List.of("null"), deleteMarkerIds);
+	}
+
+	private void doTestSuspendedDeleteKeepEnabledVersions(int bucketIndex, String key, boolean useDeleteObjects) {
+		var client = getClient();
+		var bucketName = createBucket(client, bucketIndex);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		var deleteMarkerIds = new ArrayList<String>();
+
+		// ENABLED: 버전 2개 → 버전 있는 삭제마커 → 버전 1개
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		createMultipleVersions(client, bucketName, key, 2, versionIds, contents, true);
+		var deleteResponse = client.deleteObject(d -> d.bucket(bucketName).key(key));
+		assertEquals(true, deleteResponse.deleteMarker());
+		assertNotNull(deleteResponse.versionId());
+		deleteMarkerIds.add(deleteResponse.versionId());
+		createMultipleVersions(client, bucketName, key, 1, versionIds, contents, true);
+		checkDeleteMarkers(client, bucketName, key, deleteMarkerIds, null);
+
+		// SUSPENDED: null 삭제마커만 추가/대체되고 ENABLED 시절 버전과 마커는 그대로
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
+		for (int i = 0; i < 2; i++)
+			deleteSuspended(client, bucketName, key, versionIds, contents, deleteMarkerIds, useDeleteObjects);
+
+		assertEquals(3, versionIds.size());
+		assertEquals(2, deleteMarkerIds.size());
+	}
+
+	private void doTestSuspendedDeleteReplaceNoncurrentNull(int bucketIndex, String key, boolean useDeleteObjects) {
+		var client = getClient();
+		var bucketName = createBucket(client, bucketIndex);
+		var versionIds = new ArrayList<String>();
+		var contents = new ArrayList<String>();
+		var deleteMarkerIds = new ArrayList<String>();
+
+		// OFF: null 버전 → ENABLED: 버전 2개 (null 버전은 최신이 아님)
+		var content = "content-off";
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
+		versionIds.add("null");
+		contents.add(content);
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		createMultipleVersions(client, bucketName, key, 2, versionIds, contents, true);
+
+		// SUSPENDED: 최신이 아닌 null 버전이 삭제되고 null 삭제마커가 최신이 됨
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.SUSPENDED);
+		deleteSuspended(client, bucketName, key, versionIds, contents, deleteMarkerIds, useDeleteObjects);
+
+		assertEquals(2, versionIds.size());
+		assertEquals(List.of("null"), deleteMarkerIds);
+	}
+
+	private void deleteSuspended(S3Client client, String bucketName, String key, List<String> versionIds,
+			List<String> contents, List<String> deleteMarkerIds, boolean useDeleteObjects) {
+		if (useDeleteObjects)
+			deleteObjectsSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
+		else
+			deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
 	}
 }

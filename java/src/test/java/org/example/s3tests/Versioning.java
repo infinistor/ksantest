@@ -372,4 +372,64 @@ class Versioning {
 		test.testVersioningHeadObjectDeleteMarker();
 		testV2.testVersioningHeadObjectDeleteMarker();
 	}
+
+	/**
+	 * 버저닝 중단 상태에서 DeleteObject를 반복해도 null 삭제마커가 1개만 남는지 확인
+	 */
+	@Test
+	@Tag("DeleteMarker")
+	void testVersioningSuspendedDeleteRepeatNullMarker() {
+		test.testVersioningSuspendedDeleteRepeatNullMarker();
+		testV2.testVersioningSuspendedDeleteRepeatNullMarker();
+	}
+
+	/**
+	 * 버저닝 중단 상태에서 DeleteObjects를 반복해도 null 삭제마커가 1개만 남는지 확인
+	 */
+	@Test
+	@Tag("DeleteMarker")
+	void testVersioningSuspendedDeleteObjectsRepeatNullMarker() {
+		test.testVersioningSuspendedDeleteObjectsRepeatNullMarker();
+		testV2.testVersioningSuspendedDeleteObjectsRepeatNullMarker();
+	}
+
+	/**
+	 * 버저닝 중단 상태에서 DeleteObject 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인
+	 */
+	@Test
+	@Tag("DeleteMarker")
+	void testVersioningSuspendedDeleteKeepEnabledVersions() {
+		test.testVersioningSuspendedDeleteKeepEnabledVersions();
+		testV2.testVersioningSuspendedDeleteKeepEnabledVersions();
+	}
+
+	/**
+	 * 버저닝 중단 상태에서 DeleteObjects 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인
+	 */
+	@Test
+	@Tag("DeleteMarker")
+	void testVersioningSuspendedDeleteObjectsKeepEnabledVersions() {
+		test.testVersioningSuspendedDeleteObjectsKeepEnabledVersions();
+		testV2.testVersioningSuspendedDeleteObjectsKeepEnabledVersions();
+	}
+
+	/**
+	 * 버저닝 중단 상태에서 DeleteObject 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인
+	 */
+	@Test
+	@Tag("DeleteMarker")
+	void testVersioningSuspendedDeleteReplaceNoncurrentNull() {
+		test.testVersioningSuspendedDeleteReplaceNoncurrentNull();
+		testV2.testVersioningSuspendedDeleteReplaceNoncurrentNull();
+	}
+
+	/**
+	 * 버저닝 중단 상태에서 DeleteObjects 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인
+	 */
+	@Test
+	@Tag("DeleteMarker")
+	void testVersioningSuspendedDeleteObjectsReplaceNoncurrentNull() {
+		test.testVersioningSuspendedDeleteObjectsReplaceNoncurrentNull();
+		testV2.testVersioningSuspendedDeleteObjectsReplaceNoncurrentNull();
+	}
 }

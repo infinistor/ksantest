@@ -1133,6 +1133,7 @@ public class TestBase {
 			List<String> contents) {
 		var response = client.listObjectVersions(l -> l.bucket(bucketName));
 		var versions = new ArrayList<>(response.versions());
+		assertEquals(versionIds.size(), versions.size());
 
 		var index = 0;
 		for (var version : versions.reversed()) {
@@ -2428,24 +2429,53 @@ public class TestBase {
 		}
 	}
 
+	// 버저닝 중단 상태에서 버전 없이 DeleteObject. null 버전(오브젝트/마커)을 null 삭제마커 1개로 대체해야 함
 	public void deleteSuspendedVersioningObj(S3Client client, String bucketName, String key, List<String> versionIds,
-			List<String> contents) {
-		client.deleteObject(b -> b.bucket(bucketName).key(key));
+			List<String> contents, List<String> deleteMarkerIds) {
+		var response = client.deleteObject(b -> b.bucket(bucketName).key(key));
+		assertEquals(true, response.deleteMarker());
+		assertEquals("null", response.versionId());
 
-		assertEquals(versionIds.size(), contents.size());
+		replaceNullWithDeleteMarker(versionIds, contents, deleteMarkerIds);
+		checkObjVersions(client, bucketName, key, versionIds, contents);
+		checkDeleteMarkers(client, bucketName, key, deleteMarkerIds, "null");
+	}
 
-		for (int i = versionIds.size() - 1; i >= 0; i--) {
-			if (versionIds.get(i).equals("null")) {
-				versionIds.remove(i);
-				contents.remove(i);
-			}
-		}
+	// 버저닝 중단 상태에서 버전 없이 DeleteObjects. 동작은 deleteSuspendedVersioningObj와 같아야 함
+	public void deleteObjectsSuspendedVersioningObj(S3Client client, String bucketName, String key,
+			List<String> versionIds, List<String> contents, List<String> deleteMarkerIds) {
+		var response = client.deleteObjects(d -> d.bucket(bucketName)
+				.delete(o -> o.objects(ObjectIdentifier.builder().key(key).build())));
+		assertEquals(0, response.errors().size());
+		assertEquals(1, response.deleted().size());
+		var deleted = response.deleted().get(0);
+		assertEquals(key, deleted.key());
+		assertEquals(true, deleted.deleteMarker());
+		assertEquals("null", deleted.deleteMarkerVersionId());
+
+		replaceNullWithDeleteMarker(versionIds, contents, deleteMarkerIds);
+		checkObjVersions(client, bucketName, key, versionIds, contents);
+		checkDeleteMarkers(client, bucketName, key, deleteMarkerIds, "null");
 	}
 
 	public void overwriteSuspendedVersioningObj(S3Client client, String bucketName, String key, List<String> versionIds,
-			List<String> contents, String content) {
+			List<String> contents, List<String> deleteMarkerIds, String content) {
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(content));
 
+		removeNullVersion(versionIds, contents, deleteMarkerIds);
+		contents.add(content);
+		versionIds.add("null");
+		checkObjVersions(client, bucketName, key, versionIds, contents);
+		checkDeleteMarkers(client, bucketName, key, deleteMarkerIds, null);
+	}
+
+	private void replaceNullWithDeleteMarker(List<String> versionIds, List<String> contents,
+			List<String> deleteMarkerIds) {
+		removeNullVersion(versionIds, contents, deleteMarkerIds);
+		deleteMarkerIds.add("null");
+	}
+
+	private void removeNullVersion(List<String> versionIds, List<String> contents, List<String> deleteMarkerIds) {
 		assertEquals(versionIds.size(), contents.size());
 
 		for (int i = versionIds.size() - 1; i >= 0; i--) {
@@ -2454,8 +2484,23 @@ public class TestBase {
 				contents.remove(i);
 			}
 		}
-		contents.add(content);
-		versionIds.add("null");
+		deleteMarkerIds.remove("null");
+	}
+
+	// key의 삭제마커 목록이 deleteMarkerIds와 일치하는지 확인. latestId가 있으면 해당 마커가 최신이어야 함
+	public void checkDeleteMarkers(S3Client client, String bucketName, String key, List<String> deleteMarkerIds,
+			String latestId) {
+		var response = client.listObjectVersions(l -> l.bucket(bucketName).prefix(key));
+		var markers = response.deleteMarkers().stream().filter(m -> key.equals(m.key())).toList();
+
+		var actual = markers.stream().map(m -> m.versionId() == null ? "null" : m.versionId()).sorted().toList();
+		assertEquals(deleteMarkerIds.stream().sorted().toList(), actual);
+
+		if (latestId != null) {
+			var latest = markers.stream().filter(m -> Boolean.TRUE.equals(m.isLatest())).toList();
+			assertEquals(1, latest.size());
+			assertEquals(latestId, latest.get(0).versionId() == null ? "null" : latest.get(0).versionId());
+		}
 	}
 
 	public void removeObjVersion(S3Client client, String bucketName, String key, List<String> versionIds,

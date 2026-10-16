@@ -220,22 +220,24 @@ namespace s3tests.Test
 
 			List<string> versionIds = null;
 			List<string> contents = null;
+			var deleteMarkerIds = new List<string>();
 			SetupMultipleVersions(client, bucketName, key, numVersions, ref versionIds, ref contents);
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
-			DeleteSuspendedVersioningObj(client, bucketName, key, ref versionIds, ref contents);
-			DeleteSuspendedVersioningObj(client, bucketName, key, ref versionIds, ref contents);
+			DeleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
+			DeleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
 
-			OverwriteSuspendedVersioningObj(client, bucketName, key, ref versionIds, ref contents, "null content 1");
-			OverwriteSuspendedVersioningObj(client, bucketName, key, ref versionIds, ref contents, "null content 2");
-			DeleteSuspendedVersioningObj(client, bucketName, key, ref versionIds, ref contents);
-			OverwriteSuspendedVersioningObj(client, bucketName, key, ref versionIds, ref contents, "null content 3");
-			DeleteSuspendedVersioningObj(client, bucketName, key, ref versionIds, ref contents);
+			OverwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds, "null content 1");
+			OverwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds, "null content 2");
+			DeleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
+			OverwriteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds, "null content 3");
+			DeleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
 
 			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
 
 			SetupMultipleVersions(client, bucketName, key, 3, ref versionIds, ref contents);
 			numVersions += 3;
+			CheckDeleteMarkers(client, bucketName, key, deleteMarkerIds, null);
 
 			for (int i = 0; i < numVersions; i++)
 				RemoveObjVersion(client, bucketName, key, versionIds, contents, 0);
@@ -243,6 +245,12 @@ namespace s3tests.Test
 			Assert.Empty(versionIds);
 			Assert.Empty(contents);
 
+			// 마지막 null 삭제마커만 남아 있어야 함
+			CheckDeleteMarkers(client, bucketName, key, deleteMarkerIds, "null");
+			client.DeleteObject(bucketName, key, versionId: "null");
+
+			var listResponse = client.ListVersions(bucketName);
+			Assert.Empty(listResponse.Versions);
 		}
 
 		[Fact]
@@ -1433,6 +1441,149 @@ namespace s3tests.Test
 			// 6. HeadObject 실패 확인
 			var e = Assert.Throws<AggregateException>(() => client.GetObjectMetadata(bucketName, key));
 			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "DeleteMarker")]
+		[Trait(MainData.Explanation, "버저닝 중단 상태에서 DeleteObject를 반복해도 null 삭제마커가 1개만 남는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningSuspendedDeleteRepeatNullMarker()
+		{
+			TestId = 34;
+			DoTestSuspendedDeleteRepeatNullMarker("TestVersioningSuspendedDeleteRepeatNullMarker", false);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "DeleteMarker")]
+		[Trait(MainData.Explanation, "버저닝 중단 상태에서 DeleteObjects를 반복해도 null 삭제마커가 1개만 남는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningSuspendedDeleteObjectsRepeatNullMarker()
+		{
+			TestId = 35;
+			DoTestSuspendedDeleteRepeatNullMarker("TestVersioningSuspendedDeleteObjectsRepeatNullMarker", true);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "DeleteMarker")]
+		[Trait(MainData.Explanation, "버저닝 중단 상태에서 DeleteObject 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningSuspendedDeleteKeepEnabledVersions()
+		{
+			TestId = 36;
+			DoTestSuspendedDeleteKeepEnabledVersions("TestVersioningSuspendedDeleteKeepEnabledVersions", false);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "DeleteMarker")]
+		[Trait(MainData.Explanation, "버저닝 중단 상태에서 DeleteObjects 후에도 ENABLED 때 만든 버전과 삭제마커가 유지되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningSuspendedDeleteObjectsKeepEnabledVersions()
+		{
+			TestId = 37;
+			DoTestSuspendedDeleteKeepEnabledVersions("TestVersioningSuspendedDeleteObjectsKeepEnabledVersions", true);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "DeleteMarker")]
+		[Trait(MainData.Explanation, "버저닝 중단 상태에서 DeleteObject 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningSuspendedDeleteReplaceNoncurrentNull()
+		{
+			TestId = 38;
+			DoTestSuspendedDeleteReplaceNoncurrentNull("TestVersioningSuspendedDeleteReplaceNoncurrentNull", false);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "DeleteMarker")]
+		[Trait(MainData.Explanation, "버저닝 중단 상태에서 DeleteObjects 시 최신이 아닌 null 버전도 null 삭제마커로 대체되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningSuspendedDeleteObjectsReplaceNoncurrentNull()
+		{
+			TestId = 39;
+			DoTestSuspendedDeleteReplaceNoncurrentNull("TestVersioningSuspendedDeleteObjectsReplaceNoncurrentNull", true);
+		}
+
+		private void DoTestSuspendedDeleteRepeatNullMarker(string key, bool useDeleteObjects)
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			List<string> versionIds = null;
+			List<string> contents = null;
+			var deleteMarkerIds = new List<string>();
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			SetupMultipleVersions(client, bucketName, key, 2, ref versionIds, ref contents);
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
+			for (int i = 0; i < 3; i++)
+				DeleteSuspended(client, bucketName, key, versionIds, contents, deleteMarkerIds, useDeleteObjects);
+
+			Assert.Equal(2, versionIds.Count);
+			Assert.Equal(["null"], deleteMarkerIds);
+		}
+
+		private void DoTestSuspendedDeleteKeepEnabledVersions(string key, bool useDeleteObjects)
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			List<string> versionIds = null;
+			List<string> contents = null;
+			var deleteMarkerIds = new List<string>();
+
+			// ENABLED: 버전 2개 → 버전 있는 삭제마커 → 버전 1개
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			SetupMultipleVersions(client, bucketName, key, 2, ref versionIds, ref contents);
+			var deleteResponse = client.DeleteObject(bucketName, key);
+			Assert.Equal("true", deleteResponse.DeleteMarker);
+			Assert.False(string.IsNullOrEmpty(deleteResponse.VersionId));
+			deleteMarkerIds.Add(deleteResponse.VersionId);
+			SetupMultipleVersions(client, bucketName, key, 1, ref versionIds, ref contents);
+			CheckDeleteMarkers(client, bucketName, key, deleteMarkerIds, null);
+
+			// SUSPENDED: null 삭제마커만 추가/대체되고 ENABLED 시절 버전과 마커는 그대로
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
+			for (int i = 0; i < 2; i++)
+				DeleteSuspended(client, bucketName, key, versionIds, contents, deleteMarkerIds, useDeleteObjects);
+
+			Assert.Equal(3, versionIds.Count);
+			Assert.Equal(2, deleteMarkerIds.Count);
+		}
+
+		private void DoTestSuspendedDeleteReplaceNoncurrentNull(string key, bool useDeleteObjects)
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var deleteMarkerIds = new List<string>();
+
+			// OFF: null 버전 → ENABLED: 버전 2개 (null 버전은 최신이 아님)
+			var content = "content-off";
+			client.PutObject(bucketName, key, body: content);
+			var versionIds = new List<string>() { "null" };
+			var contents = new List<string>() { content };
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			SetupMultipleVersions(client, bucketName, key, 2, ref versionIds, ref contents);
+
+			// SUSPENDED: 최신이 아닌 null 버전이 삭제되고 null 삭제마커가 최신이 됨
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Suspended);
+			DeleteSuspended(client, bucketName, key, versionIds, contents, deleteMarkerIds, useDeleteObjects);
+
+			Assert.Equal(2, versionIds.Count);
+			Assert.Equal(["null"], deleteMarkerIds);
+		}
+
+		private static void DeleteSuspended(S3Client client, string bucketName, string key, List<string> versionIds, List<string> contents, List<string> deleteMarkerIds, bool useDeleteObjects)
+		{
+			if (useDeleteObjects)
+				DeleteObjectsSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
+			else
+				DeleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
 		}
 	}
 }

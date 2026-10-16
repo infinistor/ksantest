@@ -547,6 +547,7 @@ namespace s3tests.Utils
 		{
 			var response = client.ListVersions(bucketName);
 			var versions = GetVersions(response.Versions);
+			Assert.Equal(versionIds.Count, versions.Count);
 
 			versions.Reverse();
 
