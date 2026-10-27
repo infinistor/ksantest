@@ -58,6 +58,7 @@ namespace s3tests
 		public const string BUCKET_NOT_EMPTY = "BucketNotEmpty";
 		public const string NO_SUCH_KEY = "NoSuchKey";
 		public const string NO_SUCH_CORS_CONFIGURATION = "NoSuchCORSConfiguration";
+		public const string NO_SUCH_WEBSITE_CONFIGURATION = "NoSuchWebsiteConfiguration";
 		public const string ACCESS_DENIED = "AccessDenied";
 		public const string PRECONDITION_FAILED = "PreconditionFailed";
 		public const string NOT_MODIFIED = "NotModified";

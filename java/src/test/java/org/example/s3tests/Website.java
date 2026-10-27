@@ -71,4 +71,213 @@ class Website {
 		test.testWebsiteDeleteBuckets();
 		testV2.testWebsiteDeleteBuckets();
 	}
+
+	/**
+	 * Website 설정 삭제 후 조회하면 NoSuchWebsiteConfiguration 에러가 발생하는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testWebsiteGetAfterDelete() {
+		test.testWebsiteGetAfterDelete();
+		testV2.testWebsiteGetAfterDelete();
+	}
+
+	/**
+	 * Website 설정이 없는 버킷에서 삭제해도 성공하는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testWebsiteDeleteNotConfigured() {
+		test.testWebsiteDeleteNotConfigured();
+		testV2.testWebsiteDeleteNotConfigured();
+	}
+
+	/**
+	 * IndexDocument만으로 Website 설정이 가능한지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testWebsiteIndexDocumentOnly() {
+		test.testWebsiteIndexDocumentOnly();
+		testV2.testWebsiteIndexDocumentOnly();
+	}
+
+	/**
+	 * Website 설정을 덮어쓰면 기존 설정이 완전히 대체되는지 확인
+	 */
+	@Test
+	@Tag("Overwrite")
+	void testWebsiteOverwrite() {
+		test.testWebsiteOverwrite();
+		testV2.testWebsiteOverwrite();
+	}
+
+	/**
+	 * RedirectAllRequestsTo(호스트, 프로토콜) 설정이 가능한지 확인
+	 */
+	@Test
+	@Tag("Redirect")
+	void testWebsiteRedirectAllRequests() {
+		test.testWebsiteRedirectAllRequests();
+		testV2.testWebsiteRedirectAllRequests();
+	}
+
+	/**
+	 * RedirectAllRequestsTo에 호스트만 설정이 가능한지 확인
+	 */
+	@Test
+	@Tag("Redirect")
+	void testWebsiteRedirectAllRequestsHostOnly() {
+		test.testWebsiteRedirectAllRequestsHostOnly();
+		testV2.testWebsiteRedirectAllRequestsHostOnly();
+	}
+
+	/**
+	 * RoutingRules 설정이 가능하고 조회 결과가 일치하는지 확인
+	 */
+	@Test
+	@Tag("RoutingRule")
+	void testWebsiteRoutingRules() {
+		test.testWebsiteRoutingRules();
+		testV2.testWebsiteRoutingRules();
+	}
+
+	/**
+	 * RoutingRules를 최대 개수(50개)까지 설정 가능한지 확인
+	 */
+	@Test
+	@Tag("RoutingRule")
+	void testWebsiteRoutingRulesMax() {
+		test.testWebsiteRoutingRulesMax();
+		testV2.testWebsiteRoutingRulesMax();
+	}
+
+	/**
+	 * RoutingRules가 최대 개수(50개)를 넘으면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRoutingRulesOverMax() {
+		test.testWebsiteRoutingRulesOverMax();
+		testV2.testWebsiteRoutingRulesOverMax();
+	}
+
+	/**
+	 * RedirectAllRequestsTo 없이 IndexDocument를 빠뜨리면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteNoIndexDocument() {
+		testV2.testWebsiteNoIndexDocument();
+	}
+
+	/**
+	 * IndexDocument Suffix가 비어있으면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteEmptyIndexSuffix() {
+		test.testWebsiteEmptyIndexSuffix();
+		testV2.testWebsiteEmptyIndexSuffix();
+	}
+
+	/**
+	 * IndexDocument Suffix에 '/'가 포함되면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteIndexSuffixWithSlash() {
+		test.testWebsiteIndexSuffixWithSlash();
+		testV2.testWebsiteIndexSuffixWithSlash();
+	}
+
+	/**
+	 * RedirectAllRequestsTo와 IndexDocument를 함께 설정하면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRedirectAllWithIndexDocument() {
+		test.testWebsiteRedirectAllWithIndexDocument();
+		testV2.testWebsiteRedirectAllWithIndexDocument();
+	}
+
+	/**
+	 * RedirectAllRequestsTo와 RoutingRules를 함께 설정하면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRedirectAllWithRoutingRules() {
+		test.testWebsiteRedirectAllWithRoutingRules();
+		testV2.testWebsiteRedirectAllWithRoutingRules();
+	}
+
+	/**
+	 * RedirectAllRequestsTo의 Protocol이 http/https가 아니면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRedirectAllInvalidProtocol() {
+		test.testWebsiteRedirectAllInvalidProtocol();
+		testV2.testWebsiteRedirectAllInvalidProtocol();
+	}
+
+	/**
+	 * RoutingRule에 ReplaceKeyWith와 ReplaceKeyPrefixWith를 함께 설정하면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRoutingRuleReplaceKeyAndPrefix() {
+		test.testWebsiteRoutingRuleReplaceKeyAndPrefix();
+		testV2.testWebsiteRoutingRuleReplaceKeyAndPrefix();
+	}
+
+	/**
+	 * RoutingRule의 HttpRedirectCode가 3XX가 아니면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRoutingRuleInvalidRedirectCode() {
+		test.testWebsiteRoutingRuleInvalidRedirectCode();
+		testV2.testWebsiteRoutingRuleInvalidRedirectCode();
+	}
+
+	/**
+	 * RoutingRule 조건의 HttpErrorCodeReturnedEquals가 4XX/5XX가 아니면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRoutingRuleInvalidErrorCode() {
+		test.testWebsiteRoutingRuleInvalidErrorCode();
+		testV2.testWebsiteRoutingRuleInvalidErrorCode();
+	}
+
+	/**
+	 * RoutingRule의 Redirect가 비어있어도 설정이 가능한지 확인
+	 */
+	@Test
+	@Tag("RoutingRule")
+	void testWebsiteRoutingRuleEmptyRedirect() {
+		test.testWebsiteRoutingRuleEmptyRedirect();
+		testV2.testWebsiteRoutingRuleEmptyRedirect();
+	}
+
+	/**
+	 * 존재하지 않는 버킷에 Website 설정/조회/삭제 시 NoSuchBucket 에러가 발생하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteBucketNotFound() {
+		test.testWebsiteBucketNotFound();
+		testV2.testWebsiteBucketNotFound();
+	}
+
+	/**
+	 * 다른 사용자가 Website 설정/조회/삭제할 수 없는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testWebsiteAccessDenied() {
+		test.testWebsiteAccessDenied();
+		testV2.testWebsiteAccessDenied();
+	}
 }
