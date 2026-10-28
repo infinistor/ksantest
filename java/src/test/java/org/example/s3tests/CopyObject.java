@@ -10,6 +10,8 @@
 */
 package org.example.s3tests;
 
+import java.net.MalformedURLException;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Tag;
@@ -669,5 +671,47 @@ class CopyObject {
 	void testCopyObjectMetadataAndTags() {
 		test.testCopyObjectMetadataAndTags();
 		testV2.testCopyObjectMetadataAndTags();
+	}
+
+	/**
+	 * aws-chunked로 업로드한 오브젝트를 같은 키로 REPLACE 복사할 때 본문 해시를 서명하지 않은 요청에
+	 * Content-Encoding: aws-chunked를 실으면 400 InvalidArgument로 거부되고, HEAD 응답 값을 그대로 실으면 성공하는지 확인하는 테스트
+	 */
+	@Test
+	@Tag("ContentEncoding")
+	void testCopyObjectReplaceAwsChunkedToItself() throws MalformedURLException {
+		test.testCopyObjectReplaceAwsChunkedToItself();
+		testV2.testCopyObjectReplaceAwsChunkedToItself();
+	}
+
+	/**
+	 * 버저닝 버킷에서 aws-chunked 오브젝트를 같은 키로 REPLACE 복사할 때
+	 * 본문 해시를 서명하지 않고 aws-chunked를 실은 요청은 거부되어 버전이 생기지 않고, HEAD 값으로 복사하면 새 버전이 생기는지 확인하는 테스트
+	 */
+	@Test
+	@Tag("ContentEncoding")
+	void testCopyObjectVersioningReplaceAwsChunkedToItself() throws MalformedURLException {
+		test.testCopyObjectVersioningReplaceAwsChunkedToItself();
+		testV2.testCopyObjectVersioningReplaceAwsChunkedToItself();
+	}
+
+	/**
+	 * 본문 해시를 서명하지 않고 Content-Encoding: aws-chunked,gzip으로 REPLACE 복사하면 거부되고, gzip만 지정하면 저장되는지 확인하는 테스트
+	 */
+	@Test
+	@Tag("ContentEncoding")
+	void testCopyObjectReplaceAwsChunkedWithGzip() throws MalformedURLException {
+		test.testCopyObjectReplaceAwsChunkedWithGzip();
+		testV2.testCopyObjectReplaceAwsChunkedWithGzip();
+	}
+
+	/**
+	 * 본문 해시를 서명한 CopyObject(REPLACE)의 Content-Encoding: aws-chunked는 그대로 저장되는지 확인하는 테스트
+	 */
+	@Test
+	@Tag("ContentEncoding")
+	void testCopyObjectReplaceAwsChunkedSignedPayload() throws MalformedURLException {
+		test.testCopyObjectReplaceAwsChunkedSignedPayload();
+		testV2.testCopyObjectReplaceAwsChunkedSignedPayload();
 	}
 }

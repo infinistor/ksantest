@@ -66,6 +66,7 @@ import org.example.Utility.CheckSum;
 import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
 import org.example.auth.AWS4SignerBase;
+import org.example.auth.AWS4SignerForChunkedUpload;
 import org.example.s3tests.S3Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
@@ -78,6 +79,9 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.auth.scheme.S3AuthSchemeProvider;
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -180,6 +184,11 @@ public class TestBase {
 
 	public S3Client createClient(boolean isSecure, UserData user, boolean useChunkEncoding,
 			RequestChecksumCalculation request, ResponseChecksumValidation response) {
+		return createClientBuilder(isSecure, user, useChunkEncoding, request, response).build();
+	}
+
+	public S3ClientBuilder createClientBuilder(boolean isSecure, UserData user, boolean useChunkEncoding,
+			RequestChecksumCalculation request, ResponseChecksumValidation response) {
 		String address = "";
 		var httpClient = ApacheHttpClient.builder()
 				.connectionTimeout(Duration.ofSeconds(300))
@@ -247,7 +256,7 @@ public class TestBase {
 		}
 
 		clientBuilder.overrideConfiguration(configBuilder.build());
-		return clientBuilder.build();
+		return clientBuilder;
 	}
 
 	public S3Client getOldClient() {
@@ -292,6 +301,21 @@ public class TestBase {
 	public S3Client getPublicClient() {
 		return createClient(config.isSecure, null, true, RequestChecksumCalculation.WHEN_REQUIRED,
 				ResponseChecksumValidation.WHEN_REQUIRED);
+	}
+
+	/**
+	 * 본문 해시 서명(x-amz-content-sha256) 여부를 지정한 클라이언트를 생성한다.
+	 * 서명을 끄면 UNSIGNED-PAYLOAD를 보내며, HTTPS에서만 보장되므로 HTTPS로 연결한다.
+	 */
+	public S3Client getClientPayloadSigning(boolean payloadSigning) {
+		return createClientBuilder(!payloadSigning || config.isSecure, config.mainUser, false,
+				RequestChecksumCalculation.WHEN_REQUIRED, ResponseChecksumValidation.WHEN_REQUIRED)
+				.authSchemeProvider(params -> S3AuthSchemeProvider.defaultProvider().resolveAuthScheme(params)
+						.stream()
+						.map(option -> option.toBuilder()
+								.putSignerProperty(AwsV4HttpSigner.PAYLOAD_SIGNING_ENABLED, payloadSigning).build())
+						.toList())
+				.build();
 	}
 
 	public S3Client getClient(boolean useChunkEncoding, RequestChecksumCalculation request,
@@ -625,6 +649,32 @@ public class TestBase {
 
 		return config.isAWS() ? NetUtils.getEndpoint(protocol, config.regionName, bucketName, key)
 				: NetUtils.getEndpoint(protocol, config.url, port, bucketName, key);
+	}
+
+	/**
+	 * aws-chunked(STREAMING-AWS4-HMAC-SHA256-PAYLOAD)로 오브젝트를 업로드한다.
+	 * aws-cli 2.x처럼 Content-Encoding에 aws-chunked가 붙은 요청을 재현한다.
+	 *
+	 * @param contentEncoding aws-chunked를 맨 앞에 둔 Content-Encoding 값 (예: "aws-chunked,gzip")
+	 */
+	public void putObjectAwsChunked(String bucketName, String key, String content, String contentEncoding)
+			throws MalformedURLException {
+		var endPoint = createURL(bucketName, key);
+
+		var headers = new HashMap<String, String>();
+		headers.put("x-amz-content-sha256", AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256);
+		headers.put("content-encoding", contentEncoding);
+		headers.put("x-amz-decoded-content-length", "" + content.length());
+		headers.put("content-length", "" + AWS4SignerForChunkedUpload.calculateChunkedContentLength(
+				content.length(), NetUtils.USER_DATE_BLOCK_SIZE));
+
+		var signer = new AWS4SignerForChunkedUpload(endPoint, "PUT", "s3", config.regionName);
+		var authorization = signer.computeSignature(headers, null, AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256,
+				config.mainUser.accessKey, config.mainUser.secretKey);
+		headers.put("Authorization", authorization);
+
+		var result = NetUtils.putUploadChunked(endPoint, "PUT", headers, signer, content);
+		assertEquals(HttpStatus.SC_OK, result.statusCode, result.getErrorCode());
 	}
 
 	public static JsonObject makeJsonStatement(String action, String resource, String effect, JsonObject principal,

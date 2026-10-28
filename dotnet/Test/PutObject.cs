@@ -1103,5 +1103,109 @@ namespace s3tests.Test
 				Assert.Equal(key, GetBody(getResponse));
 			}
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "ContentEncoding")]
+		[Trait(MainData.Explanation, "aws-chunked로 업로드한 오브젝트에 Content-Encoding이 저장되지 않는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectAwsChunkedNotStored()
+		{
+			TestId = 50;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestPutObjectAwsChunkedNotStored";
+			var content = S3Utils.RandomTextToLong(100);
+
+			PutObjectAwsChunked(bucketName, key, content, "aws-chunked");
+
+			// aws-chunked는 전송용 인코딩이므로 저장되지 않아야 한다
+			var headResponse = client.HeadObject(bucketName, key);
+			Assert.Null(headResponse.Headers.ContentEncoding);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Null(getResponse.Headers.ContentEncoding);
+			Assert.Equal(content, GetBody(getResponse));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "ContentEncoding")]
+		[Trait(MainData.Explanation, "aws-chunked,gzip으로 업로드하면 aws-chunked만 빠지고 gzip이 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectAwsChunkedWithGzip()
+		{
+			TestId = 51;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestPutObjectAwsChunkedWithGzip";
+			var content = S3Utils.RandomTextToLong(100);
+
+			PutObjectAwsChunked(bucketName, key, content, "aws-chunked,gzip");
+
+			// aws-chunked만 빠지고 gzip은 남아야 한다
+			var headResponse = client.HeadObject(bucketName, key);
+			Assert.Equal("gzip", headResponse.Headers.ContentEncoding);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal("gzip", getResponse.Headers.ContentEncoding);
+			Assert.Equal(content, GetBody(getResponse));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "ContentEncoding")]
+		[Trait(MainData.Explanation, "UNSIGNED-PAYLOAD로 일반 본문을 올리면서 aws-chunked를 실으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectAwsChunkedUnsignedPayload()
+		{
+			TestId = 52;
+			var client = GetClient();
+			var unsignedClient = GetClientUnsignedPayload();
+			var bucketName = GetNewBucket(client);
+			var key = "TestPutObjectAwsChunkedUnsignedPayload";
+			var content = S3Utils.RandomTextToLong(100);
+
+			// 본문이 aws-chunked 형식이 아닌데 aws-chunked를 실으면 거부된다
+			var e = Assert.Throws<AggregateException>(() =>
+				unsignedClient.PutObject(bucketName, key, body: content, contentEncoding: "aws-chunked"));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+
+			// 다른 인코딩과 함께 와도 거부된다
+			e = Assert.Throws<AggregateException>(() =>
+				unsignedClient.PutObject(bucketName, key, body: content, contentEncoding: "aws-chunked,gzip"));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "ContentEncoding")]
+		[Trait(MainData.Explanation, "페이로드를 서명한 일반 본문 업로드에 aws-chunked를 실으면 값이 그대로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectAwsChunkedSignedPayload()
+		{
+			TestId = 53;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key1 = "TestPutObjectAwsChunkedSignedPayload1";
+			var key2 = "TestPutObjectAwsChunkedSignedPayload2";
+			var content = S3Utils.RandomTextToLong(100);
+
+			// 페이로드가 서명된 요청이면 aws-chunked도 일반 값처럼 그대로 저장된다
+			// SDK는 기본적으로 본문을 aws-chunked 스트리밍 서명으로 보내므로 청크 인코딩을 꺼서 본문 SHA256으로 서명한다
+			client.PutObject(bucketName, key1, body: content, contentEncoding: "aws-chunked", useChunkEncoding: false);
+			Assert.Equal("aws-chunked", GetRawContentEncoding(client, bucketName, key1));
+
+			var getResponse = client.GetObject(bucketName, key1);
+			Assert.Equal(content, GetBody(getResponse));
+
+			client.PutObject(bucketName, key2, body: content, contentEncoding: "aws-chunked,gzip", useChunkEncoding: false);
+			Assert.Equal("aws-chunked,gzip", GetRawContentEncoding(client, bucketName, key2));
+
+			getResponse = client.GetObject(bucketName, key2);
+			Assert.Equal(content, GetBody(getResponse));
+		}
 	}
 }

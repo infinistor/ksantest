@@ -916,3 +916,84 @@ class TestPutObject(S3TestBase):
             assert response["ETag"] is not None
             get_response = client.get_object(Bucket=bucket_name, Key=key)
             assert self.get_body(get_response) == key
+
+    @pytest.mark.tag("ContentEncoding")
+    def test_put_object_aws_chunked_not_stored(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 50)
+        key = "test_put_object_aws_chunked_not_stored"
+        content = utils.random_text_to_long(100)
+
+        self.put_object_aws_chunked(bucket_name, key, content, "aws-chunked")
+
+        # aws-chunked는 전송용 인코딩이므로 저장되지 않아야 한다
+        head_response = client.head_object(Bucket=bucket_name, Key=key)
+        assert "ContentEncoding" not in head_response
+
+        get_response = client.get_object(Bucket=bucket_name, Key=key)
+        assert "ContentEncoding" not in get_response
+        assert self.get_body(get_response) == content
+
+    @pytest.mark.tag("ContentEncoding")
+    def test_put_object_aws_chunked_with_gzip(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 51)
+        key = "test_put_object_aws_chunked_with_gzip"
+        content = utils.random_text_to_long(100)
+
+        self.put_object_aws_chunked(bucket_name, key, content, "aws-chunked,gzip")
+
+        # aws-chunked만 빠지고 gzip은 남아야 한다
+        head_response = client.head_object(Bucket=bucket_name, Key=key)
+        assert head_response["ContentEncoding"] == "gzip"
+
+        get_response = client.get_object(Bucket=bucket_name, Key=key)
+        assert get_response["ContentEncoding"] == "gzip"
+        assert self.get_body(get_response) == content
+
+    @pytest.mark.tag("ContentEncoding")
+    def test_put_object_aws_chunked_unsigned_payload(self):
+        client = self.get_client_unsigned_payload()
+        bucket_name = self.create_bucket(client, 52)
+        key = "test_put_object_aws_chunked_unsigned_payload"
+        content = utils.random_text_to_long(100)
+
+        # UNSIGNED-PAYLOAD 요청은 aws-chunked 본문을 보낼 수 없으므로 400 InvalidArgument
+        for content_encoding in ("aws-chunked", "aws-chunked,gzip"):
+            with pytest.raises(ClientError) as exc_info:
+                client.put_object(
+                    Bucket=bucket_name,
+                    Key=key,
+                    Body=content.encode("utf-8"),
+                    ContentEncoding=content_encoding,
+                )
+            assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+            assert exc_info.value.response["Error"]["Code"] == md.INVALID_ARGUMENT
+
+    @pytest.mark.tag("ContentEncoding")
+    def test_put_object_aws_chunked_signed_payload(self):
+        client = self.get_client_signed_payload()
+        bucket_name = self.create_bucket(client, 53)
+        key1 = "test_put_object_aws_chunked_signed_payload1"
+        key2 = "test_put_object_aws_chunked_signed_payload2"
+        content = utils.random_text_to_long(100)
+
+        # 본문 SHA256으로 서명한 일반 본문 요청은 aws-chunked를 그대로 저장한다
+        client.put_object(Bucket=bucket_name, Key=key1, Body=content.encode("utf-8"), ContentEncoding="aws-chunked")
+
+        head_response = client.head_object(Bucket=bucket_name, Key=key1)
+        assert head_response["ContentEncoding"] == "aws-chunked"
+
+        get_response = client.get_object(Bucket=bucket_name, Key=key1)
+        assert self.get_body(get_response) == content
+
+        # 다른 인코딩과 함께 와도 그대로 저장된다
+        client.put_object(
+            Bucket=bucket_name, Key=key2, Body=content.encode("utf-8"), ContentEncoding="aws-chunked,gzip"
+        )
+
+        head_response = client.head_object(Bucket=bucket_name, Key=key2)
+        assert head_response["ContentEncoding"] == "aws-chunked,gzip"
+
+        get_response = client.get_object(Bucket=bucket_name, Key=key2)
+        assert self.get_body(get_response) == content

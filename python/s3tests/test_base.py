@@ -177,6 +177,14 @@ class S3TestBase:
     def get_client_https(self, use_chunk_encoding: bool = False) -> Any:
         return self.create_client(True, self.config.main_user, use_chunk_encoding)
 
+    def get_client_unsigned_payload(self) -> Any:
+        # payload_signing_enabled=False: x-amz-content-sha256 = UNSIGNED-PAYLOAD (HTTP/HTTPS 모두)
+        return self.create_client(self.config.is_secure, self.config.main_user, False)
+
+    def get_client_signed_payload(self) -> Any:
+        # payload_signing_enabled=True: x-amz-content-sha256 = 본문의 실제 SHA256
+        return self.create_client(self.config.is_secure, self.config.main_user, True)
+
     def get_alt_client(self) -> Any:
         return self.create_client(self.config.is_secure, self.config.alt_user, True)
 
@@ -1521,13 +1529,21 @@ class S3TestBase:
         )
         return net_utils.put_upload(endpoint, "PUT", headers, content)
 
-    def put_object_chunked_v4(self, bucket_name: str, key: str, content: str) -> HttpResult:
+    def put_object_aws_chunked(self, bucket_name: str, key: str, content: str, content_encoding: str) -> None:
+        # aws-chunked(STREAMING-AWS4-HMAC-SHA256-PAYLOAD)로 업로드. aws-cli 2.x처럼
+        # Content-Encoding에 aws-chunked가 붙은 요청을 재현한다 (예: "aws-chunked,gzip")
+        result = self.put_object_chunked_v4(bucket_name, key, content, content_encoding)
+        assert result.status_code == 200, result.get_error_code()
+
+    def put_object_chunked_v4(
+        self, bucket_name: str, key: str, content: str, content_encoding: str = "aws-chunked"
+    ) -> HttpResult:
         from s3tests.auth.aws4_signer_chunked import AWS4SignerForChunkedUpload
 
         endpoint = self.create_url(bucket_name, key)
         headers = {
             "x-amz-content-sha256": AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256,
-            "content-encoding": "aws-chunked",
+            "content-encoding": content_encoding,
             "x-amz-decoded-content-length": str(len(content)),
         }
         signer = AWS4SignerForChunkedUpload(endpoint, "PUT", "s3", self.config.region_name)

@@ -67,20 +67,23 @@ namespace s3tests.Client
 
 			return Put(URI, Headers, Content);
 		}
-		public MyResult PutObjectChunked(string Key, string Content, string ContentType = "text/plain")
+		/// <param name="ContentEncoding">aws-chunked를 맨 앞에 둔 Content-Encoding 값 (예: "aws-chunked,gzip")</param>
+		public MyResult PutObjectChunked(string Key, string Content, string ContentType = "text/plain", string ContentEncoding = "aws-chunked")
 		{
+			// content-length는 청크 서명 오버헤드를 포함한 전체 전송 길이다
+			var TotalLength = AWS4SignerForChunkedUpload.CalculateChunkedContentLength(Content.Length, UserDataBlockSize);
 			var Headers = new Dictionary<string, string>
 			{
 				{AWS4SignerBase.X_Amz_Content_SHA256, AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256},
-				{"content-encoding", "aws-chunked"},
+				{"content-encoding", ContentEncoding},
 				{"content-type", "text/plain"},
-				{AWS4SignerBase.X_Amz_Decoded_Content_Length, Content.Length.ToString()}
+				{AWS4SignerBase.X_Amz_Decoded_Content_Length, Content.Length.ToString()},
+				{"content-length", TotalLength.ToString()}
 			};
 
 			var URI = new Uri($"{URL}/{Key}");
 
 			var Signer = new AWS4SignerForChunkedUpload { EndpointUri = URI, HttpMethod = "PUT", Service = "s3", Region = Region };
-			var TotalLength = AWS4SignerForChunkedUpload.CalculateChunkedContentLength(Content.Length, UserDataBlockSize);
 
 			var Authorization = Signer.ComputeSignature(Headers, "", AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256, AccessKey, SecretKey);
 			Headers.Add("Authorization", Authorization);

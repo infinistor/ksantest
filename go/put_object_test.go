@@ -7,15 +7,22 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"hash/crc32"
+	"io"
+	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go/middleware"
 )
 
 // 오브젝트가 올바르게 생성되는지 확인
@@ -870,6 +877,226 @@ func TestPutObjectKeyBoundaryLengths(t *testing.T) {
 		if aws.ToString(out.ETag) == "" || read(t, s, bucket, key) != body {
 			t.Fatalf("key bytes=%d ETag=%q", len([]byte(key)), aws.ToString(out.ETag))
 		}
+	}
+}
+
+// aws-chunked로 업로드하면 전송용 인코딩인 aws-chunked는 Content-Encoding에 저장되지 않는지 확인
+func TestPutObjectAwsChunkedNotStored(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucket(t, 50)
+	key := "testPutObjectAwsChunkedNotStored"
+	content := string(randomTextToLong(100))
+
+	putObjectAwsChunked(t, s, bucket, key, content, "aws-chunked")
+
+	// aws-chunked는 전송용 인코딩이므로 저장되지 않아야 한다
+	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil || head.ContentEncoding != nil {
+		t.Fatalf("HeadObject ContentEncoding=%q err=%v", contentEncodingOf(head), err)
+	}
+	get, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer get.Body.Close()
+	if get.ContentEncoding != nil {
+		t.Fatalf("GetObject ContentEncoding=%q", aws.ToString(get.ContentEncoding))
+	}
+	if body, err := io.ReadAll(get.Body); err != nil || string(body) != content {
+		t.Fatalf("body=%q err=%v", body, err)
+	}
+}
+
+// aws-chunked,gzip으로 업로드하면 aws-chunked만 빠지고 gzip은 저장되는지 확인
+func TestPutObjectAwsChunkedWithGzip(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucket(t, 51)
+	key := "testPutObjectAwsChunkedWithGzip"
+	content := string(randomTextToLong(100))
+
+	putObjectAwsChunked(t, s, bucket, key, content, "aws-chunked,gzip")
+
+	// aws-chunked만 빠지고 gzip은 남아야 한다
+	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil || aws.ToString(head.ContentEncoding) != "gzip" {
+		t.Fatalf("HeadObject ContentEncoding=%q err=%v", contentEncodingOf(head), err)
+	}
+	get, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer get.Body.Close()
+	if aws.ToString(get.ContentEncoding) != "gzip" {
+		t.Fatalf("GetObject ContentEncoding=%q", aws.ToString(get.ContentEncoding))
+	}
+	if body, err := io.ReadAll(get.Body); err != nil || string(body) != content {
+		t.Fatalf("body=%q err=%v", body, err)
+	}
+}
+
+// 본문을 서명하지 않는(UNSIGNED-PAYLOAD) PutObject에 Content-Encoding: aws-chunked를 실으면 거부되는지 확인
+func TestPutObjectAwsChunkedUnsignedPayload(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucket(t, 52)
+	key := "testPutObjectAwsChunkedUnsignedPayload"
+	content := randomTextToLong(100)
+
+	// 실제 aws-chunked 본문이 아니므로 다른 인코딩과 함께 와도 거부된다
+	for _, contentEncoding := range []string{"aws-chunked", "aws-chunked,gzip"} {
+		_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(content),
+			ContentEncoding: aws.String(contentEncoding)}, withUnsignedPayload)
+		assertS3Error(t, err, 400, "InvalidArgument")
+	}
+}
+
+// 본문을 서명한(SHA256) PutObject에 Content-Encoding: aws-chunked를 실으면 값이 그대로 저장되는지 확인
+func TestPutObjectAwsChunkedSignedPayload(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucket(t, 53)
+	content := string(randomTextToLong(100))
+
+	// 서명된 본문에서는 aws-chunked가 전송 인코딩으로 해석되지 않고 일반 값으로 저장된다
+	for key, contentEncoding := range map[string]string{
+		"testPutObjectAwsChunkedSignedPayload":     "aws-chunked",
+		"testPutObjectAwsChunkedSignedPayloadGzip": "aws-chunked,gzip",
+	} {
+		if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(content)),
+			ContentEncoding: aws.String(contentEncoding)}, withSignedPayload); err != nil {
+			t.Fatalf("PutObject %q: %v", contentEncoding, err)
+		}
+		head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+		if err != nil || aws.ToString(head.ContentEncoding) != contentEncoding {
+			t.Fatalf("HeadObject ContentEncoding=%q want=%q err=%v", contentEncodingOf(head), contentEncoding, err)
+		}
+		if body := read(t, s, bucket, key); body != content {
+			t.Fatalf("body=%q want=%q", body, content)
+		}
+	}
+}
+
+// withUnsignedPayload는 요청을 x-amz-content-sha256: UNSIGNED-PAYLOAD로 서명하도록 SDK를 설정한다.
+func withUnsignedPayload(o *s3.Options) {
+	o.APIOptions = append(o.APIOptions, v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware)
+}
+
+// withSignedPayload는 본문 SHA256을 계산해 서명하도록 SDK를 설정한다.
+// PutObject는 기본적으로 HTTPS에서 UNSIGNED-PAYLOAD를 쓰므로(dynamic payload signing) 계산 미들웨어로 되돌린다.
+func withSignedPayload(o *s3.Options) {
+	o.APIOptions = append(o.APIOptions, func(stack *middleware.Stack) error {
+		compute := &v4.ComputePayloadSHA256{}
+		_, err := stack.Finalize.Swap(compute.ID(), compute)
+		return err
+	})
+}
+
+// contentEncodingOf는 HeadObject 실패 시(nil 응답)에도 안전하게 Content-Encoding을 꺼낸다.
+func contentEncodingOf(head *s3.HeadObjectOutput) string {
+	if head == nil {
+		return ""
+	}
+	return aws.ToString(head.ContentEncoding)
+}
+
+const (
+	awsChunkedStreamingPayload = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
+	awsChunkedChunkSize        = 64 * 1024
+	awsChunkedEmptySHA256      = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+)
+
+// putObjectAwsChunked는 aws-chunked(STREAMING-AWS4-HMAC-SHA256-PAYLOAD)로 오브젝트를 업로드한다.
+// aws-cli 2.x처럼 Content-Encoding에 aws-chunked가 붙은 요청을 재현한다.
+// contentEncoding은 aws-chunked를 맨 앞에 둔 Content-Encoding 값이다 (예: "aws-chunked,gzip").
+func putObjectAwsChunked(t *testing.T, s *suite, bucket, key, content, contentEncoding string) {
+	t.Helper()
+	region := s.cfg.Region
+	if region == "" {
+		region = "us-east-1"
+	}
+	data := []byte(content)
+	objectURL := postBucketURL(s, bucket)
+	if !strings.HasSuffix(objectURL, "/") {
+		objectURL += "/"
+	}
+	objectURL += url.PathEscape(key)
+
+	// 청크 서명이 seed 서명에 연결되므로 전체 본문 길이를 먼저 계산해 헤더에 싣는다
+	var chunkSizes []int
+	for offset := 0; offset < len(data); offset += awsChunkedChunkSize {
+		chunkSizes = append(chunkSizes, min(awsChunkedChunkSize, len(data)-offset))
+	}
+	chunkSizes = append(chunkSizes, 0)
+	totalLength := 0
+	for _, size := range chunkSizes {
+		totalLength += len(fmt.Sprintf("%x", size)) + len(";chunk-signature=") + 64 + 2 + size + 2
+	}
+
+	req, err := http.NewRequest(http.MethodPut, objectURL, nil)
+	if err != nil {
+		t.Fatalf("aws-chunked request: %v", err)
+	}
+	req.Header.Set("X-Amz-Content-Sha256", awsChunkedStreamingPayload)
+	req.Header.Set("Content-Encoding", contentEncoding)
+	req.Header.Set("X-Amz-Decoded-Content-Length", fmt.Sprintf("%d", len(data)))
+	req.ContentLength = int64(totalLength)
+
+	credVal, err := credentials.NewStaticCredentialsProvider(s.cfg.Main.AccessKey, s.cfg.Main.SecretKey, "").Retrieve(context.Background())
+	if err != nil {
+		t.Fatalf("aws-chunked credentials: %v", err)
+	}
+	now := time.Now().UTC()
+	if err := v4.NewSigner().SignHTTP(context.Background(), credVal, req, awsChunkedStreamingPayload, "s3", region, now); err != nil {
+		t.Fatalf("aws-chunked sign: %v", err)
+	}
+	authorization := req.Header.Get("Authorization")
+	idx := strings.LastIndex(authorization, "Signature=")
+	if idx < 0 {
+		t.Fatalf("aws-chunked seed signature not found: %q", authorization)
+	}
+	previousSignature := authorization[idx+len("Signature="):]
+
+	// 각 청크 서명은 직전 서명(첫 청크는 seed 서명)에 연결된다
+	amzDate := now.Format("20060102T150405Z")
+	date := now.Format("20060102")
+	scope := date + "/" + region + "/s3/aws4_request"
+	signingKey := hmacSHA256([]byte("AWS4"+s.cfg.Main.SecretKey), date)
+	signingKey = hmacSHA256(signingKey, region)
+	signingKey = hmacSHA256(signingKey, "s3")
+	signingKey = hmacSHA256(signingKey, "aws4_request")
+
+	var body bytes.Buffer
+	offset := 0
+	for _, size := range chunkSizes {
+		chunk := data[offset : offset+size]
+		offset += size
+		stringToSign := "AWS4-HMAC-SHA256-PAYLOAD\n" + amzDate + "\n" + scope + "\n" + previousSignature + "\n" +
+			awsChunkedEmptySHA256 + "\n" + hex.EncodeToString(sha256Sum(chunk))
+		signature := hex.EncodeToString(hmacSHA256(signingKey, stringToSign))
+		fmt.Fprintf(&body, "%x;chunk-signature=%s\r\n", size, signature)
+		body.Write(chunk)
+		body.WriteString("\r\n")
+		previousSignature = signature
+	}
+	if body.Len() != totalLength {
+		t.Fatalf("aws-chunked length=%d want=%d", body.Len(), totalLength)
+	}
+	req.Body = io.NopCloser(bytes.NewReader(body.Bytes()))
+
+	resp, err := insecureHTTPClient().Do(req)
+	if err != nil {
+		t.Fatalf("aws-chunked PutObject: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		msg, _ := io.ReadAll(resp.Body)
+		t.Fatalf("aws-chunked PutObject: status=%d body=%s", resp.StatusCode, msg)
 	}
 }
 

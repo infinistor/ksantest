@@ -11,8 +11,10 @@
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.net.MalformedURLException;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -1310,5 +1312,167 @@ public class CopyObject extends TestBase {
 
 		tagResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(targetKey));
 		assertEquals(tags, tagResponse.tagSet());
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testCopyObjectReplaceAwsChunkedToItself() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 63);
+		var key = "testCopyObjectReplaceAwsChunkedToItself";
+		var content = Utils.randomTextToLong(100);
+
+		putObjectAwsChunked(bucketName, key, content, "aws-chunked");
+
+		var metadata = new HashMap<String, String>();
+		metadata.put("foo", "bar");
+
+		// 본문 해시를 서명하지 않은 요청(UNSIGNED-PAYLOAD)에 aws-chunked를 실으면 거부된다
+		var unsignedClient = getClientPayloadSigning(false);
+		var e = assertThrows(AwsServiceException.class, () -> unsignedClient.copyObject(c -> c
+				.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(key)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.metadata(metadata)
+				.contentType("text/plain")
+				.contentEncoding("aws-chunked")));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+
+		// HEAD 응답에 aws-chunked가 없으므로 그 값을 그대로 실어 헤더만 바꾸면 성공한다
+		var sourceHead = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertNull(sourceHead.contentEncoding());
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(key)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.metadata(metadata)
+				.contentType("text/plain")
+				.contentEncoding(sourceHead.contentEncoding()));
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(metadata, headResponse.metadata());
+		assertEquals("text/plain", headResponse.contentType());
+		assertNull(headResponse.contentEncoding());
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(content, getBody(getResponse));
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testCopyObjectVersioningReplaceAwsChunkedToItself() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 64);
+		var key = "testCopyObjectVersioningReplaceAwsChunkedToItself";
+		var content = Utils.randomTextToLong(100);
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		putObjectAwsChunked(bucketName, key, content, "aws-chunked");
+
+		var metadata = new HashMap<String, String>();
+		metadata.put("foo", "bar");
+
+		// 본문 해시를 서명하지 않은 요청(UNSIGNED-PAYLOAD)에 aws-chunked를 실으면 거부된다
+		var unsignedClient = getClientPayloadSigning(false);
+		var e = assertThrows(AwsServiceException.class, () -> unsignedClient.copyObject(c -> c
+				.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(key)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.metadata(metadata)
+				.contentType("text/plain")
+				.contentEncoding("aws-chunked")));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+
+		// 실패한 요청은 새 버전을 만들지 않는다
+		var versionResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(1, versionResponse.versions().size());
+
+		// 버저닝을 켠 직후에는 버전 ID 없는 HEAD가 한동안 404를 낼 수 있어 버전 ID로 조회한다
+		var versionId = versionResponse.versions().get(0).versionId();
+		var sourceHead = client.headObject(h -> h.bucket(bucketName).key(key).versionId(versionId));
+		assertNull(sourceHead.contentEncoding());
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey(key)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.metadata(metadata)
+				.contentType("text/plain")
+				.contentEncoding(sourceHead.contentEncoding()));
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(metadata, headResponse.metadata());
+		assertEquals("text/plain", headResponse.contentType());
+		assertNull(headResponse.contentEncoding());
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(content, getBody(getResponse));
+
+		// 버전이 2개인지 확인
+		versionResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(2, versionResponse.versions().size());
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testCopyObjectReplaceAwsChunkedWithGzip() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 65);
+		var sourceKey = "testCopyObjectReplaceAwsChunkedWithGzipSource";
+		var targetKey = "testCopyObjectReplaceAwsChunkedWithGzipTarget";
+		var content = Utils.randomTextToLong(100);
+
+		putObjectAwsChunked(bucketName, sourceKey, content, "aws-chunked");
+
+		// 다른 인코딩과 함께 와도 UNSIGNED-PAYLOAD 요청의 aws-chunked는 거부된다
+		var unsignedClient = getClientPayloadSigning(false);
+		var e = assertThrows(AwsServiceException.class, () -> unsignedClient.copyObject(c -> c
+				.sourceBucket(bucketName).sourceKey(sourceKey)
+				.destinationBucket(bucketName).destinationKey(targetKey)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.contentEncoding("aws-chunked,gzip")));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+
+		// gzip만 지정하면 그대로 저장된다
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey)
+				.destinationBucket(bucketName).destinationKey(targetKey)
+				.metadataDirective(MetadataDirective.REPLACE)
+				.contentEncoding("gzip"));
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(targetKey));
+		assertEquals("gzip", headResponse.contentEncoding());
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
+		assertEquals(content, getBody(getResponse));
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testCopyObjectReplaceAwsChunkedSignedPayload() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 66);
+		var sourceKey = "testCopyObjectReplaceAwsChunkedSignedPayloadSource";
+		var content = Utils.randomTextToLong(100);
+
+		putObjectAwsChunked(bucketName, sourceKey, content, "aws-chunked");
+
+		// 본문 해시를 서명한 요청이면 aws-chunked도 일반 값으로 취급되어 그대로 저장된다
+		var signedClient = getClientPayloadSigning(true);
+		for (var encoding : List.of("aws-chunked", "aws-chunked,gzip")) {
+			var targetKey = "testCopyObjectReplaceAwsChunkedSignedPayloadTarget-" + encoding;
+			signedClient.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey)
+					.destinationBucket(bucketName).destinationKey(targetKey)
+					.metadataDirective(MetadataDirective.REPLACE)
+					.contentEncoding(encoding));
+
+			var headResponse = client.headObject(h -> h.bucket(bucketName).key(targetKey));
+			assertEquals(encoding, headResponse.contentEncoding());
+
+			var getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
+			assertEquals(content, getBody(getResponse));
+		}
 	}
 }

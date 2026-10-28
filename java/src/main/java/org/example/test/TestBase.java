@@ -31,6 +31,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -53,6 +54,7 @@ import org.example.Data.UserData;
 import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
 import org.example.auth.AWS4SignerBase;
+import org.example.auth.AWS4SignerForChunkedUpload;
 import org.example.s3tests.S3Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
@@ -256,6 +258,15 @@ public class TestBase {
 				S3Config.STR_SIGNATURE_VERSION_V4);
 	}
 
+	/**
+	 * 본문 해시 서명(x-amz-content-sha256) 여부를 지정한 클라이언트를 생성한다.
+	 * SDK v1은 HTTP에서 항상 본문 해시를 서명하므로, 서명을 끄면(UNSIGNED-PAYLOAD) HTTPS로 연결한다.
+	 */
+	public AmazonS3 getClientPayloadSigning(boolean payloadSigning) {
+		return createClient(!payloadSigning || config.isSecure, config.mainUser, true, payloadSigning,
+				S3Config.STR_SIGNATURE_VERSION_V4);
+	}
+
 	public AmazonS3 getClientHttps() {
 		return createClient(true, config.mainUser, true, true, config.getSignatureVersion());
 	}
@@ -445,6 +456,32 @@ public class TestBase {
 
 		return config.isAWS() ? NetUtils.getEndpoint(protocol, config.regionName, bucketName, key)
 				: NetUtils.getEndpoint(protocol, config.url, port, bucketName, key);
+	}
+
+	/**
+	 * aws-chunked(STREAMING-AWS4-HMAC-SHA256-PAYLOAD)로 오브젝트를 업로드한다.
+	 * aws-cli 2.x처럼 Content-Encoding에 aws-chunked가 붙은 요청을 재현한다.
+	 *
+	 * @param contentEncoding aws-chunked를 맨 앞에 둔 Content-Encoding 값 (예: "aws-chunked,gzip")
+	 */
+	public void putObjectAwsChunked(String bucketName, String key, String content, String contentEncoding)
+			throws MalformedURLException {
+		var endPoint = createURL(bucketName, key);
+
+		var headers = new HashMap<String, String>();
+		headers.put("x-amz-content-sha256", AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256);
+		headers.put("content-encoding", contentEncoding);
+		headers.put("x-amz-decoded-content-length", "" + content.length());
+		headers.put("content-length", "" + AWS4SignerForChunkedUpload.calculateChunkedContentLength(
+				content.length(), NetUtils.USER_DATE_BLOCK_SIZE));
+
+		var signer = new AWS4SignerForChunkedUpload(endPoint, "PUT", "s3", config.regionName);
+		var authorization = signer.computeSignature(headers, null, AWS4SignerForChunkedUpload.STREAMING_BODY_SHA256,
+				config.mainUser.accessKey, config.mainUser.secretKey);
+		headers.put("Authorization", authorization);
+
+		var result = NetUtils.putUploadChunked(endPoint, "PUT", headers, signer, content);
+		assertEquals(HttpStatus.SC_OK, result.statusCode, result.getErrorCode());
 	}
 
 	public static JsonObject makeJsonStatement(String action, String resource, String effect, JsonObject principal,

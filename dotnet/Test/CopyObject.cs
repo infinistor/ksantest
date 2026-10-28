@@ -1467,5 +1467,167 @@ namespace s3tests.Test
 			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
 			Assert.Equal(MainData.NO_SUCH_KEY, GetErrorCode(e));
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ContentEncoding")]
+		[Trait(MainData.Explanation, "UNSIGNED-PAYLOAD로 자기 자신에게 REPLACE 복사할 때 aws-chunked를 실으면 실패하고, HEAD 값으로 복사하면 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectReplaceAwsChunkedToItself()
+		{
+			TestId = 63;
+			var client = GetClient();
+			var unsignedClient = GetClientUnsignedPayload();
+			var bucketName = GetNewBucket(client);
+			var key = "TestCopyObjectReplaceAwsChunkedToItself";
+			var content = S3Utils.RandomTextToLong(100);
+
+			PutObjectAwsChunked(bucketName, key, content, "aws-chunked");
+
+			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
+
+			// UNSIGNED-PAYLOAD 요청에 aws-chunked를 실으면 거부된다
+			var e = Assert.Throws<AggregateException>(() => unsignedClient.CopyObject(bucketName, key, bucketName, key,
+				metadataList: metadataList, metadataDirective: S3MetadataDirective.REPLACE,
+				contentType: "text/plain", contentEncoding: "aws-chunked"));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+
+			// HEAD 응답에 aws-chunked가 없으므로 그 값을 그대로 실어 헤더만 바꾸면 성공한다
+			var sourceHead = client.HeadObject(bucketName, key);
+			Assert.Null(sourceHead.Headers.ContentEncoding);
+
+			client.CopyObject(bucketName, key, bucketName, key,
+				metadataList: metadataList, metadataDirective: S3MetadataDirective.REPLACE,
+				contentType: "text/plain", contentEncoding: sourceHead.Headers.ContentEncoding);
+
+			var headResponse = client.HeadObject(bucketName, key);
+			Assert.Equal(1, headResponse.Metadata.Count);
+			Assert.Equal("bar", headResponse.Metadata["x-amz-meta-foo"]);
+			Assert.Equal("text/plain", headResponse.Headers.ContentType);
+			Assert.Null(headResponse.Headers.ContentEncoding);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal(content, GetBody(getResponse));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ContentEncoding")]
+		[Trait(MainData.Explanation, "버저닝 버킷에서 UNSIGNED-PAYLOAD aws-chunked REPLACE 복사가 실패하면 버전이 생기지 않고, HEAD 값으로 복사하면 새 버전이 생기는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectVersioningReplaceAwsChunkedToItself()
+		{
+			TestId = 64;
+			var client = GetClient();
+			var unsignedClient = GetClientUnsignedPayload();
+			var bucketName = GetNewBucket(client);
+			var key = "TestCopyObjectVersioningReplaceAwsChunkedToItself";
+			var content = S3Utils.RandomTextToLong(100);
+
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			PutObjectAwsChunked(bucketName, key, content, "aws-chunked");
+
+			var metadataList = new List<KeyValuePair<string, string>>() { new("x-amz-meta-foo", "bar") };
+
+			var e = Assert.Throws<AggregateException>(() => unsignedClient.CopyObject(bucketName, key, bucketName, key,
+				metadataList: metadataList, metadataDirective: S3MetadataDirective.REPLACE,
+				contentType: "text/plain", contentEncoding: "aws-chunked"));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+
+			// 실패한 요청은 새 버전을 만들지 않는다
+			var versionResponse = client.ListVersions(bucketName);
+			Assert.Single(GetVersions(versionResponse.Versions));
+
+			// 버저닝을 켠 직후에는 버전 ID 없는 HEAD가 한동안 404를 낼 수 있어 버전 ID로 조회한다
+			var versionId = GetVersions(versionResponse.Versions)[0].VersionId;
+			var sourceHead = client.HeadObject(bucketName, key, versionId: versionId);
+			Assert.Null(sourceHead.Headers.ContentEncoding);
+
+			client.CopyObject(bucketName, key, bucketName, key,
+				metadataList: metadataList, metadataDirective: S3MetadataDirective.REPLACE,
+				contentType: "text/plain", contentEncoding: sourceHead.Headers.ContentEncoding);
+
+			var headResponse = client.HeadObject(bucketName, key);
+			Assert.Equal(1, headResponse.Metadata.Count);
+			Assert.Equal("bar", headResponse.Metadata["x-amz-meta-foo"]);
+			Assert.Equal("text/plain", headResponse.Headers.ContentType);
+			Assert.Null(headResponse.Headers.ContentEncoding);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal(content, GetBody(getResponse));
+
+			// 버전이 2개인지 확인
+			versionResponse = client.ListVersions(bucketName);
+			Assert.Equal(2, GetVersions(versionResponse.Versions).Count);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ContentEncoding")]
+		[Trait(MainData.Explanation, "UNSIGNED-PAYLOAD REPLACE 복사에 aws-chunked,gzip을 실으면 실패하고, gzip만 지정하면 그대로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectReplaceAwsChunkedWithGzip()
+		{
+			TestId = 65;
+			var client = GetClient();
+			var unsignedClient = GetClientUnsignedPayload();
+			var bucketName = GetNewBucket(client);
+			var sourceKey = "TestCopyObjectReplaceAwsChunkedWithGzipSource";
+			var targetKey = "TestCopyObjectReplaceAwsChunkedWithGzipTarget";
+			var content = S3Utils.RandomTextToLong(100);
+
+			PutObjectAwsChunked(bucketName, sourceKey, content, "aws-chunked");
+
+			// 다른 인코딩과 함께 와도 UNSIGNED-PAYLOAD 요청의 aws-chunked는 거부된다
+			var e = Assert.Throws<AggregateException>(() => unsignedClient.CopyObject(bucketName, sourceKey, bucketName, targetKey,
+				metadataDirective: S3MetadataDirective.REPLACE, contentEncoding: "aws-chunked,gzip"));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+
+			// gzip만 지정하면 그대로 저장된다
+			client.CopyObject(bucketName, sourceKey, bucketName, targetKey,
+				metadataDirective: S3MetadataDirective.REPLACE, contentEncoding: "gzip");
+
+			var headResponse = client.HeadObject(bucketName, targetKey);
+			Assert.Equal("gzip", headResponse.Headers.ContentEncoding);
+
+			var getResponse = client.GetObject(bucketName, targetKey);
+			Assert.Equal(content, GetBody(getResponse));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ContentEncoding")]
+		[Trait(MainData.Explanation, "페이로드를 서명한 REPLACE 복사에 aws-chunked를 실으면 값이 그대로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectReplaceAwsChunkedSignedPayload()
+		{
+			TestId = 66;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var sourceKey = "TestCopyObjectReplaceAwsChunkedSignedPayloadSource";
+			var targetKey1 = "TestCopyObjectReplaceAwsChunkedSignedPayloadTarget1";
+			var targetKey2 = "TestCopyObjectReplaceAwsChunkedSignedPayloadTarget2";
+			var content = S3Utils.RandomTextToLong(100);
+
+			PutObjectAwsChunked(bucketName, sourceKey, content, "aws-chunked");
+
+			// 페이로드가 서명된 요청이면 aws-chunked도 일반 값처럼 그대로 저장된다
+			client.CopyObject(bucketName, sourceKey, bucketName, targetKey1,
+				metadataDirective: S3MetadataDirective.REPLACE, contentEncoding: "aws-chunked");
+			Assert.Equal("aws-chunked", GetRawContentEncoding(client, bucketName, targetKey1));
+
+			client.CopyObject(bucketName, sourceKey, bucketName, targetKey2,
+				metadataDirective: S3MetadataDirective.REPLACE, contentEncoding: "aws-chunked,gzip");
+			Assert.Equal("aws-chunked,gzip", GetRawContentEncoding(client, bucketName, targetKey2));
+
+			var getResponse = client.GetObject(bucketName, targetKey1);
+			Assert.Equal(content, GetBody(getResponse));
+			getResponse = client.GetObject(bucketName, targetKey2);
+			Assert.Equal(content, GetBody(getResponse));
+		}
 	}
 }

@@ -22,6 +22,7 @@ using Xunit;
 using Xunit.Abstractions;
 using System.Net.Http;
 using Newtonsoft.Json.Linq;
+using s3tests.Client;
 using s3tests.Utils;
 
 namespace s3tests.Test
@@ -111,6 +112,8 @@ namespace s3tests.Test
 
 		public S3Client GetClientV4() => new(Config.S3, Config.IsSecure, Config.MainUser, Output);
 		public S3Client GetClientHttps() => new(Config.S3, true, Config.MainUser, Output);
+		/// <summary>모든 요청을 UNSIGNED-PAYLOAD로 서명하는 클라이언트. SDK v4는 이 경우 HTTPS를 요구한다.</summary>
+		public S3Client GetClientUnsignedPayload() => new(Config.S3, true, Config.MainUser, Output, unsignedPayload: true);
 		public S3Client GetClientHttpsV4(RequestChecksumCalculation? requestChecksumCalculation = null,
 		ResponseChecksumValidation? responseChecksumValidation = null) => new(Config.S3, true, Config.MainUser, Output, requestChecksumCalculation, responseChecksumValidation);
 
@@ -179,6 +182,30 @@ namespace s3tests.Test
 
 			var port = secure ? Config.S3.SSLPort : Config.S3.Port;
 			return $"{Config.S3.Address}:{port}/{bucketName}";
+		}
+
+		/// <summary>
+		/// aws-chunked(STREAMING-AWS4-HMAC-SHA256-PAYLOAD)로 오브젝트를 업로드한다.
+		/// aws-cli 2.x처럼 Content-Encoding에 aws-chunked가 붙은 요청을 재현한다.
+		/// </summary>
+		/// <param name="contentEncoding">aws-chunked를 맨 앞에 둔 Content-Encoding 값 (예: "aws-chunked,gzip")</param>
+		public void PutObjectAwsChunked(string bucketName, string key, string content, string contentEncoding)
+		{
+			var client = new MyHttpClient(GetURL(bucketName), Config.MainUser.AccessKey, Config.MainUser.SecretKey, Config.S3.RegionName);
+			var result = client.PutObjectChunked(key, content, ContentEncoding: contentEncoding);
+			Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+		}
+
+		/// <summary>
+		/// HEAD 응답의 Content-Encoding 원본 값을 반환한다.
+		/// SDK의 Headers.ContentEncoding은 "aws-chunked,gzip" 같은 다중 값에서 첫 값만 돌려주므로 원본 헤더를 읽는다.
+		/// </summary>
+		public static string GetRawContentEncoding(S3Client client, string bucketName, string key)
+		{
+			client.HeadObject(bucketName, key);
+			foreach (var header in client.GetRawResponseHeaders())
+				if (header.Key.Equals("Content-Encoding", StringComparison.OrdinalIgnoreCase)) return header.Value;
+			return null;
 		}
 
 

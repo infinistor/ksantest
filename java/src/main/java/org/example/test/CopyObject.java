@@ -11,8 +11,10 @@
 package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.net.MalformedURLException;
 import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
@@ -28,6 +30,7 @@ import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.amazonaws.services.s3.model.MetadataDirective;
@@ -802,5 +805,162 @@ public class CopyObject extends TestBase {
 
 		tagResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, targetKey));
 		tagCompare(tags, tagResponse.getTagSet());
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testCopyObjectReplaceAwsChunkedToItself() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 43);
+		var key = "testCopyObjectReplaceAwsChunkedToItself";
+		var content = Utils.randomTextToLong(100);
+
+		putObjectAwsChunked(bucketName, key, content, "aws-chunked");
+
+		// 본문 해시를 서명하지 않은 요청(UNSIGNED-PAYLOAD)에 aws-chunked를 실으면 거부된다
+		var chunkedMetadata = new ObjectMetadata();
+		chunkedMetadata.addUserMetadata("foo", "bar");
+		chunkedMetadata.setContentType("text/plain");
+		chunkedMetadata.setContentEncoding("aws-chunked");
+		var unsignedClient = getClientPayloadSigning(false);
+		var e = assertThrows(AmazonServiceException.class,
+				() -> unsignedClient.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key)
+						.withNewObjectMetadata(chunkedMetadata).withMetadataDirective(MetadataDirective.REPLACE)));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
+
+		// HEAD 응답에 aws-chunked가 없으므로 그 값을 그대로 실어 헤더만 바꾸면 성공한다
+		var sourceHead = client.getObjectMetadata(bucketName, key);
+		assertNull(sourceHead.getContentEncoding());
+
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("foo", "bar");
+		metadata.setContentType("text/plain");
+		if (sourceHead.getContentEncoding() != null)
+			metadata.setContentEncoding(sourceHead.getContentEncoding());
+		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key)
+				.withNewObjectMetadata(metadata).withMetadataDirective(MetadataDirective.REPLACE));
+
+		var headResponse = client.getObjectMetadata(bucketName, key);
+		assertEquals(metadata.getUserMetadata(), headResponse.getUserMetadata());
+		assertEquals("text/plain", headResponse.getContentType());
+		assertNull(headResponse.getContentEncoding());
+
+		var getResponse = client.getObject(bucketName, key);
+		assertEquals(content, getBody(getResponse.getObjectContent()));
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testCopyObjectVersioningReplaceAwsChunkedToItself() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 44);
+		var key = "testCopyObjectVersioningReplaceAwsChunkedToItself";
+		var content = Utils.randomTextToLong(100);
+
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+
+		putObjectAwsChunked(bucketName, key, content, "aws-chunked");
+
+		var chunkedMetadata = new ObjectMetadata();
+		chunkedMetadata.addUserMetadata("foo", "bar");
+		chunkedMetadata.setContentType("text/plain");
+		chunkedMetadata.setContentEncoding("aws-chunked");
+		var unsignedClient = getClientPayloadSigning(false);
+		var e = assertThrows(AmazonServiceException.class,
+				() -> unsignedClient.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key)
+						.withNewObjectMetadata(chunkedMetadata).withMetadataDirective(MetadataDirective.REPLACE)));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
+
+		// 실패한 요청은 새 버전을 만들지 않는다
+		var versionResponse = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
+		assertEquals(1, versionResponse.getVersionSummaries().size());
+
+		// 버저닝을 켠 직후에는 버전 ID 없는 HEAD가 한동안 404를 낼 수 있어 버전 ID로 조회한다
+		var versionId = versionResponse.getVersionSummaries().get(0).getVersionId();
+		var sourceHead = client.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key, versionId));
+		assertNull(sourceHead.getContentEncoding());
+
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("foo", "bar");
+		metadata.setContentType("text/plain");
+		if (sourceHead.getContentEncoding() != null)
+			metadata.setContentEncoding(sourceHead.getContentEncoding());
+		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key)
+				.withNewObjectMetadata(metadata).withMetadataDirective(MetadataDirective.REPLACE));
+
+		var headResponse = client.getObjectMetadata(bucketName, key);
+		assertEquals(metadata.getUserMetadata(), headResponse.getUserMetadata());
+		assertEquals("text/plain", headResponse.getContentType());
+		assertNull(headResponse.getContentEncoding());
+
+		var getResponse = client.getObject(bucketName, key);
+		assertEquals(content, getBody(getResponse.getObjectContent()));
+
+		// 버전이 2개인지 확인
+		versionResponse = client.listVersions(new ListVersionsRequest().withBucketName(bucketName));
+		assertEquals(2, versionResponse.getVersionSummaries().size());
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testCopyObjectReplaceAwsChunkedWithGzip() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 45);
+		var sourceKey = "testCopyObjectReplaceAwsChunkedWithGzipSource";
+		var targetKey = "testCopyObjectReplaceAwsChunkedWithGzipTarget";
+		var content = Utils.randomTextToLong(100);
+
+		putObjectAwsChunked(bucketName, sourceKey, content, "aws-chunked");
+
+		// 다른 인코딩과 함께 와도 UNSIGNED-PAYLOAD 요청의 aws-chunked는 거부된다
+		var chunkedMetadata = new ObjectMetadata();
+		chunkedMetadata.setContentEncoding("aws-chunked,gzip");
+		var unsignedClient = getClientPayloadSigning(false);
+		var e = assertThrows(AmazonServiceException.class,
+				() -> unsignedClient.copyObject(new CopyObjectRequest(bucketName, sourceKey, bucketName, targetKey)
+						.withNewObjectMetadata(chunkedMetadata).withMetadataDirective(MetadataDirective.REPLACE)));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
+
+		// gzip만 지정하면 그대로 저장된다
+		var metadata = new ObjectMetadata();
+		metadata.setContentEncoding("gzip");
+		client.copyObject(new CopyObjectRequest(bucketName, sourceKey, bucketName, targetKey)
+				.withNewObjectMetadata(metadata).withMetadataDirective(MetadataDirective.REPLACE));
+
+		var headResponse = client.getObjectMetadata(bucketName, targetKey);
+		assertEquals("gzip", headResponse.getContentEncoding());
+
+		var getResponse = client.getObject(bucketName, targetKey);
+		assertEquals(content, getBody(getResponse.getObjectContent()));
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testCopyObjectReplaceAwsChunkedSignedPayload() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 46);
+		var sourceKey = "testCopyObjectReplaceAwsChunkedSignedPayloadSource";
+		var content = Utils.randomTextToLong(100);
+
+		putObjectAwsChunked(bucketName, sourceKey, content, "aws-chunked");
+
+		// 본문 해시를 서명한 요청이면 aws-chunked도 일반 값으로 취급되어 그대로 저장된다
+		var signedClient = getClientPayloadSigning(true);
+		for (var encoding : List.of("aws-chunked", "aws-chunked,gzip")) {
+			var targetKey = "testCopyObjectReplaceAwsChunkedSignedPayloadTarget-" + encoding;
+			var metadata = new ObjectMetadata();
+			metadata.setContentEncoding(encoding);
+			signedClient.copyObject(new CopyObjectRequest(bucketName, sourceKey, bucketName, targetKey)
+					.withNewObjectMetadata(metadata).withMetadataDirective(MetadataDirective.REPLACE));
+
+			var headResponse = client.getObjectMetadata(bucketName, targetKey);
+			assertEquals(encoding, headResponse.getContentEncoding());
+
+			var getResponse = client.getObject(bucketName, targetKey);
+			assertEquals(content, getBody(getResponse.getObjectContent()));
+		}
 	}
 }

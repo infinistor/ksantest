@@ -1246,6 +1246,153 @@ func TestCopyObjectMetadataAndTags(t *testing.T) {
 	}
 }
 
+// aws-chunked로 올린 오브젝트를 자기 자신에 REPLACE 복사할 때 Content-Encoding: aws-chunked는 거부되고
+// HEAD 응답 값(없음)을 그대로 실으면 성공하는지 확인
+func TestCopyObjectReplaceAwsChunkedToItself(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := s.bucket(t, 63)
+	key := "testCopyObjectReplaceAwsChunkedToItself"
+	content := string(randomTextToLong(100))
+
+	putObjectAwsChunked(t, s, b, key, content, "aws-chunked")
+
+	metadata := map[string]string{"foo": "bar"}
+
+	// UNSIGNED-PAYLOAD 요청에 aws-chunked를 실으면 거부된다
+	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(key), CopySource: copySource(b, key, ""),
+		MetadataDirective: types.MetadataDirectiveReplace, Metadata: metadata, ContentType: aws.String("text/plain"), ContentEncoding: aws.String("aws-chunked")}, withUnsignedPayload)
+	assertS3Error(t, err, 400, "InvalidArgument")
+
+	// HEAD 응답에 aws-chunked가 없으므로 그 값을 그대로 실어 헤더만 바꾸면 성공한다
+	sourceHead, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil || sourceHead.ContentEncoding != nil {
+		t.Fatalf("source ContentEncoding=%q err=%v", contentEncodingOf(sourceHead), err)
+	}
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(key), CopySource: copySource(b, key, ""),
+		MetadataDirective: types.MetadataDirectiveReplace, Metadata: metadata, ContentType: aws.String("text/plain"), ContentEncoding: sourceHead.ContentEncoding})
+
+	assertAwsChunkedReplaced(t, s.client, b, key, metadata)
+	assertCopied(t, s.client, b, key, content, nil)
+}
+
+// 버저닝된 버킷에서 aws-chunked로 올린 오브젝트를 자기 자신에 REPLACE 복사할 때 aws-chunked는 거부되고
+// 실패한 요청은 새 버전을 만들지 않으며 HEAD 응답 값을 실으면 성공하는지 확인
+func TestCopyObjectVersioningReplaceAwsChunkedToItself(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := s.bucket(t, 64)
+	key := "testCopyObjectVersioningReplaceAwsChunkedToItself"
+	content := string(randomTextToLong(100))
+
+	enableVersioning(t, s, b)
+
+	putObjectAwsChunked(t, s, b, key, content, "aws-chunked")
+
+	metadata := map[string]string{"foo": "bar"}
+
+	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(key), CopySource: copySource(b, key, ""),
+		MetadataDirective: types.MetadataDirectiveReplace, Metadata: metadata, ContentType: aws.String("text/plain"), ContentEncoding: aws.String("aws-chunked")}, withUnsignedPayload)
+	assertS3Error(t, err, 400, "InvalidArgument")
+
+	// 실패한 요청은 새 버전을 만들지 않는다
+	listed := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
+	if len(listed.Versions) != 1 {
+		t.Fatalf("versions after failed copy=%d", len(listed.Versions))
+	}
+
+	// 버저닝을 켠 직후에는 버전 ID 없는 HEAD가 한동안 404를 낼 수 있어 버전 ID로 조회한다
+	sourceHead, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: listed.Versions[0].VersionId})
+	if err != nil || sourceHead.ContentEncoding != nil {
+		t.Fatalf("source ContentEncoding=%q err=%v", contentEncodingOf(sourceHead), err)
+	}
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(key), CopySource: copySource(b, key, ""),
+		MetadataDirective: types.MetadataDirectiveReplace, Metadata: metadata, ContentType: aws.String("text/plain"), ContentEncoding: sourceHead.ContentEncoding})
+
+	assertAwsChunkedReplaced(t, s.client, b, key, metadata)
+	assertCopied(t, s.client, b, key, content, nil)
+
+	// 버전이 2개인지 확인
+	listed = listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
+	if len(listed.Versions) != 2 {
+		t.Fatalf("versions=%d", len(listed.Versions))
+	}
+}
+
+// 다른 인코딩과 함께 와도(aws-chunked,gzip) UNSIGNED-PAYLOAD 복사 요청의 aws-chunked는 거부되고 gzip만 지정하면 저장되는지 확인
+func TestCopyObjectReplaceAwsChunkedWithGzip(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := s.bucket(t, 65)
+	sourceKey := "testCopyObjectReplaceAwsChunkedWithGzipSource"
+	targetKey := "testCopyObjectReplaceAwsChunkedWithGzipTarget"
+	content := string(randomTextToLong(100))
+
+	putObjectAwsChunked(t, s, b, sourceKey, content, "aws-chunked")
+
+	// 다른 인코딩과 함께 와도 UNSIGNED-PAYLOAD 요청의 aws-chunked는 거부된다
+	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(targetKey), CopySource: copySource(b, sourceKey, ""),
+		MetadataDirective: types.MetadataDirectiveReplace, ContentEncoding: aws.String("aws-chunked,gzip")}, withUnsignedPayload)
+	assertS3Error(t, err, 400, "InvalidArgument")
+
+	// gzip만 지정하면 그대로 저장된다
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(targetKey), CopySource: copySource(b, sourceKey, ""),
+		MetadataDirective: types.MetadataDirectiveReplace, ContentEncoding: aws.String("gzip")})
+
+	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(targetKey)})
+	if err != nil || aws.ToString(head.ContentEncoding) != "gzip" {
+		t.Fatalf("target ContentEncoding=%q err=%v", contentEncodingOf(head), err)
+	}
+	assertCopied(t, s.client, b, targetKey, content, nil)
+}
+
+// 서명된(SHA256) 복사 요청에 Content-Encoding: aws-chunked를 실으면 값이 그대로 저장되는지 확인
+func TestCopyObjectReplaceAwsChunkedSignedPayload(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := s.bucket(t, 66)
+	sourceKey := "testCopyObjectReplaceAwsChunkedSignedPayloadSource"
+	content := string(randomTextToLong(100))
+
+	putObjectAwsChunked(t, s, b, sourceKey, content, "aws-chunked")
+
+	// 서명된 요청에서는 aws-chunked가 전송 인코딩으로 해석되지 않고 일반 값으로 저장된다
+	for targetKey, contentEncoding := range map[string]string{
+		"testCopyObjectReplaceAwsChunkedSignedPayloadTarget1": "aws-chunked",
+		"testCopyObjectReplaceAwsChunkedSignedPayloadTarget2": "aws-chunked,gzip",
+	} {
+		copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(targetKey), CopySource: copySource(b, sourceKey, ""),
+			MetadataDirective: types.MetadataDirectiveReplace, ContentEncoding: aws.String(contentEncoding)})
+		head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(targetKey)})
+		if err != nil || aws.ToString(head.ContentEncoding) != contentEncoding {
+			t.Fatalf("target ContentEncoding=%q want=%q err=%v", contentEncodingOf(head), contentEncoding, err)
+		}
+		assertCopied(t, s.client, b, targetKey, content, nil)
+	}
+}
+
+// assertAwsChunkedReplaced는 REPLACE 복사 후 메타데이터·Content-Type이 바뀌고 Content-Encoding이 없는지 확인한다.
+func assertAwsChunkedReplaced(t *testing.T, client *s3.Client, bucket, key string, metadata map[string]string) {
+	t.Helper()
+	head, err := client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(head.Metadata) != len(metadata) || head.Metadata["foo"] != metadata["foo"] {
+		t.Fatalf("metadata=%v want=%v", head.Metadata, metadata)
+	}
+	if aws.ToString(head.ContentType) != "text/plain" {
+		t.Fatalf("ContentType=%q", aws.ToString(head.ContentType))
+	}
+	if head.ContentEncoding != nil {
+		t.Fatalf("ContentEncoding=%q", aws.ToString(head.ContentEncoding))
+	}
+}
+
 func copySource(bucket, key, version string) *string {
 	encKey := strings.ReplaceAll(url.PathEscape(key), "%2F", "/")
 	value := url.PathEscape(bucket) + "/" + encKey

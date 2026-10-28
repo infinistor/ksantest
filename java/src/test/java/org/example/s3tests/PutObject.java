@@ -10,6 +10,8 @@
 */
 package org.example.s3tests;
 
+import java.net.MalformedURLException;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Disabled;
@@ -478,5 +480,37 @@ class PutObject {
 	void testPutObjectKeyBoundaryLengths() {
 		test.testPutObjectKeyBoundaryLengths();
 		testV2.testPutObjectKeyBoundaryLengths();
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	// aws-chunked로 업로드한 오브젝트에 Content-Encoding: aws-chunked가 저장되지 않는지 확인
+	void testPutObjectAwsChunkedNotStored() throws MalformedURLException {
+		test.testPutObjectAwsChunkedNotStored();
+		testV2.testPutObjectAwsChunkedNotStored();
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	// Content-Encoding: aws-chunked,gzip으로 업로드하면 gzip만 저장되는지 확인
+	void testPutObjectAwsChunkedWithGzip() throws MalformedURLException {
+		test.testPutObjectAwsChunkedWithGzip();
+		testV2.testPutObjectAwsChunkedWithGzip();
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	// 본문 해시를 서명하지 않은 PutObject에 Content-Encoding: aws-chunked를 실으면 400 InvalidArgument인지 확인
+	void testPutObjectAwsChunkedUnsignedPayload() {
+		test.testPutObjectAwsChunkedUnsignedPayload();
+		testV2.testPutObjectAwsChunkedUnsignedPayload();
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	// 본문 해시를 서명한 PutObject의 Content-Encoding: aws-chunked는 그대로 저장되는지 확인
+	void testPutObjectAwsChunkedSignedPayload() {
+		test.testPutObjectAwsChunkedSignedPayload();
+		testV2.testPutObjectAwsChunkedSignedPayload();
 	}
 }

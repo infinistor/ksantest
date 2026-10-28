@@ -1237,3 +1237,188 @@ class TestCopyObject(S3TestBase):
 
         tag_response = client.get_object_tagging(Bucket=bucket_name, Key=target_key)
         assert tag_response["TagSet"] == tags
+
+    @pytest.mark.tag("ContentEncoding")
+    def test_copy_object_replace_aws_chunked_to_itself(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 63)
+        key = "test_copy_object_replace_aws_chunked_to_itself"
+        content = utils.random_text_to_long(100)
+
+        self.put_object_aws_chunked(bucket_name, key, content, "aws-chunked")
+
+        metadata = {"foo": "bar"}
+
+        # UNSIGNED-PAYLOAD 요청에 aws-chunked를 실으면 400 InvalidArgument
+        unsigned_client = self.get_client_unsigned_payload()
+        with pytest.raises(ClientError) as exc_info:
+            unsigned_client.copy_object(
+                Bucket=bucket_name,
+                Key=key,
+                CopySource={"Bucket": bucket_name, "Key": key},
+                MetadataDirective="REPLACE",
+                Metadata=metadata,
+                ContentType="text/plain",
+                ContentEncoding="aws-chunked",
+            )
+        assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert exc_info.value.response["Error"]["Code"] == md.INVALID_ARGUMENT
+
+        # aws-chunked 업로드는 Content-Encoding이 저장되지 않으므로, HEAD 값(없음)을 그대로 실으면 성공한다
+        source_head = client.head_object(Bucket=bucket_name, Key=key)
+        assert "ContentEncoding" not in source_head
+
+        client.copy_object(
+            Bucket=bucket_name,
+            Key=key,
+            CopySource={"Bucket": bucket_name, "Key": key},
+            MetadataDirective="REPLACE",
+            Metadata=metadata,
+            ContentType="text/plain",
+        )
+
+        head_response = client.head_object(Bucket=bucket_name, Key=key)
+        assert head_response["Metadata"] == metadata
+        assert head_response["ContentType"] == "text/plain"
+        assert "ContentEncoding" not in head_response
+
+        get_response = client.get_object(Bucket=bucket_name, Key=key)
+        assert self.get_body(get_response) == content
+
+    @pytest.mark.tag("ContentEncoding")
+    def test_copy_object_versioning_replace_aws_chunked_to_itself(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 64)
+        key = "test_copy_object_versioning_replace_aws_chunked_to_itself"
+        content = utils.random_text_to_long(100)
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+
+        self.put_object_aws_chunked(bucket_name, key, content, "aws-chunked")
+
+        metadata = {"foo": "bar"}
+
+        # UNSIGNED-PAYLOAD 요청에 aws-chunked를 실으면 400 InvalidArgument
+        unsigned_client = self.get_client_unsigned_payload()
+        with pytest.raises(ClientError) as exc_info:
+            unsigned_client.copy_object(
+                Bucket=bucket_name,
+                Key=key,
+                CopySource={"Bucket": bucket_name, "Key": key},
+                MetadataDirective="REPLACE",
+                Metadata=metadata,
+                ContentType="text/plain",
+                ContentEncoding="aws-chunked",
+            )
+        assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert exc_info.value.response["Error"]["Code"] == md.INVALID_ARGUMENT
+
+        # 실패한 요청은 새 버전을 만들지 않는다
+        version_response = client.list_object_versions(Bucket=bucket_name)
+        assert len(version_response["Versions"]) == 1
+        version_id = version_response["Versions"][0]["VersionId"]
+
+        # 버저닝을 켠 직후에는 버전 ID 없는 HEAD가 한동안 404를 낼 수 있어 버전 ID로 조회한다
+        source_head = client.head_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+        assert "ContentEncoding" not in source_head
+
+        client.copy_object(
+            Bucket=bucket_name,
+            Key=key,
+            CopySource={"Bucket": bucket_name, "Key": key},
+            MetadataDirective="REPLACE",
+            Metadata=metadata,
+            ContentType="text/plain",
+        )
+
+        head_response = client.head_object(Bucket=bucket_name, Key=key)
+        assert head_response["Metadata"] == metadata
+        assert head_response["ContentType"] == "text/plain"
+        assert "ContentEncoding" not in head_response
+
+        get_response = client.get_object(Bucket=bucket_name, Key=key)
+        assert self.get_body(get_response) == content
+
+        # 버전이 2개인지 확인
+        version_response = client.list_object_versions(Bucket=bucket_name)
+        assert len(version_response["Versions"]) == 2
+
+    @pytest.mark.tag("ContentEncoding")
+    def test_copy_object_replace_aws_chunked_with_gzip(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 65)
+        source_key = "test_copy_object_replace_aws_chunked_with_gzip_source"
+        target_key = "test_copy_object_replace_aws_chunked_with_gzip_target"
+        content = utils.random_text_to_long(100)
+
+        self.put_object_aws_chunked(bucket_name, source_key, content, "aws-chunked")
+
+        # 다른 인코딩과 함께 와도 UNSIGNED-PAYLOAD 요청의 aws-chunked는 400 InvalidArgument
+        unsigned_client = self.get_client_unsigned_payload()
+        with pytest.raises(ClientError) as exc_info:
+            unsigned_client.copy_object(
+                Bucket=bucket_name,
+                Key=target_key,
+                CopySource={"Bucket": bucket_name, "Key": source_key},
+                MetadataDirective="REPLACE",
+                ContentEncoding="aws-chunked,gzip",
+            )
+        assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert exc_info.value.response["Error"]["Code"] == md.INVALID_ARGUMENT
+
+        # gzip만 지정하면 그대로 저장된다
+        client.copy_object(
+            Bucket=bucket_name,
+            Key=target_key,
+            CopySource={"Bucket": bucket_name, "Key": source_key},
+            MetadataDirective="REPLACE",
+            ContentEncoding="gzip",
+        )
+
+        head_response = client.head_object(Bucket=bucket_name, Key=target_key)
+        assert head_response["ContentEncoding"] == "gzip"
+
+        get_response = client.get_object(Bucket=bucket_name, Key=target_key)
+        assert self.get_body(get_response) == content
+
+    @pytest.mark.tag("ContentEncoding")
+    def test_copy_object_replace_aws_chunked_signed_payload(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 66)
+        source_key = "test_copy_object_replace_aws_chunked_signed_payload_source"
+        target_key1 = "test_copy_object_replace_aws_chunked_signed_payload_target1"
+        target_key2 = "test_copy_object_replace_aws_chunked_signed_payload_target2"
+        content = utils.random_text_to_long(100)
+
+        self.put_object_aws_chunked(bucket_name, source_key, content, "aws-chunked")
+
+        # 본문 SHA256으로 서명한 요청은 aws-chunked를 그대로 저장한다
+        signed_client = self.get_client_signed_payload()
+        signed_client.copy_object(
+            Bucket=bucket_name,
+            Key=target_key1,
+            CopySource={"Bucket": bucket_name, "Key": source_key},
+            MetadataDirective="REPLACE",
+            ContentEncoding="aws-chunked",
+        )
+
+        head_response = client.head_object(Bucket=bucket_name, Key=target_key1)
+        assert head_response["ContentEncoding"] == "aws-chunked"
+
+        get_response = client.get_object(Bucket=bucket_name, Key=target_key1)
+        assert self.get_body(get_response) == content
+
+        # 다른 인코딩과 함께 와도 그대로 저장된다
+        signed_client.copy_object(
+            Bucket=bucket_name,
+            Key=target_key2,
+            CopySource={"Bucket": bucket_name, "Key": source_key},
+            MetadataDirective="REPLACE",
+            ContentEncoding="aws-chunked,gzip",
+        )
+
+        head_response = client.head_object(Bucket=bucket_name, Key=target_key2)
+        assert head_response["ContentEncoding"] == "aws-chunked,gzip"
+
+        get_response = client.get_object(Bucket=bucket_name, Key=target_key2)
+        assert self.get_body(get_response) == content

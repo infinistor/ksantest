@@ -9,6 +9,7 @@
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
 using Amazon.Runtime;
+using Amazon.Runtime.Internal;
 using Amazon.S3;
 using Amazon.S3.Model;
 using System;
@@ -49,10 +50,12 @@ namespace s3tests.Test
 		private bool NeedsPrecomputedChecksum(ChecksumAlgorithm algorithm, string value)
 			=> algorithm != null && value == null && RequestChecksum == RequestChecksumCalculation.WHEN_REQUIRED;
 
+		/// <param name="unsignedPayload">true면 모든 요청을 UNSIGNED-PAYLOAD로 서명한다. SDK v4가 HTTPS를 요구하므로 isSecure와 함께 쓴다.</param>
 		public S3Client(S3Config s3, bool isSecure, UserData user, ITestOutputHelper output = null,
 		RequestChecksumCalculation? requestChecksumCalculation = null,
 		ResponseChecksumValidation? responseChecksumValidation = null,
-		List<KeyValuePair<string, string>> clientHeaders = null)
+		List<KeyValuePair<string, string>> clientHeaders = null,
+		bool unsignedPayload = false)
 		{
 			if (output != null) Output = output;
 
@@ -77,7 +80,7 @@ namespace s3tests.Test
 			s3Config.ResponseChecksumValidation = responseChecksumValidation ?? ResponseChecksumValidation.WHEN_REQUIRED;
 			RequestChecksum = s3Config.RequestChecksumCalculation;
 
-			Client = new(credentials, s3Config);
+			Client = unsignedPayload ? new UnsignedPayloadS3Client(credentials, s3Config) : new AmazonS3Client(credentials, s3Config);
 
 			if (clientHeaders != null)
 			{
@@ -99,6 +102,47 @@ namespace s3tests.Test
 					args.Headers[header.Key] = header.Value;
 			};
 		}
+
+		#region UnsignedPayload
+		/// <summary>
+		/// 페이로드 서명을 끄는 전용 클라이언트 타입. CopyObjectRequest 등은 DisablePayloadSigning 옵션이 없으므로
+		/// 파이프라인 확장으로 Signer 앞에서 요청에 DisablePayloadSigning을 설정한다.
+		/// 커스터마이저 레지스트리는 전역이라 이 타입으로 만든 클라이언트에만 핸들러를 붙인다.
+		/// </summary>
+		private sealed class UnsignedPayloadS3Client : AmazonS3Client
+		{
+			static UnsignedPayloadS3Client()
+				=> RuntimePipelineCustomizerRegistry.Instance.Register(new UnsignedPayloadPipelineCustomizer());
+
+			public UnsignedPayloadS3Client(AWSCredentials credentials, AmazonS3Config config) : base(credentials, config) { }
+		}
+
+		private sealed class UnsignedPayloadPipelineCustomizer : IRuntimePipelineCustomizer
+		{
+			public string UniqueName => "s3tests.UnsignedPayload";
+
+			public void Customize(Type type, RuntimePipeline pipeline)
+			{
+				if (type != typeof(UnsignedPayloadS3Client)) return;
+				pipeline.AddHandlerBefore<Signer>(new DisablePayloadSigningHandler());
+			}
+		}
+
+		private sealed class DisablePayloadSigningHandler : PipelineHandler
+		{
+			public override void InvokeSync(IExecutionContext executionContext)
+			{
+				executionContext.RequestContext.Request.DisablePayloadSigning = true;
+				base.InvokeSync(executionContext);
+			}
+
+			public override Task<T> InvokeAsync<T>(IExecutionContext executionContext)
+			{
+				executionContext.RequestContext.Request.DisablePayloadSigning = true;
+				return base.InvokeAsync<T>(executionContext);
+			}
+		}
+		#endregion
 
 		// HttpClientFactory 클래스 추가
 		private class AmazonS3HttpClientFactory : HttpClientFactory
@@ -996,7 +1040,7 @@ namespace s3tests.Test
 			S3CannedACL acl = null, List<S3Grant> grants = null, ServerSideEncryptionMethod sseKey = null,
 			ObjectLockLegalHoldStatus objectLockLegalHoldStatus = null, DateTime? objectLockRetainUntilDate = null,
 			ObjectLockMode objectLockMode = null, bool? useChunkEncoding = null, bool? disablePayloadSigning = null,
-			string expectedBucketOwner = null)
+			string expectedBucketOwner = null, string contentEncoding = null)
 		{
 			var request = new PutObjectRequest()
 			{
@@ -1005,6 +1049,7 @@ namespace s3tests.Test
 			};
 
 			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
+			if (contentEncoding != null) request.Headers.ContentEncoding = contentEncoding;
 
 			if (body != null) request.ContentBody = body;
 			if (byteBody != null)
@@ -1141,7 +1186,8 @@ namespace s3tests.Test
 			List<KeyValuePair<string, string>> headerList = null,
 			DateTime? modifiedSince = null, DateTime? unmodifiedSince = null,
 			string ifMatch = null, string ifNoneMatch = null,
-			string expectedBucketOwner = null, string expectedSourceBucketOwner = null)
+			string expectedBucketOwner = null, string expectedSourceBucketOwner = null,
+			string contentEncoding = null)
 		{
 			var request = new CopyObjectRequest()
 			{
@@ -1154,6 +1200,7 @@ namespace s3tests.Test
 			if (expectedSourceBucketOwner != null) request.ExpectedSourceBucketOwner = expectedSourceBucketOwner;
 			if (acl != null) request.CannedACL = acl;
 			if (contentType != null) request.ContentType = contentType;
+			if (contentEncoding != null) request.Headers.ContentEncoding = contentEncoding;
 			// CopyObject는 본문이 없어 체크섬을 S3가 계산한다. SDK v4가 x-amz-sdk-checksum-algorithm(본문 체크섬용)을
 			// 내보내면 AWS가 대응 값이 없다며 400을 반환하므로, 알고리즘 지정 헤더를 직접 넣는다.
 			if (checksumAlgorithm != null) request.Headers["x-amz-checksum-algorithm"] = checksumAlgorithm.Value;

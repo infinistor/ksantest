@@ -14,7 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.List;
@@ -771,4 +773,84 @@ public class PutObject extends TestBase {
 		}
 	}
 
+	@Test
+	@Tag("ContentEncoding")
+	public void testPutObjectAwsChunkedNotStored() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 44);
+		var key = "testPutObjectAwsChunkedNotStored";
+		var content = Utils.randomTextToLong(100);
+
+		putObjectAwsChunked(bucketName, key, content, "aws-chunked");
+
+		// aws-chunked는 전송용 인코딩이므로 저장되지 않아야 한다
+		var headResponse = client.getObjectMetadata(bucketName, key);
+		assertNull(headResponse.getContentEncoding());
+
+		var getResponse = client.getObject(bucketName, key);
+		assertNull(getResponse.getObjectMetadata().getContentEncoding());
+		assertEquals(content, getBody(getResponse.getObjectContent()));
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testPutObjectAwsChunkedWithGzip() throws MalformedURLException {
+		var client = getClient();
+		var bucketName = createBucket(client, 45);
+		var key = "testPutObjectAwsChunkedWithGzip";
+		var content = Utils.randomTextToLong(100);
+
+		putObjectAwsChunked(bucketName, key, content, "aws-chunked,gzip");
+
+		// aws-chunked만 빠지고 gzip은 남아야 한다
+		var headResponse = client.getObjectMetadata(bucketName, key);
+		assertEquals("gzip", headResponse.getContentEncoding());
+
+		var getResponse = client.getObject(bucketName, key);
+		assertEquals("gzip", getResponse.getObjectMetadata().getContentEncoding());
+		assertEquals(content, getBody(getResponse.getObjectContent()));
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testPutObjectAwsChunkedUnsignedPayload() {
+		var client = getClient();
+		var bucketName = createBucket(client, 46);
+		var content = Utils.randomTextToLong(100);
+
+		// 본문 해시를 서명하지 않은 요청(UNSIGNED-PAYLOAD)에 aws-chunked를 실으면 거부된다
+		var unsignedClient = getClientPayloadSigning(false);
+		for (var encoding : List.of("aws-chunked", "aws-chunked,gzip")) {
+			var key = "testPutObjectAwsChunkedUnsignedPayload-" + encoding;
+			var metadata = new ObjectMetadata();
+			metadata.setContentEncoding(encoding);
+			var e = assertThrows(AmazonServiceException.class,
+					() -> unsignedClient.putObject(bucketName, key, createBody(content), metadata));
+			assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+			assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
+		}
+	}
+
+	@Test
+	@Tag("ContentEncoding")
+	public void testPutObjectAwsChunkedSignedPayload() {
+		var client = getClient();
+		var bucketName = createBucket(client, 47);
+		var content = Utils.randomTextToLong(100);
+
+		// 본문 해시를 서명한 요청이면 aws-chunked도 일반 값으로 취급되어 그대로 저장된다
+		var signedClient = getClientPayloadSigning(true);
+		for (var encoding : List.of("aws-chunked", "aws-chunked,gzip")) {
+			var key = "testPutObjectAwsChunkedSignedPayload-" + encoding;
+			var metadata = new ObjectMetadata();
+			metadata.setContentEncoding(encoding);
+			signedClient.putObject(bucketName, key, createBody(content), metadata);
+
+			var headResponse = client.getObjectMetadata(bucketName, key);
+			assertEquals(encoding, headResponse.getContentEncoding());
+
+			var getResponse = client.getObject(bucketName, key);
+			assertEquals(content, getBody(getResponse.getObjectContent()));
+		}
+	}
 }
