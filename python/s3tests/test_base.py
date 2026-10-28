@@ -7,6 +7,7 @@ import random
 import threading
 import time
 import urllib.request
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Sequence, TypeVar
@@ -36,6 +37,15 @@ SSE_KEY = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs="
 SSE_KEY_MD5 = "DWygnHRtgiJ77HCm+1rvHw=="
 
 T = TypeVar("T")
+
+
+@dataclass(frozen=True)
+class WebsiteResponse:
+    """웹사이트 엔드포인트 응답"""
+
+    status_code: int
+    location: Optional[str]
+    body: str
 
 
 class EncryptionType(Enum):
@@ -928,6 +938,33 @@ class S3TestBase:
             }
             for _ in range(count)
         ]
+
+    # 익명 사용자가 버킷의 모든 객체를 읽을 수 있도록 정책을 건다
+    def set_public_read_policy(self, client: Any, bucket_name: str) -> None:
+        resource = utils.make_arn_resource(f"{bucket_name}/*")
+        policy = self.make_json_policy("s3:GetObject", resource)
+        client.put_bucket_policy(Bucket=bucket_name, Policy=policy)
+
+    # endregion
+
+    # region website helpers
+    # 설정의 WebsiteURL 템플릿에 버킷명을 넣어 웹사이트 주소를 만든다
+    def get_website_url(self, bucket_name: str, path: Optional[str] = None) -> str:
+        base_url = self.config.website_url.replace("{bucket}", bucket_name)
+        if base_url.endswith("/"):
+            base_url = base_url[:-1]
+        return f"{base_url}/{path or ''}"
+
+    # 서명 없이 웹사이트 엔드포인트에 GET 요청을 보낸다. 리다이렉트를 검증하기 위해 따라가지 않는다
+    def website_get(self, bucket_name: str, path: Optional[str] = None) -> WebsiteResponse:
+        url = self.get_website_url(bucket_name, path)
+        http = urllib3.PoolManager(cert_reqs="CERT_NONE")
+        try:
+            response = http.request("GET", url, redirect=False, retries=False, timeout=15.0)
+        finally:
+            http.clear()
+        body = response.data.decode("utf-8", errors="replace")
+        return WebsiteResponse(response.status, response.headers.get("Location"), body)
 
     # endregion
 

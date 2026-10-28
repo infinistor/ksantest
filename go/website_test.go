@@ -2,9 +2,14 @@ package s3tests
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -387,6 +392,238 @@ func TestWebsiteAccessDenied(t *testing.T) {
 	out := getWebsite(t, s, bucket)
 	if out.IndexDocument == nil || aws.ToString(out.IndexDocument.Suffix) != "index.html" {
 		t.Fatalf("IndexDocument = %#v, want index.html", out.IndexDocument)
+	}
+}
+
+// 웹사이트 엔드포인트에서 루트와 디렉터리 요청에 IndexDocument를 돌려주는지 확인
+func TestWebsiteAccessIndexDocument(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipWithoutWebsiteURL(t, s)
+	bucket := createPublicWebsiteBucket(t, s, 25, &types.WebsiteConfiguration{IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")}})
+	putHTML(t, s, bucket, "index.html", "root index")
+	putHTML(t, s, bucket, "dir/index.html", "dir index")
+
+	assertWebsiteBody(t, websiteGet(t, s, bucket, ""), http.StatusOK, "root index")
+	assertWebsiteBody(t, websiteGet(t, s, bucket, "dir/"), http.StatusOK, "dir index")
+	assertWebsiteBody(t, websiteGet(t, s, bucket, "index.html"), http.StatusOK, "root index")
+
+	// 슬래시 없이 디렉터리를 요청하면 슬래시를 붙인 주소로 보낸다
+	assertWebsiteRedirect(t, websiteGet(t, s, bucket, "dir"), http.StatusFound, "/dir/")
+}
+
+// 없는 객체를 요청하면 ErrorDocument 내용을 404로 돌려주는지 확인
+func TestWebsiteAccessErrorDocument(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipWithoutWebsiteURL(t, s)
+	bucket := createPublicWebsiteBucket(t, s, 26, &types.WebsiteConfiguration{
+		IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")},
+		ErrorDocument: &types.ErrorDocument{Key: aws.String("error.html")},
+	})
+	putHTML(t, s, bucket, "error.html", "custom error")
+
+	assertWebsiteBody(t, websiteGet(t, s, bucket, "not-exist.html"), http.StatusNotFound, "custom error")
+}
+
+// ErrorDocument가 없을 때 없는 객체를 요청하면 기본 404 NoSuchKey 페이지를 돌려주는지 확인
+func TestWebsiteAccessNoErrorDocument(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipWithoutWebsiteURL(t, s)
+	bucket := createPublicWebsiteBucket(t, s, 27, &types.WebsiteConfiguration{IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")}})
+
+	assertWebsiteBodyContains(t, websiteGet(t, s, bucket, "not-exist.html"), http.StatusNotFound, "NoSuchKey")
+}
+
+// RedirectAllRequestsTo 설정 시 모든 요청을 지정한 호스트로 301 리다이렉트하는지 확인
+func TestWebsiteAccessRedirectAllRequests(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipWithoutWebsiteURL(t, s)
+	bucket := createPublicWebsiteBucket(t, s, 28, &types.WebsiteConfiguration{
+		RedirectAllRequestsTo: &types.RedirectAllRequestsTo{HostName: aws.String("example.com"), Protocol: types.ProtocolHttps},
+	})
+
+	assertWebsiteRedirect(t, websiteGet(t, s, bucket, "docs/a.html"), http.StatusMovedPermanently, "https://example.com/docs/a.html")
+}
+
+// KeyPrefixEquals 라우팅 규칙으로 접두어를 바꿔 리다이렉트하는지 확인
+func TestWebsiteAccessRoutingRuleKeyPrefix(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipWithoutWebsiteURL(t, s)
+	bucket := createPublicWebsiteBucket(t, s, 29, &types.WebsiteConfiguration{
+		IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")},
+		RoutingRules: []types.RoutingRule{{
+			Condition: &types.Condition{KeyPrefixEquals: aws.String("docs/")},
+			Redirect:  &types.Redirect{ReplaceKeyPrefixWith: aws.String("documents/")},
+		}},
+	})
+
+	response := websiteGet(t, s, bucket, "docs/a.html")
+	if response.statusCode != http.StatusMovedPermanently {
+		t.Fatalf("status = %d, want %d (body=%q)", response.statusCode, http.StatusMovedPermanently, response.body)
+	}
+	// 호스트는 엔드포인트마다 달라지므로 경로만 확인한다
+	if !strings.HasSuffix(response.location, "/documents/a.html") {
+		t.Fatalf("Location = %q, want suffix /documents/a.html", response.location)
+	}
+}
+
+// HttpErrorCodeReturnedEquals 라우팅 규칙으로 404일 때만 리다이렉트하는지 확인
+func TestWebsiteAccessRoutingRuleErrorCode(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipWithoutWebsiteURL(t, s)
+	bucket := createPublicWebsiteBucket(t, s, 30, &types.WebsiteConfiguration{
+		IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")},
+		RoutingRules: []types.RoutingRule{{
+			Condition: &types.Condition{HttpErrorCodeReturnedEquals: aws.String("404")},
+			Redirect: &types.Redirect{HostName: aws.String("example.com"), Protocol: types.ProtocolHttps,
+				HttpRedirectCode: aws.String("302"), ReplaceKeyWith: aws.String("error.html")},
+		}},
+	})
+	putHTML(t, s, bucket, "exist.html", "exist")
+
+	assertWebsiteBody(t, websiteGet(t, s, bucket, "exist.html"), http.StatusOK, "exist")
+	assertWebsiteRedirect(t, websiteGet(t, s, bucket, "not-exist.html"), http.StatusFound, "https://example.com/error.html")
+}
+
+// 객체의 x-amz-website-redirect-location 메타데이터로 리다이렉트하는지 확인
+func TestWebsiteAccessObjectRedirectLocation(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipWithoutWebsiteURL(t, s)
+	bucket := createPublicWebsiteBucket(t, s, 31, &types.WebsiteConfiguration{IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")}})
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("old.html"),
+		WebsiteRedirectLocation: aws.String("/new.html"), Body: strings.NewReader("")})
+	if err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+
+	assertWebsiteRedirect(t, websiteGet(t, s, bucket, "old.html"), http.StatusMovedPermanently, "/new.html")
+}
+
+// 공개되지 않은 버킷을 웹사이트로 접근하면 403 AccessDenied가 반환되는지 확인
+func TestWebsiteAccessNotPublic(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipWithoutWebsiteURL(t, s)
+	bucket := s.bucket(t, 32)
+	putWebsite(t, s, bucket, &types.WebsiteConfiguration{IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")}})
+	putHTML(t, s, bucket, "index.html", "root index")
+
+	assertWebsiteBodyContains(t, websiteGet(t, s, bucket, "index.html"), http.StatusForbidden, "AccessDenied")
+}
+
+// 웹사이트 설정이 없는 버킷에 접근하면 404 NoSuchWebsiteConfiguration이 반환되는지 확인
+func TestWebsiteAccessNoConfiguration(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	skipWithoutWebsiteURL(t, s)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 33)
+	setPublicReadPolicy(t, s, bucket)
+	putHTML(t, s, bucket, "index.html", "root index")
+
+	assertWebsiteBodyContains(t, websiteGet(t, s, bucket, "index.html"), http.StatusNotFound, "NoSuchWebsiteConfiguration")
+}
+
+// 웹사이트 엔드포인트 응답
+type websiteResponse struct {
+	statusCode int
+	location   string
+	body       string
+}
+
+// 설정에 WebsiteURL이 없으면 웹사이트 접속 테스트를 건너뛴다
+func skipWithoutWebsiteURL(t *testing.T, s *suite) {
+	t.Helper()
+	if !s.cfg.HasWebsiteURL() {
+		t.Skip("설정의 [S3] WebsiteURL을 지정하세요")
+	}
+}
+
+// 설정의 WebsiteURL 템플릿에 버킷명을 넣어 웹사이트 주소를 만든다
+func websiteURL(s *suite, bucket, path string) string {
+	baseURL := strings.ReplaceAll(s.cfg.WebsiteURL, "{bucket}", bucket)
+	return strings.TrimSuffix(baseURL, "/") + "/" + path
+}
+
+// 서명 없이 웹사이트 엔드포인트에 GET 요청을 보낸다. 리다이렉트를 검증하기 위해 따라가지 않는다
+func websiteGet(t *testing.T, s *suite, bucket, path string) websiteResponse {
+	t.Helper()
+	client := insecureHTTPClient()
+	client.Timeout = 15 * time.Second
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
+	response, err := client.Get(websiteURL(s, bucket, path))
+	if err != nil {
+		t.Fatalf("website GET %q: %v", path, err)
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatalf("website GET %q 본문 읽기: %v", path, err)
+	}
+	return websiteResponse{statusCode: response.StatusCode, location: response.Header.Get("Location"), body: string(body)}
+}
+
+func assertWebsiteBody(t *testing.T, response websiteResponse, status int, body string) {
+	t.Helper()
+	if response.statusCode != status || response.body != body {
+		t.Fatalf("status/body = %d/%q, want %d/%q", response.statusCode, response.body, status, body)
+	}
+}
+
+func assertWebsiteBodyContains(t *testing.T, response websiteResponse, status int, text string) {
+	t.Helper()
+	if response.statusCode != status || !strings.Contains(response.body, text) {
+		t.Fatalf("status/body = %d/%q, want %d containing %q", response.statusCode, response.body, status, text)
+	}
+}
+
+func assertWebsiteRedirect(t *testing.T, response websiteResponse, status int, location string) {
+	t.Helper()
+	if response.statusCode != status || response.location != location {
+		t.Fatalf("status/Location = %d/%q, want %d/%q", response.statusCode, response.location, status, location)
+	}
+}
+
+// 익명 사용자가 버킷의 모든 객체를 읽을 수 있도록 정책을 건다
+func setPublicReadPolicy(t *testing.T, s *suite, bucket string) {
+	t.Helper()
+	statement := map[string]any{"Effect": "Allow", "Principal": map[string]any{"AWS": "*"}, "Action": "s3:GetObject", "Resource": bucketARN(bucket) + "/*"}
+	policy, _ := json.Marshal(map[string]any{"Version": "2012-10-17", "Statement": []any{statement}})
+	if _, err := s.client.PutBucketPolicy(context.Background(), &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(string(policy))}); err != nil {
+		t.Fatalf("PutBucketPolicy: %v", err)
+	}
+}
+
+// 익명 읽기를 허용하고 웹사이트 설정을 건 버킷을 만든다
+func createPublicWebsiteBucket(t *testing.T, s *suite, testID int, configuration *types.WebsiteConfiguration) string {
+	t.Helper()
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, testID)
+	setPublicReadPolicy(t, s, bucket)
+	putWebsite(t, s, bucket, configuration)
+	return bucket
+}
+
+func putHTML(t *testing.T, s *suite, bucket, key, body string) {
+	t.Helper()
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key),
+		ContentType: aws.String("text/html"), Body: strings.NewReader(body)})
+	if err != nil {
+		t.Fatalf("PutObject %s: %v", key, err)
 	}
 }
 

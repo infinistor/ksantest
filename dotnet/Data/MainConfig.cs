@@ -24,6 +24,7 @@ namespace s3tests
 		private const string STR_SSL_PORT = "SSLPort";
 		private const string STR_SIGNATURE_VERSION = "SignatureVersion";
 		private const string STR_REGION_NAME = "RegionName";
+		private const string STR_WEBSITE_URL = "WebsiteURL";
 		private const string STR_SECURE = "IsSecure";
 		#endregion
 
@@ -111,6 +112,8 @@ namespace s3tests
 				Port = ReadKeyToInt(STR_S3, STR_PORT),
 				SSLPort = ReadKeyToInt(STR_S3, STR_SSL_PORT),
 				RegionName = ReadKeyToString(STR_S3, STR_REGION_NAME),
+				// 선택 항목이라 없으면 빈 값으로 둔다
+				WebsiteURL = HasKey(STR_S3, STR_WEBSITE_URL) ? ReadKeyToString(STR_S3, STR_WEBSITE_URL).Trim() : "",
 			};
 		}
 

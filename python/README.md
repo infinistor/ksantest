@@ -153,6 +153,11 @@ Java와 동일한 INI 형식을 사용합니다.
 
 표준 섹션: `[S3]`, `[Fixtures]`, `[Main User]`, `[Alt User]`, `[Backend User]`
 
+`[S3]`의 `WebsiteURL`은 웹사이트 엔드포인트 템플릿입니다. `{bucket}`이 버킷명으로 치환되며, 비워 두면 웹사이트 접속 테스트(`test_website_access_*`)를 건너뜁니다.
+
+- AWS(가상 호스트): `http://{bucket}.s3-website.ap-northeast-2.amazonaws.com`
+- ksan(경로 방식): `http://<host>:<port>/website/{bucket}`
+
 ## 테스트 실행
 
 가상환경 활성화 후:

@@ -280,4 +280,85 @@ class Website {
 		test.testWebsiteAccessDenied();
 		testV2.testWebsiteAccessDenied();
 	}
+
+	/**
+	 * 웹사이트 엔드포인트에서 루트와 디렉터리 요청에 IndexDocument를 돌려주는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testWebsiteAccessIndexDocument() {
+		testV2.testWebsiteAccessIndexDocument();
+	}
+
+	/**
+	 * 없는 객체를 요청하면 ErrorDocument 내용을 404로 돌려주는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testWebsiteAccessErrorDocument() {
+		testV2.testWebsiteAccessErrorDocument();
+	}
+
+	/**
+	 * ErrorDocument가 없을 때 없는 객체를 요청하면 기본 404 NoSuchKey 페이지를 돌려주는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testWebsiteAccessNoErrorDocument() {
+		testV2.testWebsiteAccessNoErrorDocument();
+	}
+
+	/**
+	 * RedirectAllRequestsTo 설정 시 모든 요청을 지정한 호스트로 301 리다이렉트하는지 확인
+	 */
+	@Test
+	@Tag("Redirect")
+	void testWebsiteAccessRedirectAllRequests() {
+		testV2.testWebsiteAccessRedirectAllRequests();
+	}
+
+	/**
+	 * KeyPrefixEquals 라우팅 규칙으로 접두어를 바꿔 리다이렉트하는지 확인
+	 */
+	@Test
+	@Tag("RoutingRule")
+	void testWebsiteAccessRoutingRuleKeyPrefix() {
+		testV2.testWebsiteAccessRoutingRuleKeyPrefix();
+	}
+
+	/**
+	 * HttpErrorCodeReturnedEquals 라우팅 규칙으로 404일 때만 리다이렉트하는지 확인
+	 */
+	@Test
+	@Tag("RoutingRule")
+	void testWebsiteAccessRoutingRuleErrorCode() {
+		testV2.testWebsiteAccessRoutingRuleErrorCode();
+	}
+
+	/**
+	 * 객체의 x-amz-website-redirect-location 메타데이터로 리다이렉트하는지 확인
+	 */
+	@Test
+	@Tag("Redirect")
+	void testWebsiteAccessObjectRedirectLocation() {
+		testV2.testWebsiteAccessObjectRedirectLocation();
+	}
+
+	/**
+	 * 공개되지 않은 버킷을 웹사이트로 접근하면 403 AccessDenied가 반환되는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testWebsiteAccessNotPublic() {
+		testV2.testWebsiteAccessNotPublic();
+	}
+
+	/**
+	 * 웹사이트 설정이 없는 버킷에 접근하면 404 NoSuchWebsiteConfiguration이 반환되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteAccessNoConfiguration() {
+		testV2.testWebsiteAccessNoConfiguration();
+	}
 }

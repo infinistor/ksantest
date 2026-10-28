@@ -19,6 +19,8 @@ namespace s3tests
 		public int Port;
 		public int SSLPort;
 		public string RegionName;
+		/// <summary>웹사이트 엔드포인트 템플릿. {bucket}이 버킷명으로 치환된다. 비어 있으면 접속 테스트를 건너뛴다</summary>
+		public string WebsiteURL;
 
 		public S3Config()
 		{
@@ -38,11 +40,14 @@ namespace s3tests
 			Port = 0;
 			SSLPort = 0;
 			RegionName = "";
+			WebsiteURL = "";
 		}
 
 		public override string ToString() => $"S3Config {JsonSerializer.Serialize(this)}";
 
 		public bool IsAWS { get => string.IsNullOrEmpty(Address); }
+
+		public bool HasWebsiteURL { get => !string.IsNullOrWhiteSpace(WebsiteURL); }
 
 		public string GetURL(bool isSecure) => isSecure ? $"{MainData.HTTPS}{Address}:{SSLPort}" : $"{MainData.HTTP}{Address}:{Port}";
 

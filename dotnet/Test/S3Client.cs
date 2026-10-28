@@ -1040,7 +1040,7 @@ namespace s3tests.Test
 			S3CannedACL acl = null, List<S3Grant> grants = null, ServerSideEncryptionMethod sseKey = null,
 			ObjectLockLegalHoldStatus objectLockLegalHoldStatus = null, DateTime? objectLockRetainUntilDate = null,
 			ObjectLockMode objectLockMode = null, bool? useChunkEncoding = null, bool? disablePayloadSigning = null,
-			string expectedBucketOwner = null, string contentEncoding = null)
+			string expectedBucketOwner = null, string contentEncoding = null, string websiteRedirectLocation = null)
 		{
 			var request = new PutObjectRequest()
 			{
@@ -1050,6 +1050,7 @@ namespace s3tests.Test
 
 			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			if (contentEncoding != null) request.Headers.ContentEncoding = contentEncoding;
+			if (websiteRedirectLocation != null) request.WebsiteRedirectLocation = websiteRedirectLocation;
 
 			if (body != null) request.ContentBody = body;
 			if (byteBody != null)

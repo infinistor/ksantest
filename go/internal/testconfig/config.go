@@ -28,6 +28,9 @@ type Config struct {
 	SignatureVersion          int
 	Secure, NotDelete         bool
 	Main, Alt, Backend        User
+
+	// WebsiteURL은 웹사이트 엔드포인트 템플릿이다. {bucket}이 버킷명으로 치환된다. 비어 있으면 접속 테스트를 건너뛴다.
+	WebsiteURL string
 }
 
 func Load(path string) (Config, error) {
@@ -69,7 +72,7 @@ func Load(path string) (Config, error) {
 	}
 	c := Config{
 		URL: get("S3", "URL"), Port: integer("S3", "Port"), OldPort: integer("S3", "OldPort"), SSLPort: integer("S3", "SSLPort"),
-		SignatureVersion: integer("S3", "SignatureVersion"), Region: get("S3", "RegionName"),
+		SignatureVersion: integer("S3", "SignatureVersion"), Region: get("S3", "RegionName"), WebsiteURL: get("S3", "WebsiteURL"),
 		BucketPrefix: get("Fixtures", "BucketPrefix"), Secure: boolean("Fixtures", "IsSecure"), NotDelete: boolean("Fixtures", "NotDelete"),
 		Main: user("Main User"), Alt: user("Alt User"), Backend: user("Backend User"),
 	}
@@ -80,6 +83,11 @@ func Load(path string) (Config, error) {
 		c.BucketPrefix = "go-"
 	}
 	return c, nil
+}
+
+// HasWebsiteURL은 웹사이트 엔드포인트가 설정되어 있는지 확인한다.
+func (c Config) HasWebsiteURL() bool {
+	return strings.TrimSpace(c.WebsiteURL) != ""
 }
 
 func (c Config) Endpoint() string {

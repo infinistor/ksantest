@@ -31,6 +31,7 @@ public class S3Config {
 	static final String STR_SIGNATURE_VERSION = "SignatureVersion";
 	static final String STR_IS_SECURE = "IsSecure";
 	static final String STR_REGION = "RegionName";
+	static final String STR_WEBSITE_URL = "WebsiteURL";
 	/* Fixtures */
 	static final String STR_FIXTURES = "Fixtures";
 	static final String STR_BUCKET_PREFIX = "BucketPrefix";
@@ -58,6 +59,8 @@ public class S3Config {
 	public int sslPort;
 	public String regionName;
 	public String signatureVersion;
+	/** 웹사이트 엔드포인트 템플릿. {bucket}이 버킷명으로 치환된다. 비어 있으면 접속 테스트를 건너뛴다 */
+	public String websiteUrl;
 	public boolean isSecure;
 	public String bucketPrefix;
 	public boolean notDelete;
@@ -83,6 +86,7 @@ public class S3Config {
 			sslPort = readKeyToInt(STR_S3, STR_SSL_PORT);
 			regionName = readKeyToString(STR_S3, STR_REGION);
 			signatureVersion = readKeyToString(STR_S3, STR_SIGNATURE_VERSION);
+			websiteUrl = readKeyToString(STR_S3, STR_WEBSITE_URL);
 			isSecure = readKeyToBoolean(STR_FIXTURES, STR_IS_SECURE);
 			bucketPrefix = readKeyToString(STR_FIXTURES, STR_BUCKET_PREFIX);
 			notDelete = readKeyToBoolean(STR_FIXTURES, STR_BUCKET_DELETE);
@@ -109,6 +113,10 @@ public class S3Config {
 
 	public boolean isOldSystem() {
 		return oldPort > 0;
+	}
+
+	public boolean hasWebsiteUrl() {
+		return StringUtils.isNotBlank(websiteUrl);
 	}
 
 	UserData readUser(String section) {

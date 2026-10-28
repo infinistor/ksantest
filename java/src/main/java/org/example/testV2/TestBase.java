@@ -2652,6 +2652,53 @@ public class TestBase {
 		}
 	}
 
+	/** 웹사이트 엔드포인트 응답 */
+	public record WebsiteResponse(int statusCode, String location, String body) {
+	}
+
+	// 설정의 WebsiteURL 템플릿에 버킷명을 넣어 웹사이트 주소를 만든다
+	public String getWebsiteURL(String bucketName, String path) {
+		var baseUrl = config.websiteUrl.replace("{bucket}", bucketName);
+		if (baseUrl.endsWith("/"))
+			baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+		return baseUrl + "/" + (path == null ? "" : path);
+	}
+
+	// 서명 없이 웹사이트 엔드포인트에 GET 요청을 보낸다. 리다이렉트를 검증하기 위해 따라가지 않는다
+	public WebsiteResponse websiteGet(String bucketName, String path) {
+		try {
+			var url = URI.create(getWebsiteURL(bucketName, path)).toURL();
+			var connection = (HttpURLConnection) url.openConnection();
+			connection.setRequestMethod("GET");
+			connection.setInstanceFollowRedirects(false);
+			connection.setUseCaches(false);
+			connection.setConnectTimeout(15000);
+			connection.setReadTimeout(15000);
+
+			var statusCode = connection.getResponseCode();
+			var location = connection.getHeaderField("Location");
+			var stream = statusCode >= 400 ? connection.getErrorStream() : connection.getInputStream();
+			var body = "";
+			if (stream != null) {
+				try (stream) {
+					body = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+				}
+			}
+			connection.disconnect();
+			return new WebsiteResponse(statusCode, location, body);
+		} catch (IOException e) {
+			fail(e);
+			return null;
+		}
+	}
+
+	// 익명 사용자가 버킷의 모든 객체를 읽을 수 있도록 정책을 건다
+	public void setPublicReadPolicy(S3Client client, String bucketName) {
+		var resource = Utils.makeArnResource(String.format("%s/%s", bucketName, "*"));
+		var policyDocument = makeJsonPolicy("s3:GetObject", resource, null, null);
+		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policyDocument.toString()));
+	}
+
 	public static void partsETagCompare(List<CompletedPart> expected, List<Part> actual) {
 		assertEquals(expected.size(), actual.size());
 

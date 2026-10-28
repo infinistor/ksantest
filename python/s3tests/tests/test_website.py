@@ -335,6 +335,175 @@ class TestWebsite(S3TestBase):
         response = client.get_bucket_website(Bucket=bucket_name)
         assert response["IndexDocument"] == {"Suffix": "index.html"}
 
+    @pytest.mark.tag("Access")
+    def test_website_access_index_document(self):
+        self._skip_if_no_website_url()
+        client = self.get_client()
+        bucket_name = self._create_public_website_bucket(client, 25, {"IndexDocument": {"Suffix": "index.html"}})
+        self._put_html(client, bucket_name, "index.html", "root index")
+        self._put_html(client, bucket_name, "dir/index.html", "dir index")
+
+        response = self.website_get(bucket_name, "")
+        assert response.status_code == 200
+        assert response.body == "root index"
+
+        response = self.website_get(bucket_name, "dir/")
+        assert response.status_code == 200
+        assert response.body == "dir index"
+
+        response = self.website_get(bucket_name, "index.html")
+        assert response.status_code == 200
+        assert response.body == "root index"
+
+        # 슬래시 없이 디렉터리를 요청하면 슬래시를 붙인 주소로 보낸다
+        response = self.website_get(bucket_name, "dir")
+        assert response.status_code == 302
+        assert response.location == "/dir/"
+
+    @pytest.mark.tag("Access")
+    def test_website_access_error_document(self):
+        self._skip_if_no_website_url()
+        client = self.get_client()
+        bucket_name = self._create_public_website_bucket(
+            client,
+            26,
+            {"IndexDocument": {"Suffix": "index.html"}, "ErrorDocument": {"Key": "error.html"}},
+        )
+        self._put_html(client, bucket_name, "error.html", "custom error")
+
+        response = self.website_get(bucket_name, "not-exist.html")
+        assert response.status_code == 404
+        assert response.body == "custom error"
+
+    @pytest.mark.tag("Access")
+    def test_website_access_no_error_document(self):
+        self._skip_if_no_website_url()
+        client = self.get_client()
+        bucket_name = self._create_public_website_bucket(client, 27, {"IndexDocument": {"Suffix": "index.html"}})
+
+        response = self.website_get(bucket_name, "not-exist.html")
+        assert response.status_code == 404
+        assert md.NO_SUCH_KEY in response.body, response.body
+
+    @pytest.mark.tag("Redirect")
+    def test_website_access_redirect_all_requests(self):
+        self._skip_if_no_website_url()
+        client = self.get_client()
+        bucket_name = self._create_public_website_bucket(
+            client, 28, {"RedirectAllRequestsTo": {"HostName": "example.com", "Protocol": "https"}}
+        )
+
+        response = self.website_get(bucket_name, "docs/a.html")
+        assert response.status_code == 301
+        assert response.location == "https://example.com/docs/a.html"
+
+    @pytest.mark.tag("RoutingRule")
+    def test_website_access_routing_rule_key_prefix(self):
+        self._skip_if_no_website_url()
+        client = self.get_client()
+        bucket_name = self._create_public_website_bucket(
+            client,
+            29,
+            {
+                "IndexDocument": {"Suffix": "index.html"},
+                "RoutingRules": [
+                    {
+                        "Condition": {"KeyPrefixEquals": "docs/"},
+                        "Redirect": {"ReplaceKeyPrefixWith": "documents/"},
+                    }
+                ],
+            },
+        )
+
+        response = self.website_get(bucket_name, "docs/a.html")
+        assert response.status_code == 301
+        assert response.location is not None and response.location.endswith("/documents/a.html"), response.location
+
+    @pytest.mark.tag("RoutingRule")
+    def test_website_access_routing_rule_error_code(self):
+        self._skip_if_no_website_url()
+        client = self.get_client()
+        bucket_name = self._create_public_website_bucket(
+            client,
+            30,
+            {
+                "IndexDocument": {"Suffix": "index.html"},
+                "RoutingRules": [
+                    {
+                        "Condition": {"HttpErrorCodeReturnedEquals": "404"},
+                        "Redirect": {
+                            "HostName": "example.com",
+                            "Protocol": "https",
+                            "HttpRedirectCode": "302",
+                            "ReplaceKeyWith": "error.html",
+                        },
+                    }
+                ],
+            },
+        )
+        self._put_html(client, bucket_name, "exist.html", "exist")
+
+        response = self.website_get(bucket_name, "exist.html")
+        assert response.status_code == 200
+        assert response.body == "exist"
+
+        response = self.website_get(bucket_name, "not-exist.html")
+        assert response.status_code == 302
+        assert response.location == "https://example.com/error.html"
+
+    @pytest.mark.tag("Redirect")
+    def test_website_access_object_redirect_location(self):
+        self._skip_if_no_website_url()
+        client = self.get_client()
+        bucket_name = self._create_public_website_bucket(client, 31, {"IndexDocument": {"Suffix": "index.html"}})
+        client.put_object(Bucket=bucket_name, Key="old.html", Body=b"", WebsiteRedirectLocation="/new.html")
+
+        response = self.website_get(bucket_name, "old.html")
+        assert response.status_code == 301
+        assert response.location == "/new.html"
+
+    @pytest.mark.tag("Access")
+    def test_website_access_not_public(self):
+        self._skip_if_no_website_url()
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 32)
+        client.put_bucket_website(
+            Bucket=bucket_name, WebsiteConfiguration={"IndexDocument": {"Suffix": "index.html"}}
+        )
+        self._put_html(client, bucket_name, "index.html", "root index")
+
+        response = self.website_get(bucket_name, "index.html")
+        assert response.status_code == 403
+        assert md.ACCESS_DENIED in response.body, response.body
+
+    @pytest.mark.tag("ERROR")
+    def test_website_access_no_configuration(self):
+        self._skip_if_no_website_url()
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 33)
+        self.set_public_read_policy(client, bucket_name)
+        self._put_html(client, bucket_name, "index.html", "root index")
+
+        response = self.website_get(bucket_name, "index.html")
+        assert response.status_code == 404
+        assert md.NO_SUCH_WEBSITE_CONFIGURATION in response.body, response.body
+
+    # WebsiteURL이 설정되지 않았으면 웹사이트 접속 테스트를 건너뛴다
+    def _skip_if_no_website_url(self) -> None:
+        if not self.config.has_website_url():
+            pytest.skip("WebsiteURL is not configured")
+
+    # 익명 읽기를 허용하고 웹사이트 설정을 건 버킷을 만든다
+    def _create_public_website_bucket(self, client, test_id: int, web_config: dict) -> str:
+        bucket_name = self.create_bucket_canned_acl(client, test_id)
+        self.set_public_read_policy(client, bucket_name)
+        client.put_bucket_website(Bucket=bucket_name, WebsiteConfiguration=web_config)
+        return bucket_name
+
+    @staticmethod
+    def _put_html(client, bucket_name: str, key: str, body: str) -> None:
+        client.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"), ContentType="text/html")
+
     @staticmethod
     def _create_routing_rules(count: int) -> list:
         return [

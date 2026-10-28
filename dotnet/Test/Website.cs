@@ -503,6 +503,232 @@ namespace s3tests.Test
 			Assert.Equal("index.html", client.GetBucketWebsite(bucketName).WebsiteConfiguration.IndexDocumentSuffix);
 		}
 
+		[SkippableFact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "웹사이트 엔드포인트에서 루트와 디렉터리 요청에 IndexDocument를 돌려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestWebsiteAccessIndexDocument()
+		{
+			TestId = 25;
+			SkipIfNoWebsiteURL();
+			var client = GetClient();
+			var bucketName = CreatePublicWebsiteBucket(client, new WebsiteConfiguration() { IndexDocumentSuffix = "index.html" });
+			PutHtml(client, bucketName, "index.html", "root index");
+			PutHtml(client, bucketName, "dir/index.html", "dir index");
+
+			var response = WebsiteGet(bucketName, "");
+			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+			Assert.Equal("root index", response.Body);
+
+			response = WebsiteGet(bucketName, "dir/");
+			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+			Assert.Equal("dir index", response.Body);
+
+			response = WebsiteGet(bucketName, "index.html");
+			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+			Assert.Equal("root index", response.Body);
+
+			// 슬래시 없이 디렉터리를 요청하면 슬래시를 붙인 주소로 보낸다
+			response = WebsiteGet(bucketName, "dir");
+			Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+			Assert.Equal("/dir/", response.Location);
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "없는 객체를 요청하면 ErrorDocument 내용을 404로 돌려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestWebsiteAccessErrorDocument()
+		{
+			TestId = 26;
+			SkipIfNoWebsiteURL();
+			var client = GetClient();
+			var bucketName = CreatePublicWebsiteBucket(client, new WebsiteConfiguration()
+			{
+				IndexDocumentSuffix = "index.html",
+				ErrorDocument = "error.html",
+			});
+			PutHtml(client, bucketName, "error.html", "custom error");
+
+			var response = WebsiteGet(bucketName, "not-exist.html");
+			Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+			Assert.Equal("custom error", response.Body);
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "ErrorDocument가 없을 때 없는 객체를 요청하면 기본 404 NoSuchKey 페이지를 돌려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestWebsiteAccessNoErrorDocument()
+		{
+			TestId = 27;
+			SkipIfNoWebsiteURL();
+			var client = GetClient();
+			var bucketName = CreatePublicWebsiteBucket(client, new WebsiteConfiguration() { IndexDocumentSuffix = "index.html" });
+
+			var response = WebsiteGet(bucketName, "not-exist.html");
+			Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+			Assert.Contains(MainData.NO_SUCH_KEY, response.Body);
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "Redirect")]
+		[Trait(MainData.Explanation, "RedirectAllRequestsTo 설정 시 모든 요청을 지정한 호스트로 301 리다이렉트하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestWebsiteAccessRedirectAllRequests()
+		{
+			TestId = 28;
+			SkipIfNoWebsiteURL();
+			var client = GetClient();
+			var bucketName = CreatePublicWebsiteBucket(client, new WebsiteConfiguration()
+			{
+				RedirectAllRequestsTo = new RoutingRuleRedirect() { HostName = "example.com", Protocol = "https" },
+			});
+
+			var response = WebsiteGet(bucketName, "docs/a.html");
+			Assert.Equal(HttpStatusCode.MovedPermanently, response.StatusCode);
+			Assert.Equal("https://example.com/docs/a.html", response.Location);
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "RoutingRule")]
+		[Trait(MainData.Explanation, "KeyPrefixEquals 라우팅 규칙으로 접두어를 바꿔 리다이렉트하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestWebsiteAccessRoutingRuleKeyPrefix()
+		{
+			TestId = 29;
+			SkipIfNoWebsiteURL();
+			var client = GetClient();
+			var bucketName = CreatePublicWebsiteBucket(client, new WebsiteConfiguration()
+			{
+				IndexDocumentSuffix = "index.html",
+				RoutingRules =
+				[
+					new()
+					{
+						Condition = new RoutingRuleCondition() { KeyPrefixEquals = "docs/" },
+						Redirect = new RoutingRuleRedirect() { ReplaceKeyPrefixWith = "documents/" },
+					},
+				],
+			});
+
+			var response = WebsiteGet(bucketName, "docs/a.html");
+			Assert.Equal(HttpStatusCode.MovedPermanently, response.StatusCode);
+			Assert.EndsWith("/documents/a.html", response.Location);
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "RoutingRule")]
+		[Trait(MainData.Explanation, "HttpErrorCodeReturnedEquals 라우팅 규칙으로 404일 때만 리다이렉트하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestWebsiteAccessRoutingRuleErrorCode()
+		{
+			TestId = 30;
+			SkipIfNoWebsiteURL();
+			var client = GetClient();
+			var bucketName = CreatePublicWebsiteBucket(client, new WebsiteConfiguration()
+			{
+				IndexDocumentSuffix = "index.html",
+				RoutingRules =
+				[
+					new()
+					{
+						Condition = new RoutingRuleCondition() { HttpErrorCodeReturnedEquals = "404" },
+						Redirect = new RoutingRuleRedirect()
+						{
+							HostName = "example.com",
+							Protocol = "https",
+							HttpRedirectCode = "302",
+							ReplaceKeyWith = "error.html",
+						},
+					},
+				],
+			});
+			PutHtml(client, bucketName, "exist.html", "exist");
+
+			var response = WebsiteGet(bucketName, "exist.html");
+			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+			Assert.Equal("exist", response.Body);
+
+			response = WebsiteGet(bucketName, "not-exist.html");
+			Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+			Assert.Equal("https://example.com/error.html", response.Location);
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "Redirect")]
+		[Trait(MainData.Explanation, "객체의 x-amz-website-redirect-location 메타데이터로 리다이렉트하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestWebsiteAccessObjectRedirectLocation()
+		{
+			TestId = 31;
+			SkipIfNoWebsiteURL();
+			var client = GetClient();
+			var bucketName = CreatePublicWebsiteBucket(client, new WebsiteConfiguration() { IndexDocumentSuffix = "index.html" });
+			client.PutObject(bucketName, "old.html", websiteRedirectLocation: "/new.html");
+
+			var response = WebsiteGet(bucketName, "old.html");
+			Assert.Equal(HttpStatusCode.MovedPermanently, response.StatusCode);
+			Assert.Equal("/new.html", response.Location);
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "공개되지 않은 버킷을 웹사이트로 접근하면 403 AccessDenied가 반환되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestWebsiteAccessNotPublic()
+		{
+			TestId = 32;
+			SkipIfNoWebsiteURL();
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutBucketWebsite(bucketName, new WebsiteConfiguration() { IndexDocumentSuffix = "index.html" });
+			PutHtml(client, bucketName, "index.html", "root index");
+
+			var response = WebsiteGet(bucketName, "index.html");
+			Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+			Assert.Contains(MainData.ACCESS_DENIED, response.Body);
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "웹사이트 설정이 없는 버킷에 접근하면 404 NoSuchWebsiteConfiguration이 반환되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestWebsiteAccessNoConfiguration()
+		{
+			TestId = 33;
+			SkipIfNoWebsiteURL();
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			SetPublicReadPolicy(client, bucketName);
+			PutHtml(client, bucketName, "index.html", "root index");
+
+			var response = WebsiteGet(bucketName, "index.html");
+			Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+			Assert.Contains(MainData.NO_SUCH_WEBSITE_CONFIGURATION, response.Body);
+		}
+
+		// 익명 읽기를 허용하고 웹사이트 설정을 건 버킷을 만든다
+		private string CreatePublicWebsiteBucket(S3Client client, WebsiteConfiguration webConfig)
+		{
+			var bucketName = GetNewBucketCannedAcl(client);
+			SetPublicReadPolicy(client, bucketName);
+			client.PutBucketWebsite(bucketName, webConfig);
+			return bucketName;
+		}
+
+		private static void PutHtml(S3Client client, string bucketName, string key, string body)
+			=> client.PutObject(bucketName, key, body: body, contentType: "text/html");
+
 		private static List<RoutingRule> CreateRoutingRules(int count)
 		{
 			var rules = new List<RoutingRule>();

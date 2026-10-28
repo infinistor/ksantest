@@ -104,6 +104,13 @@ namespace s3tests.Test
 		protected void SkipIfAws(string reason = "AWS does not support this feature")
 			=> Skip.If(Config.S3.IsAWS, reason);
 
+		/// <summary>
+		/// 설정에 WebsiteURL이 없으면 테스트를 스킵한다. (JUnit assumeTrue(config.hasWebsiteUrl())에 대응)
+		/// [SkippableFact]/[SkippableTheory]와 함께 사용해야 한다.
+		/// </summary>
+		protected void SkipIfNoWebsiteURL(string reason = "WebsiteURL is not configured")
+			=> Skip.IfNot(Config.S3.HasWebsiteURL, reason);
+
 		#region Get client
 		public S3Client GetClient() => new(Config.S3, Config.IsSecure, Config.MainUser, Output);
 		public S3Client GetClient(RequestChecksumCalculation? requestChecksumCalculation,
@@ -1969,6 +1976,44 @@ namespace s3tests.Test
 			Assert.Equal(allPayload, text);
 
 			return allPayload;
+		}
+
+		#endregion
+
+		#region Website Utils
+
+		/// <summary>웹사이트 엔드포인트 응답</summary>
+		public record WebsiteResponse(HttpStatusCode StatusCode, string Location, string Body);
+
+		// 설정의 WebsiteURL 템플릿에 버킷명을 넣어 웹사이트 주소를 만든다
+		public string GetWebsiteURL(string bucketName, string path)
+		{
+			var baseUrl = Config.S3.WebsiteURL.Replace("{bucket}", bucketName);
+			if (baseUrl.EndsWith('/')) baseUrl = baseUrl[..^1];
+			return $"{baseUrl}/{path ?? ""}";
+		}
+
+		// 서명 없이 웹사이트 엔드포인트에 GET 요청을 보낸다. 리다이렉트를 검증하기 위해 따라가지 않는다
+		public WebsiteResponse WebsiteGet(string bucketName, string path)
+		{
+			using var handler = new HttpClientHandler() { AllowAutoRedirect = false, UseCookies = false };
+			using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+			using var request = new HttpRequestMessage(HttpMethod.Get, GetWebsiteURL(bucketName, path));
+			using var response = client.SendAsync(request).GetAwaiter().GetResult();
+
+			// 상대 경로 Location이 절대 주소로 바뀌지 않도록 원본 헤더 값을 그대로 읽는다
+			string location = null;
+			if (response.Headers.TryGetValues("Location", out var values)) location = values.FirstOrDefault();
+			var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+			return new WebsiteResponse(response.StatusCode, location, body);
+		}
+
+		// 익명 사용자가 버킷의 모든 객체를 읽을 수 있도록 정책을 건다
+		public static void SetPublicReadPolicy(S3Client client, string bucketName)
+		{
+			var resource = S3Utils.MakeArnResource($"{bucketName}/*");
+			var policyDocument = S3Utils.MakeJsonPolicy("s3:GetObject", resource);
+			client.PutBucketPolicy(bucketName, policyDocument.ToString());
 		}
 
 		#endregion

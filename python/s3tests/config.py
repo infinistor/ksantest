@@ -38,6 +38,8 @@ class S3Config:
         self.ssl_port: int = -1
         self.region_name: str = ""
         self.signature_version: str = ""
+        # 웹사이트 엔드포인트 템플릿. {bucket}이 버킷명으로 치환된다. 비어 있으면 접속 테스트를 건너뛴다
+        self.website_url: str = ""
         self.is_secure: bool = False
         self.bucket_prefix: str = ""
         self.not_delete: bool = False
@@ -57,6 +59,7 @@ class S3Config:
         self.ssl_port = self._read_int("S3", "SSLPort")
         self.region_name = self._read_string("S3", "RegionName") or ""
         self.signature_version = self._read_string("S3", "SignatureVersion") or ""
+        self.website_url = (self._read_string("S3", "WebsiteURL") or "").strip()
         self.is_secure = self._read_bool("S3", "IsSecure")
         self.bucket_prefix = self._read_string("Fixtures", "BucketPrefix") or ""
         self.not_delete = self._read_bool("Fixtures", "NotDelete")
@@ -79,6 +82,9 @@ class S3Config:
 
     def is_old_system(self) -> bool:
         return self.old_port > 0
+
+    def has_website_url(self) -> bool:
+        return bool(self.website_url)
 
     def _read_user(self, section: str) -> UserData:
         return UserData(

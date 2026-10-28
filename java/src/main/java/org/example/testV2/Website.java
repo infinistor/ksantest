@@ -13,15 +13,19 @@ package org.example.testV2;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Protocol;
 import software.amazon.awssdk.services.s3.model.RoutingRule;
@@ -428,6 +432,169 @@ public class Website extends TestBase {
 
 		var response = client.getBucketWebsite(g -> g.bucket(bucketName));
 		assertEquals("index.html", response.indexDocument().suffix());
+	}
+
+	@Test
+	@Tag("Access")
+	public void testWebsiteAccessIndexDocument() {
+		assumeTrue(config.hasWebsiteUrl());
+		var client = getClient();
+		var bucketName = createPublicWebsiteBucket(client, 25, w -> w.indexDocument(d -> d.suffix("index.html")));
+		putHtml(client, bucketName, "index.html", "root index");
+		putHtml(client, bucketName, "dir/index.html", "dir index");
+
+		var response = websiteGet(bucketName, "");
+		assertEquals(HttpStatus.SC_OK, response.statusCode());
+		assertEquals("root index", response.body());
+
+		response = websiteGet(bucketName, "dir/");
+		assertEquals(HttpStatus.SC_OK, response.statusCode());
+		assertEquals("dir index", response.body());
+
+		response = websiteGet(bucketName, "index.html");
+		assertEquals(HttpStatus.SC_OK, response.statusCode());
+		assertEquals("root index", response.body());
+
+		// 슬래시 없이 디렉터리를 요청하면 슬래시를 붙인 주소로 보낸다
+		response = websiteGet(bucketName, "dir");
+		assertEquals(HttpStatus.SC_MOVED_TEMPORARILY, response.statusCode());
+		assertEquals("/dir/", response.location());
+	}
+
+	@Test
+	@Tag("Access")
+	public void testWebsiteAccessErrorDocument() {
+		assumeTrue(config.hasWebsiteUrl());
+		var client = getClient();
+		var bucketName = createPublicWebsiteBucket(client, 26, w -> w
+				.indexDocument(d -> d.suffix("index.html"))
+				.errorDocument(d -> d.key("error.html")));
+		putHtml(client, bucketName, "error.html", "custom error");
+
+		var response = websiteGet(bucketName, "not-exist.html");
+		assertEquals(HttpStatus.SC_NOT_FOUND, response.statusCode());
+		assertEquals("custom error", response.body());
+	}
+
+	@Test
+	@Tag("Access")
+	public void testWebsiteAccessNoErrorDocument() {
+		assumeTrue(config.hasWebsiteUrl());
+		var client = getClient();
+		var bucketName = createPublicWebsiteBucket(client, 27, w -> w.indexDocument(d -> d.suffix("index.html")));
+
+		var response = websiteGet(bucketName, "not-exist.html");
+		assertEquals(HttpStatus.SC_NOT_FOUND, response.statusCode());
+		assertTrue(response.body().contains(MainData.NO_SUCH_KEY), response.body());
+	}
+
+	@Test
+	@Tag("Redirect")
+	public void testWebsiteAccessRedirectAllRequests() {
+		assumeTrue(config.hasWebsiteUrl());
+		var client = getClient();
+		var bucketName = createPublicWebsiteBucket(client, 28,
+				w -> w.redirectAllRequestsTo(r -> r.hostName("example.com").protocol(Protocol.HTTPS)));
+
+		var response = websiteGet(bucketName, "docs/a.html");
+		assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, response.statusCode());
+		assertEquals("https://example.com/docs/a.html", response.location());
+	}
+
+	@Test
+	@Tag("RoutingRule")
+	public void testWebsiteAccessRoutingRuleKeyPrefix() {
+		assumeTrue(config.hasWebsiteUrl());
+		var client = getClient();
+		var bucketName = createPublicWebsiteBucket(client, 29, w -> w
+				.indexDocument(d -> d.suffix("index.html"))
+				.routingRules(RoutingRule.builder()
+						.condition(c -> c.keyPrefixEquals("docs/"))
+						.redirect(r -> r.replaceKeyPrefixWith("documents/"))
+						.build()));
+
+		var response = websiteGet(bucketName, "docs/a.html");
+		assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, response.statusCode());
+		assertTrue(response.location().endsWith("/documents/a.html"), response.location());
+	}
+
+	@Test
+	@Tag("RoutingRule")
+	public void testWebsiteAccessRoutingRuleErrorCode() {
+		assumeTrue(config.hasWebsiteUrl());
+		var client = getClient();
+		var bucketName = createPublicWebsiteBucket(client, 30, w -> w
+				.indexDocument(d -> d.suffix("index.html"))
+				.routingRules(RoutingRule.builder()
+						.condition(c -> c.httpErrorCodeReturnedEquals("404"))
+						.redirect(r -> r.hostName("example.com").protocol(Protocol.HTTPS)
+								.httpRedirectCode("302").replaceKeyWith("error.html"))
+						.build()));
+		putHtml(client, bucketName, "exist.html", "exist");
+
+		var response = websiteGet(bucketName, "exist.html");
+		assertEquals(HttpStatus.SC_OK, response.statusCode());
+		assertEquals("exist", response.body());
+
+		response = websiteGet(bucketName, "not-exist.html");
+		assertEquals(HttpStatus.SC_MOVED_TEMPORARILY, response.statusCode());
+		assertEquals("https://example.com/error.html", response.location());
+	}
+
+	@Test
+	@Tag("Redirect")
+	public void testWebsiteAccessObjectRedirectLocation() {
+		assumeTrue(config.hasWebsiteUrl());
+		var client = getClient();
+		var bucketName = createPublicWebsiteBucket(client, 31, w -> w.indexDocument(d -> d.suffix("index.html")));
+		client.putObject(p -> p.bucket(bucketName).key("old.html").websiteRedirectLocation("/new.html"),
+				RequestBody.empty());
+
+		var response = websiteGet(bucketName, "old.html");
+		assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, response.statusCode());
+		assertEquals("/new.html", response.location());
+	}
+
+	@Test
+	@Tag("Access")
+	public void testWebsiteAccessNotPublic() {
+		assumeTrue(config.hasWebsiteUrl());
+		var client = getClient();
+		var bucketName = createBucket(client, 32);
+		client.putBucketWebsite(p -> p.bucket(bucketName)
+				.websiteConfiguration(w -> w.indexDocument(d -> d.suffix("index.html"))));
+		putHtml(client, bucketName, "index.html", "root index");
+
+		var response = websiteGet(bucketName, "index.html");
+		assertEquals(HttpStatus.SC_FORBIDDEN, response.statusCode());
+		assertTrue(response.body().contains(MainData.ACCESS_DENIED), response.body());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testWebsiteAccessNoConfiguration() {
+		assumeTrue(config.hasWebsiteUrl());
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 33);
+		setPublicReadPolicy(client, bucketName);
+		putHtml(client, bucketName, "index.html", "root index");
+
+		var response = websiteGet(bucketName, "index.html");
+		assertEquals(HttpStatus.SC_NOT_FOUND, response.statusCode());
+		assertTrue(response.body().contains(MainData.NO_SUCH_WEBSITE_CONFIGURATION), response.body());
+	}
+
+	// 익명 읽기를 허용하고 웹사이트 설정을 건 버킷을 만든다
+	private String createPublicWebsiteBucket(S3Client client, int testId,
+			Consumer<WebsiteConfiguration.Builder> webConfig) {
+		var bucketName = createBucketCannedAcl(client, testId);
+		setPublicReadPolicy(client, bucketName);
+		client.putBucketWebsite(p -> p.bucket(bucketName).websiteConfiguration(webConfig));
+		return bucketName;
+	}
+
+	private void putHtml(S3Client client, String bucketName, String key, String body) {
+		client.putObject(p -> p.bucket(bucketName).key(key).contentType("text/html"), RequestBody.fromString(body));
 	}
 
 	private List<RoutingRule> createRoutingRules(int count) {
