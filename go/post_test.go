@@ -806,6 +806,78 @@ func TestPresignedUrlPutGet(t *testing.T) {
 	}
 }
 
+// PresignedURL에 서명된 x-amz-acl 헤더를 그대로 보내면 업로드 성공 확인
+func TestPresignedUrlPutSignedAcl(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 37)
+	key := "TestPresignedUrlPutSignedAcl"
+	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPublicRead}
+	status, body := presignedPut(t, s, input, nil, []byte(key))
+	if status != 200 {
+		t.Fatalf("PUT status=%d body=%s", status, body)
+	}
+}
+
+// PresignedURL에 서명되지 않은 x-amz-acl 헤더를 붙이면 AccessDenied로 거부 확인
+func TestPresignedUrlPutUnsignedAcl(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 38)
+	key := "TestPresignedUrlPutUnsignedAcl"
+	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	status, body := presignedPut(t, s, input, map[string]string{"x-amz-acl": "public-read"}, []byte(key))
+	if status != 403 || !bytes.Contains(body, []byte("AccessDenied")) {
+		t.Fatalf("PUT status=%d body=%s want=403 AccessDenied", status, body)
+	}
+	_, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	assertS3Status(t, err, 404)
+}
+
+// PresignedURL(PUT)에 서명되지 않은 x-amz-copy-source 헤더를 붙이면 AccessDenied로 거부 확인
+func TestPresignedUrlPutUnsignedCopySource(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 39)
+	source, target := "source", "target"
+	putBytes(t, s.client, bucket, source, []byte(source))
+	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(target)}
+	// 본문이 없으면 서명 검사 전에 MissingContentLength로 막는 구현이 있어 빈 본문을 보낸다.
+	status, body := presignedPut(t, s, input, map[string]string{"x-amz-copy-source": bucket + "/" + source}, []byte{})
+	if status != 403 || !bytes.Contains(body, []byte("AccessDenied")) {
+		t.Fatalf("PUT status=%d body=%s want=403 AccessDenied", status, body)
+	}
+	_, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(target)})
+	assertS3Status(t, err, 404)
+}
+
+// presigned PUT URL에 서명된 헤더와 extra 헤더(서명에 넣지 않음)를 붙여 보낸다.
+func presignedPut(t *testing.T, s *suite, input *s3.PutObjectInput, extra map[string]string, body []byte) (int, []byte) {
+	t.Helper()
+	putURL, err := s3.NewPresignClient(s.client).PresignPutObject(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request, _ := http.NewRequest(http.MethodPut, putURL.URL, bytes.NewReader(body))
+	copySignedHeaders(request, putURL.SignedHeader)
+	for name, value := range extra {
+		request.Header.Set(name, value)
+	}
+	response, err := insecureHTTPClient().Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	got, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return response.StatusCode, got
+}
+
 // SignatureVersion4로 오브젝트 업로드 성공 확인
 func TestPutObjectV4(t *testing.T) {
 	t.Parallel()

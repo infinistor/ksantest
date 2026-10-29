@@ -1419,5 +1419,75 @@ namespace s3tests.Test
 			Assert.Equal(Size, Body.Length);
 			Assert.Equal(Content, Body);
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "PresignedURL")]
+		[Trait(MainData.Explanation, "PresignedURL에 서명된 x-amz-acl 헤더를 그대로 보내면 업로드 성공 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPresignedUrlPutSignedAcl()
+		{
+			TestId = 37;
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			var key = "TestPresignedUrlPutSignedAcl";
+
+			var putURL = client.GeneratePresignedURL(bucketName, key, DateTime.Now.AddMinutes(10), HttpVerb.PUT,
+				acl: S3CannedACL.PublicRead);
+			var headers = new Dictionary<string, string> { ["x-amz-acl"] = "public-read" };
+			var response = PutObject(putURL, key, headers: headers);
+			var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+			Assert.True(HttpStatusCode.OK == response.StatusCode, body);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "PresignedURL")]
+		[Trait(MainData.Explanation, "PresignedURL에 서명되지 않은 x-amz-acl 헤더를 붙이면 AccessDenied로 거부 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPresignedUrlPutUnsignedAcl()
+		{
+			TestId = 38;
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			var key = "TestPresignedUrlPutUnsignedAcl";
+
+			var putURL = client.GeneratePresignedURL(bucketName, key, DateTime.Now.AddMinutes(10), HttpVerb.PUT);
+			var headers = new Dictionary<string, string> { ["x-amz-acl"] = "public-read" };
+			var response = PutObject(putURL, key, headers: headers);
+			var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+			Assert.True(HttpStatusCode.Forbidden == response.StatusCode, body);
+			Assert.Contains(MainData.ACCESS_DENIED, body);
+
+			var e = Assert.Throws<AggregateException>(() => client.HeadObject(bucketName, key));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "PresignedURL")]
+		[Trait(MainData.Explanation, "PresignedURL(PUT)에 서명되지 않은 x-amz-copy-source 헤더를 붙이면 AccessDenied로 거부 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPresignedUrlPutUnsignedCopySource()
+		{
+			TestId = 39;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var sourceKey = "source";
+			var targetKey = "target";
+
+			client.PutObject(bucketName, key: sourceKey, body: sourceKey);
+
+			var putURL = client.GeneratePresignedURL(bucketName, targetKey, DateTime.Now.AddMinutes(10), HttpVerb.PUT);
+			var headers = new Dictionary<string, string> { ["x-amz-copy-source"] = $"{bucketName}/{sourceKey}" };
+			// 본문이 없으면 서명 검사 전에 MissingContentLength로 막히는 구현이 있어 빈 본문을 보낸다.
+			var response = PutObject(putURL, "", headers: headers);
+			var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+			Assert.True(HttpStatusCode.Forbidden == response.StatusCode, body);
+			Assert.Contains(MainData.ACCESS_DENIED, body);
+
+			var e = Assert.Throws<AggregateException>(() => client.HeadObject(bucketName, targetKey));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+		}
 	}
 }

@@ -1528,11 +1528,16 @@ class S3TestBase:
         with urllib.request.urlopen(request, context=context, timeout=300) as response:
             return response.status
 
-    def generate_presigned_put_url(self, bucket_name: str, key: str, expires_in: int = 600) -> str:
+    def generate_presigned_put_url(
+        self, bucket_name: str, key: str, expires_in: int = 600, acl: Optional[str] = None
+    ) -> str:
         client = self.get_s3_presigner()
+        params = {"Bucket": bucket_name, "Key": key}
+        if acl:
+            params["ACL"] = acl
         return client.generate_presigned_url(
             "put_object",
-            Params={"Bucket": bucket_name, "Key": key},
+            Params=params,
             ExpiresIn=expires_in,
             HttpMethod="PUT",
         )

@@ -1941,7 +1941,7 @@ namespace s3tests.Test
 
 		#region ETC Function
 		public string GeneratePresignedURL(string bucketName, string key, DateTime expires, HttpVerb verb,
-			ServerSideEncryptionMethod sseS3Method = null, string contentType = null)
+			ServerSideEncryptionMethod sseS3Method = null, string contentType = null, S3CannedACL acl = null)
 		{
 			var request = new GetPreSignedUrlRequest()
 			{
@@ -1954,6 +1954,7 @@ namespace s3tests.Test
 
 			if (sseS3Method != null) request.ServerSideEncryptionMethod = sseS3Method;
 			if (contentType != null) request.ContentType = contentType;
+			if (acl != null) request.Headers["x-amz-acl"] = acl.Value;
 
 			return Client.GetPreSignedURL(request);
 		}

@@ -11,6 +11,7 @@
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.MalformedURLException;
@@ -31,8 +32,10 @@ import org.junit.jupiter.api.Test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.utils.BinaryUtils;
 
 public class Post extends TestBase {
@@ -1837,5 +1840,65 @@ public class Post extends TestBase {
 
 		var result = NetUtils.postUpload(createURL(badBucketName), payload, fileData);
 		assertEquals(HttpStatus.SC_NOT_FOUND, result.statusCode, result.getErrorCode());
+	}
+
+	@Test
+	@Tag("PresignedURL")
+	public void testPresignedUrlPutSignedAcl() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 37);
+		var key = "testPresignedUrlPutSignedAcl";
+
+		var putURL = getS3Presigner().presignPutObject(s -> s.signatureDuration(Duration.ofMinutes(10))
+				.putObjectRequest(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ)));
+
+		var headers = new HashMap<String, String>();
+		headers.put("x-amz-acl", "public-read");
+		var result = NetUtils.putUpload(putURL.url(), "PUT", headers, key);
+		assertEquals(HttpStatus.SC_OK, result.statusCode, result.message);
+	}
+
+	@Test
+	@Tag("PresignedURL")
+	public void testPresignedUrlPutUnsignedAcl() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 38);
+		var key = "testPresignedUrlPutUnsignedAcl";
+
+		var putURL = getS3Presigner().presignPutObject(
+				s -> s.signatureDuration(Duration.ofMinutes(10)).putObjectRequest(p -> p.bucket(bucketName).key(key)));
+
+		var headers = new HashMap<String, String>();
+		headers.put("x-amz-acl", "public-read");
+		var result = NetUtils.putUpload(putURL.url(), "PUT", headers, key);
+		assertEquals(HttpStatus.SC_FORBIDDEN, result.statusCode, result.message);
+		assertTrue(result.message.contains("AccessDenied"), result.message);
+
+		var e = assertThrows(AwsServiceException.class, () -> client.headObject(h -> h.bucket(bucketName).key(key)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+	}
+
+	@Test
+	@Tag("PresignedURL")
+	public void testPresignedUrlPutUnsignedCopySource() {
+		var client = getClient();
+		var bucketName = createBucket(client, 39);
+		var sourceKey = "source";
+		var targetKey = "target";
+
+		client.putObject(p -> p.bucket(bucketName).key(sourceKey), RequestBody.fromString(sourceKey));
+
+		var putURL = getS3Presigner().presignPutObject(s -> s.signatureDuration(Duration.ofMinutes(10))
+				.putObjectRequest(p -> p.bucket(bucketName).key(targetKey)));
+
+		var headers = new HashMap<String, String>();
+		headers.put("x-amz-copy-source", bucketName + "/" + sourceKey);
+		var result = NetUtils.putUpload(putURL.url(), "PUT", headers, "");
+		assertEquals(HttpStatus.SC_FORBIDDEN, result.statusCode, result.message);
+		assertTrue(result.message.contains("AccessDenied"), result.message);
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.headObject(h -> h.bucket(bucketName).key(targetKey)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
 	}
 }

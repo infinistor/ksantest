@@ -219,13 +219,17 @@ namespace s3tests.Test
 		#endregion
 
 		#region POST
-		public static HttpResponseMessage PutObject(string url, string body = null, string contentType = null)
+		public static HttpResponseMessage PutObject(string url, string body = null, string contentType = null,
+			IDictionary<string, string> headers = null)
 		{
 			using var client = new HttpClient();
 			using var request = new HttpRequestMessage(HttpMethod.Put, url);
 
 			if (contentType != null)
 				request.Headers.Add("Content-Type", contentType);
+			if (headers != null)
+				foreach (var header in headers)
+					request.Headers.TryAddWithoutValidation(header.Key, header.Value);
 
 			if (body != null)
 				request.Content = new StringContent(body);

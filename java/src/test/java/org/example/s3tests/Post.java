@@ -491,4 +491,31 @@ class Post {
 		test.testGetObjectV4();
 		testV2.testGetObjectV4();
 	}
+
+	/**
+	 * PresignedURL에 서명된 x-amz-acl 헤더를 그대로 보내면 업로드 성공 확인
+	 */
+	@Test
+	@Tag("PresignedURL")
+	void testPresignedUrlPutSignedAcl() {
+		testV2.testPresignedUrlPutSignedAcl();
+	}
+
+	/**
+	 * PresignedURL에 서명되지 않은 x-amz-acl 헤더를 붙이면 AccessDenied로 거부 확인
+	 */
+	@Test
+	@Tag("PresignedURL")
+	void testPresignedUrlPutUnsignedAcl() {
+		testV2.testPresignedUrlPutUnsignedAcl();
+	}
+
+	/**
+	 * PresignedURL(PUT)에 서명되지 않은 x-amz-copy-source 헤더를 붙이면 AccessDenied로 거부 확인
+	 */
+	@Test
+	@Tag("PresignedURL")
+	void testPresignedUrlPutUnsignedCopySource() {
+		testV2.testPresignedUrlPutUnsignedCopySource();
+	}
 }

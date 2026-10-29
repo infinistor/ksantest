@@ -767,6 +767,46 @@ class TestPost(S3TestBase):
         get_url = self.generate_presigned_get_url(bucket_name, key)
         assert self.get_object_url(get_url) == 200
 
+    @pytest.mark.tag("PresignedURL")
+    def test_presigned_url_put_signed_acl(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 37)
+        key = "test_presigned_url_put_signed_acl"
+
+        put_url = self.generate_presigned_put_url(bucket_name, key, acl="public-read")
+        result = net_utils.put_upload(put_url, "PUT", {"x-amz-acl": "public-read"}, key)
+        assert result.status_code == 200, result.message
+
+    @pytest.mark.tag("PresignedURL")
+    def test_presigned_url_put_unsigned_acl(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 38)
+        key = "test_presigned_url_put_unsigned_acl"
+
+        put_url = self.generate_presigned_put_url(bucket_name, key)
+        result = net_utils.put_upload(put_url, "PUT", {"x-amz-acl": "public-read"}, key)
+        assert result.status_code == 403, result.message
+        assert md.ACCESS_DENIED in result.message, result.message
+
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key=key), 404, "404")
+
+    @pytest.mark.tag("PresignedURL")
+    def test_presigned_url_put_unsigned_copy_source(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 39)
+        source_key = "source"
+        target_key = "target"
+        client.put_object(Bucket=bucket_name, Key=source_key, Body=source_key.encode("utf-8"))
+
+        put_url = self.generate_presigned_put_url(bucket_name, target_key)
+        # 본문이 없으면 서명 검사 전에 MissingContentLength로 막는 구현이 있어 빈 본문을 보낸다.
+        headers = {"x-amz-copy-source": f"{bucket_name}/{source_key}"}
+        result = net_utils.put_upload(put_url, "PUT", headers, "")
+        assert result.status_code == 403, result.message
+        assert md.ACCESS_DENIED in result.message, result.message
+
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key=target_key), 404, "404")
+
     @pytest.mark.tag("signV4")
     def test_put_object_v4(self):
         bucket_name = self.create_bucket(33)
