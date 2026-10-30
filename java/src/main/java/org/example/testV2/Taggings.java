@@ -325,4 +325,43 @@ public class Taggings extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(key).tagging(Tagging.builder().build()),
 				RequestBody.fromString(""));
 	}
+
+	@Test
+	@Tag("PutObject")
+	public void testPutObjWithTagsEncoded() {
+		var client = getClient();
+		var bucketName = createBucket(client, 14);
+		var key = "testPutObjWithTagsEncoded";
+
+		// 공백, '/', '+', '='는 x-amz-tagging 헤더에서 URL 인코딩되어 전송되므로 서버가 디코딩해서 저장해야 한다
+		var tags = Tagging.builder().tagSet(
+				t -> t.key("k 1").value("a/b+c d").build(),
+				t -> t.key("k2").value("x=y").build()).build();
+
+		client.putObject(p -> p.bucket(bucketName).key(key).tagging(tags), RequestBody.fromString(key));
+
+		var getResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(key));
+		tagCompare(tags.tagSet(), getResponse.tagSet());
+	}
+
+	@Test
+	@Tag("Multipart")
+	public void testMultipartUploadWithTagsEncoded() {
+		var client = getClient();
+		var bucketName = createBucket(client, 15);
+		var key = "testMultipartUploadWithTagsEncoded";
+
+		var tags = Tagging.builder().tagSet(
+				t -> t.key("k 1").value("a/b+c d").build(),
+				t -> t.key("k2").value("x=y").build()).build();
+
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(key).tagging(tags)).uploadId();
+		var partResponse = client.uploadPart(u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(1),
+				RequestBody.fromString(key));
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadId)
+				.multipartUpload(m -> m.parts(p -> p.partNumber(1).eTag(partResponse.eTag()))));
+
+		var getResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(key));
+		tagCompare(tags.tagSet(), getResponse.tagSet());
+	}
 }

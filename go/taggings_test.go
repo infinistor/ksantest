@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 	"testing"
@@ -224,6 +225,57 @@ func TestGetObjNonTagging(t *testing.T) {
 	assertTags(t, getObjectTags(t, s, b, key), nil)
 }
 
+// x-amz-tagging 헤더에 URL 인코딩이 필요한 문자(공백, /, +, =)가 든 태그로 업로드하면 디코딩된 값으로 저장되는지 확인
+func TestPutObjWithTagsEncoded(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t, 14), "TestPutObjWithTagsEncoded"
+	want := encodedTags()
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte(key)), Tagging: aws.String(encodeTagging(want))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTags(t, getObjectTags(t, s, b, key), want)
+}
+
+// x-amz-tagging 헤더에 URL 인코딩이 필요한 문자가 든 태그로 멀티파트 업로드하면 디코딩된 값으로 저장되는지 확인
+func TestMultipartUploadWithTagsEncoded(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 15), "TestMultipartUploadWithTagsEncoded"
+	want := encodedTags()
+	created, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), Tagging: aws.String(encodeTagging(want))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	part, err := s.client.UploadPart(ctx, &s3.UploadPartInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, PartNumber: aws.Int32(1), Body: bytes.NewReader([]byte(key))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.client.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: []types.CompletedPart{{ETag: part.ETag, PartNumber: aws.Int32(1)}}}}); err != nil {
+		t.Fatal(err)
+	}
+	assertTags(t, getObjectTags(t, s, b, key), want)
+}
+
+// encodedTags는 x-amz-tagging 헤더에서 URL 인코딩이 필요한 문자(공백, /, +, =)가 든 태그 목록을 반환한다.
+func encodedTags() []types.Tag {
+	return []types.Tag{{Key: aws.String("k 1"), Value: aws.String("a/b+c d")}, {Key: aws.String("k2"), Value: aws.String("x=y")}}
+}
+
+// encodeTagging은 태그 목록을 x-amz-tagging 헤더 값(공백은 %20)으로 인코딩한다.
+func encodeTagging(set []types.Tag) string {
+	escape := func(v string) string { return strings.ReplaceAll(url.QueryEscape(v), "+", "%20") }
+	pairs := make([]string, len(set))
+	for i, tag := range set {
+		pairs[i] = escape(aws.ToString(tag.Key)) + "=" + escape(aws.ToString(tag.Value))
+	}
+	return strings.Join(pairs, "&")
+}
+
 func tags(count, keySize, valueSize int) []types.Tag {
 	result := make([]types.Tag, count)
 	for i := 0; i < count; i++ {
@@ -257,11 +309,20 @@ func assertTags(t *testing.T, got, want []types.Tag) {
 	sort.Slice(got, func(i, j int) bool { return aws.ToString(got[i].Key) < aws.ToString(got[j].Key) })
 	sort.Slice(want, func(i, j int) bool { return aws.ToString(want[i].Key) < aws.ToString(want[j].Key) })
 	if len(got) != len(want) {
-		t.Fatalf("tags=%v want=%v", got, want)
+		t.Fatalf("tags=%v want=%v", tagStrings(got), tagStrings(want))
 	}
 	for i := range want {
 		if aws.ToString(got[i].Key) != aws.ToString(want[i].Key) || aws.ToString(got[i].Value) != aws.ToString(want[i].Value) {
-			t.Fatalf("tags=%v want=%v", got, want)
+			t.Fatalf("tags=%v want=%v", tagStrings(got), tagStrings(want))
 		}
 	}
+}
+
+// tagStrings는 실패 메시지용으로 태그를 "키=값" 문자열 목록으로 바꾼다.
+func tagStrings(set []types.Tag) []string {
+	result := make([]string, len(set))
+	for i, tag := range set {
+		result[i] = fmt.Sprintf("%q=%q", aws.ToString(tag.Key), aws.ToString(tag.Value))
+	}
+	return result
 }

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+from urllib.parse import quote, urlencode
 
 import pytest
 
@@ -308,3 +309,41 @@ class TestTaggings(S3TestBase):
             Body=b"",
             Tagging="",
         )
+
+    @pytest.mark.tag("PutObject")
+    def test_put_obj_with_tags_encoded(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 14)
+        key = "test_put_obj_with_tags_encoded"
+
+        # 공백, '/', '+', '='는 x-amz-tagging 헤더에서 URL 인코딩되어 전송되므로 서버가 디코딩해서 저장해야 한다
+        tags = [{"Key": "k 1", "Value": "a/b+c d"}, {"Key": "k2", "Value": "x=y"}]
+        tagging = urlencode([(t["Key"], t["Value"]) for t in tags], quote_via=quote, safe="")
+
+        client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"), Tagging=tagging)
+
+        get_response = client.get_object_tagging(Bucket=bucket_name, Key=key)
+        self.tag_compare(tags, get_response["TagSet"])
+
+    @pytest.mark.tag("Multipart")
+    def test_multipart_upload_with_tags_encoded(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 15)
+        key = "test_multipart_upload_with_tags_encoded"
+
+        tags = [{"Key": "k 1", "Value": "a/b+c d"}, {"Key": "k2", "Value": "x=y"}]
+        tagging = urlencode([(t["Key"], t["Value"]) for t in tags], quote_via=quote, safe="")
+
+        upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=key, Tagging=tagging)["UploadId"]
+        part_response = client.upload_part(
+            Bucket=bucket_name, Key=key, UploadId=upload_id, PartNumber=1, Body=key.encode("utf-8")
+        )
+        client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=key,
+            UploadId=upload_id,
+            MultipartUpload={"Parts": [{"PartNumber": 1, "ETag": part_response["ETag"]}]},
+        )
+
+        get_response = client.get_object_tagging(Bucket=bucket_name, Key=key)
+        self.tag_compare(tags, get_response["TagSet"])

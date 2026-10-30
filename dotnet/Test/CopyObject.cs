@@ -1629,5 +1629,67 @@ namespace s3tests.Test
 			getResponse = client.GetObject(bucketName, targetKey2);
 			Assert.Equal(content, GetBody(getResponse));
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Tagging")]
+		[Trait(MainData.Explanation, "TaggingDirective=REPLACE로 복사하면 원본 태그가 아니라 요청한 태그로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectReplaceTags()
+		{
+			TestId = 67;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var sourceKey = "TestCopyObjectReplaceTagsSource";
+			var targetKey = "TestCopyObjectReplaceTagsTarget";
+
+			var sourceTagSet = new List<Tag>() { new() { Key = "tag1", Value = "value1" } };
+			var targetTagSet = new List<Tag>()
+			{
+				new() { Key = "tag2", Value = "value2" },
+				new() { Key = "tag3", Value = "value3" },
+			};
+
+			client.PutObject(bucketName, sourceKey, body: sourceKey, tagSet: sourceTagSet);
+
+			client.CopyObject(bucketName, sourceKey, bucketName, targetKey, tagSet: targetTagSet,
+				taggingDirective: TaggingDirective.REPLACE);
+
+			// REPLACE이면 원본 태그가 아니라 요청에 담은 태그로 저장되어야 한다
+			var tagResponse = client.GetObjectTagging(bucketName, targetKey);
+			TaggingCompare(targetTagSet, tagResponse.Tagging);
+
+			tagResponse = client.GetObjectTagging(bucketName, sourceKey);
+			TaggingCompare(sourceTagSet, tagResponse.Tagging);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Tagging")]
+		[Trait(MainData.Explanation, "TaggingDirective=REPLACE로 URL 인코딩이 필요한 문자가 든 태그를 지정해 복사하면 디코딩된 값으로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectReplaceTagsEncoded()
+		{
+			TestId = 68;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var sourceKey = "TestCopyObjectReplaceTagsEncodedSource";
+			var targetKey = "TestCopyObjectReplaceTagsEncodedTarget";
+
+			client.PutObject(bucketName, sourceKey, body: sourceKey);
+
+			// 공백, '/', '+', '='는 x-amz-tagging 헤더에서 URL 인코딩되어 전송되므로 서버가 디코딩해서 저장해야 한다
+			var targetTagSet = new List<Tag>()
+			{
+				new() { Key = "k 1", Value = "a/b+c d" },
+				new() { Key = "k2", Value = "x=y" },
+			};
+
+			client.CopyObject(bucketName, sourceKey, bucketName, targetKey, tagSet: targetTagSet,
+				taggingDirective: TaggingDirective.REPLACE);
+
+			var tagResponse = client.GetObjectTagging(bucketName, targetKey);
+			TaggingCompare(targetTagSet, tagResponse.Tagging);
+		}
 	}
 }

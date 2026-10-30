@@ -372,5 +372,56 @@ namespace s3tests.Test
 
 			client.PutObject(bucketName, Key, body: "", tagSet: []);
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "PutObject")]
+		[Trait(MainData.Explanation, "x-amz-tagging 헤더에 URL 인코딩이 필요한 문자(공백, /, +, =)가 든 태그로 업로드하면 디코딩된 값으로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjWithTagsEncoded()
+		{
+			TestId = 14;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestPutObjWithTagsEncoded";
+
+			// 공백, '/', '+', '='는 x-amz-tagging 헤더에서 URL 인코딩되어 전송되므로 서버가 디코딩해서 저장해야 한다
+			var tagSet = new List<Tag>()
+			{
+				new(){ Key = "k 1", Value = "a/b+c d"},
+				new(){ Key = "k2", Value = "x=y"},
+			};
+
+			client.PutObject(bucketName, key, body: key, tagSet: tagSet);
+
+			var getResponse = client.GetObjectTagging(bucketName, key);
+			TaggingCompare(tagSet, getResponse.Tagging);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Multipart")]
+		[Trait(MainData.Explanation, "x-amz-tagging 헤더에 URL 인코딩이 필요한 문자가 든 태그로 멀티파트 업로드하면 디코딩된 값으로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestMultipartUploadWithTagsEncoded()
+		{
+			TestId = 15;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var key = "TestMultipartUploadWithTagsEncoded";
+
+			var tagSet = new List<Tag>()
+			{
+				new(){ Key = "k 1", Value = "a/b+c d"},
+				new(){ Key = "k2", Value = "x=y"},
+			};
+
+			var uploadId = client.InitiateMultipartUpload(bucketName, key, tagSet: tagSet).UploadId;
+			var partResponse = client.UploadPart(bucketName, key, uploadId, key, 1);
+			client.CompleteMultipartUpload(bucketName, key, uploadId, [new PartETag(1, partResponse.ETag)]);
+
+			var getResponse = client.GetObjectTagging(bucketName, key);
+			TaggingCompare(tagSet, getResponse.Tagging);
+		}
 	}
 }

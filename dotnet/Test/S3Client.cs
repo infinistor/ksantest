@@ -1188,7 +1188,7 @@ namespace s3tests.Test
 			DateTime? modifiedSince = null, DateTime? unmodifiedSince = null,
 			string ifMatch = null, string ifNoneMatch = null,
 			string expectedBucketOwner = null, string expectedSourceBucketOwner = null,
-			string contentEncoding = null)
+			string contentEncoding = null, List<Tag> tagSet = null, TaggingDirective taggingDirective = null)
 		{
 			var request = new CopyObjectRequest()
 			{
@@ -1212,6 +1212,8 @@ namespace s3tests.Test
 			}
 			if (metadataDirective != null) request.MetadataDirective = metadataDirective.Value;
 			if (versionId != null) request.SourceVersionId = versionId;
+			if (tagSet != null) request.TagSet = tagSet;
+			if (taggingDirective != null) request.TaggingDirective = taggingDirective;
 
 			// SDK v4는 x-amz-copy-source의 '/'까지 %2F로 인코딩한다. 복사 자체는 되지만
 			// IAM/버킷 정책의 s3:x-amz-copy-source 조건은 원본 헤더 값과 비교하므로 매칭에 실패한다.

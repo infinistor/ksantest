@@ -177,4 +177,22 @@ class Taggings {
 		test.testGetObjNonTagging();
 		testV2.testGetObjNonTagging();
 	}
+
+	/**
+	 * x-amz-tagging 헤더에 URL 인코딩이 필요한 문자(공백, /, +, =)가 든 태그로 업로드하면 디코딩된 값으로 저장되는지 확인
+	 */
+	@Test
+	@Tag("PutObject")
+	void testPutObjWithTagsEncoded() {
+		testV2.testPutObjWithTagsEncoded();
+	}
+
+	/**
+	 * x-amz-tagging 헤더에 URL 인코딩이 필요한 문자가 든 태그로 멀티파트 업로드하면 디코딩된 값으로 저장되는지 확인
+	 */
+	@Test
+	@Tag("Multipart")
+	void testMultipartUploadWithTagsEncoded() {
+		testV2.testMultipartUploadWithTagsEncoded();
+	}
 }

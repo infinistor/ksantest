@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote, urlencode
 
 import pytest
 from botocore.exceptions import ClientError
@@ -1422,3 +1423,56 @@ class TestCopyObject(S3TestBase):
 
         get_response = client.get_object(Bucket=bucket_name, Key=target_key2)
         assert self.get_body(get_response) == content
+
+    @pytest.mark.tag("Tagging")
+    def test_copy_object_replace_tags(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 67)
+        source_key = "test_copy_object_replace_tags_source"
+        target_key = "test_copy_object_replace_tags_target"
+
+        source_tags = [{"Key": "tag1", "Value": "value1"}]
+        target_tags = [{"Key": "tag2", "Value": "value2"}, {"Key": "tag3", "Value": "value3"}]
+
+        client.put_object(
+            Bucket=bucket_name, Key=source_key, Body=source_key.encode("utf-8"), Tagging="tag1=value1"
+        )
+
+        client.copy_object(
+            Bucket=bucket_name,
+            Key=target_key,
+            CopySource={"Bucket": bucket_name, "Key": source_key},
+            TaggingDirective="REPLACE",
+            Tagging="tag2=value2&tag3=value3",
+        )
+
+        # REPLACE이면 원본 태그가 아니라 요청에 담은 태그로 저장되어야 한다
+        tag_response = client.get_object_tagging(Bucket=bucket_name, Key=target_key)
+        self.tag_compare(target_tags, tag_response["TagSet"])
+
+        tag_response = client.get_object_tagging(Bucket=bucket_name, Key=source_key)
+        self.tag_compare(source_tags, tag_response["TagSet"])
+
+    @pytest.mark.tag("Tagging")
+    def test_copy_object_replace_tags_encoded(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 68)
+        source_key = "test_copy_object_replace_tags_encoded_source"
+        target_key = "test_copy_object_replace_tags_encoded_target"
+
+        client.put_object(Bucket=bucket_name, Key=source_key, Body=source_key.encode("utf-8"))
+
+        # 공백, '/', '+', '='는 x-amz-tagging 헤더에서 URL 인코딩되어 전송되므로 서버가 디코딩해서 저장해야 한다
+        target_tags = [{"Key": "k 1", "Value": "a/b+c d"}, {"Key": "k2", "Value": "x=y"}]
+        tagging = urlencode([(t["Key"], t["Value"]) for t in target_tags], quote_via=quote, safe="")
+
+        client.copy_object(
+            Bucket=bucket_name,
+            Key=target_key,
+            CopySource={"Bucket": bucket_name, "Key": source_key},
+            TaggingDirective="REPLACE",
+            Tagging=tagging,
+        )
+
+        tag_response = client.get_object_tagging(Bucket=bucket_name, Key=target_key)
+        self.tag_compare(target_tags, tag_response["TagSet"])

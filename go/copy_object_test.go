@@ -1375,6 +1375,35 @@ func TestCopyObjectReplaceAwsChunkedSignedPayload(t *testing.T) {
 	}
 }
 
+// TaggingDirective=REPLACE로 복사하면 원본 태그가 아니라 요청한 태그로 저장되는지 확인
+func TestCopyObjectReplaceTags(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := s.bucket(t, 67)
+	source, target := "source", "target"
+	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source)), Tagging: aws.String("tag1=value1")}); err != nil {
+		t.Fatal(err)
+	}
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), TaggingDirective: types.TaggingDirectiveReplace, Tagging: aws.String("tag2=value2&tag3=value3")})
+	// REPLACE이면 원본 태그가 아니라 요청에 담은 태그로 저장되어야 한다
+	assertTags(t, getObjectTags(t, s, b, target), []types.Tag{{Key: aws.String("tag2"), Value: aws.String("value2")}, {Key: aws.String("tag3"), Value: aws.String("value3")}})
+	assertTags(t, getObjectTags(t, s, b, source), []types.Tag{{Key: aws.String("tag1"), Value: aws.String("value1")}})
+}
+
+// TaggingDirective=REPLACE로 URL 인코딩이 필요한 문자가 든 태그를 지정해 복사하면 디코딩된 값으로 저장되는지 확인
+func TestCopyObjectReplaceTagsEncoded(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := s.bucket(t, 68)
+	source, target := "source", "target"
+	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(source), Body: bytes.NewReader([]byte(source))}); err != nil {
+		t.Fatal(err)
+	}
+	want := encodedTags()
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(target), CopySource: copySource(b, source, ""), TaggingDirective: types.TaggingDirectiveReplace, Tagging: aws.String(encodeTagging(want))})
+	assertTags(t, getObjectTags(t, s, b, target), want)
+}
+
 // assertAwsChunkedReplaced는 REPLACE 복사 후 메타데이터·Content-Type이 바뀌고 Content-Encoding이 없는지 확인한다.
 func assertAwsChunkedReplaced(t *testing.T, client *s3.Client, bucket, key string, metadata map[string]string) {
 	t.Helper()

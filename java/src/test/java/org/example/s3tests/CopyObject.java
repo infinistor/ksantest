@@ -714,4 +714,22 @@ class CopyObject {
 		test.testCopyObjectReplaceAwsChunkedSignedPayload();
 		testV2.testCopyObjectReplaceAwsChunkedSignedPayload();
 	}
+
+	/**
+	 * TaggingDirective=REPLACE로 복사하면 원본 태그가 아니라 요청한 태그로 저장되는지 확인
+	 */
+	@Test
+	@Tag("Tagging")
+	void testCopyObjectReplaceTags() {
+		testV2.testCopyObjectReplaceTags();
+	}
+
+	/**
+	 * TaggingDirective=REPLACE로 URL 인코딩이 필요한 문자가 든 태그를 지정해 복사하면 디코딩된 값으로 저장되는지 확인
+	 */
+	@Test
+	@Tag("Tagging")
+	void testCopyObjectReplaceTagsEncoded() {
+		testV2.testCopyObjectReplaceTagsEncoded();
+	}
 }

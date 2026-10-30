@@ -39,6 +39,7 @@ import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.Permission;
 import software.amazon.awssdk.services.s3.model.Tagging;
+import software.amazon.awssdk.services.s3.model.TaggingDirective;
 
 @Execution(ExecutionMode.CONCURRENT)
 public class CopyObject extends TestBase {
@@ -1474,5 +1475,54 @@ public class CopyObject extends TestBase {
 			var getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey));
 			assertEquals(content, getBody(getResponse));
 		}
+	}
+
+	@Test
+	@Tag("Tagging")
+	public void testCopyObjectReplaceTags() {
+		var client = getClient();
+		var bucketName = createBucket(client, 67);
+		var sourceKey = "testCopyObjectReplaceTagsSource";
+		var targetKey = "testCopyObjectReplaceTagsTarget";
+
+		var sourceTags = Tagging.builder().tagSet(t -> t.key("tag1").value("value1").build()).build();
+		var targetTags = Tagging.builder().tagSet(
+				t -> t.key("tag2").value("value2").build(),
+				t -> t.key("tag3").value("value3").build()).build();
+
+		client.putObject(p -> p.bucket(bucketName).key(sourceKey).tagging(sourceTags),
+				RequestBody.fromString(sourceKey));
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey).destinationBucket(bucketName)
+				.destinationKey(targetKey).taggingDirective(TaggingDirective.REPLACE).tagging(targetTags));
+
+		// REPLACE이면 원본 태그가 아니라 요청에 담은 태그로 저장되어야 한다
+		var tagResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(targetKey));
+		tagCompare(targetTags.tagSet(), tagResponse.tagSet());
+
+		tagResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(sourceKey));
+		tagCompare(sourceTags.tagSet(), tagResponse.tagSet());
+	}
+
+	@Test
+	@Tag("Tagging")
+	public void testCopyObjectReplaceTagsEncoded() {
+		var client = getClient();
+		var bucketName = createBucket(client, 68);
+		var sourceKey = "testCopyObjectReplaceTagsEncodedSource";
+		var targetKey = "testCopyObjectReplaceTagsEncodedTarget";
+
+		client.putObject(p -> p.bucket(bucketName).key(sourceKey), RequestBody.fromString(sourceKey));
+
+		// 공백, '/', '+', '='는 x-amz-tagging 헤더에서 URL 인코딩되어 전송되므로 서버가 디코딩해서 저장해야 한다
+		var targetTags = Tagging.builder().tagSet(
+				t -> t.key("k 1").value("a/b+c d").build(),
+				t -> t.key("k2").value("x=y").build()).build();
+
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey).destinationBucket(bucketName)
+				.destinationKey(targetKey).taggingDirective(TaggingDirective.REPLACE).tagging(targetTags));
+
+		var tagResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(targetKey));
+		tagCompare(targetTags.tagSet(), tagResponse.tagSet());
 	}
 }
