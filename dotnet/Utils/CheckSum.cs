@@ -98,6 +98,10 @@ namespace s3tests.Utils
 				response?.Checksum?.ChecksumCRC64NVME, response?.Checksum?.ChecksumSHA1,
 				response?.Checksum?.ChecksumSHA256, algorithm);
 
+		public static string GetChecksum(GetObjectMetadataResponse response, ChecksumAlgorithm algorithm)
+			=> GetChecksumValue(response.ChecksumCRC32, response.ChecksumCRC32C, response.ChecksumCRC64NVME,
+				response.ChecksumSHA1, response.ChecksumSHA256, algorithm);
+
 		public static string GetChecksum(PutObjectResponse response, ChecksumAlgorithm algorithm)
 			=> GetChecksumValue(response.ChecksumCRC32, response.ChecksumCRC32C, response.ChecksumCRC64NVME,
 				response.ChecksumSHA1, response.ChecksumSHA256, algorithm);

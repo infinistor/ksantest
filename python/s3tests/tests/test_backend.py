@@ -9,8 +9,13 @@ from botocore.exceptions import ClientError
 
 from s3tests.data import backend_headers as bh
 from s3tests.data import main_data as md
-from s3tests.data.multipart_upload_data import MultipartUploadData
+from s3tests.data.multipart_upload_data import MultipartUploadData, MultipartUploadV2Data
 from s3tests.test_base import DEFAULT_PART_SIZE, S3TestBase
+from s3tests.utils import checksum, utils
+
+
+# 복제 시 원본 GetObject 응답에서 대상으로 넘어오는 체크섬 알고리즘 목록
+REPLICATION_CHECKSUMS = ["CRC32", "CRC32C", "CRC64NVME", "SHA1", "SHA256"]
 
 
 class TestBackend(S3TestBase):
@@ -1077,3 +1082,132 @@ class TestBackend(S3TestBase):
 
         tag_response4 = client.get_object_tagging(Bucket=bucket_name, Key=target_key)
         assert len(tag_response4["TagSet"]) == 0
+
+    @pytest.mark.tag("PUT")
+    def test_put_object_checksum_versioning(self):
+        self.skip_if_aws()
+        client = self.get_client()
+        backend_client = self.get_backend_client()
+        bucket_name = self.create_bucket(client, 41)
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+
+        for algorithm in REPLICATION_CHECKSUMS:
+            key = f"client/{algorithm}"
+            backend_key = f"backend/{algorithm}"
+            value = checksum.calculate_checksum(algorithm, key)
+            backend_value = checksum.calculate_checksum(algorithm, backend_key)
+
+            # 대조군: 일반 클라이언트로 업로드하면 체크섬이 저장된다
+            params = {"Bucket": bucket_name, "Key": key, "Body": key.encode("utf-8")}
+            checksum.set_checksum(params, algorithm, value)
+            client.put_object(**params)
+            self._check_stored_checksum(client, bucket_name, key, None, algorithm, value)
+
+            # Backend 클라이언트로 업로드
+            params = {"Bucket": bucket_name, "Key": backend_key, "Body": backend_key.encode("utf-8")}
+            checksum.set_checksum(params, algorithm, backend_value)
+            backend_client.put_object(**params)
+            self._check_stored_checksum(client, bucket_name, backend_key, None, algorithm, backend_value)
+
+    @pytest.mark.tag("PUT")
+    def test_put_object_checksum_versioning_with_version_id(self):
+        self.skip_if_aws()
+        client = self.get_client()
+        backend_client = self.get_backend_client()
+        bucket_name = self.create_bucket(client, 42)
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+
+        # 반복마다 원본 버전 ID가 바뀌므로 핸들러는 한 번만 등록하고 값을 바꿔 끼운다
+        current = {"version_id": ""}
+
+        def _inject(request, **kwargs):
+            request.headers[bh.IFS_VERSION_ID] = current["version_id"]
+            request.headers[bh.KSAN_VERSION_ID] = current["version_id"]
+
+        backend_client.meta.events.register("before-sign.s3.PutObject", _inject)
+
+        for algorithm in REPLICATION_CHECKSUMS:
+            source_key = f"source/{algorithm}"
+            target_key = f"target/{algorithm}"
+            content = "test content"
+            value = checksum.calculate_checksum(algorithm, content)
+
+            params = {"Bucket": bucket_name, "Key": source_key, "Body": content.encode("utf-8")}
+            checksum.set_checksum(params, algorithm, value)
+            version_id = client.put_object(**params)["VersionId"]
+            self._check_stored_checksum(client, bucket_name, source_key, version_id, algorithm, value)
+
+            # Backend 클라이언트로 원본과 같은 버전 ID, 체크섬 값을 지정해 업로드
+            current["version_id"] = version_id
+            params = {"Bucket": bucket_name, "Key": target_key, "Body": content.encode("utf-8")}
+            checksum.set_checksum(params, algorithm, value)
+            backend_client.put_object(**params)
+            self._check_stored_checksum(client, bucket_name, target_key, version_id, algorithm, value)
+
+    @pytest.mark.tag("MULTIPART")
+    def test_multipart_upload_checksum_versioning(self):
+        self.skip_if_aws()
+        client = self.get_client()
+        backend_client = self.get_backend_client()
+        bucket_name = self.create_bucket(client, 43)
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+
+        for algorithm in checksum.FULL_OBJECT_ALGORITHMS:
+            key = f"client/{algorithm}"
+            backend_key = f"backend/{algorithm}"
+
+            # 대조군: 일반 클라이언트로 업로드하면 체크섬이 저장된다
+            body = self._checksum_multipart_upload(client, bucket_name, key, algorithm)
+            self._check_stored_checksum(
+                client, bucket_name, key, None, algorithm, checksum.calculate_checksum(algorithm, body)
+            )
+
+            # Backend 클라이언트로 업로드
+            backend_body = self._checksum_multipart_upload(backend_client, bucket_name, backend_key, algorithm)
+            self._check_stored_checksum(
+                client, bucket_name, backend_key, None, algorithm, checksum.calculate_checksum(algorithm, backend_body)
+            )
+
+    @staticmethod
+    def _checksum_multipart_upload(client, bucket_name: str, key: str, algorithm: str) -> str:
+        """FULL_OBJECT 체크섬을 지정해 파트 2개로 멀티파트 업로드하고 업로드한 본문을 반환"""
+        upload_data = MultipartUploadV2Data()
+        upload_data.upload_id = client.create_multipart_upload(
+            Bucket=bucket_name, Key=key, ChecksumType="FULL_OBJECT", ChecksumAlgorithm=algorithm
+        )["UploadId"]
+        for part in utils.generate_random_string(6 * md.MB, 5 * md.MB):
+            upload_data.append_body(part)
+            part_params = checksum.apply_put_checksum_params(
+                {
+                    "Bucket": bucket_name,
+                    "Key": key,
+                    "UploadId": upload_data.upload_id,
+                    "PartNumber": upload_data.next_part_number(),
+                    "Body": part.encode("utf-8"),
+                },
+                algorithm,
+                part,
+            )
+            upload_data.add_part_with_checksum(algorithm, client.upload_part(**part_params))
+        client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=key,
+            UploadId=upload_data.upload_id,
+            ChecksumType="FULL_OBJECT",
+            MultipartUpload={"Parts": upload_data.parts},
+        )
+        return upload_data.get_body()
+
+    @staticmethod
+    def _check_stored_checksum(client, bucket_name: str, key: str, version_id, algorithm: str, expected: str) -> None:
+        """일반 클라이언트로 HeadObject(ChecksumMode=ENABLED)해 저장된 체크섬이 기대값과 같은지 확인"""
+        params = {"Bucket": bucket_name, "Key": key, "ChecksumMode": "ENABLED"}
+        if version_id:
+            params["VersionId"] = version_id
+        response = client.head_object(**params)
+        assert checksum.get_checksum(response, algorithm) == expected, f"{key} {algorithm} 체크섬"
+        if version_id:
+            assert response["VersionId"] == version_id

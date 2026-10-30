@@ -16,14 +16,21 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 
 import org.example.Data.BackendHeaders;
 import org.example.Data.MainData;
 import org.example.Data.MultipartUploadV2Data;
+import org.example.Utility.CheckSum;
+import org.example.Utility.Utils;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
+import software.amazon.awssdk.services.s3.model.ChecksumMode;
+import software.amazon.awssdk.services.s3.model.ChecksumType;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.ObjectLockRetentionMode;
@@ -32,6 +39,16 @@ import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.model.Tagging;
 
 public class Backend extends TestBase {
+	/**
+	 * 복제 시 원본 GetObject 응답에서 대상으로 넘어오는 체크섬 알고리즘 목록
+	 */
+	static final List<ChecksumAlgorithm> REPLICATION_CHECKSUMS = List.of(
+			ChecksumAlgorithm.CRC32,
+			ChecksumAlgorithm.CRC32_C,
+			ChecksumAlgorithm.CRC64_NVME,
+			ChecksumAlgorithm.SHA1,
+			ChecksumAlgorithm.SHA256);
+
 	/**
 	 * Backend 헤더를 사용하여 오브젝트를 업로드할 수 있는지 확인
 	 */
@@ -1349,5 +1366,139 @@ public class Backend extends TestBase {
 
 		var tagResponse4 = client.getObjectTagging(g -> g.bucket(bucketName).key(targetKey));
 		assertEquals(0, tagResponse4.tagSet().size());
+	}
+
+	/**
+	 * [Versioning] Backend 헤더로 체크섬 값을 지정해 업로드하면 일반 업로드와 같이 체크섬이 저장되는지 확인
+	 */
+	public void testPutObjectChecksumVersioning() {
+		assumeFalse(config.isAWS());
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucket(client, 41);
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		for (var checksum : REPLICATION_CHECKSUMS) {
+			var key = "client/" + checksum.name();
+			var backendKey = "backend/" + checksum.name();
+			var value = CheckSum.calculateChecksum(checksum, key);
+			var backendValue = CheckSum.calculateChecksum(checksum, backendKey);
+
+			// 대조군: 일반 클라이언트로 업로드하면 체크섬이 저장된다
+			client.putObject(p -> {
+				p.bucket(bucketName).key(key);
+				CheckSum.setChecksum(p, checksum, value);
+			}, RequestBody.fromString(key));
+			checkStoredChecksum(client, bucketName, key, null, checksum, value);
+
+			// Backend 클라이언트로 업로드
+			backendClient.putObject(p -> {
+				p.bucket(bucketName).key(backendKey);
+				CheckSum.setChecksum(p, checksum, backendValue);
+			}, RequestBody.fromString(backendKey));
+			checkStoredChecksum(client, bucketName, backendKey, null, checksum, backendValue);
+		}
+	}
+
+	/**
+	 * [Versioning] 복제와 같이 원본 버전 ID와 체크섬 값을 지정해 Backend 헤더로 업로드하면 체크섬이 보존되는지 확인
+	 */
+	public void testPutObjectChecksumVersioningWithVersionId() {
+		assumeFalse(config.isAWS());
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucket(client, 42);
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		for (var checksum : REPLICATION_CHECKSUMS) {
+			var sourceKey = "source/" + checksum.name();
+			var targetKey = "target/" + checksum.name();
+			var content = "test content";
+			var value = CheckSum.calculateChecksum(checksum, content);
+
+			// 일반 클라이언트로 업로드
+			var putResponse = client.putObject(p -> {
+				p.bucket(bucketName).key(sourceKey);
+				CheckSum.setChecksum(p, checksum, value);
+			}, RequestBody.fromString(content));
+			var versionId = putResponse.versionId();
+			checkStoredChecksum(client, bucketName, sourceKey, versionId, checksum, value);
+
+			// Backend 클라이언트로 원본과 같은 버전 ID, 체크섬 값을 지정해 업로드
+			backendClient.putObject(p -> {
+				p.bucket(bucketName).key(targetKey)
+						.overrideConfiguration(o -> o
+								.putHeader(BackendHeaders.IFS_VERSION_ID, versionId)
+								.putHeader(BackendHeaders.KSAN_VERSION_ID, versionId));
+				CheckSum.setChecksum(p, checksum, value);
+			}, RequestBody.fromString(content));
+			checkStoredChecksum(client, bucketName, targetKey, versionId, checksum, value);
+		}
+	}
+
+	/**
+	 * [Versioning] Backend 헤더로 FULL_OBJECT 체크섬을 지정해 멀티파트 업로드하면 일반 업로드와 같이 체크섬이 저장되는지 확인
+	 */
+	public void testMultipartUploadChecksumVersioning() {
+		assumeFalse(config.isAWS());
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucket(client, 43);
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		for (var checksum : CheckSum.FULL_OBJECT_ALGORITHMS) {
+			var key = "client/" + checksum.name();
+			var backendKey = "backend/" + checksum.name();
+
+			// 대조군: 일반 클라이언트로 업로드하면 체크섬이 저장된다
+			var body = checksumMultipartUpload(client, bucketName, key, checksum);
+			checkStoredChecksum(client, bucketName, key, null, checksum, CheckSum.calculateChecksum(checksum, body));
+
+			// Backend 클라이언트로 업로드
+			var backendBody = checksumMultipartUpload(backendClient, bucketName, backendKey, checksum);
+			checkStoredChecksum(client, bucketName, backendKey, null, checksum,
+					CheckSum.calculateChecksum(checksum, backendBody));
+		}
+	}
+
+	/**
+	 * FULL_OBJECT 체크섬을 지정해 파트 2개로 멀티파트 업로드하고 업로드한 본문을 반환
+	 */
+	String checksumMultipartUpload(S3Client client, String bucketName,
+			String key, ChecksumAlgorithm checksum) {
+		var uploadData = new MultipartUploadV2Data();
+		var createResponse = client.createMultipartUpload(c -> c.bucket(bucketName).key(key)
+				.checksumType(ChecksumType.FULL_OBJECT).checksumAlgorithm(checksum));
+		uploadData.uploadId = createResponse.uploadId();
+
+		for (var part : Utils.generateRandomString(6 * MainData.MB, 5 * MainData.MB)) {
+			uploadData.appendBody(part);
+			var partResponse = client.uploadPart(u -> CheckSum.applyChecksum(u.bucket(bucketName).key(key)
+					.uploadId(uploadData.uploadId).partNumber(uploadData.nextPartNumber()), checksum, part),
+					RequestBody.fromString(part));
+			uploadData.addPart(checksum, partResponse);
+		}
+
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
+				.checksumType(ChecksumType.FULL_OBJECT).multipartUpload(p -> p.parts(uploadData.parts)));
+		return uploadData.getBody();
+	}
+
+	/**
+	 * 일반 클라이언트로 HeadObject(ChecksumMode=ENABLED)해 저장된 체크섬이 기대값과 같은지 확인
+	 */
+	void checkStoredChecksum(S3Client client, String bucketName, String key,
+			String versionId, ChecksumAlgorithm checksum, String expected) {
+		var response = client.headObject(h -> h.bucket(bucketName).key(key).versionId(versionId)
+				.checksumMode(ChecksumMode.ENABLED));
+		assertEquals(expected, CheckSum.getChecksum(response, checksum), String.format("%s %s 체크섬", key, checksum));
+		if (versionId != null)
+			assertEquals(versionId, response.versionId());
 	}
 }

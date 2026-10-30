@@ -406,4 +406,31 @@ public class Backend {
 	void testDeleteObjectTaggingReplication() {
 		testV2.testDeleteObjectTaggingReplication();
 	}
+
+	/**
+	 * [Versioning] Backend 헤더로 체크섬 값을 지정해 업로드하면 일반 업로드와 같이 체크섬이 저장되는지 확인
+	 */
+	@Test
+	@Tag("PUT")
+	void testPutObjectChecksumVersioning() {
+		testV2.testPutObjectChecksumVersioning();
+	}
+
+	/**
+	 * [Versioning] 복제와 같이 원본 버전 ID와 체크섬 값을 지정해 Backend 헤더로 업로드하면 체크섬이 보존되는지 확인
+	 */
+	@Test
+	@Tag("PUT")
+	void testPutObjectChecksumVersioningWithVersionId() {
+		testV2.testPutObjectChecksumVersioningWithVersionId();
+	}
+
+	/**
+	 * [Versioning] Backend 헤더로 FULL_OBJECT 체크섬을 지정해 멀티파트 업로드하면 일반 업로드와 같이 체크섬이 저장되는지 확인
+	 */
+	@Test
+	@Tag("MULTIPART")
+	void testMultipartUploadChecksumVersioning() {
+		testV2.testMultipartUploadChecksumVersioning();
+	}
 }

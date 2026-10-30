@@ -1427,5 +1427,157 @@ namespace s3tests.Test
 			var tagResponse4 = client.GetObjectTagging(bucketName, targetKey);
 			Assert.Empty(tagResponse4.Tagging);
 		}
+
+		/// <summary>
+		/// 복제 시 원본 GetObject 응답에서 대상으로 넘어오는 체크섬 알고리즘 목록
+		/// </summary>
+		static readonly List<ChecksumAlgorithm> ReplicationChecksums =
+		[
+			ChecksumAlgorithm.CRC32,
+			ChecksumAlgorithm.CRC32C,
+			ChecksumAlgorithm.CRC64NVME,
+			ChecksumAlgorithm.SHA1,
+			ChecksumAlgorithm.SHA256,
+		];
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Backend")]
+		[Trait(MainData.Minor, "Versioning")]
+		[Trait(MainData.Explanation, "[Versioning] Backend 헤더로 체크섬 값을 지정해 업로드하면 일반 업로드와 같이 체크섬이 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectChecksumVersioning()
+		{
+			TestId = 41;
+			SkipIfAws();
+			var client = GetClient();
+			var backendClient = GetBackendClient();
+			var bucketName = GetNewBucket();
+
+			// 버저닝 활성화
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			foreach (var checksum in ReplicationChecksums)
+			{
+				var key = $"client/{checksum.Value}";
+				var backendKey = $"backend/{checksum.Value}";
+				var value = CheckSum.CalculateChecksum(checksum, key);
+				var backendValue = CheckSum.CalculateChecksum(checksum, backendKey);
+
+				// 대조군: 일반 클라이언트로 업로드하면 체크섬이 저장된다
+				client.PutObject(bucketName, key, body: key, checksumAlgorithm: checksum, checksumValue: value);
+				CheckStoredChecksum(client, bucketName, key, null, checksum, value);
+
+				// Backend 클라이언트로 업로드
+				backendClient.PutObject(bucketName, backendKey, body: backendKey, checksumAlgorithm: checksum,
+					checksumValue: backendValue);
+				CheckStoredChecksum(client, bucketName, backendKey, null, checksum, backendValue);
+			}
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Backend")]
+		[Trait(MainData.Minor, "Versioning")]
+		[Trait(MainData.Explanation, "[Versioning] 복제와 같이 원본 버전 ID와 체크섬 값을 지정해 Backend 헤더로 업로드하면 체크섬이 보존되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectChecksumVersioningWithVersionId()
+		{
+			TestId = 42;
+			SkipIfAws();
+			var client = GetClient();
+			var backendClient = GetBackendClient();
+			var bucketName = GetNewBucket();
+			var content = "test content";
+
+			// 버저닝 활성화
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			foreach (var checksum in ReplicationChecksums)
+			{
+				var sourceKey = $"source/{checksum.Value}";
+				var targetKey = $"target/{checksum.Value}";
+				var value = CheckSum.CalculateChecksum(checksum, content);
+
+				// 일반 클라이언트로 업로드
+				var putResponse = client.PutObject(bucketName, sourceKey, body: content, checksumAlgorithm: checksum,
+					checksumValue: value);
+				var versionId = putResponse.VersionId;
+				CheckStoredChecksum(client, bucketName, sourceKey, versionId, checksum, value);
+
+				// Backend 클라이언트로 원본과 같은 버전 ID, 체크섬 값을 지정해 업로드
+				backendClient.PutObject(bucketName, targetKey, body: content, checksumAlgorithm: checksum,
+					checksumValue: value,
+					headerList: [
+						new(BackendHeaders.IFS_VERSION_ID, versionId),
+						new(BackendHeaders.KSAN_VERSION_ID, versionId),
+					]);
+				CheckStoredChecksum(client, bucketName, targetKey, versionId, checksum, value);
+			}
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Backend")]
+		[Trait(MainData.Minor, "Versioning")]
+		[Trait(MainData.Explanation, "[Versioning] Backend 헤더로 FULL_OBJECT 체크섬을 지정해 멀티파트 업로드하면 일반 업로드와 같이 체크섬이 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestMultipartUploadChecksumVersioning()
+		{
+			TestId = 43;
+			SkipIfAws();
+			var client = GetClient();
+			var backendClient = GetBackendClient();
+			var bucketName = GetNewBucket();
+
+			// 버저닝 활성화
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			foreach (var checksum in CheckSum.FullObjectAlgorithms)
+			{
+				var key = $"client/{checksum.Value}";
+				var backendKey = $"backend/{checksum.Value}";
+
+				// 대조군: 일반 클라이언트로 업로드하면 체크섬이 저장된다
+				var body = ChecksumMultipartUpload(client, bucketName, key, checksum);
+				CheckStoredChecksum(client, bucketName, key, null, checksum, CheckSum.CalculateChecksum(checksum, body));
+
+				// Backend 클라이언트로 업로드
+				var backendBody = ChecksumMultipartUpload(backendClient, bucketName, backendKey, checksum);
+				CheckStoredChecksum(client, bucketName, backendKey, null, checksum,
+					CheckSum.CalculateChecksum(checksum, backendBody));
+			}
+		}
+
+		/// <summary>
+		/// FULL_OBJECT 체크섬을 지정해 파트 2개로 멀티파트 업로드하고 업로드한 본문을 반환
+		/// </summary>
+		static string ChecksumMultipartUpload(S3Client client, string bucketName, string key, ChecksumAlgorithm checksum)
+		{
+			var uploadData = new MultipartUploadData();
+			uploadData.UploadId = client.InitiateMultipartUpload(bucketName, key, checksumAlgorithm: checksum,
+				checksumType: ChecksumType.FULL_OBJECT).UploadId;
+
+			foreach (var part in new[] { S3Utils.RandomTextToLong(5 * MainData.MB), S3Utils.RandomTextToLong(MainData.MB) })
+			{
+				uploadData.AppendBody(part);
+				var partResponse = client.UploadPart(bucketName, key, uploadData.UploadId, part, uploadData.NextPartNumber,
+					checksumAlgorithm: checksum);
+				uploadData.AddPart(checksum, partResponse);
+			}
+
+			client.CompleteMultipartUpload(bucketName, key, uploadData.UploadId, uploadData.Parts,
+				checksumType: ChecksumType.FULL_OBJECT);
+			return uploadData.Body;
+		}
+
+		/// <summary>
+		/// 일반 클라이언트로 HeadObject(ChecksumMode=ENABLED)해 저장된 체크섬이 기대값과 같은지 확인
+		/// </summary>
+		static void CheckStoredChecksum(S3Client client, string bucketName, string key, string versionId,
+			ChecksumAlgorithm checksum, string expected)
+		{
+			var response = client.HeadObject(bucketName, key, versionId: versionId, checksumMode: ChecksumMode.ENABLED);
+			var actual = CheckSum.GetChecksum(response, checksum);
+			Assert.True(expected == actual, $"{key} {checksum.Value} 체크섬: expected={expected} actual={actual}");
+			if (versionId != null) Assert.Equal(versionId, response.VersionId);
+		}
 	}
 }

@@ -783,6 +783,149 @@ func TestDeleteObjectTaggingReplication(t *testing.T) {
 	assertBackendTags(t, s.client, bucket, targetKey, versionID, nil)
 }
 
+// 복제 시 원본 GetObject 응답에서 대상으로 넘어오는 체크섬 알고리즘 목록
+var replicationChecksums = []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmCrc64nvme, types.ChecksumAlgorithmSha1, types.ChecksumAlgorithmSha256}
+
+// [Versioning] Backend 헤더로 체크섬 값을 지정해 업로드하면 일반 업로드와 같이 체크섬이 저장되는지 확인
+func TestPutObjectChecksumVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	bucket := s.bucket(t, 41)
+	enableVersioning(t, s, bucket)
+	for _, algorithm := range replicationChecksums {
+		key, backendKey := "client/"+string(algorithm), "backend/"+string(algorithm)
+
+		// 대조군: 일반 클라이언트로 업로드하면 체크섬이 저장된다
+		input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader([]byte(key))}
+		setPutChecksum(input, algorithm, []byte(key), false)
+		if _, err := s.client.PutObject(context.Background(), input); err != nil {
+			t.Fatal(err)
+		}
+		assertStoredChecksum(t, s.client, bucket, key, "", algorithm, checksumValue(algorithm, []byte(key)))
+
+		// Backend 클라이언트로 업로드
+		input = &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(backendKey), Body: bytes.NewReader([]byte(backendKey))}
+		setPutChecksum(input, algorithm, []byte(backendKey), false)
+		if _, err := backend.PutObject(context.Background(), input); err != nil {
+			t.Fatal(err)
+		}
+		assertStoredChecksum(t, s.client, bucket, backendKey, "", algorithm, checksumValue(algorithm, []byte(backendKey)))
+	}
+}
+
+// [Versioning] 복제와 같이 원본 버전 ID와 체크섬 값을 지정해 Backend 헤더로 업로드하면 체크섬이 보존되는지 확인
+func TestPutObjectChecksumVersioningWithVersionId(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	bucket := s.bucket(t, 42)
+	enableVersioning(t, s, bucket)
+	body := []byte("test content")
+	for _, algorithm := range replicationChecksums {
+		sourceKey, targetKey := "source/"+string(algorithm), "target/"+string(algorithm)
+		value := checksumValue(algorithm, body)
+
+		input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(sourceKey), Body: bytes.NewReader(body)}
+		setPutChecksum(input, algorithm, body, false)
+		source, err := s.client.PutObject(context.Background(), input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		versionID := aws.ToString(source.VersionId)
+		requireVersionID(t, versionID)
+		assertStoredChecksum(t, s.client, bucket, sourceKey, versionID, algorithm, value)
+
+		// Backend 클라이언트로 원본과 같은 버전 ID, 체크섬 값을 지정해 업로드
+		input = &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), Body: bytes.NewReader(body)}
+		setPutChecksum(input, algorithm, body, false)
+		if _, err = backend.PutObject(context.Background(), input, versionOption(versionID)); err != nil {
+			t.Fatal(err)
+		}
+		assertStoredChecksum(t, s.client, bucket, targetKey, versionID, algorithm, value)
+	}
+}
+
+// [Versioning] Backend 헤더로 FULL_OBJECT 체크섬을 지정해 멀티파트 업로드하면 일반 업로드와 같이 체크섬이 저장되는지 확인
+func TestMultipartUploadChecksumVersioning(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	bucket := s.bucket(t, 43)
+	enableVersioning(t, s, bucket)
+	for _, algorithm := range []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmCrc64nvme} {
+		key, backendKey := "client/"+string(algorithm), "backend/"+string(algorithm)
+
+		// 대조군: 일반 클라이언트로 업로드하면 체크섬이 저장된다
+		body := checksumMultipartUpload(t, s.client, bucket, key, algorithm)
+		assertStoredChecksum(t, s.client, bucket, key, "", algorithm, checksumValue(algorithm, body))
+
+		// Backend 클라이언트로 업로드
+		backendBody := checksumMultipartUpload(t, backend, bucket, backendKey, algorithm)
+		assertStoredChecksum(t, s.client, bucket, backendKey, "", algorithm, checksumValue(algorithm, backendBody))
+	}
+}
+
+// checksumMultipartUpload는 FULL_OBJECT 체크섬을 지정해 파트 2개로 멀티파트 업로드하고 업로드한 본문을 반환한다.
+func checksumMultipartUpload(t *testing.T, client *s3.Client, bucket, key string, algorithm types.ChecksumAlgorithm) []byte {
+	t.Helper()
+	ctx := context.Background()
+	created, err := client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), ChecksumAlgorithm: algorithm, ChecksumType: types.ChecksumTypeFullObject})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body []byte
+	var parts []types.CompletedPart
+	for i, size := range []int{5 * 1024 * 1024, 1024 * 1024} {
+		partBody := bytes.Repeat([]byte{byte('a' + i)}, size)
+		body = append(body, partBody...)
+		part, err := client.UploadPart(ctx, &s3.UploadPartInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId, PartNumber: aws.Int32(int32(i + 1)), Body: bytes.NewReader(partBody), ChecksumAlgorithm: algorithm})
+		if err != nil {
+			t.Fatal(err)
+		}
+		parts = append(parts, types.CompletedPart{ETag: part.ETag, PartNumber: aws.Int32(int32(i + 1)), ChecksumCRC32: part.ChecksumCRC32, ChecksumCRC32C: part.ChecksumCRC32C, ChecksumCRC64NVME: part.ChecksumCRC64NVME})
+	}
+	if _, err = client.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId, ChecksumType: types.ChecksumTypeFullObject, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts}}); err != nil {
+		t.Fatal(err)
+	}
+	return body
+}
+
+// assertStoredChecksum은 일반 클라이언트로 HeadObject(ChecksumMode=ENABLED)해 저장된 체크섬이 기대값과 같은지 확인한다.
+func assertStoredChecksum(t *testing.T, client *s3.Client, bucket, key, versionID string, algorithm types.ChecksumAlgorithm, want string) {
+	t.Helper()
+	input := &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), ChecksumMode: types.ChecksumModeEnabled}
+	if versionID != "" {
+		input.VersionId = aws.String(versionID)
+	}
+	out, err := client.HeadObject(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[types.ChecksumAlgorithm]*string{
+		types.ChecksumAlgorithmCrc32: out.ChecksumCRC32, types.ChecksumAlgorithmCrc32c: out.ChecksumCRC32C, types.ChecksumAlgorithmCrc64nvme: out.ChecksumCRC64NVME,
+		types.ChecksumAlgorithmSha1: out.ChecksumSHA1, types.ChecksumAlgorithmSha256: out.ChecksumSHA256,
+	}[algorithm]
+	if aws.ToString(got) != want {
+		t.Fatalf("%s %s checksum=%q want=%q", key, algorithm, aws.ToString(got), want)
+	}
+	if versionID != "" && aws.ToString(out.VersionId) != versionID {
+		t.Fatalf("%s versionId=%q want=%q", key, aws.ToString(out.VersionId), versionID)
+	}
+}
+
 func newBackendClient(t *testing.T, s *suite) *s3.Client {
 	t.Helper()
 	user := s.cfg.Backend

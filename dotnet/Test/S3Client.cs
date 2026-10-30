@@ -1407,7 +1407,7 @@ namespace s3tests.Test
 		public GetObjectMetadataResponse HeadObject(string bucketName, string key, string ifMatch = null,
 			string ifNoneMatch = null, string ifModifiedSince = null, DateTime? ifModifiedSinceDateTime = null,
 			string ifUnmodifiedSince = null, DateTime? ifUnmodifiedSinceDateTime = null,
-			string versionId = null, SSECustomerKey sseCustomerKey = null)
+			string versionId = null, SSECustomerKey sseCustomerKey = null, ChecksumMode checksumMode = null)
 		{
 			var request = new GetObjectMetadataRequest()
 			{
@@ -1416,6 +1416,7 @@ namespace s3tests.Test
 			};
 
 			if (versionId != null) request.VersionId = versionId;
+			if (checksumMode != null) request.ChecksumMode = checksumMode;
 			if (ifMatch != null) request.EtagToMatch = ifMatch;
 			if (ifNoneMatch != null) request.EtagToNotMatch = ifNoneMatch;
 			if (ifModifiedSince != null) request.ModifiedSinceDate = DateTime.Parse(ifModifiedSince);

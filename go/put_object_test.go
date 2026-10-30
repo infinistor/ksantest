@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash/crc32"
+	"hash/crc64"
 	"io"
 	"net/http"
 	"net/url"
@@ -1111,6 +1112,8 @@ func setPutChecksum(input *s3.PutObjectInput, algorithm types.ChecksumAlgorithm,
 		input.ChecksumCRC32 = aws.String(value)
 	case types.ChecksumAlgorithmCrc32c:
 		input.ChecksumCRC32C = aws.String(value)
+	case types.ChecksumAlgorithmCrc64nvme:
+		input.ChecksumCRC64NVME = aws.String(value)
 	case types.ChecksumAlgorithmSha1:
 		input.ChecksumSHA1 = aws.String(value)
 	case types.ChecksumAlgorithmSha256:
@@ -1127,6 +1130,10 @@ func checksumValue(algorithm types.ChecksumAlgorithm, body []byte) string {
 	case types.ChecksumAlgorithmCrc32c:
 		value := crc32.Checksum(body, crc32.MakeTable(crc32.Castagnoli))
 		sum = []byte{byte(value >> 24), byte(value >> 16), byte(value >> 8), byte(value)}
+	case types.ChecksumAlgorithmCrc64nvme:
+		// CRC64NVME 다항식 0xAD93D23594C93659의 비트 반전값
+		value := crc64.Checksum(body, crc64.MakeTable(0x9A6C9329AC4BC9B5))
+		sum = []byte{byte(value >> 56), byte(value >> 48), byte(value >> 40), byte(value >> 32), byte(value >> 24), byte(value >> 16), byte(value >> 8), byte(value)}
 	case types.ChecksumAlgorithmSha1:
 		value := sha1.Sum(body)
 		sum = value[:]
