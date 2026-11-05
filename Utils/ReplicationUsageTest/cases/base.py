@@ -136,18 +136,19 @@ class ReplicationCase(Case):
 
         with self.step(1, [f"{self.src}, {self.dst}"]):
             self.s3.create_bucket(Bucket=self.src)
-            self.s3.create_bucket(Bucket=self.dst)
+            self.dst_s3.create_bucket(Bucket=self.dst)
 
         with self.step(2):
             for bucket in (self.src, self.dst):
-                self.s3.put_bucket_versioning(Bucket=bucket, VersioningConfiguration={"Status": "Enabled"})
-                status = self.s3.get_bucket_versioning(Bucket=bucket).get("Status")
+                client = self.client_for(bucket)
+                client.put_bucket_versioning(Bucket=bucket, VersioningConfiguration={"Status": "Enabled"})
+                status = client.get_bucket_versioning(Bucket=bucket).get("Status")
                 if status != "Enabled":
                     raise CaseFailed(f"{bucket} 버저닝 상태가 Enabled 가 아님: {status}")
 
         with self.step(3):
             status = "Enabled" if self.DELETE_MARKER_REPLICATION else "Disabled"
-            # 리전 없는 ARN = 같은 시스템(local) 안의 대상 버킷
+            # local 은 리전 없는 ARN, remote 는 arn:aws:s3:<리전>::<버킷>
             self.s3.put_bucket_replication(Bucket=self.src, ReplicationConfiguration={
                 "Role": "",
                 "Rules": [{
@@ -155,7 +156,7 @@ class ReplicationCase(Case):
                     "Priority": 1,
                     "Status": "Enabled",
                     "Filter": self.RULE_FILTER,
-                    "Destination": {"Bucket": f"arn:aws:s3:::{self.dst}"},
+                    "Destination": {"Bucket": self.target.arn(self.dst)},
                     "DeleteMarkerReplication": {"Status": status},
                 }],
             })
@@ -195,7 +196,7 @@ class ReplicationCase(Case):
 
     def dst_matches(self) -> tuple[bool, str]:
         _, src_markers = list_versions(self.s3, self.src)
-        files, markers = list_versions(self.s3, self.dst)
+        files, markers = list_versions(self.dst_s3, self.dst)
         want_markers = self.expected_markers(src_markers)
         missing = set(self.dst_expected) - set(files)
         extra = set(files) - set(self.dst_expected)
@@ -220,11 +221,16 @@ class ReplicationCase(Case):
             raise CaseFailed(f"{REPLICATION_TIMEOUT_SEC}초 안에 대상이 기대와 같아지지 않음: {diff}")
         return elapsed
 
+    def client_for(self, bucket: str):
+        """대상 버킷이면 대상 클라이언트, 나머지(원본·보조 버킷)는 원본 클라이언트."""
+        return self.dst_s3 if bucket == self.dst else self.s3
+
     def describe(self, bucket: str, key: str, version_id: str) -> dict:
+        client = self.client_for(bucket)
         kwargs = {"ChecksumMode": "ENABLED"} if self.COMPARE_CHECKSUM else {}
-        h = self.s3.head_object(Bucket=bucket, Key=key, VersionId=version_id, **kwargs)
+        h = client.head_object(Bucket=bucket, Key=key, VersionId=version_id, **kwargs)
         info = {"Size": h["ContentLength"], "ETag": h["ETag"].strip('"'),
-                "Metadata": h.get("Metadata", {}), "Tags": get_tags(self.s3, bucket, key, version_id)}
+                "Metadata": h.get("Metadata", {}), "Tags": get_tags(client, bucket, key, version_id)}
         if self.COMPARE_CHECKSUM:
             info["Checksum"] = {k: v for k, v in h.items() if k.startswith("Checksum") and k != "ChecksumType"}
         return info
@@ -246,16 +252,23 @@ class ReplicationCase(Case):
 
     def compare_usage(self, detail: list) -> None:
         want_src, want_dst = usage_of(self.src_expected), usage_of(self.dst_expected)
+        # 다른 시스템 리전이면 대상 usage 는 이 포털로 볼 수 없어 원본만 비교한다
+        check_dst = self.target.same_portal
+        dst_keys = self.target.usage_keys()
 
         def usage_matched():
-            s, d = self.portal.bucket_usage(self.src), self.portal.bucket_usage(self.dst)
+            s = self.portal.bucket_usage(self.src)
+            d = self.portal.bucket_usage(self.dst, *dst_keys) if check_dst else None
             self.result.src_usage, self.result.dst_usage = s, d
-            return s == want_src and d == want_dst, (s, d)
+            return s == want_src and (not check_dst or d == want_dst), (s, d)
 
         done, (s, d), elapsed = wait_until(usage_matched, USAGE_TIMEOUT_SEC, USAGE_POLL_SEC)
         if not done:
             raise CaseFailed(f"{USAGE_TIMEOUT_SEC}초 안에 usage 가 맞지 않음: "
                              f"src 기대 {want_src} 실제 {s} / dst 기대 {want_dst} 실제 {d}")
+        if not check_dst:
+            detail.append(f"src {want_src}, dst 는 다른 포털이라 건너뜀, 수렴 {elapsed:.1f}초")
+            return
         same = "src=dst " if want_src == want_dst else ""
         detail.append(f"{same}src {want_src}, dst {want_dst}, 수렴 {elapsed:.1f}초")
 
@@ -268,7 +281,7 @@ class ReplicationCase(Case):
                 logger.warning("복제 룰 삭제 실패: %s (%s)", self.src, e)
         for bucket in [self.src, self.dst, *self.extra_buckets]:
             if bucket:
-                empty_and_delete_bucket(self.s3, bucket)
+                empty_and_delete_bucket(self.client_for(bucket), bucket)
 
     # ── 공용 계산 ────────────────────────────────────────────────────
     def sized_keys(self, prefix: str = "") -> list[tuple[str, int]]:

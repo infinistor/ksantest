@@ -1,19 +1,22 @@
 ; 복제 usage 테스트 설정 템플릿. config.ini 로 복사해 값을 채운다 (*.ini 는 git 에 올라가지 않는다).
+; S3 주소와 원격 대상은 설정하지 않는다. 포털에서 가져온다.
+;   원본 S3 주소 = 포털 기본 리전(GET /api/v2/Regions/Default) 의 Address·Port(https 면 SSLPort)
+;   원격 대상   = 포털에 등록된 나머지 리전(GET /api/v2/Regions). 복제기가 쓰는 리전 키로 대상 버킷을 다룬다
 
 [portal]
 ; [필수] 포털 API 주소 (https://호스트:포트). 브라우저 UI 주소가 아니라 API 포트.
-;   서버 /usr/local/ksan/etc/ksanAgent.conf 의 PortalHost·PortalPort 참고 (예: https://192.168.31.151:7553)
+;   서버 /usr/local/ksan/etc/ksanAgent.conf 의 PortalHost·PortalPort 참고 (예: https://192.168.11.151:7554)
 url =
 ; [필수] 포털 API 키 (Authorization: Bearer 로 보낸다)
 ;   ksanAgent.conf 의 PortalApiKey 값, 또는 포털 UI 에서 발급한 키
 api_key =
 
 [s3]
-; [필수] S3 GW 주소 (예: http://192.168.31.151:7070)
-url =
-; [필수] S3 사용자 키. 버킷 생성·복제 설정·포털 버킷 조회(AccessKey/SecretKey 헤더)에 같이 쓴다
+; [필수] 원본 버킷을 만들 기존 S3 사용자 키 (포털 사용자 목록의 AccessKey·SecretKey)
 access_key =
 secret_key =
+; [선택] true 면 https(리전 SSLPort)로 접속. 비우면 http
+https =
 
 [test]
 ; [선택] 업로드할 파일 개수. 비우면 10

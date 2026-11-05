@@ -30,7 +30,7 @@ class Tc12Tagging(ReplicationCase):
 
         def tags_replicated():
             pending = [k for k, vid in versions
-                       if get_tags(self.s3, self.dst, k, vid) != self.dst_expected[(k, vid)]["Tags"]]
+                       if get_tags(self.dst_s3, self.dst, k, vid) != self.dst_expected[(k, vid)]["Tags"]]
             return not pending, pending
 
         done, pending, elapsed = wait_until(tags_replicated, REPLICATION_TIMEOUT_SEC, REPLICATION_POLL_SEC)
