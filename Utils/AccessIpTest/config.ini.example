@@ -1,0 +1,20 @@
+; Access IP 테스트 설정 템플릿. config.ini 로 복사해 값을 채운다 (*.ini 는 git 에 올라가지 않는다).
+
+[portal]
+; [필수] 포털 API 주소 (https://호스트:포트). 브라우저 UI 주소가 아니라 API 포트.
+;   서버 /usr/local/ksan/etc/ksanAgent.conf 의 PortalHost·PortalPort 참고 (예: https://192.168.11.151:7554)
+url =
+; [필수] 포털 API 키 (Authorization 헤더로 보낸다)
+;   ksanAgent.conf 의 PortalApiKey 값, 또는 포털 UI 에서 발급한 키
+api_key =
+
+[s3]
+; [필수] S3 GW 주소 (예: http://192.168.11.152:7070)
+url =
+
+[test]
+; [선택] 이 머신의 IP. 비우면 S3 주소로 나가는 출발지 IP 를 자동 감지한다.
+;   NAT·프록시 뒤라서 GW 가 보는 IP 가 다르면 GW 가 보는 IP 를 적는다.
+client_ip =
+; [선택] Access IP 설정·해제 후 GW 반영까지 기다리는 초. 비우면 1
+delay =
