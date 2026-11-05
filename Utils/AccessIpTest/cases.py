@@ -9,8 +9,8 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
-from common import (BUCKET_ALL, IpCase, PortalClient, logger, probe_list_buckets,
-                    probe_list_objects)
+from common import (BUCKET_ALL, XFF_OUTSIDE_IP, IpCase, PortalClient, inside_ip, logger,
+                    probe_list_buckets, probe_list_buckets_with_xff, probe_list_objects)
 
 USERS = ("main", "alt")
 
@@ -130,4 +130,35 @@ def run_bucket_mode(ctx: Context, case: IpCase) -> list[ScenarioResult]:
     return results
 
 
-MODES = {"user": run_user_mode, "bucket": run_bucket_mode}
+# ── XFF 우회 ──────────────────────────────────────────────────────────
+# 올바른 동작: 클라이언트가 보낸 X-Forwarded-For 헤더는 Access IP 판정을 바꾸면 안 된다.
+#   - 실제 접속 출발지가 허용 범위 밖이면, XFF 에 허용 IP 를 넣어도 차단돼야 한다.
+#   - 실제 접속 출발지가 허용 범위 안이면, XFF 에 아무 주소나 넣어도 허용돼야 한다.
+# 현재 GWUtils.checkIPs 는 XFF 의 주소까지 함께 검사해 하나라도 맞으면 통과시키므로,
+# 아래 "XFF=범위 안" 단계가 allowed=False 케이스에서 통과(=우회)하여 FAIL 로 드러난다.
+# 신뢰 프록시만 XFF 를 쓰도록 고치면 모두 PASS 가 된다.
+def run_xff_mode(ctx: Context, case: IpCase) -> list[ScenarioResult]:
+    """main 사용자에 ALL 정책을 걸고, XFF 헤더가 판정을 바꾸지 못하는지(=무시되는지) 확인한다."""
+    user = ctx.users["main"]
+    result = ScenarioResult("xff", case.case_id, case.ip, case.allowed, "all-policy")
+    rec = Recorder(result)
+
+    rec.check("설정 전", "ListBuckets", probe_list_buckets(user.s3), True)
+
+    ctx.portal.set_access_ip(user.user_id, case.ip, BUCKET_ALL)
+    time.sleep(ctx.delay)
+    # 기준선: XFF 없이 실제 출발지로만 판정 → 케이스의 기대값과 같아야 한다.
+    rec.check("설정 후", "XFF 없음", probe_list_buckets(user.s3), case.allowed)
+    # 핵심: XFF 가 판정을 바꾸면 안 되므로, 기대값은 세 경우 모두 case.allowed 로 같다.
+    rec.check("설정 후", f"XFF=범위안({inside_ip(case.ip)})",
+              probe_list_buckets_with_xff(user.s3, inside_ip(case.ip)), case.allowed)
+    rec.check("설정 후", f"XFF=범위밖({XFF_OUTSIDE_IP})",
+              probe_list_buckets_with_xff(user.s3, XFF_OUTSIDE_IP), case.allowed)
+
+    ctx.portal.clear_access_ips(user.user_id)
+    time.sleep(ctx.delay)
+    rec.check("해제 후", "ListBuckets", probe_list_buckets(user.s3), True)
+    return [result]
+
+
+MODES = {"user": run_user_mode, "bucket": run_bucket_mode, "xff": run_xff_mode}

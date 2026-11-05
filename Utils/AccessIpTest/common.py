@@ -38,6 +38,9 @@ RANGE_MID = 100
 RANGE_HIGH = 254
 NEAR_SPAN = 5                    # ".40-.50" 처럼 클라이언트 앞뒤로 넓힌 범위의 폭
 
+# XFF 우회 테스트에서 "허용 범위 밖" 으로 쓰는 주소(테스트 대역과 겹치지 않는 사설 IP)
+XFF_OUTSIDE_IP = "10.254.254.254"
+
 KSAN_USERS_API = "/api/v2/KsanUsers"
 ACCESS_IPS_API = "/api/v2/S3/AccessIps"
 
@@ -158,6 +161,21 @@ def build_ip_cases(client_ip: str) -> tuple[list[IpCase], list[str]]:
     return cases, skipped
 
 
+def inside_ip(policy_ip: str) -> str:
+    """포털에 등록한 Access IP 값(단일/CIDR/범위) 안에 드는 주소 하나를 돌려준다.
+
+    XFF 우회 테스트에서 "허용 범위 안" 주소를 헤더에 넣어보는 용도.
+    """
+    if "/" in policy_ip:
+        net = ipaddress.ip_network(policy_ip, strict=False)
+        host = net.network_address + (1 if net.num_addresses > 1 else 0)
+        return str(host)
+    if "-" in policy_ip:
+        low, _, _ = policy_ip.partition("-")
+        return low.strip()
+    return policy_ip.strip()
+
+
 # ── 포털 ──────────────────────────────────────────────────────────────
 class PortalClient:
     def __init__(self, settings: Settings):
@@ -242,6 +260,21 @@ def probe_list_buckets(s3) -> tuple[bool, str]:
         return True, ""
     except Exception as e:  # 차단은 AccessDenied 또는 연결 오류로 나타난다
         return False, _error_code(e)
+
+
+def probe_list_buckets_with_xff(s3, xff_value: str) -> tuple[bool, str]:
+    """ListBuckets 요청에 X-Forwarded-For 헤더를 붙여 성공 여부와 실패 코드를 돌려준다.
+
+    boto3 서명이 끝난 뒤(before-send) 헤더를 넣어, 클라이언트가 임의로 XFF 를 보내는 상황을 흉내 낸다.
+    """
+    def add_header(request, **kwargs):
+        request.headers["X-Forwarded-For"] = xff_value
+
+    s3.meta.events.register("before-send.s3", add_header)
+    try:
+        return probe_list_buckets(s3)
+    finally:
+        s3.meta.events.unregister("before-send.s3", add_header)
 
 
 def probe_list_objects(s3, bucket: str) -> tuple[bool, str]:

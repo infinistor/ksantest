@@ -44,6 +44,20 @@
 - bucket-C: C 에 설정 → C=기대값, 나머지 허용
 - bucket-A+C: A·C 에 설정 → A·C=기대값, B·D 허용
 
+**XFF 우회 (`--mode xff`, main 사용자에 `BucketName=ALL`, ListBuckets 로 확인)**
+
+클라이언트가 보낸 `X-Forwarded-For` 헤더가 Access IP 판정을 바꾸면 안 된다는 것을 검사한다.
+IP 케이스마다 ALL 정책을 걸고 세 번 확인하며, 기대값은 셋 다 그 케이스의 허용/차단값과 같아야 한다.
+
+- `XFF 없음`: 실제 출발지로만 판정 (기준선)
+- `XFF=범위안`: 허용 범위 안 주소를 헤더에 넣음 → **무시돼야** 함 (차단 케이스에서 통과하면 우회)
+- `XFF=범위밖`: 허용 범위 밖 주소(`10.254.254.254`)를 헤더에 넣음 → **무시돼야** 함
+
+> 현재 `GWUtils.checkIPs` 는 XFF 의 주소까지 함께 검사해 하나라도 맞으면 통과시키고, XFF 가 있으면
+> 실제 원격주소를 배열에서 덮어쓴다. 그래서 차단 케이스는 `XFF=범위안` 에서 통과(우회)하고,
+> 허용 케이스는 `XFF=범위밖` 에서 차단되어 **지금은 10개 케이스가 모두 FAIL** 이다.
+> 신뢰 프록시 목록이 있을 때만 XFF 를 쓰도록 고치면 전부 PASS 가 된다. (core·ksan2-integration 동일)
+
 모든 시나리오는 설정 전·해제 후에 전부 허용인지도 확인한다.
 사용자·버킷은 실행마다 새로 만들고(`accessip-main-<시각>`, `accessip-test-<시각>-a` …), 끝나면 성공·실패와 상관없이
 정책 → 버킷 → 사용자 순서로 지운다.
@@ -80,16 +94,17 @@ GW 가 보는 IP 는 GW 서버의 `/var/log/ksan/gw/access.log` 맨 앞 칸에�
 ## 실행
 
 ```bash
-python3 run.py                  # 사용자 단위 + 버킷 단위 전부
+python3 run.py                  # 사용자 단위 + 버킷 단위 + XFF 우회 전부
 python3 run.py --mode user      # 사용자 단위만
 python3 run.py --mode bucket    # 버킷 단위만
+python3 run.py --mode xff       # XFF 우회만
 python3 run.py --case IP05      # 지정 케이스만 (여러 번 줄 수 있음)
 python3 run.py --list           # 클라이언트 IP 와 케이스 목록만
 ```
 
 종료 코드: 모두 통과 0, 실패·중단·정리 실패 1, 설정 오류 2
 
-전체 실행은 60개 시나리오, `delay` 1초 기준 약 2분 걸린다.
+전체 실행은 70개 시나리오, `delay` 1초 기준 약 2분 걸린다.
 
 ## 주기 실행 (cron·Jenkins)
 
