@@ -9,3 +9,5 @@ python-new/
 .agents/
 ksantest.code-workspace
 *.ini
+bin/
+obj/
