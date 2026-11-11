@@ -56,7 +56,7 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "Lock")]
 		[Trait(MainData.Minor, "ERROR")]
-		[Trait(MainData.Explanation, "버킷을 Lock옵션을 활성화 하지않을 경우 lock 설정이 실패")]
+		[Trait(MainData.Explanation, "버저닝을 활성화하지 않은 버킷에 오브젝트 잠금을 설정할 경우 실패")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestObjectLockPutObjLockInvalidBucket()
 		{
@@ -845,7 +845,7 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "Lock")]
 		[Trait(MainData.Minor, "Put")]
-		[Trait(MainData.Explanation, "버킷 생성 후 버저닝을 활성화하고 오브젝트 잠금을 설정할 수 있는지 확인")]
+		[Trait(MainData.Explanation, "Object Lock 없이 생성한 버킷에 버저닝을 활성화한 뒤 오브젝트 잠금을 활성화할 수 있는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCreatedBucketEnableObjectLock()
 		{
