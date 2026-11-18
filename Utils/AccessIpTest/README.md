@@ -1,15 +1,22 @@
-# S3 Access IP 테스트
+# S3 Access IP·버킷 QoS 테스트
 
-포털에서 Access IP(접근 허용 IP)를 설정했을 때 GW 가 기대대로 허용·차단하는지 확인한다.
-KSAN 과 S3Backend 를 같은 시나리오로 검사한다. 대상마다 다른 것은 포털 API 뿐이다(`portal.py`).
+포털에서 설정한 정책을 GW 가 지키는지 실서버에서 확인한다.
+
+- Access IP(접근 허용 IP): 설정한 범위대로 허용·차단하는가 (기본 실행)
+- 버킷 QoS(초당 요청 한도): 설정한 한도대로 503 SlowDown 을 돌려주는가 (`--mode qos`)
+
+KSAN 과 InfiniStor(`ifs`) 를 같은 시나리오로 검사한다. 대상마다 다른 것은 포털 API 뿐이다(`portal.py`).
 
 - KSAN: 사용자를 만들면 S3 키가 나온다.
-- S3Backend: 볼륨에 사용자를 마운트해야 S3 키가 나온다. 볼륨이 없으면 만들고, 꺼져 있으면 시작한다.
+- InfiniStor: 볼륨에 사용자를 마운트해야 S3 키가 나온다. 볼륨이 없으면 만들고, 꺼져 있으면 시작한다.
+  GW 는 ksan2-integration 의 ifs 모드다. 대상 이름은 예전에 `s3backend` 였고, 그 이름도 그대로 받는다.
 
 예전에 여러 곳에 있던 Access IP 테스트를 합친 것이다(모두 삭제됨).
 
 - jenkins 저장소의 Java 테스트 `s3_accessip_test`, `s3_accessip_test_ksan`, `portal_test`
-- ksan 저장소의 `core/jenkins/access-test/access-ips-check.py` 와 jenkins 저장소의 S3Backend 용 같은 이름 스크립트
+- ksan 저장소의 `core/jenkins/access-test/access-ips-check.py` 와 jenkins 저장소의 InfiniStor 용 같은 이름 스크립트
+
+# Access IP
 
 ## GW 판정 규칙 (ksan `GWUtils.checkIPs`)
 
@@ -66,6 +73,42 @@ IP 케이스마다 ALL 정책을 걸고 세 번 확인하며, 기대값은 셋 �
 사용자·버킷은 실행마다 새로 만들고(`accessip-main-<시각>`, `accessip-test-<시각>-a` …), 끝나면 성공·실패와 상관없이
 정책 → 버킷 → 사용자 순서로 지운다.
 
+# 버킷 QoS (`--mode qos`)
+
+## GW 판정 규칙 (ksan `GWHandler.enforceQoS`, ifs 모드도 같다)
+
+- 포털이 Valkey 에 쓴 값 가운데 `Bucket` 값만 쓴다. `ListObject`·`GetObject`·`PutObject`·`HeadObject` 는 적용하지 않는다.
+- 버킷마다 1초 창에 `Bucket` 개까지 통과시키고 나머지는 503 SlowDown 으로 돌려준다.
+- 같은 버킷으로 오는 요청은 종류와 상관없이 한 창을 함께 쓴다. 버킷 이름이 없는 요청(ListBuckets)은 제한하지 않는다.
+- 0 이거나 값이 없으면 제한하지 않는다. 포털에서 바꾼 값은 1초 안에 반영된다.
+- Valkey 에 붙어 있지 않은 GW 는 제한하지 않는다(ifs 모드는 `s3gw.conf` 의 `s3.valkey`, `s3.slowdown`).
+  이 테스트는 Valkey 로 동작하는 구성을 전제로 하므로, 그런 GW 에서는 Q2 부터 FAIL 로 나온다.
+
+## 재는 방법
+
+한도의 5배 속도로 요청을 일정하게 보내고 통과한 개수를 센다. 10초 동안 창이 10번 열리므로 기대값은
+`한도 × 10` 이고, 통과 수가 기대값의 ±10% 안이면 통과로 본다.
+
+- 통과 수가 범위를 벗어나면 FAIL (많으면 한도가 새는 것, 적으면 덜 통과시키는 것)
+- 503 이 아닌 실패가 한 건이라도 있으면 FAIL
+- 실제로 보낸 요청이 한도의 2배에 못 미치면 판정하지 않고 ERROR(측정 불가)로 남긴다
+
+## 시나리오
+
+버킷 A 에 한도를 걸고, 버킷 B 는 한도가 없는 비교 대상으로 쓴다(둘 다 main 사용자의 버킷).
+
+- Q1 no-limit: 설정 전 → A 에 503 없음
+- Q2 limit: A 에 `Bucket=20` → 10초 동안 통과 200 ±10%
+- Q3 other-bucket: A·B 에 동시에 보냄 → A 는 200 ±10%, B 는 503 없음
+- Q4 limit-changed: `Bucket=40` 으로 변경 → 통과 400 ±10%
+- Q5 mixed-requests: `Bucket=20` 에서 Put·Get·Head·List 를 섞어 보냄 → 합계가 200 ±10%
+- Q6 limit-cleared: 한도 해제 → A 에 503 없음
+
+끝나면 한도를 풀고 테스트 객체를 지운 뒤 버킷·사용자를 지운다. 전체 실행은 약 1분 걸린다.
+한도·측정 시간·허용 오차는 `common.py` 의 `QOS_` 상수에 있다.
+
+# 공통
+
 ## 준비
 
 ```bash
@@ -81,16 +124,18 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 설정 항목은 `config.ini.example` 의 주석을 참고한다.
 
-- `[portal]` `url`, `api_key`, `type` (선택: `ksan` 또는 `s3backend`, 비우면 `ksan`)
+- `[portal]` `url`, `api_key`, `type` (선택: `ksan` 또는 `ifs`, 비우면 `ksan`)
 - `[s3]` `url`
 - `[test]` `client_ip`, `delay` (선택)
-- `[s3backend]` 대상이 `s3backend` 일 때만 읽는다
+- `[ifs]` 대상이 `ifs` 일 때만 읽는다
   - `volume_password`, `user_password` (필수)
   - `volume_name`, `volume_size`, `user_size` (선택, 비우면 `accessipvol`, `100GB`, `50GB`)
 
+예전 이름으로 적힌 설정(`type = s3backend`, `[s3backend]` 섹션)도 그대로 읽는다.
+
 버킷·사용자 접두사, 타임아웃 같은 나머지 값은 `common.py` 와 `portal.py` 맨 위 상수에 있다.
 
-S3Backend 의 볼륨은 테스트가 끝나도 지우지 않는다. 사용자와 버킷만 지운다.
+InfiniStor 의 볼륨은 테스트가 끝나도 지우지 않는다. 사용자와 버킷만 지운다.
 
 ### NAT 뒤에서 실행할 때
 
@@ -103,18 +148,19 @@ GW 가 보는 IP 는 GW 서버의 `/var/log/ksan/gw/access.log` 맨 앞 칸에�
 ## 실행
 
 ```bash
-python3 run.py                  # 사용자 단위 + 버킷 단위 + XFF 우회 전부
+python3 run.py                  # Access IP: 사용자 단위 + 버킷 단위 + XFF 우회 전부
 python3 run.py --mode user      # 사용자 단위만
 python3 run.py --mode bucket    # 버킷 단위만
 python3 run.py --mode xff       # XFF 우회만
-python3 run.py --case IP05      # 지정 케이스만 (여러 번 줄 수 있음)
+python3 run.py --mode qos       # 버킷 QoS 만 (기본 실행에는 들어가지 않는다)
+python3 run.py --case IP05      # 지정 케이스만 (여러 번 줄 수 있음, Access IP 에만 해당)
 python3 run.py --list           # 대상, 클라이언트 IP, 케이스 목록만
-python3 run.py --target s3backend   # 설정 파일의 [portal] type 대신 이 대상으로 실행
+python3 run.py --target ifs     # 설정 파일의 [portal] type 대신 이 대상으로 실행
 ```
 
-종료 코드: 모두 통과 0, 실패·중단·정리 실패 1, 설정 오류 2
+종료 코드: 모두 통과 0, 실패·측정 불가·중단·정리 실패 1, 설정 오류 2
 
-전체 실행은 70개 시나리오, `delay` 1초 기준 약 2분 걸린다.
+Access IP 전체 실행은 70개 시나리오, `delay` 1초 기준 약 2분 30초 걸린다.
 
 ## 주기 실행 (cron·Jenkins)
 
@@ -134,4 +180,5 @@ chmod +x run.sh
 
 - `results/<yyyyMMddHHmmss>.log`: 판정마다 한 줄
   - 예: `[BUCKET IP03 bucket-A] 설정 후: main ListObjects A 허용=False (AccessDenied) 기대=False OK`
+  - 예: `[QOS Q2 limit] A ListObjects: 한도 20/초 × 10초, 보냄 980 통과 202 503 778 기대=200 (허용 180~220), 초별 통과 [25 18 18 22 17 21 20 20 21 20] OK`
 - `results/summary.csv`: 실행·단위·케이스·시나리오마다 한 줄(결과, 불일치 내용)

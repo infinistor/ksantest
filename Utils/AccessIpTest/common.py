@@ -26,6 +26,7 @@ BUCKET_ALL = "ALL"               # 사용자의 모든 버킷(=사용자 단위)
 S3_REGION = "us-east-1"
 S3_CONNECT_TIMEOUT_SEC = 10      # 차단 시 빨리 실패하도록 짧게, 재시도 없음
 S3_READ_TIMEOUT_SEC = 30
+S3_MAX_POOL_CONNECTIONS = 64     # QoS 부하(버킷 둘 × QOS_WORKERS)가 한 클라이언트를 함께 쓴다
 PORTAL_TIMEOUT_SEC = 30
 VERIFY_TLS = False               # 테스트 서버는 자체 서명 인증서
 USER_READY_TIMEOUT_SEC = 60      # 새 사용자 키가 GW 에 반영될 때까지 기다리는 상한
@@ -40,14 +41,32 @@ NEAR_SPAN = 5                    # ".40-.50" 처럼 클라이언트 앞뒤로 �
 # XFF 우회 테스트에서 "허용 범위 밖" 으로 쓰는 주소(테스트 대역과 겹치지 않는 사설 IP)
 XFF_OUTSIDE_IP = "10.254.254.254"
 
-# 테스트 대상. 포털 API 가 다르다 (portal.py)
-PORTAL_TYPES = ("ksan", "s3backend")
+# 테스트 대상. 포털 API 가 다르다 (portal.py). ifs 는 InfiniStor 다.
+PORTAL_TYPES = ("ksan", "ifs")
 DEFAULT_PORTAL_TYPE = "ksan"
+# 예전 이름. 이 이름으로 적힌 설정 파일과 --target 도 그대로 받는다.
+PORTAL_TYPE_ALIASES = {"s3backend": "ifs"}
+IFS_SECTION = "ifs"
+IFS_SECTION_OLD = "s3backend"
 
-# S3Backend 전용 기본값 ([s3backend] 섹션에서 바꾼다). 비밀번호는 기본값이 없다.
-DEFAULT_S3B_VOLUME_NAME = "accessipvol"
-DEFAULT_S3B_VOLUME_SIZE = "100GB"
-DEFAULT_S3B_USER_SIZE = "50GB"
+# InfiniStor 전용 기본값 ([ifs] 섹션에서 바꾼다). 비밀번호는 기본값이 없다.
+DEFAULT_IFS_VOLUME_NAME = "accessipvol"
+DEFAULT_IFS_VOLUME_SIZE = "100GB"
+DEFAULT_IFS_USER_SIZE = "50GB"
+
+# ── QoS (--mode qos) ──────────────────────────────────────────────────
+QOS_LIMIT = 20                   # 버킷에 거는 초당 요청 한도
+QOS_LIMIT_CHANGED = 40           # 한도 변경 시나리오에서 바꾸는 값
+QOS_MEASURE_SEC = 10             # 한도를 재는 시간. 1초 창이 이만큼 열린다
+QOS_BASELINE_SEC = 3             # 한도가 없을 때 503 이 없는지 보는 시간
+QOS_TOLERANCE = 0.10             # 통과 수의 허용 오차 (한도 × 시간 기준)
+QOS_LOAD_FACTOR = 5              # 보내는 속도 = 한도의 몇 배
+QOS_MIN_LOAD_FACTOR = 2          # 실제로 보낸 요청이 한도의 이 배수보다 적으면 측정 불가
+QOS_WORKERS = 16                 # 버킷 하나에 동시에 보내는 스레드 수
+QOS_STOP_GUARD_SEC = 0.2         # 측정 시간이 끝나기 이만큼 전에 보내기를 멈춘다
+QOS_SETTLE_SEC = 2.0             # 측정 전 대기: 앞 측정의 1초 창이 끝나고 바꾼 한도가 반영될 시간
+QOS_SET_RETRY_SEC = 10           # 방금 만든 버킷이 포털에 보일 때까지 한도 설정을 다시 시도하는 상한
+QOS_SET_RETRY_POLL_SEC = 1
 
 logger = logging.getLogger("accessip")
 
@@ -72,7 +91,7 @@ class Settings:
     client_ip: str   # 비어 있으면 자동 감지
     delay: float
     portal_type: str = DEFAULT_PORTAL_TYPE
-    # 아래는 portal_type 이 s3backend 일 때만 쓴다
+    # 아래는 portal_type 이 ifs 일 때만 쓴다
     volume_name: str = ""
     volume_size: str = ""
     volume_password: str = ""
@@ -109,6 +128,7 @@ class Settings:
             raise ConfigError("[test] delay 는 0 이상이어야 함")
 
         portal_type = (target or get("portal", "type", required=False) or DEFAULT_PORTAL_TYPE).lower()
+        portal_type = PORTAL_TYPE_ALIASES.get(portal_type, portal_type)
         if portal_type not in PORTAL_TYPES:
             raise ConfigError(f"대상이 {'·'.join(PORTAL_TYPES)} 중 하나가 아님: {portal_type!r}")
 
@@ -120,12 +140,15 @@ class Settings:
             delay=delay,
             portal_type=portal_type,
         )
-        if portal_type == "s3backend":
-            settings.volume_name = get("s3backend", "volume_name", required=False) or DEFAULT_S3B_VOLUME_NAME
-            settings.volume_size = get("s3backend", "volume_size", required=False) or DEFAULT_S3B_VOLUME_SIZE
-            settings.user_size = get("s3backend", "user_size", required=False) or DEFAULT_S3B_USER_SIZE
-            settings.volume_password = get("s3backend", "volume_password")
-            settings.user_password = get("s3backend", "user_password")
+        if portal_type == "ifs":
+            # 예전 이름의 섹션만 있는 설정 파일은 그 섹션을 읽는다
+            section = IFS_SECTION_OLD if cp.has_section(IFS_SECTION_OLD) and not cp.has_section(IFS_SECTION) \
+                else IFS_SECTION
+            settings.volume_name = get(section, "volume_name", required=False) or DEFAULT_IFS_VOLUME_NAME
+            settings.volume_size = get(section, "volume_size", required=False) or DEFAULT_IFS_VOLUME_SIZE
+            settings.user_size = get(section, "user_size", required=False) or DEFAULT_IFS_USER_SIZE
+            settings.volume_password = get(section, "volume_password")
+            settings.user_password = get(section, "user_password")
         return settings
 
 
@@ -216,6 +239,11 @@ def make_s3_client(settings: Settings, access_key: str, secret_key: str):
             connect_timeout=S3_CONNECT_TIMEOUT_SEC,
             read_timeout=S3_READ_TIMEOUT_SEC,
             retries={"max_attempts": 1, "mode": "standard"},
+            max_pool_connections=S3_MAX_POOL_CONNECTIONS,
+            # 응답 체크섬 검증을 켜 두면 botocore 가 GetObject 응답 본문을 검증용 스트림으로 감싼다.
+            # 오류 응답에 체크섬 헤더가 붙어 오면 그 상태로 오류 본문을 읽다가 AttributeError·TypeError 로
+            # 끝나 실제 상태 코드를 알 수 없게 된다(2026-11-18 InfiniStor 228). 필요한 경우에만 검증한다.
+            response_checksum_validation="when_required",
         ),
     )
 

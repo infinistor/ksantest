@@ -4,7 +4,8 @@
     python3 run.py --mode user      # 사용자 단위(ALL)만
     python3 run.py --mode bucket    # 버킷 단위만
     python3 run.py --mode xff       # XFF 우회만
-    python3 run.py --target s3backend   # 설정 파일의 [portal] type 대신 이 대상으로 실행
+    python3 run.py --mode qos       # 버킷 QoS 만 (기본 실행에는 들어가지 않는다)
+    python3 run.py --target ifs     # 설정 파일의 [portal] type 대신 이 대상으로 실행
     python3 run.py --case IP05      # 지정 IP 케이스만 (여러 번 줄 수 있음)
     python3 run.py --list           # 감지한 클라이언트 IP 와 케이스 목록만 출력
 """
@@ -18,9 +19,11 @@ import sys
 from datetime import datetime
 
 from cases import MODES, USERS, Context, ScenarioResult, TestUser
-from common import (BUCKET_PREFIX, PORTAL_TYPES, USER_PREFIX, ConfigError, PortalError, Settings,
-                    build_ip_cases, detect_client_ip, logger, make_s3_client, wait_user_ready)
+from common import (BUCKET_PREFIX, PORTAL_TYPE_ALIASES, PORTAL_TYPES, USER_PREFIX, ConfigError, PortalError,
+                    Settings, build_ip_cases, detect_client_ip, logger, make_s3_client, wait_user_ready)
 from portal import BasePortal, make_portal
+from qos import MODE as QOS_MODE
+from qos import run_qos_mode
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CONFIG = os.path.join(BASE_DIR, "config.ini")
@@ -104,11 +107,12 @@ def cleanup(portal: BasePortal, created: dict) -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="KSAN S3 Access IP 테스트")
+    parser = argparse.ArgumentParser(description="S3 Access IP·버킷 QoS 테스트 (KSAN, InfiniStor)")
     parser.add_argument("--config", default=DEFAULT_CONFIG, help="설정 파일 (기본 config.ini)")
-    parser.add_argument("--target", choices=PORTAL_TYPES,
+    parser.add_argument("--target", choices=[*PORTAL_TYPES, *PORTAL_TYPE_ALIASES],
                         help="테스트 대상 (기본: 설정 파일의 [portal] type, 없으면 ksan)")
-    parser.add_argument("--mode", choices=["all", *MODES], default="all", help="실행할 단위 (기본 all)")
+    parser.add_argument("--mode", choices=["all", *MODES, QOS_MODE], default="all",
+                        help="실행할 단위. all 은 Access IP 세 단위(user·bucket·xff)이고 qos 는 따로 지정한다")
     parser.add_argument("--case", action="append", metavar="ID", help="실행할 IP 케이스 ID (예: IP05)")
     parser.add_argument("--list", action="store_true", help="클라이언트 IP 와 케이스 목록만 출력")
     args = parser.parse_args()
@@ -156,8 +160,11 @@ def main() -> int:
     aborted = False
     try:
         portal.check()
-        ctx = prepare(settings, portal, run_time, "bucket" in modes, created)
+        ctx = prepare(settings, portal, run_time, "bucket" in modes or QOS_MODE in modes, created)
         for mode in modes:
+            if mode == QOS_MODE:   # IP 케이스와 무관하게 한 번 돈다
+                results.extend(run_qos_mode(ctx))
+                continue
             for case in ip_cases:
                 logger.info("---- %s %s %s (%s, %s) ----", mode, case.case_id, case.ip, case.title,
                             "허용" if case.allowed else "차단")

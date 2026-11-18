@@ -20,7 +20,7 @@ USERS = ("main", "alt")
 class TestUser:
     key: str          # "main" / "alt"
     name: str
-    user_id: str      # 포털이 사용자를 가리키는 값 (KSAN: UUID, S3Backend: 이름)
+    user_id: str      # 포털이 사용자를 가리키는 값 (KSAN: UUID, InfiniStor: 이름)
     s3: object
 
 
