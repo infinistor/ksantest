@@ -1,4 +1,7 @@
-"""Access IP 테스트의 공용 부분: 설정, 포털·S3 클라이언트, 클라이언트 IP 감지, IP 케이스 생성."""
+"""Access IP 테스트의 공용 부분: 설정, S3 클라이언트, 클라이언트 IP 감지, IP 케이스 생성.
+
+포털 호출은 대상별로 달라 portal.py 에 있다.
+"""
 from __future__ import annotations
 
 import configparser
@@ -11,7 +14,6 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 import boto3
-import requests
 import urllib3
 from botocore.config import Config as BotoConfig
 
@@ -19,9 +21,6 @@ from botocore.config import Config as BotoConfig
 DEFAULT_DELAY_SEC = 1.0          # 정책 설정·해제 후 GW 반영 대기
 USER_PREFIX = "accessip"         # 사용자 이름: accessip-main-<시각>, accessip-alt-<시각>
 BUCKET_PREFIX = "accessip-test"  # 버킷 이름: accessip-test-<시각>-a ~ d
-EMAIL_DOMAIN = "pspace.co.kr"
-USER_DESCRIPTION = "ksantest AccessIpTest user"
-ACCESS_IP_DESCRIPTION = "ksantest AccessIpTest"
 BUCKET_ALL = "ALL"               # 사용자의 모든 버킷(=사용자 단위) 정책에 쓰는 예약 이름
 
 S3_REGION = "us-east-1"
@@ -41,8 +40,14 @@ NEAR_SPAN = 5                    # ".40-.50" 처럼 클라이언트 앞뒤로 �
 # XFF 우회 테스트에서 "허용 범위 밖" 으로 쓰는 주소(테스트 대역과 겹치지 않는 사설 IP)
 XFF_OUTSIDE_IP = "10.254.254.254"
 
-KSAN_USERS_API = "/api/v2/KsanUsers"
-ACCESS_IPS_API = "/api/v2/S3/AccessIps"
+# 테스트 대상. 포털 API 가 다르다 (portal.py)
+PORTAL_TYPES = ("ksan", "s3backend")
+DEFAULT_PORTAL_TYPE = "ksan"
+
+# S3Backend 전용 기본값 ([s3backend] 섹션에서 바꾼다). 비밀번호는 기본값이 없다.
+DEFAULT_S3B_VOLUME_NAME = "accessipvol"
+DEFAULT_S3B_VOLUME_SIZE = "100GB"
+DEFAULT_S3B_USER_SIZE = "50GB"
 
 logger = logging.getLogger("accessip")
 
@@ -66,9 +71,17 @@ class Settings:
     s3_url: str
     client_ip: str   # 비어 있으면 자동 감지
     delay: float
+    portal_type: str = DEFAULT_PORTAL_TYPE
+    # 아래는 portal_type 이 s3backend 일 때만 쓴다
+    volume_name: str = ""
+    volume_size: str = ""
+    volume_password: str = ""
+    user_password: str = ""
+    user_size: str = ""
 
     @classmethod
-    def load(cls, path: str) -> "Settings":
+    def load(cls, path: str, target: str | None = None) -> "Settings":
+        """target 을 주면 [portal] type 대신 그 값을 쓴다(--target)."""
         if not os.path.isfile(path):
             raise ConfigError(f"설정 파일이 없음: {path} (config.ini.example 을 복사해 채운다)")
         cp = configparser.ConfigParser()
@@ -95,13 +108,25 @@ class Settings:
         if delay < 0:
             raise ConfigError("[test] delay 는 0 이상이어야 함")
 
-        return cls(
+        portal_type = (target or get("portal", "type", required=False) or DEFAULT_PORTAL_TYPE).lower()
+        if portal_type not in PORTAL_TYPES:
+            raise ConfigError(f"대상이 {'·'.join(PORTAL_TYPES)} 중 하나가 아님: {portal_type!r}")
+
+        settings = cls(
             portal_url=get("portal", "url").rstrip("/"),
             api_key=get("portal", "api_key"),
             s3_url=get("s3", "url").rstrip("/"),
             client_ip=client_ip,
             delay=delay,
+            portal_type=portal_type,
         )
+        if portal_type == "s3backend":
+            settings.volume_name = get("s3backend", "volume_name", required=False) or DEFAULT_S3B_VOLUME_NAME
+            settings.volume_size = get("s3backend", "volume_size", required=False) or DEFAULT_S3B_VOLUME_SIZE
+            settings.user_size = get("s3backend", "user_size", required=False) or DEFAULT_S3B_USER_SIZE
+            settings.volume_password = get("s3backend", "volume_password")
+            settings.user_password = get("s3backend", "user_password")
+        return settings
 
 
 # ── 클라이언트 IP·케이스 ──────────────────────────────────────────────
@@ -174,57 +199,6 @@ def inside_ip(policy_ip: str) -> str:
         low, _, _ = policy_ip.partition("-")
         return low.strip()
     return policy_ip.strip()
-
-
-# ── 포털 ──────────────────────────────────────────────────────────────
-class PortalClient:
-    def __init__(self, settings: Settings):
-        self.base = settings.portal_url
-        self.session = requests.Session()
-        self.session.headers.update({"Authorization": settings.api_key, "Accept": "application/json"})
-        self.session.verify = VERIFY_TLS
-
-    def _call(self, method: str, path: str, *, params=None, body=None):
-        try:
-            r = self.session.request(method, self.base + path, params=params, json=body,
-                                     timeout=PORTAL_TIMEOUT_SEC)
-        except requests.RequestException as e:
-            raise PortalError(f"{method} {path} 요청 실패: {e}") from e
-        if r.status_code != 200:
-            raise PortalError(f"{method} {path} → HTTP {r.status_code}: {r.text.strip()[:300]}")
-        if not r.text.strip():
-            return None
-        try:
-            return r.json()
-        except ValueError as e:
-            raise PortalError(f"{method} {path} 응답이 JSON 이 아님: {r.text[:200]}") from e
-
-    def check(self) -> None:
-        data = self._call("GET", KSAN_USERS_API, params={"skip": 0, "countPerPage": 1})
-        if not isinstance(data, list):
-            raise PortalError(f"GET {KSAN_USERS_API} 응답이 목록이 아님")
-
-    def create_user(self, name: str) -> dict:
-        data = self._call("POST", KSAN_USERS_API, body={
-            "Name": name, "Email": f"{name}@{EMAIL_DOMAIN}", "Description": USER_DESCRIPTION})
-        if not isinstance(data, dict) or not data.get("Id") or not data.get("AccessKey"):
-            raise PortalError(f"사용자 생성({name}) 응답에 Id·AccessKey 가 없음: {data}")
-        return data
-
-    def delete_user(self, user_id: str) -> None:
-        self._call("DELETE", f"{KSAN_USERS_API}/{user_id}")
-
-    def set_access_ip(self, user_id: str, ip: str, bucket: str) -> None:
-        data = self._call("POST", ACCESS_IPS_API, body={
-            "UserId": user_id, "IpAddress": ip, "BucketName": bucket, "Description": ACCESS_IP_DESCRIPTION})
-        if not isinstance(data, dict) or not data.get("AddressId"):
-            raise PortalError(f"Access IP 등록({ip}, {bucket}) 응답에 AddressId 가 없음: {data}")
-
-    def clear_access_ips(self, user_id: str) -> None:
-        self._call("DELETE", ACCESS_IPS_API, params={"userId": user_id})
-
-    def list_access_ips(self, user_id: str) -> list:
-        return self._call("GET", ACCESS_IPS_API, params={"userId": user_id}) or []
 
 
 # ── S3 ────────────────────────────────────────────────────────────────

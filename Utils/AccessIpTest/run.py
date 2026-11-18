@@ -1,8 +1,10 @@
 """Access IP 테스트 실행 진입점.
 
-    python3 run.py                  # 사용자 단위 + 버킷 단위 전부
+    python3 run.py                  # 사용자 단위 + 버킷 단위 + XFF 우회 전부
     python3 run.py --mode user      # 사용자 단위(ALL)만
     python3 run.py --mode bucket    # 버킷 단위만
+    python3 run.py --mode xff       # XFF 우회만
+    python3 run.py --target s3backend   # 설정 파일의 [portal] type 대신 이 대상으로 실행
     python3 run.py --case IP05      # 지정 IP 케이스만 (여러 번 줄 수 있음)
     python3 run.py --list           # 감지한 클라이언트 IP 와 케이스 목록만 출력
 """
@@ -16,13 +18,14 @@ import sys
 from datetime import datetime
 
 from cases import MODES, USERS, Context, ScenarioResult, TestUser
-from common import (BUCKET_PREFIX, USER_PREFIX, ConfigError, PortalClient, PortalError, Settings,
+from common import (BUCKET_PREFIX, PORTAL_TYPES, USER_PREFIX, ConfigError, PortalError, Settings,
                     build_ip_cases, detect_client_ip, logger, make_s3_client, wait_user_ready)
+from portal import BasePortal, make_portal
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CONFIG = os.path.join(BASE_DIR, "config.ini")
-RESULTS_DIR = os.path.join(BASE_DIR, "results")
-SUMMARY_FILE = os.path.join(RESULTS_DIR, "summary.csv")
+RESULTS_DIR_NAME = "results"     # 설정 파일이 있는 폴더 아래에 만든다
+SUMMARY_FILE_NAME = "summary.csv"
 SUMMARY_HEADER = ["run_time", "client_ip", "mode", "case", "ip", "allowed", "scenario", "result", "message"]
 LOG_FORMAT = "%(asctime)s %(levelname)-7s %(message)s"
 
@@ -37,9 +40,9 @@ def setup_logging(log_path: str) -> None:
         logger.addHandler(handler)
 
 
-def append_summary(run_time: str, client_ip: str, results: list[ScenarioResult]) -> None:
-    new_file = not os.path.exists(SUMMARY_FILE)
-    with open(SUMMARY_FILE, "a", encoding="utf-8", newline="") as f:
+def append_summary(summary_file: str, run_time: str, client_ip: str, results: list[ScenarioResult]) -> None:
+    new_file = not os.path.exists(summary_file)
+    with open(summary_file, "a", encoding="utf-8", newline="") as f:
         w = csv.writer(f, lineterminator="\n")
         if new_file:
             w.writerow(SUMMARY_HEADER)
@@ -48,17 +51,18 @@ def append_summary(run_time: str, client_ip: str, results: list[ScenarioResult])
                         "; ".join(r.failures)])
 
 
-def prepare(settings: Settings, portal: PortalClient, run_time: str, need_buckets: bool,
+def prepare(settings: Settings, portal: BasePortal, run_time: str, need_buckets: bool,
             created: dict) -> Context:
     """사용자 둘(과 버킷 넷)을 만든다. 만든 것은 created 에 바로 기록해 실패해도 정리되게 한다."""
+    portal.prepare()
     users = {}
     for key in USERS:
         name = f"{USER_PREFIX}-{key}-{run_time}"
         info = portal.create_user(name)
-        created["users"].append((name, info["Id"]))
-        s3 = make_s3_client(settings, info["AccessKey"], info["SecretKey"])
-        users[key] = TestUser(key, name, info["Id"], s3)
-        logger.info("사용자 생성: %s (%s)", name, info["Id"])
+        created["users"].append((name, info.user_id))
+        s3 = make_s3_client(settings, info.access_key, info.secret_key)
+        users[key] = TestUser(key, name, info.user_id, s3)
+        logger.info("사용자 생성: %s (%s)", name, info.user_id)
     for user in users.values():
         wait_user_ready(user.s3, user.name)
 
@@ -73,7 +77,7 @@ def prepare(settings: Settings, portal: PortalClient, run_time: str, need_bucket
     return ctx
 
 
-def cleanup(portal: PortalClient, created: dict) -> bool:
+def cleanup(portal: BasePortal, created: dict) -> bool:
     """정책 → 버킷 → 사용자 순서로 정리한다. 하나가 실패해도 나머지는 계속한다."""
     ok = True
     for name, user_id in created["users"]:
@@ -102,13 +106,15 @@ def cleanup(portal: PortalClient, created: dict) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description="KSAN S3 Access IP 테스트")
     parser.add_argument("--config", default=DEFAULT_CONFIG, help="설정 파일 (기본 config.ini)")
+    parser.add_argument("--target", choices=PORTAL_TYPES,
+                        help="테스트 대상 (기본: 설정 파일의 [portal] type, 없으면 ksan)")
     parser.add_argument("--mode", choices=["all", *MODES], default="all", help="실행할 단위 (기본 all)")
     parser.add_argument("--case", action="append", metavar="ID", help="실행할 IP 케이스 ID (예: IP05)")
     parser.add_argument("--list", action="store_true", help="클라이언트 IP 와 케이스 목록만 출력")
     args = parser.parse_args()
 
     try:
-        settings = Settings.load(args.config)
+        settings = Settings.load(args.config, args.target)
         client_ip = settings.client_ip or detect_client_ip(settings.s3_url)
     except (ConfigError, OSError) as e:
         print(f"설정 오류: {e}", file=sys.stderr)
@@ -124,6 +130,7 @@ def main() -> int:
         ip_cases = [c for c in ip_cases if c.case_id in wanted]
 
     if args.list:
+        print(f"대상: {settings.portal_type}")
         print(f"클라이언트 IP: {client_ip}{' (설정값)' if settings.client_ip else ' (자동 감지)'}")
         for c in ip_cases:
             print(f"{c.case_id}  {c.ip:<32} {'허용' if c.allowed else '차단'}  {c.title}")
@@ -132,16 +139,18 @@ def main() -> int:
         return EXIT_OK
 
     modes = list(MODES) if args.mode == "all" else [args.mode]
-    os.makedirs(RESULTS_DIR, exist_ok=True)
+    # 결과는 설정 파일 옆에 둔다. 코드를 한곳에 두고 서버별 설정으로 돌려도 결과가 섞이지 않는다.
+    results_dir = os.path.join(os.path.dirname(os.path.abspath(args.config)), RESULTS_DIR_NAME)
+    os.makedirs(results_dir, exist_ok=True)
     run_time = datetime.now().strftime("%Y%m%d%H%M%S")
-    setup_logging(os.path.join(RESULTS_DIR, f"{run_time}.log"))
-    logger.info("실행 시작 %s: portal=%s s3=%s client_ip=%s 단위=%s 케이스 %d개 delay=%.1f초",
-                run_time, settings.portal_url, settings.s3_url, client_ip, ",".join(modes),
-                len(ip_cases), settings.delay)
+    setup_logging(os.path.join(results_dir, f"{run_time}.log"))
+    logger.info("실행 시작 %s: 대상=%s portal=%s s3=%s client_ip=%s 단위=%s 케이스 %d개 delay=%.1f초",
+                run_time, settings.portal_type, settings.portal_url, settings.s3_url, client_ip,
+                ",".join(modes), len(ip_cases), settings.delay)
     for s in skipped:
         logger.warning("건너뜀 %s", s)
 
-    portal = PortalClient(settings)
+    portal = make_portal(settings)
     created = {"users": [], "buckets": []}
     results: list[ScenarioResult] = []
     aborted = False
@@ -166,7 +175,7 @@ def main() -> int:
     finally:
         cleaned = cleanup(portal, created)
 
-    append_summary(run_time, client_ip, results)
+    append_summary(os.path.join(results_dir, SUMMARY_FILE_NAME), run_time, client_ip, results)
     failed = [r for r in results if r.result != "PASS"]
     logger.info("실행 종료: 시나리오 %d개 중 통과 %d, 실패 %d%s%s", len(results), len(results) - len(failed),
                 len(failed), ", 중단됨" if aborted else "", "" if cleaned else ", 정리 실패 있음")

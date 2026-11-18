@@ -1,10 +1,15 @@
 # S3 Access IP 테스트
 
 포털에서 Access IP(접근 허용 IP)를 설정했을 때 GW 가 기대대로 허용·차단하는지 확인한다.
-예전 Jenkins 테스트 두 개를 합친 것이다.
+KSAN 과 S3Backend 를 같은 시나리오로 검사한다. 대상마다 다른 것은 포털 API 뿐이다(`portal.py`).
 
-- `jenkins_test_code/java/s3_accessip_test_ksan` (Java, 버킷 단위)
-- `ksan/core/jenkins/access-test/access-ips-check.py` (Python, 사용자 단위)
+- KSAN: 사용자를 만들면 S3 키가 나온다.
+- S3Backend: 볼륨에 사용자를 마운트해야 S3 키가 나온다. 볼륨이 없으면 만들고, 꺼져 있으면 시작한다.
+
+예전에 여러 곳에 있던 Access IP 테스트를 합친 것이다(모두 삭제됨).
+
+- jenkins 저장소의 Java 테스트 `s3_accessip_test`, `s3_accessip_test_ksan`, `portal_test`
+- ksan 저장소의 `core/jenkins/access-test/access-ips-check.py` 와 jenkins 저장소의 S3Backend 용 같은 이름 스크립트
 
 ## GW 판정 규칙 (ksan `GWUtils.checkIPs`)
 
@@ -53,10 +58,9 @@ IP 케이스마다 ALL 정책을 걸고 세 번 확인하며, 기대값은 셋 �
 - `XFF=범위안`: 허용 범위 안 주소를 헤더에 넣음 → **무시돼야** 함 (차단 케이스에서 통과하면 우회)
 - `XFF=범위밖`: 허용 범위 밖 주소(`10.254.254.254`)를 헤더에 넣음 → **무시돼야** 함
 
-> 현재 `GWUtils.checkIPs` 는 XFF 의 주소까지 함께 검사해 하나라도 맞으면 통과시키고, XFF 가 있으면
-> 실제 원격주소를 배열에서 덮어쓴다. 그래서 차단 케이스는 `XFF=범위안` 에서 통과(우회)하고,
-> 허용 케이스는 `XFF=범위밖` 에서 차단되어 **지금은 10개 케이스가 모두 FAIL** 이다.
-> 신뢰 프록시 목록이 있을 때만 XFF 를 쓰도록 고치면 전부 PASS 가 된다. (core·ksan2-integration 동일)
+> ksan core 의 `GWUtils.checkIPs` 는 XFF 를 판정에 쓰지 않도록 고쳐졌다. 고치기 전 GW 는 XFF 의 주소까지
+> 함께 검사해서, 차단 케이스는 `XFF=범위안` 에서 통과(우회)하고 허용 케이스는 `XFF=범위밖` 에서 차단된다.
+> 그런 GW 에서는 10개 케이스가 모두 FAIL 로 나온다.
 
 모든 시나리오는 설정 전·해제 후에 전부 허용인지도 확인한다.
 사용자·버킷은 실행마다 새로 만들고(`accessip-main-<시각>`, `accessip-test-<시각>-a` …), 끝나면 성공·실패와 상관없이
@@ -77,11 +81,16 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 설정 항목은 `config.ini.example` 의 주석을 참고한다.
 
-- `[portal]` `url`, `api_key`
+- `[portal]` `url`, `api_key`, `type` (선택: `ksan` 또는 `s3backend`, 비우면 `ksan`)
 - `[s3]` `url`
 - `[test]` `client_ip`, `delay` (선택)
+- `[s3backend]` 대상이 `s3backend` 일 때만 읽는다
+  - `volume_password`, `user_password` (필수)
+  - `volume_name`, `volume_size`, `user_size` (선택, 비우면 `accessipvol`, `100GB`, `50GB`)
 
-버킷·사용자 접두사, 타임아웃 같은 나머지 값은 `common.py` 맨 위 상수에 있다.
+버킷·사용자 접두사, 타임아웃 같은 나머지 값은 `common.py` 와 `portal.py` 맨 위 상수에 있다.
+
+S3Backend 의 볼륨은 테스트가 끝나도 지우지 않는다. 사용자와 버킷만 지운다.
 
 ### NAT 뒤에서 실행할 때
 
@@ -99,7 +108,8 @@ python3 run.py --mode user      # 사용자 단위만
 python3 run.py --mode bucket    # 버킷 단위만
 python3 run.py --mode xff       # XFF 우회만
 python3 run.py --case IP05      # 지정 케이스만 (여러 번 줄 수 있음)
-python3 run.py --list           # 클라이언트 IP 와 케이스 목록만
+python3 run.py --list           # 대상, 클라이언트 IP, 케이스 목록만
+python3 run.py --target s3backend   # 설정 파일의 [portal] type 대신 이 대상으로 실행
 ```
 
 종료 코드: 모두 통과 0, 실패·중단·정리 실패 1, 설정 오류 2
@@ -108,7 +118,8 @@ python3 run.py --list           # 클라이언트 IP 와 케이스 목록만
 
 ## 주기 실행 (cron·Jenkins)
 
-`run.sh` 는 이전 실행이 끝나지 않았으면 그 회차를 건너뛴다(flock).
+`run.sh` 는 이전 실행이 끝나지 않았으면 그 회차를 건너뛴다(flock). 잠금이 머신에 하나뿐이라, 한 머신에서
+여러 서버를 같은 시각에 돌릴 때는 `run.sh` 대신 `python run.py --config <서버별 설정>` 을 직접 부른다.
 
 ```bash
 chmod +x run.sh
@@ -117,6 +128,9 @@ chmod +x run.sh
 ```
 
 ## 결과
+
+설정 파일이 있는 폴더의 `results/` 에 쌓인다. 코드는 한곳에 두고 `--config` 로 서버별 설정 파일을
+주면 결과도 서버별로 나뉜다.
 
 - `results/<yyyyMMddHHmmss>.log`: 판정마다 한 줄
   - 예: `[BUCKET IP03 bucket-A] 설정 후: main ListObjects A 허용=False (AccessDenied) 기대=False OK`

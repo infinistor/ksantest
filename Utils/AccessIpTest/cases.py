@@ -9,8 +9,9 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
-from common import (BUCKET_ALL, XFF_OUTSIDE_IP, IpCase, PortalClient, inside_ip, logger,
+from common import (BUCKET_ALL, XFF_OUTSIDE_IP, IpCase, inside_ip, logger,
                     probe_list_buckets, probe_list_buckets_with_xff, probe_list_objects)
+from portal import BasePortal
 
 USERS = ("main", "alt")
 
@@ -19,13 +20,13 @@ USERS = ("main", "alt")
 class TestUser:
     key: str          # "main" / "alt"
     name: str
-    user_id: str
+    user_id: str      # 포털이 사용자를 가리키는 값 (KSAN: UUID, S3Backend: 이름)
     s3: object
 
 
 @dataclass
 class Context:
-    portal: PortalClient
+    portal: BasePortal
     users: dict[str, TestUser]
     buckets: dict[str, str] = field(default_factory=dict)  # "A","B" → main, "C","D" → alt
     delay: float = 1.0
