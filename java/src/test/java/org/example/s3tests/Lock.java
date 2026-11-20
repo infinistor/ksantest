@@ -403,4 +403,265 @@ class Lock {
 		test.testObjectLockGetObjMetadata();
 		testV2.testObjectLockGetObjMetadata();
 	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] GOVERNANCE 보존 오브젝트를 COMPLIANCE(같은 기한)로 변경 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeGovernanceToCompliance() {
+		testV2.testObjectLockChangeModeGovernanceToCompliance();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] GOVERNANCE 보존 오브젝트를 COMPLIANCE(같은 기한)로 변경 시 bypass 포함 허용되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeGovernanceToComplianceBypass() {
+		testV2.testObjectLockChangeModeGovernanceToComplianceBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] GOVERNANCE 보존 오브젝트를 COMPLIANCE(기한 연장)로 변경 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeGovernanceToComplianceExtend() {
+		testV2.testObjectLockChangeModeGovernanceToComplianceExtend();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] GOVERNANCE 보존 오브젝트를 COMPLIANCE(기한 연장)로 변경 시 bypass 포함 허용되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeGovernanceToComplianceExtendBypass() {
+		testV2.testObjectLockChangeModeGovernanceToComplianceExtendBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] GOVERNANCE 보존 오브젝트를 COMPLIANCE(기한 단축)로 변경 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeGovernanceToComplianceShorten() {
+		testV2.testObjectLockChangeModeGovernanceToComplianceShorten();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] GOVERNANCE 보존 오브젝트를 COMPLIANCE(기한 단축)로 변경 시 bypass 포함 허용되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeGovernanceToComplianceShortenBypass() {
+		testV2.testObjectLockChangeModeGovernanceToComplianceShortenBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] GOVERNANCE 보존 오브젝트를 GOVERNANCE(기한 연장)로 변경 시 bypass 포함 허용되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockPutObjRetentionIncreasePeriodBypass() {
+		testV2.testObjectLockPutObjRetentionIncreasePeriodBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 GOVERNANCE(같은 기한)로 변경 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeComplianceToGovernance() {
+		testV2.testObjectLockChangeModeComplianceToGovernance();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 GOVERNANCE(같은 기한)로 변경 시 bypass 포함 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeComplianceToGovernanceBypass() {
+		testV2.testObjectLockChangeModeComplianceToGovernanceBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 GOVERNANCE(기한 연장)로 변경 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeComplianceToGovernanceExtend() {
+		testV2.testObjectLockChangeModeComplianceToGovernanceExtend();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 GOVERNANCE(기한 연장)로 변경 시 bypass 포함 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeComplianceToGovernanceExtendBypass() {
+		testV2.testObjectLockChangeModeComplianceToGovernanceExtendBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 GOVERNANCE(기한 단축)로 변경 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeComplianceToGovernanceShorten() {
+		testV2.testObjectLockChangeModeComplianceToGovernanceShorten();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 GOVERNANCE(기한 단축)로 변경 시 bypass 포함 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeComplianceToGovernanceShortenBypass() {
+		testV2.testObjectLockChangeModeComplianceToGovernanceShortenBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 COMPLIANCE(같은 기한)로 변경 시 bypass 없이 허용되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockComplianceSamePeriod() {
+		testV2.testObjectLockComplianceSamePeriod();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 COMPLIANCE(같은 기한)로 변경 시 bypass 포함 허용되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockComplianceSamePeriodBypass() {
+		testV2.testObjectLockComplianceSamePeriodBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 COMPLIANCE(기한 연장)로 변경 시 bypass 없이 허용되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockComplianceIncreasePeriod() {
+		testV2.testObjectLockComplianceIncreasePeriod();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 COMPLIANCE(기한 연장)로 변경 시 bypass 포함 허용되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockComplianceIncreasePeriodBypass() {
+		testV2.testObjectLockComplianceIncreasePeriodBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 COMPLIANCE(기한 단축)로 변경 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockComplianceShortenPeriod() {
+		testV2.testObjectLockComplianceShortenPeriod();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 오브젝트를 COMPLIANCE(기한 단축)로 변경 시 bypass 포함 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockComplianceShortenPeriodBypass() {
+		testV2.testObjectLockComplianceShortenPeriodBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] GOVERNANCE 보존을 빈 Retention 으로 제거 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockRemoveRetentionGovernance() {
+		testV2.testObjectLockRemoveRetentionGovernance();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] GOVERNANCE 보존을 빈 Retention 으로 제거 시 bypass 포함 허용되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockRemoveRetentionGovernanceBypass() {
+		testV2.testObjectLockRemoveRetentionGovernanceBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존을 빈 Retention 으로 제거 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockRemoveRetentionCompliance() {
+		testV2.testObjectLockRemoveRetentionCompliance();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존을 빈 Retention 으로 제거 시 bypass 포함 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockRemoveRetentionComplianceBypass() {
+		testV2.testObjectLockRemoveRetentionComplianceBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 버전을 bypass 없이 삭제 시 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockDeleteObjectCompliance() {
+		testV2.testObjectLockDeleteObjectCompliance();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 버전을 bypass 포함 삭제 시 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockDeleteObjectComplianceBypass() {
+		testV2.testObjectLockDeleteObjectComplianceBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 버전을 DeleteObjects 로 bypass 없이 삭제 시 키별로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockDeleteObjectsCompliance() {
+		testV2.testObjectLockDeleteObjectsCompliance();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] COMPLIANCE 보존 버전을 DeleteObjects 로 bypass 포함 삭제 시 키별로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockDeleteObjectsComplianceBypass() {
+		testV2.testObjectLockDeleteObjectsComplianceBypass();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] PutObject 헤더로 지정한 COMPLIANCE 를 GOVERNANCE 로 변경 시 bypass 없이 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeHeaderComplianceToGovernance() {
+		testV2.testObjectLockChangeModeHeaderComplianceToGovernance();
+	}
+
+	/**
+	 * [버킷의 Lock옵션을 활성화] PutObject 헤더로 지정한 COMPLIANCE 를 GOVERNANCE 로 변경 시 bypass 포함 거부되는지 확인
+	 */
+	@Test
+	@Tag("Mode")
+	void testObjectLockChangeModeHeaderComplianceToGovernanceBypass() {
+		testV2.testObjectLockChangeModeHeaderComplianceToGovernanceBypass();
+	}
 }

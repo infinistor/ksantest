@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -27,12 +29,14 @@ import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.ObjectLockConfiguration;
 import software.amazon.awssdk.services.s3.model.ObjectLockEnabled;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
+import software.amazon.awssdk.services.s3.model.ObjectLockMode;
 import software.amazon.awssdk.services.s3.model.ObjectLockRetention;
 import software.amazon.awssdk.services.s3.model.ObjectLockRetentionMode;
 
@@ -854,4 +858,383 @@ public class Lock extends TestBase {
 		client.deleteObject(
 				d -> d.bucket(bucketName).key(key).versionId(putResponse.versionId()).bypassGovernanceRetention(true));
 	}
+
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeGovernanceToCompliance() {
+		retentionChangeTest(37, "testObjectLockChangeModeGovernanceToCompliance", ObjectLockRetentionMode.GOVERNANCE, ObjectLockRetentionMode.COMPLIANCE, 0, false, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeGovernanceToComplianceBypass() {
+		retentionChangeTest(38, "testObjectLockChangeModeGovernanceToComplianceBypass", ObjectLockRetentionMode.GOVERNANCE, ObjectLockRetentionMode.COMPLIANCE, 0, true, true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeGovernanceToComplianceExtend() {
+		retentionChangeTest(39, "testObjectLockChangeModeGovernanceToComplianceExtend", ObjectLockRetentionMode.GOVERNANCE, ObjectLockRetentionMode.COMPLIANCE, RETENTION_DELTA_SECONDS, false, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeGovernanceToComplianceExtendBypass() {
+		retentionChangeTest(40, "testObjectLockChangeModeGovernanceToComplianceExtendBypass", ObjectLockRetentionMode.GOVERNANCE, ObjectLockRetentionMode.COMPLIANCE, RETENTION_DELTA_SECONDS, true, true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeGovernanceToComplianceShorten() {
+		retentionChangeTest(41, "testObjectLockChangeModeGovernanceToComplianceShorten", ObjectLockRetentionMode.GOVERNANCE, ObjectLockRetentionMode.COMPLIANCE, -RETENTION_DELTA_SECONDS, false, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeGovernanceToComplianceShortenBypass() {
+		retentionChangeTest(42, "testObjectLockChangeModeGovernanceToComplianceShortenBypass", ObjectLockRetentionMode.GOVERNANCE, ObjectLockRetentionMode.COMPLIANCE, -RETENTION_DELTA_SECONDS, true, true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockPutObjRetentionIncreasePeriodBypass() {
+		retentionChangeTest(43, "testObjectLockPutObjRetentionIncreasePeriodBypass", ObjectLockRetentionMode.GOVERNANCE, ObjectLockRetentionMode.GOVERNANCE, RETENTION_DELTA_SECONDS, true, true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeComplianceToGovernance() {
+		retentionChangeTest(44, "testObjectLockChangeModeComplianceToGovernance", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.GOVERNANCE, 0, false, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeComplianceToGovernanceBypass() {
+		retentionChangeTest(45, "testObjectLockChangeModeComplianceToGovernanceBypass", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.GOVERNANCE, 0, true, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeComplianceToGovernanceExtend() {
+		retentionChangeTest(46, "testObjectLockChangeModeComplianceToGovernanceExtend", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.GOVERNANCE, RETENTION_DELTA_SECONDS, false, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeComplianceToGovernanceExtendBypass() {
+		retentionChangeTest(47, "testObjectLockChangeModeComplianceToGovernanceExtendBypass", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.GOVERNANCE, RETENTION_DELTA_SECONDS, true, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeComplianceToGovernanceShorten() {
+		retentionChangeTest(48, "testObjectLockChangeModeComplianceToGovernanceShorten", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.GOVERNANCE, -RETENTION_DELTA_SECONDS, false, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeComplianceToGovernanceShortenBypass() {
+		retentionChangeTest(49, "testObjectLockChangeModeComplianceToGovernanceShortenBypass", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.GOVERNANCE, -RETENTION_DELTA_SECONDS, true, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockComplianceSamePeriod() {
+		retentionChangeTest(50, "testObjectLockComplianceSamePeriod", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.COMPLIANCE, 0, false, true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockComplianceSamePeriodBypass() {
+		retentionChangeTest(51, "testObjectLockComplianceSamePeriodBypass", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.COMPLIANCE, 0, true, true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockComplianceIncreasePeriod() {
+		retentionChangeTest(52, "testObjectLockComplianceIncreasePeriod", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.COMPLIANCE, RETENTION_DELTA_SECONDS, false, true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockComplianceIncreasePeriodBypass() {
+		retentionChangeTest(53, "testObjectLockComplianceIncreasePeriodBypass", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.COMPLIANCE, RETENTION_DELTA_SECONDS, true, true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockComplianceShortenPeriod() {
+		retentionChangeTest(54, "testObjectLockComplianceShortenPeriod", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.COMPLIANCE, -RETENTION_DELTA_SECONDS, false, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockComplianceShortenPeriodBypass() {
+		retentionChangeTest(55, "testObjectLockComplianceShortenPeriodBypass", ObjectLockRetentionMode.COMPLIANCE, ObjectLockRetentionMode.COMPLIANCE, -RETENTION_DELTA_SECONDS, true, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockRemoveRetentionGovernance() {
+		retentionRemoveTest(56, "testObjectLockRemoveRetentionGovernance", ObjectLockRetentionMode.GOVERNANCE, false, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockRemoveRetentionGovernanceBypass() {
+		retentionRemoveTest(57, "testObjectLockRemoveRetentionGovernanceBypass", ObjectLockRetentionMode.GOVERNANCE, true, true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockRemoveRetentionCompliance() {
+		retentionRemoveTest(58, "testObjectLockRemoveRetentionCompliance", ObjectLockRetentionMode.COMPLIANCE, false, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockRemoveRetentionComplianceBypass() {
+		retentionRemoveTest(59, "testObjectLockRemoveRetentionComplianceBypass", ObjectLockRetentionMode.COMPLIANCE, true, false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockDeleteObjectCompliance() {
+		complianceDeleteTest(60, "testObjectLockDeleteObjectCompliance", false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockDeleteObjectComplianceBypass() {
+		complianceDeleteTest(61, "testObjectLockDeleteObjectComplianceBypass", true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockDeleteObjectsCompliance() {
+		complianceDeleteObjectsTest(62, "testObjectLockDeleteObjectsCompliance", false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockDeleteObjectsComplianceBypass() {
+		complianceDeleteObjectsTest(63, "testObjectLockDeleteObjectsComplianceBypass", true);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeHeaderComplianceToGovernance() {
+		complianceHeaderToGovernanceTest(64, "testObjectLockChangeModeHeaderComplianceToGovernance", false);
+	}
+
+	@Test
+	@Tag("Mode")
+	public void testObjectLockChangeModeHeaderComplianceToGovernanceBypass() {
+		complianceHeaderToGovernanceTest(65, "testObjectLockChangeModeHeaderComplianceToGovernanceBypass", true);
+	}
+
+	// region 보존 모드/기한 변경 (AWS 실측 기준)
+
+	/** 보존 기간. COMPLIANCE 는 만료 전에는 지울 수 없으므로 짧게 잡는다. */
+	static final int RETENTION_SECONDS = 15;
+	/** 기한 연장/단축 폭. 단축해도 미래여야 한다. */
+	static final int RETENTION_DELTA_SECONDS = 5;
+
+	Instant retentionBase() {
+		return Instant.now().plusSeconds(RETENTION_SECONDS).truncatedTo(ChronoUnit.SECONDS);
+	}
+
+	ObjectLockRetention retentionOf(ObjectLockRetentionMode mode, Instant until) {
+		return ObjectLockRetention.builder().mode(mode).retainUntilDate(until).build();
+	}
+
+	/** false 일 때는 헤더 자체를 보내지 않는다. */
+	Boolean bypassHeader(boolean bypass) {
+		return bypass ? Boolean.TRUE : null;
+	}
+
+	void assertAccessDenied(AwsServiceException e) {
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+	}
+
+	/** COMPLIANCE 버전은 bypass 를 줘도 지워지면 안 된다(WORM). */
+	void assertComplianceProtected(S3Client client, String bucketName, String key, String versionId) {
+		var e = assertThrows(AwsServiceException.class, () -> client.deleteObject(
+				d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true)));
+		assertAccessDenied(e);
+	}
+
+	/**
+	 * 보존 설정 후 다른 모드/기한으로 PutObjectRetention 을 보낸다. 허용이면 바뀐 값, 거부면 403 과 원래 값을 확인한다.
+	 * 마지막 모드가 COMPLIANCE 면 bypass 삭제가 막히는지도 확인한다.
+	 */
+	void retentionChangeTest(int testId, String key, ObjectLockRetentionMode from, ObjectLockRetentionMode to,
+			int deltaSeconds, boolean bypass, boolean allowed) {
+		var client = getClient();
+		var bucketName = getNewBucketName(testId);
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).versionId();
+
+		var base = retentionBase();
+		var initial = retentionOf(from, base);
+		var changed = retentionOf(to, base.plusSeconds(deltaSeconds));
+		try {
+			client.putObjectRetention(p -> p.bucket(bucketName).key(key).versionId(versionId).retention(initial));
+
+			if (allowed) {
+				client.putObjectRetention(p -> p.bucket(bucketName).key(key).versionId(versionId).retention(changed)
+						.bypassGovernanceRetention(bypassHeader(bypass)));
+			} else {
+				var e = assertThrows(AwsServiceException.class,
+						() -> client.putObjectRetention(p -> p.bucket(bucketName).key(key).versionId(versionId)
+								.retention(changed).bypassGovernanceRetention(bypassHeader(bypass))));
+				assertAccessDenied(e);
+			}
+
+			var expected = allowed ? changed : initial;
+			var response = client.getObjectRetention(g -> g.bucket(bucketName).key(key).versionId(versionId));
+			retentionCompare(expected, response.retention());
+
+			if (expected.mode() == ObjectLockRetentionMode.COMPLIANCE)
+				assertComplianceProtected(client, bucketName, key, versionId);
+		} finally {
+			deleteAfterRetentionExpires(client, bucketName, key, versionId,
+					base.plusSeconds(Math.abs(deltaSeconds)));
+		}
+	}
+
+	/** 빈 Retention 으로 보존 제거를 시도한다. */
+	void retentionRemoveTest(int testId, String key, ObjectLockRetentionMode mode, boolean bypass, boolean allowed) {
+		var client = getClient();
+		var bucketName = getNewBucketName(testId);
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).versionId();
+
+		var base = retentionBase();
+		var initial = retentionOf(mode, base);
+		var empty = ObjectLockRetention.builder().build();
+		try {
+			client.putObjectRetention(p -> p.bucket(bucketName).key(key).versionId(versionId).retention(initial));
+
+			if (allowed) {
+				client.putObjectRetention(p -> p.bucket(bucketName).key(key).versionId(versionId).retention(empty)
+						.bypassGovernanceRetention(bypassHeader(bypass)));
+				var e = assertThrows(AwsServiceException.class,
+						() -> client.getObjectRetention(g -> g.bucket(bucketName).key(key).versionId(versionId)));
+				assertEquals(MainData.NO_SUCH_OBJECT_LOCK_CONFIGURATION, e.awsErrorDetails().errorCode());
+			} else {
+				var e = assertThrows(AwsServiceException.class,
+						() -> client.putObjectRetention(p -> p.bucket(bucketName).key(key).versionId(versionId)
+								.retention(empty).bypassGovernanceRetention(bypassHeader(bypass))));
+				assertAccessDenied(e);
+				var response = client.getObjectRetention(g -> g.bucket(bucketName).key(key).versionId(versionId));
+				retentionCompare(initial, response.retention());
+			}
+		} finally {
+			deleteAfterRetentionExpires(client, bucketName, key, versionId, base);
+		}
+	}
+
+	/** COMPLIANCE 버전을 DeleteObject 로 지우면 bypass 여부와 상관없이 거부된다. */
+	void complianceDeleteTest(int testId, String key, boolean bypass) {
+		var client = getClient();
+		var bucketName = getNewBucketName(testId);
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).versionId();
+
+		var base = retentionBase();
+		var retention = retentionOf(ObjectLockRetentionMode.COMPLIANCE, base);
+		try {
+			client.putObjectRetention(p -> p.bucket(bucketName).key(key).versionId(versionId).retention(retention));
+
+			var e = assertThrows(AwsServiceException.class, () -> client.deleteObject(
+					d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(bypassHeader(bypass))));
+			assertAccessDenied(e);
+
+			var response = client.getObjectRetention(g -> g.bucket(bucketName).key(key).versionId(versionId));
+			retentionCompare(retention, response.retention());
+		} finally {
+			deleteAfterRetentionExpires(client, bucketName, key, versionId, base);
+		}
+	}
+
+	/** COMPLIANCE 버전을 DeleteObjects 로 지우면 요청은 200 이고 키별로 AccessDenied 가 돌아온다. */
+	void complianceDeleteObjectsTest(int testId, String key, boolean bypass) {
+		var client = getClient();
+		var bucketName = getNewBucketName(testId);
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).versionId();
+
+		var base = retentionBase();
+		var retention = retentionOf(ObjectLockRetentionMode.COMPLIANCE, base);
+		try {
+			client.putObjectRetention(p -> p.bucket(bucketName).key(key).versionId(versionId).retention(retention));
+
+			var response = client.deleteObjects(d -> d.bucket(bucketName)
+					.delete(o -> o.objects(ObjectIdentifier.builder().key(key).versionId(versionId).build()))
+					.bypassGovernanceRetention(bypassHeader(bypass)));
+			assertEquals(0, response.deleted().size());
+			assertEquals(1, response.errors().size());
+			assertEquals(key, response.errors().get(0).key());
+			assertEquals(MainData.ACCESS_DENIED, response.errors().get(0).code());
+
+			var get = client.getObjectRetention(g -> g.bucket(bucketName).key(key).versionId(versionId));
+			retentionCompare(retention, get.retention());
+		} finally {
+			deleteAfterRetentionExpires(client, bucketName, key, versionId, base);
+		}
+	}
+
+	/** PutObject 헤더로 지정한 COMPLIANCE 도 PutObjectRetention 으로 건 것과 똑같이 GOVERNANCE 로 바꿀 수 없다. */
+	void complianceHeaderToGovernanceTest(int testId, String key, boolean bypass) {
+		var client = getClient();
+		var bucketName = getNewBucketName(testId);
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+
+		var base = retentionBase();
+		var compliance = retentionOf(ObjectLockRetentionMode.COMPLIANCE, base);
+		var governance = retentionOf(ObjectLockRetentionMode.GOVERNANCE, base);
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key).contentMD5(Utils.getMD5(key))
+				.objectLockMode(ObjectLockMode.COMPLIANCE).objectLockRetainUntilDate(base),
+				RequestBody.fromString(key)).versionId();
+		try {
+			var head = client.headObject(h -> h.bucket(bucketName).key(key).versionId(versionId));
+			assertEquals(ObjectLockMode.COMPLIANCE, head.objectLockMode());
+			assertEquals(base, head.objectLockRetainUntilDate());
+
+			var e = assertThrows(AwsServiceException.class,
+					() -> client.putObjectRetention(p -> p.bucket(bucketName).key(key).versionId(versionId)
+							.retention(governance).bypassGovernanceRetention(bypassHeader(bypass))));
+			assertAccessDenied(e);
+
+			var response = client.getObjectRetention(g -> g.bucket(bucketName).key(key).versionId(versionId));
+			retentionCompare(compliance, response.retention());
+			assertComplianceProtected(client, bucketName, key, versionId);
+		} finally {
+			deleteAfterRetentionExpires(client, bucketName, key, versionId, base);
+		}
+	}
+
+	/**
+	 * COMPLIANCE 로 잠긴 버전은 만료 전에는 삭제할 수 없어 버킷 정리가 실패한다. 만료될 때까지 재시도하며 삭제한다.
+	 * GOVERNANCE 는 bypass 로 바로 지워진다. 서버와 클라이언트의 시계 차이를 고려해 넉넉히 기다린다.
+	 */
+	void deleteAfterRetentionExpires(S3Client client, String bucketName, String key, String versionId,
+			Instant retainUntil) {
+		var deadline = retainUntil.plusSeconds(60);
+		while (true) {
+			try {
+				client.deleteObject(
+						d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
+				return;
+			} catch (AwsServiceException e) {
+				if (e.statusCode() != HttpStatus.SC_FORBIDDEN || Instant.now().isAfter(deadline))
+					throw e;
+				delay(1000);
+			}
+		}
+	}
+	// endregion
 }
