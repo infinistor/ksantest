@@ -1456,3 +1456,243 @@ func assertCopied(t *testing.T, client *s3.Client, bucket, key, want string, inp
 		t.Fatalf("body=%q want=%q err=%v", body, want, err)
 	}
 }
+
+// copySourceBucket은 10바이트(0123456789) 원본 오브젝트 source 를 하나 넣은 버킷을 만든다.
+func copySourceBucket(t *testing.T, s *suite, id int, options func(*s3.PutObjectInput)) string {
+	t.Helper()
+	bucket := s.bucket(t, id)
+	input := &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("source"), Body: strings.NewReader("0123456789")}
+	if options != nil {
+		options(input)
+	}
+	if _, err := s.client.PutObject(context.Background(), input); err != nil {
+		t.Fatal(err)
+	}
+	return bucket
+}
+
+// 알 수 없는 메타데이터·태그 지시자는 거부된다
+func TestCopyObjectInvalidDirective(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := copySourceBucket(t, s, 69, nil)
+	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", ""), MetadataDirective: types.MetadataDirective("INVALID")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	_, err = s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", ""), TaggingDirective: types.TaggingDirective("INVALID")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	_, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String("target")})
+	assertS3Status(t, err, 404)
+}
+
+// 원본에 키가 없으면 거부되고, 앞에 / 가 붙은 형식은 허용한다
+func TestCopyObjectInvalidSource(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := copySourceBucket(t, s, 70, nil)
+	for _, source := range []string{b, b + "/"} {
+		_, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: aws.String(source)})
+		assertS3Error(t, err, 400, "InvalidArgument")
+	}
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: aws.String("/" + b + "/source")})
+	assertCopied(t, s.client, b, "target", "0123456789", nil)
+}
+
+// 원본 버전 ID 가 잘못됐거나 없는 null 버전이면 거부된다
+func TestCopyObjectSourceInvalidVersionId(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := copySourceBucket(t, s, 71, nil)
+	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", "invalid")})
+	assertS3Error(t, err, 400, "InvalidRequest")
+	// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전으로 복사할 수 있다
+	out := copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", "null")})
+	if aws.ToString(out.CopySourceVersionId) != "null" {
+		t.Fatalf("CopySourceVersionId=%q", aws.ToString(out.CopySourceVersionId))
+	}
+
+	// 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+	enableVersioning(t, s, b)
+	put(t, s, b, "versioned", "content", nil)
+	_, err = s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target2"), CopySource: copySource(b, "versioned", "null")})
+	assertS3Error(t, err, 404, "NoSuchVersion")
+}
+
+// 응답으로 복사한 원본 버전과 새로 만든 버전을 알려준다
+func TestCopyObjectSourceVersionId(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 72), "TestCopyObjectSourceVersionId"
+	enableVersioning(t, s, b)
+	version1 := aws.ToString(put(t, s, b, key, "version1", nil).VersionId)
+	version2 := aws.ToString(put(t, s, b, key, "version2", nil).VersionId)
+
+	out := copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target1"), CopySource: copySource(b, key, version1)})
+	if aws.ToString(out.CopySourceVersionId) != version1 || aws.ToString(out.VersionId) == "" {
+		t.Fatalf("CopySourceVersionId=%q want=%q VersionId=%q", aws.ToString(out.CopySourceVersionId), version1, aws.ToString(out.VersionId))
+	}
+	assertCopied(t, s.client, b, "target1", "version1", nil)
+
+	out = copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target2"), CopySource: copySource(b, key, "")})
+	if aws.ToString(out.CopySourceVersionId) != version2 {
+		t.Fatalf("CopySourceVersionId=%q want=%q", aws.ToString(out.CopySourceVersionId), version2)
+	}
+	assertCopied(t, s.client, b, "target2", "version2", nil)
+}
+
+// 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
+func TestCopyObjectAttributesNotCopied(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := copySourceBucket(t, s, 73, func(input *s3.PutObjectInput) {
+		input.ContentType = aws.String("text/plain")
+		input.CacheControl = aws.String("no-cache")
+		input.Metadata = map[string]string{"key": "value"}
+		input.WebsiteRedirectLocation = aws.String("/other")
+		input.StorageClass = types.StorageClassStandardIa
+	})
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", "")})
+
+	head := headObject(t, s.client, b, "target")
+	if aws.ToString(head.ContentType) != "text/plain" || aws.ToString(head.CacheControl) != "no-cache" || len(head.Metadata) != 1 || head.Metadata["key"] != "value" {
+		t.Fatalf("ContentType=%q CacheControl=%q Metadata=%v", aws.ToString(head.ContentType), aws.ToString(head.CacheControl), head.Metadata)
+	}
+	if head.StorageClass != "" || head.WebsiteRedirectLocation != nil {
+		t.Fatalf("StorageClass=%q WebsiteRedirectLocation=%q", head.StorageClass, aws.ToString(head.WebsiteRedirectLocation))
+	}
+}
+
+// REPLACE 인데 아무것도 주지 않으면 원본의 메타데이터가 모두 빠진다
+func TestCopyObjectReplaceWithoutMetadata(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := copySourceBucket(t, s, 74, func(input *s3.PutObjectInput) {
+		input.ContentType = aws.String("text/plain")
+		input.CacheControl = aws.String("no-cache")
+		input.Metadata = map[string]string{"key": "value"}
+	})
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", ""), MetadataDirective: types.MetadataDirectiveReplace})
+
+	head := headObject(t, s.client, b, "target")
+	if aws.ToString(head.ContentType) != "binary/octet-stream" || len(head.Metadata) != 0 || head.CacheControl != nil {
+		t.Fatalf("ContentType=%q Metadata=%v CacheControl=%q", aws.ToString(head.ContentType), head.Metadata, aws.ToString(head.CacheControl))
+	}
+}
+
+// 복사하면서 스토리지 클래스를 지정할 수 있다
+func TestCopyObjectStorageClass(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := copySourceBucket(t, s, 75, nil)
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", ""), StorageClass: types.StorageClassStandardIa})
+	if head := headObject(t, s.client, b, "target"); head.StorageClass != types.StorageClassStandardIa {
+		t.Fatalf("StorageClass=%q", head.StorageClass)
+	}
+
+	_, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target2"), CopySource: copySource(b, "source", ""), StorageClass: types.StorageClass("INVALID")})
+	assertS3Error(t, err, 400, "InvalidStorageClass")
+}
+
+// 스토리지 클래스, 웹사이트 리다이렉트, 암호화 설정 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
+func TestCopyObjectToItselfWithChanges(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := copySourceBucket(t, s, 76, nil)
+	source := copySource(b, "source", "")
+
+	// 태그만 바꾸는 것은 변경으로 치지 않는다
+	_, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("source"), CopySource: source, TaggingDirective: types.TaggingDirectiveReplace, Tagging: aws.String("key=value")})
+	assertS3Error(t, err, 400, "InvalidRequest")
+
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("source"), CopySource: source, StorageClass: types.StorageClassStandardIa})
+	if head := headObject(t, s.client, b, "source"); head.StorageClass != types.StorageClassStandardIa {
+		t.Fatalf("StorageClass=%q", head.StorageClass)
+	}
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("source"), CopySource: source, WebsiteRedirectLocation: aws.String("/other")})
+	if head := headObject(t, s.client, b, "source"); aws.ToString(head.WebsiteRedirectLocation) != "/other" {
+		t.Fatalf("WebsiteRedirectLocation=%q", aws.ToString(head.WebsiteRedirectLocation))
+	}
+	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("source"), CopySource: source, ServerSideEncryption: types.ServerSideEncryptionAes256})
+}
+
+// 이전 버전을 지정하면 변경 없이도 자기 자신에게 복사되어 그 내용이 새 최신 버전이 된다
+func TestCopyObjectToItselfFromOldVersion(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 77), "TestCopyObjectToItselfFromOldVersion"
+	enableVersioning(t, s, b)
+	version1 := aws.ToString(put(t, s, b, key, "version1", nil).VersionId)
+	version2 := aws.ToString(put(t, s, b, key, "version2", nil).VersionId)
+
+	// 버저닝 버킷이어도 최신 버전을 그대로 자기 자신에게 복사할 수는 없다
+	_, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(key), CopySource: copySource(b, key, "")})
+	assertS3Error(t, err, 400, "InvalidRequest")
+
+	out := copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String(key), CopySource: copySource(b, key, version1)})
+	if created := aws.ToString(out.VersionId); created == "" || created == version1 || created == version2 {
+		t.Fatalf("VersionId=%q version1=%q version2=%q", created, version1, version2)
+	}
+	assertCopied(t, s.client, b, key, "version1", nil)
+	listed, err := s.client.ListObjectVersions(context.Background(), &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Versions) != 3 {
+		t.Fatalf("versions=%d", len(listed.Versions))
+	}
+}
+
+// REPLACE 로 주는 사용자 메타데이터도 2KB 를 넘을 수 없다
+func TestCopyObjectMetadataTooLarge(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := copySourceBucket(t, s, 78, nil)
+	_, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", ""), MetadataDirective: types.MetadataDirectiveReplace, Metadata: map[string]string{"key": strings.Repeat("v", 2100)}})
+	assertS3Error(t, err, 400, "MetadataTooLarge")
+}
+
+// 알 수 없는 canned ACL 은 거부된다
+func TestCopyObjectInvalidAcl(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := copySourceBucket(t, s, 79, nil)
+	_, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", ""), ACL: types.ObjectCannedACL("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 없는 버킷으로는 복사할 수 없다
+func TestCopyObjectTargetBucketNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := copySourceBucket(t, s, 80, nil)
+	_, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(s.bucketNameOnly(80)), Key: aws.String("target"), CopySource: copySource(b, "source", "")})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+
+// 원본은 읽을 수 있어도 대상 버킷에 쓸 권한이 없으면 거부된다
+func TestCopyObjectTargetAccessDenied(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	alt := altClientOrSkip(t, s)
+	b := copySourceBucket(t, s, 81, nil)
+	altBucket := s.bucketNameOnly(81)
+	if _, err := alt.CreateBucket(ctx, createBucketInput(s.cfg, altBucket)); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if !s.cfg.NotDelete {
+			_, _ = alt.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(altBucket), Key: aws.String("source")})
+			_, _ = alt.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: aws.String(altBucket)})
+		}
+	})
+	if _, err := alt.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(altBucket), Key: aws.String("source"), Body: strings.NewReader("content")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := alt.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(altBucket, "source", "")})
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String("target")})
+	assertS3Status(t, err, 404)
+}

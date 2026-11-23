@@ -246,4 +246,124 @@ class DeleteObjects {
 	void testDeleteObjectsIfMatchAndIfNoneMatchAny() {
 		testV2.testDeleteObjectsIfMatchAndIfNoneMatchAny();
 	}
+
+	/**
+	 * 없는 키를 삭제해도 성공하는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testDeleteObjectNotExist() {
+		test.testDeleteObjectNotExist();
+		testV2.testDeleteObjectNotExist();
+	}
+
+	/**
+	 * 없는 버킷에 삭제를 요청하면 404 NoSuchBucket인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testDeleteObjectBucketNotExist() {
+		test.testDeleteObjectBucketNotExist();
+		testV2.testDeleteObjectBucketNotExist();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 삭제가 거부되는지 확인(DeleteObjects는 키마다 AccessDenied)
+	 */
+	@Test
+	@Tag("Access")
+	void testDeleteObjectAccessDenied() {
+		test.testDeleteObjectAccessDenied();
+		testV2.testDeleteObjectAccessDenied();
+	}
+
+	/**
+	 * 버저닝을 쓰지 않는 버킷에서 null 버전 삭제가 성공하고 잘못된 버전 ID는 400인지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testDeleteObjectVersionIdUnversioned() {
+		test.testDeleteObjectVersionIdUnversioned();
+		testV2.testDeleteObjectVersionIdUnversioned();
+	}
+
+	/**
+	 * DeleteObjects로 없는 키를 지워도 삭제된 것으로 응답하는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testDeleteObjectsNotExist() {
+		test.testDeleteObjectsNotExist();
+		testV2.testDeleteObjectsNotExist();
+	}
+
+	/**
+	 * 삭제 목록이 빈 DeleteObjects가 400 MalformedXML로 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testDeleteObjectsEmpty() {
+		test.testDeleteObjectsEmpty();
+		testV2.testDeleteObjectsEmpty();
+	}
+
+	/**
+	 * DeleteObjects가 1000개까지 허용되고 1001개는 400 MalformedXML인지 확인
+	 */
+	@Test
+	@Tag("Max")
+	void testDeleteObjectsMaxKeys() {
+		test.testDeleteObjectsMaxKeys();
+		testV2.testDeleteObjectsMaxKeys();
+	}
+
+	/**
+	 * DeleteObjects에 같은 키를 두 번 넣어도 한 번만 응답하는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testDeleteObjectsDuplicateKeys() {
+		test.testDeleteObjectsDuplicateKeys();
+		testV2.testDeleteObjectsDuplicateKeys();
+	}
+
+	/**
+	 * DeleteObjects에 잘못된 버전 ID를 주면 키마다 NoSuchVersion을 돌려주는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testDeleteObjectsInvalidVersionId() {
+		test.testDeleteObjectsInvalidVersionId();
+		testV2.testDeleteObjectsInvalidVersionId();
+	}
+
+	/**
+	 * 버저닝 버킷에서 없는 키를 지워도 삭제 마커가 생기는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testDeleteObjectVersioningNotExist() {
+		test.testDeleteObjectVersioningNotExist();
+		testV2.testDeleteObjectVersioningNotExist();
+	}
+
+	/**
+	 * 버저닝 버킷에서 잘못된 버전 ID 삭제는 400이고 없는 null 버전 삭제는 성공하는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testDeleteObjectVersioningInvalidVersionId() {
+		test.testDeleteObjectVersioningInvalidVersionId();
+		testV2.testDeleteObjectVersioningInvalidVersionId();
+	}
+
+	/**
+	 * 삭제 마커를 지우면 이전 버전이 다시 보이는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testDeleteObjectRemoveDeleteMarker() {
+		test.testDeleteObjectRemoveDeleteMarker();
+		testV2.testDeleteObjectRemoveDeleteMarker();
+	}
 }

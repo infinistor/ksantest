@@ -924,5 +924,136 @@ namespace s3tests.Test
 			Assert.Equal(3, Response.S3Objects.Count);
 			Assert.Equal(["aaa", "bbb", "ccc"], GetKeys(Response));
 		}
+
+		private static readonly List<string> TreeKeys = ["a/1", "a/2", "b/1", "c", "d"];
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjects")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "max-keys가 음수이면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketListMaxKeysNegative()
+		{
+			TestId = 41;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.ListObjects(bucketName, rawMaxKeys: -1));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjects")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "encoding-type이 잘못되면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketListEncodingInvalid()
+		{
+			TestId = 42;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.ListObjects(bucketName, encodingTypeName: "invalid"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjects")]
+		[Trait(MainData.Minor, "Marker")]
+		[Trait(MainData.Explanation, "구분자가 있을 때만 NextMarker를 주고, 그 값으로 이어서 조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListNextMarker()
+		{
+			TestId = 43;
+			var bucketName = SetupObjects(TreeKeys);
+			var client = GetClient();
+
+			// 구분자가 없으면 잘려도 NextMarker 를 주지 않는다(마지막 키를 마커로 쓴다)
+			// .NET SDK는 응답에 NextMarker가 없으면 마지막 키로 채워 주므로 없음을 확인할 수 없다
+			var response = client.ListObjects(bucketName, maxKeys: 2);
+			Assert.Equal(["a/1", "a/2"], GetKeys(response));
+			Assert.True(response.IsTruncated);
+
+			// 구분자가 있으면 마지막으로 돌려준 항목을 NextMarker 로 준다
+			response = client.ListObjects(bucketName, maxKeys: 2, delimiter: "/");
+			Assert.Empty(GetKeys(response));
+			Assert.Equal(["a/", "b/"], response.CommonPrefixes);
+			Assert.True(response.IsTruncated);
+			Assert.Equal("b/", response.NextMarker);
+
+			response = client.ListObjects(bucketName, maxKeys: 2, delimiter: "/", marker: response.NextMarker);
+			Assert.Equal(["c", "d"], GetKeys(response));
+			Assert.Empty(response.CommonPrefixes ?? []);
+			Assert.False(response.IsTruncated);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjects")]
+		[Trait(MainData.Minor, "Marker")]
+		[Trait(MainData.Explanation, "마커가 공통 접두어 안의 키이면 그 접두어를 통째로 건너뛰는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListMarkerInCommonPrefix()
+		{
+			TestId = 44;
+			var bucketName = SetupObjects(TreeKeys);
+			var client = GetClient();
+
+			// 마커가 공통 접두어 안의 키이면 그 접두어는 통째로 건너뛴다
+			var response = client.ListObjects(bucketName, marker: "a/1", delimiter: "/");
+			Assert.Equal(["c", "d"], GetKeys(response));
+			Assert.Equal(["b/"], response.CommonPrefixes);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjects")]
+		[Trait(MainData.Minor, "Delimiter")]
+		[Trait(MainData.Explanation, "여러 글자 구분자가 동작하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListDelimiterMultiChar()
+		{
+			TestId = 45;
+			var bucketName = SetupObjects(TreeKeys);
+			var client = GetClient();
+
+			// 구분자는 여러 글자일 수 있다
+			var response = client.ListObjects(bucketName, delimiter: "/1");
+			Assert.Equal(["a/2", "c", "d"], GetKeys(response));
+			Assert.Equal(["a/1", "b/1"], response.CommonPrefixes);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjects")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자의 목록 조회가 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketListAltUser()
+		{
+			TestId = 46;
+			var bucketName = SetupObjects(TreeKeys);
+
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => GetAltClient().ListObjects(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjects")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "요청에 준 값을 응답 필드로 그대로 돌려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListResponseFields()
+		{
+			TestId = 47;
+			var bucketName = SetupObjects(TreeKeys);
+			var client = GetClient();
+
+			// 요청에 준 값을 응답에 그대로 돌려준다
+			var response = client.ListObjects(bucketName, prefix: "a/", marker: "a/0", maxKeys: 5, delimiter: "/");
+			Assert.Equal(bucketName, response.Name);
+			Assert.Equal("a/", response.Prefix);
+			Assert.Equal("a/0", response.Marker);
+			Assert.Equal(5, response.MaxKeys);
+			Assert.Equal("/", response.Delimiter);
+			Assert.False(response.IsTruncated);
+			Assert.Equal(["a/1", "a/2"], GetKeys(response));
+		}
 	}
 }

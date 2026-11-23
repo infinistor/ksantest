@@ -16,7 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import org.example.Data.FormFile;
 import org.apache.hc.core5.http.HttpStatus;
@@ -25,9 +27,12 @@ import org.example.Utility.NetUtils;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.BucketTaggingConfiguration;
+import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.DeleteObjectTaggingRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -331,5 +336,308 @@ public class Taggings extends TestBase {
 		var putObjectRequest = new PutObjectRequest(bucketName, key, createBody("00"), new ObjectMetadata());
 		putObjectRequest.setTagging(new ObjectTagging(new ArrayList<>()));
 		client.putObject(putObjectRequest);
+	}
+
+	private static com.amazonaws.services.s3.model.Tag tag(String key, String value) {
+		return new com.amazonaws.services.s3.model.Tag(key, value);
+	}
+
+	private static ObjectTagging tagging(com.amazonaws.services.s3.model.Tag... tags) {
+		return new ObjectTagging(List.of(tags));
+	}
+
+	private static BucketTaggingConfiguration bucketTagging(List<com.amazonaws.services.s3.model.Tag> tags) {
+		var tagSet = new TagSet();
+		for (var item : tags)
+			tagSet.setTag(item.getKey(), item.getValue());
+		return new BucketTaggingConfiguration().withTagSets(tagSet);
+	}
+
+	private static List<com.amazonaws.services.s3.model.Tag> toTags(BucketTaggingConfiguration config) {
+		var tags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
+		for (var item : config.getTagSet().getAllTags().entrySet())
+			tags.add(tag(item.getKey(), item.getValue()));
+		return tags;
+	}
+
+	private static void assertError(Executable executable, int statusCode, String errorCode) {
+		var e = assertThrows(AmazonServiceException.class, executable);
+		assertEquals(statusCode, e.getStatusCode());
+		assertEquals(errorCode, e.getErrorCode());
+	}
+
+	private static void assertObjectNotExist(AmazonS3 client, String bucketName, String key) {
+		var e = assertThrows(AmazonServiceException.class, () -> client.getObjectMetadata(bucketName, key));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+	}
+
+	private static PutObjectRequest putRequest(String bucketName, String key, ObjectTagging tagging) {
+		return new PutObjectRequest(bucketName, key, createBody(""), new ObjectMetadata()).withTagging(tagging);
+	}
+
+	@Test
+	@Tag("Max")
+	public void testBucketTaggingMax() {
+		var client = getClient();
+		var bucketName = createBucket(client, 16);
+
+		// 버킷 태그는 50개까지 넣을 수 있다
+		var tagSet = makeSimpleTagSet(50);
+		client.setBucketTaggingConfiguration(bucketName, bucketTagging(tagSet));
+		tagCompare(tagSet, toTags(client.getBucketTaggingConfiguration(bucketName)));
+
+		assertError(() -> client.setBucketTaggingConfiguration(bucketName, bucketTagging(makeSimpleTagSet(51))),
+				HttpStatus.SC_BAD_REQUEST, MainData.BAD_REQUEST);
+		assertEquals(50, toTags(client.getBucketTaggingConfiguration(bucketName)).size());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketTaggingInvalidTag() {
+		var client = getClient();
+		var bucketName = createBucket(client, 18);
+		var invalidTags = List.of(
+				tag("aws:key", "value"), // aws: 접두어는 시스템 태그 전용
+				tag("k".repeat(129), "value"), // 키 128자 초과
+				tag("key", "v".repeat(257)), // 값 256자 초과
+				tag("key?<>", "value")); // 허용하지 않는 문자
+
+		for (var invalidTag : invalidTags) {
+			assertError(() -> client.setBucketTaggingConfiguration(bucketName, bucketTagging(List.of(invalidTag))),
+					HttpStatus.SC_BAD_REQUEST, MainData.INVALID_TAG);
+		}
+		// SDK v1 은 NoSuchTagSet(404) 을 null 로 돌려준다
+		assertNull(client.getBucketTaggingConfiguration(bucketName));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testBucketTaggingEmptyValue() {
+		var client = getClient();
+		var bucketName = createBucket(client, 19);
+		var tags = List.of(tag("key", ""));
+
+		client.setBucketTaggingConfiguration(bucketName, bucketTagging(tags));
+		tagCompare(tags, toTags(client.getBucketTaggingConfiguration(bucketName)));
+	}
+
+	@Test
+	@Tag("Delete")
+	public void testBucketTaggingEmptySet() {
+		var client = getClient();
+		var bucketName = createBucket(client, 20);
+		client.setBucketTaggingConfiguration(bucketName, bucketTagging(List.of(tag("key", "value"))));
+
+		// 빈 태그 목록을 넣으면 태그가 지워진다
+		client.setBucketTaggingConfiguration(bucketName, bucketTagging(List.of()));
+		assertNull(client.getBucketTaggingConfiguration(bucketName));
+
+		// 태그가 없어도 삭제는 성공한다
+		client.deleteBucketTaggingConfiguration(bucketName);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketTaggingBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(21);
+
+		// SDK v1 의 조회는 404 를 null 로 바꾸므로 설정·삭제만 확인한다
+		assertError(() -> client.setBucketTaggingConfiguration(bucketName,
+				bucketTagging(List.of(tag("key", "value")))), HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET);
+		assertError(() -> client.deleteBucketTaggingConfiguration(bucketName), HttpStatus.SC_NOT_FOUND,
+				MainData.NO_SUCH_BUCKET);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjTaggingDuplicateKey() {
+		var key = "testObjTaggingDuplicateKey";
+		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, 22, key, 10);
+
+		assertError(() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key,
+				tagging(tag("key", "value1"), tag("key", "value2")))),
+				HttpStatus.SC_BAD_REQUEST, MainData.INVALID_TAG);
+		assertEquals(0, client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)).getTagSet().size());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjTaggingInvalidTag() {
+		var key = "testObjTaggingInvalidTag";
+		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, 23, key, 10);
+		var invalidTags = List.of(
+				tag("aws:key", "value"), // aws: 접두어는 시스템 태그 전용
+				tag("key?<>", "value")); // 허용하지 않는 문자
+
+		for (var invalidTag : invalidTags) {
+			assertError(() -> client.setObjectTagging(
+					new SetObjectTaggingRequest(bucketName, key, tagging(invalidTag))),
+					HttpStatus.SC_BAD_REQUEST, MainData.INVALID_TAG);
+		}
+		assertEquals(0, client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)).getTagSet().size());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testObjTaggingSpecialCharacters() {
+		var key = "testObjTaggingSpecialCharacters";
+		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, 24, key, 10);
+
+		// 허용 문자(영숫자, 공백, + - = . _ : / @)와 빈 값은 그대로 저장된다
+		var tagging = tagging(tag("a+b-=._:/@ c", "v+-=._:/@ d"), tag("empty", ""));
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, tagging));
+		tagCompare(tagging.getTagSet(),
+				client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)).getTagSet());
+	}
+
+	@Test
+	@Tag("Delete")
+	public void testObjTaggingEmptySet() {
+		var key = "testObjTaggingEmptySet";
+		var client = getClient();
+		var bucketName = createKeyWithRandomContent(client, 25, key, 10);
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, tagging(tag("key", "value"))));
+
+		// 빈 태그 목록을 넣으면 태그가 지워진다
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, tagging()));
+		assertEquals(0, client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)).getTagSet().size());
+
+		// 태그가 없어도 삭제는 성공한다
+		client.deleteObjectTagging(new DeleteObjectTaggingRequest(bucketName, key));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjTaggingKeyNotExist() {
+		var key = "testObjTaggingKeyNotExist";
+		var client = getClient();
+		var bucketName = createBucket(client, 26);
+
+		assertError(() -> client.setObjectTagging(
+				new SetObjectTaggingRequest(bucketName, key, tagging(tag("key", "value")))),
+				HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY);
+		assertError(() -> client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)),
+				HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY);
+		assertError(() -> client.deleteObjectTagging(new DeleteObjectTaggingRequest(bucketName, key)),
+				HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY);
+	}
+
+	@Test
+	@Tag("Overflow")
+	public void testPutObjWithExcessTags() {
+		var key = "testPutObjWithExcessTags";
+		var client = getClient();
+		var bucketName = createBucket(client, 27);
+
+		var tags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
+		for (int i = 0; i < 11; i++)
+			tags.add(tag("key" + i, "value" + i));
+
+		assertError(() -> client.putObject(putRequest(bucketName, key, new ObjectTagging(tags))),
+				HttpStatus.SC_BAD_REQUEST, MainData.BAD_REQUEST);
+		assertObjectNotExist(client, bucketName, key);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testPutObjWithInvalidTags() {
+		var key = "testPutObjWithInvalidTags";
+		var client = getClient();
+		var bucketName = createBucket(client, 28);
+
+		// 헤더로 준 태그의 키가 중복되면 InvalidArgument
+		assertError(() -> client.putObject(
+				putRequest(bucketName, key, tagging(tag("key", "value1"), tag("key", "value2")))),
+				HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT);
+		var invalidTags = List.of(tag("aws:key", "value"), tag("key?", "value"), tag("k".repeat(129), "value"));
+		for (var invalidTag : invalidTags) {
+			assertError(() -> client.putObject(putRequest(bucketName, key, tagging(invalidTag))),
+					HttpStatus.SC_BAD_REQUEST, MainData.INVALID_TAG);
+		}
+		assertObjectNotExist(client, bucketName, key);
+	}
+
+	@Test
+	@Tag("Version")
+	public void testObjTaggingVersion() {
+		var key = "testObjTaggingVersion";
+		var client = getClient();
+		var bucketName = createBucket(client, 29);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var version1 = client.putObject(bucketName, key, "1").getVersionId();
+		var version2 = client.putObject(bucketName, key, "2").getVersionId();
+		var tagging = tagging(tag("version", "1"));
+
+		// 버전을 지정하면 그 버전의 태그만 바뀐다
+		var putResponse = client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, version1, tagging));
+		assertEquals(version1, putResponse.getVersionId());
+
+		var getResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key, version1));
+		assertEquals(version1, getResponse.getVersionId());
+		tagCompare(tagging.getTagSet(), getResponse.getTagSet());
+
+		// 버전을 지정하지 않으면 최신 버전이 대상이다
+		getResponse = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key));
+		assertEquals(version2, getResponse.getVersionId());
+		assertEquals(0, getResponse.getTagSet().size());
+
+		var deleteResponse = client
+				.deleteObjectTagging(new DeleteObjectTaggingRequest(bucketName, key).withVersionId(version1));
+		assertEquals(version1, deleteResponse.getVersionId());
+		assertEquals(0, client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key, version1)).getTagSet()
+				.size());
+	}
+
+	@Test
+	@Tag("Version")
+	public void testObjTaggingInvalidVersion() {
+		var key = "testObjTaggingInvalidVersion";
+		var client = getClient();
+		var bucketName = createBucket(client, 30);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		client.putObject(bucketName, key, "1");
+
+		assertError(() -> client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key, "invalid")),
+				HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT);
+		assertError(() -> client.setObjectTagging(
+				new SetObjectTaggingRequest(bucketName, key, "invalid", tagging(tag("key", "value")))),
+				HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT);
+		assertError(() -> client.deleteObjectTagging(
+				new DeleteObjectTaggingRequest(bucketName, key).withVersionId("invalid")),
+				HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT);
+	}
+
+	@Test
+	@Tag("Version")
+	public void testObjTaggingDeleteMarker() {
+		var key = "testObjTaggingDeleteMarker";
+		var client = getClient();
+		var bucketName = createBucket(client, 31);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var versionId = client.putObject(bucketName, key, "1").getVersionId();
+		client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, tagging(tag("key", "value"))));
+		client.deleteObject(bucketName, key);
+		var deleteMarker = client.listVersions(bucketName, key).getVersionSummaries().stream()
+				.filter(v -> v.isDeleteMarker()).findFirst().orElseThrow().getVersionId();
+		var tagging = tagging(tag("key", "value2"));
+
+		// 최신 버전이 삭제 마커이면 버전을 지정하든 않든 태그 요청은 405 (versionId 가 null 이면 지정하지 않은 요청)
+		for (var target : Arrays.asList(null, deleteMarker)) {
+			assertError(() -> client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key, target)),
+					HttpStatus.SC_METHOD_NOT_ALLOWED, MainData.METHOD_NOT_ALLOWED);
+			assertError(() -> client.setObjectTagging(new SetObjectTaggingRequest(bucketName, key, target, tagging)),
+					HttpStatus.SC_METHOD_NOT_ALLOWED, MainData.METHOD_NOT_ALLOWED);
+			assertError(() -> client.deleteObjectTagging(
+					new DeleteObjectTaggingRequest(bucketName, key).withVersionId(target)),
+					HttpStatus.SC_METHOD_NOT_ALLOWED, MainData.METHOD_NOT_ALLOWED);
+		}
+
+		// 삭제 마커 아래의 실제 버전은 버전을 지정하면 그대로 조회된다
+		var response = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, key, versionId));
+		tagCompare(List.of(tag("key", "value")), response.getTagSet());
 	}
 }

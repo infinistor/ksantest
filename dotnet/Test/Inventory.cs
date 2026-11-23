@@ -372,5 +372,229 @@ namespace s3tests.Test
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.MALFORMED_XML, GetErrorCode(e));
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Max")]
+		[Trait(MainData.Explanation, "인벤토리 ID 는 64자까지만 허용하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutBucketInventoryIdLength()
+		{
+			TestId = 18;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			// ID 는 64자까지 허용한다
+			var inventoryId = new string('a', 64);
+			client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName));
+			var response = client.GetBucketInventoryConfiguration(bucketName, inventoryId);
+			Assert.Equal(inventoryId, response.InventoryConfiguration.InventoryId);
+
+			var tooLong = new string('a', 65);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(tooLong, targetBucketName)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "인벤토리 ID 에 허용하지 않는 문자가 있으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutBucketInventoryInvalidId()
+		{
+			TestId = 19;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			// ID 에는 영숫자와 - _ . 만 쓸 수 있다
+			var inventoryId = "a b/c";
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "쿼리의 id 와 본문의 Id 가 다르면 인벤토리 설정이 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutBucketInventoryIdMismatch()
+		{
+			TestId = 20;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			// 쿼리의 id 와 본문의 Id 가 다르면 거부된다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.ID_MISMATCH,
+				() => client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig("other-inventory", targetBucketName), id: "my-inventory"));
+			Assert.Empty(client.ListBucketInventoryConfigurations(bucketName).InventoryConfigurationList ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "비활성(IsEnabled=false) 인벤토리 설정이 그대로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutBucketInventoryDisabled()
+		{
+			TestId = 21;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
+			var config = GetInventoryConfig(inventoryId, targetBucketName);
+			config.IsEnabled = false;
+			client.PutBucketInventoryConfiguration(bucketName, config);
+			var response = client.GetBucketInventoryConfiguration(bucketName, inventoryId);
+			Assert.False(response.InventoryConfiguration.IsEnabled);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "대상 버전(IncludedObjectVersions)이 잘못된 인벤토리 설정은 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutBucketInventoryInvalidVersions()
+		{
+			TestId = 22;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName, includedVersions: "Invalid")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "인벤토리의 형식·주기·대상 버전이 그대로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutBucketInventoryFormats()
+		{
+			TestId = 23;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			// 형식(CSV/ORC/Parquet), 주기(Daily/Weekly), 대상 버전(All/Current)이 그대로 저장된다
+			var cases = new List<(string Id, InventoryFormat Format, InventoryFrequency Frequency, InventoryIncludedObjectVersions Versions)>()
+			{
+				("inventory-csv", InventoryFormat.CSV, InventoryFrequency.Daily, InventoryIncludedObjectVersions.All),
+				("inventory-orc", InventoryFormat.ORC, InventoryFrequency.Weekly, InventoryIncludedObjectVersions.Current),
+				("inventory-parquet", InventoryFormat.Parquet, InventoryFrequency.Weekly, InventoryIncludedObjectVersions.All),
+			};
+			foreach (var item in cases)
+				client.PutBucketInventoryConfiguration(bucketName,
+					GetInventoryConfig(item.Id, targetBucketName, format: item.Format, includedVersions: item.Versions, frequency: item.Frequency));
+			foreach (var item in cases)
+			{
+				var config = client.GetBucketInventoryConfiguration(bucketName, item.Id).InventoryConfiguration;
+				Assert.Equal(item.Format, config.Destination.S3BucketDestination.InventoryFormat);
+				Assert.Equal(item.Frequency, config.Schedule.Frequency);
+				Assert.Equal(item.Versions, config.IncludedObjectVersions);
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "인벤토리 대상의 접두어와 SSE-S3 암호화 설정이 그대로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutBucketInventoryDestination()
+		{
+			TestId = 24;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
+			// 대상의 접두어와 SSE-S3 암호화 설정이 그대로 저장된다
+			var config = GetInventoryConfig(inventoryId, targetBucketName, prefix: "inventory/");
+			config.Destination.S3BucketDestination.InventoryEncryption = new InventoryEncryption { SSES3 = new SSES3() };
+			client.PutBucketInventoryConfiguration(bucketName, config);
+
+			var destination = client.GetBucketInventoryConfiguration(bucketName, inventoryId).InventoryConfiguration.Destination.S3BucketDestination;
+			Assert.Equal($"arn:aws:s3:::{targetBucketName}", destination.BucketName);
+			Assert.Equal("inventory/", destination.Prefix);
+			Assert.NotNull(destination.InventoryEncryption?.SSES3);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "인벤토리 대상 버킷이 ARN 형식이 아니면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutBucketInventoryInvalidDestinationArn()
+		{
+			TestId = 25;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var inventoryId = "my-inventory";
+			// 대상 버킷은 ARN 형식이어야 한다
+			var config = GetInventoryConfig(inventoryId, targetBucketName);
+			config.Destination.S3BucketDestination.BucketName = targetBucketName;
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_S3_DESTINATION_BUCKET,
+				() => client.PutBucketInventoryConfiguration(bucketName, config));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "인벤토리 설정 목록이 100개씩 나뉘어 조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListBucketInventoryPagination()
+		{
+			TestId = 26;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var targetBucketName = GetNewBucket(client);
+			var ids = new List<string>();
+			for (int i = 0; i < 101; i++) ids.Add($"inventory-{i:D3}");
+			foreach (var inventoryId in ids)
+				client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName));
+
+			// 한 번에 100개까지만 돌려주고 나머지는 토큰으로 이어서 받는다
+			var response = client.ListBucketInventoryConfigurations(bucketName);
+			Assert.Equal(100, response.InventoryConfigurationList.Count);
+			Assert.True(response.IsTruncated);
+			var listed = new List<string>();
+			foreach (var config in response.InventoryConfigurationList) listed.Add(config.InventoryId);
+
+			response = client.ListBucketInventoryConfigurations(bucketName, continuationToken: response.NextToken);
+			Assert.Single(response.InventoryConfigurationList);
+			Assert.False(response.IsTruncated);
+			foreach (var config in response.InventoryConfigurationList) listed.Add(config.InventoryId);
+			listed.Sort(StringComparer.Ordinal);
+			Assert.Equal(ids, listed);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "잘못된 토큰으로 인벤토리 설정 목록을 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestListBucketInventoryInvalidToken()
+		{
+			TestId = 27;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_CONTINUATION_TOKEN,
+				() => client.ListBucketInventoryConfigurations(bucketName, continuationToken: "invalid"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Inventory")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "없는 버킷에 인벤토리 목록/조회/삭제를 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketInventoryBucketNotExist()
+		{
+			TestId = 28;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.ListBucketInventoryConfigurations(bucketName));
+			// SDK v4 는 단건 조회의 404 를 예외로 던지지 않고 상태 코드만 채운 응답을 돌려준다
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketInventoryConfiguration(bucketName, "my-inventory"), MainData.NO_SUCH_BUCKET);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.DeleteBucketInventoryConfiguration(bucketName, "my-inventory"));
+		}
 	}
 }

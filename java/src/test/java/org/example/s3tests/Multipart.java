@@ -505,4 +505,184 @@ class Multipart {
 	void testCompleteMultipartUploadIfMatchAndIfNoneMatchAny() {
 		testV2.testCompleteMultipartUploadIfMatchAndIfNoneMatchAny();
 	}
+
+	/**
+	 * 파트 번호가 1~10000을 벗어나면 400 InvalidArgument인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testUploadPartInvalidPartNumber() {
+		test.testUploadPartInvalidPartNumber();
+		testV2.testUploadPartInvalidPartNumber();
+	}
+
+	/**
+	 * 없는 업로드 ID나 다른 키의 업로드 ID로 파트를 올리면 404 NoSuchUpload인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testUploadPartNoSuchUpload() {
+		test.testUploadPartNoSuchUpload();
+		testV2.testUploadPartNoSuchUpload();
+	}
+
+	/**
+	 * 본문과 다른 Content-MD5로 파트를 올리면 400 BadDigest인지 확인
+	 */
+	@Test
+	@Tag("ContentMD5")
+	void testUploadPartContentMd5Mismatch() {
+		test.testUploadPartContentMd5Mismatch();
+		testV2.testUploadPartContentMd5Mismatch();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 멀티파트 요청이 모두 403 AccessDenied로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testMultipartAccessDenied() {
+		test.testMultipartAccessDenied();
+		testV2.testMultipartAccessDenied();
+	}
+
+	/**
+	 * 없는 버킷에 멀티파트 요청을 하면 404 NoSuchBucket인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testMultipartBucketNotExist() {
+		test.testMultipartBucketNotExist();
+		testV2.testMultipartBucketNotExist();
+	}
+
+	/**
+	 * 잘못된 스토리지 클래스로 멀티파트 업로드를 시작하면 400 InvalidStorageClass인지 확인
+	 * SDK V1은 멀티파트 업로드의 스토리지 클래스를 열거형으로 변환하므로 잘못된 값을 보낼 수 없어 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("StorageClass")
+	void testMultipartInvalidStorageClass() {
+		testV2.testMultipartInvalidStorageClass();
+	}
+
+	/**
+	 * ListParts의 max-parts와 part-number-marker 동작을 확인
+	 */
+	@Test
+	@Tag("List")
+	void testListPartsMaxParts() {
+		test.testListPartsMaxParts();
+		testV2.testListPartsMaxParts();
+	}
+
+	/**
+	 * 파트 번호가 오름차순이 아니거나 중복되면 400 InvalidPartOrder인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testCompleteMultipartUploadInvalidPartOrder() {
+		test.testCompleteMultipartUploadInvalidPartOrder();
+		testV2.testCompleteMultipartUploadInvalidPartOrder();
+	}
+
+	/**
+	 * 파트 목록 없이 완료하면 400 MalformedXML인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testCompleteMultipartUploadNoParts() {
+		test.testCompleteMultipartUploadNoParts();
+		testV2.testCompleteMultipartUploadNoParts();
+	}
+
+	/**
+	 * 올린 파트 중 일부만 골라 완료할 수 있는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testCompleteMultipartUploadSkipPart() {
+		test.testCompleteMultipartUploadSkipPart();
+		testV2.testCompleteMultipartUploadSkipPart();
+	}
+
+	/**
+	 * 완료한 업로드를 다시 완료해도 같은 결과로 성공하는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testCompleteMultipartUploadTwice() {
+		test.testCompleteMultipartUploadTwice();
+		testV2.testCompleteMultipartUploadTwice();
+	}
+
+	/**
+	 * 중단한 업로드를 다시 중단해도 성공하는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testAbortMultipartUploadTwice() {
+		test.testAbortMultipartUploadTwice();
+		testV2.testAbortMultipartUploadTwice();
+	}
+
+	/**
+	 * ListMultipartUploads의 prefix와 delimiter 동작을 확인
+	 */
+	@Test
+	@Tag("List")
+	void testListMultipartUploadsPrefixDelimiter() {
+		test.testListMultipartUploadsPrefixDelimiter();
+		testV2.testListMultipartUploadsPrefixDelimiter();
+	}
+
+	/**
+	 * ListMultipartUploads의 key-marker와 upload-id-marker 페이지 처리를 확인
+	 */
+	@Test
+	@Tag("List")
+	void testListMultipartUploadsPagination() {
+		test.testListMultipartUploadsPagination();
+		testV2.testListMultipartUploadsPagination();
+	}
+
+	/**
+	 * ListMultipartUploads의 max-uploads 경계값 동작을 확인
+	 */
+	@Test
+	@Tag("List")
+	void testListMultipartUploadsMaxUploads() {
+		test.testListMultipartUploadsMaxUploads();
+		testV2.testListMultipartUploadsMaxUploads();
+	}
+
+	/**
+	 * UploadPartCopy의 원본 키·버킷·업로드 ID가 없으면 404인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testUploadPartCopySourceNotExist() {
+		test.testUploadPartCopySourceNotExist();
+		testV2.testUploadPartCopySourceNotExist();
+	}
+
+	/**
+	 * UploadPartCopy의 범위 형식이 잘못되면 400 InvalidArgument인지 확인
+	 * SDK V1은 복사 범위를 숫자 구간으로만 받아 형식이 다른 값을 보낼 수 없으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testUploadPartCopyInvalidRangeFormat() {
+		testV2.testUploadPartCopyInvalidRangeFormat();
+	}
+
+	/**
+	 * 멀티파트 오브젝트를 partNumber로 조회하면 해당 파트와 전체 파트 수를 돌려주는지 확인
+	 */
+	@Test
+	@Tag("PartNumber")
+	void testMultipartGetPartNumber() {
+		test.testMultipartGetPartNumber();
+		testV2.testMultipartGetPartNumber();
+	}
 }

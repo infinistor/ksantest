@@ -1207,5 +1207,230 @@ namespace s3tests.Test
 			getResponse = client.GetObject(bucketName, key2);
 			Assert.Equal(content, GetBody(getResponse));
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "ContentMD5")]
+		[Trait(MainData.Explanation, "본문과 일치하는 Content-MD5를 주면 업로드되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectContentMd5()
+		{
+			TestId = 54;
+			var key = "TestPutObjectContentMd5";
+			var content = "TestPutObjectContentMd5";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			client.PutObject(bucketName, key, body: content, md5Digest: S3Utils.GetMD5(content));
+			Assert.Equal(content, GetBody(client.GetObject(bucketName, key)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "ContentMD5")]
+		[Trait(MainData.Explanation, "본문과 다른 Content-MD5를 주면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectContentMd5Mismatch()
+		{
+			TestId = 55;
+			var key = "TestPutObjectContentMd5Mismatch";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			// 본문과 다른 MD5 를 주면 저장되지 않는다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.BAD_DIGEST,
+				() => client.PutObject(bucketName, key, body: "content", md5Digest: S3Utils.GetMD5("other")));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, () => client.GetObject(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "ContentMD5")]
+		[Trait(MainData.Explanation, "형식이 잘못된 Content-MD5를 주면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectContentMd5Invalid()
+		{
+			TestId = 56;
+			var key = "TestPutObjectContentMd5Invalid";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			// base64 가 아니거나 길이가 MD5(16바이트)가 아닌 값
+			foreach (var contentMd5 in new[] { "not-base64!!", "YWJj" })
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_DIGEST,
+					() => client.PutObject(bucketName, key, body: "content", md5Digest: contentMd5));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, () => client.GetObject(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "StorageClass")]
+		[Trait(MainData.Explanation, "스토리지 클래스를 지정해 올리면 조회와 목록에 그대로 나오는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectStorageClass()
+		{
+			TestId = 57;
+			var key = "TestPutObjectStorageClass";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			client.PutObject(bucketName, key, body: "content", storageClass: S3StorageClass.StandardInfrequentAccess);
+			client.PutObject(bucketName, key + "_standard", body: "content");
+
+			Assert.Equal("STANDARD_IA", client.HeadObject(bucketName, key).StorageClass?.Value);
+			using (var getResponse = client.GetObject(bucketName, key))
+				Assert.Equal("STANDARD_IA", getResponse.StorageClass?.Value);
+			// STANDARD 는 x-amz-storage-class 헤더를 돌려주지 않는다
+			Assert.Null(client.HeadObject(bucketName, key + "_standard").StorageClass);
+
+			var listed = new Dictionary<string, string>();
+			foreach (var obj in client.ListObjectsV2(bucketName).S3Objects ?? [])
+				listed[obj.Key] = obj.StorageClass?.Value;
+			Assert.Equal(2, listed.Count);
+			Assert.Equal("STANDARD_IA", listed[key]);
+			Assert.Equal("STANDARD", listed[key + "_standard"]);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "StorageClass")]
+		[Trait(MainData.Explanation, "잘못된 스토리지 클래스로 올리면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectInvalidStorageClass()
+		{
+			TestId = 58;
+			var key = "TestPutObjectInvalidStorageClass";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_STORAGE_CLASS,
+				() => client.PutObject(bucketName, key, body: "content", storageClass: new S3StorageClass("INVALID")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Header")]
+		[Trait(MainData.Explanation, "Content-* 헤더를 주어 올리면 조회 시 그대로 돌려주고, 주지 않으면 기본값인지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectContentHeaders()
+		{
+			TestId = 59;
+			var key = "TestPutObjectContentHeaders";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var contentType = "text/plain";
+			var contentDisposition = "attachment; filename=\"a.txt\"";
+			var contentEncoding = "gzip";
+			var contentLanguage = "ko-KR";
+
+			client.PutObject(bucketName, key, body: "content", contentType: contentType, contentEncoding: contentEncoding,
+				headerList:
+				[
+					new("Content-Disposition", contentDisposition),
+					new("Content-Language", contentLanguage),
+				]);
+
+			var headResponse = client.HeadObject(bucketName, key);
+			Assert.Equal(contentType, headResponse.Headers.ContentType);
+			Assert.Equal(contentDisposition, headResponse.Headers.ContentDisposition);
+			Assert.Equal(contentEncoding, headResponse.Headers.ContentEncoding);
+			Assert.Equal(contentLanguage, headResponse.ContentLanguage);
+
+			using (var getResponse = client.GetObject(bucketName, key))
+			{
+				Assert.Equal(contentType, getResponse.Headers.ContentType);
+				Assert.Equal(contentDisposition, getResponse.Headers.ContentDisposition);
+				Assert.Equal(contentEncoding, getResponse.Headers.ContentEncoding);
+				Assert.Equal(contentLanguage, getResponse.ContentLanguage);
+			}
+
+			// 주지 않은 헤더는 돌려주지 않는다
+			// (기본 Content-Type binary/octet-stream 은 .NET SDK가 항상 Content-Type을 붙여 보내므로 확인할 수 없다)
+			client.PutObject(bucketName, key + "_default", body: "content");
+			headResponse = client.HeadObject(bucketName, key + "_default");
+			Assert.True(string.IsNullOrEmpty(headResponse.Headers.ContentDisposition));
+			Assert.True(string.IsNullOrEmpty(headResponse.Headers.ContentEncoding));
+			Assert.True(string.IsNullOrEmpty(headResponse.ContentLanguage));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Header")]
+		[Trait(MainData.Explanation, "x-amz-website-redirect-location 값이 저장되고, 형식이 잘못되면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectWebsiteRedirectLocation()
+		{
+			TestId = 60;
+			var key = "TestPutObjectWebsiteRedirectLocation";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var locations = new[] { "/other", "http://example.com/", "https://example.com/path" };
+
+			for (var index = 0; index < locations.Length; index++)
+			{
+				client.PutObject(bucketName, $"{key}{index}", body: "content", websiteRedirectLocation: locations[index]);
+				Assert.Equal(locations[index], client.HeadObject(bucketName, $"{key}{index}").WebsiteRedirectLocation);
+			}
+
+			// / 나 http://, https:// 로 시작하지 않으면 거부된다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REDIRECT_LOCATION,
+				() => client.PutObject(bucketName, key, body: "content", websiteRedirectLocation: "other"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "사용자 메타데이터가 2KB를 넘으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectMetadataTooLarge()
+		{
+			TestId = 61;
+			var key = "TestPutObjectMetadataTooLarge";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			// 사용자 메타데이터는 합쳐서 2KB 까지
+			var metadata = new List<KeyValuePair<string, string>> { new("key", new string('v', 2000)) };
+			client.PutObject(bucketName, key, body: "content", metadataList: metadata);
+			CheckMetaData(metadata, client.HeadObject(bucketName, key).Metadata);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.METADATA_TOO_LARGE,
+				() => client.PutObject(bucketName, key + "_big", body: "content",
+					metadataList: [new("key", new string('v', 2100))]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "ACL")]
+		[Trait(MainData.Explanation, "잘못된 canned ACL로 올리면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectInvalidAcl()
+		{
+			TestId = 62;
+			var key = "TestPutObjectInvalidAcl";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.PutObject(bucketName, key, body: "content", acl: new S3CannedACL("invalid")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutObject")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자와 익명 사용자의 업로드가 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectAccessDenied()
+		{
+			TestId = 63;
+			var key = "TestPutObjectAccessDenied";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			foreach (var otherClient in new[] { GetAltClient(), GetPublicClient() })
+				AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED,
+					() => otherClient.PutObject(bucketName, key, body: "content"));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, () => client.GetObject(bucketName, key));
+		}
 	}
 }

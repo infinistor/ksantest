@@ -640,3 +640,124 @@ func assertRange(t *testing.T, client *s3.Client, bucket, key string, body []byt
 		t.Fatalf("range %d-%d size=%d err=%v", start, end, len(got), err)
 	}
 }
+
+func sseEncryptionRule(algorithm types.ServerSideEncryption) types.ServerSideEncryptionRule {
+	return types.ServerSideEncryptionRule{ApplyServerSideEncryptionByDefault: &types.ServerSideEncryptionByDefault{SSEAlgorithm: algorithm}}
+}
+
+func putEncryptionRules(client *s3.Client, bucket string, rules ...types.ServerSideEncryptionRule) (*s3.PutBucketEncryptionOutput, error) {
+	if rules == nil {
+		rules = []types.ServerSideEncryptionRule{}
+	}
+	return client.PutBucketEncryption(context.Background(), &s3.PutBucketEncryptionInput{Bucket: aws.String(bucket), ServerSideEncryptionConfiguration: &types.ServerSideEncryptionConfiguration{Rules: rules}})
+}
+
+// 잘못된 버킷 암호화 설정은 거부된다
+func TestPutBucketEncryptionInvalid(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t, 26)
+	aes := sseEncryptionRule(types.ServerSideEncryptionAes256)
+	invalidRules := [][]types.ServerSideEncryptionRule{
+		{sseEncryptionRule(types.ServerSideEncryption("INVALID"))}, // 없는 알고리즘
+		{},         // 규칙 없음
+		{aes, aes}, // 규칙은 하나만
+	}
+	for _, rules := range invalidRules {
+		_, err := putEncryptionRules(s.client, bucket, rules...)
+		assertS3Error(t, err, 400, "MalformedXML")
+	}
+	// AES256 에는 KMS 키를 지정할 수 없다
+	rule := sseEncryptionRule(types.ServerSideEncryptionAes256)
+	rule.ApplyServerSideEncryptionByDefault.KMSMasterKeyID = aws.String("key-id")
+	_, err := putEncryptionRules(s.client, bucket, rule)
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 버킷 암호화 설정의 BucketKeyEnabled 가 유지된다
+func TestPutBucketEncryptionBucketKey(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t, 27)
+	rule := sseEncryptionRule(types.ServerSideEncryptionAes256)
+	rule.BucketKeyEnabled = aws.Bool(true)
+	if _, err := putEncryptionRules(s.client, bucket, rule); err != nil {
+		t.Fatal(err)
+	}
+	out, err := s.client.GetBucketEncryption(context.Background(), &s3.GetBucketEncryptionInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertAESRule(t, out.ServerSideEncryptionConfiguration)
+	if !aws.ToBool(out.ServerSideEncryptionConfiguration.Rules[0].BucketKeyEnabled) {
+		t.Fatalf("BucketKeyEnabled = %v, want true", out.ServerSideEncryptionConfiguration.Rules[0].BucketKeyEnabled)
+	}
+}
+
+// 암호화 설정이 없어도 삭제는 성공한다
+func TestDeleteBucketEncryptionTwice(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t, 28)
+	rule := sseEncryptionRule(types.ServerSideEncryptionAes256)
+	rule.BucketKeyEnabled = aws.Bool(true)
+	if _, err := putEncryptionRules(s.client, bucket, rule); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		out, err := s.client.DeleteBucketEncryption(context.Background(), &s3.DeleteBucketEncryptionInput{Bucket: aws.String(bucket)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if status := responseStatus(t, out.ResultMetadata); status != 204 {
+			t.Fatalf("HTTP status = %d, want 204", status)
+		}
+	}
+}
+
+// 다른 사용자는 버킷 암호화 설정을 조회·설정·삭제할 수 없다
+func TestBucketEncryptionAccessDenied(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	alt := altClientOrSkip(t, s)
+	bucket := s.bucket(t, 29)
+	_, err := alt.GetBucketEncryption(context.Background(), &s3.GetBucketEncryptionInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = putEncryptionRules(alt, bucket, sseEncryptionRule(types.ServerSideEncryptionAes256))
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = alt.DeleteBucketEncryption(context.Background(), &s3.DeleteBucketEncryptionInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 403, "AccessDenied")
+}
+
+// 없는 버킷의 암호화 설정 조회·설정·삭제는 실패한다
+func TestBucketEncryptionBucketNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucketNameOnly(30)
+	_, err := s.client.GetBucketEncryption(context.Background(), &s3.GetBucketEncryptionInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = putEncryptionRules(s.client, bucket, sseEncryptionRule(types.ServerSideEncryptionAes256))
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.DeleteBucketEncryption(context.Background(), &s3.DeleteBucketEncryptionInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+
+// 없는 암호화 알고리즘으로는 오브젝트를 만들 수 없다
+func TestSseS3InvalidAlgorithm(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "TestSseS3InvalidAlgorithm"
+	bucket := s.bucket(t, 31)
+	invalid := types.ServerSideEncryption("INVALID")
+	put(t, s, bucket, "source", "content", nil)
+
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: strings.NewReader("content"), ServerSideEncryption: invalid})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	_, err = s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), ServerSideEncryption: invalid})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	_, err = s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), CopySource: aws.String(bucket + "/source"), ServerSideEncryption: invalid})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	_, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	assertS3Status(t, err, 404)
+}

@@ -1046,6 +1046,14 @@ namespace s3tests.Test
 			if (errorCode != null) Assert.Equal(errorCode, GetErrorCode(e));
 		}
 
+		/// <summary>요청이 주어진 상태 코드와 에러 코드로 실패하는지 확인한다. (python assert_client_error)</summary>
+		public static void AssertS3Error(HttpStatusCode expected, string errorCode, Action call)
+		{
+			var e = Assert.Throws<AggregateException>(call);
+			Assert.Equal(expected, GetStatus(e));
+			if (errorCode != null) Assert.Equal(errorCode, GetErrorCode(e));
+		}
+
 		public static HttpStatusCode GetStatus(AggregateException e) => (e.InnerException is AmazonS3Exception e2) ? e2.StatusCode : HttpStatusCode.OK;
 
 		public static string GetErrorCode(AggregateException e) => (e.InnerException is AmazonS3Exception e2) ? e2.ErrorCode : null;

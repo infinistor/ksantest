@@ -29,6 +29,8 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import java.util.List;
+import software.amazon.awssdk.services.s3.S3Client;
 
 public class GetObject extends TestBase {
 	@Test
@@ -682,5 +684,233 @@ public class GetObject extends TestBase {
 		var response = client.getObject(g -> g.bucket(bucketName).key(key).versionId(version.versionId()));
 		var content = getBody(response);
 		assertEquals(body, content);
+	}
+
+	private static final String DIGITS = "0123456789";
+
+	/** 10바이트(0123456789) 오브젝트를 하나 넣은 버킷을 만든다. */
+	private String putDigits(S3Client client, int testId, String key) {
+		var bucketName = createBucket(client, testId);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(DIGITS));
+		return bucketName;
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testGetObjectBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(37);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.getObject(g -> g.bucket(bucketName).key("key")));
+		// HEAD 는 본문이 없어 상태 코드만 온다
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.headObject(h -> h.bucket(bucketName).key("key")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testHeadObjectNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 38);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.headObject(h -> h.bucket(bucketName).key("key")));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testGetObjectAccessDenied() {
+		var key = "testGetObjectAccessDenied";
+		var client = getClient();
+		var bucketName = putDigits(client, 39, key);
+		for (var otherClient : List.of(getAltClient(), getPublicClient())) {
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+					() -> otherClient.getObject(g -> g.bucket(bucketName).key(key)));
+			// 목록 권한이 없으면 없는 키도 404 가 아니라 403 이다
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+					() -> otherClient.getObject(g -> g.bucket(bucketName).key("not_exist")));
+			assertS3Error(HttpStatus.SC_FORBIDDEN, null,
+					() -> otherClient.headObject(h -> h.bucket(bucketName).key(key)));
+		}
+	}
+
+	@Test
+	@Tag("Range")
+	public void testRangedRequestIgnored() {
+		var key = "testRangedRequestIgnored";
+		var client = getClient();
+		var bucketName = putDigits(client, 40, key);
+		// 여러 구간, 잘못된 형식, 다른 단위, 뒤집힌 구간은 무시하고 전체를 200 으로 돌려준다
+		for (var value : List.of("bytes=0-1,3-4", "bytes=abc", "items=0-1", "bytes=5-2")) {
+			var response = client.getObject(g -> g.bucket(bucketName).key(key).range(value));
+			assertEquals(HttpStatus.SC_OK, response.response().sdkHttpResponse().statusCode());
+			assertNull(response.response().contentRange());
+			assertEquals(DIGITS, getBody(response));
+		}
+	}
+
+	@Test
+	@Tag("Range")
+	public void testRangedRequestBeyondEnd() {
+		var key = "testRangedRequestBeyondEnd";
+		var client = getClient();
+		var bucketName = putDigits(client, 41, key);
+		// 끝이 크기를 넘으면 마지막 바이트까지로 잘린다
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=5-100"));
+		assertEquals(HttpStatus.SC_PARTIAL_CONTENT, response.response().sdkHttpResponse().statusCode());
+		assertEquals("bytes 5-9/10", response.response().contentRange());
+		assertEquals("56789", getBody(response));
+
+		// 뒤에서부터의 길이가 크기를 넘으면 전체를 206 으로 돌려준다
+		response = client.getObject(g -> g.bucket(bucketName).key(key).range("bytes=-100"));
+		assertEquals(HttpStatus.SC_PARTIAL_CONTENT, response.response().sdkHttpResponse().statusCode());
+		assertEquals("bytes 0-9/10", response.response().contentRange());
+		assertEquals(DIGITS, getBody(response));
+
+		// 시작이 크기와 같거나, 뒤에서 0바이트를 요청하면 416
+		for (var value : List.of("bytes=10-20", "bytes=-0")) {
+			assertS3Error(HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE, MainData.INVALID_RANGE,
+					() -> client.getObject(g -> g.bucket(bucketName).key(key).range(value)));
+		}
+	}
+
+	@Test
+	@Tag("Range")
+	public void testHeadObjectRange() {
+		var key = "testHeadObjectRange";
+		var client = getClient();
+		var bucketName = putDigits(client, 42, key);
+		var response = client.headObject(h -> h.bucket(bucketName).key(key).range("bytes=0-4"));
+		assertEquals(HttpStatus.SC_PARTIAL_CONTENT, response.sdkHttpResponse().statusCode());
+		assertEquals(5, response.contentLength());
+		assertEquals("bytes 0-4/10", response.contentRange());
+	}
+
+	@Test
+	@Tag("PartNumber")
+	public void testGetObjectPartNumber() {
+		var key = "testGetObjectPartNumber";
+		var client = getClient();
+		var bucketName = putDigits(client, 43, key);
+		// 멀티파트가 아닌 오브젝트는 1번 파트가 전체다
+		var response = client.getObject(g -> g.bucket(bucketName).key(key).partNumber(1));
+		assertEquals(HttpStatus.SC_PARTIAL_CONTENT, response.response().sdkHttpResponse().statusCode());
+		assertEquals("bytes 0-9/10", response.response().contentRange());
+		assertNull(response.response().partsCount());
+		assertEquals(DIGITS, getBody(response));
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key).partNumber(1));
+		assertEquals(HttpStatus.SC_PARTIAL_CONTENT, headResponse.sdkHttpResponse().statusCode());
+		assertEquals(10, headResponse.contentLength());
+
+		assertS3Error(HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE, MainData.INVALID_PART_NUMBER,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).partNumber(2)));
+	}
+
+	@Test
+	@Tag("PartNumber")
+	public void testGetObjectPartNumberInvalid() {
+		var key = "testGetObjectPartNumberInvalid";
+		var client = getClient();
+		var bucketName = putDigits(client, 44, key);
+		// 파트 번호는 1~10000
+		for (var partNumber : List.of(0, 10001)) {
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+					() -> client.getObject(g -> g.bucket(bucketName).key(key).partNumber(partNumber)));
+		}
+		// Range 와 partNumber 는 함께 쓸 수 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).partNumber(1).range("bytes=0-1")));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testGetObjectVersionIdUnversioned() {
+		var key = "testGetObjectVersionIdUnversioned";
+		var client = getClient();
+		var bucketName = putDigits(client, 45, key);
+		// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전이다
+		assertEquals(DIGITS, getBody(client.getObject(g -> g.bucket(bucketName).key(key).versionId("null"))));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).versionId("invalid")));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, null,
+				() -> client.headObject(h -> h.bucket(bucketName).key(key).versionId("invalid")));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testGetObjectNullVersionNotExist() {
+		var key = "testGetObjectNullVersionNotExist";
+		var client = getClient();
+		var bucketName = createBucket(client, 46);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		// 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_VERSION,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).versionId("null")));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null,
+				() -> client.headObject(h -> h.bucket(bucketName).key(key).versionId("null")));
+	}
+
+	@Test
+	@Tag("Header")
+	public void testGetObjectResponseHeadersAnonymous() {
+		var key = "testGetObjectResponseHeadersAnonymous";
+		var client = getClient();
+		var bucketName = putDigits(client, 47, key);
+		// 익명 요청에는 response-* 재정의를 쓸 수 없다
+		var publicClient = getPublicClient();
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> publicClient.getObject(g -> g.bucket(bucketName).key(key).responseContentType("text/html")));
+	}
+
+	@Test
+	@Tag("Header")
+	public void testHeadObjectResponseHeaders() {
+		var key = "testHeadObjectResponseHeaders";
+		var client = getClient();
+		var bucketName = putDigits(client, 48, key);
+		var response = client.headObject(h -> h.bucket(bucketName).key(key)
+				.responseContentType("text/html")
+				.responseContentDisposition("inline")
+				.responseCacheControl("max-age=1")
+				.responseContentEncoding("identity")
+				.responseContentLanguage("en"));
+		assertEquals("text/html", response.contentType());
+		assertEquals("inline", response.contentDisposition());
+		assertEquals("max-age=1", response.cacheControl());
+		assertEquals("identity", response.contentEncoding());
+		assertEquals("en", response.contentLanguage());
+	}
+
+	@Test
+	@Tag("Header")
+	public void testGetObjectDefaultHeaders() {
+		var key = "testGetObjectDefaultHeaders";
+		var client = getClient();
+		var bucketName = putDigits(client, 49, key);
+		var eTag = "\"781e5e245d69b566979b86e28d23f2c7\"";
+		// (SDK 가 Content-Type 을 항상 붙여 올리므로 기본값 binary/octet-stream 은 확인하지 않는다)
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("bytes", getResponse.response().acceptRanges());
+		assertEquals(10, getResponse.response().contentLength());
+		assertEquals(eTag, getResponse.response().eTag());
+		assertTrue(getResponse.response().lastModified() != null);
+		getBody(getResponse);
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals("bytes", headResponse.acceptRanges());
+		assertEquals(10, headResponse.contentLength());
+		assertEquals(eTag, headResponse.eTag());
+		assertTrue(headResponse.lastModified() != null);
+	}
+
+	@Test
+	@Tag("IfMatch")
+	public void testGetObjectIfMatchWildcard() {
+		var key = "testGetObjectIfMatchWildcard";
+		var client = getClient();
+		var bucketName = putDigits(client, 50, key);
+		// If-Match: * 는 오브젝트가 있으면 통과, If-None-Match: * 는 304
+		assertEquals(DIGITS, getBody(client.getObject(g -> g.bucket(bucketName).key(key).ifMatch("*"))));
+		assertS3Error(HttpStatus.SC_NOT_MODIFIED, null,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).ifNoneMatch("*")));
 	}
 }

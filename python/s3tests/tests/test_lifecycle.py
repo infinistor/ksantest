@@ -420,3 +420,422 @@ class TestLifeCycle(S3TestBase):
 
         get_response = client.get_object(Bucket=bucket_name, Key=key)
         assert get_response["Expires"] == expired_time
+
+    @staticmethod
+    def _put_rules(client, bucket_name: str, rules: list, **kwargs):
+        return client.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name, LifecycleConfiguration={"Rules": rules}, **kwargs
+        )
+
+    @staticmethod
+    def _rule(**actions) -> dict:
+        """ID rule1, 전체 대상(Prefix ""), Enabled 인 규칙에 주어진 항목을 덮어쓴다."""
+        rule = {"ID": "rule1", "Status": "Enabled", "Filter": {"Prefix": ""}}
+        rule.update(actions)
+        return rule
+
+    @pytest.mark.tag("Get")
+    def test_lifecycle_get_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 21)
+        self.assert_client_error(
+            lambda: client.get_bucket_lifecycle_configuration(Bucket=bucket_name),
+            404,
+            md.NO_SUCH_LIFECYCLE_CONFIGURATION,
+        )
+
+    @pytest.mark.tag("Delete")
+    def test_lifecycle_delete_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 22)
+        # 설정이 없어도 삭제는 성공한다
+        response = client.delete_bucket_lifecycle(Bucket=bucket_name)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(23)
+        rules = [self._rule(Expiration={"Days": 1})]
+        self.assert_client_error(
+            lambda: client.get_bucket_lifecycle_configuration(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET
+        )
+        self.assert_client_error(lambda: self._put_rules(client, bucket_name, rules), 404, md.NO_SUCH_BUCKET)
+        self.assert_client_error(
+            lambda: client.delete_bucket_lifecycle(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_access_denied(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket(client, 24)
+        rules = [self._rule(Expiration={"Days": 1})]
+        self._put_rules(client, bucket_name, rules)
+
+        self.assert_client_error(
+            lambda: alt_client.get_bucket_lifecycle_configuration(Bucket=bucket_name), 403, md.ACCESS_DENIED
+        )
+        self.assert_client_error(lambda: self._put_rules(alt_client, bucket_name, rules), 403, md.ACCESS_DENIED)
+        self.assert_client_error(
+            lambda: alt_client.delete_bucket_lifecycle(Bucket=bucket_name), 403, md.ACCESS_DENIED
+        )
+        # 설정은 그대로 남아 있다
+        response = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        assert len(response["Rules"]) == 1
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_no_action(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 25)
+        self.assert_client_error(
+            lambda: self._put_rules(client, bucket_name, [self._rule()]), 400, md.INVALID_REQUEST
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_no_filter(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 26)
+        # Filter 도 Prefix 도 없는 규칙은 거부된다
+        rules = [{"ID": "rule1", "Status": "Enabled", "Expiration": {"Days": 1}}]
+        self.assert_client_error(lambda: self._put_rules(client, bucket_name, rules), 400, md.MALFORMED_XML)
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_empty_rules(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 27)
+        self.assert_client_error(lambda: self._put_rules(client, bucket_name, []), 400, md.MALFORMED_XML)
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_days_and_date(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 28)
+        expiration = {"Days": 1, "Date": datetime(2099, 11, 10, tzinfo=timezone.utc)}
+        self.assert_client_error(
+            lambda: self._put_rules(client, bucket_name, [self._rule(Expiration=expiration)]),
+            400,
+            md.MALFORMED_XML,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_negative_days(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 29)
+        self.assert_client_error(
+            lambda: self._put_rules(client, bucket_name, [self._rule(Expiration={"Days": -1})]),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("Transition")
+    def test_lifecycle_transition(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 30)
+        transitions = [
+            {"Days": 30, "StorageClass": "STANDARD_IA"},
+            {"Days": 60, "StorageClass": "GLACIER"},
+        ]
+        self._put_rules(client, bucket_name, [self._rule(Transitions=transitions, Expiration={"Days": 90})])
+
+        rules = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]
+        assert len(rules) == 1
+        assert sorted(rules[0]["Transitions"], key=lambda t: t["Days"]) == transitions
+        assert rules[0]["Expiration"]["Days"] == 90
+
+    @pytest.mark.tag("Transition")
+    def test_lifecycle_transition_invalid_storage_class(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 31)
+        # STANDARD 로는 전환할 수 없다
+        self.assert_client_error(
+            lambda: self._put_rules(
+                client, bucket_name, [self._rule(Transitions=[{"Days": 30, "StorageClass": "STANDARD"}])]
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+        # 없는 스토리지 클래스
+        self.assert_client_error(
+            lambda: self._put_rules(
+                client, bucket_name, [self._rule(Transitions=[{"Days": 30, "StorageClass": "INVALID"}])]
+            ),
+            400,
+            md.MALFORMED_XML,
+        )
+
+    @pytest.mark.tag("Transition")
+    def test_lifecycle_expiration_before_transition(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 32)
+        transitions = [{"Days": 30, "StorageClass": "STANDARD_IA"}]
+        # 만료일은 전환일보다 커야 한다
+        self.assert_client_error(
+            lambda: self._put_rules(
+                client, bucket_name, [self._rule(Transitions=transitions, Expiration={"Days": 30})]
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+        self._put_rules(client, bucket_name, [self._rule(Transitions=transitions, Expiration={"Days": 31})])
+
+    @pytest.mark.tag("Transition")
+    def test_lifecycle_transition_interval(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 33)
+        # STANDARD_IA 에서 GLACIER 로는 30일 이상 지나야 전환할 수 있다
+        transitions = [
+            {"Days": 30, "StorageClass": "STANDARD_IA"},
+            {"Days": 40, "StorageClass": "GLACIER"},
+        ]
+        self.assert_client_error(
+            lambda: self._put_rules(client, bucket_name, [self._rule(Transitions=transitions)]),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("Transition")
+    def test_lifecycle_noncurrent_transition(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 34)
+        transitions = [{"NoncurrentDays": 30, "StorageClass": "STANDARD_IA"}]
+        self._put_rules(client, bucket_name, [self._rule(NoncurrentVersionTransitions=transitions)])
+
+        rules = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]
+        assert rules[0]["NoncurrentVersionTransitions"] == transitions
+
+    @pytest.mark.tag("Version")
+    def test_lifecycle_noncurrent_zero_days(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 35)
+        self.assert_client_error(
+            lambda: self._put_rules(
+                client, bucket_name, [self._rule(NoncurrentVersionExpiration={"NoncurrentDays": 0})]
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("Version")
+    def test_lifecycle_newer_noncurrent_versions(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 36)
+        expiration = {"NoncurrentDays": 1, "NewerNoncurrentVersions": 5}
+        self._put_rules(client, bucket_name, [self._rule(NoncurrentVersionExpiration=expiration)])
+
+        rules = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]
+        assert rules[0]["NoncurrentVersionExpiration"] == expiration
+
+        # 보존할 버전 수는 1~100 만 허용한다
+        for count in (0, 101):
+            self.assert_client_error(
+                lambda count=count: self._put_rules(
+                    client,
+                    bucket_name,
+                    [self._rule(NoncurrentVersionExpiration={"NoncurrentDays": 1, "NewerNoncurrentVersions": count})],
+                ),
+                400,
+                md.INVALID_ARGUMENT,
+            )
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_delete_marker_with_days(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 37)
+        # ExpiredObjectDeleteMarker 는 Days 와 함께 쓸 수 없다
+        self.assert_client_error(
+            lambda: self._put_rules(
+                client, bucket_name, [self._rule(Expiration={"Days": 1, "ExpiredObjectDeleteMarker": True})]
+            ),
+            400,
+            md.MALFORMED_XML,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_delete_marker_with_tag(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 38)
+        rule = self._rule(Filter={"Tag": {"Key": "key", "Value": "value"}}, Expiration={"ExpiredObjectDeleteMarker": True})
+        self.assert_client_error(lambda: self._put_rules(client, bucket_name, [rule]), 400, md.INVALID_REQUEST)
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_abort_multipart_with_filter(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 39)
+        # AbortIncompleteMultipartUpload 는 태그·크기 필터와 함께 쓸 수 없다
+        for rule_filter in ({"Tag": {"Key": "key", "Value": "value"}}, {"ObjectSizeGreaterThan": 10}):
+            rule = self._rule(Filter=rule_filter, AbortIncompleteMultipartUpload={"DaysAfterInitiation": 1})
+            self.assert_client_error(
+                lambda rule=rule: self._put_rules(client, bucket_name, [rule]), 400, md.INVALID_REQUEST
+            )
+
+    @pytest.mark.tag("ERROR")
+    def test_lifecycle_abort_multipart_zero_days(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 40)
+        self.assert_client_error(
+            lambda: self._put_rules(
+                client, bucket_name, [self._rule(AbortIncompleteMultipartUpload={"DaysAfterInitiation": 0})]
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("Filter")
+    def test_lifecycle_tag_filter(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 41)
+        rule_filter = {"Tag": {"Key": "key", "Value": "value"}}
+        self._put_rules(client, bucket_name, [self._rule(Filter=rule_filter, Expiration={"Days": 1})])
+
+        rules = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]
+        assert rules[0]["Filter"] == rule_filter
+
+    @pytest.mark.tag("Filter")
+    def test_lifecycle_and_filter(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 42)
+        rule_filter = {
+            "And": {
+                "Prefix": "test1/",
+                "Tags": [{"Key": "key1", "Value": "value1"}, {"Key": "key2", "Value": "value2"}],
+                "ObjectSizeGreaterThan": 10,
+                "ObjectSizeLessThan": 100,
+            }
+        }
+        self._put_rules(client, bucket_name, [self._rule(Filter=rule_filter, Expiration={"Days": 1})])
+
+        rules = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]
+        actual = rules[0]["Filter"]["And"]
+        assert actual["Prefix"] == "test1/"
+        self.tag_compare(rule_filter["And"]["Tags"], actual["Tags"])
+        assert actual["ObjectSizeGreaterThan"] == 10
+        assert actual["ObjectSizeLessThan"] == 100
+
+    @pytest.mark.tag("Filter")
+    def test_lifecycle_and_filter_invalid(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 43)
+        # And 안에 조건이 하나뿐이면 거부된다
+        self.assert_client_error(
+            lambda: self._put_rules(
+                client, bucket_name, [self._rule(Filter={"And": {"Prefix": "test1/"}}, Expiration={"Days": 1})]
+            ),
+            400,
+            md.MALFORMED_XML,
+        )
+        # And 안의 태그 키는 중복될 수 없다
+        duplicated = {"And": {"Prefix": "test1/", "Tags": [{"Key": "key", "Value": "1"}, {"Key": "key", "Value": "2"}]}}
+        self.assert_client_error(
+            lambda: self._put_rules(client, bucket_name, [self._rule(Filter=duplicated, Expiration={"Days": 1})]),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("Filter")
+    def test_lifecycle_object_size_filter(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 44)
+        self._put_rules(
+            client, bucket_name, [self._rule(Filter={"ObjectSizeGreaterThan": 500}, Expiration={"Days": 1})]
+        )
+        rules = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]
+        assert rules[0]["Filter"] == {"ObjectSizeGreaterThan": 500}
+
+        self._put_rules(client, bucket_name, [self._rule(Filter={"ObjectSizeLessThan": 500}, Expiration={"Days": 1})])
+        rules = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]
+        assert rules[0]["Filter"] == {"ObjectSizeLessThan": 500}
+
+    @pytest.mark.tag("Filter")
+    def test_lifecycle_object_size_filter_invalid(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 45)
+        # ObjectSizeLessThan 은 1 이상이어야 한다
+        self.assert_client_error(
+            lambda: self._put_rules(
+                client, bucket_name, [self._rule(Filter={"ObjectSizeLessThan": 0}, Expiration={"Days": 1})]
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+        # ObjectSizeLessThan 은 ObjectSizeGreaterThan 보다 커야 한다
+        size_filter = {"And": {"ObjectSizeGreaterThan": 100, "ObjectSizeLessThan": 100}}
+        self.assert_client_error(
+            lambda: self._put_rules(client, bucket_name, [self._rule(Filter=size_filter, Expiration={"Days": 1})]),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("Filter")
+    def test_lifecycle_legacy_prefix(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 46)
+        # Filter 대신 규칙 바로 아래에 Prefix 를 두는 예전 형식도 그대로 저장·조회된다
+        rule = {"ID": "rule1", "Status": "Enabled", "Prefix": "legacy/", "Expiration": {"Days": 1}}
+        self._put_rules(client, bucket_name, [rule])
+        rules = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]
+        assert rules[0]["Prefix"] == "legacy/"
+        assert "Filter" not in rules[0]
+
+        # Prefix 와 Filter 를 함께 줄 수는 없다
+        both = dict(rule, Filter={"Prefix": "test1/"})
+        self.assert_client_error(lambda: self._put_rules(client, bucket_name, [both]), 400, md.MALFORMED_XML)
+
+    @pytest.mark.tag("Max")
+    def test_lifecycle_max_rules(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 47)
+
+        def make_rules(count: int) -> list:
+            return [
+                {"ID": f"rule{i}", "Status": "Enabled", "Filter": {"Prefix": f"test{i}/"}, "Expiration": {"Days": 1}}
+                for i in range(count)
+            ]
+
+        # 규칙은 1000개까지 넣을 수 있다
+        self._put_rules(client, bucket_name, make_rules(1000))
+        assert len(client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]) == 1000
+        self.assert_client_error(lambda: self._put_rules(client, bucket_name, make_rules(1001)), 400, md.MALFORMED_XML)
+
+    @pytest.mark.tag("Transition")
+    def test_lifecycle_transition_default_minimum_object_size(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 48)
+        rules = [self._rule(Expiration={"Days": 1})]
+
+        # 지정하지 않으면 all_storage_classes_128K
+        self._put_rules(client, bucket_name, rules)
+        response = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        assert response["TransitionDefaultMinimumObjectSize"] == "all_storage_classes_128K"
+
+        response = self._put_rules(
+            client, bucket_name, rules, TransitionDefaultMinimumObjectSize="varies_by_storage_class"
+        )
+        assert response["TransitionDefaultMinimumObjectSize"] == "varies_by_storage_class"
+        response = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        assert response["TransitionDefaultMinimumObjectSize"] == "varies_by_storage_class"
+
+        self.assert_client_error(
+            lambda: self._put_rules(client, bucket_name, rules, TransitionDefaultMinimumObjectSize="invalid"),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("metadata")
+    def test_lifecycle_expiration_header(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 49)
+        rule = {"ID": "rule1", "Status": "Enabled", "Filter": {"Prefix": "test1/"}, "Expiration": {"Days": 1}}
+        self._put_rules(client, bucket_name, [rule])
+
+        # 만료 규칙에 걸리는 오브젝트는 x-amz-expiration 헤더로 만료 예정일과 규칙 ID 를 돌려준다
+        key = "test1/test_lifecycle_expiration_header"
+        put_response = client.put_object(Bucket=bucket_name, Key=key, Body=b"test")
+        assert 'rule-id="rule1"' in put_response["Expiration"]
+        assert "expiry-date=" in put_response["Expiration"]
+        assert 'rule-id="rule1"' in client.head_object(Bucket=bucket_name, Key=key)["Expiration"]
+        assert 'rule-id="rule1"' in client.get_object(Bucket=bucket_name, Key=key)["Expiration"]
+
+        # 규칙에 걸리지 않는 오브젝트에는 헤더가 없다
+        other = "test2/test_lifecycle_expiration_header"
+        assert "Expiration" not in client.put_object(Bucket=bucket_name, Key=other, Body=b"test")
+        assert "Expiration" not in client.head_object(Bucket=bucket_name, Key=other)

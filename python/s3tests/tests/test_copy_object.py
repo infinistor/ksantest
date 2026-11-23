@@ -1476,3 +1476,253 @@ class TestCopyObject(S3TestBase):
 
         tag_response = client.get_object_tagging(Bucket=bucket_name, Key=target_key)
         self.tag_compare(target_tags, tag_response["TagSet"])
+
+    def _copy_source_bucket(self, client, test_id: int, key: str = "source", **extra) -> str:
+        """10바이트(0123456789) 원본 오브젝트를 하나 넣은 버킷을 만든다."""
+        bucket_name = self.create_bucket(client, test_id)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"0123456789", **extra)
+        return bucket_name
+
+    @pytest.mark.tag("ERROR")
+    def test_copy_object_invalid_directive(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(client, 69)
+        source = {"Bucket": bucket_name, "Key": "source"}
+        self.assert_client_error(
+            lambda: client.copy_object(Bucket=bucket_name, Key="target", CopySource=source, MetadataDirective="INVALID"),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+        self.assert_client_error(
+            lambda: client.copy_object(Bucket=bucket_name, Key="target", CopySource=source, TaggingDirective="INVALID"),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key="target"), 404, "404")
+
+    @pytest.mark.tag("ERROR")
+    def test_copy_object_invalid_source(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(client, 70)
+        # 원본에 키가 없으면 거부된다
+        for copy_source in (bucket_name, bucket_name + "/"):
+            self.assert_client_error(
+                lambda copy_source=copy_source: client.copy_object(
+                    Bucket=bucket_name, Key="target", CopySource=copy_source
+                ),
+                400,
+                md.INVALID_ARGUMENT,
+            )
+        # 앞에 / 가 붙은 형식은 허용한다
+        client.copy_object(Bucket=bucket_name, Key="target", CopySource=f"/{bucket_name}/source")
+        assert self.get_body(client.get_object(Bucket=bucket_name, Key="target")) == "0123456789"
+
+    @pytest.mark.tag("Version")
+    def test_copy_object_source_invalid_version_id(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(client, 71)
+
+        def copy(version_id: str):
+            return client.copy_object(
+                Bucket=bucket_name,
+                Key="target",
+                CopySource={"Bucket": bucket_name, "Key": "source", "VersionId": version_id},
+            )
+
+        self.assert_client_error(lambda: copy("invalid"), 400, md.INVALID_REQUEST)
+        # 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전으로 복사할 수 있다
+        assert copy("null")["CopySourceVersionId"] == "null"
+
+        # 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        client.put_object(Bucket=bucket_name, Key="versioned", Body=b"content")
+        self.assert_client_error(
+            lambda: client.copy_object(
+                Bucket=bucket_name,
+                Key="target2",
+                CopySource={"Bucket": bucket_name, "Key": "versioned", "VersionId": "null"},
+            ),
+            404,
+            md.NO_SUCH_VERSION,
+        )
+
+    @pytest.mark.tag("Version")
+    def test_copy_object_source_version_id(self):
+        key = "test_copy_object_source_version_id"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 72)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        version1 = client.put_object(Bucket=bucket_name, Key=key, Body=b"version1")["VersionId"]
+        version2 = client.put_object(Bucket=bucket_name, Key=key, Body=b"version2")["VersionId"]
+
+        # 응답으로 복사한 원본 버전과 새로 만든 버전을 알려준다
+        response = client.copy_object(
+            Bucket=bucket_name, Key="target1", CopySource={"Bucket": bucket_name, "Key": key, "VersionId": version1}
+        )
+        assert response["CopySourceVersionId"] == version1
+        assert response["VersionId"]
+        assert self.get_body(client.get_object(Bucket=bucket_name, Key="target1")) == "version1"
+
+        response = client.copy_object(Bucket=bucket_name, Key="target2", CopySource={"Bucket": bucket_name, "Key": key})
+        assert response["CopySourceVersionId"] == version2
+        assert self.get_body(client.get_object(Bucket=bucket_name, Key="target2")) == "version2"
+
+    @pytest.mark.tag("Metadata")
+    def test_copy_object_attributes_not_copied(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(
+            client,
+            73,
+            ContentType="text/plain",
+            CacheControl="no-cache",
+            Metadata={"key": "value"},
+            WebsiteRedirectLocation="/other",
+            StorageClass="STANDARD_IA",
+        )
+        client.copy_object(Bucket=bucket_name, Key="target", CopySource={"Bucket": bucket_name, "Key": "source"})
+
+        response = client.head_object(Bucket=bucket_name, Key="target")
+        assert response["ContentType"] == "text/plain"
+        assert response["CacheControl"] == "no-cache"
+        assert response["Metadata"] == {"key": "value"}
+        # 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
+        assert "StorageClass" not in response
+        assert "WebsiteRedirectLocation" not in response
+
+    @pytest.mark.tag("Metadata")
+    def test_copy_object_replace_without_metadata(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(
+            client, 74, ContentType="text/plain", CacheControl="no-cache", Metadata={"key": "value"}
+        )
+        client.copy_object(
+            Bucket=bucket_name,
+            Key="target",
+            CopySource={"Bucket": bucket_name, "Key": "source"},
+            MetadataDirective="REPLACE",
+        )
+        # REPLACE 인데 아무것도 주지 않으면 원본의 메타데이터가 모두 빠진다
+        response = client.head_object(Bucket=bucket_name, Key="target")
+        assert response["ContentType"] == "binary/octet-stream"
+        assert response["Metadata"] == {}
+        assert "CacheControl" not in response
+
+    @pytest.mark.tag("StorageClass")
+    def test_copy_object_storage_class(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(client, 75)
+        source = {"Bucket": bucket_name, "Key": "source"}
+        client.copy_object(Bucket=bucket_name, Key="target", CopySource=source, StorageClass="STANDARD_IA")
+        assert client.head_object(Bucket=bucket_name, Key="target")["StorageClass"] == "STANDARD_IA"
+
+        self.assert_client_error(
+            lambda: client.copy_object(Bucket=bucket_name, Key="target2", CopySource=source, StorageClass="INVALID"),
+            400,
+            md.INVALID_STORAGE_CLASS,
+        )
+
+    @pytest.mark.tag("Overwrite")
+    def test_copy_object_to_itself_with_changes(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(client, 76)
+        source = {"Bucket": bucket_name, "Key": "source"}
+
+        # 태그만 바꾸는 것은 변경으로 치지 않는다
+        self.assert_client_error(
+            lambda: client.copy_object(
+                Bucket=bucket_name, Key="source", CopySource=source, TaggingDirective="REPLACE", Tagging="key=value"
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+        # 스토리지 클래스, 웹사이트 리다이렉트, 암호화 설정 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
+        client.copy_object(Bucket=bucket_name, Key="source", CopySource=source, StorageClass="STANDARD_IA")
+        assert client.head_object(Bucket=bucket_name, Key="source")["StorageClass"] == "STANDARD_IA"
+        client.copy_object(Bucket=bucket_name, Key="source", CopySource=source, WebsiteRedirectLocation="/other")
+        assert client.head_object(Bucket=bucket_name, Key="source")["WebsiteRedirectLocation"] == "/other"
+        client.copy_object(Bucket=bucket_name, Key="source", CopySource=source, ServerSideEncryption="AES256")
+
+    @pytest.mark.tag("Version")
+    def test_copy_object_to_itself_from_old_version(self):
+        key = "test_copy_object_to_itself_from_old_version"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 77)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        version1 = client.put_object(Bucket=bucket_name, Key=key, Body=b"version1")["VersionId"]
+        version2 = client.put_object(Bucket=bucket_name, Key=key, Body=b"version2")["VersionId"]
+        source = {"Bucket": bucket_name, "Key": key}
+
+        # 버저닝 버킷이어도 최신 버전을 그대로 자기 자신에게 복사할 수는 없다
+        self.assert_client_error(
+            lambda: client.copy_object(Bucket=bucket_name, Key=key, CopySource=source), 400, md.INVALID_REQUEST
+        )
+
+        # 이전 버전을 지정하면 변경 없이도 복사되어 그 내용이 새 최신 버전이 된다
+        response = client.copy_object(Bucket=bucket_name, Key=key, CopySource=dict(source, VersionId=version1))
+        assert response["VersionId"] not in (version1, version2)
+        assert self.get_body(client.get_object(Bucket=bucket_name, Key=key)) == "version1"
+        assert len(client.list_object_versions(Bucket=bucket_name)["Versions"]) == 3
+
+    @pytest.mark.tag("Metadata")
+    def test_copy_object_metadata_too_large(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(client, 78)
+        self.assert_client_error(
+            lambda: client.copy_object(
+                Bucket=bucket_name,
+                Key="target",
+                CopySource={"Bucket": bucket_name, "Key": "source"},
+                MetadataDirective="REPLACE",
+                Metadata={"key": "v" * 2100},
+            ),
+            400,
+            md.METADATA_TOO_LARGE,
+        )
+
+    @pytest.mark.tag("ACL")
+    def test_copy_object_invalid_acl(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(client, 79)
+        self.assert_client_error(
+            lambda: client.copy_object(
+                Bucket=bucket_name, Key="target", CopySource={"Bucket": bucket_name, "Key": "source"}, ACL="invalid"
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_copy_object_target_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self._copy_source_bucket(client, 80)
+        self.assert_client_error(
+            lambda: client.copy_object(
+                Bucket=self.get_new_bucket_name_only(80),
+                Key="target",
+                CopySource={"Bucket": bucket_name, "Key": "source"},
+            ),
+            404,
+            md.NO_SUCH_BUCKET,
+        )
+
+    @pytest.mark.tag("Access")
+    def test_copy_object_target_access_denied(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self._copy_source_bucket(client, 81)
+        alt_bucket_name = self.create_bucket(alt_client, 81)
+        alt_client.put_object(Bucket=alt_bucket_name, Key="source", Body=b"content")
+        # 원본은 읽을 수 있어도 대상 버킷에 쓸 권한이 없으면 거부된다
+        self.assert_client_error(
+            lambda: alt_client.copy_object(
+                Bucket=bucket_name, Key="target", CopySource={"Bucket": alt_bucket_name, "Key": "source"}
+            ),
+            403,
+            md.ACCESS_DENIED,
+        )
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key="target"), 404, "404")
+        # 다른 사용자가 만든 버킷은 공용 정리로 지워지지 않는다
+        alt_client.delete_object(Bucket=alt_bucket_name, Key="source")
+        alt_client.delete_bucket(Bucket=alt_bucket_name)
+        self.delete_bucket_list(alt_bucket_name)

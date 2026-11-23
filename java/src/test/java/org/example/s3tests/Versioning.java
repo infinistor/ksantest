@@ -432,4 +432,53 @@ class Versioning {
 		test.testVersioningSuspendedDeleteObjectsReplaceNoncurrentNull();
 		testV2.testVersioningSuspendedDeleteObjectsReplaceNoncurrentNull();
 	}
+
+	/**
+	 * 버저닝을 설정한 적 없는 버킷은 Status 가 없는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testVersioningGetNewBucket() {
+		test.testVersioningGetNewBucket();
+		testV2.testVersioningGetNewBucket();
+	}
+
+	/**
+	 * Enabled, Suspended 외의 버저닝 상태가 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testVersioningInvalidStatus() {
+		test.testVersioningInvalidStatus();
+		testV2.testVersioningInvalidStatus();
+	}
+
+	/**
+	 * Status 가 없는 버저닝 설정이 거부되고 기존 상태가 유지되는지 확인 (SDK v1 은 Status 를 항상 넣어 보내므로 V2만)
+	 */
+	@Test
+	@Tag("ERROR")
+	void testVersioningEmptyConfiguration() {
+		testV2.testVersioningEmptyConfiguration();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 버저닝 조회·설정이 NoSuchBucket 으로 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testVersioningBucketNotExist() {
+		test.testVersioningBucketNotExist();
+		testV2.testVersioningBucketNotExist();
+	}
+
+	/**
+	 * 다른 사용자의 버저닝 조회·설정이 AccessDenied 로 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testVersioningAccessDenied() {
+		test.testVersioningAccessDenied();
+		testV2.testVersioningAccessDenied();
+	}
 }

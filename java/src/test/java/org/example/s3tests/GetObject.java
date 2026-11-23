@@ -390,4 +390,144 @@ class GetObject {
 		test.testGetObjectDeleteMarker();
 		testV2.testGetObjectDeleteMarker();
 	}
+
+	/**
+	 * 없는 버킷의 오브젝트를 조회하면 404 NoSuchBucket인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testGetObjectBucketNotExist() {
+		test.testGetObjectBucketNotExist();
+		testV2.testGetObjectBucketNotExist();
+	}
+
+	/**
+	 * 없는 오브젝트를 HeadObject하면 404인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testHeadObjectNotExist() {
+		test.testHeadObjectNotExist();
+		testV2.testHeadObjectNotExist();
+	}
+
+	/**
+	 * 권한이 없는 사용자와 익명 사용자의 조회가 403 AccessDenied로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testGetObjectAccessDenied() {
+		test.testGetObjectAccessDenied();
+		testV2.testGetObjectAccessDenied();
+	}
+
+	/**
+	 * 해석할 수 없는 Range는 무시하고 전체를 200으로 돌려주는지 확인
+	 * SDK V1은 Range를 숫자 구간으로만 받아 형식이 다른 값을 보낼 수 없으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("Range")
+	void testRangedRequestIgnored() {
+		testV2.testRangedRequestIgnored();
+	}
+
+	/**
+	 * Range가 오브젝트 끝을 넘으면 잘라서 돌려주고 시작이 크기 이상이면 416 InvalidRange인지 확인
+	 */
+	@Test
+	@Tag("Range")
+	void testRangedRequestBeyondEnd() {
+		test.testRangedRequestBeyondEnd();
+		testV2.testRangedRequestBeyondEnd();
+	}
+
+	/**
+	 * HeadObject에 Range를 주면 206과 Content-Range를 돌려주는지 확인
+	 * SDK V1의 HeadObject 요청은 Range를 지원하지 않으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("Range")
+	void testHeadObjectRange() {
+		testV2.testHeadObjectRange();
+	}
+
+	/**
+	 * 멀티파트가 아닌 오브젝트를 partNumber=1로 조회하면 전체를 돌려주고 2 이상은 416 InvalidPartNumber인지 확인
+	 */
+	@Test
+	@Tag("PartNumber")
+	void testGetObjectPartNumber() {
+		test.testGetObjectPartNumber();
+		testV2.testGetObjectPartNumber();
+	}
+
+	/**
+	 * 범위를 벗어난 partNumber와 Range 동시 지정이 400으로 거부되는지 확인
+	 */
+	@Test
+	@Tag("PartNumber")
+	void testGetObjectPartNumberInvalid() {
+		test.testGetObjectPartNumberInvalid();
+		testV2.testGetObjectPartNumberInvalid();
+	}
+
+	/**
+	 * 버저닝을 쓰지 않는 버킷에서 null 버전 조회가 성공하고 잘못된 버전 ID는 400인지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testGetObjectVersionIdUnversioned() {
+		test.testGetObjectVersionIdUnversioned();
+		testV2.testGetObjectVersionIdUnversioned();
+	}
+
+	/**
+	 * 버저닝 버킷에 없는 null 버전을 조회하면 404 NoSuchVersion인지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testGetObjectNullVersionNotExist() {
+		test.testGetObjectNullVersionNotExist();
+		testV2.testGetObjectNullVersionNotExist();
+	}
+
+	/**
+	 * 익명 요청에 response-* 재정의를 쓰면 400 InvalidRequest로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Header")
+	void testGetObjectResponseHeadersAnonymous() {
+		test.testGetObjectResponseHeadersAnonymous();
+		testV2.testGetObjectResponseHeadersAnonymous();
+	}
+
+	/**
+	 * HeadObject에도 response-* 재정의가 적용되는지 확인
+	 * SDK V1의 HeadObject 요청은 response-* 재정의를 지원하지 않으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("Header")
+	void testHeadObjectResponseHeaders() {
+		testV2.testHeadObjectResponseHeaders();
+	}
+
+	/**
+	 * Get/Head 응답의 기본 헤더(Accept-Ranges, Content-Length, ETag, Last-Modified)를 확인
+	 */
+	@Test
+	@Tag("Header")
+	void testGetObjectDefaultHeaders() {
+		test.testGetObjectDefaultHeaders();
+		testV2.testGetObjectDefaultHeaders();
+	}
+
+	/**
+	 * If-Match: * 는 통과하고 If-None-Match: * 는 304인지 확인
+	 */
+	@Test
+	@Tag("IfMatch")
+	void testGetObjectIfMatchWildcard() {
+		test.testGetObjectIfMatchWildcard();
+		testV2.testGetObjectIfMatchWildcard();
+	}
 }

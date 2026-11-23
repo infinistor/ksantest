@@ -210,4 +210,113 @@ class Inventory {
 		test.testPutBucketInventoryInvalidOptional();
 		testV2.testPutBucketInventoryInvalidOptional();
 	}
+
+	/**
+	 * 인벤토리 ID 는 64자까지 허용되고 65자는 거부되는지 확인
+	 */
+	@Test
+	@Tag("Max")
+	void testPutBucketInventoryIdLength() {
+		test.testPutBucketInventoryIdLength();
+		testV2.testPutBucketInventoryIdLength();
+	}
+
+	/**
+	 * 허용하지 않는 문자가 든 인벤토리 ID 가 거부되는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testPutBucketInventoryInvalidId() {
+		test.testPutBucketInventoryInvalidId();
+		testV2.testPutBucketInventoryInvalidId();
+	}
+
+	/**
+	 * 쿼리의 id 와 본문의 Id 가 다르면 거부되는지 확인 (SDK v1 은 두 값을 따로 줄 수 없으므로 V2만)
+	 */
+	@Test
+	@Tag("Error")
+	void testPutBucketInventoryIdMismatch() {
+		testV2.testPutBucketInventoryIdMismatch();
+	}
+
+	/**
+	 * 비활성(IsEnabled=false) 인벤토리가 그대로 저장되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testPutBucketInventoryDisabled() {
+		test.testPutBucketInventoryDisabled();
+		testV2.testPutBucketInventoryDisabled();
+	}
+
+	/**
+	 * 올바르지 않은 IncludedObjectVersions 가 거부되는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testPutBucketInventoryInvalidVersions() {
+		test.testPutBucketInventoryInvalidVersions();
+		testV2.testPutBucketInventoryInvalidVersions();
+	}
+
+	/**
+	 * 인벤토리의 형식·주기·대상 버전이 그대로 저장되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testPutBucketInventoryFormats() {
+		test.testPutBucketInventoryFormats();
+		testV2.testPutBucketInventoryFormats();
+	}
+
+	/**
+	 * 인벤토리 대상의 접두어와 SSE-S3 암호화 설정이 그대로 저장되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testPutBucketInventoryDestination() {
+		test.testPutBucketInventoryDestination();
+		testV2.testPutBucketInventoryDestination();
+	}
+
+	/**
+	 * 대상 버킷이 ARN 형식이 아니면 거부되는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testPutBucketInventoryInvalidDestinationArn() {
+		test.testPutBucketInventoryInvalidDestinationArn();
+		testV2.testPutBucketInventoryInvalidDestinationArn();
+	}
+
+	/**
+	 * 인벤토리 설정 목록이 100개씩 나뉘어 조회되는지 확인
+	 */
+	@Test
+	@Tag("List")
+	void testListBucketInventoryPagination() {
+		test.testListBucketInventoryPagination();
+		testV2.testListBucketInventoryPagination();
+	}
+
+	/**
+	 * 올바르지 않은 ContinuationToken 으로 인벤토리 목록을 조회하면 실패하는지 확인
+	 */
+	@Test
+	@Tag("List")
+	void testListBucketInventoryInvalidToken() {
+		test.testListBucketInventoryInvalidToken();
+		testV2.testListBucketInventoryInvalidToken();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 인벤토리 목록·조회·삭제가 NoSuchBucket 으로 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testBucketInventoryBucketNotExist() {
+		test.testBucketInventoryBucketNotExist();
+		testV2.testBucketInventoryBucketNotExist();
+	}
 }

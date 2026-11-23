@@ -211,6 +211,9 @@ class TestLogging(S3TestBase):
             400,
             md.INVALID_TARGET_BUCKET_FOR_LOGGING,
         )
+        # 다른 사용자가 만든 버킷은 공용 정리로 지워지지 않는다
+        alt_client.delete_bucket(Bucket=target_bucket_name)
+        self.delete_bucket_list(target_bucket_name)
 
     @pytest.mark.tag("Error")
     def test_logging_get_bucket_not_exist(self):

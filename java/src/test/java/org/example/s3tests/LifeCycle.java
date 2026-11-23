@@ -242,4 +242,291 @@ class LifeCycle {
 		test.testLifecycleSetExpiration();
 		// testV2.testLifecycleSetExpiration();
 	}
+
+	/**
+	 * Lifecycle 설정이 없는 버킷을 조회하면 NoSuchLifecycleConfiguration 인지 확인
+	 */
+	@Test
+	@Tag("Get")
+	void testLifecycleGetNotExist() {
+		test.testLifecycleGetNotExist();
+		testV2.testLifecycleGetNotExist();
+	}
+
+	/**
+	 * Lifecycle 설정이 없어도 삭제가 성공하는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testLifecycleDeleteNotExist() {
+		test.testLifecycleDeleteNotExist();
+		testV2.testLifecycleDeleteNotExist();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 Lifecycle 조회·설정·삭제가 NoSuchBucket 으로 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleBucketNotExist() {
+		test.testLifecycleBucketNotExist();
+		testV2.testLifecycleBucketNotExist();
+	}
+
+	/**
+	 * 다른 사용자의 Lifecycle 조회·설정·삭제가 AccessDenied 로 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleAccessDenied() {
+		test.testLifecycleAccessDenied();
+		testV2.testLifecycleAccessDenied();
+	}
+
+	/**
+	 * 동작이 하나도 없는 규칙이 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleNoAction() {
+		test.testLifecycleNoAction();
+		testV2.testLifecycleNoAction();
+	}
+
+	/**
+	 * Filter 도 Prefix 도 없는 규칙이 거부되는지 확인 (SDK v1 은 Filter 가 없으면 빈 Prefix 를 넣어 보내므로 V2만)
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleNoFilter() {
+		testV2.testLifecycleNoFilter();
+	}
+
+	/**
+	 * 규칙이 없는 Lifecycle 설정이 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleEmptyRules() {
+		test.testLifecycleEmptyRules();
+		testV2.testLifecycleEmptyRules();
+	}
+
+	/**
+	 * 만료에 Days 와 Date 를 함께 주면 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleDaysAndDate() {
+		test.testLifecycleDaysAndDate();
+		testV2.testLifecycleDaysAndDate();
+	}
+
+	/**
+	 * 만료일이 음수이면 거부되는지 확인 (SDK v1 은 -1 을 미설정으로 다루므로 V2만)
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleNegativeDays() {
+		testV2.testLifecycleNegativeDays();
+	}
+
+	/**
+	 * 스토리지 클래스 전환 규칙이 그대로 저장·조회되는지 확인
+	 */
+	@Test
+	@Tag("Transition")
+	void testLifecycleTransition() {
+		test.testLifecycleTransition();
+		testV2.testLifecycleTransition();
+	}
+
+	/**
+	 * 전환할 수 없는 스토리지 클래스가 거부되는지 확인
+	 */
+	@Test
+	@Tag("Transition")
+	void testLifecycleTransitionInvalidStorageClass() {
+		test.testLifecycleTransitionInvalidStorageClass();
+		testV2.testLifecycleTransitionInvalidStorageClass();
+	}
+
+	/**
+	 * 만료일이 전환일보다 크지 않으면 거부되는지 확인
+	 */
+	@Test
+	@Tag("Transition")
+	void testLifecycleExpirationBeforeTransition() {
+		test.testLifecycleExpirationBeforeTransition();
+		testV2.testLifecycleExpirationBeforeTransition();
+	}
+
+	/**
+	 * STANDARD_IA 에서 GLACIER 로의 전환 간격이 30일 미만이면 거부되는지 확인
+	 */
+	@Test
+	@Tag("Transition")
+	void testLifecycleTransitionInterval() {
+		test.testLifecycleTransitionInterval();
+		testV2.testLifecycleTransitionInterval();
+	}
+
+	/**
+	 * 이전 버전 전환 규칙이 그대로 저장·조회되는지 확인
+	 */
+	@Test
+	@Tag("Transition")
+	void testLifecycleNoncurrentTransition() {
+		test.testLifecycleNoncurrentTransition();
+		testV2.testLifecycleNoncurrentTransition();
+	}
+
+	/**
+	 * 이전 버전 만료일이 0이면 거부되는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testLifecycleNoncurrentZeroDays() {
+		test.testLifecycleNoncurrentZeroDays();
+		testV2.testLifecycleNoncurrentZeroDays();
+	}
+
+	/**
+	 * 보존할 이전 버전 수(NewerNoncurrentVersions)가 저장되고 1~100 밖의 값은 거부되는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testLifecycleNewerNoncurrentVersions() {
+		test.testLifecycleNewerNoncurrentVersions();
+		testV2.testLifecycleNewerNoncurrentVersions();
+	}
+
+	/**
+	 * ExpiredObjectDeleteMarker 를 Days 와 함께 주면 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleDeleteMarkerWithDays() {
+		test.testLifecycleDeleteMarkerWithDays();
+		testV2.testLifecycleDeleteMarkerWithDays();
+	}
+
+	/**
+	 * ExpiredObjectDeleteMarker 를 태그 필터와 함께 주면 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleDeleteMarkerWithTag() {
+		test.testLifecycleDeleteMarkerWithTag();
+		testV2.testLifecycleDeleteMarkerWithTag();
+	}
+
+	/**
+	 * AbortIncompleteMultipartUpload 를 태그·크기 필터와 함께 주면 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleAbortMultipartWithFilter() {
+		test.testLifecycleAbortMultipartWithFilter();
+		testV2.testLifecycleAbortMultipartWithFilter();
+	}
+
+	/**
+	 * AbortIncompleteMultipartUpload 의 일수가 0이면 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testLifecycleAbortMultipartZeroDays() {
+		test.testLifecycleAbortMultipartZeroDays();
+		testV2.testLifecycleAbortMultipartZeroDays();
+	}
+
+	/**
+	 * 태그 필터가 그대로 저장·조회되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testLifecycleTagFilter() {
+		test.testLifecycleTagFilter();
+		testV2.testLifecycleTagFilter();
+	}
+
+	/**
+	 * And 필터(접두어·태그·크기)가 그대로 저장·조회되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testLifecycleAndFilter() {
+		test.testLifecycleAndFilter();
+		testV2.testLifecycleAndFilter();
+	}
+
+	/**
+	 * 조건이 하나뿐이거나 태그 키가 중복된 And 필터가 거부되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testLifecycleAndFilterInvalid() {
+		test.testLifecycleAndFilterInvalid();
+		testV2.testLifecycleAndFilterInvalid();
+	}
+
+	/**
+	 * 오브젝트 크기 필터가 그대로 저장·조회되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testLifecycleObjectSizeFilter() {
+		test.testLifecycleObjectSizeFilter();
+		testV2.testLifecycleObjectSizeFilter();
+	}
+
+	/**
+	 * 올바르지 않은 오브젝트 크기 필터가 거부되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testLifecycleObjectSizeFilterInvalid() {
+		test.testLifecycleObjectSizeFilterInvalid();
+		testV2.testLifecycleObjectSizeFilterInvalid();
+	}
+
+	/**
+	 * Filter 대신 Prefix 를 쓰는 예전 형식이 저장·조회되고 Prefix 와 Filter 를 함께 주면 거부되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testLifecycleLegacyPrefix() {
+		test.testLifecycleLegacyPrefix();
+		testV2.testLifecycleLegacyPrefix();
+	}
+
+	/**
+	 * 규칙을 1000개까지 넣을 수 있고 1001개는 거부되는지 확인
+	 */
+	@Test
+	@Tag("Max")
+	void testLifecycleMaxRules() {
+		test.testLifecycleMaxRules();
+		testV2.testLifecycleMaxRules();
+	}
+
+	/**
+	 * TransitionDefaultMinimumObjectSize 의 기본값·설정·잘못된 값 거부를 확인 (SDK v1 모델에 없으므로 V2만)
+	 */
+	@Test
+	@Tag("Transition")
+	void testLifecycleTransitionDefaultMinimumObjectSize() {
+		testV2.testLifecycleTransitionDefaultMinimumObjectSize();
+	}
+
+	/**
+	 * 만료 규칙에 걸리는 오브젝트에만 x-amz-expiration 헤더가 오는지 확인
+	 */
+	@Test
+	@Tag("metadata")
+	void testLifecycleExpirationHeader() throws java.io.IOException {
+		test.testLifecycleExpirationHeader();
+		testV2.testLifecycleExpirationHeader();
+	}
 }

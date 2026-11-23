@@ -1540,3 +1540,83 @@ func assertListedVersionIDs(t *testing.T, client *s3.Client, bucket string, want
 		}
 	}
 }
+
+func getVersioning(t *testing.T, s *suite, bucket string) *s3.GetBucketVersioningOutput {
+	t.Helper()
+	out, err := s.client.GetBucketVersioning(context.Background(), &s3.GetBucketVersioningInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// 버저닝을 한 번도 설정하지 않은 버킷은 Status 가 없다
+func TestVersioningGetNewBucket(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	out := getVersioning(t, s, s.bucket(t, 40))
+	if out.Status != "" || out.MFADelete != "" {
+		t.Fatalf("status=%q mfaDelete=%q want none", out.Status, out.MFADelete)
+	}
+}
+
+// Enabled, Suspended 외의 값은 거부된다(버저닝을 끈 상태로 되돌릴 수 없다)
+func TestVersioningInvalidStatus(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 41)
+	for _, status := range []types.BucketVersioningStatus{"Invalid", "Disabled"} {
+		_, err := s.client.PutBucketVersioning(context.Background(), &s3.PutBucketVersioningInput{Bucket: aws.String(bucket), VersioningConfiguration: &types.VersioningConfiguration{Status: status}})
+		assertS3Error(t, err, 400, "MalformedXML")
+	}
+	if out := getVersioning(t, s, bucket); out.Status != "" {
+		t.Fatalf("status=%q want none", out.Status)
+	}
+}
+
+// Status 가 없는 설정은 거부되고 기존 상태가 유지된다
+func TestVersioningEmptyConfiguration(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 42)
+	enableVersioning(t, s, bucket)
+	_, err := s.client.PutBucketVersioning(context.Background(), &s3.PutBucketVersioningInput{Bucket: aws.String(bucket), VersioningConfiguration: &types.VersioningConfiguration{}})
+	assertS3Error(t, err, 400, "IllegalVersioningConfigurationException")
+	if out := getVersioning(t, s, bucket); out.Status != types.BucketVersioningStatusEnabled {
+		t.Fatalf("status=%q want=%q", out.Status, types.BucketVersioningStatusEnabled)
+	}
+}
+
+// 없는 버킷에 대한 버저닝 요청은 실패한다
+func TestVersioningBucketNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucketNameOnly(43)
+	_, err := s.client.GetBucketVersioning(ctx, &s3.GetBucketVersioningInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{Bucket: aws.String(bucket), VersioningConfiguration: &types.VersioningConfiguration{Status: types.BucketVersioningStatusEnabled}})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+
+// 다른 사용자의 버저닝 요청은 거부된다
+func TestVersioningAccessDenied(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	alt := altClientOrSkip(t, s)
+	ctx := context.Background()
+	bucket := s.bucket(t, 44)
+	enableVersioning(t, s, bucket)
+	_, err := alt.GetBucketVersioning(ctx, &s3.GetBucketVersioningInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = alt.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{Bucket: aws.String(bucket), VersioningConfiguration: &types.VersioningConfiguration{Status: types.BucketVersioningStatusSuspended}})
+	assertS3Error(t, err, 403, "AccessDenied")
+	if out := getVersioning(t, s, bucket); out.Status != types.BucketVersioningStatusEnabled {
+		t.Fatalf("status=%q want=%q", out.Status, types.BucketVersioningStatusEnabled)
+	}
+}

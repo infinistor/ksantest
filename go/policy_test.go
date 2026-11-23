@@ -3,8 +3,10 @@ package s3tests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -579,4 +581,205 @@ func putBucketPolicy(t *testing.T, s *suite, bucket, policy string) {
 	if _, err := s.client.PutBucketPolicy(context.Background(), &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(policy)}); err != nil {
 		t.Fatalf("PutBucketPolicy: %v", err)
 	}
+}
+
+// 모든 주체의 GetObject 를 거부하는 문장에 주어진 항목을 덮어쓴다. 값이 nil 이면 그 항목을 뺀다.
+func denyGetObjectStatement(bucket string, overrides map[string]any) map[string]any {
+	statement := map[string]any{"Effect": "Deny", "Principal": "*", "Action": "s3:GetObject", "Resource": bucketARN(bucket) + "/*"}
+	for name, value := range overrides {
+		if value == nil {
+			delete(statement, name)
+			continue
+		}
+		statement[name] = value
+	}
+	return statement
+}
+
+func policyDocumentVersion(version string, statements ...map[string]any) string {
+	if statements == nil {
+		statements = []map[string]any{}
+	}
+	data, _ := json.Marshal(map[string]any{"Version": version, "Statement": statements})
+	return string(data)
+}
+
+func assertMalformedPolicy(t *testing.T, s *suite, bucket, policy string) {
+	t.Helper()
+	_, err := s.client.PutBucketPolicy(context.Background(), &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(policy)})
+	assertS3Error(t, err, 400, "MalformedPolicy")
+}
+
+// 정책이 없는 버킷의 정책·정책 상태 조회는 실패한다
+func TestBucketPolicyGetNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 22)
+	_, err := s.client.GetBucketPolicy(context.Background(), &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucketPolicy")
+	_, err = s.client.GetBucketPolicyStatus(context.Background(), &s3.GetBucketPolicyStatusInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucketPolicy")
+}
+
+// 정책이 없어도 삭제는 성공한다
+func TestBucketPolicyDeleteNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 23)
+	out, err := s.client.DeleteBucketPolicy(context.Background(), &s3.DeleteBucketPolicyInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status := responseStatus(t, out.ResultMetadata); status != 204 {
+		t.Fatalf("HTTP status = %d, want 204", status)
+	}
+}
+
+// 정책을 설정·조회·삭제한다
+func TestBucketPolicyPutGetDelete(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucket(t, 24)
+	policy := policyDocumentVersion("2012-10-17", denyGetObjectStatement(bucket, map[string]any{"Sid": "deny-get"}))
+	if _, err := s.client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(policy)}); err != nil {
+		t.Fatalf("PutBucketPolicy: %v", err)
+	}
+
+	got, err := s.client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equalJSONPolicy(aws.ToString(got.Policy), policy) {
+		t.Fatalf("policy mismatch: %s", aws.ToString(got.Policy))
+	}
+	status, err := s.client.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.PolicyStatus == nil || aws.ToBool(status.PolicyStatus.IsPublic) {
+		t.Fatalf("policy status=%#v, want public=false", status.PolicyStatus)
+	}
+
+	if _, err := s.client.DeleteBucketPolicy(ctx, &s3.DeleteBucketPolicyInput{Bucket: aws.String(bucket)}); err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucketPolicy")
+}
+
+// 없는 버킷의 정책 조회·설정·삭제는 실패한다
+func TestBucketPolicyBucketNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucketNameOnly(25)
+	policy := policyDocumentVersion("2012-10-17", denyGetObjectStatement(bucket, nil))
+	_, err := s.client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(policy)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.DeleteBucketPolicy(ctx, &s3.DeleteBucketPolicyInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+
+// 다른 사용자는 정책을 조회·설정·삭제할 수 없다
+func TestBucketPolicyAccessDenied(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	alt := altClientOrSkip(t, s)
+	ctx := context.Background()
+	bucket := s.bucket(t, 26)
+	policy := policyDocumentVersion("2012-10-17", denyGetObjectStatement(bucket, nil))
+	if _, err := s.client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(policy)}); err != nil {
+		t.Fatalf("PutBucketPolicy: %v", err)
+	}
+
+	_, err := alt.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = alt.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{Bucket: aws.String(bucket), Policy: aws.String(policy)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = alt.DeleteBucketPolicy(ctx, &s3.DeleteBucketPolicyInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	// 정책은 그대로 남아 있다
+	got, err := s.client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equalJSONPolicy(aws.ToString(got.Policy), policy) {
+		t.Fatalf("policy mismatch: %s", aws.ToString(got.Policy))
+	}
+}
+
+// JSON 이 아니거나 Statement 가 비었거나 Version 이 잘못된 정책은 거부된다
+func TestBucketPolicyInvalidJson(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 27)
+	assertMalformedPolicy(t, s, bucket, "not json")
+	// Statement 가 비어 있다
+	assertMalformedPolicy(t, s, bucket, policyDocumentVersion("2012-10-17"))
+	assertMalformedPolicy(t, s, bucket, policyDocumentVersion("2020-01-01", denyGetObjectStatement(bucket, nil)))
+}
+
+// 문장의 항목 값이 잘못된 정책은 거부된다
+func TestBucketPolicyInvalidElement(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 28)
+	invalidOverrides := []map[string]any{
+		{"Effect": "Maybe"},
+		{"Action": "s3:Invalid"},
+		{"Principal": map[string]any{"AWS": "arn:aws:iam::000000000000:user/not-exist"}},
+		{"Condition": map[string]any{"StringEquals": map[string]any{"s3:invalid": "value"}}},      // 없는 조건 키
+		{"Condition": map[string]any{"InvalidEquals": map[string]any{"aws:SourceIp": "1.1.1.1"}}}, // 없는 조건 연산자
+	}
+	for _, overrides := range invalidOverrides {
+		assertMalformedPolicy(t, s, bucket, policyDocumentVersion("2012-10-17", denyGetObjectStatement(bucket, overrides)))
+	}
+	_, err := s.client.GetBucketPolicy(context.Background(), &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucketPolicy")
+}
+
+// 리소스가 맞지 않거나 필수 항목이 빠진 정책은 거부된다
+func TestBucketPolicyInvalidResource(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 29)
+	// 다른 버킷의 리소스
+	assertMalformedPolicy(t, s, bucket, policyDocumentVersion("2012-10-17", denyGetObjectStatement(bucket, map[string]any{"Resource": "arn:aws:s3:::other-bucket-name/*"})))
+	// 버킷 대상 액션에 오브젝트 리소스
+	assertMalformedPolicy(t, s, bucket, policyDocumentVersion("2012-10-17", denyGetObjectStatement(bucket, map[string]any{"Action": "s3:ListBucket"})))
+	// Resource, Principal 누락
+	for _, missing := range []string{"Resource", "Principal"} {
+		assertMalformedPolicy(t, s, bucket, policyDocumentVersion("2012-10-17", denyGetObjectStatement(bucket, map[string]any{missing: nil})))
+	}
+}
+
+// 정책 문서는 20KB 까지
+func TestBucketPolicyTooLarge(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 30)
+	statements := make([]map[string]any, 0, 70)
+	for i := range 70 {
+		statements = append(statements, denyGetObjectStatement(bucket, map[string]any{
+			"Sid":       fmt.Sprintf("statement%d", i),
+			"Condition": map[string]any{"StringEquals": map[string]any{"aws:Referer": strings.Repeat("x", 180)}},
+		}))
+	}
+	policy := policyDocumentVersion("2012-10-17", statements...)
+	if len(policy) <= 20480 {
+		t.Fatalf("policy size = %d, want > 20480", len(policy))
+	}
+	assertMalformedPolicy(t, s, bucket, policy)
 }

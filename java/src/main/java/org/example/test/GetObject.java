@@ -32,6 +32,9 @@ import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
 import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
+import java.util.List;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 
 public class GetObject extends TestBase {
 	@Test
@@ -427,5 +430,174 @@ public class GetObject extends TestBase {
 				assertEquals(body, content);
 			}
 		}
+	}
+
+	private static final String DIGITS = "0123456789";
+
+	/** 10바이트(0123456789) 오브젝트를 하나 넣은 버킷을 만든다. */
+	private String putDigits(AmazonS3 client, int testId, String key) {
+		var bucketName = createBucket(client, testId);
+		client.putObject(bucketName, key, DIGITS);
+		return bucketName;
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testGetObjectBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(37);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET, () -> client.getObject(bucketName, "key"));
+		// HEAD 는 본문이 없어 상태 코드만 온다
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.getObjectMetadata(bucketName, "key"));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testHeadObjectNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 38);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.getObjectMetadata(bucketName, "key"));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testGetObjectAccessDenied() {
+		var key = "testGetObjectAccessDenied";
+		var client = getClient();
+		var bucketName = putDigits(client, 39, key);
+		for (var otherClient : List.of(getAltClient(), getPublicClient())) {
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+					() -> otherClient.getObject(bucketName, key));
+			// 목록 권한이 없으면 없는 키도 404 가 아니라 403 이다
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+					() -> otherClient.getObject(bucketName, "not_exist"));
+			assertS3Error(HttpStatus.SC_FORBIDDEN, null, () -> otherClient.getObjectMetadata(bucketName, key));
+		}
+	}
+
+	@Test
+	@Tag("Range")
+	public void testRangedRequestBeyondEnd() {
+		var key = "testRangedRequestBeyondEnd";
+		var client = getClient();
+		var bucketName = putDigits(client, 41, key);
+		// 끝이 크기를 넘으면 마지막 바이트까지로 잘린다
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withRange(5, 100));
+		assertEquals(List.of(5L, 9L), List.of(response.getObjectMetadata().getContentRange()));
+		assertEquals(10, response.getObjectMetadata().getInstanceLength());
+		assertEquals("56789", getBody(response.getObjectContent()));
+
+		// 시작이 크기와 같으면 416
+		// (SDK 가 뒤에서부터의 길이 지정(bytes=-N)을 표현하지 못해 bytes=-100, bytes=-0 은 확인하지 않는다)
+		assertS3Error(HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE, MainData.INVALID_RANGE,
+				() -> client.getObject(new GetObjectRequest(bucketName, key).withRange(10, 20)));
+	}
+
+	@Test
+	@Tag("PartNumber")
+	public void testGetObjectPartNumber() {
+		var key = "testGetObjectPartNumber";
+		var client = getClient();
+		var bucketName = putDigits(client, 43, key);
+		// 멀티파트가 아닌 오브젝트는 1번 파트가 전체다
+		var response = client.getObject(new GetObjectRequest(bucketName, key).withPartNumber(1));
+		assertEquals(List.of(0L, 9L), List.of(response.getObjectMetadata().getContentRange()));
+		assertEquals(10, response.getObjectMetadata().getInstanceLength());
+		assertNull(response.getObjectMetadata().getPartCount());
+		assertEquals(DIGITS, getBody(response.getObjectContent()));
+
+		var headResponse = client.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key).withPartNumber(1));
+		assertEquals(10, headResponse.getContentLength());
+
+		assertS3Error(HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE, MainData.INVALID_PART_NUMBER,
+				() -> client.getObject(new GetObjectRequest(bucketName, key).withPartNumber(2)));
+	}
+
+	@Test
+	@Tag("PartNumber")
+	public void testGetObjectPartNumberInvalid() {
+		var key = "testGetObjectPartNumberInvalid";
+		var client = getClient();
+		var bucketName = putDigits(client, 44, key);
+		// 파트 번호는 1~10000
+		for (var partNumber : List.of(0, 10001)) {
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+					() -> client.getObject(new GetObjectRequest(bucketName, key).withPartNumber(partNumber)));
+		}
+		// Range 와 partNumber 는 함께 쓸 수 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.getObject(new GetObjectRequest(bucketName, key).withPartNumber(1).withRange(0, 1)));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testGetObjectVersionIdUnversioned() {
+		var key = "testGetObjectVersionIdUnversioned";
+		var client = getClient();
+		var bucketName = putDigits(client, 45, key);
+		// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전이다
+		assertEquals(DIGITS,
+				getBody(client.getObject(new GetObjectRequest(bucketName, key, "null")).getObjectContent()));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.getObject(new GetObjectRequest(bucketName, key, "invalid")));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, null,
+				() -> client.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key, "invalid")));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testGetObjectNullVersionNotExist() {
+		var key = "testGetObjectNullVersionNotExist";
+		var client = getClient();
+		var bucketName = createBucket(client, 46);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		client.putObject(bucketName, key, "content");
+		// 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_VERSION,
+				() -> client.getObject(new GetObjectRequest(bucketName, key, "null")));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null,
+				() -> client.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key, "null")));
+	}
+
+	@Test
+	@Tag("Header")
+	public void testGetObjectResponseHeadersAnonymous() {
+		var key = "testGetObjectResponseHeadersAnonymous";
+		var client = getClient();
+		var bucketName = putDigits(client, 47, key);
+		// 익명 요청에는 response-* 재정의를 쓸 수 없다
+		var publicClient = getPublicClient();
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> publicClient.getObject(new GetObjectRequest(bucketName, key)
+						.withResponseHeaders(new ResponseHeaderOverrides().withContentType("text/html"))));
+	}
+
+	@Test
+	@Tag("Header")
+	public void testGetObjectDefaultHeaders() {
+		var key = "testGetObjectDefaultHeaders";
+		var client = getClient();
+		var bucketName = putDigits(client, 49, key);
+		// (SDK 가 Content-Type 을 항상 붙여 올리므로 기본값 binary/octet-stream 은 확인하지 않는다)
+		var getResponse = client.getObject(bucketName, key);
+		for (var response : List.of(getResponse.getObjectMetadata(), client.getObjectMetadata(bucketName, key))) {
+			assertEquals("bytes", response.getRawMetadataValue("Accept-Ranges"));
+			assertEquals(10, response.getContentLength());
+			assertEquals("781e5e245d69b566979b86e28d23f2c7", response.getETag());
+			assertTrue(response.getLastModified() != null);
+		}
+		getBody(getResponse.getObjectContent());
+	}
+
+	@Test
+	@Tag("IfMatch")
+	public void testGetObjectIfMatchWildcard() {
+		var key = "testGetObjectIfMatchWildcard";
+		var client = getClient();
+		var bucketName = putDigits(client, 50, key);
+		// If-Match: * 는 오브젝트가 있으면 통과, If-None-Match: * 는 304(SDK 는 null 을 돌려준다)
+		assertEquals(DIGITS, getBody(client
+				.getObject(new GetObjectRequest(bucketName, key).withMatchingETagConstraint("*")).getObjectContent()));
+		assertNull(client.getObject(new GetObjectRequest(bucketName, key).withNonmatchingETagConstraint("*")));
 	}
 }

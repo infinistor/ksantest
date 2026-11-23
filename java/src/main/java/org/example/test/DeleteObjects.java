@@ -12,6 +12,7 @@ package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,9 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.MultiObjectDeleteException;
+import org.example.Data.MainData;
 
 public class DeleteObjects extends TestBase {
 	@Test
@@ -390,5 +394,193 @@ public class DeleteObjects extends TestBase {
 		var deleteMarkers = getDeleteMarkers(versResponse.getVersionSummaries());
 		assertEquals(0, versions.size());
 		assertEquals(10, deleteMarkers.size());
+	}
+
+	private static List<KeyVersion> objectIds(int count) {
+		var objects = new ArrayList<KeyVersion>();
+		for (var i = 0; i < count; i++)
+			objects.add(new KeyVersion("key" + i));
+		return objects;
+	}
+
+	@Test
+	@Tag("Check")
+	public void testDeleteObjectNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 22);
+		// 없는 키를 지워도 성공한다(SDK 가 응답을 돌려주지 않아 오류가 없는 것만 확인한다)
+		client.deleteObject(bucketName, "not_exist");
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testDeleteObjectBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(23);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET, () -> client.deleteObject(bucketName, "key"));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(objectIds(1))));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testDeleteObjectAccessDenied() {
+		var key = "testDeleteObjectAccessDenied";
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createObjects(client, 24, key);
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED, () -> altClient.deleteObject(bucketName, key));
+
+		// DeleteObjects 는 요청 자체는 200 이고 키마다 AccessDenied 를 돌려준다
+		var e = assertThrows(MultiObjectDeleteException.class,
+				() -> altClient.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(key)));
+		assertEquals(0, e.getDeletedObjects().size());
+		assertEquals(1, e.getErrors().size());
+		assertEquals(key, e.getErrors().get(0).getKey());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrors().get(0).getCode());
+
+		client.getObjectMetadata(bucketName, key);
+	}
+
+	@Test
+	@Tag("Version")
+	public void testDeleteObjectVersionIdUnversioned() {
+		var key = "testDeleteObjectVersionIdUnversioned";
+		var client = getClient();
+		var bucketName = createObjects(client, 25, key);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.deleteVersion(bucketName, key, "invalid"));
+		client.getObjectMetadata(bucketName, key);
+
+		// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전으로 지울 수 있다
+		client.deleteVersion(bucketName, key, "null");
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY, () -> client.getObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testDeleteObjectsNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 26);
+		var keys = List.of("not_exist1", "not_exist2");
+		// 없는 키도 삭제된 것으로 응답한다
+		var response = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(getKeyVersions(keys)));
+		assertEquals(keys, response.getDeletedObjects().stream().map(item -> item.getKey()).sorted().toList());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testDeleteObjectsEmpty() {
+		var client = getClient();
+		var bucketName = createBucket(client, 27);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML,
+				() -> client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(new ArrayList<KeyVersion>())));
+	}
+
+	@Test
+	@Tag("Max")
+	public void testDeleteObjectsMaxKeys() {
+		var client = getClient();
+		var bucketName = createBucket(client, 28);
+		// 한 번에 1000개까지 지울 수 있다
+		var response = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(objectIds(1000)));
+		assertEquals(1000, response.getDeletedObjects().size());
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML,
+				() -> client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(objectIds(1001))));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testDeleteObjectsDuplicateKeys() {
+		var key = "testDeleteObjectsDuplicateKeys";
+		var client = getClient();
+		var bucketName = createObjects(client, 29, key);
+		// 같은 키를 두 번 넣어도 한 번만 응답한다
+		var response = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(key, key));
+		assertEquals(List.of(key), response.getDeletedObjects().stream().map(item -> item.getKey()).toList());
+	}
+
+	/** 요청은 200 이고 키마다 NoSuchVersion 을 돌려준다 */
+	private void checkDeleteObjectsNoSuchVersion(AmazonS3 client, String bucketName, String key) {
+		var e = assertThrows(MultiObjectDeleteException.class,
+				() -> client.deleteObjects(
+						new DeleteObjectsRequest(bucketName).withKeys(List.of(new KeyVersion(key, "invalid")))));
+		assertEquals(0, e.getDeletedObjects().size());
+		assertEquals(1, e.getErrors().size());
+		assertEquals(key, e.getErrors().get(0).getKey());
+		assertEquals("invalid", e.getErrors().get(0).getVersionId());
+		assertEquals(MainData.NO_SUCH_VERSION, e.getErrors().get(0).getCode());
+	}
+
+	@Test
+	@Tag("Version")
+	public void testDeleteObjectsInvalidVersionId() {
+		var key = "testDeleteObjectsInvalidVersionId";
+		var client = getClient();
+		var bucketName = createObjects(client, 30, key);
+
+		checkDeleteObjectsNoSuchVersion(client, bucketName, key);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		checkDeleteObjectsNoSuchVersion(client, bucketName, key);
+		client.getObjectMetadata(bucketName, key);
+	}
+
+	@Test
+	@Tag("Version")
+	public void testDeleteObjectVersioningNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 31);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		// 버저닝 버킷에서는 없는 키를 지워도 삭제 마커가 생긴다
+		client.deleteObject(bucketName, "not_exist");
+
+		var deleteResponse = client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys("not_exist2"));
+		assertEquals(true, deleteResponse.getDeletedObjects().get(0).isDeleteMarker());
+		assertNotNull(deleteResponse.getDeletedObjects().get(0).getDeleteMarkerVersionId());
+
+		var markers = getDeleteMarkers(client.listVersions(bucketName, "").getVersionSummaries());
+		assertEquals(List.of("not_exist", "not_exist2"),
+				markers.stream().map(marker -> marker.getKey()).sorted().toList());
+	}
+
+	@Test
+	@Tag("Version")
+	public void testDeleteObjectVersioningInvalidVersionId() {
+		var key = "testDeleteObjectVersioningInvalidVersionId";
+		var client = getClient();
+		var bucketName = createBucket(client, 32);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var versionId = client.putObject(bucketName, key, "content").getVersionId();
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.deleteVersion(bucketName, key, "invalid"));
+
+		// 없는 null 버전을 지워도 성공하고 삭제 마커는 생기지 않는다
+		client.deleteVersion(bucketName, key, "null");
+
+		var summaries = client.listVersions(bucketName, "").getVersionSummaries();
+		assertEquals(1, summaries.size());
+		assertEquals(versionId, summaries.get(0).getVersionId());
+		assertEquals(false, summaries.get(0).isDeleteMarker());
+	}
+
+	@Test
+	@Tag("Version")
+	public void testDeleteObjectRemoveDeleteMarker() {
+		var key = "testDeleteObjectRemoveDeleteMarker";
+		var client = getClient();
+		var bucketName = createBucket(client, 33);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var versionId = client.putObject(bucketName, key, "content").getVersionId();
+		client.deleteObject(bucketName, key);
+		var markers = getDeleteMarkers(client.listVersions(bucketName, "").getVersionSummaries());
+		assertEquals(1, markers.size());
+		var markerId = markers.get(0).getVersionId();
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY, () -> client.getObject(bucketName, key));
+
+		// 삭제 마커를 지우면 이전 버전이 다시 보인다
+		client.deleteVersion(bucketName, key, markerId);
+		var getResponse = client.getObject(bucketName, key);
+		assertEquals(versionId, getResponse.getObjectMetadata().getVersionId());
+		getBody(getResponse.getObjectContent());
 	}
 }

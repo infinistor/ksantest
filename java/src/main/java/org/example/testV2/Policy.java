@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @SuppressWarnings("unchecked")
 public class Policy extends TestBase {
@@ -849,4 +851,208 @@ public class Policy extends TestBase {
 		var response = client.getBucketPolicyStatus(g -> g.bucket(bucketName));
 		assertTrue(response.policyStatus().isPublic());
 	}
+
+	// region 버킷 정책 API 검증
+	/** 모든 주체의 GetObject 를 거부하는 문장. Deny 는 s3:GetObject 로만 한정한다(버킷 정리가 막히지 않게). */
+	static JsonObject denyStatement(String bucketName) {
+		var statement = new JsonObject();
+		statement.addProperty(MainData.POLICY_EFFECT, MainData.POLICY_EFFECT_DENY);
+		statement.addProperty(MainData.POLICY_PRINCIPAL, "*");
+		statement.addProperty(MainData.POLICY_ACTION, "s3:GetObject");
+		statement.addProperty(MainData.POLICY_RESOURCE, MainData.POLICY_RESOURCE_PREFIX + bucketName + "/*");
+		return statement;
+	}
+
+	static String policyDocumentOf(String version, JsonObject... statements) {
+		var list = new JsonArray();
+		for (var statement : statements)
+			list.add(statement);
+		var document = new JsonObject();
+		document.addProperty(MainData.POLICY_VERSION, version);
+		document.add(MainData.POLICY_STATEMENT, list);
+		return document.toString();
+	}
+
+	static String policyDocumentOf(JsonObject... statements) {
+		return policyDocumentOf(MainData.POLICY_VERSION_DATE, statements);
+	}
+
+	static JsonObject conditionOf(String operator, String conditionKey, String value) {
+		var values = new JsonObject();
+		values.addProperty(conditionKey, value);
+		var condition = new JsonObject();
+		condition.add(operator, values);
+		return condition;
+	}
+
+	static void assertMalformedPolicy(S3Client client, String bucketName, String policy) {
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_POLICY,
+				() -> client.putBucketPolicy(p -> p.bucket(bucketName).policy(policy)));
+	}
+
+	@Test
+	@Tag("Get")
+	public void testBucketPolicyGetNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 22);
+
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET_POLICY,
+				() -> client.getBucketPolicy(g -> g.bucket(bucketName)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET_POLICY,
+				() -> client.getBucketPolicyStatus(g -> g.bucket(bucketName)));
+	}
+
+	@Test
+	@Tag("Delete")
+	public void testBucketPolicyDeleteNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 23);
+
+		// 정책이 없어도 삭제는 성공한다
+		var response = client.deleteBucketPolicy(d -> d.bucket(bucketName));
+		assertEquals(HttpStatus.SC_NO_CONTENT, response.sdkHttpResponse().statusCode());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testBucketPolicyPutGetDelete() {
+		var client = getClient();
+		var bucketName = createBucket(client, 24);
+		var statement = denyStatement(bucketName);
+		statement.addProperty("Sid", "deny-get");
+		var policy = policyDocumentOf(statement);
+		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policy));
+
+		assertEquals(JsonParser.parseString(policy),
+				JsonParser.parseString(client.getBucketPolicy(g -> g.bucket(bucketName)).policy()));
+		assertFalse(client.getBucketPolicyStatus(g -> g.bucket(bucketName)).policyStatus().isPublic());
+
+		client.deleteBucketPolicy(d -> d.bucket(bucketName));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET_POLICY,
+				() -> client.getBucketPolicy(g -> g.bucket(bucketName)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketPolicyBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(25);
+		var policy = policyDocumentOf(denyStatement(bucketName));
+
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.getBucketPolicy(g -> g.bucket(bucketName)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.putBucketPolicy(p -> p.bucket(bucketName).policy(policy)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.deleteBucketPolicy(d -> d.bucket(bucketName)));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testBucketPolicyAccessDenied() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 26);
+		var policy = policyDocumentOf(denyStatement(bucketName));
+		client.putBucketPolicy(p -> p.bucket(bucketName).policy(policy));
+
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.getBucketPolicy(g -> g.bucket(bucketName)));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.putBucketPolicy(p -> p.bucket(bucketName).policy(policy)));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.deleteBucketPolicy(d -> d.bucket(bucketName)));
+		// 정책은 그대로 남아 있다
+		assertEquals(JsonParser.parseString(policy),
+				JsonParser.parseString(client.getBucketPolicy(g -> g.bucket(bucketName)).policy()));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketPolicyInvalidJson() {
+		var client = getClient();
+		var bucketName = createBucket(client, 27);
+
+		assertMalformedPolicy(client, bucketName, "not json");
+		// Statement 가 비어 있다
+		assertMalformedPolicy(client, bucketName, policyDocumentOf());
+		assertMalformedPolicy(client, bucketName, policyDocumentOf("2020-01-01", denyStatement(bucketName)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketPolicyInvalidElement() {
+		var client = getClient();
+		var bucketName = createBucket(client, 28);
+
+		var invalidEffect = denyStatement(bucketName);
+		invalidEffect.addProperty(MainData.POLICY_EFFECT, "Maybe");
+
+		var invalidAction = denyStatement(bucketName);
+		invalidAction.addProperty(MainData.POLICY_ACTION, "s3:Invalid");
+
+		var invalidPrincipal = denyStatement(bucketName);
+		var principal = new JsonObject();
+		principal.addProperty("AWS", "arn:aws:iam::000000000000:user/not-exist");
+		invalidPrincipal.add(MainData.POLICY_PRINCIPAL, principal);
+
+		// 없는 조건 키
+		var invalidConditionKey = denyStatement(bucketName);
+		invalidConditionKey.add(MainData.POLICY_CONDITION, conditionOf("StringEquals", "s3:invalid", "value"));
+
+		// 없는 조건 연산자
+		var invalidOperator = denyStatement(bucketName);
+		invalidOperator.add(MainData.POLICY_CONDITION, conditionOf("InvalidEquals", "aws:SourceIp", "1.1.1.1"));
+
+		for (var statement : List.of(invalidEffect, invalidAction, invalidPrincipal, invalidConditionKey,
+				invalidOperator))
+			assertMalformedPolicy(client, bucketName, policyDocumentOf(statement));
+
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET_POLICY,
+				() -> client.getBucketPolicy(g -> g.bucket(bucketName)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketPolicyInvalidResource() {
+		var client = getClient();
+		var bucketName = createBucket(client, 29);
+
+		// 다른 버킷의 리소스
+		var otherBucket = denyStatement(bucketName);
+		otherBucket.addProperty(MainData.POLICY_RESOURCE, "arn:aws:s3:::other-bucket-name/*");
+		assertMalformedPolicy(client, bucketName, policyDocumentOf(otherBucket));
+
+		// 버킷 대상 액션에 오브젝트 리소스
+		var bucketAction = denyStatement(bucketName);
+		bucketAction.addProperty(MainData.POLICY_ACTION, "s3:ListBucket");
+		assertMalformedPolicy(client, bucketName, policyDocumentOf(bucketAction));
+
+		// Resource, Principal 누락
+		for (var missing : List.of(MainData.POLICY_RESOURCE, MainData.POLICY_PRINCIPAL)) {
+			var statement = denyStatement(bucketName);
+			statement.remove(missing);
+			assertMalformedPolicy(client, bucketName, policyDocumentOf(statement));
+		}
+	}
+
+	@Test
+	@Tag("Max")
+	public void testBucketPolicyTooLarge() {
+		var client = getClient();
+		var bucketName = createBucket(client, 30);
+
+		// 정책 문서는 20KB 까지
+		var statements = new JsonObject[70];
+		for (int i = 0; i < statements.length; i++) {
+			statements[i] = denyStatement(bucketName);
+			statements[i].addProperty("Sid", "statement" + i);
+			statements[i].add(MainData.POLICY_CONDITION,
+					conditionOf("StringEquals", "aws:Referer", "x".repeat(180)));
+		}
+		var policy = policyDocumentOf(statements);
+		assertTrue(policy.length() > 20480);
+		assertMalformedPolicy(client, bucketName, policy);
+	}
+	// endregion
 }

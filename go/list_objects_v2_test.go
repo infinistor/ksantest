@@ -818,3 +818,96 @@ func listV2Prefixes(out *s3.ListObjectsV2Output) []string {
 	}
 	return prefixes
 }
+
+// max-keys 가 음수이면 거부된다
+func TestBucketListV2MaxKeysNegative(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	_, err := s.client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(s.bucket(t, 46)), MaxKeys: aws.Int32(-1)})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 알 수 없는 encoding-type 은 거부된다
+func TestBucketListV2EncodingInvalid(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	_, err := s.client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(s.bucket(t, 47)), EncodingType: types.EncodingType("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 서버가 내주지 않은 continuation-token 은 거부된다
+func TestBucketListV2ContinuationTokenInvalid(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, listTreeKeys, 48)
+	_, err := s.client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(b), ContinuationToken: aws.String("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// KeyCount 와 MaxKeys 는 공통 접두어도 한 건으로 센다
+func TestBucketListV2KeyCountDelimiter(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, listTreeKeys, 49)
+	out := listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b), Delimiter: aws.String("/")})
+	assertStringList(t, listV2Keys(out), []string{"c", "d"})
+	assertStringList(t, listV2Prefixes(out), []string{"a/", "b/"})
+	if aws.ToInt32(out.KeyCount) != 4 {
+		t.Fatalf("KeyCount=%d", aws.ToInt32(out.KeyCount))
+	}
+
+	out = listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b), Delimiter: aws.String("/"), MaxKeys: aws.Int32(2)})
+	assertStringList(t, listV2Keys(out), []string{})
+	assertStringList(t, listV2Prefixes(out), []string{"a/", "b/"})
+	if aws.ToInt32(out.KeyCount) != 2 || !aws.ToBool(out.IsTruncated) {
+		t.Fatalf("KeyCount=%d IsTruncated=%v", aws.ToInt32(out.KeyCount), aws.ToBool(out.IsTruncated))
+	}
+
+	out = listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b), Delimiter: aws.String("/"), MaxKeys: aws.Int32(2), ContinuationToken: out.NextContinuationToken})
+	assertStringList(t, listV2Keys(out), []string{"c", "d"})
+	assertStringList(t, listV2Prefixes(out), []string{})
+	if aws.ToBool(out.IsTruncated) {
+		t.Fatal("last page is truncated")
+	}
+}
+
+// StartAfter 가 공통 접두어 안의 키이면 그 접두어는 통째로 건너뛴다
+func TestBucketListV2StartAfterInCommonPrefix(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, listTreeKeys, 50)
+	out := listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b), StartAfter: aws.String("a/1"), Delimiter: aws.String("/")})
+	assertStringList(t, listV2Keys(out), []string{"c", "d"})
+	assertStringList(t, listV2Prefixes(out), []string{"b/"})
+	if aws.ToInt32(out.KeyCount) != 3 || aws.ToString(out.StartAfter) != "a/1" {
+		t.Fatalf("KeyCount=%d StartAfter=%q", aws.ToInt32(out.KeyCount), aws.ToString(out.StartAfter))
+	}
+}
+
+// 구분자는 여러 글자일 수 있다
+func TestBucketListV2DelimiterMultiChar(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, listTreeKeys, 51)
+	out := listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b), Delimiter: aws.String("/1")})
+	assertStringList(t, listV2Keys(out), []string{"a/2", "c", "d"})
+	assertStringList(t, listV2Prefixes(out), []string{"a/1", "b/1"})
+}
+
+// 권한이 없는 사용자는 목록을 볼 수 없다
+func TestBucketListV2AltUser(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, listTreeKeys, 52)
+	_, err := altClientOrSkip(t, s).ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(b)})
+	assertS3Error(t, err, 403, "AccessDenied")
+}
+
+// 요청에 준 값을 응답에 그대로 돌려준다
+func TestBucketListV2ResponseFields(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, listTreeKeys, 53)
+	out := listV2(t, s.client, &s3.ListObjectsV2Input{Bucket: aws.String(b), Prefix: aws.String("a/"), StartAfter: aws.String("a/0"), MaxKeys: aws.Int32(5), Delimiter: aws.String("/")})
+	if aws.ToString(out.Name) != b || aws.ToString(out.Prefix) != "a/" || aws.ToString(out.StartAfter) != "a/0" || aws.ToInt32(out.MaxKeys) != 5 || aws.ToString(out.Delimiter) != "/" {
+		t.Fatalf("Name=%q Prefix=%q StartAfter=%q MaxKeys=%d Delimiter=%q", aws.ToString(out.Name), aws.ToString(out.Prefix), aws.ToString(out.StartAfter), aws.ToInt32(out.MaxKeys), aws.ToString(out.Delimiter))
+	}
+	if aws.ToBool(out.IsTruncated) || aws.ToInt32(out.KeyCount) != 2 || out.NextContinuationToken != nil {
+		t.Fatalf("IsTruncated=%v KeyCount=%d NextContinuationToken=%q", aws.ToBool(out.IsTruncated), aws.ToInt32(out.KeyCount), aws.ToString(out.NextContinuationToken))
+	}
+	assertStringList(t, listV2Keys(out), []string{"a/1", "a/2"})
+}

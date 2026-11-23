@@ -1297,3 +1297,429 @@ class TestMultipart(S3TestBase):
             404,
             md.NO_SUCH_UPLOAD,
         )
+
+    @staticmethod
+    def _parts(*parts) -> dict:
+        return {"Parts": [{"PartNumber": number, "ETag": etag} for number, etag in parts]}
+
+    def _upload_small_parts(self, client, bucket_name: str, key: str, count: int) -> tuple:
+        """10바이트짜리 파트를 count 개 올리고 (upload_id, etag 목록)을 돌려준다."""
+        upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=key)["UploadId"]
+        etags = [
+            client.upload_part(
+                Bucket=bucket_name, Key=key, UploadId=upload_id, PartNumber=number, Body=b"0123456789"
+            )["ETag"]
+            for number in range(1, count + 1)
+        ]
+        return upload_id, etags
+
+    @pytest.mark.tag("ERROR")
+    def test_upload_part_invalid_part_number(self):
+        key = "test_upload_part_invalid_part_number"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 49)
+        upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=key)["UploadId"]
+        # 파트 번호는 1~10000
+        for part_number in (0, 10001):
+            self.assert_client_error(
+                lambda part_number=part_number: client.upload_part(
+                    Bucket=bucket_name, Key=key, UploadId=upload_id, PartNumber=part_number, Body=b"content"
+                ),
+                400,
+                md.INVALID_ARGUMENT,
+            )
+        client.upload_part(Bucket=bucket_name, Key=key, UploadId=upload_id, PartNumber=10000, Body=b"content")
+        parts = client.list_parts(Bucket=bucket_name, Key=key, UploadId=upload_id)["Parts"]
+        assert [part["PartNumber"] for part in parts] == [10000]
+
+    @pytest.mark.tag("ERROR")
+    def test_upload_part_no_such_upload(self):
+        key = "test_upload_part_no_such_upload"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 50)
+        upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=key)["UploadId"]
+        # 없는 업로드 ID, 다른 키의 업로드 ID
+        for target_key, target_upload_id in ((key, "invalid"), (key + "_other", upload_id)):
+            self.assert_client_error(
+                lambda target_key=target_key, target_upload_id=target_upload_id: client.upload_part(
+                    Bucket=bucket_name, Key=target_key, UploadId=target_upload_id, PartNumber=1, Body=b"content"
+                ),
+                404,
+                md.NO_SUCH_UPLOAD,
+            )
+            self.assert_client_error(
+                lambda target_key=target_key, target_upload_id=target_upload_id: client.list_parts(
+                    Bucket=bucket_name, Key=target_key, UploadId=target_upload_id
+                ),
+                404,
+                md.NO_SUCH_UPLOAD,
+            )
+
+    @pytest.mark.tag("ContentMD5")
+    def test_upload_part_content_md5_mismatch(self):
+        key = "test_upload_part_content_md5_mismatch"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 51)
+        upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=key)["UploadId"]
+        self.assert_client_error(
+            lambda: client.upload_part(
+                Bucket=bucket_name,
+                Key=key,
+                UploadId=upload_id,
+                PartNumber=1,
+                Body=b"content",
+                ContentMD5=utils.get_md5("other"),
+            ),
+            400,
+            md.BAD_DIGEST,
+        )
+        assert not client.list_parts(Bucket=bucket_name, Key=key, UploadId=upload_id).get("Parts")
+
+    @pytest.mark.tag("Access")
+    def test_multipart_access_denied(self):
+        key = "test_multipart_access_denied"
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket(client, 52)
+        upload_id, etags = self._upload_small_parts(client, bucket_name, key, 1)
+        denied = [
+            lambda: alt_client.create_multipart_upload(Bucket=bucket_name, Key=key),
+            lambda: alt_client.upload_part(
+                Bucket=bucket_name, Key=key, UploadId=upload_id, PartNumber=2, Body=b"content"
+            ),
+            lambda: alt_client.list_parts(Bucket=bucket_name, Key=key, UploadId=upload_id),
+            lambda: alt_client.list_multipart_uploads(Bucket=bucket_name),
+            lambda: alt_client.complete_multipart_upload(
+                Bucket=bucket_name, Key=key, UploadId=upload_id, MultipartUpload=self._parts((1, etags[0]))
+            ),
+            lambda: alt_client.abort_multipart_upload(Bucket=bucket_name, Key=key, UploadId=upload_id),
+        ]
+        for request in denied:
+            self.assert_client_error(request, 403, md.ACCESS_DENIED)
+        # 업로드는 그대로 남아 있다
+        parts = client.list_parts(Bucket=bucket_name, Key=key, UploadId=upload_id)["Parts"]
+        assert [part["PartNumber"] for part in parts] == [1]
+
+    @pytest.mark.tag("ERROR")
+    def test_multipart_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(53)
+        self.assert_client_error(
+            lambda: client.create_multipart_upload(Bucket=bucket_name, Key="key"), 404, md.NO_SUCH_BUCKET
+        )
+        self.assert_client_error(lambda: client.list_multipart_uploads(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+
+    @pytest.mark.tag("StorageClass")
+    def test_multipart_invalid_storage_class(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 54)
+        self.assert_client_error(
+            lambda: client.create_multipart_upload(Bucket=bucket_name, Key="key", StorageClass="INVALID"),
+            400,
+            md.INVALID_STORAGE_CLASS,
+        )
+        assert not client.list_multipart_uploads(Bucket=bucket_name).get("Uploads")
+
+    @pytest.mark.tag("List")
+    def test_list_parts_max_parts(self):
+        key = "test_list_parts_max_parts"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 55)
+        upload_id, _ = self._upload_small_parts(client, bucket_name, key, 3)
+
+        def list_parts(**kwargs):
+            return client.list_parts(Bucket=bucket_name, Key=key, UploadId=upload_id, **kwargs)
+
+        def numbers(response):
+            return [part["PartNumber"] for part in response.get("Parts", [])]
+
+        response = list_parts()
+        assert numbers(response) == [1, 2, 3]
+        assert response["IsTruncated"] is False
+        assert response["MaxParts"] == 1000
+
+        response = list_parts(MaxParts=2)
+        assert numbers(response) == [1, 2]
+        assert response["IsTruncated"] is True
+        assert response["NextPartNumberMarker"] == 2
+
+        response = list_parts(PartNumberMarker=2)
+        assert numbers(response) == [3]
+        assert response["IsTruncated"] is False
+
+        response = list_parts(MaxParts=0)
+        assert numbers(response) == []
+        assert response["IsTruncated"] is False
+
+        # 1000 보다 큰 값은 1000 으로 낮춘다
+        assert list_parts(MaxParts=1001)["MaxParts"] == 1000
+        self.assert_client_error(lambda: list_parts(MaxParts=-1), 400, md.INVALID_ARGUMENT)
+
+    @pytest.mark.tag("ERROR")
+    def test_complete_multipart_upload_invalid_part_order(self):
+        key = "test_complete_multipart_upload_invalid_part_order"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 56)
+        upload_id, etags = self._upload_small_parts(client, bucket_name, key, 2)
+        # 파트 번호는 오름차순이어야 하고 중복될 수 없다
+        for parts in (((2, etags[1]), (1, etags[0])), ((1, etags[0]), (1, etags[0]))):
+            self.assert_client_error(
+                lambda parts=parts: client.complete_multipart_upload(
+                    Bucket=bucket_name, Key=key, UploadId=upload_id, MultipartUpload=self._parts(*parts)
+                ),
+                400,
+                md.INVALID_PART_ORDER,
+            )
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key=key), 404, "404")
+
+    @pytest.mark.tag("ERROR")
+    def test_complete_multipart_upload_no_parts(self):
+        key = "test_complete_multipart_upload_no_parts"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 57)
+        upload_id, _ = self._upload_small_parts(client, bucket_name, key, 1)
+        self.assert_client_error(
+            lambda: client.complete_multipart_upload(
+                Bucket=bucket_name, Key=key, UploadId=upload_id, MultipartUpload={"Parts": []}
+            ),
+            400,
+            md.MALFORMED_XML,
+        )
+
+    @pytest.mark.tag("Check")
+    def test_complete_multipart_upload_skip_part(self):
+        key = "test_complete_multipart_upload_skip_part"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 58)
+        upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=key)["UploadId"]
+        bodies = {1: b"a" * (5 * md.MB), 2: b"b" * (5 * md.MB), 3: b"c" * 10}
+        etags = {
+            number: client.upload_part(
+                Bucket=bucket_name, Key=key, UploadId=upload_id, PartNumber=number, Body=body
+            )["ETag"]
+            for number, body in bodies.items()
+        }
+
+        # 올린 파트 중 일부만 골라 완료할 수 있고, ETag 는 따옴표가 없어도 된다
+        response = client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=key,
+            UploadId=upload_id,
+            MultipartUpload=self._parts((1, etags[1].strip('"')), (3, etags[3].strip('"'))),
+        )
+        assert response["ETag"].endswith('-2"')
+        assert response["Bucket"] == bucket_name
+        assert response["Key"] == key
+
+        response = client.get_object(Bucket=bucket_name, Key=key)
+        assert response["ContentLength"] == len(bodies[1]) + len(bodies[3])
+        assert response["Body"].read() == bodies[1] + bodies[3]
+
+    @pytest.mark.tag("Check")
+    def test_complete_multipart_upload_twice(self):
+        key = "test_complete_multipart_upload_twice"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 59)
+        upload_id, etags = self._upload_small_parts(client, bucket_name, key, 1)
+        parts = self._parts((1, etags[0]))
+        first = client.complete_multipart_upload(
+            Bucket=bucket_name, Key=key, UploadId=upload_id, MultipartUpload=parts
+        )
+        assert first["ETag"].endswith('-1"')
+
+        # 완료한 업로드를 같은 내용으로 다시 완료하면 같은 결과로 성공한다
+        second = client.complete_multipart_upload(
+            Bucket=bucket_name, Key=key, UploadId=upload_id, MultipartUpload=parts
+        )
+        assert second["ETag"] == first["ETag"]
+
+        # 완료한 업로드에는 파트를 더 올리거나 목록을 볼 수 없고, 중단 요청은 성공한다
+        self.assert_client_error(
+            lambda: client.upload_part(Bucket=bucket_name, Key=key, UploadId=upload_id, PartNumber=2, Body=b"content"),
+            404,
+            md.NO_SUCH_UPLOAD,
+        )
+        self.assert_client_error(
+            lambda: client.list_parts(Bucket=bucket_name, Key=key, UploadId=upload_id), 404, md.NO_SUCH_UPLOAD
+        )
+        response = client.abort_multipart_upload(Bucket=bucket_name, Key=key, UploadId=upload_id)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+        assert self.get_body(client.get_object(Bucket=bucket_name, Key=key)) == "0123456789"
+
+    @pytest.mark.tag("Check")
+    def test_abort_multipart_upload_twice(self):
+        key = "test_abort_multipart_upload_twice"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 60)
+        upload_id, etags = self._upload_small_parts(client, bucket_name, key, 1)
+        client.abort_multipart_upload(Bucket=bucket_name, Key=key, UploadId=upload_id)
+
+        # 이미 중단한 업로드를 다시 중단해도 성공한다
+        response = client.abort_multipart_upload(Bucket=bucket_name, Key=key, UploadId=upload_id)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+
+        self.assert_client_error(
+            lambda: client.upload_part(Bucket=bucket_name, Key=key, UploadId=upload_id, PartNumber=1, Body=b"content"),
+            404,
+            md.NO_SUCH_UPLOAD,
+        )
+        self.assert_client_error(
+            lambda: client.complete_multipart_upload(
+                Bucket=bucket_name, Key=key, UploadId=upload_id, MultipartUpload=self._parts((1, etags[0]))
+            ),
+            404,
+            md.NO_SUCH_UPLOAD,
+        )
+
+    def _create_uploads(self, client, bucket_name: str) -> None:
+        """a/1 에 2개, a/2, b/1, c 에 1개씩 업로드를 만든다."""
+        for key in ("a/1", "a/1", "a/2", "b/1", "c"):
+            client.create_multipart_upload(Bucket=bucket_name, Key=key)
+
+    @staticmethod
+    def _upload_keys(response) -> list:
+        return [upload["Key"] for upload in response.get("Uploads", [])]
+
+    @pytest.mark.tag("List")
+    def test_list_multipart_uploads_prefix_delimiter(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 61)
+        self._create_uploads(client, bucket_name)
+
+        response = client.list_multipart_uploads(Bucket=bucket_name)
+        assert self._upload_keys(response) == ["a/1", "a/1", "a/2", "b/1", "c"]
+        assert response["IsTruncated"] is False
+        assert response["MaxUploads"] == 1000
+
+        response = client.list_multipart_uploads(Bucket=bucket_name, Prefix="a/")
+        assert self._upload_keys(response) == ["a/1", "a/1", "a/2"]
+
+        response = client.list_multipart_uploads(Bucket=bucket_name, Delimiter="/")
+        assert self._upload_keys(response) == ["c"]
+        assert [prefix["Prefix"] for prefix in response["CommonPrefixes"]] == ["a/", "b/"]
+
+    @pytest.mark.tag("List")
+    def test_list_multipart_uploads_pagination(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 62)
+        self._create_uploads(client, bucket_name)
+
+        response = client.list_multipart_uploads(Bucket=bucket_name, MaxUploads=2)
+        assert self._upload_keys(response) == ["a/1", "a/1"]
+        assert response["IsTruncated"] is True
+        assert response["NextKeyMarker"] == "a/1"
+        assert response["NextUploadIdMarker"] == response["Uploads"][1]["UploadId"]
+
+        response = client.list_multipart_uploads(
+            Bucket=bucket_name,
+            MaxUploads=2,
+            KeyMarker=response["NextKeyMarker"],
+            UploadIdMarker=response["NextUploadIdMarker"],
+        )
+        assert self._upload_keys(response) == ["a/2", "b/1"]
+        assert response["IsTruncated"] is True
+
+        # 키 마커만 주면 그 키의 업로드는 모두 건너뛴다
+        response = client.list_multipart_uploads(Bucket=bucket_name, KeyMarker="a/1")
+        assert self._upload_keys(response) == ["a/2", "b/1", "c"]
+        assert response["IsTruncated"] is False
+
+    @pytest.mark.tag("List")
+    def test_list_multipart_uploads_max_uploads(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 63)
+        self._create_uploads(client, bucket_name)
+
+        response = client.list_multipart_uploads(Bucket=bucket_name, MaxUploads=0)
+        assert self._upload_keys(response) == []
+        assert response["IsTruncated"] is False
+
+        # 1000 보다 큰 값은 1000 으로 낮춘다
+        assert client.list_multipart_uploads(Bucket=bucket_name, MaxUploads=1001)["MaxUploads"] == 1000
+        self.assert_client_error(
+            lambda: client.list_multipart_uploads(Bucket=bucket_name, MaxUploads=-1), 400, md.INVALID_ARGUMENT
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_upload_part_copy_source_not_exist(self):
+        key = "test_upload_part_copy_source_not_exist"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 64)
+        client.put_object(Bucket=bucket_name, Key="source", Body=b"0123456789")
+        upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=key)["UploadId"]
+
+        def copy(source_bucket: str, source_key: str, target_upload_id: str = upload_id):
+            return client.upload_part_copy(
+                Bucket=bucket_name,
+                Key=key,
+                UploadId=target_upload_id,
+                PartNumber=1,
+                CopySource={"Bucket": source_bucket, "Key": source_key},
+            )
+
+        self.assert_client_error(lambda: copy(bucket_name, "not_exist"), 404, md.NO_SUCH_KEY)
+        self.assert_client_error(
+            lambda: copy(self.get_new_bucket_name_only(64), "source"), 404, md.NO_SUCH_BUCKET
+        )
+        self.assert_client_error(lambda: copy(bucket_name, "source", "invalid"), 404, md.NO_SUCH_UPLOAD)
+        assert not client.list_parts(Bucket=bucket_name, Key=key, UploadId=upload_id).get("Parts")
+
+    @pytest.mark.tag("ERROR")
+    def test_upload_part_copy_invalid_range_format(self):
+        key = "test_upload_part_copy_invalid_range_format"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 65)
+        client.put_object(Bucket=bucket_name, Key="source", Body=b"0123456789")
+        upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=key)["UploadId"]
+        # bytes=시작-끝 형식만 허용한다(뒤에서부터의 길이 지정 불가)
+        for value in ("bytes=abc", "bytes=-5"):
+            self.assert_client_error(
+                lambda value=value: client.upload_part_copy(
+                    Bucket=bucket_name,
+                    Key=key,
+                    UploadId=upload_id,
+                    PartNumber=1,
+                    CopySource={"Bucket": bucket_name, "Key": "source"},
+                    CopySourceRange=value,
+                ),
+                400,
+                md.INVALID_ARGUMENT,
+            )
+
+    @pytest.mark.tag("PartNumber")
+    def test_multipart_get_part_number(self):
+        key = "test_multipart_get_part_number"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 66)
+        upload_id = client.create_multipart_upload(Bucket=bucket_name, Key=key)["UploadId"]
+        bodies = [b"a" * (5 * md.MB), b"b" * 10]
+        etags = [
+            client.upload_part(
+                Bucket=bucket_name, Key=key, UploadId=upload_id, PartNumber=index + 1, Body=body
+            )["ETag"]
+            for index, body in enumerate(bodies)
+        ]
+        client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=key,
+            UploadId=upload_id,
+            MultipartUpload=self._parts((1, etags[0]), (2, etags[1])),
+        )
+        total = len(bodies[0]) + len(bodies[1])
+
+        # partNumber 를 주면 그 파트만 206 으로 돌려주고 전체 파트 수를 알려준다
+        response = client.head_object(Bucket=bucket_name, Key=key, PartNumber=1)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 206
+        assert response["ContentLength"] == len(bodies[0])
+        assert response["PartsCount"] == 2
+        assert response["ContentRange"] == f"bytes 0-{len(bodies[0]) - 1}/{total}"
+
+        response = client.get_object(Bucket=bucket_name, Key=key, PartNumber=2)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 206
+        assert response["PartsCount"] == 2
+        assert response["ContentRange"] == f"bytes {len(bodies[0])}-{total - 1}/{total}"
+        assert response["Body"].read() == bodies[1]
+
+        self.assert_client_error(
+            lambda: client.get_object(Bucket=bucket_name, Key=key, PartNumber=3), 416, md.INVALID_PART_NUMBER
+        )

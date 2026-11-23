@@ -94,6 +94,24 @@ namespace s3tests
 		public const string NO_SUCH_BUCKET_POLICY = "NoSuchBucketPolicy";
 		public const string OWNERSHIP_CONTROLS_NOT_FOUND_ERROR = "OwnershipControlsNotFoundError";
 		public const string INVALID_BUCKET_ACL_WITH_OBJECT_OWNERSHIP = "InvalidBucketAclWithObjectOwnership";
+		public const string NO_SUCH_LIFECYCLE_CONFIGURATION = "NoSuchLifecycleConfiguration";
+		public const string ID_MISMATCH = "IdMismatch";
+		public const string INVALID_S3_DESTINATION_BUCKET = "InvalidS3DestinationBucket";
+		public const string MALFORMED_CONTINUATION_TOKEN = "MalformedContinuationToken";
+		public const string ILLEGAL_LOCATION_CONSTRAINT_EXCEPTION = "IllegalLocationConstraintException";
+		public const string INVALID_LOCATION_CONSTRAINT = "InvalidLocationConstraint";
+		public const string ILLEGAL_VERSIONING_CONFIGURATION_EXCEPTION = "IllegalVersioningConfigurationException";
+		public const string INVALID_DIGEST = "InvalidDigest";
+		public const string INVALID_STORAGE_CLASS = "InvalidStorageClass";
+		public const string INVALID_REDIRECT_LOCATION = "InvalidRedirectLocation";
+		public const string METADATA_TOO_LARGE = "MetadataTooLarge";
+		public const string INVALID_PART_NUMBER = "InvalidPartNumber";
+		public const string INVALID_PART_ORDER = "InvalidPartOrder";
+		public const string MALFORMED_POLICY = "MalformedPolicy";
+		public const string INVALID_ENCRYPTION_ALGORITHM_ERROR = "InvalidEncryptionAlgorithmError";
+		public const string NO_SUCH_OBJECT_LOCK_CONFIGURATION = "NoSuchObjectLockConfiguration";
+		public const string UNEXPECTED_CONTENT = "UnexpectedContent";
+		public const string MISSING_SECURITY_HEADER = "MissingSecurityHeader";
 		#endregion
 	}
 }

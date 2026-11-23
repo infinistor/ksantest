@@ -597,5 +597,270 @@ namespace s3tests.Test
 			var listResponse = client.ListObjects(bucketName);
 			Assert.Single(listResponse.S3Objects);
 		}
+
+		/// <summary>.NET SDK는 키별 오류가 있으면 DeleteObjectsException을 던지므로 예외에서 응답을 꺼낸다.</summary>
+		private static DeleteObjectsResponse DeleteObjectsWithErrors(S3Client client, string bucketName, List<KeyVersion> objects)
+		{
+			try { return client.DeleteObjects(bucketName, objects); }
+			catch (AggregateException e) when (e.InnerException is DeleteObjectsException de) { return de.Response; }
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "없는 키를 지워도 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestDeleteObjectNotExist()
+		{
+			TestId = 22;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			// 없는 키를 지워도 성공한다
+			var response = client.DeleteObject(bucketName, "not_exist");
+			Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
+			Assert.True(string.IsNullOrEmpty(response.DeleteMarker));
+			Assert.Null(response.VersionId);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 버킷에 삭제 요청을 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestDeleteObjectBucketNotExist()
+		{
+			TestId = 23;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.DeleteObject(bucketName, "key"));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET,
+				() => client.DeleteObjects(bucketName, [new() { Key = "key" }]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자의 삭제가 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestDeleteObjectAccessDenied()
+		{
+			TestId = 24;
+			var key = "TestDeleteObjectAccessDenied";
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = SetupObjects([key]);
+
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.DeleteObject(bucketName, key));
+
+			// DeleteObjects 는 요청 자체는 200 이고 키마다 AccessDenied 를 돌려준다
+			var response = DeleteObjectsWithErrors(altClient, bucketName, [new() { Key = key }]);
+			Assert.Empty(response.DeletedObjects ?? []);
+			Assert.Single(response.DeleteErrors);
+			Assert.Equal(key, response.DeleteErrors[0].Key);
+			Assert.Equal(MainData.ACCESS_DENIED, response.DeleteErrors[0].Code);
+
+			client.HeadObject(bucketName, key);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "버저닝을 쓰지 않는 버킷에서 잘못된 버전 ID 삭제는 실패하고 null 버전 삭제는 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestDeleteObjectVersionIdUnversioned()
+		{
+			TestId = 25;
+			var key = "TestDeleteObjectVersionIdUnversioned";
+			var client = GetClient();
+			var bucketName = SetupObjects([key]);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.DeleteObject(bucketName, key, versionId: "invalid"));
+			client.HeadObject(bucketName, key);
+
+			// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전으로 지울 수 있다
+			var response = client.DeleteObject(bucketName, key, versionId: "null");
+			Assert.Equal("null", response.VersionId);
+			Assert.True(string.IsNullOrEmpty(response.DeleteMarker));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, () => client.GetObject(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "DeleteObjects로 없는 키를 지우면 삭제된 것으로 응답하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestDeleteObjectsNotExist()
+		{
+			TestId = 26;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var keys = new List<string> { "not_exist1", "not_exist2" };
+
+			// 없는 키도 삭제된 것으로 응답한다
+			var response = DeleteObjectsWithErrors(client, bucketName, GetKeyVersions(keys));
+			Assert.Equal(keys, (response.DeletedObjects ?? []).Select(item => item.Key).OrderBy(item => item, StringComparer.Ordinal).ToList());
+			Assert.Empty(response.DeleteErrors ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "DeleteObjects에 키를 하나도 주지 않으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestDeleteObjectsEmpty()
+		{
+			TestId = 27;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => client.DeleteObjects(bucketName, []));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Max")]
+		[Trait(MainData.Explanation, "DeleteObjects는 한 번에 1000개까지만 지울 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestDeleteObjectsMaxKeys()
+		{
+			TestId = 28;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			List<KeyVersion> MakeKeys(int count)
+				=> Enumerable.Range(0, count).Select(i => new KeyVersion() { Key = $"key{i}" }).ToList();
+
+			// 한 번에 1000개까지 지울 수 있다
+			var response = DeleteObjectsWithErrors(client, bucketName, MakeKeys(1000));
+			Assert.Equal(1000, response.DeletedObjects.Count);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => client.DeleteObjects(bucketName, MakeKeys(1001)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "DeleteObjects에 같은 키를 두 번 넣어도 한 번만 응답하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestDeleteObjectsDuplicateKeys()
+		{
+			TestId = 29;
+			var key = "TestDeleteObjectsDuplicateKeys";
+			var client = GetClient();
+			var bucketName = SetupObjects([key]);
+
+			// 같은 키를 두 번 넣어도 한 번만 응답한다
+			var response = DeleteObjectsWithErrors(client, bucketName, [new() { Key = key }, new() { Key = key }]);
+			Assert.Single(response.DeletedObjects);
+			Assert.Equal(key, response.DeletedObjects[0].Key);
+			Assert.Empty(response.DeleteErrors ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "DeleteObjects에 잘못된 버전 ID를 주면 키마다 NoSuchVersion을 돌려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestDeleteObjectsInvalidVersionId()
+		{
+			TestId = 30;
+			var key = "TestDeleteObjectsInvalidVersionId";
+			var client = GetClient();
+			var bucketName = SetupObjects([key]);
+
+			void CheckNoSuchVersion()
+			{
+				// 요청은 200 이고 키마다 NoSuchVersion 을 돌려준다
+				var response = DeleteObjectsWithErrors(client, bucketName, [new() { Key = key, VersionId = "invalid" }]);
+				Assert.Empty(response.DeletedObjects ?? []);
+				Assert.Single(response.DeleteErrors);
+				Assert.Equal(key, response.DeleteErrors[0].Key);
+				Assert.Equal("invalid", response.DeleteErrors[0].VersionId);
+				Assert.Equal(MainData.NO_SUCH_VERSION, response.DeleteErrors[0].Code);
+			}
+
+			CheckNoSuchVersion();
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			CheckNoSuchVersion();
+			client.HeadObject(bucketName, key);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "버저닝 버킷에서는 없는 키를 지워도 삭제 마커가 생기는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestDeleteObjectVersioningNotExist()
+		{
+			TestId = 31;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			// 버저닝 버킷에서는 없는 키를 지워도 삭제 마커가 생긴다
+			var response = client.DeleteObject(bucketName, "not_exist");
+			Assert.Equal("true", response.DeleteMarker, ignoreCase: true);
+			Assert.False(string.IsNullOrEmpty(response.VersionId));
+
+			var deleteResponse = DeleteObjectsWithErrors(client, bucketName, [new() { Key = "not_exist2" }]);
+			Assert.True(deleteResponse.DeletedObjects[0].DeleteMarker);
+			Assert.False(string.IsNullOrEmpty(deleteResponse.DeletedObjects[0].DeleteMarkerVersionId));
+
+			var markers = GetDeleteMarkers(client.ListVersions(bucketName).Versions);
+			Assert.Equal(["not_exist", "not_exist2"], markers.Select(marker => marker.Key).OrderBy(item => item, StringComparer.Ordinal).ToList());
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "버저닝 버킷에서 잘못된 버전 ID 삭제는 실패하고, 없는 null 버전 삭제는 삭제 마커 없이 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestDeleteObjectVersioningInvalidVersionId()
+		{
+			TestId = 32;
+			var key = "TestDeleteObjectVersioningInvalidVersionId";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var versionId = client.PutObject(bucketName, key, body: "content").VersionId;
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.DeleteObject(bucketName, key, versionId: "invalid"));
+
+			// 없는 null 버전을 지워도 성공하고 삭제 마커는 생기지 않는다
+			var response = client.DeleteObject(bucketName, key, versionId: "null");
+			Assert.Equal("null", response.VersionId);
+			Assert.True(string.IsNullOrEmpty(response.DeleteMarker));
+
+			var versions = client.ListVersions(bucketName).Versions;
+			Assert.Equal([versionId], GetVersionIds(versions));
+			Assert.Empty(GetDeleteMarkers(versions));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "DeleteObjects")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "삭제 마커를 지우면 이전 버전이 다시 보이는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestDeleteObjectRemoveDeleteMarker()
+		{
+			TestId = 33;
+			var key = "TestDeleteObjectRemoveDeleteMarker";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var versionId = client.PutObject(bucketName, key, body: "content").VersionId;
+			var markerId = client.DeleteObject(bucketName, key).VersionId;
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, () => client.GetObject(bucketName, key));
+
+			// 삭제 마커를 지우면 x-amz-delete-marker: true 로 응답하고 이전 버전이 다시 보인다
+			var response = client.DeleteObject(bucketName, key, versionId: markerId);
+			Assert.Equal("true", response.DeleteMarker, ignoreCase: true);
+			Assert.Equal(markerId, response.VersionId);
+			using var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal(versionId, getResponse.VersionId);
+		}
 	}
 }

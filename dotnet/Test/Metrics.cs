@@ -313,5 +313,146 @@ namespace s3tests.Test
 			Assert.Equal(tag.Key, ((MetricsTagPredicate)andOp.Operands[1]).Tag.Key);
 			Assert.Equal(tag.Value, ((MetricsTagPredicate)andOp.Operands[1]).Tag.Value);
 		}
+
+		private static PutBucketMetricsConfigurationResponse PutMetrics(S3Client client, string bucketName, string metricId,
+			MetricsConfiguration config = null)
+			=> client.PutBucketMetricsConfiguration(bucketName, metricId, config ?? new MetricsConfiguration { MetricsId = metricId });
+
+		/// <summary>"{prefix}-000" 형식의 ID 를 count 개 만든다.</summary>
+		private static List<string> MakeIds(string prefix, int count)
+		{
+			var ids = new List<string>();
+			for (int i = 0; i < count; i++) ids.Add($"{prefix}-{i:D3}");
+			return ids;
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Metrics")]
+		[Trait(MainData.Minor, "Max")]
+		[Trait(MainData.Explanation, "메트릭스 ID 는 64자까지만 허용하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutMetricsIdLength()
+		{
+			TestId = 15;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// ID 는 64자까지 허용한다
+			var metricId = new string('a', 64);
+			PutMetrics(client, bucketName, metricId);
+			var response = client.GetBucketMetricsConfiguration(bucketName, metricId);
+			Assert.Equal(metricId, response.MetricsConfiguration.MetricsId);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => PutMetrics(client, bucketName, new string('a', 65)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Metrics")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "메트릭스 ID 에 허용하지 않는 문자가 있으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutMetricsInvalidId()
+		{
+			TestId = 16;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// ID 에는 영숫자와 - _ . 만 쓸 수 있다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => PutMetrics(client, bucketName, "a b/c"));
+			Assert.Empty(client.ListBucketMetricsConfigurations(bucketName).MetricsConfigurationList ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Metrics")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "쿼리의 id 와 본문의 Id 가 다르면 메트릭스 설정이 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutMetricsIdMismatch()
+		{
+			TestId = 17;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 쿼리의 id 와 본문의 Id 가 다르면 거부된다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => PutMetrics(client, bucketName, "metrics-id", new MetricsConfiguration { MetricsId = "other-id" }));
+			Assert.Empty(client.ListBucketMetricsConfigurations(bucketName).MetricsConfigurationList ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Metrics")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "메트릭스 And 필터의 조건이 하나뿐이면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutMetricsInvalidFilter()
+		{
+			TestId = 18;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// And 안에 조건이 하나뿐이면 거부된다
+			var config = new MetricsConfiguration
+			{
+				MetricsId = "metrics-id",
+				MetricsFilter = new MetricsFilter { MetricsFilterPredicate = new MetricsAndOperator([new MetricsPrefixPredicate("test")]) },
+			};
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => PutMetrics(client, bucketName, "metrics-id", config));
+			// And 없이 Prefix 와 Tag 를 함께 주는 케이스는 SDK 의 MetricsFilter 가 조건을 하나만 담을 수 있어 요청을 만들 수 없다
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Metrics")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "메트릭스 설정 목록이 100개씩 나뉘어 조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListMetricsPagination()
+		{
+			TestId = 19;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var ids = MakeIds("metrics", 101);
+			foreach (var metricId in ids)
+				PutMetrics(client, bucketName, metricId);
+
+			// 한 번에 100개까지만 돌려주고 나머지는 토큰으로 이어서 받는다
+			var response = client.ListBucketMetricsConfigurations(bucketName);
+			Assert.Equal(100, response.MetricsConfigurationList.Count);
+			Assert.True(response.IsTruncated);
+			var listed = new List<string>();
+			foreach (var config in response.MetricsConfigurationList) listed.Add(config.MetricsId);
+
+			response = client.ListBucketMetricsConfigurations(bucketName, continuationToken: response.NextToken);
+			Assert.Single(response.MetricsConfigurationList);
+			Assert.False(response.IsTruncated);
+			foreach (var config in response.MetricsConfigurationList) listed.Add(config.MetricsId);
+			listed.Sort(StringComparer.Ordinal);
+			Assert.Equal(ids, listed);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Metrics")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "잘못된 토큰으로 메트릭스 설정 목록을 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestListMetricsInvalidToken()
+		{
+			TestId = 20;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_CONTINUATION_TOKEN,
+				() => client.ListBucketMetricsConfigurations(bucketName, continuationToken: "invalid"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Metrics")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "없는 버킷에 메트릭스 목록/조회/삭제를 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestMetricsBucketNotExist()
+		{
+			TestId = 21;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.ListBucketMetricsConfigurations(bucketName));
+			// SDK v4 는 단건 조회의 404 를 예외로 던지지 않고 상태 코드만 채운 응답을 돌려준다
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketMetricsConfiguration(bucketName, "metrics-id"), MainData.NO_SUCH_BUCKET);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.DeleteBucketMetricsConfiguration(bucketName, "metrics-id"));
+		}
 	}
 }

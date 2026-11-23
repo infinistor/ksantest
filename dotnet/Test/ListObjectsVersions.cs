@@ -934,5 +934,166 @@ namespace s3tests.Test
 			for (var i = 0; i < objects.Count; i++)
 				Assert.Equal(objects[i], listResponse.Versions[i].VersionId);
 		}
+
+		/// <summary>버저닝을 켠 버킷에 같은 키로 count 개 버전을 만든다. (bucket, 오래된 순 버전 ID 목록) TestId를 먼저 대입해야 한다.</summary>
+		private (string BucketName, List<string> VersionIds) PutVersions(S3Client client, string key, int count)
+		{
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var versionIds = new List<string>();
+			for (var index = 0; index < count; index++)
+				versionIds.Add(client.PutObject(bucketName, key, body: index.ToString()).VersionId);
+			return (bucketName, versionIds);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsVersions")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "max-keys가 음수이면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketListVersionsMaxKeysNegative()
+		{
+			TestId = 41;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.ListVersions(bucketName, rawMaxKeys: -1));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsVersions")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "encoding-type이 잘못되면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketListVersionsEncodingInvalid()
+		{
+			TestId = 42;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.ListVersions(bucketName, encodingTypeName: "invalid"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsVersions")]
+		[Trait(MainData.Minor, "Marker")]
+		[Trait(MainData.Explanation, "키 마커 없는 버전 마커나 형식이 잘못된 버전 마커는 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketListVersionsVersionIdMarkerInvalid()
+		{
+			TestId = 43;
+			var key = "TestBucketListVersionsVersionIdMarkerInvalid";
+			var client = GetClient();
+			var (bucketName, versionIds) = PutVersions(client, key, 2);
+
+			// 버전 마커는 키 마커 없이 쓸 수 없다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.ListVersions(bucketName, versionIdMarker: versionIds[0]));
+			// 형식이 잘못된 버전 마커
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.ListVersions(bucketName, keyMarker: key, versionIdMarker: "invalid"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsVersions")]
+		[Trait(MainData.Minor, "Marker")]
+		[Trait(MainData.Explanation, "키 마커와 버전 마커로 버전 목록을 한 건씩 이어서 조회할 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListVersionsPagination()
+		{
+			TestId = 44;
+			var key = "TestBucketListVersionsPagination";
+			var client = GetClient();
+			var (bucketName, versionIds) = PutVersions(client, key, 3);
+			var expected = Enumerable.Reverse(versionIds).ToList(); // 최신 버전부터 나온다
+
+			var listed = new List<string>();
+			string keyMarker = null;
+			string versionIdMarker = null;
+			for (var page = 0; page < 3; page++)
+			{
+				var response = client.ListVersions(bucketName, maxKeys: 1, keyMarker: keyMarker, versionIdMarker: versionIdMarker);
+				Assert.Single(response.Versions);
+				var version = response.Versions[0];
+				Assert.Equal(key, version.Key);
+				Assert.Equal(page == 0, version.IsLatest);
+				listed.Add(version.VersionId);
+				Assert.Equal(page < 2, response.IsTruncated);
+				if (response.IsTruncated == true)
+				{
+					Assert.Equal(key, response.NextKeyMarker);
+					Assert.Equal(version.VersionId, response.NextVersionIdMarker);
+					keyMarker = response.NextKeyMarker;
+					versionIdMarker = response.NextVersionIdMarker;
+				}
+			}
+			Assert.Equal(expected, listed);
+
+			// 키 마커만 주면 그 키의 버전은 모두 건너뛴다
+			Assert.Empty(client.ListVersions(bucketName, keyMarker: key).Versions ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsVersions")]
+		[Trait(MainData.Minor, "DeleteMarker")]
+		[Trait(MainData.Explanation, "삭제 마커가 최신이 되고 기존 버전은 모두 최신이 아니게 되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListVersionsDeleteMarker()
+		{
+			TestId = 45;
+			var key = "TestBucketListVersionsDeleteMarker";
+			var client = GetClient();
+			var (bucketName, versionIds) = PutVersions(client, key, 2);
+			var markerId = client.DeleteObject(bucketName, key).VersionId;
+
+			// 삭제 마커가 최신이 되고 기존 버전은 모두 최신이 아니게 된다
+			var response = client.ListVersions(bucketName);
+			var markers = GetDeleteMarkers(response.Versions);
+			Assert.Single(markers);
+			Assert.Equal(markerId, markers[0].VersionId);
+			Assert.True(markers[0].IsLatest);
+
+			var versions = GetVersions(response.Versions);
+			Assert.Equal([versionIds[1], versionIds[0]], versions.ConvertAll(version => version.VersionId));
+			Assert.All(versions, version => Assert.False(version.IsLatest));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsVersions")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "버저닝을 쓰지 않는 버킷의 오브젝트는 모두 null 버전이고 최신인지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketListVersionsUnversioned()
+		{
+			TestId = 46;
+			var bucketName = SetupObjects(["a/1", "a/2", "b/1", "c", "d"]);
+			var client = GetClient();
+
+			// 버저닝을 쓰지 않는 버킷의 오브젝트는 모두 null 버전이고 최신이다
+			var response = client.ListVersions(bucketName, delimiter: "/");
+			Assert.Equal(["c", "d"], GetKeys(response));
+			Assert.All(response.Versions, version =>
+			{
+				Assert.Equal("null", version.VersionId);
+				Assert.True(version.IsLatest);
+				Assert.NotEqual(true, version.IsDeleteMarker);
+			});
+			Assert.Equal(["a/", "b/"], response.CommonPrefixes);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListObjectsVersions")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자의 버전 목록 조회가 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketListVersionsAltUser()
+		{
+			TestId = 47;
+			var bucketName = SetupObjects(["a", "b"]);
+
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => GetAltClient().ListVersions(bucketName));
+		}
 	}
 }

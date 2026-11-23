@@ -804,3 +804,87 @@ func assertStringList(t *testing.T, got, want []string) {
 		}
 	}
 }
+
+// listTreeKeys는 구분자·마커 테스트가 함께 쓰는 키 목록이다.
+var listTreeKeys = []string{"a/1", "a/2", "b/1", "c", "d"}
+
+// max-keys 가 음수이면 거부된다
+func TestBucketListMaxKeysNegative(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	_, err := s.client.ListObjects(context.Background(), &s3.ListObjectsInput{Bucket: aws.String(s.bucket(t, 41)), MaxKeys: aws.Int32(-1)})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 알 수 없는 encoding-type 은 거부된다
+func TestBucketListEncodingInvalid(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	_, err := s.client.ListObjects(context.Background(), &s3.ListObjectsInput{Bucket: aws.String(s.bucket(t, 42)), EncodingType: types.EncodingType("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// NextMarker 는 구분자가 있을 때만 돌려준다
+func TestBucketListNextMarker(t *testing.T) {
+	t.Parallel()
+	s, bucket := listFixture(t, listTreeKeys, 43)
+
+	// 구분자가 없으면 잘려도 NextMarker 를 주지 않는다(마지막 키를 마커로 쓴다)
+	out := listV1(t, s.client, &s3.ListObjectsInput{Bucket: aws.String(bucket), MaxKeys: aws.Int32(2)})
+	assertStringList(t, listKeys(out, false), []string{"a/1", "a/2"})
+	if !aws.ToBool(out.IsTruncated) || out.NextMarker != nil {
+		t.Fatalf("IsTruncated=%v NextMarker=%q", aws.ToBool(out.IsTruncated), aws.ToString(out.NextMarker))
+	}
+
+	// 구분자가 있으면 마지막으로 돌려준 항목을 NextMarker 로 준다
+	out = listV1(t, s.client, &s3.ListObjectsInput{Bucket: aws.String(bucket), MaxKeys: aws.Int32(2), Delimiter: aws.String("/")})
+	assertStringList(t, listKeys(out, false), []string{})
+	assertStringList(t, listPrefixes(out, false), []string{"a/", "b/"})
+	if !aws.ToBool(out.IsTruncated) || aws.ToString(out.NextMarker) != "b/" {
+		t.Fatalf("IsTruncated=%v NextMarker=%q", aws.ToBool(out.IsTruncated), aws.ToString(out.NextMarker))
+	}
+
+	out = listV1(t, s.client, &s3.ListObjectsInput{Bucket: aws.String(bucket), MaxKeys: aws.Int32(2), Delimiter: aws.String("/"), Marker: out.NextMarker})
+	assertStringList(t, listKeys(out, false), []string{"c", "d"})
+	assertStringList(t, listPrefixes(out, false), []string{})
+	if aws.ToBool(out.IsTruncated) {
+		t.Fatal("last page is truncated")
+	}
+}
+
+// 마커가 공통 접두어 안의 키이면 그 접두어는 통째로 건너뛴다
+func TestBucketListMarkerInCommonPrefix(t *testing.T) {
+	t.Parallel()
+	s, bucket := listFixture(t, listTreeKeys, 44)
+	out := listV1(t, s.client, &s3.ListObjectsInput{Bucket: aws.String(bucket), Marker: aws.String("a/1"), Delimiter: aws.String("/")})
+	assertStringList(t, listKeys(out, false), []string{"c", "d"})
+	assertStringList(t, listPrefixes(out, false), []string{"b/"})
+}
+
+// 구분자는 여러 글자일 수 있다
+func TestBucketListDelimiterMultiChar(t *testing.T) {
+	t.Parallel()
+	s, bucket := listFixture(t, listTreeKeys, 45)
+	out := listV1(t, s.client, &s3.ListObjectsInput{Bucket: aws.String(bucket), Delimiter: aws.String("/1")})
+	assertStringList(t, listKeys(out, false), []string{"a/2", "c", "d"})
+	assertStringList(t, listPrefixes(out, false), []string{"a/1", "b/1"})
+}
+
+// 권한이 없는 사용자는 목록을 볼 수 없다
+func TestBucketListAltUser(t *testing.T) {
+	t.Parallel()
+	s, bucket := listFixture(t, listTreeKeys, 46)
+	_, err := altClientOrSkip(t, s).ListObjects(context.Background(), &s3.ListObjectsInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 403, "AccessDenied")
+}
+
+// 요청에 준 값을 응답에 그대로 돌려준다
+func TestBucketListResponseFields(t *testing.T) {
+	t.Parallel()
+	s, bucket := listFixture(t, listTreeKeys, 47)
+	out := listV1(t, s.client, &s3.ListObjectsInput{Bucket: aws.String(bucket), Prefix: aws.String("a/"), Marker: aws.String("a/0"), MaxKeys: aws.Int32(5), Delimiter: aws.String("/")})
+	if aws.ToString(out.Name) != bucket || aws.ToString(out.Prefix) != "a/" || aws.ToString(out.Marker) != "a/0" || aws.ToInt32(out.MaxKeys) != 5 || aws.ToString(out.Delimiter) != "/" || aws.ToBool(out.IsTruncated) {
+		t.Fatalf("Name=%q Prefix=%q Marker=%q MaxKeys=%d Delimiter=%q IsTruncated=%v", aws.ToString(out.Name), aws.ToString(out.Prefix), aws.ToString(out.Marker), aws.ToInt32(out.MaxKeys), aws.ToString(out.Delimiter), aws.ToBool(out.IsTruncated))
+	}
+	assertStringList(t, listKeys(out, false), []string{"a/1", "a/2"})
+}

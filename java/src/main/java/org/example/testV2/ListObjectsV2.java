@@ -838,4 +838,110 @@ public class ListObjectsV2 extends TestBase {
 			continuationToken = response.nextContinuationToken();
 		}
 	}
+
+	private static final List<String> TREE_KEYS = List.of("a/1", "a/2", "b/1", "c", "d");
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListV2MaxKeysNegative() {
+		var client = getClient();
+		var bucketName = createBucket(client, 46);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectsV2(l -> l.bucket(bucketName).maxKeys(-1)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListV2EncodingInvalid() {
+		var client = getClient();
+		var bucketName = createBucket(client, 47);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectsV2(l -> l.bucket(bucketName).encodingType("invalid")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListV2ContinuationTokenInvalid() {
+		var client = getClient();
+		var bucketName = createObjects(client, 48, TREE_KEYS);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectsV2(l -> l.bucket(bucketName).continuationToken("invalid")));
+	}
+
+	@Test
+	@Tag("KeyCount")
+	public void testBucketListV2KeyCountDelimiter() {
+		var client = getClient();
+		var bucketName = createObjects(client, 49, TREE_KEYS);
+		// KeyCount 와 MaxKeys 는 공통 접두어도 한 건으로 센다
+		var response = client.listObjectsV2(l -> l.bucket(bucketName).delimiter("/"));
+		assertEquals(List.of("c", "d"), getKeys(response.contents()));
+		assertEquals(List.of("a/", "b/"), getPrefixList(response.commonPrefixes()));
+		assertEquals(4, response.keyCount());
+
+		var first = client.listObjectsV2(l -> l.bucket(bucketName).delimiter("/").maxKeys(2));
+		assertEquals(0, first.contents().size());
+		assertEquals(List.of("a/", "b/"), getPrefixList(first.commonPrefixes()));
+		assertEquals(2, first.keyCount());
+		assertEquals(true, first.isTruncated());
+
+		response = client.listObjectsV2(l -> l.bucket(bucketName).delimiter("/").maxKeys(2)
+				.continuationToken(first.nextContinuationToken()));
+		assertEquals(List.of("c", "d"), getKeys(response.contents()));
+		assertEquals(0, response.commonPrefixes().size());
+		assertEquals(false, response.isTruncated());
+	}
+
+	@Test
+	@Tag("StartAfter")
+	public void testBucketListV2StartAfterInCommonPrefix() {
+		var client = getClient();
+		var bucketName = createObjects(client, 50, TREE_KEYS);
+		// StartAfter 가 공통 접두어 안의 키이면 그 접두어는 통째로 건너뛴다
+		var response = client.listObjectsV2(l -> l.bucket(bucketName).startAfter("a/1").delimiter("/"));
+		assertEquals(List.of("c", "d"), getKeys(response.contents()));
+		assertEquals(List.of("b/"), getPrefixList(response.commonPrefixes()));
+		assertEquals(3, response.keyCount());
+		assertEquals("a/1", response.startAfter());
+	}
+
+	@Test
+	@Tag("Delimiter")
+	public void testBucketListV2DelimiterMultiChar() {
+		var client = getClient();
+		var bucketName = createObjects(client, 51, TREE_KEYS);
+		// 구분자는 여러 글자일 수 있다
+		var response = client.listObjectsV2(l -> l.bucket(bucketName).delimiter("/1"));
+		assertEquals(List.of("a/2", "c", "d"), getKeys(response.contents()));
+		assertEquals(List.of("a/1", "b/1"), getPrefixList(response.commonPrefixes()));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testBucketListV2AltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createObjects(client, 52, TREE_KEYS);
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.listObjectsV2(l -> l.bucket(bucketName)));
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testBucketListV2ResponseFields() {
+		var client = getClient();
+		var bucketName = createObjects(client, 53, TREE_KEYS);
+		// 요청에 준 값을 응답에 그대로 돌려준다
+		var response = client.listObjectsV2(
+				l -> l.bucket(bucketName).prefix("a/").startAfter("a/0").maxKeys(5).delimiter("/"));
+		assertEquals(bucketName, response.name());
+		assertEquals("a/", response.prefix());
+		assertEquals("a/0", response.startAfter());
+		assertEquals(5, response.maxKeys());
+		assertEquals("/", response.delimiter());
+		assertEquals(false, response.isTruncated());
+		assertEquals(2, response.keyCount());
+		assertNull(response.nextContinuationToken());
+		assertEquals(List.of("a/1", "a/2"), getKeys(response.contents()));
+	}
 }

@@ -391,4 +391,164 @@ class Grants {
 		test.testBucketAclRevokeAllId();
 		testV2.testBucketAclRevokeAllId();
 	}
+
+	/**
+	 * 잘못된 canned ACL 로 버킷·오브젝트 ACL 을 설정하면 InvalidArgument 인지 확인
+	 * SDK V1은 ACL을 열거형으로만 받아 잘못된 값을 보낼 수 없으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketAclInvalidCanned() {
+		testV2.testBucketAclInvalidCanned();
+	}
+
+	/**
+	 * canned ACL 과 권한 부여 헤더를 함께 주면 InvalidRequest 인지 확인
+	 * SDK V1은 canned ACL과 권한 부여 헤더 중 하나만 보내므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testAclCannedWithGrantHeader() {
+		testV2.testAclCannedWithGrantHeader();
+	}
+
+	/**
+	 * canned ACL 과 본문(AccessControlPolicy)을 함께 주면 UnexpectedContent 인지 확인
+	 * SDK V1은 canned ACL과 본문 중 하나만 보내므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketAclCannedWithBody() {
+		testV2.testBucketAclCannedWithBody();
+	}
+
+	/**
+	 * canned ACL, 권한 부여 헤더, 본문이 모두 없으면 MissingSecurityHeader 인지 확인
+	 * SDK V1은 ACL 없는 요청을 클라이언트에서 막으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketAclMissing() {
+		testV2.testBucketAclMissing();
+	}
+
+	/**
+	 * 없는 권한을 부여하면 MalformedACLError 인지 확인
+	 * SDK V1은 권한을 열거형으로만 받아 잘못된 값을 보낼 수 없으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketAclInvalidPermission() {
+		testV2.testBucketAclInvalidPermission();
+	}
+
+	/**
+	 * ACL 의 Owner 를 다른 사용자로 바꾸면 AccessDenied 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketAclChangeOwner() {
+		test.testBucketAclChangeOwner();
+		testV2.testBucketAclChangeOwner();
+	}
+
+	/**
+	 * 올바르지 않은 권한 부여 헤더(형식 오류, 없는 ID, 없는 그룹)가 InvalidArgument 인지 확인
+	 * SDK V1은 버킷 ACL에 권한 부여 헤더를 임의 문자열로 보낼 수 없으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketAclInvalidGrantHeader() {
+		testV2.testBucketAclInvalidGrantHeader();
+	}
+
+	/**
+	 * 없는 그룹 URI 에 권한을 부여하면 InvalidArgument 인지 확인
+	 * SDK V1은 그룹을 열거형으로만 받아 잘못된 URI를 보낼 수 없으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketAclInvalidGroupUri() {
+		testV2.testBucketAclInvalidGroupUri();
+	}
+
+	/**
+	 * 권한 부여 100개는 저장되고 101개는 MalformedACLError 인지 확인
+	 */
+	@Test
+	@Tag("Max")
+	void testBucketAclMaxGrants() {
+		test.testBucketAclMaxGrants();
+		testV2.testBucketAclMaxGrants();
+	}
+
+	/**
+	 * 없는 버킷의 ACL 조회·설정이 NoSuchBucket 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketAclBucketNotExist() {
+		test.testBucketAclBucketNotExist();
+		testV2.testBucketAclBucketNotExist();
+	}
+
+	/**
+	 * 다른 사용자의 버킷·오브젝트 ACL 조회·설정이 AccessDenied 인지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testAclAccessDenied() {
+		test.testAclAccessDenied();
+		testV2.testAclAccessDenied();
+	}
+
+	/**
+	 * 없는 오브젝트의 ACL 조회·설정이 NoSuchKey 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjectAclKeyNotExist() {
+		test.testObjectAclKeyNotExist();
+		testV2.testObjectAclKeyNotExist();
+	}
+
+	/**
+	 * null 버전의 ACL 은 조회되고 올바르지 않은 버전 ID 는 InvalidArgument 인지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testObjectAclVersionId() {
+		test.testObjectAclVersionId();
+		testV2.testObjectAclVersionId();
+	}
+
+	/**
+	 * 최신 버전이 삭제 마커이면 NoSuchKey, 삭제 마커 버전을 지정하면 MethodNotAllowed 인지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testObjectAclDeleteMarker() {
+		test.testObjectAclDeleteMarker();
+		testV2.testObjectAclDeleteMarker();
+	}
+
+	/**
+	 * log-delivery-write 로 로그 전달 그룹에 WRITE, READ_ACP 가 부여되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testBucketAclLogDeliveryWrite() {
+		test.testBucketAclLogDeliveryWrite();
+		testV2.testBucketAclLogDeliveryWrite();
+	}
+
+	/**
+	 * 권한 부여 헤더로 업로드하면 지정한 권한만 남고 대상 사용자가 읽을 수 있는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testPutObjectWithGrantHeader() {
+		test.testPutObjectWithGrantHeader();
+		testV2.testPutObjectWithGrantHeader();
+	}
 }

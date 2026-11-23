@@ -326,3 +326,334 @@ func tagStrings(set []types.Tag) []string {
 	}
 	return result
 }
+
+// tagSet은 키, 값 순서로 나열한 문자열에서 태그 목록을 만든다.
+func tagSet(pairs ...string) []types.Tag {
+	set := make([]types.Tag, 0, len(pairs)/2)
+	for index := 0; index+1 < len(pairs); index += 2 {
+		set = append(set, types.Tag{Key: aws.String(pairs[index]), Value: aws.String(pairs[index+1])})
+	}
+	return set
+}
+
+func putBucketTags(s *suite, bucket string, set []types.Tag) error {
+	_, err := s.client.PutBucketTagging(context.Background(), &s3.PutBucketTaggingInput{Bucket: aws.String(bucket), Tagging: &types.Tagging{TagSet: set}})
+	return err
+}
+
+func getBucketTags(t *testing.T, s *suite, bucket string) []types.Tag {
+	t.Helper()
+	out, err := s.client.GetBucketTagging(context.Background(), &s3.GetBucketTaggingInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out.TagSet
+}
+
+// putObjectWithTagging은 x-amz-tagging 헤더를 붙여 빈 오브젝트를 올린다.
+func putObjectWithTagging(s *suite, bucket, key, tagging string) error {
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(nil), Tagging: aws.String(tagging)})
+	return err
+}
+
+// 버킷 태그는 50개까지 넣을 수 있다
+func TestBucketTaggingMax(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 16)
+	want := tags(50, 0, 0)
+	if err := putBucketTags(s, bucket, want); err != nil {
+		t.Fatal(err)
+	}
+	assertTags(t, getBucketTags(t, s, bucket), want)
+
+	assertS3Error(t, putBucketTags(s, bucket, tags(51, 0, 0)), 400, "BadRequest")
+	if got := getBucketTags(t, s, bucket); len(got) != 50 {
+		t.Fatalf("tags=%d want=50", len(got))
+	}
+}
+
+// 버킷 태그의 키가 중복되면 거부된다
+func TestBucketTaggingDuplicateKey(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	assertS3Error(t, putBucketTags(s, s.bucket(t, 17), tagSet("key", "value1", "key", "value2")), 400, "InvalidTag")
+}
+
+// 올바르지 않은 버킷 태그는 거부된다
+func TestBucketTaggingInvalidTag(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 18)
+	invalid := [][]types.Tag{
+		tagSet("aws:key", "value"),                // aws: 접두어는 시스템 태그 전용
+		tagSet(strings.Repeat("k", 129), "value"), // 키 128자 초과
+		tagSet("key", strings.Repeat("v", 257)),   // 값 256자 초과
+		tagSet("key?<>", "value"),                 // 허용하지 않는 문자
+	}
+	for _, set := range invalid {
+		assertS3Error(t, putBucketTags(s, bucket, set), 400, "InvalidTag")
+	}
+	_, err := s.client.GetBucketTagging(context.Background(), &s3.GetBucketTaggingInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchTagSet")
+}
+
+// 값이 빈 버킷 태그도 그대로 저장된다
+func TestBucketTaggingEmptyValue(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 19)
+	want := tagSet("key", "")
+	if err := putBucketTags(s, bucket, want); err != nil {
+		t.Fatal(err)
+	}
+	assertTags(t, getBucketTags(t, s, bucket), want)
+}
+
+// 빈 태그 목록을 넣으면 버킷 태그가 지워진다
+func TestBucketTaggingEmptySet(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucket(t, 20)
+	if err := putBucketTags(s, bucket, tagSet("key", "value")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := putBucketTags(s, bucket, []types.Tag{}); err != nil {
+		t.Fatal(err)
+	}
+	_, err := s.client.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchTagSet")
+
+	// 태그가 없어도 삭제는 성공한다
+	out, err := s.client.DeleteBucketTagging(ctx, &s3.DeleteBucketTaggingInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := responseStatus(t, out.ResultMetadata); got != 204 {
+		t.Fatalf("HTTP status = %d, want 204", got)
+	}
+}
+
+// 없는 버킷에 대한 태그 요청은 실패한다
+func TestBucketTaggingBucketNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucketNameOnly(21)
+	_, err := s.client.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	assertS3Error(t, putBucketTags(s, bucket, tagSet("key", "value")), 404, "NoSuchBucket")
+	_, err = s.client.DeleteBucketTagging(ctx, &s3.DeleteBucketTaggingInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+
+// 오브젝트 태그의 키가 중복되면 거부된다
+func TestObjTaggingDuplicateKey(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t, 22), "TestObjTaggingDuplicateKey"
+	put(t, s, b, key, "", nil)
+	err := taggingsPutObjectTags(t, s, b, key, tagSet("key", "value1", "key", "value2"))
+	assertS3Error(t, err, 400, "InvalidTag")
+	assertTags(t, getObjectTags(t, s, b, key), nil)
+}
+
+// 올바르지 않은 오브젝트 태그는 거부된다
+func TestObjTaggingInvalidTag(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t, 23), "TestObjTaggingInvalidTag"
+	put(t, s, b, key, "", nil)
+	invalid := [][]types.Tag{
+		tagSet("aws:key", "value"), // aws: 접두어는 시스템 태그 전용
+		tagSet("key?<>", "value"),  // 허용하지 않는 문자
+	}
+	for _, set := range invalid {
+		assertS3Error(t, taggingsPutObjectTags(t, s, b, key, set), 400, "InvalidTag")
+	}
+	assertTags(t, getObjectTags(t, s, b, key), nil)
+}
+
+// 허용 문자(영숫자, 공백, + - = . _ : / @)와 빈 값은 그대로 저장된다
+func TestObjTaggingSpecialCharacters(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t, 24), "TestObjTaggingSpecialCharacters"
+	put(t, s, b, key, "", nil)
+	want := tagSet("a+b-=._:/@ c", "v+-=._:/@ d", "empty", "")
+	if err := taggingsPutObjectTags(t, s, b, key, want); err != nil {
+		t.Fatal(err)
+	}
+	assertTags(t, getObjectTags(t, s, b, key), want)
+}
+
+// 빈 태그 목록을 넣으면 오브젝트 태그가 지워진다
+func TestObjTaggingEmptySet(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t, 25), "TestObjTaggingEmptySet"
+	put(t, s, b, key, "", nil)
+	if err := taggingsPutObjectTags(t, s, b, key, tagSet("key", "value")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := taggingsPutObjectTags(t, s, b, key, []types.Tag{}); err != nil {
+		t.Fatal(err)
+	}
+	assertTags(t, getObjectTags(t, s, b, key), nil)
+
+	// 태그가 없어도 삭제는 성공한다
+	out, err := s.client.DeleteObjectTagging(context.Background(), &s3.DeleteObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := responseStatus(t, out.ResultMetadata); got != 204 {
+		t.Fatalf("HTTP status = %d, want 204", got)
+	}
+}
+
+// 없는 오브젝트에 대한 태그 요청은 실패한다
+func TestObjTaggingKeyNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 26), "TestObjTaggingKeyNotExist"
+	assertS3Error(t, taggingsPutObjectTags(t, s, b, key, tagSet("key", "value")), 404, "NoSuchKey")
+	_, err := s.client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+	_, err = s.client.DeleteObjectTagging(ctx, &s3.DeleteObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+}
+
+// 헤더로 태그를 10개 넘게 주면 업로드가 거부된다
+func TestPutObjWithExcessTags(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t, 27), "TestPutObjWithExcessTags"
+	pairs := make([]string, 11)
+	for index := range pairs {
+		pairs[index] = fmt.Sprintf("key%d=value%d", index, index)
+	}
+	assertS3Error(t, putObjectWithTagging(s, b, key, strings.Join(pairs, "&")), 400, "BadRequest")
+	_, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Status(t, err, 404)
+}
+
+// 헤더로 준 태그가 올바르지 않으면 업로드가 거부된다
+func TestPutObjWithInvalidTags(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	b, key := s.bucket(t, 28), "TestPutObjWithInvalidTags"
+	// 헤더로 준 태그의 키가 중복되면 InvalidArgument
+	assertS3Error(t, putObjectWithTagging(s, b, key, "key=value1&key=value2"), 400, "InvalidArgument")
+	for _, tagging := range []string{"aws:key=value", "key%3F=value", strings.Repeat("k", 129) + "=value"} {
+		assertS3Error(t, putObjectWithTagging(s, b, key, tagging), 400, "InvalidTag")
+	}
+	_, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Status(t, err, 404)
+}
+
+// 버전을 지정하면 그 버전의 태그만 바뀐다
+func TestObjTaggingVersion(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 29), "TestObjTaggingVersion"
+	enableVersioning(t, s, b)
+	version1 := aws.ToString(put(t, s, b, key, "1", nil).VersionId)
+	version2 := aws.ToString(put(t, s, b, key, "2", nil).VersionId)
+	want := tagSet("version", "1")
+
+	putOut, err := s.client.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String(version1), Tagging: &types.Tagging{TagSet: want}})
+	if err != nil || aws.ToString(putOut.VersionId) != version1 {
+		t.Fatalf("PutObjectTagging version=%v want=%q err=%v", putOut, version1, err)
+	}
+
+	getOut, err := s.client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String(version1)})
+	if err != nil || aws.ToString(getOut.VersionId) != version1 {
+		t.Fatalf("GetObjectTagging version=%v want=%q err=%v", getOut, version1, err)
+	}
+	assertTags(t, getOut.TagSet, want)
+
+	// 버전을 지정하지 않으면 최신 버전이 대상이다
+	getOut, err = s.client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil || aws.ToString(getOut.VersionId) != version2 || len(getOut.TagSet) != 0 {
+		t.Fatalf("GetObjectTagging latest=%v want version=%q err=%v", getOut, version2, err)
+	}
+
+	deleteOut, err := s.client.DeleteObjectTagging(ctx, &s3.DeleteObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String(version1)})
+	if err != nil || aws.ToString(deleteOut.VersionId) != version1 {
+		t.Fatalf("DeleteObjectTagging version=%v want=%q err=%v", deleteOut, version1, err)
+	}
+	getOut, err = s.client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String(version1)})
+	if err != nil || len(getOut.TagSet) != 0 {
+		t.Fatalf("GetObjectTagging after delete=%v err=%v", getOut, err)
+	}
+}
+
+// 올바르지 않은 버전 ID 로 보낸 태그 요청은 거부된다
+func TestObjTaggingInvalidVersion(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 30), "TestObjTaggingInvalidVersion"
+	enableVersioning(t, s, b)
+	put(t, s, b, key, "1", nil)
+	_, err := s.client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	_, err = s.client.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("invalid"), Tagging: &types.Tagging{TagSet: tagSet("key", "value")}})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	_, err = s.client.DeleteObjectTagging(ctx, &s3.DeleteObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 최신 버전이 삭제 마커이면 버전을 지정하든 않든 태그 요청은 405
+func TestObjTaggingDeleteMarker(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 31), "TestObjTaggingDeleteMarker"
+	enableVersioning(t, s, b)
+	versionID := put(t, s, b, key, "1", nil).VersionId
+	if err := taggingsPutObjectTags(t, s, b, key, tagSet("key", "value")); err != nil {
+		t.Fatal(err)
+	}
+	deleted, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, version := range []*string{nil, deleted.VersionId} {
+		_, err = s.client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: version})
+		assertS3Error(t, err, 405, "MethodNotAllowed")
+		_, err = s.client.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: version, Tagging: &types.Tagging{TagSet: tagSet("key", "value2")}})
+		assertS3Error(t, err, 405, "MethodNotAllowed")
+		_, err = s.client.DeleteObjectTagging(ctx, &s3.DeleteObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: version})
+		assertS3Error(t, err, 405, "MethodNotAllowed")
+	}
+
+	// 삭제 마커 아래의 실제 버전은 버전을 지정하면 그대로 조회된다
+	out, err := s.client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: versionID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTags(t, out.TagSet, tagSet("key", "value"))
+}

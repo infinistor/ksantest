@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using Xunit;
+using Amazon.S3;
 
 namespace s3tests.Test
 {
@@ -422,6 +423,366 @@ namespace s3tests.Test
 
 			var getResponse = client.GetObjectTagging(bucketName, key);
 			TaggingCompare(tagSet, getResponse.Tagging);
+		}
+
+		private static List<Tag> Tags(params (string Key, string Value)[] pairs)
+		{
+			var tagSet = new List<Tag>();
+			foreach (var (key, value) in pairs) tagSet.Add(new Tag() { Key = key, Value = value });
+			return tagSet;
+		}
+
+		private static List<Tag> MakeSimpleTagSet(int count)
+		{
+			var tagSet = new List<Tag>();
+			for (int i = 0; i < count; i++) tagSet.Add(new Tag() { Key = $"key{i}", Value = $"value{i}" });
+			return tagSet;
+		}
+
+		/// <summary>오브젝트의 태그 목록. SDK v4 는 태그가 없으면 null 을 돌려준다.</summary>
+		private static List<Tag> GetObjectTags(S3Client client, string bucketName, string key, string versionId = null)
+			=> client.GetObjectTagging(bucketName, key, versionId: versionId).Tagging ?? [];
+
+		private static List<KeyValuePair<string, string>> TaggingHeader(string tagging) => [new("x-amz-tagging", tagging)];
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Max")]
+		[Trait(MainData.Explanation, "버킷 태그는 50개까지만 넣을 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketTaggingMax()
+		{
+			TestId = 16;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			// 버킷 태그는 50개까지 넣을 수 있다
+			var tagSet = MakeSimpleTagSet(50);
+			client.PutBucketTagging(bucketName, tagSet);
+			TaggingCompare(tagSet, client.GetBucketTagging(bucketName).TagSet);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.BAD_REQUEST, () => client.PutBucketTagging(bucketName, MakeSimpleTagSet(51)));
+			Assert.Equal(50, client.GetBucketTagging(bucketName).TagSet.Count);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "버킷 태그의 키가 중복되면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketTaggingDuplicateKey()
+		{
+			TestId = 17;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_TAG,
+				() => client.PutBucketTagging(bucketName, Tags(("key", "value1"), ("key", "value2"))));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "버킷 태그의 키·값이 규칙에 맞지 않으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketTaggingInvalidTag()
+		{
+			TestId = 18;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var invalidTags = new List<(string Key, string Value)>()
+			{
+				("aws:key", "value"), // aws: 접두어는 시스템 태그 전용
+				(new string('k', 129), "value"), // 키 128자 초과
+				("key", new string('v', 257)), // 값 256자 초과
+				("key?<>", "value"), // 허용하지 않는 문자
+			};
+			foreach (var tag in invalidTags)
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_TAG, () => client.PutBucketTagging(bucketName, Tags(tag)));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_TAG_SET, () => client.GetBucketTagging(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "버킷 태그의 값이 비어 있어도 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketTaggingEmptyValue()
+		{
+			TestId = 19;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var tagSet = Tags(("key", ""));
+			client.PutBucketTagging(bucketName, tagSet);
+
+			var actual = client.GetBucketTagging(bucketName).TagSet;
+			Assert.Single(actual);
+			Assert.Equal("key", actual[0].Key);
+			// SDK v4 는 빈 값을 null 로 돌려줄 수 있다
+			Assert.Equal("", actual[0].Value ?? "");
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "빈 태그 목록을 넣으면 버킷 태그가 지워지고, 태그가 없어도 삭제가 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketTaggingEmptySet()
+		{
+			TestId = 20;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutBucketTagging(bucketName, Tags(("key", "value")));
+
+			// 빈 태그 목록을 넣으면 태그가 지워진다
+			client.PutBucketTagging(bucketName, []);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_TAG_SET, () => client.GetBucketTagging(bucketName));
+
+			// 태그가 없어도 삭제는 성공한다
+			var response = client.DeleteBucketTagging(bucketName);
+			Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 버킷에 태그 조회/설정/삭제를 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketTaggingBucketNotExist()
+		{
+			TestId = 21;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.GetBucketTagging(bucketName));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.PutBucketTagging(bucketName, Tags(("key", "value"))));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.DeleteBucketTagging(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "오브젝트 태그의 키가 중복되면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjTaggingDuplicateKey()
+		{
+			TestId = 22;
+			var key = "TestObjTaggingDuplicateKey";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, key, body: "");
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_TAG,
+				() => client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = Tags(("key", "value1"), ("key", "value2")) }));
+			Assert.Empty(GetObjectTags(client, bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "오브젝트 태그의 키가 규칙에 맞지 않으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjTaggingInvalidTag()
+		{
+			TestId = 23;
+			var key = "TestObjTaggingInvalidTag";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, key, body: "");
+			var invalidTags = new List<(string Key, string Value)>()
+			{
+				("aws:key", "value"), // aws: 접두어는 시스템 태그 전용
+				("key?<>", "value"), // 허용하지 않는 문자
+			};
+			foreach (var tag in invalidTags)
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_TAG,
+					() => client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = Tags(tag) }));
+			Assert.Empty(GetObjectTags(client, bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "허용 문자와 빈 값으로 된 오브젝트 태그가 그대로 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestObjTaggingSpecialCharacters()
+		{
+			TestId = 24;
+			var key = "TestObjTaggingSpecialCharacters";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, key, body: "");
+			// 허용 문자(영숫자, 공백, + - = . _ : / @)와 빈 값은 그대로 저장된다
+			var tagSet = Tags(("a+b-=._:/@ c", "v+-=._:/@ d"), ("empty", ""));
+			client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = tagSet });
+
+			var actual = GetObjectTags(client, bucketName, key);
+			// SDK v4 는 빈 값을 null 로 돌려줄 수 있다
+			foreach (var tag in actual) tag.Value ??= "";
+			TaggingCompare(tagSet, actual);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "빈 태그 목록을 넣으면 오브젝트 태그가 지워지고, 태그가 없어도 삭제가 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestObjTaggingEmptySet()
+		{
+			TestId = 25;
+			var key = "TestObjTaggingEmptySet";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, key, body: "");
+			client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = Tags(("key", "value")) });
+
+			// 빈 태그 목록을 넣으면 태그가 지워진다
+			client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = [] });
+			Assert.Empty(GetObjectTags(client, bucketName, key));
+
+			// 태그가 없어도 삭제는 성공한다
+			var response = client.DeleteObjectTagging(bucketName, key);
+			Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 오브젝트에 태그 조회/설정/삭제를 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjTaggingKeyNotExist()
+		{
+			TestId = 26;
+			var key = "TestObjTaggingKeyNotExist";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY,
+				() => client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = Tags(("key", "value")) }));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, () => client.GetObjectTagging(bucketName, key));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, () => client.DeleteObjectTagging(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Overflow")]
+		[Trait(MainData.Explanation, "헤더로 태그를 10개 넘게 주면 오브젝트 업로드가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjWithExcessTags()
+		{
+			TestId = 27;
+			var key = "TestPutObjWithExcessTags";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var pairs = new List<string>();
+			for (int i = 0; i < 11; i++) pairs.Add($"key{i}=value{i}");
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.BAD_REQUEST,
+				() => client.PutObject(bucketName, key, body: "", headerList: TaggingHeader(string.Join("&", pairs))));
+			// HEAD 응답에는 본문이 없어 상태 코드만 확인한다
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.GetObjectMetadata(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "헤더로 준 태그가 규칙에 맞지 않으면 오브젝트 업로드가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjWithInvalidTags()
+		{
+			TestId = 28;
+			var key = "TestPutObjWithInvalidTags";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 헤더로 준 태그의 키가 중복되면 InvalidArgument
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.PutObject(bucketName, key, body: "", headerList: TaggingHeader("key=value1&key=value2")));
+			foreach (var tagging in new[] { "aws:key=value", "key%3F=value", new string('k', 129) + "=value" })
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_TAG,
+					() => client.PutObject(bucketName, key, body: "", headerList: TaggingHeader(tagging)));
+			// HEAD 응답에는 본문이 없어 상태 코드만 확인한다
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.GetObjectMetadata(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "버전을 지정한 태그 설정/조회/삭제가 그 버전에만 적용되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestObjTaggingVersion()
+		{
+			TestId = 29;
+			var key = "TestObjTaggingVersion";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var version1 = client.PutObject(bucketName, key, body: "1").VersionId;
+			var version2 = client.PutObject(bucketName, key, body: "2").VersionId;
+			var tagSet = Tags(("version", "1"));
+
+			// 버전을 지정하면 그 버전의 태그만 바뀐다
+			var putResponse = client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = tagSet }, versionId: version1);
+			Assert.Equal(version1, putResponse.VersionId);
+
+			var getResponse = client.GetObjectTagging(bucketName, key, versionId: version1);
+			Assert.Equal(version1, getResponse.VersionId);
+			TaggingCompare(tagSet, getResponse.Tagging);
+
+			// 버전을 지정하지 않으면 최신 버전이 대상이다
+			getResponse = client.GetObjectTagging(bucketName, key);
+			Assert.Equal(version2, getResponse.VersionId);
+			Assert.Empty(getResponse.Tagging ?? []);
+
+			var deleteResponse = client.DeleteObjectTagging(bucketName, key, versionId: version1);
+			Assert.Equal(version1, deleteResponse.VersionId);
+			Assert.Empty(GetObjectTags(client, bucketName, key, version1));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "잘못된 버전 ID 로 태그 조회/설정/삭제를 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjTaggingInvalidVersion()
+		{
+			TestId = 30;
+			var key = "TestObjTaggingInvalidVersion";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			client.PutObject(bucketName, key, body: "1");
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.GetObjectTagging(bucketName, key, versionId: "invalid"));
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = Tags(("key", "value")) }, versionId: "invalid"));
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.DeleteObjectTagging(bucketName, key, versionId: "invalid"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Taggings")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "최신 버전이 삭제 마커이면 태그 요청이 실패하고, 그 아래 버전은 버전 지정으로 조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjTaggingDeleteMarker()
+		{
+			TestId = 31;
+			var key = "TestObjTaggingDeleteMarker";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var versionId = client.PutObject(bucketName, key, body: "1").VersionId;
+			client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = Tags(("key", "value")) });
+			var deleteMarker = client.DeleteObject(bucketName, key).VersionId;
+
+			// 최신 버전이 삭제 마커이면 버전을 지정하든 않든 태그 요청은 405
+			foreach (var target in new[] { null, deleteMarker })
+			{
+				AssertS3Error(HttpStatusCode.MethodNotAllowed, MainData.METHOD_NOT_ALLOWED,
+					() => client.GetObjectTagging(bucketName, key, versionId: target));
+				AssertS3Error(HttpStatusCode.MethodNotAllowed, MainData.METHOD_NOT_ALLOWED,
+					() => client.PutObjectTagging(bucketName, key, new Tagging() { TagSet = Tags(("key", "value2")) }, versionId: target));
+				AssertS3Error(HttpStatusCode.MethodNotAllowed, MainData.METHOD_NOT_ALLOWED,
+					() => client.DeleteObjectTagging(bucketName, key, versionId: target));
+			}
+
+			// 삭제 마커 아래의 실제 버전은 버전을 지정하면 그대로 조회된다
+			TaggingCompare(Tags(("key", "value")), GetObjectTags(client, bucketName, key, versionId));
 		}
 	}
 }

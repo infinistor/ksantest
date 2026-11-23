@@ -168,4 +168,31 @@ class GetObjectAttributes {
 	void testGetObjectAttributesAllAttributes() {
 		testV2.testGetObjectAttributesAllAttributes();
 	}
+
+	/**
+	 * 알 수 없는 속성 이름이 있으면 400 InvalidArgument인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testGetObjectAttributesInvalidAttribute() {
+		testV2.testGetObjectAttributesInvalidAttribute();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 조회가 403 AccessDenied로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testGetObjectAttributesAccessDenied() {
+		testV2.testGetObjectAttributesAccessDenied();
+	}
+
+	/**
+	 * 최신 버전이 삭제 마커이면 404 NoSuchKey이고 버전을 지정하면 조회되는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testGetObjectAttributesDeleteMarker() {
+		testV2.testGetObjectAttributesDeleteMarker();
+	}
 }

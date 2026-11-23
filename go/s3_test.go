@@ -20,9 +20,12 @@ import (
 	"ksantest/go-s3tests/internal/testconfig"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go/middleware"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 type suite struct {
@@ -172,6 +175,30 @@ func (s *suite) bucket(t *testing.T, id ...int) string {
 		}
 	})
 	return name
+}
+
+// bucketNameOnly는 버킷을 만들지 않고 이름만 돌려준다. 정리 목록에도 등록하지 않는다.
+func (s *suite) bucketNameOnly(id ...int) string {
+	return buildBucketName(s.cfg.BucketPrefix, s.suiteID, id...)
+}
+
+// altClientOrSkip은 Alt User 클라이언트를 돌려준다. 자격 증명이 없으면 테스트를 건너뛴다.
+func altClientOrSkip(t *testing.T, s *suite) *s3.Client {
+	t.Helper()
+	if s.cfg.Alt.AccessKey == "" || s.cfg.Alt.SecretKey == "" {
+		t.Skip("configure Alt User credentials in config.ini")
+	}
+	return s3Client(s.cfg, s.cfg.Alt)
+}
+
+// responseStatus는 성공한 응답의 HTTP 상태 코드를 돌려준다.
+func responseStatus(t *testing.T, metadata middleware.Metadata) int {
+	t.Helper()
+	response, ok := awsmiddleware.GetRawResponse(metadata).(*smithyhttp.Response)
+	if !ok || response == nil {
+		t.Fatal("raw HTTP response not found in result metadata")
+	}
+	return response.StatusCode
 }
 
 // 버킷에 남아 있는 미완료 멀티파트 업로드를 모두 중단하여 파트를 삭제한다.

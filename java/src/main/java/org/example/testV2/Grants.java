@@ -29,6 +29,10 @@ import software.amazon.awssdk.services.s3.model.Grantee;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 import software.amazon.awssdk.services.s3.model.Permission;
+import java.util.Collections;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.Type;
 
 public class Grants extends TestBase {
 	@Test
@@ -465,4 +469,258 @@ public class Grants extends TestBase {
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
 		assertEquals(MainData.MALFORMED_ACL_ERROR, e.awsErrorDetails().errorCode());
 	}
+
+	// region ACL API 검증
+	static final String LOG_DELIVERY_GROUP = "http://acs.amazonaws.com/groups/s3/LogDelivery";
+
+	/** 버킷 소유자를 Owner 로 하는 AccessControlPolicy. grants 가 없으면 소유자 FULL_CONTROL. */
+	static AccessControlPolicy ownerPolicy(S3Client client, String bucketName, Grant... grants) {
+		var ownerId = client.getBucketAcl(g -> g.bucket(bucketName)).owner().id();
+		var list = grants.length > 0 ? List.of(grants) : List.of(ownerGrant(ownerId, Permission.FULL_CONTROL));
+		return AccessControlPolicy.builder().owner(o -> o.id(ownerId)).grants(list).build();
+	}
+
+	static Grant ownerGrant(String ownerId, Permission permission) {
+		return Grant.builder().grantee(g -> g.type(Type.CANONICAL_USER).id(ownerId)).permission(permission).build();
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketAclInvalidCanned() {
+		var key = "testBucketAclInvalidCanned";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 36);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl("invalid")));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl("invalid")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testAclCannedWithGrantHeader() {
+		var key = "testAclCannedWithGrantHeader";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 37);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		var grant = "uri=\"" + MainData.AUTHENTICATED_USERS + "\"";
+
+		// 캔드 ACL 과 권한 부여 헤더는 함께 쓸 수 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE).grantRead(grant)));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST, () -> client
+				.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PRIVATE).grantRead(grant)));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.putObject(
+						p -> p.bucket(bucketName).key(key + "2").acl(ObjectCannedACL.PRIVATE).grantRead(grant),
+						RequestBody.fromString("content")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketAclCannedWithBody() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 38);
+		var policy = ownerPolicy(client, bucketName);
+
+		// 캔드 ACL 과 본문(AccessControlPolicy)은 함께 쓸 수 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.UNEXPECTED_CONTENT, () -> client
+				.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE).accessControlPolicy(policy)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketAclMissing() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 39);
+
+		// 캔드 ACL, 권한 부여 헤더, 본문 중 아무것도 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MISSING_SECURITY_HEADER,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketAclInvalidPermission() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 40);
+		var ownerId = client.getBucketAcl(g -> g.bucket(bucketName)).owner().id();
+		var grant = Grant.builder().grantee(g -> g.type(Type.CANONICAL_USER).id(ownerId)).permission("INVALID")
+				.build();
+		var policy = ownerPolicy(client, bucketName, grant);
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_ACL_ERROR,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(policy)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketAclChangeOwner() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 41);
+		var policy = ownerPolicy(client, bucketName).toBuilder().owner(o -> o.id(config.altUser.id)).build();
+
+		// ACL 로 소유자를 바꿀 수 없다
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(policy)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketAclInvalidGrantHeader() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 42);
+
+		// 형식 오류, 없는 사용자 ID, 없는 그룹 URI
+		for (var grant : List.of("invalid", "id=\"invalid\"", "uri=\"http://example.com/invalid\""))
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+					() -> client.putBucketAcl(p -> p.bucket(bucketName).grantRead(grant)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketAclInvalidGroupUri() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 43);
+		var grant = Grant.builder().grantee(g -> g.type(Type.GROUP).uri("http://example.com/invalid"))
+				.permission(Permission.READ).build();
+		var policy = ownerPolicy(client, bucketName, grant);
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(policy)));
+	}
+
+	@Test
+	@Tag("Max")
+	public void testBucketAclMaxGrants() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 44);
+		var ownerId = client.getBucketAcl(g -> g.bucket(bucketName)).owner().id();
+		var grant = ownerGrant(ownerId, Permission.FULL_CONTROL);
+
+		// 권한 부여는 100개까지
+		var maxPolicy = ownerPolicy(client, bucketName, Collections.nCopies(100, grant).toArray(new Grant[0]));
+		client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(maxPolicy));
+
+		var overPolicy = ownerPolicy(client, bucketName, Collections.nCopies(101, grant).toArray(new Grant[0]));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_ACL_ERROR,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).accessControlPolicy(overPolicy)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketAclBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(45);
+
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.getBucketAcl(g -> g.bucket(bucketName)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE)));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testAclAccessDenied() {
+		var key = "testAclAccessDenied";
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucketCannedAcl(client, 46);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.getBucketAcl(g -> g.bucket(bucketName)));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE)));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.getObjectAcl(g -> g.bucket(bucketName).key(key)));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PRIVATE)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjectAclKeyNotExist() {
+		var key = "testObjectAclKeyNotExist";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 47);
+
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.getObjectAcl(g -> g.bucket(bucketName).key(key)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PRIVATE)));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testObjectAclVersionId() {
+		var key = "testObjectAclVersionId";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 48);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+
+		// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전이다
+		assertEquals(1,
+				client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId("null")).grants().size());
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId("invalid")));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testObjectAclDeleteMarker() {
+		var key = "testObjectAclDeleteMarker";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 49);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"))
+				.versionId();
+		var markerId = client.deleteObject(d -> d.bucket(bucketName).key(key)).versionId();
+
+		// 최신 버전이 삭제 마커이면 없는 키, 삭제 마커 버전을 지정하면 405
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.getObjectAcl(g -> g.bucket(bucketName).key(key)));
+		assertS3Error(HttpStatus.SC_METHOD_NOT_ALLOWED, MainData.METHOD_NOT_ALLOWED,
+				() -> client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId(markerId)));
+		assertS3Error(HttpStatus.SC_METHOD_NOT_ALLOWED, MainData.METHOD_NOT_ALLOWED, () -> client.putObjectAcl(
+				p -> p.bucket(bucketName).key(key).versionId(markerId).acl(ObjectCannedACL.PRIVATE)));
+		assertEquals(1,
+				client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId(versionId)).grants().size());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testBucketAclLogDeliveryWrite() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 50);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl("log-delivery-write"));
+
+		// 로그 전달 그룹에 WRITE, READ_ACP 가 부여된다
+		var grants = client.getBucketAcl(g -> g.bucket(bucketName)).grants();
+		var logDelivery = grants.stream().filter(grant -> LOG_DELIVERY_GROUP.equals(grant.grantee().uri()))
+				.map(Grant::permissionAsString).sorted().toList();
+		assertEquals(List.of("READ_ACP", "WRITE"), logDelivery);
+		assertEquals(3, grants.size());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testPutObjectWithGrantHeader() {
+		var key = "testPutObjectWithGrantHeader";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 51);
+		var altId = config.altUser.id;
+
+		// 권한 부여 헤더만 주면 소유자 FULL_CONTROL 없이 지정한 권한만 남는다
+		client.putObject(p -> p.bucket(bucketName).key(key).grantRead("id=\"" + altId + "\""),
+				RequestBody.fromString("content"));
+		var grants = client.getObjectAcl(g -> g.bucket(bucketName).key(key)).grants();
+		assertEquals(1, grants.size());
+		assertEquals(altId, grants.get(0).grantee().id());
+		assertEquals(Permission.READ, grants.get(0).permission());
+		assertEquals("content", getBody(getAltClient().getObject(g -> g.bucket(bucketName).key(key))));
+	}
+	// endregion
 }

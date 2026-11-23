@@ -589,3 +589,98 @@ class TestListObjectsV2(S3TestBase):
             assert self.get_prefix_list(response.get("CommonPrefixes"), "url") == [prefix_name]
 
             token = response.get("NextContinuationToken")
+
+    _TREE_KEYS = ["a/1", "a/2", "b/1", "c", "d"]
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_list_v2_max_keys_negative(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 46)
+        self.assert_client_error(
+            lambda: client.list_objects_v2(Bucket=bucket_name, MaxKeys=-1), 400, md.INVALID_ARGUMENT
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_list_v2_encoding_invalid(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 47)
+        self.assert_client_error(
+            lambda: client.list_objects_v2(Bucket=bucket_name, EncodingType="invalid"), 400, md.INVALID_ARGUMENT
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_list_v2_continuation_token_invalid(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 48, self._TREE_KEYS)
+        self.assert_client_error(
+            lambda: client.list_objects_v2(Bucket=bucket_name, ContinuationToken="invalid"),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("KeyCount")
+    def test_bucket_list_v2_key_count_delimiter(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 49, self._TREE_KEYS)
+        # KeyCount 와 MaxKeys 는 공통 접두어도 한 건으로 센다
+        response = client.list_objects_v2(Bucket=bucket_name, Delimiter="/")
+        assert self.get_keys(response.get("Contents")) == ["c", "d"]
+        assert self.get_prefix_list(response.get("CommonPrefixes")) == ["a/", "b/"]
+        assert response["KeyCount"] == 4
+
+        response = client.list_objects_v2(Bucket=bucket_name, Delimiter="/", MaxKeys=2)
+        assert not response.get("Contents")
+        assert self.get_prefix_list(response.get("CommonPrefixes")) == ["a/", "b/"]
+        assert response["KeyCount"] == 2
+        assert response["IsTruncated"] is True
+
+        response = client.list_objects_v2(
+            Bucket=bucket_name, Delimiter="/", MaxKeys=2, ContinuationToken=response["NextContinuationToken"]
+        )
+        assert self.get_keys(response.get("Contents")) == ["c", "d"]
+        assert not response.get("CommonPrefixes")
+        assert response["IsTruncated"] is False
+
+    @pytest.mark.tag("StartAfter")
+    def test_bucket_list_v2_start_after_in_common_prefix(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 50, self._TREE_KEYS)
+        # StartAfter 가 공통 접두어 안의 키이면 그 접두어는 통째로 건너뛴다
+        response = client.list_objects_v2(Bucket=bucket_name, StartAfter="a/1", Delimiter="/")
+        assert self.get_keys(response.get("Contents")) == ["c", "d"]
+        assert self.get_prefix_list(response.get("CommonPrefixes")) == ["b/"]
+        assert response["KeyCount"] == 3
+        assert response["StartAfter"] == "a/1"
+
+    @pytest.mark.tag("Delimiter")
+    def test_bucket_list_v2_delimiter_multi_char(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 51, self._TREE_KEYS)
+        # 구분자는 여러 글자일 수 있다
+        response = client.list_objects_v2(Bucket=bucket_name, Delimiter="/1")
+        assert self.get_keys(response.get("Contents")) == ["a/2", "c", "d"]
+        assert self.get_prefix_list(response.get("CommonPrefixes")) == ["a/1", "b/1"]
+
+    @pytest.mark.tag("Access")
+    def test_bucket_list_v2_alt_user(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 52, self._TREE_KEYS)
+        self.assert_client_error(
+            lambda: self.get_alt_client().list_objects_v2(Bucket=bucket_name), 403, md.ACCESS_DENIED
+        )
+
+    @pytest.mark.tag("Metadata")
+    def test_bucket_list_v2_response_fields(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 53, self._TREE_KEYS)
+        # 요청에 준 값을 응답에 그대로 돌려준다
+        response = client.list_objects_v2(Bucket=bucket_name, Prefix="a/", StartAfter="a/0", MaxKeys=5, Delimiter="/")
+        assert response["Name"] == bucket_name
+        assert response["Prefix"] == "a/"
+        assert response["StartAfter"] == "a/0"
+        assert response["MaxKeys"] == 5
+        assert response["Delimiter"] == "/"
+        assert response["IsTruncated"] is False
+        assert response["KeyCount"] == 2
+        assert "NextContinuationToken" not in response
+        assert self.get_keys(response.get("Contents")) == ["a/1", "a/2"]

@@ -1143,3 +1143,198 @@ func checksumValue(algorithm types.ChecksumAlgorithm, body []byte) string {
 	}
 	return base64.StdEncoding.EncodeToString(sum)
 }
+
+// md5Base64는 Content-MD5 헤더에 넣을 값을 돌려준다.
+func md5Base64(content string) string {
+	sum := md5.Sum([]byte(content))
+	return base64.StdEncoding.EncodeToString(sum[:])
+}
+
+// Content-MD5 가 본문과 맞으면 저장된다
+func TestPutObjectContentMd5(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 54), "TestPutObjectContentMd5"
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader(key), ContentMD5: aws.String(md5Base64(key))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read(t, s, b, key); got != key {
+		t.Fatalf("body=%q want=%q", got, key)
+	}
+}
+
+// 본문과 다른 MD5 를 주면 저장되지 않는다
+func TestPutObjectContentMd5Mismatch(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 55), "TestPutObjectContentMd5Mismatch"
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader("content"), ContentMD5: aws.String(md5Base64("other"))})
+	assertS3Error(t, err, 400, "BadDigest")
+	_, err = s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+}
+
+// base64 가 아니거나 길이가 MD5(16바이트)가 아닌 Content-MD5 는 거부된다
+func TestPutObjectContentMd5Invalid(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 56), "TestPutObjectContentMd5Invalid"
+	for _, contentMD5 := range []string{"not-base64!!", "YWJj"} {
+		_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader("content"), ContentMD5: aws.String(contentMD5)})
+		assertS3Error(t, err, 400, "InvalidDigest")
+	}
+	_, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+}
+
+// 스토리지 클래스를 지정해 올리면 조회·목록에 그대로 나온다
+func TestPutObjectStorageClass(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 57), "TestPutObjectStorageClass"
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader("content"), StorageClass: types.StorageClassStandardIa})
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, s, b, key+"_standard", "content", nil)
+
+	if head := headObject(t, s.client, b, key); head.StorageClass != types.StorageClassStandardIa {
+		t.Fatalf("HeadObject StorageClass=%q", head.StorageClass)
+	}
+	got, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got.Body.Close()
+	if got.StorageClass != types.StorageClassStandardIa {
+		t.Fatalf("GetObject StorageClass=%q", got.StorageClass)
+	}
+	// STANDARD 는 x-amz-storage-class 헤더를 돌려주지 않는다
+	if head := headObject(t, s.client, b, key+"_standard"); head.StorageClass != "" {
+		t.Fatalf("HeadObject standard StorageClass=%q", head.StorageClass)
+	}
+
+	listed, err := s.client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String(b)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	classes := map[string]string{}
+	for _, object := range listed.Contents {
+		classes[aws.ToString(object.Key)] = string(object.StorageClass)
+	}
+	if len(classes) != 2 || classes[key] != "STANDARD_IA" || classes[key+"_standard"] != "STANDARD" {
+		t.Fatalf("listed storage classes=%v", classes)
+	}
+}
+
+// 알 수 없는 스토리지 클래스는 거부된다
+func TestPutObjectInvalidStorageClass(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 58), "TestPutObjectInvalidStorageClass"
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader("content"), StorageClass: types.StorageClass("INVALID")})
+	assertS3Error(t, err, 400, "InvalidStorageClass")
+}
+
+// Content-* 헤더를 주고 올리면 조회할 때 그대로 돌려준다
+func TestPutObjectContentHeaders(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 59), "TestPutObjectContentHeaders"
+	contentType, disposition, encoding, language := "text/plain", `attachment; filename="a.txt"`, "gzip", "ko-KR"
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader("content"),
+		ContentType: aws.String(contentType), ContentDisposition: aws.String(disposition), ContentEncoding: aws.String(encoding), ContentLanguage: aws.String(language),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	check := func(name string, gotType, gotDisposition, gotEncoding, gotLanguage *string) {
+		t.Helper()
+		if aws.ToString(gotType) != contentType || aws.ToString(gotDisposition) != disposition || aws.ToString(gotEncoding) != encoding || aws.ToString(gotLanguage) != language {
+			t.Fatalf("%s type=%q disposition=%q encoding=%q language=%q", name, aws.ToString(gotType), aws.ToString(gotDisposition), aws.ToString(gotEncoding), aws.ToString(gotLanguage))
+		}
+	}
+	head := headObject(t, s.client, b, key)
+	check("HeadObject", head.ContentType, head.ContentDisposition, head.ContentEncoding, head.ContentLanguage)
+	got, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got.Body.Close()
+	check("GetObject", got.ContentType, got.ContentDisposition, got.ContentEncoding, got.ContentLanguage)
+
+	// 주지 않은 헤더는 돌려주지 않는다
+	// (Content-Type 기본값 binary/octet-stream 은 확인하지 않는다: go SDK 가 PutObject 에 항상 application/octet-stream 을 붙인다)
+	put(t, s, b, key+"_default", "content", nil)
+	head = headObject(t, s.client, b, key+"_default")
+	if head.ContentDisposition != nil || head.ContentEncoding != nil || head.ContentLanguage != nil {
+		t.Fatalf("default disposition=%v encoding=%v language=%v", head.ContentDisposition, head.ContentEncoding, head.ContentLanguage)
+	}
+}
+
+// 웹사이트 리다이렉트 위치는 / 나 http://, https:// 로 시작해야 한다
+func TestPutObjectWebsiteRedirectLocation(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 60), "TestPutObjectWebsiteRedirectLocation"
+	for index, location := range []string{"/other", "http://example.com/", "https://example.com/path"} {
+		target := fmt.Sprintf("%s%d", key, index)
+		_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(target), Body: strings.NewReader("content"), WebsiteRedirectLocation: aws.String(location)})
+		if err != nil {
+			t.Fatalf("PutObject location=%q: %v", location, err)
+		}
+		if head := headObject(t, s.client, b, target); aws.ToString(head.WebsiteRedirectLocation) != location {
+			t.Fatalf("WebsiteRedirectLocation=%q want=%q", aws.ToString(head.WebsiteRedirectLocation), location)
+		}
+	}
+
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader("content"), WebsiteRedirectLocation: aws.String("other")})
+	assertS3Error(t, err, 400, "InvalidRedirectLocation")
+}
+
+// 사용자 메타데이터는 합쳐서 2KB 까지
+func TestPutObjectMetadataTooLarge(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 61), "TestPutObjectMetadataTooLarge"
+	value := strings.Repeat("v", 2000)
+	put(t, s, b, key, "content", map[string]string{"key": value})
+	if head := headObject(t, s.client, b, key); len(head.Metadata) != 1 || head.Metadata["key"] != value {
+		t.Fatalf("metadata count=%d", len(head.Metadata))
+	}
+
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key + "_big"), Body: strings.NewReader("content"), Metadata: map[string]string{"key": strings.Repeat("v", 2100)}})
+	assertS3Error(t, err, 400, "MetadataTooLarge")
+}
+
+// 알 수 없는 canned ACL 은 거부된다
+func TestPutObjectInvalidAcl(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 62), "TestPutObjectInvalidAcl"
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader("content"), ACL: types.ObjectCannedACL("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 권한이 없는 사용자와 익명 사용자는 올릴 수 없다
+func TestPutObjectAccessDenied(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	alt := altClientOrSkip(t, s)
+	b, key := s.bucket(t, 63), "TestPutObjectAccessDenied"
+	for _, other := range []*s3.Client{alt, anonymousClient(s)} {
+		_, err := other.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader("content")})
+		assertS3Error(t, err, 403, "AccessDenied")
+	}
+	_, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+}

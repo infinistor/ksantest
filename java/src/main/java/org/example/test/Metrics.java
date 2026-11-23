@@ -11,16 +11,20 @@
 package org.example.test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.Test;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.function.Executable;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.ListBucketMetricsConfigurationsRequest;
@@ -237,5 +241,111 @@ public class Metrics extends TestBase {
 		assertNotNull(actualTag);
 		assertEquals(tag.getKey(), actualTag.getKey());
 		assertEquals(tag.getValue(), actualTag.getValue());
+	}
+
+	private static void assertError(Executable executable, int statusCode, String errorCode) {
+		var e = assertThrows(AmazonServiceException.class, executable);
+		assertEquals(statusCode, e.getStatusCode());
+		assertEquals(errorCode, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Max")
+	public void testPutMetricsIdLength() {
+		var client = getClient();
+		var bucketName = createBucket(client, 15);
+
+		// ID 는 64자까지 허용한다
+		var metricId = "a".repeat(64);
+		client.setBucketMetricsConfiguration(bucketName, new MetricsConfiguration().withId(metricId));
+		var response = client.getBucketMetricsConfiguration(bucketName, metricId);
+		assertEquals(metricId, response.getMetricsConfiguration().getId());
+
+		assertError(() -> client.setBucketMetricsConfiguration(bucketName,
+				new MetricsConfiguration().withId("a".repeat(65))), HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML);
+	}
+
+	@Test
+	@Tag("Error")
+	public void testPutMetricsInvalidId() {
+		var client = getClient();
+		var bucketName = createBucket(client, 16);
+
+		// ID 에는 영숫자와 - _ . 만 쓸 수 있다
+		assertError(() -> client.setBucketMetricsConfiguration(bucketName, new MetricsConfiguration().withId("a b/c")),
+				HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML);
+		assertNull(client.listBucketMetricsConfigurations(
+				new ListBucketMetricsConfigurationsRequest().withBucketName(bucketName))
+				.getMetricsConfigurationList());
+	}
+
+	@Test
+	@Tag("Error")
+	public void testPutMetricsInvalidFilter() {
+		var client = getClient();
+		var bucketName = createBucket(client, 18);
+
+		// And 안에 조건이 하나뿐이면 거부된다
+		// (And 없이 Prefix 와 Tag 를 함께 주는 요청은 SDK v1 모델로 만들 수 없어 확인하지 않는다)
+		var filters = new ArrayList<MetricsFilterPredicate>();
+		filters.add(new MetricsPrefixPredicate("test"));
+		var metrics = new MetricsConfiguration().withId("metrics-id")
+				.withFilter(new MetricsFilter(new MetricsAndOperator(filters)));
+		assertError(() -> client.setBucketMetricsConfiguration(bucketName, metrics), HttpStatus.SC_BAD_REQUEST,
+				MainData.MALFORMED_XML);
+	}
+
+	@Test
+	@Tag("List")
+	public void testListMetricsPagination() {
+		var client = getClient();
+		var bucketName = createBucket(client, 19);
+		var ids = new ArrayList<String>();
+		for (int i = 0; i < 101; i++)
+			ids.add(String.format("metrics-%03d", i));
+		for (var metricId : ids)
+			client.setBucketMetricsConfiguration(bucketName, new MetricsConfiguration().withId(metricId));
+
+		// 한 번에 100개까지만 돌려주고 나머지는 토큰으로 이어서 받는다
+		var response = client.listBucketMetricsConfigurations(
+				new ListBucketMetricsConfigurationsRequest().withBucketName(bucketName));
+		assertEquals(100, response.getMetricsConfigurationList().size());
+		assertTrue(response.isTruncated());
+		var listed = new ArrayList<String>();
+		response.getMetricsConfigurationList().forEach(c -> listed.add(c.getId()));
+
+		response = client.listBucketMetricsConfigurations(new ListBucketMetricsConfigurationsRequest()
+				.withBucketName(bucketName).withContinuationToken(response.getNextContinuationToken()));
+		assertEquals(1, response.getMetricsConfigurationList().size());
+		assertFalse(response.isTruncated());
+		response.getMetricsConfigurationList().forEach(c -> listed.add(c.getId()));
+		Collections.sort(listed);
+		assertEquals(ids, listed);
+	}
+
+	@Test
+	@Tag("List")
+	public void testListMetricsInvalidToken() {
+		var client = getClient();
+		var bucketName = createBucket(client, 20);
+
+		assertError(() -> client.listBucketMetricsConfigurations(new ListBucketMetricsConfigurationsRequest()
+				.withBucketName(bucketName).withContinuationToken("invalid")),
+				HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_CONTINUATION_TOKEN);
+	}
+
+	@Test
+	@Tag("Error")
+	public void testMetricsBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(21);
+
+		assertError(() -> client.listBucketMetricsConfigurations(
+				new ListBucketMetricsConfigurationsRequest().withBucketName(bucketName)),
+				HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET);
+		assertError(() -> client.getBucketMetricsConfiguration(bucketName, "metrics-id"), HttpStatus.SC_NOT_FOUND,
+				MainData.NO_SUCH_BUCKET);
+		assertError(() -> client.deleteBucketMetricsConfiguration(bucketName, "metrics-id"), HttpStatus.SC_NOT_FOUND,
+				MainData.NO_SUCH_BUCKET);
 	}
 }

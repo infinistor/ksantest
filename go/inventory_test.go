@@ -2,6 +2,9 @@ package s3tests
 
 import (
 	"context"
+	"fmt"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -245,4 +248,208 @@ func putInventory(t *testing.T, s *suite, bucket, id string, configuration *type
 
 func putInventoryError(s *suite, bucket, id string, configuration *types.InventoryConfiguration) (*s3.PutBucketInventoryConfigurationOutput, error) {
 	return s.client.PutBucketInventoryConfiguration(context.Background(), &s3.PutBucketInventoryConfigurationInput{Bucket: aws.String(bucket), Id: aws.String(id), InventoryConfiguration: configuration})
+}
+
+func getInventory(t *testing.T, s *suite, bucket, id string) *types.InventoryConfiguration {
+	t.Helper()
+	out, err := s.client.GetBucketInventoryConfiguration(context.Background(), &s3.GetBucketInventoryConfigurationInput{Bucket: aws.String(bucket), Id: aws.String(id)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.InventoryConfiguration == nil || out.InventoryConfiguration.Destination == nil || out.InventoryConfiguration.Destination.S3BucketDestination == nil || out.InventoryConfiguration.Schedule == nil {
+		t.Fatalf("configuration=%#v", out.InventoryConfiguration)
+	}
+	return out.InventoryConfiguration
+}
+
+// ID 는 64자까지 허용한다
+func TestPutBucketInventoryIdLength(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, target, id := s.bucket(t, 18), s.bucket(t, 18), strings.Repeat("a", 64)
+	putInventory(t, s, source, id, standardInventory(id, target))
+	if got := aws.ToString(getInventory(t, s, source, id).Id); got != id {
+		t.Fatalf("ID=%q want=%q", got, id)
+	}
+
+	tooLong := strings.Repeat("a", 65)
+	_, err := putInventoryError(s, source, tooLong, standardInventory(tooLong, target))
+	assertS3Error(t, err, 400, "MalformedXML")
+}
+
+// ID 에는 영숫자와 - _ . 만 쓸 수 있다
+func TestPutBucketInventoryInvalidId(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, target, id := s.bucket(t, 19), s.bucket(t, 19), "a b/c"
+	_, err := putInventoryError(s, source, id, standardInventory(id, target))
+	assertS3Error(t, err, 400, "MalformedXML")
+}
+
+// 쿼리의 id 와 본문의 Id 가 다르면 거부된다
+func TestPutBucketInventoryIdMismatch(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, target := s.bucket(t, 20), s.bucket(t, 20)
+	_, err := putInventoryError(s, source, "my-inventory", standardInventory("other-inventory", target))
+	assertS3Error(t, err, 400, "IdMismatch")
+	out, err := s.client.ListBucketInventoryConfigurations(context.Background(), &s3.ListBucketInventoryConfigurationsInput{Bucket: aws.String(source)})
+	if err != nil || len(out.InventoryConfigurationList) != 0 {
+		t.Fatalf("configurations=%d err=%v", len(out.InventoryConfigurationList), err)
+	}
+}
+
+// 비활성(IsEnabled false) 인벤토리가 그대로 저장된다
+func TestPutBucketInventoryDisabled(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, target, id := s.bucket(t, 21), s.bucket(t, 21), "my-inventory"
+	configuration := standardInventory(id, target)
+	configuration.IsEnabled = aws.Bool(false)
+	putInventory(t, s, source, id, configuration)
+	if got := getInventory(t, s, source, id).IsEnabled; got == nil || *got {
+		t.Fatalf("IsEnabled=%v want=false", got)
+	}
+}
+
+// 올바르지 않은 대상 버전(IncludedObjectVersions)은 거부된다
+func TestPutBucketInventoryInvalidVersions(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, target, id := s.bucket(t, 22), s.bucket(t, 22), "my-inventory"
+	configuration := standardInventory(id, target)
+	configuration.IncludedObjectVersions = types.InventoryIncludedObjectVersions("Invalid")
+	_, err := putInventoryError(s, source, id, configuration)
+	assertS3Error(t, err, 400, "MalformedXML")
+}
+
+// 형식(CSV/ORC/Parquet), 주기(Daily/Weekly), 대상 버전(All/Current)이 그대로 저장된다
+func TestPutBucketInventoryFormats(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, target := s.bucket(t, 23), s.bucket(t, 23)
+	cases := []struct {
+		id        string
+		format    types.InventoryFormat
+		frequency types.InventoryFrequency
+		versions  types.InventoryIncludedObjectVersions
+	}{
+		{"inventory-csv", types.InventoryFormatCsv, types.InventoryFrequencyDaily, types.InventoryIncludedObjectVersionsAll},
+		{"inventory-orc", types.InventoryFormatOrc, types.InventoryFrequencyWeekly, types.InventoryIncludedObjectVersionsCurrent},
+		{"inventory-parquet", types.InventoryFormatParquet, types.InventoryFrequencyWeekly, types.InventoryIncludedObjectVersionsAll},
+	}
+	for _, tc := range cases {
+		putInventory(t, s, source, tc.id, inventoryConfiguration(tc.id, target, "", nil, tc.versions, tc.frequency, tc.format))
+	}
+	for _, tc := range cases {
+		got := getInventory(t, s, source, tc.id)
+		if got.Destination.S3BucketDestination.Format != tc.format || got.Schedule.Frequency != tc.frequency || got.IncludedObjectVersions != tc.versions {
+			t.Fatalf("%s: format=%s frequency=%s versions=%s want=%s/%s/%s", tc.id, got.Destination.S3BucketDestination.Format, got.Schedule.Frequency, got.IncludedObjectVersions, tc.format, tc.frequency, tc.versions)
+		}
+	}
+}
+
+// 대상의 접두어와 SSE-S3 암호화 설정이 그대로 저장된다
+func TestPutBucketInventoryDestination(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, target, id := s.bucket(t, 24), s.bucket(t, 24), "my-inventory"
+	configuration := inventoryConfiguration(id, target, "inventory/", nil, types.InventoryIncludedObjectVersionsCurrent, types.InventoryFrequencyDaily, types.InventoryFormatCsv)
+	configuration.Destination.S3BucketDestination.Encryption = &types.InventoryEncryption{SSES3: &types.SSES3{}}
+	putInventory(t, s, source, id, configuration)
+
+	destination := getInventory(t, s, source, id).Destination.S3BucketDestination
+	if got := aws.ToString(destination.Bucket); got != "arn:aws:s3:::"+target {
+		t.Fatalf("destination bucket = %q, want %q", got, "arn:aws:s3:::"+target)
+	}
+	if got := aws.ToString(destination.Prefix); got != "inventory/" {
+		t.Fatalf("destination prefix = %q, want %q", got, "inventory/")
+	}
+	if destination.Encryption == nil || destination.Encryption.SSES3 == nil {
+		t.Fatalf("destination encryption = %#v, want SSES3", destination.Encryption)
+	}
+}
+
+// 대상 버킷은 ARN 형식이어야 한다
+func TestPutBucketInventoryInvalidDestinationArn(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, target, id := s.bucket(t, 25), s.bucket(t, 25), "my-inventory"
+	configuration := standardInventory(id, target)
+	configuration.Destination.S3BucketDestination.Bucket = aws.String(target)
+	_, err := putInventoryError(s, source, id, configuration)
+	assertS3Error(t, err, 400, "InvalidS3DestinationBucket")
+}
+
+// 목록은 한 번에 100개까지만 돌려주고 나머지는 토큰으로 이어서 받는다
+func TestListBucketInventoryPagination(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	source, target := s.bucket(t, 26), s.bucket(t, 26)
+	ids := make([]string, 101)
+	for index := range ids {
+		ids[index] = fmt.Sprintf("inventory-%03d", index)
+		putInventory(t, s, source, ids[index], standardInventory(ids[index], target))
+	}
+
+	out, err := s.client.ListBucketInventoryConfigurations(ctx, &s3.ListBucketInventoryConfigurationsInput{Bucket: aws.String(source)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.InventoryConfigurationList) != 100 || !aws.ToBool(out.IsTruncated) {
+		t.Fatalf("configurations=%d truncated=%v", len(out.InventoryConfigurationList), aws.ToBool(out.IsTruncated))
+	}
+	listed := make([]string, 0, len(ids))
+	for _, configuration := range out.InventoryConfigurationList {
+		listed = append(listed, aws.ToString(configuration.Id))
+	}
+
+	out, err = s.client.ListBucketInventoryConfigurations(ctx, &s3.ListBucketInventoryConfigurationsInput{Bucket: aws.String(source), ContinuationToken: out.NextContinuationToken})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.InventoryConfigurationList) != 1 || aws.ToBool(out.IsTruncated) {
+		t.Fatalf("configurations=%d truncated=%v", len(out.InventoryConfigurationList), aws.ToBool(out.IsTruncated))
+	}
+	for _, configuration := range out.InventoryConfigurationList {
+		listed = append(listed, aws.ToString(configuration.Id))
+	}
+	slices.Sort(listed)
+	if !slices.Equal(listed, ids) {
+		t.Fatalf("listed=%v want=%v", listed, ids)
+	}
+}
+
+// 올바르지 않은 토큰으로 목록을 요청하면 거부된다
+func TestListBucketInventoryInvalidToken(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	_, err := s.client.ListBucketInventoryConfigurations(context.Background(), &s3.ListBucketInventoryConfigurationsInput{Bucket: aws.String(s.bucket(t, 27)), ContinuationToken: aws.String("invalid")})
+	assertS3Error(t, err, 400, "MalformedContinuationToken")
+}
+
+// 없는 버킷에 대한 인벤토리 요청은 실패한다
+func TestBucketInventoryBucketNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucketNameOnly(28)
+	_, err := s.client.ListBucketInventoryConfigurations(ctx, &s3.ListBucketInventoryConfigurationsInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.GetBucketInventoryConfiguration(ctx, &s3.GetBucketInventoryConfigurationInput{Bucket: aws.String(bucket), Id: aws.String("my-inventory")})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(bucket), Id: aws.String("my-inventory")})
+	assertS3Error(t, err, 404, "NoSuchBucket")
 }

@@ -32,6 +32,7 @@ import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.S3Client;
 
 public class ListObjectsVersions extends TestBase {
 	@Test
@@ -809,5 +810,137 @@ public class ListObjectsVersions extends TestBase {
 		for (var i = 0; i < objects.size(); i++) {
 			assertEquals(objects.get(i), response.versions().get(i).versionId());
 		}
+	}
+
+	private record VersionedBucket(String bucketName, List<String> versionIds) {
+	}
+
+	/** 버저닝을 켠 버킷에 같은 키로 count 개 버전을 만든다. 버전 ID 는 오래된 순이다. */
+	private VersionedBucket putVersions(S3Client client, int testId, String key, int count) {
+		var bucketName = createBucket(client, testId);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		var versionIds = new ArrayList<String>();
+		for (var index = 0; index < count; index++)
+			versionIds.add(client.putObject(p -> p.bucket(bucketName).key(key),
+					RequestBody.fromString(String.valueOf(index))).versionId());
+		return new VersionedBucket(bucketName, versionIds);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListVersionsMaxKeysNegative() {
+		var client = getClient();
+		var bucketName = createBucket(client, 41);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectVersions(l -> l.bucket(bucketName).maxKeys(-1)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListVersionsEncodingInvalid() {
+		var client = getClient();
+		var bucketName = createBucket(client, 42);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectVersions(l -> l.bucket(bucketName).encodingType("invalid")));
+	}
+
+	@Test
+	@Tag("Marker")
+	public void testBucketListVersionsVersionIdMarkerInvalid() {
+		var key = "testBucketListVersionsVersionIdMarkerInvalid";
+		var client = getClient();
+		var versioned = putVersions(client, 43, key, 2);
+		var bucketName = versioned.bucketName();
+		// 버전 마커는 키 마커 없이 쓸 수 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectVersions(
+						l -> l.bucket(bucketName).versionIdMarker(versioned.versionIds().get(0))));
+		// 형식이 잘못된 버전 마커
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectVersions(
+						l -> l.bucket(bucketName).keyMarker(key).versionIdMarker("invalid")));
+	}
+
+	@Test
+	@Tag("Marker")
+	public void testBucketListVersionsPagination() {
+		var key = "testBucketListVersionsPagination";
+		var client = getClient();
+		var versioned = putVersions(client, 44, key, 3);
+		var bucketName = versioned.bucketName();
+		var expected = new ArrayList<>(versioned.versionIds());
+		Collections.reverse(expected); // 최신 버전부터 나온다
+
+		var listed = new ArrayList<String>();
+		String keyMarker = null;
+		String versionIdMarker = null;
+		for (var page = 0; page < 3; page++) {
+			var nextKeyMarker = keyMarker;
+			var nextVersionIdMarker = versionIdMarker;
+			var response = client.listObjectVersions(l -> l.bucket(bucketName).maxKeys(1)
+					.keyMarker(nextKeyMarker).versionIdMarker(nextVersionIdMarker));
+			assertEquals(1, response.versions().size());
+			var version = response.versions().get(0);
+			assertEquals(key, version.key());
+			assertEquals(page == 0, version.isLatest());
+			listed.add(version.versionId());
+			assertEquals(page < 2, response.isTruncated());
+			if (response.isTruncated()) {
+				assertEquals(key, response.nextKeyMarker());
+				assertEquals(version.versionId(), response.nextVersionIdMarker());
+				keyMarker = response.nextKeyMarker();
+				versionIdMarker = response.nextVersionIdMarker();
+			}
+		}
+		assertEquals(expected, listed);
+
+		// 키 마커만 주면 그 키의 버전은 모두 건너뛴다
+		var response = client.listObjectVersions(l -> l.bucket(bucketName).keyMarker(key));
+		assertEquals(0, response.versions().size());
+	}
+
+	@Test
+	@Tag("DeleteMarker")
+	public void testBucketListVersionsDeleteMarker() {
+		var key = "testBucketListVersionsDeleteMarker";
+		var client = getClient();
+		var versioned = putVersions(client, 45, key, 2);
+		var bucketName = versioned.bucketName();
+		var versionIds = versioned.versionIds();
+		var markerId = client.deleteObject(d -> d.bucket(bucketName).key(key)).versionId();
+
+		// 삭제 마커가 최신이 되고 기존 버전은 모두 최신이 아니게 된다
+		var response = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(1, response.deleteMarkers().size());
+		assertEquals(markerId, response.deleteMarkers().get(0).versionId());
+		assertEquals(true, response.deleteMarkers().get(0).isLatest());
+		assertEquals(List.of(versionIds.get(1), versionIds.get(0)),
+				response.versions().stream().map(version -> version.versionId()).toList());
+		assertEquals(List.of(false, false), response.versions().stream().map(version -> version.isLatest()).toList());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testBucketListVersionsUnversioned() {
+		var client = getClient();
+		var bucketName = createObjects(client, 46, List.of("a/1", "a/2", "b/1", "c", "d"));
+		// 버저닝을 쓰지 않는 버킷의 오브젝트는 모두 null 버전이고 최신이다
+		var response = client.listObjectVersions(l -> l.bucket(bucketName).delimiter("/"));
+		assertEquals(List.of("c", "d"), response.versions().stream().map(version -> version.key()).toList());
+		assertEquals(List.of("null", "null"),
+				response.versions().stream().map(version -> version.versionId()).toList());
+		assertEquals(List.of(true, true), response.versions().stream().map(version -> version.isLatest()).toList());
+		assertEquals(List.of("a/", "b/"), getPrefixList(response.commonPrefixes()));
+		assertEquals(0, response.deleteMarkers().size());
+	}
+
+	@Test
+	@Tag("Access")
+	public void testBucketListVersionsAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createObjects(client, 47, List.of("a", "b"));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.listObjectVersions(l -> l.bucket(bucketName)));
 	}
 }

@@ -858,4 +858,113 @@ public class ListObjectsV2 extends TestBase {
 			continuationToken = response.getNextContinuationToken();
 		}
 	}
+
+	private static final List<String> TREE_KEYS = List.of("a/1", "a/2", "b/1", "c", "d");
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListV2MaxKeysNegative() {
+		var client = getClient();
+		var bucketName = createBucket(client, 46);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(-1)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListV2EncodingInvalid() {
+		var client = getClient();
+		var bucketName = createBucket(client, 47);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectsV2(
+						new ListObjectsV2Request().withBucketName(bucketName).withEncodingType("invalid")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListV2ContinuationTokenInvalid() {
+		var client = getClient();
+		var bucketName = createObjects(client, 48, TREE_KEYS);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjectsV2(
+						new ListObjectsV2Request().withBucketName(bucketName).withContinuationToken("invalid")));
+	}
+
+	@Test
+	@Tag("KeyCount")
+	public void testBucketListV2KeyCountDelimiter() {
+		var client = getClient();
+		var bucketName = createObjects(client, 49, TREE_KEYS);
+		// KeyCount 와 MaxKeys 는 공통 접두어도 한 건으로 센다
+		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("/"));
+		assertEquals(List.of("c", "d"), getKeys(response.getObjectSummaries()));
+		assertEquals(List.of("a/", "b/"), response.getCommonPrefixes());
+		assertEquals(4, response.getKeyCount());
+
+		var first = client.listObjectsV2(
+				new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("/").withMaxKeys(2));
+		assertEquals(0, first.getObjectSummaries().size());
+		assertEquals(List.of("a/", "b/"), first.getCommonPrefixes());
+		assertEquals(2, first.getKeyCount());
+		assertEquals(true, first.isTruncated());
+
+		response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("/")
+				.withMaxKeys(2).withContinuationToken(first.getNextContinuationToken()));
+		assertEquals(List.of("c", "d"), getKeys(response.getObjectSummaries()));
+		assertEquals(0, response.getCommonPrefixes().size());
+		assertEquals(false, response.isTruncated());
+	}
+
+	@Test
+	@Tag("StartAfter")
+	public void testBucketListV2StartAfterInCommonPrefix() {
+		var client = getClient();
+		var bucketName = createObjects(client, 50, TREE_KEYS);
+		// StartAfter 가 공통 접두어 안의 키이면 그 접두어는 통째로 건너뛴다
+		var response = client.listObjectsV2(
+				new ListObjectsV2Request().withBucketName(bucketName).withStartAfter("a/1").withDelimiter("/"));
+		assertEquals(List.of("c", "d"), getKeys(response.getObjectSummaries()));
+		assertEquals(List.of("b/"), response.getCommonPrefixes());
+		assertEquals(3, response.getKeyCount());
+		assertEquals("a/1", response.getStartAfter());
+	}
+
+	@Test
+	@Tag("Delimiter")
+	public void testBucketListV2DelimiterMultiChar() {
+		var client = getClient();
+		var bucketName = createObjects(client, 51, TREE_KEYS);
+		// 구분자는 여러 글자일 수 있다
+		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withDelimiter("/1"));
+		assertEquals(List.of("a/2", "c", "d"), getKeys(response.getObjectSummaries()));
+		assertEquals(List.of("a/1", "b/1"), response.getCommonPrefixes());
+	}
+
+	@Test
+	@Tag("Access")
+	public void testBucketListV2AltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createObjects(client, 52, TREE_KEYS);
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED, () -> altClient.listObjectsV2(bucketName));
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testBucketListV2ResponseFields() {
+		var client = getClient();
+		var bucketName = createObjects(client, 53, TREE_KEYS);
+		// 요청에 준 값을 응답에 그대로 돌려준다
+		var response = client.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withPrefix("a/")
+				.withStartAfter("a/0").withMaxKeys(5).withDelimiter("/"));
+		assertEquals(bucketName, response.getBucketName());
+		assertEquals("a/", response.getPrefix());
+		assertEquals("a/0", response.getStartAfter());
+		assertEquals(5, response.getMaxKeys());
+		assertEquals("/", response.getDelimiter());
+		assertEquals(false, response.isTruncated());
+		assertEquals(2, response.getKeyCount());
+		assertNull(response.getNextContinuationToken());
+		assertEquals(List.of("a/1", "a/2"), getKeys(response.getObjectSummaries()));
+	}
 }

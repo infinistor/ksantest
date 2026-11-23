@@ -630,5 +630,105 @@ namespace s3tests.Test
 
 			CheckContentUsingRange(Client, bucketName, key, Content, MainData.KB, sseC: sseC);
 		}
+
+		private static SSECustomerKey DefaultSseC() => new()
+		{
+			Method = ServerSideEncryptionCustomerMethod.AES256,
+			ProvidedKey = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=",
+			MD5 = "DWygnHRtgiJ77HCm+1rvHw==",
+		};
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-C")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "지원하지 않는 SSE-C 알고리즘으로 업로드하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestEncryptionSseCInvalidAlgorithm()
+		{
+			TestId = 21;
+			var key = "TestEncryptionSseCInvalidAlgorithm";
+			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
+			var client = GetClientHttps();
+			var sseC = DefaultSseC();
+			sseC.Method = new ServerSideEncryptionCustomerMethod("AES128");
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ENCRYPTION_ALGORITHM_ERROR,
+				() => client.PutObject(bucketName, key, body: "content", sseCustomerKey: sseC));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-C")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "길이가 잘못된 SSE-C 키로 업로드하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestEncryptionSseCInvalidKeyLength()
+		{
+			TestId = 22;
+			var key = "TestEncryptionSseCInvalidKeyLength";
+			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
+			var client = GetClientHttps();
+			// AES256 키는 32바이트여야 한다(아래는 16바이트 키와 그 MD5)
+			var sseC = new SSECustomerKey()
+			{
+				Method = ServerSideEncryptionCustomerMethod.AES256,
+				ProvidedKey = "a2tra2tra2tra2tra2traw==",
+				MD5 = "5eB2YnFGLcav0OwlNDgr8A==",
+			};
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.PutObject(bucketName, key, body: "content", sseCustomerKey: sseC));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-C")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "SSE-C와 SSE-S3를 함께 지정하여 업로드하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestEncryptionSseCWithSseS3()
+		{
+			TestId = 23;
+			var key = "TestEncryptionSseCWithSseS3";
+			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
+			var client = GetClientHttps();
+			// SSE-C 와 SSE-S3 는 함께 지정할 수 없다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.PutObject(bucketName, key, body: "content", sseKey: ServerSideEncryptionMethod.AES256, sseCustomerKey: DefaultSseC()));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-C")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "SSE-C로 저장하지 않은 오브젝트를 SSE-C 키로 다운로드하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestEncryptionSseCKeyOnPlainObject()
+		{
+			TestId = 24;
+			var key = "TestEncryptionSseCKeyOnPlainObject";
+			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
+			var client = GetClientHttps();
+			client.PutObject(bucketName, key, body: "content");
+			// SSE-C 로 저장하지 않은 오브젝트에 키를 주면 거부된다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => client.GetObject(bucketName, key, sseCustomerKey: DefaultSseC()));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-C")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "HTTP로 SSE-C 업로드를 요청하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestEncryptionSseCInsecureTransport()
+		{
+			TestId = 25;
+			var key = "TestEncryptionSseCInsecureTransport";
+			var bucketName = GetNewBucket();
+			UnblockSseC(bucketName);
+			// SSE-C 요청은 HTTPS 로만 받는다
+			var httpClient = new S3Client(Config.S3, false, Config.MainUser, Output);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => httpClient.PutObject(bucketName, key, body: "content", sseCustomerKey: DefaultSseC()));
+		}
 	}
 }

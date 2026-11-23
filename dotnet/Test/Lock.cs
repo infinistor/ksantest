@@ -1052,5 +1052,270 @@ namespace s3tests.Test
 
 			client.DeleteObjects(bucketName, keyVersions, bypassGovernanceRetention: true);
 		}
+
+		private static readonly DateTime RetentionDate = new(2030, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+		private static readonly DateTime PastDate = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+		/// <summary>Object Lock 을 켠 버킷을 만든다. (python create_bucket_object_lock)</summary>
+		private string CreateBucketObjectLock(S3Client client)
+		{
+			var bucketName = GetNewBucketName();
+			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
+			return bucketName;
+		}
+
+		private static ObjectLockConfiguration DefaultRetentionConfig(ObjectLockRetentionMode mode = null, int? days = null, int? years = null)
+		{
+			var retention = new DefaultRetention();
+			if (mode != null) retention.Mode = mode;
+			if (days.HasValue) retention.Days = days.Value;
+			if (years.HasValue) retention.Years = years.Value;
+			return new ObjectLockConfiguration() { ObjectLockEnabled = ObjectLockEnabled.Enabled, Rule = new ObjectLockRule() { DefaultRetention = retention } };
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "retention")]
+		[Trait(MainData.Explanation, "[버킷의 Lock옵션을 활성화] 보존 기한·법적 보존을 설정한 적이 없는 오브젝트의 잠금 정보를 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectLockGetNotConfigured()
+		{
+			TestId = 37;
+			var key = "TestObjectLockGetNotConfigured";
+			var client = GetClient();
+			var bucketName = CreateBucketObjectLock(client);
+			client.PutObject(bucketName, key, body: "content");
+			// 보존 기한·법적 보존을 설정한 적이 없는 오브젝트
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_OBJECT_LOCK_CONFIGURATION, () => client.GetObjectRetention(bucketName, key));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_OBJECT_LOCK_CONFIGURATION, () => client.GetObjectLegalHold(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "retention")]
+		[Trait(MainData.Explanation, "[버킷의 Lock옵션을 활성화] 지난 날짜로 보존 기한을 설정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectLockPutObjRetentionPastDate()
+		{
+			TestId = 38;
+			var key = "TestObjectLockPutObjRetentionPastDate";
+			var client = GetClient();
+			var bucketName = CreateBucketObjectLock(client);
+			client.PutObject(bucketName, key, body: "content");
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.PutObjectRetention(bucketName, key, GovernanceRetention(PastDate)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "[버킷의 Lock옵션을 활성화] 존재하지 않는 오브젝트의 보존 기한·법적 보존을 설정, 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectLockKeyNotExist()
+		{
+			TestId = 39;
+			var key = "TestObjectLockKeyNotExist";
+			var client = GetClient();
+			var bucketName = CreateBucketObjectLock(client);
+			var requests = new Action[]
+			{
+				() => client.PutObjectRetention(bucketName, key, GovernanceRetention(RetentionDate)),
+				() => client.GetObjectRetention(bucketName, key),
+				() => client.PutObjectLegalHold(bucketName, key, new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.On }),
+				() => client.GetObjectLegalHold(bucketName, key),
+			};
+			foreach (var request in requests)
+				AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, request);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "[버킷의 Lock옵션을 활성화] 잘못된 잠금 헤더로 오브젝트를 업로드하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectLockPutObjectInvalidHeaders()
+		{
+			TestId = 40;
+			var key = "TestObjectLockPutObjectInvalidHeaders";
+			var client = GetClient();
+			var bucketName = CreateBucketObjectLock(client);
+			// 잠금 헤더가 있는 PutObject 는 Content-MD5 나 체크섬이 있어야 한다
+			var md5 = S3Utils.GetMD5("content");
+			var requests = new Action[]
+			{
+				// 모드만
+				() => client.PutObject(bucketName, key, body: "content", md5Digest: md5, objectLockMode: ObjectLockMode.Governance),
+				// 기한만
+				() => client.PutObject(bucketName, key, body: "content", md5Digest: md5, objectLockRetainUntilDate: RetentionDate),
+				// 지난 기한
+				() => client.PutObject(bucketName, key, body: "content", md5Digest: md5, objectLockMode: ObjectLockMode.Governance, objectLockRetainUntilDate: PastDate),
+				() => client.PutObject(bucketName, key, body: "content", md5Digest: md5, objectLockMode: new ObjectLockMode("INVALID"), objectLockRetainUntilDate: RetentionDate),
+				() => client.PutObject(bucketName, key, body: "content", md5Digest: md5, objectLockLegalHoldStatus: new ObjectLockLegalHoldStatus("INVALID")),
+			};
+			foreach (var request in requests)
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT, request);
+			// HEAD 오류는 본문이 없어 상태 코드만 확인한다
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.HeadObject(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "[버킷의 Lock옵션을 비활성화] 잠금 헤더로 오브젝트를 업로드하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectLockPutObjectInvalidBucket()
+		{
+			TestId = 41;
+			var key = "TestObjectLockPutObjectInvalidBucket";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var md5 = S3Utils.GetMD5("content");
+			// Object Lock 을 켜지 않은 버킷에는 잠금 헤더를 쓸 수 없다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => client.PutObject(bucketName, key, body: "content", md5Digest: md5, objectLockMode: ObjectLockMode.Governance, objectLockRetainUntilDate: RetentionDate));
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => client.PutObject(bucketName, key, body: "content", md5Digest: md5, objectLockLegalHoldStatus: ObjectLockLegalHoldStatus.On));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "legalhold")]
+		[Trait(MainData.Explanation, "[버킷의 Lock옵션을 활성화] 법적 보존을 켜서 업로드한 버전은 bypass로도 삭제할 수 없는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestObjectLockLegalHoldOnPutObject()
+		{
+			TestId = 42;
+			var key = "TestObjectLockLegalHoldOnPutObject";
+			var client = GetClient();
+			var bucketName = CreateBucketObjectLock(client);
+			// 잠금 헤더가 있는 PutObject 는 Content-MD5 나 체크섬이 있어야 한다
+			var versionId = client.PutObject(bucketName, key, body: "content", md5Digest: S3Utils.GetMD5("content"),
+				objectLockLegalHoldStatus: ObjectLockLegalHoldStatus.On).VersionId;
+			try
+			{
+				var response = client.HeadObject(bucketName, key);
+				Assert.Equal(ObjectLockLegalHoldStatus.On, response.ObjectLockLegalHoldStatus);
+				Assert.Null(response.ObjectLockMode);
+
+				// 버전을 지정하지 않은 삭제(삭제 마커)와 덮어쓰기는 막지 않는다
+				Assert.Equal("true", client.DeleteObject(bucketName, key).DeleteMarker, ignoreCase: true);
+				Assert.NotEqual(versionId, client.PutObject(bucketName, key, body: "new").VersionId);
+
+				// 법적 보존 중인 버전은 bypass 를 줘도 지울 수 없다
+				AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED,
+					() => client.DeleteObject(bucketName, key, versionId: versionId, bypassGovernanceRetention: true));
+
+				// .NET SDK는 키별 오류가 있으면 DeleteObjectsException을 던지므로 예외에서 응답을 꺼낸다.
+				DeleteObjectsResponse deleteResponse;
+				var keyVersions = new System.Collections.Generic.List<KeyVersion>() { new() { Key = key, VersionId = versionId } };
+				try { deleteResponse = client.DeleteObjects(bucketName, keyVersions); }
+				catch (AggregateException e) when (e.InnerException is DeleteObjectsException de) { deleteResponse = de.Response; }
+				Assert.True(deleteResponse.DeletedObjects == null || deleteResponse.DeletedObjects.Count == 0);
+				Assert.Equal(MainData.ACCESS_DENIED, deleteResponse.DeleteErrors[0].Code);
+				Assert.Equal("content", GetBody(client.GetObject(bucketName, key, versionId: versionId)));
+			}
+			finally
+			{
+				client.PutObjectLegalHold(bucketName, key, new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.Off }, versionId: versionId);
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "[버킷의 Lock옵션을 활성화] 삭제 마커에 보존 기한·법적 보존을 설정, 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectLockDeleteMarker()
+		{
+			TestId = 43;
+			var key = "TestObjectLockDeleteMarker";
+			var client = GetClient();
+			var bucketName = CreateBucketObjectLock(client);
+			client.PutObject(bucketName, key, body: "content");
+			var markerId = client.DeleteObject(bucketName, key).VersionId;
+			var retention = GovernanceRetention(RetentionDate);
+			// 삭제 마커에는 보존 기한·법적 보존을 걸 수 없다(버전을 지정하든 않든)
+			foreach (var versionId in new[] { markerId, null })
+			{
+				var requests = new Action[]
+				{
+					() => client.PutObjectRetention(bucketName, key, retention, versionId: versionId),
+					() => client.GetObjectRetention(bucketName, key, versionId: versionId),
+					() => client.PutObjectLegalHold(bucketName, key, new ObjectLockLegalHold() { Status = ObjectLockLegalHoldStatus.On }, versionId: versionId),
+				};
+				foreach (var request in requests)
+					AssertS3Error(HttpStatusCode.MethodNotAllowed, MainData.METHOD_NOT_ALLOWED, request);
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "[버킷의 Lock옵션을 활성화] 잘못된 기본 보존 규칙을 설정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectLockPutObjLockInvalidRule()
+		{
+			TestId = 44;
+			var client = GetClient();
+			var bucketName = CreateBucketObjectLock(client);
+			var governance = ObjectLockRetentionMode.Governance;
+
+			// ObjectLockEnabled 누락, 모드 누락
+			var noEnabled = DefaultRetentionConfig(governance, days: 1);
+			noEnabled.ObjectLockEnabled = null;
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => client.PutObjectLockConfiguration(bucketName, noEnabled));
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => client.PutObjectLockConfiguration(bucketName, DefaultRetentionConfig(days: 1)));
+			// 기간 누락
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => client.PutObjectLockConfiguration(bucketName, DefaultRetentionConfig(governance)));
+			// 기본 보존 기간은 36500일(100년)까지
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.PutObjectLockConfiguration(bucketName, DefaultRetentionConfig(governance, days: 36501)));
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.PutObjectLockConfiguration(bucketName, DefaultRetentionConfig(governance, years: 101)));
+			client.PutObjectLockConfiguration(bucketName, DefaultRetentionConfig(governance, days: 36500));
+			var retention = client.GetObjectLockConfiguration(bucketName).ObjectLockConfiguration.Rule.DefaultRetention;
+			Assert.Equal(governance, retention.Mode);
+			Assert.Equal(36500, retention.Days);
+			Assert.Null(retention.Years);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "[버킷의 Lock옵션을 활성화] Rule 없이 잠금 설정을 다시 넣으면 기본 보존 규칙이 지워지는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestObjectLockPutObjLockRemoveRule()
+		{
+			TestId = 45;
+			var client = GetClient();
+			var bucketName = CreateBucketObjectLock(client);
+			client.PutObjectLockConfiguration(bucketName, GovernanceLockConfig());
+			// Rule 없이 다시 넣으면 기본 보존 규칙이 지워진다
+			client.PutObjectLockConfiguration(bucketName, new ObjectLockConfiguration() { ObjectLockEnabled = ObjectLockEnabled.Enabled });
+			var conf = client.GetObjectLockConfiguration(bucketName).ObjectLockConfiguration;
+			Assert.Equal(ObjectLockEnabled.Enabled, conf.ObjectLockEnabled);
+			Assert.Null(conf.Rule);
+
+			var key = "TestObjectLockPutObjLockRemoveRule";
+			client.PutObject(bucketName, key, body: "content");
+			Assert.Null(client.HeadObject(bucketName, key).ObjectLockMode);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lock")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "다른 계정이 조회하거나 존재하지 않는 버킷의 잠금 설정을 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectLockGetObjLockAccessDenied()
+		{
+			TestId = 46;
+			var client = GetClient();
+			var bucketName = CreateBucketObjectLock(client);
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => GetAltClient().GetObjectLockConfiguration(bucketName));
+			var notExist = GetNewBucketName(false);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.GetObjectLockConfiguration(notExist));
+		}
 	}
 }

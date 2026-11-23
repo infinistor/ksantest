@@ -2,6 +2,9 @@ package s3tests
 
 import (
 	"context"
+	"fmt"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -202,4 +205,131 @@ func assertMetricsPrefix(t *testing.T, configuration *types.MetricsConfiguration
 
 func putMetricsError(s *suite, bucket, id string, configuration *types.MetricsConfiguration) (*s3.PutBucketMetricsConfigurationOutput, error) {
 	return s.client.PutBucketMetricsConfiguration(context.Background(), &s3.PutBucketMetricsConfigurationInput{Bucket: aws.String(bucket), Id: aws.String(id), MetricsConfiguration: configuration})
+}
+
+func listMetricsCount(t *testing.T, s *suite, bucket string) int {
+	t.Helper()
+	out, err := s.client.ListBucketMetricsConfigurations(context.Background(), &s3.ListBucketMetricsConfigurationsInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(out.MetricsConfigurationList)
+}
+
+// ID 는 64자까지 허용한다
+func TestPutMetricsIdLength(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket, id := s.bucket(t, 15), strings.Repeat("a", 64)
+	putMetrics(t, s, bucket, id, metricsConfiguration(id, nil))
+	if got := aws.ToString(getMetrics(t, s, bucket, id).Id); got != id {
+		t.Fatalf("ID=%q want=%q", got, id)
+	}
+
+	tooLong := strings.Repeat("a", 65)
+	_, err := putMetricsError(s, bucket, tooLong, metricsConfiguration(tooLong, nil))
+	assertS3Error(t, err, 400, "MalformedXML")
+}
+
+// ID 에는 영숫자와 - _ . 만 쓸 수 있다
+func TestPutMetricsInvalidId(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 16)
+	_, err := putMetricsError(s, bucket, "a b/c", metricsConfiguration("a b/c", nil))
+	assertS3Error(t, err, 400, "MalformedXML")
+	if got := listMetricsCount(t, s, bucket); got != 0 {
+		t.Fatalf("configurations=%d want=0", got)
+	}
+}
+
+// 쿼리의 id 와 본문의 Id 가 다르면 거부된다
+func TestPutMetricsIdMismatch(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 17)
+	_, err := putMetricsError(s, bucket, "metrics-id", metricsConfiguration("other-id", nil))
+	assertS3Error(t, err, 400, "MalformedXML")
+	if got := listMetricsCount(t, s, bucket); got != 0 {
+		t.Fatalf("configurations=%d want=0", got)
+	}
+}
+
+// And 안에 조건이 하나뿐이면 거부된다
+// (And 없이 Prefix 와 Tag 를 함께 주는 경우는 SDK 의 MetricsFilter 가 union 이라 만들 수 없어 확인하지 않는다)
+func TestPutMetricsInvalidFilter(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	filter := &types.MetricsFilterMemberAnd{Value: types.MetricsAndOperator{Prefix: aws.String("test")}}
+	_, err := putMetricsError(s, s.bucket(t, 18), "metrics-id", metricsConfiguration("metrics-id", filter))
+	assertS3Error(t, err, 400, "MalformedXML")
+}
+
+// 목록은 한 번에 100개까지만 돌려주고 나머지는 토큰으로 이어서 받는다
+func TestListMetricsPagination(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucket(t, 19)
+	ids := make([]string, 101)
+	for index := range ids {
+		ids[index] = fmt.Sprintf("metrics-%03d", index)
+		putMetrics(t, s, bucket, ids[index], metricsConfiguration(ids[index], nil))
+	}
+
+	out, err := s.client.ListBucketMetricsConfigurations(ctx, &s3.ListBucketMetricsConfigurationsInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.MetricsConfigurationList) != 100 || !aws.ToBool(out.IsTruncated) {
+		t.Fatalf("configurations=%d truncated=%v", len(out.MetricsConfigurationList), aws.ToBool(out.IsTruncated))
+	}
+	listed := make([]string, 0, len(ids))
+	for _, configuration := range out.MetricsConfigurationList {
+		listed = append(listed, aws.ToString(configuration.Id))
+	}
+
+	out, err = s.client.ListBucketMetricsConfigurations(ctx, &s3.ListBucketMetricsConfigurationsInput{Bucket: aws.String(bucket), ContinuationToken: out.NextContinuationToken})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.MetricsConfigurationList) != 1 || aws.ToBool(out.IsTruncated) {
+		t.Fatalf("configurations=%d truncated=%v", len(out.MetricsConfigurationList), aws.ToBool(out.IsTruncated))
+	}
+	for _, configuration := range out.MetricsConfigurationList {
+		listed = append(listed, aws.ToString(configuration.Id))
+	}
+	slices.Sort(listed)
+	if !slices.Equal(listed, ids) {
+		t.Fatalf("listed=%v want=%v", listed, ids)
+	}
+}
+
+// 올바르지 않은 토큰으로 목록을 요청하면 거부된다
+func TestListMetricsInvalidToken(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	_, err := s.client.ListBucketMetricsConfigurations(context.Background(), &s3.ListBucketMetricsConfigurationsInput{Bucket: aws.String(s.bucket(t, 20)), ContinuationToken: aws.String("invalid")})
+	assertS3Error(t, err, 400, "MalformedContinuationToken")
+}
+
+// 없는 버킷에 대한 Metrics 요청은 실패한다
+func TestMetricsBucketNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucketNameOnly(21)
+	_, err := s.client.ListBucketMetricsConfigurations(ctx, &s3.ListBucketMetricsConfigurationsInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.GetBucketMetricsConfiguration(ctx, &s3.GetBucketMetricsConfigurationInput{Bucket: aws.String(bucket), Id: aws.String("metrics-id")})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.DeleteBucketMetricsConfiguration(ctx, &s3.DeleteBucketMetricsConfigurationInput{Bucket: aws.String(bucket), Id: aws.String("metrics-id")})
+	assertS3Error(t, err, 404, "NoSuchBucket")
 }

@@ -444,5 +444,66 @@ namespace s3tests.Test
 			Assert.Equal(1, response.ObjectParts.TotalPartsCount);
 			Assert.NotNull(response.Checksum);
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObjectAttributes")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "알 수 없는 속성 이름이 하나라도 있으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestGetObjectAttributesInvalidAttribute()
+		{
+			TestId = 16;
+			var key = "TestGetObjectAttributesInvalidAttribute";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, key, body: "content");
+
+			// 알 수 없는 속성 이름이 하나라도 있으면 거부된다
+			var invalid = new ObjectAttributes("Invalid");
+			foreach (var attributes in new List<List<ObjectAttributes>> { new() { invalid }, new() { ObjectAttributes.ETag, invalid } })
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+					() => client.GetObjectAttributes(bucketName, key, attributes));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObjectAttributes")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자의 GetObjectAttributes가 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestGetObjectAttributesAccessDenied()
+		{
+			TestId = 17;
+			var key = "TestGetObjectAttributesAccessDenied";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, key, body: "content");
+
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED,
+				() => GetAltClient().GetObjectAttributes(bucketName, key, [ObjectAttributes.ETag, ObjectAttributes.ObjectSize]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObjectAttributes")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "최신 버전이 삭제 마커이면 없는 키로 취급하고, 버전을 지정하면 그 아래 버전이 조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestGetObjectAttributesDeleteMarker()
+		{
+			TestId = 18;
+			var key = "TestGetObjectAttributesDeleteMarker";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var versionId = client.PutObject(bucketName, key, body: "content").VersionId;
+			client.DeleteObject(bucketName, key);
+
+			// 최신 버전이 삭제 마커이면 없는 키로 취급한다
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY,
+				() => client.GetObjectAttributes(bucketName, key, [ObjectAttributes.ETag]));
+			// 버전을 지정하면 삭제 마커 아래의 버전을 조회할 수 있다
+			var response = client.GetObjectAttributes(bucketName, key, [ObjectAttributes.ObjectSize], versionId: versionId);
+			Assert.Equal(versionId, response.VersionId);
+			Assert.Equal(7, response.ObjectSize);
+		}
 	}
 }

@@ -446,4 +446,74 @@ class ListObjects {
 		test.testBucketListVersioning();
 		testV2.testBucketListVersioning();
 	}
+
+	/**
+	 * max-keys가 음수이면 400 InvalidArgument인지 확인
+	 * SDK V1은 음수 max-keys를 요청에 싣지 않으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketListMaxKeysNegative() {
+		testV2.testBucketListMaxKeysNegative();
+	}
+
+	/**
+	 * encoding-type이 잘못되면 400 InvalidArgument인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketListEncodingInvalid() {
+		test.testBucketListEncodingInvalid();
+		testV2.testBucketListEncodingInvalid();
+	}
+
+	/**
+	 * 구분자가 있을 때만 NextMarker를 돌려주는지 확인
+	 */
+	@Test
+	@Tag("Marker")
+	void testBucketListNextMarker() {
+		test.testBucketListNextMarker();
+		testV2.testBucketListNextMarker();
+	}
+
+	/**
+	 * 마커가 공통 접두어 안의 키이면 그 접두어를 통째로 건너뛰는지 확인
+	 */
+	@Test
+	@Tag("Marker")
+	void testBucketListMarkerInCommonPrefix() {
+		test.testBucketListMarkerInCommonPrefix();
+		testV2.testBucketListMarkerInCommonPrefix();
+	}
+
+	/**
+	 * 여러 글자로 된 구분자가 동작하는지 확인
+	 */
+	@Test
+	@Tag("Delimiter")
+	void testBucketListDelimiterMultiChar() {
+		test.testBucketListDelimiterMultiChar();
+		testV2.testBucketListDelimiterMultiChar();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 목록 조회가 403 AccessDenied로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testBucketListAltUser() {
+		test.testBucketListAltUser();
+		testV2.testBucketListAltUser();
+	}
+
+	/**
+	 * 요청에 준 값이 응답 필드에 그대로 돌아오는지 확인
+	 */
+	@Test
+	@Tag("Metadata")
+	void testBucketListResponseFields() {
+		test.testBucketListResponseFields();
+		testV2.testBucketListResponseFields();
+	}
 }

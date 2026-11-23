@@ -1268,5 +1268,467 @@ namespace s3tests.Test
 			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
 			Assert.Equal(MainData.NO_SUCH_UPLOAD, GetErrorCode(e));
 		}
+
+		private const string SmallPart = "0123456789";
+
+		/// <summary>10바이트짜리 파트를 count 개 올리고 (uploadId, 파트 목록)을 돌려준다.</summary>
+		private static (string UploadId, List<PartETag> Parts) UploadSmallParts(S3Client client, string bucketName, string key, int count)
+		{
+			var uploadId = client.InitiateMultipartUpload(bucketName, key).UploadId;
+			var parts = new List<PartETag>();
+			for (var number = 1; number <= count; number++)
+				parts.Add(new PartETag(number, client.UploadPart(bucketName, key, uploadId, SmallPart, number).ETag));
+			return (uploadId, parts);
+		}
+
+		private static List<int?> GetPartNumbers(ListPartsResponse response)
+			=> (response.Parts ?? []).ConvertAll(part => part.PartNumber);
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "파트 번호가 1~10000을 벗어나면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestUploadPartInvalidPartNumber()
+		{
+			TestId = 49;
+			var key = "TestUploadPartInvalidPartNumber";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var uploadId = client.InitiateMultipartUpload(bucketName, key).UploadId;
+
+			// 파트 번호는 1~10000
+			foreach (var partNumber in new[] { 0, 10001 })
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+					() => client.UploadPart(bucketName, key, uploadId, "content", partNumber));
+			client.UploadPart(bucketName, key, uploadId, "content", 10000);
+			Assert.Equal([10000], GetPartNumbers(client.ListParts(bucketName, key, uploadId)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 업로드 ID나 다른 키의 업로드 ID로 파트 업로드/목록 조회를 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestUploadPartNoSuchUpload()
+		{
+			TestId = 50;
+			var key = "TestUploadPartNoSuchUpload";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var uploadId = client.InitiateMultipartUpload(bucketName, key).UploadId;
+
+			// 없는 업로드 ID, 다른 키의 업로드 ID
+			foreach (var (targetKey, targetUploadId) in new[] { (key, "invalid"), (key + "_other", uploadId) })
+			{
+				AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_UPLOAD,
+					() => client.UploadPart(bucketName, targetKey, targetUploadId, "content", 1));
+				AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_UPLOAD,
+					() => client.ListParts(bucketName, targetKey, targetUploadId));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "ContentMD5")]
+		[Trait(MainData.Explanation, "본문과 다른 Content-MD5로 파트를 올리면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestUploadPartContentMd5Mismatch()
+		{
+			TestId = 51;
+			var key = "TestUploadPartContentMd5Mismatch";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var uploadId = client.InitiateMultipartUpload(bucketName, key).UploadId;
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.BAD_DIGEST,
+				() => client.UploadPart(bucketName, key, uploadId, "content", 1, md5Digest: S3Utils.GetMD5("other")));
+			Assert.Empty(GetPartNumbers(client.ListParts(bucketName, key, uploadId)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자의 멀티파트 요청이 모두 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestMultipartAccessDenied()
+		{
+			TestId = 52;
+			var key = "TestMultipartAccessDenied";
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+			var (uploadId, parts) = UploadSmallParts(client, bucketName, key, 1);
+
+			var denied = new List<Action>
+			{
+				() => altClient.InitiateMultipartUpload(bucketName, key),
+				() => altClient.UploadPart(bucketName, key, uploadId, "content", 2),
+				() => altClient.ListParts(bucketName, key, uploadId),
+				() => altClient.ListMultipartUploads(bucketName),
+				() => altClient.CompleteMultipartUpload(bucketName, key, uploadId, parts),
+				() => altClient.AbortMultipartUpload(bucketName, key, uploadId),
+			};
+			foreach (var request in denied)
+				AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, request);
+
+			// 업로드는 그대로 남아 있다
+			Assert.Equal([1], GetPartNumbers(client.ListParts(bucketName, key, uploadId)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 버킷에 멀티파트 업로드 생성/목록 조회를 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestMultipartBucketNotExist()
+		{
+			TestId = 53;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET,
+				() => client.InitiateMultipartUpload(bucketName, "key"));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.ListMultipartUploads(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "StorageClass")]
+		[Trait(MainData.Explanation, "잘못된 스토리지 클래스로 멀티파트 업로드를 만들면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestMultipartInvalidStorageClass()
+		{
+			TestId = 54;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_STORAGE_CLASS,
+				() => client.InitiateMultipartUpload(bucketName, "key", storageClass: new S3StorageClass("INVALID")));
+			Assert.Empty(client.ListMultipartUploads(bucketName).MultipartUploads ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "ListParts의 max-parts와 part-number-marker 동작 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListPartsMaxParts()
+		{
+			TestId = 55;
+			var key = "TestListPartsMaxParts";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var (uploadId, _) = UploadSmallParts(client, bucketName, key, 3);
+
+			var response = client.ListParts(bucketName, key, uploadId);
+			Assert.Equal([1, 2, 3], GetPartNumbers(response));
+			Assert.False(response.IsTruncated);
+			Assert.Equal(1000, response.MaxParts);
+
+			response = client.ListParts(bucketName, key, uploadId, maxParts: 2);
+			Assert.Equal([1, 2], GetPartNumbers(response));
+			Assert.True(response.IsTruncated);
+			Assert.Equal(2, response.NextPartNumberMarker);
+
+			response = client.ListParts(bucketName, key, uploadId, partNumberMarker: 2);
+			Assert.Equal([3], GetPartNumbers(response));
+			Assert.False(response.IsTruncated);
+
+			response = client.ListParts(bucketName, key, uploadId, maxParts: 0);
+			Assert.Empty(GetPartNumbers(response));
+			Assert.False(response.IsTruncated);
+
+			// 1000 보다 큰 값은 1000 으로 낮춘다
+			Assert.Equal(1000, client.ListParts(bucketName, key, uploadId, maxParts: 1001).MaxParts);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.ListParts(bucketName, key, uploadId, maxParts: -1));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "파트 번호가 중복이면 완료가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCompleteMultipartUploadInvalidPartOrder()
+		{
+			TestId = 56;
+			var key = "TestCompleteMultipartUploadInvalidPartOrder";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var (uploadId, parts) = UploadSmallParts(client, bucketName, key, 2);
+
+			// 파트 번호는 오름차순이어야 하고 중복될 수 없다
+			// .NET SDK가 파트 목록을 번호순으로 정렬해 보내므로 내림차순은 보낼 수 없어 중복만 확인한다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_PART_ORDER,
+				() => client.CompleteMultipartUpload(bucketName, key, uploadId, [parts[0], parts[0]]));
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.HeadObject(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "파트 목록 없이 완료하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCompleteMultipartUploadNoParts()
+		{
+			TestId = 57;
+			var key = "TestCompleteMultipartUploadNoParts";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var (uploadId, _) = UploadSmallParts(client, bucketName, key, 1);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => client.CompleteMultipartUpload(bucketName, key, uploadId, []));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "올린 파트 중 일부만 골라 완료할 수 있고 ETag에 따옴표가 없어도 되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCompleteMultipartUploadSkipPart()
+		{
+			TestId = 58;
+			var key = "TestCompleteMultipartUploadSkipPart";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var uploadId = client.InitiateMultipartUpload(bucketName, key).UploadId;
+			var bodies = new[] { new string('a', 5 * MainData.MB), new string('b', 5 * MainData.MB), new string('c', 10) };
+			var eTags = new List<string>();
+			for (var index = 0; index < bodies.Length; index++)
+				eTags.Add(client.UploadPart(bucketName, key, uploadId, bodies[index], index + 1).ETag);
+
+			// 올린 파트 중 일부만 골라 완료할 수 있고, ETag 는 따옴표가 없어도 된다
+			var response = client.CompleteMultipartUpload(bucketName, key, uploadId,
+				[new PartETag(1, eTags[0].Trim('"')), new PartETag(3, eTags[2].Trim('"'))]);
+			Assert.EndsWith("-2\"", response.ETag);
+			Assert.Equal(bucketName, response.BucketName);
+			Assert.Equal(key, response.Key);
+
+			var getResponse = client.GetObject(bucketName, key);
+			Assert.Equal(bodies[0].Length + bodies[2].Length, getResponse.ContentLength);
+			Assert.True(bodies[0] + bodies[2] == GetBody(getResponse), "Source does not match target");
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "완료한 업로드를 같은 내용으로 다시 완료하면 같은 결과로 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCompleteMultipartUploadTwice()
+		{
+			TestId = 59;
+			var key = "TestCompleteMultipartUploadTwice";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var (uploadId, parts) = UploadSmallParts(client, bucketName, key, 1);
+
+			var first = client.CompleteMultipartUpload(bucketName, key, uploadId, parts);
+			Assert.EndsWith("-1\"", first.ETag);
+
+			// 완료한 업로드를 같은 내용으로 다시 완료하면 같은 결과로 성공한다
+			var second = client.CompleteMultipartUpload(bucketName, key, uploadId, parts);
+			Assert.Equal(first.ETag, second.ETag);
+
+			// 완료한 업로드에는 파트를 더 올리거나 목록을 볼 수 없고, 중단 요청은 성공한다
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_UPLOAD,
+				() => client.UploadPart(bucketName, key, uploadId, "content", 2));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_UPLOAD, () => client.ListParts(bucketName, key, uploadId));
+			var response = client.AbortMultipartUpload(bucketName, key, uploadId);
+			Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
+			Assert.Equal(SmallPart, GetBody(client.GetObject(bucketName, key)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "이미 중단한 업로드를 다시 중단해도 성공하고, 그 업로드로는 더 진행할 수 없는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestAbortMultipartUploadTwice()
+		{
+			TestId = 60;
+			var key = "TestAbortMultipartUploadTwice";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var (uploadId, parts) = UploadSmallParts(client, bucketName, key, 1);
+			client.AbortMultipartUpload(bucketName, key, uploadId);
+
+			// 이미 중단한 업로드를 다시 중단해도 성공한다
+			var response = client.AbortMultipartUpload(bucketName, key, uploadId);
+			Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
+
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_UPLOAD,
+				() => client.UploadPart(bucketName, key, uploadId, "content", 1));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_UPLOAD,
+				() => client.CompleteMultipartUpload(bucketName, key, uploadId, parts));
+		}
+
+		/// <summary>a/1 에 2개, a/2, b/1, c 에 1개씩 업로드를 만든다.</summary>
+		private static void CreateUploads(S3Client client, string bucketName)
+		{
+			foreach (var key in new[] { "a/1", "a/1", "a/2", "b/1", "c" })
+				client.InitiateMultipartUpload(bucketName, key);
+		}
+
+		private static List<string> GetUploadKeys(ListMultipartUploadsResponse response)
+			=> (response.MultipartUploads ?? []).ConvertAll(upload => upload.Key);
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "ListMultipartUploads의 prefix와 delimiter 동작 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListMultipartUploadsPrefixDelimiter()
+		{
+			TestId = 61;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CreateUploads(client, bucketName);
+
+			var response = client.ListMultipartUploads(bucketName);
+			Assert.Equal(["a/1", "a/1", "a/2", "b/1", "c"], GetUploadKeys(response));
+			Assert.False(response.IsTruncated);
+			Assert.Equal(1000, response.MaxUploads);
+
+			response = client.ListMultipartUploads(bucketName, prefix: "a/");
+			Assert.Equal(["a/1", "a/1", "a/2"], GetUploadKeys(response));
+
+			response = client.ListMultipartUploads(bucketName, delimiter: "/");
+			Assert.Equal(["c"], GetUploadKeys(response));
+			Assert.Equal(["a/", "b/"], response.CommonPrefixes);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "ListMultipartUploads의 키 마커와 업로드 ID 마커로 이어서 조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListMultipartUploadsPagination()
+		{
+			TestId = 62;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CreateUploads(client, bucketName);
+
+			var response = client.ListMultipartUploads(bucketName, maxUploads: 2);
+			Assert.Equal(["a/1", "a/1"], GetUploadKeys(response));
+			Assert.True(response.IsTruncated);
+			Assert.Equal("a/1", response.NextKeyMarker);
+			Assert.Equal(response.MultipartUploads[1].UploadId, response.NextUploadIdMarker);
+
+			response = client.ListMultipartUploads(bucketName, maxUploads: 2,
+				keyMarker: response.NextKeyMarker, uploadIdMarker: response.NextUploadIdMarker);
+			Assert.Equal(["a/2", "b/1"], GetUploadKeys(response));
+			Assert.True(response.IsTruncated);
+
+			// 키 마커만 주면 그 키의 업로드는 모두 건너뛴다
+			response = client.ListMultipartUploads(bucketName, keyMarker: "a/1");
+			Assert.Equal(["a/2", "b/1", "c"], GetUploadKeys(response));
+			Assert.False(response.IsTruncated);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "ListMultipartUploads의 max-uploads 경계값 동작 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListMultipartUploadsMaxUploads()
+		{
+			TestId = 63;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CreateUploads(client, bucketName);
+
+			var response = client.ListMultipartUploads(bucketName, maxUploads: 0);
+			Assert.Empty(GetUploadKeys(response));
+			Assert.False(response.IsTruncated);
+
+			// 1000 보다 큰 값은 1000 으로 낮춘다
+			Assert.Equal(1000, client.ListMultipartUploads(bucketName, maxUploads: 1001).MaxUploads);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.ListMultipartUploads(bucketName, maxUploads: -1));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "UploadPartCopy의 원본 키/원본 버킷/업로드 ID가 없으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestUploadPartCopySourceNotExist()
+		{
+			TestId = 64;
+			var key = "TestUploadPartCopySourceNotExist";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, "source", body: SmallPart);
+			var uploadId = client.InitiateMultipartUpload(bucketName, key).UploadId;
+
+			// 래퍼가 범위를 항상 보내므로 원본 전체(0-9)를 지정한다
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY,
+				() => client.CopyPart(bucketName, "not_exist", bucketName, key, uploadId, 1, 0, 9));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET,
+				() => client.CopyPart(GetNewBucketName(false), "source", bucketName, key, uploadId, 1, 0, 9));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_UPLOAD,
+				() => client.CopyPart(bucketName, "source", bucketName, key, "invalid", 1, 0, 9));
+			Assert.Empty(GetPartNumbers(client.ListParts(bucketName, key, uploadId)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "UploadPartCopy의 범위 형식이 bytes=시작-끝이 아니면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestUploadPartCopyInvalidRangeFormat()
+		{
+			TestId = 65;
+			var key = "TestUploadPartCopyInvalidRangeFormat";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, "source", body: SmallPart);
+			var uploadId = client.InitiateMultipartUpload(bucketName, key).UploadId;
+
+			// bytes=시작-끝 형식만 허용한다(뒤에서부터의 길이 지정 불가)
+			foreach (var value in new[] { "bytes=abc", "bytes=-5" })
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+					() => client.CopyPart(bucketName, "source", bucketName, key, uploadId, 1, 0, 9, copySourceRange: value));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Multipart")]
+		[Trait(MainData.Minor, "PartNumber")]
+		[Trait(MainData.Explanation, "멀티파트 오브젝트를 partNumber로 조회하면 그 파트만 206으로 돌려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestMultipartGetPartNumber()
+		{
+			TestId = 66;
+			var key = "TestMultipartGetPartNumber";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var uploadId = client.InitiateMultipartUpload(bucketName, key).UploadId;
+			var bodies = new[] { new string('a', 5 * MainData.MB), new string('b', 10) };
+			var parts = new List<PartETag>();
+			for (var index = 0; index < bodies.Length; index++)
+				parts.Add(new PartETag(index + 1, client.UploadPart(bucketName, key, uploadId, bodies[index], index + 1).ETag));
+			client.CompleteMultipartUpload(bucketName, key, uploadId, parts);
+			var first = bodies[0].Length;
+			var total = bodies[0].Length + bodies[1].Length;
+
+			// partNumber 를 주면 그 파트만 206 으로 돌려주고 전체 파트 수를 알려준다
+			var headResponse = client.HeadObject(bucketName, key, partNumber: 1);
+			Assert.Equal(HttpStatusCode.PartialContent, headResponse.HttpStatusCode);
+			Assert.Equal(first, headResponse.ContentLength);
+			Assert.Equal(2, headResponse.PartsCount);
+			Assert.Equal($"bytes 0-{first - 1}/{total}", headResponse.ContentRange);
+
+			var response = client.GetObject(bucketName, key, partNumber: 2);
+			Assert.Equal(HttpStatusCode.PartialContent, response.HttpStatusCode);
+			Assert.Equal(2, response.PartsCount);
+			Assert.Equal($"bytes {first}-{total - 1}/{total}", response.ContentRange);
+			Assert.Equal(bodies[1], GetBody(response));
+
+			AssertS3Error(HttpStatusCode.RequestedRangeNotSatisfiable, MainData.INVALID_PART_NUMBER,
+				() => client.GetObject(bucketName, key, partNumber: 3));
+		}
 	}
 }

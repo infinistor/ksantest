@@ -12,6 +12,7 @@ package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -20,8 +21,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
 public class PutBucket extends TestBase {
 	@Test
@@ -203,5 +206,125 @@ public class PutBucket extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 24);
 		client.getBucketLocation(g -> g.bucket(bucketName));
+	}
+
+	/** 버킷 생성이 주어진 에러로 실패하는지 확인한다. 혹시 만들어지면 남지 않게 바로 지운다. */
+	private void assertCreateError(Consumer<CreateBucketRequest.Builder> request, String bucketName, int statusCode,
+			String errorCode) {
+		var client = getClient();
+		var e = assertThrows(AwsServiceException.class, () -> {
+			client.createBucket(request);
+			client.deleteBucket(d -> d.bucket(bucketName));
+		});
+		assertEquals(statusCode, e.statusCode());
+		assertEquals(errorCode, e.awsErrorDetails().errorCode());
+	}
+
+	private void assertCreateError(String bucketName, int statusCode, String errorCode) {
+		assertCreateError(c -> c.bucket(bucketName), bucketName, statusCode, errorCode);
+	}
+
+	/** 이름을 length 자로 자르고 끝에 남은 '-', '.' 를 떼어낸다. */
+	private static String trimBucketName(String bucketName, int length) {
+		if (bucketName.length() > length)
+			bucketName = bucketName.substring(0, length);
+		return bucketName.replaceAll("[-.]+$", "");
+	}
+
+	@Test
+	@Tag("CreationRules")
+	public void testBucketCreateNamingBadUppercase() {
+		// SDK 가 요청을 보내기 전에 이름을 검사해 막는다
+		checkBadBucketName(getNewBucketNameOnly(25).toUpperCase());
+	}
+
+	@Test
+	@Tag("CreationRules")
+	public void testBucketCreateNamingBadPunycodePrefix() {
+		// xn-- 로 시작하는 이름은 쓸 수 없다
+		var bucketName = trimBucketName("xn--" + getNewBucketNameOnly(26), 63);
+		assertCreateError(bucketName, HttpStatus.SC_BAD_REQUEST, MainData.INVALID_BUCKET_NAME);
+	}
+
+	@Test
+	@Tag("CreationRules")
+	public void testBucketCreateNamingBadDotAtEdge() {
+		// SDK 가 요청을 보내기 전에 이름을 검사해 막는다
+		var bucketName = trimBucketName(getNewBucketNameOnly(27), 60);
+		checkBadBucketName("." + bucketName);
+		checkBadBucketName(bucketName + ".");
+	}
+
+	@Test
+	@Tag("CreationRules")
+	public void testBucketCreateNamingReserved() {
+		var bucketName = trimBucketName(getNewBucketNameOnly(28), 45);
+
+		// 예약된 접두어·접미어가 붙은 이름은 만들 수 없다
+		for (var prefix : List.of("sthree-", "amzn-s3-demo-"))
+			assertCreateError(prefix + bucketName, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		for (var suffix : List.of("-s3alias", "--ol-s3", ".mrap"))
+			assertCreateError(bucketName + suffix, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("location")
+	public void testBucketCreateInvalidLocation() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(29);
+
+		var e = assertThrows(AwsServiceException.class, () -> {
+			client.createBucket(c -> c.bucket(bucketName)
+					.createBucketConfiguration(b -> b.locationConstraint("invalid-region-1")));
+			client.deleteBucket(d -> d.bucket(bucketName));
+		});
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		// us-east-1 엔드포인트는 InvalidLocationConstraint, 그 외 리전은 IllegalLocationConstraintException
+		assertTrue(List.of(MainData.ILLEGAL_LOCATION_CONSTRAINT_EXCEPTION, MainData.INVALID_LOCATION_CONSTRAINT)
+				.contains(e.awsErrorDetails().errorCode()), e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class, () -> client.getBucketLocation(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("location")
+	public void testGetBucketLocationNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(30);
+
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketLocation(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("location")
+	public void testGetBucketLocationAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 31);
+
+		var e = assertThrows(AwsServiceException.class, () -> altClient.getBucketLocation(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("ACL")
+	public void testBucketCreateAclWithGrant() {
+		// 캔드 ACL 과 권한 부여 헤더는 함께 쓸 수 없다
+		var bucketName = getNewBucketNameOnly(32);
+		assertCreateError(c -> c.bucket(bucketName).acl("private").grantRead("uri=\"" + MainData.ALL_USERS + "\""),
+				bucketName, HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST);
+	}
+
+	@Test
+	@Tag("ACL")
+	public void testBucketCreateInvalidAcl() {
+		var bucketName = getNewBucketNameOnly(33);
+		assertCreateError(c -> c.bucket(bucketName).acl("invalid"), bucketName, HttpStatus.SC_BAD_REQUEST,
+				MainData.INVALID_ARGUMENT);
 	}
 }

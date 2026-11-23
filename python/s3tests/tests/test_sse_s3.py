@@ -656,3 +656,94 @@ class TestSseS3(S3TestBase):
         assert response["ServerSideEncryption"] == SSE_ALGORITHM
 
         self.check_content_using_range(bucket_name, key, content, md.KB)
+
+    @staticmethod
+    def _encryption_rule(algorithm: str = SSE_ALGORITHM, **extra) -> dict:
+        rule = {"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": algorithm}}
+        rule.update(extra)
+        return rule
+
+    @staticmethod
+    def _put_encryption(client, bucket_name: str, rules: list):
+        return client.put_bucket_encryption(
+            Bucket=bucket_name, ServerSideEncryptionConfiguration={"Rules": rules}
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_put_bucket_encryption_invalid(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 26)
+        invalid_rules = [
+            [self._encryption_rule("INVALID")],  # 없는 알고리즘
+            [],  # 규칙 없음
+            [self._encryption_rule(), self._encryption_rule()],  # 규칙은 하나만
+        ]
+        for rules in invalid_rules:
+            self.assert_client_error(
+                lambda rules=rules: self._put_encryption(client, bucket_name, rules), 400, md.MALFORMED_XML
+            )
+        # AES256 에는 KMS 키를 지정할 수 없다
+        rule = {"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": SSE_ALGORITHM, "KMSMasterKeyID": "key-id"}}
+        self.assert_client_error(lambda: self._put_encryption(client, bucket_name, [rule]), 400, md.INVALID_ARGUMENT)
+
+    @pytest.mark.tag("Check")
+    def test_put_bucket_encryption_bucket_key(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 27)
+        self._put_encryption(client, bucket_name, [self._encryption_rule(BucketKeyEnabled=True)])
+        rule = client.get_bucket_encryption(Bucket=bucket_name)["ServerSideEncryptionConfiguration"]["Rules"][0]
+        assert rule["ApplyServerSideEncryptionByDefault"]["SSEAlgorithm"] == SSE_ALGORITHM
+        assert rule["BucketKeyEnabled"] is True
+
+    @pytest.mark.tag("Delete")
+    def test_delete_bucket_encryption_twice(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 28)
+        self._put_encryption(client, bucket_name, [self._encryption_rule(BucketKeyEnabled=True)])
+        # 설정이 없어도 삭제는 성공한다
+        for _ in range(2):
+            response = client.delete_bucket_encryption(Bucket=bucket_name)
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+
+    @pytest.mark.tag("Access")
+    def test_bucket_encryption_access_denied(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket(client, 29)
+        self.assert_client_error(lambda: alt_client.get_bucket_encryption(Bucket=bucket_name), 403, md.ACCESS_DENIED)
+        self.assert_client_error(
+            lambda: self._put_encryption(alt_client, bucket_name, [self._encryption_rule()]), 403, md.ACCESS_DENIED
+        )
+        self.assert_client_error(
+            lambda: alt_client.delete_bucket_encryption(Bucket=bucket_name), 403, md.ACCESS_DENIED
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_encryption_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(30)
+        self.assert_client_error(lambda: client.get_bucket_encryption(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+        self.assert_client_error(
+            lambda: self._put_encryption(client, bucket_name, [self._encryption_rule()]), 404, md.NO_SUCH_BUCKET
+        )
+        self.assert_client_error(lambda: client.delete_bucket_encryption(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+
+    @pytest.mark.tag("ERROR")
+    def test_sse_s3_invalid_algorithm(self):
+        key = "test_sse_s3_invalid_algorithm"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 31)
+        client.put_object(Bucket=bucket_name, Key="source", Body=b"content")
+        requests = [
+            lambda: client.put_object(Bucket=bucket_name, Key=key, Body=b"content", ServerSideEncryption="INVALID"),
+            lambda: client.create_multipart_upload(Bucket=bucket_name, Key=key, ServerSideEncryption="INVALID"),
+            lambda: client.copy_object(
+                Bucket=bucket_name,
+                Key=key,
+                CopySource={"Bucket": bucket_name, "Key": "source"},
+                ServerSideEncryption="INVALID",
+            ),
+        ]
+        for request in requests:
+            self.assert_client_error(request, 400, md.INVALID_ARGUMENT)
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key=key), 404, "404")

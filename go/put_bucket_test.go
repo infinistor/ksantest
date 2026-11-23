@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
 )
 
@@ -344,4 +345,133 @@ func s3Client(cfg testconfig.Config, user testconfig.User) *s3.Client {
 		options.BaseEndpoint = aws.String(endpoint)
 	}
 	return s3.New(options)
+}
+
+// assertCreateBucketError는 버킷 생성이 주어진 상태·에러 코드로 실패하는지 확인한다.
+// 뜻밖에 만들어졌으면 정리하고 실패 처리한다.
+func assertCreateBucketError(t *testing.T, s *suite, input *s3.CreateBucketInput, status int, code string) {
+	t.Helper()
+	_, err := s.client.CreateBucket(context.Background(), input)
+	if err == nil && !s.cfg.NotDelete {
+		_, _ = s.client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{Bucket: input.Bucket})
+	}
+	if err == nil {
+		t.Fatalf("CreateBucket(%q) succeeded, want %d %s", aws.ToString(input.Bucket), status, code)
+	}
+	t.Logf("CreateBucket(%q): %v", aws.ToString(input.Bucket), err)
+	assertS3Error(t, err, status, code)
+}
+
+// 생성할 버킷이름에 대문자가 있을 경우 버킷 생성 실패 확인
+func TestBucketCreateNamingBadUppercase(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	assertCreateBucketError(t, s, createBucketInput(s.cfg, strings.ToUpper(s.bucketNameOnly(25))), 400, "InvalidBucketName")
+}
+
+// xn-- 로 시작하는 이름은 쓸 수 없다
+func TestBucketCreateNamingBadPunycodePrefix(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := "xn--" + s.bucketNameOnly(26)
+	if len(bucket) > 63 {
+		bucket = bucket[:63]
+	}
+	assertCreateBucketError(t, s, createBucketInput(s.cfg, strings.TrimRight(bucket, "-.")), 400, "InvalidBucketName")
+}
+
+// 생성할 버킷이름의 맨앞이나 맨뒤에 [.]이 있을 경우 버킷 생성 실패 확인
+func TestBucketCreateNamingBadDotAtEdge(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := strings.TrimRight(s.bucketNameOnly(27)[:60], "-.")
+	assertCreateBucketError(t, s, createBucketInput(s.cfg, "."+bucket), 400, "InvalidBucketName")
+	assertCreateBucketError(t, s, createBucketInput(s.cfg, bucket+"."), 400, "InvalidBucketName")
+}
+
+// 예약된 접두어·접미어가 붙은 이름은 만들 수 없다
+func TestBucketCreateNamingReserved(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := strings.TrimRight(s.bucketNameOnly(28)[:45], "-.")
+	for _, prefix := range []string{"sthree-", "amzn-s3-demo-"} {
+		assertCreateBucketError(t, s, createBucketInput(s.cfg, prefix+bucket), 403, "AccessDenied")
+	}
+	suffixes := []string{"-s3alias", ".mrap"}
+	if s.cfg.Endpoint() != "" {
+		// 가상 호스트 방식(AWS)에서는 --ol-s3 로 끝나는 호스트를 Object Lambda 별칭으로 해석해
+		// 400 InvalidAccessPointAlias 가 나오므로 경로 방식일 때만 확인한다
+		suffixes = append(suffixes, "--ol-s3")
+	}
+	for _, suffix := range suffixes {
+		assertCreateBucketError(t, s, createBucketInput(s.cfg, bucket+suffix), 403, "AccessDenied")
+	}
+}
+
+// 없는 리전을 LocationConstraint 로 주면 버킷 생성 실패 확인
+func TestBucketCreateInvalidLocation(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	bucket := s.bucketNameOnly(29)
+	_, err := s.client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(bucket), CreateBucketConfiguration: &types.CreateBucketConfiguration{LocationConstraint: types.BucketLocationConstraint("invalid-region-1")}})
+	if err == nil && !s.cfg.NotDelete {
+		_, _ = s.client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+	}
+	assertS3Status(t, err, 400)
+	// us-east-1 엔드포인트는 InvalidLocationConstraint, 그 외 리전은 IllegalLocationConstraintException
+	var apiErr smithy.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error type = %T, want smithy.APIError: %v", err, err)
+	}
+	if code := apiErr.ErrorCode(); code != "IllegalLocationConstraintException" && code != "InvalidLocationConstraint" {
+		t.Fatalf("error code = %q, want IllegalLocationConstraintException or InvalidLocationConstraint", code)
+	}
+	_, err = s.client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{Bucket: aws.String(bucket)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+
+// 없는 버킷의 location 조회는 실패한다
+func TestGetBucketLocationNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	_, err := s.client.GetBucketLocation(context.Background(), &s3.GetBucketLocationInput{Bucket: aws.String(s.bucketNameOnly(30))})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+
+// 다른 사용자의 location 조회는 거부된다
+func TestGetBucketLocationAltUser(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	alt := altClientOrSkip(t, s)
+	_, err := alt.GetBucketLocation(context.Background(), &s3.GetBucketLocationInput{Bucket: aws.String(s.bucket(t, 31))})
+	assertS3Error(t, err, 403, "AccessDenied")
+}
+
+// 캔드 ACL 과 권한 부여 헤더는 함께 쓸 수 없다
+func TestBucketCreateAclWithGrant(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	input := createBucketInput(s.cfg, s.bucketNameOnly(32))
+	input.ACL = types.BucketCannedACLPrivate
+	input.GrantRead = aws.String(`uri="http://acs.amazonaws.com/groups/global/AllUsers"`)
+	assertCreateBucketError(t, s, input, 400, "InvalidRequest")
+}
+
+// 올바르지 않은 캔드 ACL 로는 버킷을 만들 수 없다
+func TestBucketCreateInvalidAcl(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	input := createBucketInput(s.cfg, s.bucketNameOnly(33))
+	input.ACL = types.BucketCannedACL("invalid")
+	assertCreateBucketError(t, s, input, 400, "InvalidArgument")
 }

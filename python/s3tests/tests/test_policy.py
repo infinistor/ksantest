@@ -756,3 +756,144 @@ class TestPolicy(S3TestBase):
 
         response = client.get_bucket_policy_status(Bucket=bucket_name)
         assert response["PolicyStatus"]["IsPublic"] is True
+
+    @staticmethod
+    def _deny_statement(bucket_name: str, **overrides) -> dict:
+        """모든 주체의 GetObject 를 거부하는 문장에 주어진 항목을 덮어쓴다."""
+        statement = {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": f"arn:aws:s3:::{bucket_name}/*",
+        }
+        statement.update(overrides)
+        return statement
+
+    @staticmethod
+    def _policy_document(*statements, version: str = "2012-10-17") -> str:
+        return json.dumps({"Version": version, "Statement": list(statements)})
+
+    def _assert_malformed_policy(self, client, bucket_name: str, policy: str) -> None:
+        self.assert_client_error(
+            lambda: client.put_bucket_policy(Bucket=bucket_name, Policy=policy), 400, md.MALFORMED_POLICY
+        )
+
+    @pytest.mark.tag("Get")
+    def test_bucket_policy_get_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 22)
+        self.assert_client_error(lambda: client.get_bucket_policy(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET_POLICY)
+        self.assert_client_error(
+            lambda: client.get_bucket_policy_status(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET_POLICY
+        )
+
+    @pytest.mark.tag("Delete")
+    def test_bucket_policy_delete_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 23)
+        # 정책이 없어도 삭제는 성공한다
+        response = client.delete_bucket_policy(Bucket=bucket_name)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+
+    @pytest.mark.tag("Check")
+    def test_bucket_policy_put_get_delete(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 24)
+        policy = self._policy_document(self._deny_statement(bucket_name, Sid="deny-get"))
+        client.put_bucket_policy(Bucket=bucket_name, Policy=policy)
+
+        assert json.loads(client.get_bucket_policy(Bucket=bucket_name)["Policy"]) == json.loads(policy)
+        assert client.get_bucket_policy_status(Bucket=bucket_name)["PolicyStatus"]["IsPublic"] is False
+
+        client.delete_bucket_policy(Bucket=bucket_name)
+        self.assert_client_error(lambda: client.get_bucket_policy(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET_POLICY)
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_policy_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(25)
+        policy = self._policy_document(self._deny_statement(bucket_name))
+        self.assert_client_error(lambda: client.get_bucket_policy(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+        self.assert_client_error(
+            lambda: client.put_bucket_policy(Bucket=bucket_name, Policy=policy), 404, md.NO_SUCH_BUCKET
+        )
+        self.assert_client_error(lambda: client.delete_bucket_policy(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+
+    @pytest.mark.tag("Access")
+    def test_bucket_policy_access_denied(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket(client, 26)
+        policy = self._policy_document(self._deny_statement(bucket_name))
+        client.put_bucket_policy(Bucket=bucket_name, Policy=policy)
+
+        self.assert_client_error(lambda: alt_client.get_bucket_policy(Bucket=bucket_name), 403, md.ACCESS_DENIED)
+        self.assert_client_error(
+            lambda: alt_client.put_bucket_policy(Bucket=bucket_name, Policy=policy), 403, md.ACCESS_DENIED
+        )
+        self.assert_client_error(lambda: alt_client.delete_bucket_policy(Bucket=bucket_name), 403, md.ACCESS_DENIED)
+        # 정책은 그대로 남아 있다
+        assert json.loads(client.get_bucket_policy(Bucket=bucket_name)["Policy"]) == json.loads(policy)
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_policy_invalid_json(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 27)
+        self._assert_malformed_policy(client, bucket_name, "not json")
+        # Statement 가 비어 있다
+        self._assert_malformed_policy(client, bucket_name, self._policy_document())
+        self._assert_malformed_policy(
+            client, bucket_name, self._policy_document(self._deny_statement(bucket_name), version="2020-01-01")
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_policy_invalid_element(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 28)
+        invalid_overrides = [
+            {"Effect": "Maybe"},
+            {"Action": "s3:Invalid"},
+            {"Principal": {"AWS": "arn:aws:iam::000000000000:user/not-exist"}},
+            {"Condition": {"StringEquals": {"s3:invalid": "value"}}},  # 없는 조건 키
+            {"Condition": {"InvalidEquals": {"aws:SourceIp": "1.1.1.1"}}},  # 없는 조건 연산자
+        ]
+        for overrides in invalid_overrides:
+            self._assert_malformed_policy(
+                client, bucket_name, self._policy_document(self._deny_statement(bucket_name, **overrides))
+            )
+        self.assert_client_error(lambda: client.get_bucket_policy(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET_POLICY)
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_policy_invalid_resource(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 29)
+        # 다른 버킷의 리소스
+        self._assert_malformed_policy(
+            client,
+            bucket_name,
+            self._policy_document(self._deny_statement(bucket_name, Resource="arn:aws:s3:::other-bucket-name/*")),
+        )
+        # 버킷 대상 액션에 오브젝트 리소스
+        self._assert_malformed_policy(
+            client, bucket_name, self._policy_document(self._deny_statement(bucket_name, Action="s3:ListBucket"))
+        )
+        # Resource, Principal 누락
+        for missing in ("Resource", "Principal"):
+            statement = self._deny_statement(bucket_name)
+            del statement[missing]
+            self._assert_malformed_policy(client, bucket_name, self._policy_document(statement))
+
+    @pytest.mark.tag("Max")
+    def test_bucket_policy_too_large(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 30)
+        # 정책 문서는 20KB 까지
+        statements = [
+            self._deny_statement(
+                bucket_name, Sid=f"statement{i}", Condition={"StringEquals": {"aws:Referer": "x" * 180}}
+            )
+            for i in range(70)
+        ]
+        policy = self._policy_document(*statements)
+        assert len(policy) > 20480
+        self._assert_malformed_policy(client, bucket_name, policy)

@@ -437,3 +437,218 @@ class TestGetObject(S3TestBase):
         version = versions[0]
         response = client.get_object(Bucket=bucket_name, Key=key, VersionId=version["VersionId"])
         assert self.get_body(response) == body
+
+    def _put_digits(self, client, test_id: int, key: str) -> str:
+        """10바이트(0123456789) 오브젝트를 하나 넣은 버킷을 만든다."""
+        bucket_name = self.create_bucket(client, test_id)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"0123456789")
+        return bucket_name
+
+    @pytest.mark.tag("ERROR")
+    def test_get_object_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(37)
+        self.assert_client_error(lambda: client.get_object(Bucket=bucket_name, Key="key"), 404, md.NO_SUCH_BUCKET)
+        # HEAD 는 본문이 없어 상태 코드만 온다
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key="key"), 404, "404")
+
+    @pytest.mark.tag("ERROR")
+    def test_head_object_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 38)
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key="key"), 404, "404")
+
+    @pytest.mark.tag("Access")
+    def test_get_object_access_denied(self):
+        key = "test_get_object_access_denied"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 39, key)
+        for other_client in (self.get_alt_client(), self.get_public_client()):
+            self.assert_client_error(
+                lambda other_client=other_client: other_client.get_object(Bucket=bucket_name, Key=key),
+                403,
+                md.ACCESS_DENIED,
+            )
+            # 목록 권한이 없으면 없는 키도 404 가 아니라 403 이다
+            self.assert_client_error(
+                lambda other_client=other_client: other_client.get_object(Bucket=bucket_name, Key="not_exist"),
+                403,
+                md.ACCESS_DENIED,
+            )
+            self.assert_client_error(
+                lambda other_client=other_client: other_client.head_object(Bucket=bucket_name, Key=key), 403, "403"
+            )
+
+    @pytest.mark.tag("Range")
+    def test_ranged_request_ignored(self):
+        key = "test_ranged_request_ignored"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 40, key)
+        # 여러 구간, 잘못된 형식, 다른 단위, 뒤집힌 구간은 무시하고 전체를 200 으로 돌려준다
+        for value in ("bytes=0-1,3-4", "bytes=abc", "items=0-1", "bytes=5-2"):
+            response = client.get_object(Bucket=bucket_name, Key=key, Range=value)
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+            assert "ContentRange" not in response
+            assert self.get_body(response) == "0123456789"
+
+    @pytest.mark.tag("Range")
+    def test_ranged_request_beyond_end(self):
+        key = "test_ranged_request_beyond_end"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 41, key)
+        # 끝이 크기를 넘으면 마지막 바이트까지로 잘린다
+        response = client.get_object(Bucket=bucket_name, Key=key, Range="bytes=5-100")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 206
+        assert response["ContentRange"] == "bytes 5-9/10"
+        assert self.get_body(response) == "56789"
+
+        # 뒤에서부터의 길이가 크기를 넘으면 전체를 206 으로 돌려준다
+        response = client.get_object(Bucket=bucket_name, Key=key, Range="bytes=-100")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 206
+        assert response["ContentRange"] == "bytes 0-9/10"
+        assert self.get_body(response) == "0123456789"
+
+        # 시작이 크기와 같거나, 뒤에서 0바이트를 요청하면 416
+        for value in ("bytes=10-20", "bytes=-0"):
+            self.assert_client_error(
+                lambda value=value: client.get_object(Bucket=bucket_name, Key=key, Range=value),
+                416,
+                md.INVALID_RANGE,
+            )
+
+    @pytest.mark.tag("Range")
+    def test_head_object_range(self):
+        key = "test_head_object_range"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 42, key)
+        response = client.head_object(Bucket=bucket_name, Key=key, Range="bytes=0-4")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 206
+        assert response["ContentLength"] == 5
+        assert response["ContentRange"] == "bytes 0-4/10"
+
+    @pytest.mark.tag("PartNumber")
+    def test_get_object_part_number(self):
+        key = "test_get_object_part_number"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 43, key)
+        # 멀티파트가 아닌 오브젝트는 1번 파트가 전체다
+        response = client.get_object(Bucket=bucket_name, Key=key, PartNumber=1)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 206
+        assert response["ContentRange"] == "bytes 0-9/10"
+        assert "PartsCount" not in response
+        assert self.get_body(response) == "0123456789"
+
+        response = client.head_object(Bucket=bucket_name, Key=key, PartNumber=1)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 206
+        assert response["ContentLength"] == 10
+
+        self.assert_client_error(
+            lambda: client.get_object(Bucket=bucket_name, Key=key, PartNumber=2), 416, md.INVALID_PART_NUMBER
+        )
+
+    @pytest.mark.tag("PartNumber")
+    def test_get_object_part_number_invalid(self):
+        key = "test_get_object_part_number_invalid"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 44, key)
+        # 파트 번호는 1~10000
+        for part_number in (0, 10001):
+            self.assert_client_error(
+                lambda part_number=part_number: client.get_object(
+                    Bucket=bucket_name, Key=key, PartNumber=part_number
+                ),
+                400,
+                md.INVALID_ARGUMENT,
+            )
+        # Range 와 partNumber 는 함께 쓸 수 없다
+        self.assert_client_error(
+            lambda: client.get_object(Bucket=bucket_name, Key=key, PartNumber=1, Range="bytes=0-1"),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("Version")
+    def test_get_object_version_id_unversioned(self):
+        key = "test_get_object_version_id_unversioned"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 45, key)
+        # 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전이다
+        assert self.get_body(client.get_object(Bucket=bucket_name, Key=key, VersionId="null")) == "0123456789"
+        self.assert_client_error(
+            lambda: client.get_object(Bucket=bucket_name, Key=key, VersionId="invalid"), 400, md.INVALID_ARGUMENT
+        )
+        self.assert_client_error(
+            lambda: client.head_object(Bucket=bucket_name, Key=key, VersionId="invalid"), 400, "400"
+        )
+
+    @pytest.mark.tag("Version")
+    def test_get_object_null_version_not_exist(self):
+        key = "test_get_object_null_version_not_exist"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 46)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        # 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+        self.assert_client_error(
+            lambda: client.get_object(Bucket=bucket_name, Key=key, VersionId="null"), 404, md.NO_SUCH_VERSION
+        )
+        self.assert_client_error(
+            lambda: client.head_object(Bucket=bucket_name, Key=key, VersionId="null"), 404, "404"
+        )
+
+    @pytest.mark.tag("Header")
+    def test_get_object_response_headers_anonymous(self):
+        key = "test_get_object_response_headers_anonymous"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 47, key)
+        # 익명 요청에는 response-* 재정의를 쓸 수 없다
+        self.assert_client_error(
+            lambda: self.get_public_client().get_object(
+                Bucket=bucket_name, Key=key, ResponseContentType="text/html"
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("Header")
+    def test_head_object_response_headers(self):
+        key = "test_head_object_response_headers"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 48, key)
+        response = client.head_object(
+            Bucket=bucket_name,
+            Key=key,
+            ResponseContentType="text/html",
+            ResponseContentDisposition="inline",
+            ResponseCacheControl="max-age=1",
+            ResponseContentEncoding="identity",
+            ResponseContentLanguage="en",
+        )
+        assert response["ContentType"] == "text/html"
+        assert response["ContentDisposition"] == "inline"
+        assert response["CacheControl"] == "max-age=1"
+        assert response["ContentEncoding"] == "identity"
+        assert response["ContentLanguage"] == "en"
+
+    @pytest.mark.tag("Header")
+    def test_get_object_default_headers(self):
+        key = "test_get_object_default_headers"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 49, key)
+        for response in (client.get_object(Bucket=bucket_name, Key=key), client.head_object(Bucket=bucket_name, Key=key)):
+            assert response["AcceptRanges"] == "bytes"
+            assert response["ContentType"] == "binary/octet-stream"
+            assert response["ContentLength"] == 10
+            assert response["ETag"] == '"781e5e245d69b566979b86e28d23f2c7"'
+            assert response["LastModified"] is not None
+
+    @pytest.mark.tag("IfMatch")
+    def test_get_object_if_match_wildcard(self):
+        key = "test_get_object_if_match_wildcard"
+        client = self.get_client()
+        bucket_name = self._put_digits(client, 50, key)
+        # If-Match: * 는 오브젝트가 있으면 통과, If-None-Match: * 는 304
+        assert self.get_body(client.get_object(Bucket=bucket_name, Key=key, IfMatch="*")) == "0123456789"
+        self.assert_client_error(
+            lambda: client.get_object(Bucket=bucket_name, Key=key, IfNoneMatch="*"), 304, "304"
+        )

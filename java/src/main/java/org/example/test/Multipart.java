@@ -34,6 +34,11 @@ import com.amazonaws.services.s3.model.ListPartsRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.MultipartUploadListing;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import org.junit.jupiter.api.function.Executable;
 
 public class Multipart extends TestBase {
 	@Test
@@ -685,5 +690,378 @@ public class Multipart extends TestBase {
 						.withPartSize(partBody.length())));
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_UPLOAD, e.getErrorCode());
+	}
+
+	private static final String DIGITS = "0123456789";
+
+	private record SmallUpload(String uploadId, List<PartETag> parts) {
+	}
+
+	private static UploadPartRequest partRequest(String bucketName, String key, String uploadId, int partNumber,
+			String content) {
+		return new UploadPartRequest().withBucketName(bucketName).withKey(key).withUploadId(uploadId)
+				.withPartNumber(partNumber).withInputStream(createBody(content)).withPartSize(content.length());
+	}
+
+	/** 10바이트짜리 파트를 count 개 올리고 업로드 ID 와 파트 목록을 돌려준다. */
+	private SmallUpload uploadSmallParts(AmazonS3 client, String bucketName, String key, int count) {
+		var uploadId = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key))
+				.getUploadId();
+		var parts = new ArrayList<PartETag>();
+		for (var number = 1; number <= count; number++)
+			parts.add(client.uploadPart(partRequest(bucketName, key, uploadId, number, DIGITS)).getPartETag());
+		return new SmallUpload(uploadId, parts);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testUploadPartInvalidPartNumber() {
+		var key = "testUploadPartInvalidPartNumber";
+		var client = getClient();
+		var bucketName = createBucket(client, 49);
+		var uploadId = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key))
+				.getUploadId();
+		// 파트 번호는 1~10000
+		for (var partNumber : List.of(0, 10001)) {
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+					() -> client.uploadPart(partRequest(bucketName, key, uploadId, partNumber, "content")));
+		}
+		client.uploadPart(partRequest(bucketName, key, uploadId, 10000, "content"));
+		var parts = client.listParts(new ListPartsRequest(bucketName, key, uploadId)).getParts();
+		assertEquals(List.of(10000), parts.stream().map(part -> part.getPartNumber()).toList());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testUploadPartNoSuchUpload() {
+		var key = "testUploadPartNoSuchUpload";
+		var client = getClient();
+		var bucketName = createBucket(client, 50);
+		var uploadId = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key))
+				.getUploadId();
+		// 없는 업로드 ID, 다른 키의 업로드 ID
+		for (var target : List.of(List.of(key, "invalid"), List.of(key + "_other", uploadId))) {
+			var targetKey = target.get(0);
+			var targetUploadId = target.get(1);
+			assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_UPLOAD,
+					() -> client.uploadPart(partRequest(bucketName, targetKey, targetUploadId, 1, "content")));
+			assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_UPLOAD,
+					() -> client.listParts(new ListPartsRequest(bucketName, targetKey, targetUploadId)));
+		}
+	}
+
+	@Test
+	@Tag("ContentMD5")
+	public void testUploadPartContentMd5Mismatch() {
+		var key = "testUploadPartContentMd5Mismatch";
+		var client = getClient();
+		var bucketName = createBucket(client, 51);
+		var uploadId = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key))
+				.getUploadId();
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.BAD_DIGEST,
+				() -> client.uploadPart(
+						partRequest(bucketName, key, uploadId, 1, "content").withMD5Digest(Utils.getMD5("other"))));
+		assertEquals(0, client.listParts(new ListPartsRequest(bucketName, key, uploadId)).getParts().size());
+	}
+
+	@Test
+	@Tag("Access")
+	public void testMultipartAccessDenied() {
+		var key = "testMultipartAccessDenied";
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 52);
+		var upload = uploadSmallParts(client, bucketName, key, 1);
+		var uploadId = upload.uploadId();
+		var denied = List.<Executable>of(
+				() -> altClient.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key)),
+				() -> altClient.uploadPart(partRequest(bucketName, key, uploadId, 2, "content")),
+				() -> altClient.listParts(new ListPartsRequest(bucketName, key, uploadId)),
+				() -> altClient.listMultipartUploads(new ListMultipartUploadsRequest(bucketName)),
+				() -> altClient.completeMultipartUpload(
+						new CompleteMultipartUploadRequest(bucketName, key, uploadId, upload.parts())),
+				() -> altClient.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId)));
+		for (var request : denied)
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED, request);
+		// 업로드는 그대로 남아 있다
+		var parts = client.listParts(new ListPartsRequest(bucketName, key, uploadId)).getParts();
+		assertEquals(List.of(1), parts.stream().map(part -> part.getPartNumber()).toList());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testMultipartBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(53);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, "key")));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName)));
+	}
+
+	@Test
+	@Tag("List")
+	public void testListPartsMaxParts() {
+		var key = "testListPartsMaxParts";
+		var client = getClient();
+		var bucketName = createBucket(client, 55);
+		var uploadId = uploadSmallParts(client, bucketName, key, 3).uploadId();
+
+		var response = client.listParts(new ListPartsRequest(bucketName, key, uploadId));
+		assertEquals(List.of(1, 2, 3), response.getParts().stream().map(part -> part.getPartNumber()).toList());
+		assertEquals(false, response.isTruncated());
+		assertEquals(1000, response.getMaxParts());
+
+		response = client.listParts(new ListPartsRequest(bucketName, key, uploadId).withMaxParts(2));
+		assertEquals(List.of(1, 2), response.getParts().stream().map(part -> part.getPartNumber()).toList());
+		assertEquals(true, response.isTruncated());
+		assertEquals(2, response.getNextPartNumberMarker());
+
+		response = client.listParts(new ListPartsRequest(bucketName, key, uploadId).withPartNumberMarker(2));
+		assertEquals(List.of(3), response.getParts().stream().map(part -> part.getPartNumber()).toList());
+		assertEquals(false, response.isTruncated());
+
+		response = client.listParts(new ListPartsRequest(bucketName, key, uploadId).withMaxParts(0));
+		assertEquals(0, response.getParts().size());
+		assertEquals(false, response.isTruncated());
+
+		// 1000 보다 큰 값은 1000 으로 낮춘다
+		assertEquals(1000,
+				client.listParts(new ListPartsRequest(bucketName, key, uploadId).withMaxParts(1001)).getMaxParts());
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listParts(new ListPartsRequest(bucketName, key, uploadId).withMaxParts(-1)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testCompleteMultipartUploadInvalidPartOrder() {
+		var key = "testCompleteMultipartUploadInvalidPartOrder";
+		var client = getClient();
+		var bucketName = createBucket(client, 56);
+		var upload = uploadSmallParts(client, bucketName, key, 2);
+		// 파트 번호는 중복될 수 없다
+		// (SDK 가 파트 목록을 번호순으로 정렬해 보내므로 순서가 뒤집힌 경우는 확인하지 않는다)
+		var parts = List.of(upload.parts().get(0), upload.parts().get(0));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_PART_ORDER,
+				() -> client.completeMultipartUpload(
+						new CompleteMultipartUploadRequest(bucketName, key, upload.uploadId(), parts)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.getObjectMetadata(bucketName, key));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testCompleteMultipartUploadNoParts() {
+		var key = "testCompleteMultipartUploadNoParts";
+		var client = getClient();
+		var bucketName = createBucket(client, 57);
+		var uploadId = uploadSmallParts(client, bucketName, key, 1).uploadId();
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML,
+				() -> client.completeMultipartUpload(
+						new CompleteMultipartUploadRequest(bucketName, key, uploadId, new ArrayList<PartETag>())));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testCompleteMultipartUploadSkipPart() {
+		var key = "testCompleteMultipartUploadSkipPart";
+		var client = getClient();
+		var bucketName = createBucket(client, 58);
+		var uploadId = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key))
+				.getUploadId();
+		var bodies = List.of("a".repeat(5 * MainData.MB), "b".repeat(5 * MainData.MB), "c".repeat(10));
+		var parts = new ArrayList<PartETag>();
+		for (var index = 0; index < bodies.size(); index++)
+			parts.add(client.uploadPart(partRequest(bucketName, key, uploadId, index + 1, bodies.get(index)))
+					.getPartETag());
+
+		// 올린 파트 중 일부만 골라 완료할 수 있다(SDK 는 ETag 를 따옴표 없이 보낸다)
+		var response = client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId,
+				List.of(parts.get(0), parts.get(2))));
+		assertTrue(response.getETag().endsWith("-2"));
+		assertEquals(bucketName, response.getBucketName());
+		assertEquals(key, response.getKey());
+
+		var getResponse = client.getObject(bucketName, key);
+		assertEquals(bodies.get(0).length() + bodies.get(2).length(),
+				getResponse.getObjectMetadata().getContentLength());
+		assertTrue((bodies.get(0) + bodies.get(2)).equals(getBody(getResponse.getObjectContent())));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testCompleteMultipartUploadTwice() {
+		var key = "testCompleteMultipartUploadTwice";
+		var client = getClient();
+		var bucketName = createBucket(client, 59);
+		var upload = uploadSmallParts(client, bucketName, key, 1);
+		var uploadId = upload.uploadId();
+		var first = client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, uploadId, upload.parts()));
+		assertTrue(first.getETag().endsWith("-1"));
+
+		// 완료한 업로드를 같은 내용으로 다시 완료하면 같은 결과로 성공한다
+		var second = client.completeMultipartUpload(
+				new CompleteMultipartUploadRequest(bucketName, key, uploadId, upload.parts()));
+		assertEquals(first.getETag(), second.getETag());
+
+		// 완료한 업로드에는 파트를 더 올리거나 목록을 볼 수 없고, 중단 요청은 성공한다
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_UPLOAD,
+				() -> client.uploadPart(partRequest(bucketName, key, uploadId, 2, "content")));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_UPLOAD,
+				() -> client.listParts(new ListPartsRequest(bucketName, key, uploadId)));
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId));
+		assertEquals(DIGITS, getBody(client.getObject(bucketName, key).getObjectContent()));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testAbortMultipartUploadTwice() {
+		var key = "testAbortMultipartUploadTwice";
+		var client = getClient();
+		var bucketName = createBucket(client, 60);
+		var upload = uploadSmallParts(client, bucketName, key, 1);
+		var uploadId = upload.uploadId();
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId));
+
+		// 이미 중단한 업로드를 다시 중단해도 성공한다
+		client.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId));
+
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_UPLOAD,
+				() -> client.uploadPart(partRequest(bucketName, key, uploadId, 1, "content")));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_UPLOAD,
+				() -> client.completeMultipartUpload(
+						new CompleteMultipartUploadRequest(bucketName, key, uploadId, upload.parts())));
+	}
+
+	/** a/1 에 2개, a/2, b/1, c 에 1개씩 업로드를 만든다. */
+	private void createUploads(AmazonS3 client, String bucketName) {
+		for (var key : List.of("a/1", "a/1", "a/2", "b/1", "c"))
+			client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+	}
+
+	private static List<String> uploadKeys(MultipartUploadListing response) {
+		return response.getMultipartUploads().stream().map(upload -> upload.getKey()).toList();
+	}
+
+	@Test
+	@Tag("List")
+	public void testListMultipartUploadsPrefixDelimiter() {
+		var client = getClient();
+		var bucketName = createBucket(client, 61);
+		createUploads(client, bucketName);
+
+		var response = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName));
+		assertEquals(List.of("a/1", "a/1", "a/2", "b/1", "c"), uploadKeys(response));
+		assertEquals(false, response.isTruncated());
+		assertEquals(1000, response.getMaxUploads());
+
+		response = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName).withPrefix("a/"));
+		assertEquals(List.of("a/1", "a/1", "a/2"), uploadKeys(response));
+
+		response = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName).withDelimiter("/"));
+		assertEquals(List.of("c"), uploadKeys(response));
+		assertEquals(List.of("a/", "b/"), response.getCommonPrefixes());
+	}
+
+	@Test
+	@Tag("List")
+	public void testListMultipartUploadsPagination() {
+		var client = getClient();
+		var bucketName = createBucket(client, 62);
+		createUploads(client, bucketName);
+
+		var first = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName).withMaxUploads(2));
+		assertEquals(List.of("a/1", "a/1"), uploadKeys(first));
+		assertEquals(true, first.isTruncated());
+		assertEquals("a/1", first.getNextKeyMarker());
+		assertEquals(first.getMultipartUploads().get(1).getUploadId(), first.getNextUploadIdMarker());
+
+		var response = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName).withMaxUploads(2)
+				.withKeyMarker(first.getNextKeyMarker()).withUploadIdMarker(first.getNextUploadIdMarker()));
+		assertEquals(List.of("a/2", "b/1"), uploadKeys(response));
+		assertEquals(true, response.isTruncated());
+
+		// 키 마커만 주면 그 키의 업로드는 모두 건너뛴다
+		response = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName).withKeyMarker("a/1"));
+		assertEquals(List.of("a/2", "b/1", "c"), uploadKeys(response));
+		assertEquals(false, response.isTruncated());
+	}
+
+	@Test
+	@Tag("List")
+	public void testListMultipartUploadsMaxUploads() {
+		var client = getClient();
+		var bucketName = createBucket(client, 63);
+		createUploads(client, bucketName);
+
+		var response = client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName).withMaxUploads(0));
+		assertEquals(0, response.getMultipartUploads().size());
+		assertEquals(false, response.isTruncated());
+
+		// 1000 보다 큰 값은 1000 으로 낮춘다
+		assertEquals(1000, client
+				.listMultipartUploads(new ListMultipartUploadsRequest(bucketName).withMaxUploads(1001)).getMaxUploads());
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listMultipartUploads(new ListMultipartUploadsRequest(bucketName).withMaxUploads(-1)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testUploadPartCopySourceNotExist() {
+		var key = "testUploadPartCopySourceNotExist";
+		var client = getClient();
+		var bucketName = createBucket(client, 64);
+		client.putObject(bucketName, "source", DIGITS);
+		var uploadId = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key))
+				.getUploadId();
+		var notExistBucketName = getNewBucketNameOnly(64);
+
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.copyPart(new CopyPartRequest().withSourceBucketName(bucketName)
+						.withSourceKey("not_exist").withDestinationBucketName(bucketName).withDestinationKey(key)
+						.withUploadId(uploadId).withPartNumber(1)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.copyPart(new CopyPartRequest().withSourceBucketName(notExistBucketName)
+						.withSourceKey("source").withDestinationBucketName(bucketName).withDestinationKey(key)
+						.withUploadId(uploadId).withPartNumber(1)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_UPLOAD,
+				() -> client.copyPart(new CopyPartRequest().withSourceBucketName(bucketName)
+						.withSourceKey("source").withDestinationBucketName(bucketName).withDestinationKey(key)
+						.withUploadId("invalid").withPartNumber(1)));
+		assertEquals(0, client.listParts(new ListPartsRequest(bucketName, key, uploadId)).getParts().size());
+	}
+
+	@Test
+	@Tag("PartNumber")
+	public void testMultipartGetPartNumber() {
+		var key = "testMultipartGetPartNumber";
+		var client = getClient();
+		var bucketName = createBucket(client, 66);
+		var uploadId = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key))
+				.getUploadId();
+		var bodies = List.of("a".repeat(5 * MainData.MB), "b".repeat(10));
+		var parts = new ArrayList<PartETag>();
+		for (var index = 0; index < bodies.size(); index++)
+			parts.add(client.uploadPart(partRequest(bucketName, key, uploadId, index + 1, bodies.get(index)))
+					.getPartETag());
+		client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucketName, key, uploadId, parts));
+		long firstSize = bodies.get(0).length();
+		long total = firstSize + bodies.get(1).length();
+
+		// partNumber 를 주면 그 파트만 돌려주고 전체 파트 수를 알려준다
+		var headResponse = client.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key).withPartNumber(1));
+		assertEquals(firstSize, headResponse.getContentLength());
+		assertEquals(2, headResponse.getPartCount());
+		assertEquals(List.of(0L, firstSize - 1), List.of(headResponse.getContentRange()));
+		assertEquals(total, headResponse.getInstanceLength());
+
+		var getResponse = client.getObject(new GetObjectRequest(bucketName, key).withPartNumber(2));
+		assertEquals(2, getResponse.getObjectMetadata().getPartCount());
+		assertEquals(List.of(firstSize, total - 1), List.of(getResponse.getObjectMetadata().getContentRange()));
+		assertEquals(total, getResponse.getObjectMetadata().getInstanceLength());
+		assertEquals(bodies.get(1), getBody(getResponse.getObjectContent()));
+
+		assertS3Error(HttpStatus.SC_REQUESTED_RANGE_NOT_SATISFIABLE, MainData.INVALID_PART_NUMBER,
+				() -> client.getObject(new GetObjectRequest(bucketName, key).withPartNumber(3)));
 	}
 }

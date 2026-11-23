@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -904,4 +906,484 @@ func completeMultipartParts(t *testing.T, f *multipartFixture, parts []types.Com
 		t.Fatal(err)
 	}
 	return out
+}
+
+// createUpload는 멀티파트 업로드를 시작하고 업로드 ID 를 돌려준다.
+func createUpload(t *testing.T, client *s3.Client, bucket, key string) *string {
+	t.Helper()
+	created, err := client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return created.UploadId
+}
+
+// uploadPartETag는 파트를 올리고 ETag 를 돌려준다.
+func uploadPartETag(t *testing.T, client *s3.Client, bucket, key string, uploadID *string, number int32, body []byte) *string {
+	t.Helper()
+	out, err := uploadPartCall(client, bucket, key, uploadID, number, body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out.ETag
+}
+
+func uploadPartCall(client *s3.Client, bucket, key string, uploadID *string, number int32, body []byte) (*s3.UploadPartOutput, error) {
+	return client.UploadPart(context.Background(), &s3.UploadPartInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: uploadID, PartNumber: aws.Int32(number), Body: bytes.NewReader(body)})
+}
+
+// uploadSmallParts는 10바이트짜리 파트를 count 개 올리고 업로드 ID 와 ETag 목록을 돌려준다.
+func uploadSmallParts(t *testing.T, client *s3.Client, bucket, key string, count int) (*string, []*string) {
+	t.Helper()
+	uploadID := createUpload(t, client, bucket, key)
+	etags := make([]*string, count)
+	for index := range etags {
+		etags[index] = uploadPartETag(t, client, bucket, key, uploadID, int32(index+1), []byte("0123456789"))
+	}
+	return uploadID, etags
+}
+
+func completedPart(number int32, etag *string) types.CompletedPart {
+	return types.CompletedPart{PartNumber: aws.Int32(number), ETag: etag}
+}
+
+func completeUploadCall(client *s3.Client, bucket, key string, uploadID *string, parts ...types.CompletedPart) (*s3.CompleteMultipartUploadOutput, error) {
+	return client.CompleteMultipartUpload(context.Background(), &s3.CompleteMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: uploadID, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts}})
+}
+
+func listPartNumbers(out *s3.ListPartsOutput) []int32 {
+	if out == nil {
+		return nil
+	}
+	numbers := make([]int32, 0, len(out.Parts))
+	for _, part := range out.Parts {
+		numbers = append(numbers, aws.ToInt32(part.PartNumber))
+	}
+	return numbers
+}
+
+// createTreeUploads는 a/1 에 2개, a/2, b/1, c 에 1개씩 업로드를 만든다.
+func createTreeUploads(t *testing.T, client *s3.Client, bucket string) {
+	t.Helper()
+	for _, key := range []string{"a/1", "a/1", "a/2", "b/1", "c"} {
+		createUpload(t, client, bucket, key)
+	}
+}
+
+func uploadKeys(out *s3.ListMultipartUploadsOutput) []string {
+	keys := make([]string, 0, len(out.Uploads))
+	for _, upload := range out.Uploads {
+		keys = append(keys, aws.ToString(upload.Key))
+	}
+	return keys
+}
+
+func listUploads(t *testing.T, client *s3.Client, input *s3.ListMultipartUploadsInput) *s3.ListMultipartUploadsOutput {
+	t.Helper()
+	out, err := client.ListMultipartUploads(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// 파트 번호는 1~10000
+func TestUploadPartInvalidPartNumber(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 49), "TestUploadPartInvalidPartNumber"
+	uploadID := createUpload(t, s.client, b, key)
+	for _, number := range []int32{0, 10001} {
+		_, err := uploadPartCall(s.client, b, key, uploadID, number, []byte("content"))
+		assertS3Error(t, err, 400, "InvalidArgument")
+	}
+	uploadPartETag(t, s.client, b, key, uploadID, 10000, []byte("content"))
+	listed, err := s.client.ListParts(context.Background(), &s3.ListPartsInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if numbers := listPartNumbers(listed); !slices.Equal(numbers, []int32{10000}) {
+		t.Fatalf("parts=%v", numbers)
+	}
+}
+
+// 없는 업로드 ID 나 다른 키의 업로드 ID 로는 파트를 올리거나 볼 수 없다
+func TestUploadPartNoSuchUpload(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 50), "TestUploadPartNoSuchUpload"
+	uploadID := createUpload(t, s.client, b, key)
+	for _, target := range []struct {
+		key      string
+		uploadID *string
+	}{{key, aws.String("invalid")}, {key + "_other", uploadID}} {
+		_, err := uploadPartCall(s.client, b, target.key, target.uploadID, 1, []byte("content"))
+		assertS3Error(t, err, 404, "NoSuchUpload")
+		_, err = s.client.ListParts(context.Background(), &s3.ListPartsInput{Bucket: aws.String(b), Key: aws.String(target.key), UploadId: target.uploadID})
+		assertS3Error(t, err, 404, "NoSuchUpload")
+	}
+}
+
+// 본문과 다른 MD5 를 준 파트는 저장되지 않는다
+func TestUploadPartContentMd5Mismatch(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 51), "TestUploadPartContentMd5Mismatch"
+	uploadID := createUpload(t, s.client, b, key)
+	_, err := s.client.UploadPart(ctx, &s3.UploadPartInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID, PartNumber: aws.Int32(1), Body: bytes.NewReader([]byte("content")), ContentMD5: aws.String(md5Base64("other"))})
+	assertS3Error(t, err, 400, "BadDigest")
+	listed, err := s.client.ListParts(ctx, &s3.ListPartsInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID})
+	if err != nil || len(listed.Parts) != 0 {
+		t.Fatalf("parts=%v err=%v", listPartNumbers(listed), err)
+	}
+}
+
+// 권한이 없는 사용자는 멀티파트 업로드를 다룰 수 없다
+func TestMultipartAccessDenied(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	alt := altClientOrSkip(t, s)
+	b, key := s.bucket(t, 52), "TestMultipartAccessDenied"
+	uploadID, etags := uploadSmallParts(t, s.client, b, key, 1)
+
+	_, err := alt.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = uploadPartCall(alt, b, key, uploadID, 2, []byte("content"))
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = alt.ListParts(ctx, &s3.ListPartsInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID})
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = alt.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: aws.String(b)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = completeUploadCall(alt, b, key, uploadID, completedPart(1, etags[0]))
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = alt.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID})
+	assertS3Error(t, err, 403, "AccessDenied")
+
+	// 업로드는 그대로 남아 있다
+	listed, err := s.client.ListParts(ctx, &s3.ListPartsInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if numbers := listPartNumbers(listed); !slices.Equal(numbers, []int32{1}) {
+		t.Fatalf("parts=%v", numbers)
+	}
+}
+
+// 없는 버킷에는 멀티파트 업로드를 시작하거나 목록을 볼 수 없다
+func TestMultipartBucketNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := s.bucketNameOnly(53)
+	_, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String("key")})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: aws.String(b)})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+
+// 알 수 없는 스토리지 클래스로는 멀티파트 업로드를 시작할 수 없다
+func TestMultipartInvalidStorageClass(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := s.bucket(t, 54)
+	_, err := s.client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(b), Key: aws.String("key"), StorageClass: types.StorageClass("INVALID")})
+	assertS3Error(t, err, 400, "InvalidStorageClass")
+	if out := listUploads(t, s.client, &s3.ListMultipartUploadsInput{Bucket: aws.String(b)}); len(out.Uploads) != 0 {
+		t.Fatalf("uploads=%v", uploadKeys(out))
+	}
+}
+
+// ListParts 의 max-parts 와 part-number-marker
+func TestListPartsMaxParts(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 55), "TestListPartsMaxParts"
+	uploadID, _ := uploadSmallParts(t, s.client, b, key, 3)
+	listParts := func(maxParts *int32, marker *string) (*s3.ListPartsOutput, error) {
+		return s.client.ListParts(context.Background(), &s3.ListPartsInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID, MaxParts: maxParts, PartNumberMarker: marker})
+	}
+	check := func(name string, maxParts *int32, marker *string, want []int32, truncated bool) *s3.ListPartsOutput {
+		t.Helper()
+		out, err := listParts(maxParts, marker)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if numbers := listPartNumbers(out); !slices.Equal(numbers, want) || aws.ToBool(out.IsTruncated) != truncated {
+			t.Fatalf("%s parts=%v truncated=%v want=%v/%v", name, numbers, aws.ToBool(out.IsTruncated), want, truncated)
+		}
+		return out
+	}
+
+	if out := check("default", nil, nil, []int32{1, 2, 3}, false); aws.ToInt32(out.MaxParts) != 1000 {
+		t.Fatalf("MaxParts=%d", aws.ToInt32(out.MaxParts))
+	}
+	if out := check("MaxParts=2", aws.Int32(2), nil, []int32{1, 2}, true); aws.ToString(out.NextPartNumberMarker) != "2" {
+		t.Fatalf("NextPartNumberMarker=%q", aws.ToString(out.NextPartNumberMarker))
+	}
+	check("PartNumberMarker=2", nil, aws.String("2"), []int32{3}, false)
+	check("MaxParts=0", aws.Int32(0), nil, []int32{}, false)
+
+	// 1000 보다 큰 값은 1000 으로 낮춘다
+	out, err := listParts(aws.Int32(1001), nil)
+	if err != nil || aws.ToInt32(out.MaxParts) != 1000 {
+		t.Fatalf("MaxParts=1001 response=%v err=%v", out, err)
+	}
+	_, err = listParts(aws.Int32(-1), nil)
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 완료할 때 파트 번호는 오름차순이어야 하고 중복될 수 없다
+func TestCompleteMultipartUploadInvalidPartOrder(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 56), "TestCompleteMultipartUploadInvalidPartOrder"
+	uploadID, etags := uploadSmallParts(t, s.client, b, key, 2)
+	for _, parts := range [][]types.CompletedPart{
+		{completedPart(2, etags[1]), completedPart(1, etags[0])},
+		{completedPart(1, etags[0]), completedPart(1, etags[0])},
+	} {
+		_, err := completeUploadCall(s.client, b, key, uploadID, parts...)
+		assertS3Error(t, err, 400, "InvalidPartOrder")
+	}
+	_, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Status(t, err, 404)
+}
+
+// 파트를 하나도 주지 않고 완료하면 거부된다
+func TestCompleteMultipartUploadNoParts(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 57), "TestCompleteMultipartUploadNoParts"
+	uploadID, _ := uploadSmallParts(t, s.client, b, key, 1)
+	_, err := completeUploadCall(s.client, b, key, uploadID)
+	assertS3Error(t, err, 400, "MalformedXML")
+}
+
+// 올린 파트 중 일부만 골라 완료할 수 있고, ETag 는 따옴표가 없어도 된다
+func TestCompleteMultipartUploadSkipPart(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 58), "TestCompleteMultipartUploadSkipPart"
+	uploadID := createUpload(t, s.client, b, key)
+	bodies := [][]byte{bytes.Repeat([]byte("a"), 5*1024*1024), bytes.Repeat([]byte("b"), 5*1024*1024), bytes.Repeat([]byte("c"), 10)}
+	etags := make([]string, len(bodies))
+	for index, body := range bodies {
+		etags[index] = strings.Trim(aws.ToString(uploadPartETag(t, s.client, b, key, uploadID, int32(index+1), body)), `"`)
+	}
+
+	out, err := completeUploadCall(s.client, b, key, uploadID, completedPart(1, aws.String(etags[0])), completedPart(3, aws.String(etags[2])))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(aws.ToString(out.ETag), `-2"`) || aws.ToString(out.Bucket) != b || aws.ToString(out.Key) != key {
+		t.Fatalf("ETag=%q Bucket=%q Key=%q", aws.ToString(out.ETag), aws.ToString(out.Bucket), aws.ToString(out.Key))
+	}
+
+	want := append(append([]byte{}, bodies[0]...), bodies[2]...)
+	got, body := getObjectBody(t, s.client, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if aws.ToInt64(got.ContentLength) != int64(len(want)) || body != string(want) {
+		t.Fatalf("ContentLength=%d body length=%d want=%d", aws.ToInt64(got.ContentLength), len(body), len(want))
+	}
+}
+
+// 완료한 업로드를 같은 내용으로 다시 완료하면 같은 결과로 성공한다
+func TestCompleteMultipartUploadTwice(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 59), "TestCompleteMultipartUploadTwice"
+	uploadID, etags := uploadSmallParts(t, s.client, b, key, 1)
+	first, err := completeUploadCall(s.client, b, key, uploadID, completedPart(1, etags[0]))
+	if err != nil || !strings.HasSuffix(aws.ToString(first.ETag), `-1"`) {
+		t.Fatalf("first=%v err=%v", first, err)
+	}
+	second, err := completeUploadCall(s.client, b, key, uploadID, completedPart(1, etags[0]))
+	if err != nil || aws.ToString(second.ETag) != aws.ToString(first.ETag) {
+		t.Fatalf("second=%v want ETag=%q err=%v", second, aws.ToString(first.ETag), err)
+	}
+
+	// 완료한 업로드에는 파트를 더 올리거나 목록을 볼 수 없고, 중단 요청은 성공한다
+	_, err = uploadPartCall(s.client, b, key, uploadID, 2, []byte("content"))
+	assertS3Error(t, err, 404, "NoSuchUpload")
+	_, err = s.client.ListParts(ctx, &s3.ListPartsInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID})
+	assertS3Error(t, err, 404, "NoSuchUpload")
+	aborted, err := s.client.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status := responseStatus(t, aborted.ResultMetadata); status != 204 {
+		t.Fatalf("AbortMultipartUpload status=%d", status)
+	}
+	if got := read(t, s, b, key); got != "0123456789" {
+		t.Fatalf("body=%q", got)
+	}
+}
+
+// 이미 중단한 업로드를 다시 중단해도 성공한다
+func TestAbortMultipartUploadTwice(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 60), "TestAbortMultipartUploadTwice"
+	uploadID, etags := uploadSmallParts(t, s.client, b, key, 1)
+	abort := &s3.AbortMultipartUploadInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID}
+	if _, err := s.client.AbortMultipartUpload(ctx, abort); err != nil {
+		t.Fatal(err)
+	}
+	aborted, err := s.client.AbortMultipartUpload(ctx, abort)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status := responseStatus(t, aborted.ResultMetadata); status != 204 {
+		t.Fatalf("AbortMultipartUpload status=%d", status)
+	}
+
+	_, err = uploadPartCall(s.client, b, key, uploadID, 1, []byte("content"))
+	assertS3Error(t, err, 404, "NoSuchUpload")
+	_, err = completeUploadCall(s.client, b, key, uploadID, completedPart(1, etags[0]))
+	assertS3Error(t, err, 404, "NoSuchUpload")
+}
+
+// ListMultipartUploads 의 prefix 와 delimiter
+func TestListMultipartUploadsPrefixDelimiter(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := s.bucket(t, 61)
+	createTreeUploads(t, s.client, b)
+
+	out := listUploads(t, s.client, &s3.ListMultipartUploadsInput{Bucket: aws.String(b)})
+	assertStringList(t, uploadKeys(out), []string{"a/1", "a/1", "a/2", "b/1", "c"})
+	if aws.ToBool(out.IsTruncated) || aws.ToInt32(out.MaxUploads) != 1000 {
+		t.Fatalf("IsTruncated=%v MaxUploads=%d", aws.ToBool(out.IsTruncated), aws.ToInt32(out.MaxUploads))
+	}
+
+	out = listUploads(t, s.client, &s3.ListMultipartUploadsInput{Bucket: aws.String(b), Prefix: aws.String("a/")})
+	assertStringList(t, uploadKeys(out), []string{"a/1", "a/1", "a/2"})
+
+	out = listUploads(t, s.client, &s3.ListMultipartUploadsInput{Bucket: aws.String(b), Delimiter: aws.String("/")})
+	assertStringList(t, uploadKeys(out), []string{"c"})
+	prefixes := make([]string, 0, len(out.CommonPrefixes))
+	for _, prefix := range out.CommonPrefixes {
+		prefixes = append(prefixes, aws.ToString(prefix.Prefix))
+	}
+	assertStringList(t, prefixes, []string{"a/", "b/"})
+}
+
+// ListMultipartUploads 를 마커로 이어서 조회한다
+func TestListMultipartUploadsPagination(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := s.bucket(t, 62)
+	createTreeUploads(t, s.client, b)
+
+	out := listUploads(t, s.client, &s3.ListMultipartUploadsInput{Bucket: aws.String(b), MaxUploads: aws.Int32(2)})
+	assertStringList(t, uploadKeys(out), []string{"a/1", "a/1"})
+	if !aws.ToBool(out.IsTruncated) || aws.ToString(out.NextKeyMarker) != "a/1" || aws.ToString(out.NextUploadIdMarker) != aws.ToString(out.Uploads[1].UploadId) {
+		t.Fatalf("IsTruncated=%v NextKeyMarker=%q NextUploadIdMarker=%q", aws.ToBool(out.IsTruncated), aws.ToString(out.NextKeyMarker), aws.ToString(out.NextUploadIdMarker))
+	}
+
+	out = listUploads(t, s.client, &s3.ListMultipartUploadsInput{Bucket: aws.String(b), MaxUploads: aws.Int32(2), KeyMarker: out.NextKeyMarker, UploadIdMarker: out.NextUploadIdMarker})
+	assertStringList(t, uploadKeys(out), []string{"a/2", "b/1"})
+	if !aws.ToBool(out.IsTruncated) {
+		t.Fatal("second page is not truncated")
+	}
+
+	// 키 마커만 주면 그 키의 업로드는 모두 건너뛴다
+	out = listUploads(t, s.client, &s3.ListMultipartUploadsInput{Bucket: aws.String(b), KeyMarker: aws.String("a/1")})
+	assertStringList(t, uploadKeys(out), []string{"a/2", "b/1", "c"})
+	if aws.ToBool(out.IsTruncated) {
+		t.Fatal("key marker page is truncated")
+	}
+}
+
+// ListMultipartUploads 의 max-uploads 범위
+func TestListMultipartUploadsMaxUploads(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := s.bucket(t, 63)
+	createTreeUploads(t, s.client, b)
+
+	out := listUploads(t, s.client, &s3.ListMultipartUploadsInput{Bucket: aws.String(b), MaxUploads: aws.Int32(0)})
+	if len(out.Uploads) != 0 || aws.ToBool(out.IsTruncated) {
+		t.Fatalf("uploads=%v IsTruncated=%v", uploadKeys(out), aws.ToBool(out.IsTruncated))
+	}
+
+	// 1000 보다 큰 값은 1000 으로 낮춘다
+	out = listUploads(t, s.client, &s3.ListMultipartUploadsInput{Bucket: aws.String(b), MaxUploads: aws.Int32(1001)})
+	if aws.ToInt32(out.MaxUploads) != 1000 {
+		t.Fatalf("MaxUploads=%d", aws.ToInt32(out.MaxUploads))
+	}
+	_, err := s.client.ListMultipartUploads(context.Background(), &s3.ListMultipartUploadsInput{Bucket: aws.String(b), MaxUploads: aws.Int32(-1)})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// UploadPartCopy 의 원본 키·원본 버킷·업로드가 없는 경우
+func TestUploadPartCopySourceNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 64), "TestUploadPartCopySourceNotExist"
+	put(t, s, b, "source", "0123456789", nil)
+	uploadID := createUpload(t, s.client, b, key)
+	partCopy := func(sourceBucket, sourceKey string, targetUploadID *string) error {
+		_, err := s.client.UploadPartCopy(ctx, &s3.UploadPartCopyInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: targetUploadID, PartNumber: aws.Int32(1), CopySource: copySource(sourceBucket, sourceKey, "")})
+		return err
+	}
+
+	assertS3Error(t, partCopy(b, "not_exist", uploadID), 404, "NoSuchKey")
+	assertS3Error(t, partCopy(s.bucketNameOnly(64), "source", uploadID), 404, "NoSuchBucket")
+	assertS3Error(t, partCopy(b, "source", aws.String("invalid")), 404, "NoSuchUpload")
+	listed, err := s.client.ListParts(ctx, &s3.ListPartsInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID})
+	if err != nil || len(listed.Parts) != 0 {
+		t.Fatalf("parts=%v err=%v", listPartNumbers(listed), err)
+	}
+}
+
+// UploadPartCopy 의 범위는 bytes=시작-끝 형식만 허용한다(뒤에서부터의 길이 지정 불가)
+func TestUploadPartCopyInvalidRangeFormat(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 65), "TestUploadPartCopyInvalidRangeFormat"
+	put(t, s, b, "source", "0123456789", nil)
+	uploadID := createUpload(t, s.client, b, key)
+	for _, value := range []string{"bytes=abc", "bytes=-5"} {
+		_, err := s.client.UploadPartCopy(context.Background(), &s3.UploadPartCopyInput{Bucket: aws.String(b), Key: aws.String(key), UploadId: uploadID, PartNumber: aws.Int32(1), CopySource: copySource(b, "source", ""), CopySourceRange: aws.String(value)})
+		assertS3Error(t, err, 400, "InvalidArgument")
+	}
+}
+
+// partNumber 를 주면 그 파트만 206 으로 돌려주고 전체 파트 수를 알려준다
+func TestMultipartGetPartNumber(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 66), "TestMultipartGetPartNumber"
+	uploadID := createUpload(t, s.client, b, key)
+	bodies := [][]byte{bytes.Repeat([]byte("a"), 5*1024*1024), bytes.Repeat([]byte("b"), 10)}
+	parts := make([]types.CompletedPart, len(bodies))
+	for index, body := range bodies {
+		parts[index] = completedPart(int32(index+1), uploadPartETag(t, s.client, b, key, uploadID, int32(index+1), body))
+	}
+	if _, err := completeUploadCall(s.client, b, key, uploadID, parts...); err != nil {
+		t.Fatal(err)
+	}
+	first, total := len(bodies[0]), len(bodies[0])+len(bodies[1])
+
+	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key), PartNumber: aws.Int32(1)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status, wantRange := responseStatus(t, head.ResultMetadata), fmt.Sprintf("bytes 0-%d/%d", first-1, total); status != 206 || aws.ToInt64(head.ContentLength) != int64(first) || aws.ToInt32(head.PartsCount) != 2 || aws.ToString(head.ContentRange) != wantRange {
+		t.Fatalf("HeadObject status=%d ContentLength=%d PartsCount=%d ContentRange=%q want=%q", status, aws.ToInt64(head.ContentLength), aws.ToInt32(head.PartsCount), aws.ToString(head.ContentRange), wantRange)
+	}
+
+	got, body := getObjectBody(t, s.client, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), PartNumber: aws.Int32(2)})
+	if status, wantRange := responseStatus(t, got.ResultMetadata), fmt.Sprintf("bytes %d-%d/%d", first, total-1, total); status != 206 || aws.ToInt32(got.PartsCount) != 2 || aws.ToString(got.ContentRange) != wantRange || body != string(bodies[1]) {
+		t.Fatalf("GetObject status=%d PartsCount=%d ContentRange=%q want=%q body=%q", status, aws.ToInt32(got.PartsCount), aws.ToString(got.ContentRange), wantRange, body)
+	}
+
+	_, err = s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), PartNumber: aws.Int32(3)})
+	assertS3Error(t, err, 416, "InvalidPartNumber")
 }

@@ -540,3 +540,81 @@ class TestSseC(S3TestBase):
         assert response["SSECustomerAlgorithm"] == SSE_ALGORITHM
 
         self.check_content_using_range_enc(client, bucket_name, key, content, md.KB)
+
+    @pytest.mark.tag("ERROR")
+    def test_encryption_sse_c_invalid_algorithm(self):
+        key = "test_encryption_sse_c_invalid_algorithm"
+        client = self.get_client_https(False)
+        bucket_name = self.create_bucket(client, 21)
+        self.unblock_sse_c(bucket_name)
+        sse_args = dict(self.sse_c_extra_args(), SSECustomerAlgorithm="AES128")
+        self.assert_client_error(
+            lambda: client.put_object(Bucket=bucket_name, Key=key, Body=b"content", **sse_args),
+            400,
+            md.INVALID_ENCRYPTION_ALGORITHM_ERROR,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_encryption_sse_c_invalid_key_length(self):
+        key = "test_encryption_sse_c_invalid_key_length"
+        client = self.get_client_https(False)
+        bucket_name = self.create_bucket(client, 22)
+        self.unblock_sse_c(bucket_name)
+        # AES256 키는 32바이트여야 한다(아래는 16바이트 키와 그 MD5)
+        sse_args = dict(
+            self.sse_c_extra_args(),
+            SSECustomerKey="a2tra2tra2tra2tra2traw==",
+            SSECustomerKeyMD5="5eB2YnFGLcav0OwlNDgr8A==",
+        )
+        self.assert_client_error(
+            lambda: client.put_object(Bucket=bucket_name, Key=key, Body=b"content", **sse_args),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_encryption_sse_c_with_sse_s3(self):
+        key = "test_encryption_sse_c_with_sse_s3"
+        client = self.get_client_https(False)
+        bucket_name = self.create_bucket(client, 23)
+        self.unblock_sse_c(bucket_name)
+        # SSE-C 와 SSE-S3 는 함께 지정할 수 없다
+        self.assert_client_error(
+            lambda: client.put_object(
+                Bucket=bucket_name,
+                Key=key,
+                Body=b"content",
+                ServerSideEncryption="AES256",
+                **self.sse_c_extra_args(),
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_encryption_sse_c_key_on_plain_object(self):
+        key = "test_encryption_sse_c_key_on_plain_object"
+        client = self.get_client_https(False)
+        bucket_name = self.create_bucket(client, 24)
+        self.unblock_sse_c(bucket_name)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        # SSE-C 로 저장하지 않은 오브젝트에 키를 주면 거부된다
+        self.assert_client_error(
+            lambda: client.get_object(Bucket=bucket_name, Key=key, **self.sse_c_extra_args()),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_encryption_sse_c_insecure_transport(self):
+        key = "test_encryption_sse_c_insecure_transport"
+        https_client = self.get_client_https(False)
+        bucket_name = self.create_bucket(https_client, 25)
+        self.unblock_sse_c(bucket_name)
+        # SSE-C 요청은 HTTPS 로만 받는다
+        http_client = self.create_client(False, self.config.main_user, False)
+        self.assert_client_error(
+            lambda: http_client.put_object(Bucket=bucket_name, Key=key, Body=b"content", **self.sse_c_extra_args()),
+            400,
+            md.INVALID_ARGUMENT,
+        )

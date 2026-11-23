@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Net;
 using s3tests.Utils;
 using Xunit;
+using Amazon.S3;
 
 namespace s3tests.Test
 {
@@ -319,6 +320,140 @@ namespace s3tests.Test
 			var bucketName = GetNewBucket(client);
 
 			client.GetBucketLocation(bucketName);
+		}
+
+		/// <summary>버킷 생성이 주어진 에러로 실패하는지 확인한다. 뜻밖에 생성되면 지우고 실패 처리한다.</summary>
+		private void AssertCreateError(string bucketName, HttpStatusCode statusCode, string errorCode,
+			S3CannedACL acl = null, List<KeyValuePair<string, string>> headerList = null)
+		{
+			var client = GetClient();
+			AssertS3Error(statusCode, errorCode, () =>
+			{
+				client.PutBucket(bucketName, acl: acl, headerList: headerList);
+				client.DeleteBucket(bucketName);
+			});
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutBucket")]
+		[Trait(MainData.Minor, "Creation rules")]
+		[Trait(MainData.Explanation, "버킷 이름에 대문자가 있으면 생성이 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketCreateNamingBadUppercase()
+		{
+			TestId = 25;
+			AssertCreateError(GetNewBucketName(false).ToUpperInvariant(), HttpStatusCode.BadRequest, MainData.INVALID_BUCKET_NAME);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutBucket")]
+		[Trait(MainData.Minor, "Creation rules")]
+		[Trait(MainData.Explanation, "버킷 이름이 xn-- 로 시작하면 생성이 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketCreateNamingBadPunycodePrefix()
+		{
+			TestId = 26;
+			// xn-- 로 시작하는 이름은 쓸 수 없다
+			var bucketName = "xn--" + GetNewBucketName(false);
+			if (bucketName.Length > 63) bucketName = bucketName[..63];
+			AssertCreateError(bucketName.TrimEnd('-', '.'), HttpStatusCode.BadRequest, MainData.INVALID_BUCKET_NAME);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutBucket")]
+		[Trait(MainData.Minor, "Creation rules")]
+		[Trait(MainData.Explanation, "버킷 이름의 맨앞·맨뒤에 [.]이 있으면 생성이 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketCreateNamingBadDotAtEdge()
+		{
+			TestId = 27;
+			var bucketName = GetNewBucketName(false)[..60].TrimEnd('-', '.');
+			AssertCreateError("." + bucketName, HttpStatusCode.BadRequest, MainData.INVALID_BUCKET_NAME);
+			AssertCreateError(bucketName + ".", HttpStatusCode.BadRequest, MainData.INVALID_BUCKET_NAME);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutBucket")]
+		[Trait(MainData.Minor, "Creation rules")]
+		[Trait(MainData.Explanation, "예약된 접두어·접미어가 붙은 이름으로는 버킷을 만들 수 없는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketCreateNamingReserved()
+		{
+			TestId = 28;
+			var bucketName = GetNewBucketName(false)[..45].TrimEnd('-', '.');
+			// 예약된 접두어·접미어가 붙은 이름은 만들 수 없다
+			foreach (var prefix in new[] { "sthree-", "amzn-s3-demo-" })
+				AssertCreateError(prefix + bucketName, HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
+			foreach (var suffix in new[] { "-s3alias", "--ol-s3", ".mrap" })
+				AssertCreateError(bucketName + suffix, HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutBucket")]
+		[Trait(MainData.Minor, "location")]
+		[Trait(MainData.Explanation, "없는 리전을 LocationConstraint 로 주면 버킷 생성이 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketCreateInvalidLocation()
+		{
+			TestId = 29;
+			var client = GetClient();
+			var bucketName = GetNewBucketName();
+			var e = Assert.Throws<AggregateException>(() => client.PutBucket(bucketName, regionName: "invalid-region-1"));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			// us-east-1 엔드포인트는 InvalidLocationConstraint, 그 외 리전은 IllegalLocationConstraintException
+			Assert.Contains(GetErrorCode(e), new[] { MainData.ILLEGAL_LOCATION_CONSTRAINT_EXCEPTION, MainData.INVALID_LOCATION_CONSTRAINT });
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.GetBucketLocation(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutBucket")]
+		[Trait(MainData.Minor, "location")]
+		[Trait(MainData.Explanation, "없는 버킷의 location 을 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestGetBucketLocationNotExist()
+		{
+			TestId = 30;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.GetBucketLocation(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutBucket")]
+		[Trait(MainData.Minor, "location")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자가 버킷의 location 을 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestGetBucketLocationAltUser()
+		{
+			TestId = 31;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.GetBucketLocation(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutBucket")]
+		[Trait(MainData.Minor, "ACL")]
+		[Trait(MainData.Explanation, "캔드 ACL 과 권한 부여 헤더를 함께 주면 버킷 생성이 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketCreateAclWithGrant()
+		{
+			TestId = 32;
+			// 캔드 ACL 과 권한 부여 헤더는 함께 쓸 수 없다
+			var headers = new List<KeyValuePair<string, string>>() { new("x-amz-grant-read", "uri=\"http://acs.amazonaws.com/groups/global/AllUsers\"") };
+			AssertCreateError(GetNewBucketName(), HttpStatusCode.BadRequest, MainData.INVALID_REQUEST, acl: S3CannedACL.Private, headerList: headers);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "PutBucket")]
+		[Trait(MainData.Minor, "ACL")]
+		[Trait(MainData.Explanation, "잘못된 캔드 ACL 로는 버킷을 만들 수 없는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketCreateInvalidAcl()
+		{
+			TestId = 33;
+			AssertCreateError(GetNewBucketName(), HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT, acl: new S3CannedACL("invalid"));
 		}
 	}
 }

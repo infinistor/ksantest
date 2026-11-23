@@ -36,6 +36,8 @@ import software.amazon.awssdk.services.s3.model.CompletedPart;
 import software.amazon.awssdk.services.s3.model.ObjectAttributes;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.StorageClass;
+import java.util.List;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 
 public class GetObjectAttributes extends TestBase {
 	/**
@@ -551,5 +553,55 @@ public class GetObjectAttributes extends TestBase {
 		assertNotNull(response.objectParts());
 		assertEquals(1, response.objectParts().totalPartsCount());
 		assertNotNull(response.checksum());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testGetObjectAttributesInvalidAttribute() {
+		var key = "testGetObjectAttributesInvalidAttribute";
+		var client = getClient();
+		var bucketName = createBucket(client, 16);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		// 알 수 없는 속성 이름이 하나라도 있으면 거부된다
+		for (var attributes : List.of(List.of("Invalid"), List.of("ETag", "Invalid"))) {
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+					() -> client.getObjectAttributes(
+							g -> g.bucket(bucketName).key(key).objectAttributesWithStrings(attributes)));
+		}
+	}
+
+	@Test
+	@Tag("Access")
+	public void testGetObjectAttributesAccessDenied() {
+		var key = "testGetObjectAttributesAccessDenied";
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 17);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.getObjectAttributes(g -> g.bucket(bucketName).key(key)
+						.objectAttributes(ObjectAttributes.E_TAG, ObjectAttributes.OBJECT_SIZE)));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testGetObjectAttributesDeleteMarker() {
+		var key = "testGetObjectAttributesDeleteMarker";
+		var client = getClient();
+		var bucketName = createBucket(client, 18);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"))
+				.versionId();
+		client.deleteObject(d -> d.bucket(bucketName).key(key));
+
+		// 최신 버전이 삭제 마커이면 없는 키로 취급한다
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.getObjectAttributes(
+						g -> g.bucket(bucketName).key(key).objectAttributes(ObjectAttributes.E_TAG)));
+		// 버전을 지정하면 삭제 마커 아래의 버전을 조회할 수 있다
+		var response = client.getObjectAttributes(g -> g.bucket(bucketName).key(key).versionId(versionId)
+				.objectAttributes(ObjectAttributes.OBJECT_SIZE));
+		assertEquals(versionId, response.versionId());
+		assertEquals(7, response.objectSize());
 	}
 }

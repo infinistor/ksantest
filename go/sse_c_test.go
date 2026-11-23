@@ -503,3 +503,75 @@ func assertHTTPError(t *testing.T, err error, status int) {
 		t.Fatalf("HTTP status = %d, want %d", got, status)
 	}
 }
+
+// sseCHTTPClient는 Main User 로 HTTP(평문) 요청을 보내는 클라이언트를 만든다.
+func sseCHTTPClient(s *suite) *s3.Client {
+	cfg := s.cfg
+	cfg.Secure = false
+	options := s3.Options{
+		Region:       cfg.Region,
+		Credentials:  aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(cfg.Main.AccessKey, cfg.Main.SecretKey, "")),
+		UsePathStyle: cfg.Endpoint() != "",
+	}
+	if endpoint := cfg.Endpoint(); endpoint != "" {
+		options.BaseEndpoint = aws.String(endpoint)
+	} else {
+		options.EndpointOptions.DisableHTTPS = true
+	}
+	return s3.New(options)
+}
+
+// SSE-C 알고리즘은 AES256 만 쓸 수 있다
+func TestEncryptionSseCInvalidAlgorithm(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := ssecBucket(t, s, 21)
+	input := sseCPutInput(bucket, "TestEncryptionSseCInvalidAlgorithm", []byte("content"))
+	input.SSECustomerAlgorithm = aws.String("AES128")
+	_, err := s.client.PutObject(context.Background(), input)
+	assertS3Error(t, err, 400, "InvalidEncryptionAlgorithmError")
+}
+
+// AES256 키는 32바이트여야 한다
+func TestEncryptionSseCInvalidKeyLength(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := ssecBucket(t, s, 22)
+	input := sseCPutInput(bucket, "TestEncryptionSseCInvalidKeyLength", []byte("content"))
+	// 16바이트 키와 그 MD5
+	input.SSECustomerKey = aws.String("a2tra2tra2tra2tra2traw==")
+	input.SSECustomerKeyMD5 = aws.String("5eB2YnFGLcav0OwlNDgr8A==")
+	_, err := s.client.PutObject(context.Background(), input)
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// SSE-C 와 SSE-S3 는 함께 지정할 수 없다
+func TestEncryptionSseCWithSseS3(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := ssecBucket(t, s, 23)
+	input := sseCPutInput(bucket, "TestEncryptionSseCWithSseS3", []byte("content"))
+	input.ServerSideEncryption = types.ServerSideEncryptionAes256
+	_, err := s.client.PutObject(context.Background(), input)
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// SSE-C 로 저장하지 않은 오브젝트에 키를 주면 거부된다
+func TestEncryptionSseCKeyOnPlainObject(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestEncryptionSseCKeyOnPlainObject"
+	bucket := ssecBucket(t, s, 24)
+	put(t, s, bucket, key, "content", nil)
+	_, err := s.client.GetObject(context.Background(), sseCGetInput(bucket, key))
+	assertS3Error(t, err, 400, "InvalidRequest")
+}
+
+// SSE-C 요청은 HTTPS 로만 받는다
+func TestEncryptionSseCInsecureTransport(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := ssecBucket(t, s, 25)
+	_, err := sseCHTTPClient(s).PutObject(context.Background(), sseCPutInput(bucket, "TestEncryptionSseCInsecureTransport", []byte("content")))
+	assertS3Error(t, err, 400, "InvalidArgument")
+}

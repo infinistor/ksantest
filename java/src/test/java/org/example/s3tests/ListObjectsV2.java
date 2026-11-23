@@ -496,4 +496,84 @@ class ListObjectsV2 {
 		test.testBucketListV2EncodingContinuationTokenDelimiter();
 		testV2.testBucketListV2EncodingContinuationTokenDelimiter();
 	}
+
+	/**
+	 * max-keys가 음수이면 400 InvalidArgument인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketListV2MaxKeysNegative() {
+		test.testBucketListV2MaxKeysNegative();
+		testV2.testBucketListV2MaxKeysNegative();
+	}
+
+	/**
+	 * encoding-type이 잘못되면 400 InvalidArgument인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketListV2EncodingInvalid() {
+		test.testBucketListV2EncodingInvalid();
+		testV2.testBucketListV2EncodingInvalid();
+	}
+
+	/**
+	 * continuation-token이 잘못되면 400 InvalidArgument인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketListV2ContinuationTokenInvalid() {
+		test.testBucketListV2ContinuationTokenInvalid();
+		testV2.testBucketListV2ContinuationTokenInvalid();
+	}
+
+	/**
+	 * KeyCount와 MaxKeys가 공통 접두어도 한 건으로 세는지 확인
+	 */
+	@Test
+	@Tag("KeyCount")
+	void testBucketListV2KeyCountDelimiter() {
+		test.testBucketListV2KeyCountDelimiter();
+		testV2.testBucketListV2KeyCountDelimiter();
+	}
+
+	/**
+	 * StartAfter가 공통 접두어 안의 키이면 그 접두어를 통째로 건너뛰는지 확인
+	 */
+	@Test
+	@Tag("StartAfter")
+	void testBucketListV2StartAfterInCommonPrefix() {
+		test.testBucketListV2StartAfterInCommonPrefix();
+		testV2.testBucketListV2StartAfterInCommonPrefix();
+	}
+
+	/**
+	 * 여러 글자로 된 구분자가 동작하는지 확인
+	 */
+	@Test
+	@Tag("Delimiter")
+	void testBucketListV2DelimiterMultiChar() {
+		test.testBucketListV2DelimiterMultiChar();
+		testV2.testBucketListV2DelimiterMultiChar();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 목록 조회가 403 AccessDenied로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testBucketListV2AltUser() {
+		test.testBucketListV2AltUser();
+		testV2.testBucketListV2AltUser();
+	}
+
+	/**
+	 * 요청에 준 값이 응답 필드에 그대로 돌아오는지 확인
+	 */
+	@Test
+	@Tag("Metadata")
+	void testBucketListV2ResponseFields() {
+		test.testBucketListV2ResponseFields();
+		testV2.testBucketListV2ResponseFields();
+	}
 }

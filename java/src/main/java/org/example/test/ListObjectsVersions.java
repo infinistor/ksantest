@@ -33,6 +33,7 @@ import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.amazonaws.services.s3.model.SetBucketAclRequest;
+import com.amazonaws.services.s3.AmazonS3;
 
 public class ListObjectsVersions extends TestBase {
 	@Test
@@ -827,5 +828,127 @@ public class ListObjectsVersions extends TestBase {
 		for (var i = 0; i < objects.size(); i++) {
 			assertEquals(objects.get(i), response.getVersionSummaries().get(i).getVersionId());
 		}
+	}
+
+	private record VersionedBucket(String bucketName, List<String> versionIds) {
+	}
+
+	/** 버저닝을 켠 버킷에 같은 키로 count 개 버전을 만든다. 버전 ID 는 오래된 순이다. */
+	private VersionedBucket putVersions(AmazonS3 client, int testId, String key, int count) {
+		var bucketName = createBucket(client, testId);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var versionIds = new ArrayList<String>();
+		for (var index = 0; index < count; index++)
+			versionIds.add(client.putObject(bucketName, key, String.valueOf(index)).getVersionId());
+		return new VersionedBucket(bucketName, versionIds);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListVersionsEncodingInvalid() {
+		var client = getClient();
+		var bucketName = createBucket(client, 42);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listVersions(
+						new ListVersionsRequest().withBucketName(bucketName).withEncodingType("invalid")));
+	}
+
+	@Test
+	@Tag("Marker")
+	public void testBucketListVersionsVersionIdMarkerInvalid() {
+		var key = "testBucketListVersionsVersionIdMarkerInvalid";
+		var client = getClient();
+		var versioned = putVersions(client, 43, key, 2);
+		var bucketName = versioned.bucketName();
+		// 버전 마커는 키 마커 없이 쓸 수 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listVersions(new ListVersionsRequest().withBucketName(bucketName)
+						.withVersionIdMarker(versioned.versionIds().get(0))));
+		// 형식이 잘못된 버전 마커
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withKeyMarker(key)
+						.withVersionIdMarker("invalid")));
+	}
+
+	@Test
+	@Tag("Marker")
+	public void testBucketListVersionsPagination() {
+		var key = "testBucketListVersionsPagination";
+		var client = getClient();
+		var versioned = putVersions(client, 44, key, 3);
+		var bucketName = versioned.bucketName();
+		var expected = new ArrayList<>(versioned.versionIds());
+		Collections.reverse(expected); // 최신 버전부터 나온다
+
+		var listed = new ArrayList<String>();
+		String keyMarker = null;
+		String versionIdMarker = null;
+		for (var page = 0; page < 3; page++) {
+			var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withMaxResults(1)
+					.withKeyMarker(keyMarker).withVersionIdMarker(versionIdMarker));
+			assertEquals(1, response.getVersionSummaries().size());
+			var version = response.getVersionSummaries().get(0);
+			assertEquals(key, version.getKey());
+			assertEquals(page == 0, version.isLatest());
+			listed.add(version.getVersionId());
+			assertEquals(page < 2, response.isTruncated());
+			if (response.isTruncated()) {
+				assertEquals(key, response.getNextKeyMarker());
+				assertEquals(version.getVersionId(), response.getNextVersionIdMarker());
+				keyMarker = response.getNextKeyMarker();
+				versionIdMarker = response.getNextVersionIdMarker();
+			}
+		}
+		assertEquals(expected, listed);
+
+		// 키 마커만 주면 그 키의 버전은 모두 건너뛴다
+		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withKeyMarker(key));
+		assertEquals(0, response.getVersionSummaries().size());
+	}
+
+	@Test
+	@Tag("DeleteMarker")
+	public void testBucketListVersionsDeleteMarker() {
+		var key = "testBucketListVersionsDeleteMarker";
+		var client = getClient();
+		var versioned = putVersions(client, 45, key, 2);
+		var bucketName = versioned.bucketName();
+		var versionIds = versioned.versionIds();
+		client.deleteObject(bucketName, key);
+
+		// 삭제 마커가 최신이 되고 기존 버전은 모두 최신이 아니게 된다
+		var summaries = client.listVersions(bucketName, "").getVersionSummaries();
+		var markers = summaries.stream().filter(summary -> summary.isDeleteMarker()).toList();
+		var versions = summaries.stream().filter(summary -> !summary.isDeleteMarker()).toList();
+		assertEquals(1, markers.size());
+		assertEquals(true, markers.get(0).isLatest());
+		assertTrue(!versionIds.contains(markers.get(0).getVersionId()));
+		assertEquals(List.of(versionIds.get(1), versionIds.get(0)),
+				versions.stream().map(version -> version.getVersionId()).toList());
+		assertEquals(List.of(false, false), versions.stream().map(version -> version.isLatest()).toList());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testBucketListVersionsUnversioned() {
+		var client = getClient();
+		var bucketName = createObjects(client, 46, List.of("a/1", "a/2", "b/1", "c", "d"));
+		// 버저닝을 쓰지 않는 버킷의 오브젝트는 모두 null 버전이고 최신이다
+		var response = client.listVersions(new ListVersionsRequest().withBucketName(bucketName).withDelimiter("/"));
+		var versions = response.getVersionSummaries();
+		assertEquals(List.of("c", "d"), versions.stream().map(version -> version.getKey()).toList());
+		assertEquals(List.of("null", "null"), versions.stream().map(version -> version.getVersionId()).toList());
+		assertEquals(List.of(true, true), versions.stream().map(version -> version.isLatest()).toList());
+		assertEquals(List.of(false, false), versions.stream().map(version -> version.isDeleteMarker()).toList());
+		assertEquals(List.of("a/", "b/"), response.getCommonPrefixes());
+	}
+
+	@Test
+	@Tag("Access")
+	public void testBucketListVersionsAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createObjects(client, 47, List.of("a", "b"));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED, () -> altClient.listVersions(bucketName, ""));
 	}
 }

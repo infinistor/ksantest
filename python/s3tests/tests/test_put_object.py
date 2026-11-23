@@ -997,3 +997,146 @@ class TestPutObject(S3TestBase):
 
         get_response = client.get_object(Bucket=bucket_name, Key=key2)
         assert self.get_body(get_response) == content
+
+    @pytest.mark.tag("ContentMD5")
+    def test_put_object_content_md5(self):
+        key = "test_put_object_content_md5"
+        content = "test_put_object_content_md5"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 54)
+        client.put_object(Bucket=bucket_name, Key=key, Body=content.encode("utf-8"), ContentMD5=utils.get_md5(content))
+        assert self.get_body(client.get_object(Bucket=bucket_name, Key=key)) == content
+
+    @pytest.mark.tag("ContentMD5")
+    def test_put_object_content_md5_mismatch(self):
+        key = "test_put_object_content_md5_mismatch"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 55)
+        # 본문과 다른 MD5 를 주면 저장되지 않는다
+        self.assert_client_error(
+            lambda: client.put_object(Bucket=bucket_name, Key=key, Body=b"content", ContentMD5=utils.get_md5("other")),
+            400,
+            md.BAD_DIGEST,
+        )
+        self.assert_client_error(lambda: client.get_object(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY)
+
+    @pytest.mark.tag("ContentMD5")
+    def test_put_object_content_md5_invalid(self):
+        key = "test_put_object_content_md5_invalid"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 56)
+        # base64 가 아니거나 길이가 MD5(16바이트)가 아닌 값
+        for content_md5 in ("not-base64!!", "YWJj"):
+            self.assert_client_error(
+                lambda content_md5=content_md5: client.put_object(
+                    Bucket=bucket_name, Key=key, Body=b"content", ContentMD5=content_md5
+                ),
+                400,
+                md.INVALID_DIGEST,
+            )
+        self.assert_client_error(lambda: client.get_object(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY)
+
+    @pytest.mark.tag("StorageClass")
+    def test_put_object_storage_class(self):
+        key = "test_put_object_storage_class"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 57)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content", StorageClass="STANDARD_IA")
+        client.put_object(Bucket=bucket_name, Key=key + "_standard", Body=b"content")
+
+        assert client.head_object(Bucket=bucket_name, Key=key)["StorageClass"] == "STANDARD_IA"
+        assert client.get_object(Bucket=bucket_name, Key=key)["StorageClass"] == "STANDARD_IA"
+        # STANDARD 는 x-amz-storage-class 헤더를 돌려주지 않는다
+        assert "StorageClass" not in client.head_object(Bucket=bucket_name, Key=key + "_standard")
+
+        listed = {obj["Key"]: obj["StorageClass"] for obj in client.list_objects_v2(Bucket=bucket_name)["Contents"]}
+        assert listed == {key: "STANDARD_IA", key + "_standard": "STANDARD"}
+
+    @pytest.mark.tag("StorageClass")
+    def test_put_object_invalid_storage_class(self):
+        key = "test_put_object_invalid_storage_class"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 58)
+        self.assert_client_error(
+            lambda: client.put_object(Bucket=bucket_name, Key=key, Body=b"content", StorageClass="INVALID"),
+            400,
+            md.INVALID_STORAGE_CLASS,
+        )
+
+    @pytest.mark.tag("Header")
+    def test_put_object_content_headers(self):
+        key = "test_put_object_content_headers"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 59)
+        headers = {
+            "ContentType": "text/plain",
+            "ContentDisposition": 'attachment; filename="a.txt"',
+            "ContentEncoding": "gzip",
+            "ContentLanguage": "ko-KR",
+        }
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content", **headers)
+        for response in (client.head_object(Bucket=bucket_name, Key=key), client.get_object(Bucket=bucket_name, Key=key)):
+            for name, value in headers.items():
+                assert response[name] == value
+
+        # Content-Type 을 주지 않으면 binary/octet-stream
+        client.put_object(Bucket=bucket_name, Key=key + "_default", Body=b"content")
+        response = client.head_object(Bucket=bucket_name, Key=key + "_default")
+        assert response["ContentType"] == "binary/octet-stream"
+        for name in ("ContentDisposition", "ContentEncoding", "ContentLanguage"):
+            assert name not in response
+
+    @pytest.mark.tag("Header")
+    def test_put_object_website_redirect_location(self):
+        key = "test_put_object_website_redirect_location"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 60)
+        for index, location in enumerate(("/other", "http://example.com/", "https://example.com/path")):
+            client.put_object(Bucket=bucket_name, Key=f"{key}{index}", Body=b"content", WebsiteRedirectLocation=location)
+            assert client.head_object(Bucket=bucket_name, Key=f"{key}{index}")["WebsiteRedirectLocation"] == location
+
+        # / 나 http://, https:// 로 시작하지 않으면 거부된다
+        self.assert_client_error(
+            lambda: client.put_object(Bucket=bucket_name, Key=key, Body=b"content", WebsiteRedirectLocation="other"),
+            400,
+            md.INVALID_REDIRECT_LOCATION,
+        )
+
+    @pytest.mark.tag("Metadata")
+    def test_put_object_metadata_too_large(self):
+        key = "test_put_object_metadata_too_large"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 61)
+        # 사용자 메타데이터는 합쳐서 2KB 까지
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content", Metadata={"key": "v" * 2000})
+        assert client.head_object(Bucket=bucket_name, Key=key)["Metadata"] == {"key": "v" * 2000}
+
+        self.assert_client_error(
+            lambda: client.put_object(Bucket=bucket_name, Key=key + "_big", Body=b"content", Metadata={"key": "v" * 2100}),
+            400,
+            md.METADATA_TOO_LARGE,
+        )
+
+    @pytest.mark.tag("ACL")
+    def test_put_object_invalid_acl(self):
+        key = "test_put_object_invalid_acl"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 62)
+        self.assert_client_error(
+            lambda: client.put_object(Bucket=bucket_name, Key=key, Body=b"content", ACL="invalid"),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("Access")
+    def test_put_object_access_denied(self):
+        key = "test_put_object_access_denied"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 63)
+        for other_client in (self.get_alt_client(), self.get_public_client()):
+            self.assert_client_error(
+                lambda other_client=other_client: other_client.put_object(Bucket=bucket_name, Key=key, Body=b"content"),
+                403,
+                md.ACCESS_DENIED,
+            )
+        self.assert_client_error(lambda: client.get_object(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY)

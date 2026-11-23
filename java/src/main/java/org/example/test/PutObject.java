@@ -37,6 +37,9 @@ import com.amazonaws.services.s3.model.ObjectLockMode;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.SetObjectLegalHoldRequest;
+import java.util.Map;
+import java.util.HashMap;
+import com.amazonaws.services.s3.Headers;
 
 public class PutObject extends TestBase {
 	@Test
@@ -852,5 +855,180 @@ public class PutObject extends TestBase {
 			var getResponse = client.getObject(bucketName, key);
 			assertEquals(content, getBody(getResponse.getObjectContent()));
 		}
+	}
+
+	private static ObjectMetadata contentMetadata(String content) {
+		var metadata = new ObjectMetadata();
+		metadata.setContentLength(content.getBytes(StandardCharsets.UTF_8).length);
+		return metadata;
+	}
+
+	@Test
+	@Tag("ContentMD5")
+	public void testPutObjectContentMd5() {
+		var key = "testPutObjectContentMd5";
+		var client = getClient();
+		var bucketName = createBucket(client, 54);
+		var metadata = contentMetadata(key);
+		metadata.setContentMD5(Utils.getMD5(key));
+		client.putObject(bucketName, key, createBody(key), metadata);
+		assertEquals(key, getBody(client.getObject(bucketName, key).getObjectContent()));
+	}
+
+	@Test
+	@Tag("ContentMD5")
+	public void testPutObjectContentMd5Mismatch() {
+		var key = "testPutObjectContentMd5Mismatch";
+		var client = getClient();
+		var bucketName = createBucket(client, 55);
+		// 본문과 다른 MD5 를 주면 저장되지 않는다
+		var metadata = contentMetadata("content");
+		metadata.setContentMD5(Utils.getMD5("other"));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.BAD_DIGEST,
+				() -> client.putObject(bucketName, key, createBody("content"), metadata));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY, () -> client.getObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("ContentMD5")
+	public void testPutObjectContentMd5Invalid() {
+		var key = "testPutObjectContentMd5Invalid";
+		var client = getClient();
+		var bucketName = createBucket(client, 56);
+		// base64 가 아니거나 길이가 MD5(16바이트)가 아닌 값
+		for (var contentMd5 : List.of("not-base64!!", "YWJj")) {
+			var metadata = contentMetadata("content");
+			metadata.setContentMD5(contentMd5);
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_DIGEST,
+					() -> client.putObject(bucketName, key, createBody("content"), metadata));
+		}
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY, () -> client.getObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("StorageClass")
+	public void testPutObjectStorageClass() {
+		var key = "testPutObjectStorageClass";
+		var standardKey = key + "_standard";
+		var client = getClient();
+		var bucketName = createBucket(client, 57);
+		client.putObject(new PutObjectRequest(bucketName, key, createBody("content"), contentMetadata("content"))
+				.withStorageClass("STANDARD_IA"));
+		client.putObject(bucketName, standardKey, "content");
+
+		assertEquals("STANDARD_IA", client.getObjectMetadata(bucketName, key).getStorageClass());
+		var getResponse = client.getObject(bucketName, key);
+		assertEquals("STANDARD_IA", getResponse.getObjectMetadata().getStorageClass());
+		getBody(getResponse.getObjectContent());
+		// STANDARD 는 x-amz-storage-class 헤더를 돌려주지 않는다
+		assertNull(client.getObjectMetadata(bucketName, standardKey).getStorageClass());
+
+		var listed = new HashMap<String, String>();
+		for (var object : client.listObjectsV2(bucketName).getObjectSummaries())
+			listed.put(object.getKey(), object.getStorageClass());
+		assertEquals(Map.of(key, "STANDARD_IA", standardKey, "STANDARD"), listed);
+	}
+
+	@Test
+	@Tag("StorageClass")
+	public void testPutObjectInvalidStorageClass() {
+		var key = "testPutObjectInvalidStorageClass";
+		var client = getClient();
+		var bucketName = createBucket(client, 58);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_STORAGE_CLASS,
+				() -> client.putObject(
+						new PutObjectRequest(bucketName, key, createBody("content"), contentMetadata("content"))
+								.withStorageClass("INVALID")));
+	}
+
+	@Test
+	@Tag("Header")
+	public void testPutObjectContentHeaders() {
+		var key = "testPutObjectContentHeaders";
+		var defaultKey = key + "_default";
+		var client = getClient();
+		var bucketName = createBucket(client, 59);
+		var contentType = "text/plain";
+		var contentDisposition = "attachment; filename=\"a.txt\"";
+		var contentEncoding = "gzip";
+		var contentLanguage = "ko-KR";
+		var metadata = contentMetadata("content");
+		metadata.setContentType(contentType);
+		metadata.setContentDisposition(contentDisposition);
+		metadata.setContentEncoding(contentEncoding);
+		metadata.setContentLanguage(contentLanguage);
+		client.putObject(bucketName, key, createBody("content"), metadata);
+
+		var getResponse = client.getObject(bucketName, key);
+		for (var response : List.of(client.getObjectMetadata(bucketName, key), getResponse.getObjectMetadata())) {
+			assertEquals(contentType, response.getContentType());
+			assertEquals(contentDisposition, response.getContentDisposition());
+			assertEquals(contentEncoding, response.getContentEncoding());
+			assertEquals(contentLanguage, response.getContentLanguage());
+		}
+		getBody(getResponse.getObjectContent());
+
+		// 주지 않은 헤더는 돌려주지 않는다
+		// (SDK 가 Content-Type 을 항상 붙여 보내므로 기본값 binary/octet-stream 은 확인하지 않는다)
+		client.putObject(bucketName, defaultKey, "content");
+		var defaultResponse = client.getObjectMetadata(bucketName, defaultKey);
+		assertNull(defaultResponse.getContentDisposition());
+		assertNull(defaultResponse.getContentEncoding());
+		assertNull(defaultResponse.getContentLanguage());
+	}
+
+	@Test
+	@Tag("Header")
+	public void testPutObjectWebsiteRedirectLocation() {
+		var key = "testPutObjectWebsiteRedirectLocation";
+		var client = getClient();
+		var bucketName = createBucket(client, 60);
+		var locations = List.of("/other", "http://example.com/", "https://example.com/path");
+		for (var index = 0; index < locations.size(); index++) {
+			var location = locations.get(index);
+			var targetKey = key + index;
+			client.putObject(
+					new PutObjectRequest(bucketName, targetKey, createBody("content"), contentMetadata("content"))
+							.withRedirectLocation(location));
+			assertEquals(location, client.getObjectMetadata(bucketName, targetKey)
+					.getRawMetadataValue(Headers.REDIRECT_LOCATION));
+		}
+
+		// / 나 http://, https:// 로 시작하지 않으면 거부된다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REDIRECT_LOCATION,
+				() -> client.putObject(
+						new PutObjectRequest(bucketName, key, createBody("content"), contentMetadata("content"))
+								.withRedirectLocation("other")));
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testPutObjectMetadataTooLarge() {
+		var key = "testPutObjectMetadataTooLarge";
+		var client = getClient();
+		var bucketName = createBucket(client, 61);
+		// 사용자 메타데이터는 합쳐서 2KB 까지
+		var metadata = contentMetadata("content");
+		metadata.addUserMetadata("key", "v".repeat(2000));
+		client.putObject(bucketName, key, createBody("content"), metadata);
+		assertEquals(Map.of("key", "v".repeat(2000)), client.getObjectMetadata(bucketName, key).getUserMetadata());
+
+		var bigMetadata = contentMetadata("content");
+		bigMetadata.addUserMetadata("key", "v".repeat(2100));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.METADATA_TOO_LARGE,
+				() -> client.putObject(bucketName, key + "_big", createBody("content"), bigMetadata));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPutObjectAccessDenied() {
+		var key = "testPutObjectAccessDenied";
+		var client = getClient();
+		var bucketName = createBucket(client, 63);
+		for (var otherClient : List.of(getAltClient(), getPublicClient())) {
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+					() -> otherClient.putObject(bucketName, key, "content"));
+		}
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY, () -> client.getObject(bucketName, key));
 	}
 }

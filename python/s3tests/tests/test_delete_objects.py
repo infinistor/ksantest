@@ -449,3 +449,177 @@ class TestDeleteObjects(S3TestBase):
         assert exc_info.value.response["Error"]["Code"] == md.NOT_IMPLEMENTED
         list_response = client.list_objects(Bucket=bucket_name)
         assert len(list_response.get("Contents", [])) == 1
+
+    @pytest.mark.tag("Check")
+    def test_delete_object_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 22)
+        # 없는 키를 지워도 성공한다
+        response = client.delete_object(Bucket=bucket_name, Key="not_exist")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+        assert "DeleteMarker" not in response
+        assert "VersionId" not in response
+
+    @pytest.mark.tag("ERROR")
+    def test_delete_object_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(23)
+        self.assert_client_error(lambda: client.delete_object(Bucket=bucket_name, Key="key"), 404, md.NO_SUCH_BUCKET)
+        self.assert_client_error(
+            lambda: client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": "key"}]}),
+            404,
+            md.NO_SUCH_BUCKET,
+        )
+
+    @pytest.mark.tag("Access")
+    def test_delete_object_access_denied(self):
+        key = "test_delete_object_access_denied"
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_objects_keys(client, 24, [key])
+        self.assert_client_error(lambda: alt_client.delete_object(Bucket=bucket_name, Key=key), 403, md.ACCESS_DENIED)
+
+        # DeleteObjects 는 요청 자체는 200 이고 키마다 AccessDenied 를 돌려준다
+        response = alt_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": key}]})
+        assert not response.get("Deleted")
+        assert len(response["Errors"]) == 1
+        assert response["Errors"][0]["Key"] == key
+        assert response["Errors"][0]["Code"] == md.ACCESS_DENIED
+
+        client.head_object(Bucket=bucket_name, Key=key)
+
+    @pytest.mark.tag("Version")
+    def test_delete_object_version_id_unversioned(self):
+        key = "test_delete_object_version_id_unversioned"
+        client = self.get_client()
+        bucket_name = self.create_objects_keys(client, 25, [key])
+        self.assert_client_error(
+            lambda: client.delete_object(Bucket=bucket_name, Key=key, VersionId="invalid"), 400, md.INVALID_ARGUMENT
+        )
+        client.head_object(Bucket=bucket_name, Key=key)
+
+        # 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전으로 지울 수 있다
+        response = client.delete_object(Bucket=bucket_name, Key=key, VersionId="null")
+        assert response["VersionId"] == "null"
+        assert "DeleteMarker" not in response
+        self.assert_client_error(lambda: client.get_object(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY)
+
+    @pytest.mark.tag("Check")
+    def test_delete_objects_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 26)
+        keys = ["not_exist1", "not_exist2"]
+        # 없는 키도 삭제된 것으로 응답한다
+        response = client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": key} for key in keys]})
+        assert sorted(item["Key"] for item in response["Deleted"]) == keys
+        assert not response.get("Errors")
+
+    @pytest.mark.tag("ERROR")
+    def test_delete_objects_empty(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 27)
+        self.assert_client_error(
+            lambda: client.delete_objects(Bucket=bucket_name, Delete={"Objects": []}), 400, md.MALFORMED_XML
+        )
+
+    @pytest.mark.tag("Max")
+    def test_delete_objects_max_keys(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 28)
+        # 한 번에 1000개까지 지울 수 있다
+        response = client.delete_objects(
+            Bucket=bucket_name, Delete={"Objects": [{"Key": f"key{i}"} for i in range(1000)]}
+        )
+        assert len(response["Deleted"]) == 1000
+        self.assert_client_error(
+            lambda: client.delete_objects(
+                Bucket=bucket_name, Delete={"Objects": [{"Key": f"key{i}"} for i in range(1001)]}
+            ),
+            400,
+            md.MALFORMED_XML,
+        )
+
+    @pytest.mark.tag("Check")
+    def test_delete_objects_duplicate_keys(self):
+        key = "test_delete_objects_duplicate_keys"
+        client = self.get_client()
+        bucket_name = self.create_objects_keys(client, 29, [key])
+        # 같은 키를 두 번 넣어도 한 번만 응답한다
+        response = client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": key}, {"Key": key}]})
+        assert [item["Key"] for item in response["Deleted"]] == [key]
+        assert not response.get("Errors")
+
+    @pytest.mark.tag("Version")
+    def test_delete_objects_invalid_version_id(self):
+        key = "test_delete_objects_invalid_version_id"
+        client = self.get_client()
+        bucket_name = self.create_objects_keys(client, 30, [key])
+
+        def check_no_such_version():
+            # 요청은 200 이고 키마다 NoSuchVersion 을 돌려준다
+            response = client.delete_objects(
+                Bucket=bucket_name, Delete={"Objects": [{"Key": key, "VersionId": "invalid"}]}
+            )
+            assert not response.get("Deleted")
+            assert len(response["Errors"]) == 1
+            assert response["Errors"][0]["Key"] == key
+            assert response["Errors"][0]["VersionId"] == "invalid"
+            assert response["Errors"][0]["Code"] == md.NO_SUCH_VERSION
+
+        check_no_such_version()
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        check_no_such_version()
+        client.head_object(Bucket=bucket_name, Key=key)
+
+    @pytest.mark.tag("Version")
+    def test_delete_object_versioning_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 31)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        # 버저닝 버킷에서는 없는 키를 지워도 삭제 마커가 생긴다
+        response = client.delete_object(Bucket=bucket_name, Key="not_exist")
+        assert response["DeleteMarker"] is True
+        assert response["VersionId"]
+
+        response = client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": "not_exist2"}]})
+        assert response["Deleted"][0]["DeleteMarker"] is True
+        assert response["Deleted"][0]["DeleteMarkerVersionId"]
+
+        markers = client.list_object_versions(Bucket=bucket_name)["DeleteMarkers"]
+        assert sorted(marker["Key"] for marker in markers) == ["not_exist", "not_exist2"]
+
+    @pytest.mark.tag("Version")
+    def test_delete_object_versioning_invalid_version_id(self):
+        key = "test_delete_object_versioning_invalid_version_id"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 32)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        version_id = client.put_object(Bucket=bucket_name, Key=key, Body=b"content")["VersionId"]
+        self.assert_client_error(
+            lambda: client.delete_object(Bucket=bucket_name, Key=key, VersionId="invalid"), 400, md.INVALID_ARGUMENT
+        )
+
+        # 없는 null 버전을 지워도 성공하고 삭제 마커는 생기지 않는다
+        response = client.delete_object(Bucket=bucket_name, Key=key, VersionId="null")
+        assert response["VersionId"] == "null"
+        assert "DeleteMarker" not in response
+
+        response = client.list_object_versions(Bucket=bucket_name)
+        assert [version["VersionId"] for version in response["Versions"]] == [version_id]
+        assert not response.get("DeleteMarkers")
+
+    @pytest.mark.tag("Version")
+    def test_delete_object_remove_delete_marker(self):
+        key = "test_delete_object_remove_delete_marker"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 33)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        version_id = client.put_object(Bucket=bucket_name, Key=key, Body=b"content")["VersionId"]
+        marker_id = client.delete_object(Bucket=bucket_name, Key=key)["VersionId"]
+        self.assert_client_error(lambda: client.get_object(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY)
+
+        # 삭제 마커를 지우면 x-amz-delete-marker: true 로 응답하고 이전 버전이 다시 보인다
+        response = client.delete_object(Bucket=bucket_name, Key=key, VersionId=marker_id)
+        assert response["DeleteMarker"] is True
+        assert response["VersionId"] == marker_id
+        assert client.get_object(Bucket=bucket_name, Key=key)["VersionId"] == version_id

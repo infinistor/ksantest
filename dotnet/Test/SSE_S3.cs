@@ -748,5 +748,128 @@ namespace s3tests.Test
 
 			CheckContentUsingRange(client, bucketName, key, Content, MainData.KB);
 		}
+
+		private static ServerSideEncryptionRule EncryptionRule(string algorithm = "AES256", bool? bucketKeyEnabled = null, string kmsKeyId = null)
+		{
+			var rule = new ServerSideEncryptionRule()
+			{
+				ServerSideEncryptionByDefault = new ServerSideEncryptionByDefault() { ServerSideEncryptionAlgorithm = new ServerSideEncryptionMethod(algorithm) }
+			};
+			if (bucketKeyEnabled.HasValue) rule.BucketKeyEnabled = bucketKeyEnabled.Value;
+			if (kmsKeyId != null) rule.ServerSideEncryptionByDefault.ServerSideEncryptionKeyManagementServiceKeyId = kmsKeyId;
+			return rule;
+		}
+
+		private static PutBucketEncryptionResponse PutEncryption(S3Client client, string bucketName, params ServerSideEncryptionRule[] rules)
+			=> client.PutBucketEncryption(bucketName, new ServerSideEncryptionConfiguration() { ServerSideEncryptionRules = [.. rules] });
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-S3")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "잘못된 버킷 암호화 설정은 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutBucketEncryptionInvalid()
+		{
+			TestId = 26;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var invalidRules = new List<ServerSideEncryptionRule[]>()
+			{
+				new[] { EncryptionRule("INVALID") }, // 없는 알고리즘
+				System.Array.Empty<ServerSideEncryptionRule>(), // 규칙 없음
+				new[] { EncryptionRule(), EncryptionRule() }, // 규칙은 하나만
+			};
+			foreach (var rules in invalidRules)
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => PutEncryption(client, bucketName, rules));
+			// AES256 에는 KMS 키를 지정할 수 없다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => PutEncryption(client, bucketName, EncryptionRule(kmsKeyId: "key-id")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-S3")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "버킷 암호화 설정의 BucketKeyEnabled가 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutBucketEncryptionBucketKey()
+		{
+			TestId = 27;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			PutEncryption(client, bucketName, EncryptionRule(bucketKeyEnabled: true));
+			var rule = client.GetBucketEncryption(bucketName).ServerSideEncryptionConfiguration.ServerSideEncryptionRules[0];
+			Assert.Equal(ServerSideEncryptionMethod.AES256, rule.ServerSideEncryptionByDefault.ServerSideEncryptionAlgorithm);
+			Assert.True(rule.BucketKeyEnabled);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-S3")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "버킷 암호화 설정을 두 번 삭제해도 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestDeleteBucketEncryptionTwice()
+		{
+			TestId = 28;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			PutEncryption(client, bucketName, EncryptionRule(bucketKeyEnabled: true));
+			// 설정이 없어도 삭제는 성공한다
+			for (int i = 0; i < 2; i++)
+				Assert.Equal(HttpStatusCode.NoContent, client.DeleteBucketEncryption(bucketName).HttpStatusCode);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-S3")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "다른 계정이 버킷 암호화 설정을 조회, 설정, 삭제하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketEncryptionAccessDenied()
+		{
+			TestId = 29;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.GetBucketEncryption(bucketName));
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => PutEncryption(altClient, bucketName, EncryptionRule()));
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.DeleteBucketEncryption(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-S3")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "존재하지 않는 버킷의 암호화 설정을 조회, 설정, 삭제하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketEncryptionBucketNotExist()
+		{
+			TestId = 30;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketEncryption(bucketName), MainData.NO_SUCH_BUCKET);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => PutEncryption(client, bucketName, EncryptionRule()));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.DeleteBucketEncryption(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "SSE-S3")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "잘못된 암호화 알고리즘으로 업로드, 멀티파트 시작, 복사하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestSseS3InvalidAlgorithm()
+		{
+			TestId = 31;
+			var key = "TestSseS3InvalidAlgorithm";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, "source", body: "content");
+			var invalid = new ServerSideEncryptionMethod("INVALID");
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.PutObject(bucketName, key, body: "content", sseKey: invalid));
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.InitiateMultipartUpload(bucketName, key, sseKey: invalid));
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.CopyObject(bucketName, "source", bucketName, key, sseKey: invalid));
+			// HEAD 오류는 본문이 없어 상태 코드만 확인한다
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.HeadObject(bucketName, key));
+		}
 	}
 }

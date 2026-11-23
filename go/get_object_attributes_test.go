@@ -297,3 +297,47 @@ func getAttributes(t *testing.T, client *s3.Client, input *s3.GetObjectAttribute
 // CompletableFuture 동작을 검증한다. aws-sdk-go-v2에는 별도의 비동기 S3 클라이언트가 없고
 // 모든 오퍼레이션이 context 기반 동기 호출이므로, 비동기 클라이언트 전용 시나리오를 재현할 수 없다.
 // (동기 경로는 TestGetObjectAttributesBasic / TestGetObjectAttributesNonExistentBucket 등에서 이미 검증)
+
+// 알 수 없는 속성 이름이 하나라도 있으면 거부된다
+func TestGetObjectAttributesInvalidAttribute(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 16), "TestGetObjectAttributesInvalidAttribute"
+	put(t, s, b, key, "content", nil)
+	for _, attributes := range [][]types.ObjectAttributes{{"Invalid"}, {types.ObjectAttributesEtag, "Invalid"}} {
+		_, err := s.client.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: attributes})
+		assertS3Error(t, err, 400, "InvalidArgument")
+	}
+}
+
+// 권한이 없는 사용자는 속성을 조회할 수 없다
+func TestGetObjectAttributesAccessDenied(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	alt := altClientOrSkip(t, s)
+	b, key := s.bucket(t, 17), "TestGetObjectAttributesAccessDenied"
+	put(t, s, b, key, "content", nil)
+	_, err := alt.GetObjectAttributes(context.Background(), &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesEtag, types.ObjectAttributesObjectSize}})
+	assertS3Error(t, err, 403, "AccessDenied")
+}
+
+// 최신 버전이 삭제 마커이면 없는 키로 취급하고, 버전을 지정하면 그 아래 버전을 조회할 수 있다
+func TestGetObjectAttributesDeleteMarker(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 18), "TestGetObjectAttributesDeleteMarker"
+	enableVersioning(t, s, b)
+	versionID := put(t, s, b, key, "content", nil).VersionId
+	if _, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := s.client.GetObjectAttributes(ctx, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesEtag}})
+	assertS3Error(t, err, 404, "NoSuchKey")
+
+	out := getAttributes(t, s.client, &s3.GetObjectAttributesInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: versionID, ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesObjectSize}})
+	if aws.ToString(out.VersionId) != aws.ToString(versionID) || aws.ToInt64(out.ObjectSize) != 7 {
+		t.Fatalf("VersionId=%q want=%q ObjectSize=%d", aws.ToString(out.VersionId), aws.ToString(versionID), aws.ToInt64(out.ObjectSize))
+	}
+}

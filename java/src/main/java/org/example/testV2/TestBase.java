@@ -70,6 +70,7 @@ import org.example.auth.AWS4SignerForChunkedUpload;
 import org.example.s3tests.S3Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.platform.commons.util.StringUtils;
 
 import com.google.gson.JsonArray;
@@ -1073,6 +1074,18 @@ public class TestBase {
 	// endregion
 
 	// region Check data
+
+	/**
+	 * 요청이 S3 오류로 실패하는지 확인한다.
+	 * errorCode 가 null 이면(HEAD 처럼 본문이 없는 응답) 상태 코드만 확인한다.
+	 */
+	public static AwsServiceException assertS3Error(int statusCode, String errorCode, Executable executable) {
+		var e = assertThrows(AwsServiceException.class, executable);
+		assertEquals(statusCode, e.statusCode());
+		if (errorCode != null)
+			assertEquals(errorCode, e.awsErrorDetails().errorCode());
+		return e;
+	}
 
 	public static void succeedGetObject(S3Client client, String bucketName, String key, String content) {
 		var response = client.getObject(g -> g.bucket(bucketName).key(key));

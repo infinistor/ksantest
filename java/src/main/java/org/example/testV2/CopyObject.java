@@ -13,6 +13,8 @@ package org.example.testV2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.MalformedURLException;
 import java.time.temporal.ChronoUnit;
@@ -40,6 +42,8 @@ import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.Permission;
 import software.amazon.awssdk.services.s3.model.Tagging;
 import software.amazon.awssdk.services.s3.model.TaggingDirective;
+import software.amazon.awssdk.services.s3.S3Client;
+import java.util.Map;
 
 @Execution(ExecutionMode.CONCURRENT)
 public class CopyObject extends TestBase {
@@ -1524,5 +1528,251 @@ public class CopyObject extends TestBase {
 
 		var tagResponse = client.getObjectTagging(g -> g.bucket(bucketName).key(targetKey));
 		tagCompare(targetTags.tagSet(), tagResponse.tagSet());
+	}
+
+	private static final String DIGITS = "0123456789";
+
+	/** 10바이트(0123456789) 원본 오브젝트(source)를 하나 넣은 버킷을 만든다. */
+	private String copySourceBucket(S3Client client, int testId) {
+		var bucketName = createBucket(client, testId);
+		client.putObject(p -> p.bucket(bucketName).key("source"), RequestBody.fromString(DIGITS));
+		return bucketName;
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testCopyObjectInvalidDirective() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 69);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+						.destinationBucket(bucketName).destinationKey("target").metadataDirective("INVALID")));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+						.destinationBucket(bucketName).destinationKey("target").taggingDirective("INVALID")));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null,
+				() -> client.headObject(h -> h.bucket(bucketName).key("target")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	@SuppressWarnings("deprecation")
+	public void testCopyObjectInvalidSource() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 70);
+		// 원본에 키가 없으면 거부된다
+		for (var copySource : List.of(bucketName, bucketName + "/")) {
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+					() -> client.copyObject(
+							c -> c.copySource(copySource).destinationBucket(bucketName).destinationKey("target")));
+		}
+		// 앞에 / 가 붙은 형식은 허용한다
+		client.copyObject(
+				c -> c.copySource("/" + bucketName + "/source").destinationBucket(bucketName).destinationKey("target"));
+		assertEquals(DIGITS, getBody(client.getObject(g -> g.bucket(bucketName).key("target"))));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testCopyObjectSourceInvalidVersionId() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 71);
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source").sourceVersionId("invalid")
+						.destinationBucket(bucketName).destinationKey("target")));
+		// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전으로 복사할 수 있다
+		var response = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source").sourceVersionId("null")
+				.destinationBucket(bucketName).destinationKey("target"));
+		assertEquals("null", response.copySourceVersionId());
+
+		// 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		client.putObject(p -> p.bucket(bucketName).key("versioned"), RequestBody.fromString("content"));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_VERSION,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("versioned").sourceVersionId("null")
+						.destinationBucket(bucketName).destinationKey("target2")));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testCopyObjectSourceVersionId() {
+		var key = "testCopyObjectSourceVersionId";
+		var client = getClient();
+		var bucketName = createBucket(client, 72);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		var version1 = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("version1"))
+				.versionId();
+		var version2 = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("version2"))
+				.versionId();
+
+		// 응답으로 복사한 원본 버전과 새로 만든 버전을 알려준다
+		var response = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(key).sourceVersionId(version1)
+				.destinationBucket(bucketName).destinationKey("target1"));
+		assertEquals(version1, response.copySourceVersionId());
+		assertNotNull(response.versionId());
+		assertEquals("version1", getBody(client.getObject(g -> g.bucket(bucketName).key("target1"))));
+
+		response = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(key)
+				.destinationBucket(bucketName).destinationKey("target2"));
+		assertEquals(version2, response.copySourceVersionId());
+		assertEquals("version2", getBody(client.getObject(g -> g.bucket(bucketName).key("target2"))));
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testCopyObjectAttributesNotCopied() {
+		var client = getClient();
+		var bucketName = createBucket(client, 73);
+		var metadata = Map.of("key", "value");
+		client.putObject(p -> p.bucket(bucketName).key("source").contentType("text/plain").cacheControl("no-cache")
+				.metadata(metadata).websiteRedirectLocation("/other").storageClass("STANDARD_IA"),
+				RequestBody.fromString(DIGITS));
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+				.destinationBucket(bucketName).destinationKey("target"));
+
+		var response = client.headObject(h -> h.bucket(bucketName).key("target"));
+		assertEquals("text/plain", response.contentType());
+		assertEquals("no-cache", response.cacheControl());
+		assertEquals(metadata, response.metadata());
+		// 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
+		assertNull(response.storageClassAsString());
+		assertNull(response.websiteRedirectLocation());
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testCopyObjectReplaceWithoutMetadata() {
+		var client = getClient();
+		var bucketName = createBucket(client, 74);
+		client.putObject(p -> p.bucket(bucketName).key("source").contentType("text/plain").cacheControl("no-cache")
+				.metadata(Map.of("key", "value")), RequestBody.fromString(DIGITS));
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+				.destinationBucket(bucketName).destinationKey("target").metadataDirective(MetadataDirective.REPLACE));
+		// REPLACE 인데 아무것도 주지 않으면 원본의 메타데이터가 모두 빠진다
+		var response = client.headObject(h -> h.bucket(bucketName).key("target"));
+		assertEquals("binary/octet-stream", response.contentType());
+		assertEquals(0, response.metadata().size());
+		assertNull(response.cacheControl());
+	}
+
+	@Test
+	@Tag("StorageClass")
+	public void testCopyObjectStorageClass() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 75);
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+				.destinationBucket(bucketName).destinationKey("target").storageClass("STANDARD_IA"));
+		assertEquals("STANDARD_IA",
+				client.headObject(h -> h.bucket(bucketName).key("target")).storageClassAsString());
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_STORAGE_CLASS,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+						.destinationBucket(bucketName).destinationKey("target2").storageClass("INVALID")));
+	}
+
+	@Test
+	@Tag("Overwrite")
+	public void testCopyObjectToItselfWithChanges() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 76);
+
+		// 태그만 바꾸는 것은 변경으로 치지 않는다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+						.destinationBucket(bucketName).destinationKey("source")
+						.taggingDirective(TaggingDirective.REPLACE).tagging("key=value")));
+
+		// 스토리지 클래스, 웹사이트 리다이렉트, 암호화 설정 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+				.destinationBucket(bucketName).destinationKey("source").storageClass("STANDARD_IA"));
+		assertEquals("STANDARD_IA",
+				client.headObject(h -> h.bucket(bucketName).key("source")).storageClassAsString());
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+				.destinationBucket(bucketName).destinationKey("source").websiteRedirectLocation("/other"));
+		assertEquals("/other", client.headObject(h -> h.bucket(bucketName).key("source")).websiteRedirectLocation());
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+				.destinationBucket(bucketName).destinationKey("source").serverSideEncryption("AES256"));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testCopyObjectToItselfFromOldVersion() {
+		var key = "testCopyObjectToItselfFromOldVersion";
+		var client = getClient();
+		var bucketName = createBucket(client, 77);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		var version1 = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("version1"))
+				.versionId();
+		var version2 = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("version2"))
+				.versionId();
+
+		// 버저닝 버킷이어도 최신 버전을 그대로 자기 자신에게 복사할 수는 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(key)
+						.destinationBucket(bucketName).destinationKey(key)));
+
+		// 이전 버전을 지정하면 변경 없이도 복사되어 그 내용이 새 최신 버전이 된다
+		var response = client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(key).sourceVersionId(version1)
+				.destinationBucket(bucketName).destinationKey(key));
+		assertNotNull(response.versionId());
+		assertTrue(!List.of(version1, version2).contains(response.versionId()));
+		assertEquals("version1", getBody(client.getObject(g -> g.bucket(bucketName).key(key))));
+		assertEquals(3, client.listObjectVersions(l -> l.bucket(bucketName)).versions().size());
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testCopyObjectMetadataTooLarge() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 78);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.METADATA_TOO_LARGE,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+						.destinationBucket(bucketName).destinationKey("target")
+						.metadataDirective(MetadataDirective.REPLACE).metadata(Map.of("key", "v".repeat(2100)))));
+	}
+
+	@Test
+	@Tag("ACL")
+	public void testCopyObjectInvalidAcl() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 79);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+						.destinationBucket(bucketName).destinationKey("target").acl("invalid")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testCopyObjectTargetBucketNotExist() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 80);
+		var targetBucketName = getNewBucketNameOnly(80);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
+						.destinationBucket(targetBucketName).destinationKey("target")));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testCopyObjectTargetAccessDenied() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = copySourceBucket(client, 81);
+		var altBucketName = createBucket(altClient, 81);
+		try {
+			altClient.putObject(p -> p.bucket(altBucketName).key("source"), RequestBody.fromString("content"));
+			// 원본은 읽을 수 있어도 대상 버킷에 쓸 권한이 없으면 거부된다
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+					() -> altClient.copyObject(c -> c.sourceBucket(altBucketName).sourceKey("source")
+							.destinationBucket(bucketName).destinationKey("target")));
+			assertS3Error(HttpStatus.SC_NOT_FOUND, null,
+					() -> client.headObject(h -> h.bucket(bucketName).key("target")));
+		} finally {
+			// 보조 사용자의 버킷은 기본 정리 대상이 아니므로 직접 지운다
+			altClient.deleteObject(d -> d.bucket(altBucketName).key("source"));
+			altClient.deleteBucket(d -> d.bucket(altBucketName));
+			deleteBucketList(altBucketName);
+		}
 	}
 }

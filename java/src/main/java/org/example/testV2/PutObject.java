@@ -38,6 +38,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHold;
 import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
 import software.amazon.awssdk.services.s3.model.ObjectLockMode;
+import java.util.Map;
 
 public class PutObject extends TestBase {
 	@Test
@@ -1081,5 +1082,183 @@ public class PutObject extends TestBase {
 			var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
 			assertEquals(content, getBody(getResponse));
 		}
+	}
+
+	@Test
+	@Tag("ContentMD5")
+	public void testPutObjectContentMd5() {
+		var key = "testPutObjectContentMd5";
+		var client = getClient();
+		var bucketName = createBucket(client, 54);
+		client.putObject(p -> p.bucket(bucketName).key(key).contentMD5(Utils.getMD5(key)),
+				RequestBody.fromString(key));
+		assertEquals(key, getBody(client.getObject(g -> g.bucket(bucketName).key(key))));
+	}
+
+	@Test
+	@Tag("ContentMD5")
+	public void testPutObjectContentMd5Mismatch() {
+		var key = "testPutObjectContentMd5Mismatch";
+		var client = getClient();
+		var bucketName = createBucket(client, 55);
+		// 본문과 다른 MD5 를 주면 저장되지 않는다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.BAD_DIGEST,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).contentMD5(Utils.getMD5("other")),
+						RequestBody.fromString("content")));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key)));
+	}
+
+	@Test
+	@Tag("ContentMD5")
+	public void testPutObjectContentMd5Invalid() {
+		var key = "testPutObjectContentMd5Invalid";
+		var client = getClient();
+		var bucketName = createBucket(client, 56);
+		// base64 가 아니거나 길이가 MD5(16바이트)가 아닌 값
+		for (var contentMd5 : List.of("not-base64!!", "YWJj")) {
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_DIGEST,
+					() -> client.putObject(p -> p.bucket(bucketName).key(key).contentMD5(contentMd5),
+							RequestBody.fromString("content")));
+		}
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key)));
+	}
+
+	@Test
+	@Tag("StorageClass")
+	public void testPutObjectStorageClass() {
+		var key = "testPutObjectStorageClass";
+		var standardKey = key + "_standard";
+		var client = getClient();
+		var bucketName = createBucket(client, 57);
+		client.putObject(p -> p.bucket(bucketName).key(key).storageClass("STANDARD_IA"),
+				RequestBody.fromString("content"));
+		client.putObject(p -> p.bucket(bucketName).key(standardKey), RequestBody.fromString("content"));
+
+		assertEquals("STANDARD_IA", client.headObject(h -> h.bucket(bucketName).key(key)).storageClassAsString());
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals("STANDARD_IA", getResponse.response().storageClassAsString());
+		getBody(getResponse);
+		// STANDARD 는 x-amz-storage-class 헤더를 돌려주지 않는다
+		assertNull(client.headObject(h -> h.bucket(bucketName).key(standardKey)).storageClassAsString());
+
+		var listed = new HashMap<String, String>();
+		for (var object : client.listObjectsV2(l -> l.bucket(bucketName)).contents())
+			listed.put(object.key(), object.storageClassAsString());
+		assertEquals(Map.of(key, "STANDARD_IA", standardKey, "STANDARD"), listed);
+	}
+
+	@Test
+	@Tag("StorageClass")
+	public void testPutObjectInvalidStorageClass() {
+		var key = "testPutObjectInvalidStorageClass";
+		var client = getClient();
+		var bucketName = createBucket(client, 58);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_STORAGE_CLASS,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).storageClass("INVALID"),
+						RequestBody.fromString("content")));
+	}
+
+	@Test
+	@Tag("Header")
+	public void testPutObjectContentHeaders() {
+		var key = "testPutObjectContentHeaders";
+		var defaultKey = key + "_default";
+		var client = getClient();
+		var bucketName = createBucket(client, 59);
+		var contentType = "text/plain";
+		var contentDisposition = "attachment; filename=\"a.txt\"";
+		var contentEncoding = "gzip";
+		var contentLanguage = "ko-KR";
+		client.putObject(p -> p.bucket(bucketName).key(key).contentType(contentType)
+				.contentDisposition(contentDisposition).contentEncoding(contentEncoding)
+				.contentLanguage(contentLanguage), RequestBody.fromString("content"));
+
+		var headResponse = client.headObject(h -> h.bucket(bucketName).key(key));
+		assertEquals(contentType, headResponse.contentType());
+		assertEquals(contentDisposition, headResponse.contentDisposition());
+		assertEquals(contentEncoding, headResponse.contentEncoding());
+		assertEquals(contentLanguage, headResponse.contentLanguage());
+
+		var getResponse = client.getObject(g -> g.bucket(bucketName).key(key));
+		assertEquals(contentType, getResponse.response().contentType());
+		assertEquals(contentDisposition, getResponse.response().contentDisposition());
+		assertEquals(contentEncoding, getResponse.response().contentEncoding());
+		assertEquals(contentLanguage, getResponse.response().contentLanguage());
+		getBody(getResponse);
+
+		// 주지 않은 헤더는 돌려주지 않는다
+		// (SDK 가 Content-Type 을 항상 붙여 보내므로 기본값 binary/octet-stream 은 확인하지 않는다)
+		client.putObject(p -> p.bucket(bucketName).key(defaultKey), RequestBody.fromString("content"));
+		var defaultResponse = client.headObject(h -> h.bucket(bucketName).key(defaultKey));
+		assertNull(defaultResponse.contentDisposition());
+		assertNull(defaultResponse.contentEncoding());
+		assertNull(defaultResponse.contentLanguage());
+	}
+
+	@Test
+	@Tag("Header")
+	public void testPutObjectWebsiteRedirectLocation() {
+		var key = "testPutObjectWebsiteRedirectLocation";
+		var client = getClient();
+		var bucketName = createBucket(client, 60);
+		var locations = List.of("/other", "http://example.com/", "https://example.com/path");
+		for (var index = 0; index < locations.size(); index++) {
+			var location = locations.get(index);
+			var targetKey = key + index;
+			client.putObject(p -> p.bucket(bucketName).key(targetKey).websiteRedirectLocation(location),
+					RequestBody.fromString("content"));
+			assertEquals(location,
+					client.headObject(h -> h.bucket(bucketName).key(targetKey)).websiteRedirectLocation());
+		}
+
+		// / 나 http://, https:// 로 시작하지 않으면 거부된다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REDIRECT_LOCATION,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).websiteRedirectLocation("other"),
+						RequestBody.fromString("content")));
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testPutObjectMetadataTooLarge() {
+		var key = "testPutObjectMetadataTooLarge";
+		var client = getClient();
+		var bucketName = createBucket(client, 61);
+		// 사용자 메타데이터는 합쳐서 2KB 까지
+		var metadata = Map.of("key", "v".repeat(2000));
+		client.putObject(p -> p.bucket(bucketName).key(key).metadata(metadata), RequestBody.fromString("content"));
+		assertEquals(metadata, client.headObject(h -> h.bucket(bucketName).key(key)).metadata());
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.METADATA_TOO_LARGE,
+				() -> client.putObject(
+						p -> p.bucket(bucketName).key(key + "_big").metadata(Map.of("key", "v".repeat(2100))),
+						RequestBody.fromString("content")));
+	}
+
+	@Test
+	@Tag("ACL")
+	public void testPutObjectInvalidAcl() {
+		var key = "testPutObjectInvalidAcl";
+		var client = getClient();
+		var bucketName = createBucket(client, 62);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).acl("invalid"),
+						RequestBody.fromString("content")));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testPutObjectAccessDenied() {
+		var key = "testPutObjectAccessDenied";
+		var client = getClient();
+		var bucketName = createBucket(client, 63);
+		for (var otherClient : List.of(getAltClient(), getPublicClient())) {
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+					() -> otherClient.putObject(p -> p.bucket(bucketName).key(key),
+							RequestBody.fromString("content")));
+		}
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key)));
 	}
 }

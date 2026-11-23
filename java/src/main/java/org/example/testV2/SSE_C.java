@@ -32,6 +32,9 @@ import com.google.gson.JsonObject;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
+import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
+import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 
 public class SSE_C extends TestBase { // NOSONAR
 	static final String SSE_KEY = "pO3upElrwuEXSoFwCfnZPdSsmt/xWeFa0N9KgDijwVs=";
@@ -555,5 +558,82 @@ public class SSE_C extends TestBase { // NOSONAR
 		assertEquals(SSE_ALGORITHM, response.response().sseCustomerAlgorithm());
 
 		checkContentUsingRangeEnc(client, bucketName, key, content, MainData.KB);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testEncryptionSseCInvalidAlgorithm() {
+		var key = "testEncryptionSseCInvalidAlgorithm";
+		var client = getClientHttps(false);
+		var bucketName = createBucket(client, 21);
+		unblockSseC(bucketName);
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ENCRYPTION_ALGORITHM_ERROR,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).sseCustomerAlgorithm("AES128")
+						.sseCustomerKey(SSE_KEY).sseCustomerKeyMD5(SSE_KEY_MD5),
+						RequestBody.fromString("content")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testEncryptionSseCInvalidKeyLength() {
+		var key = "testEncryptionSseCInvalidKeyLength";
+		var client = getClientHttps(false);
+		var bucketName = createBucket(client, 22);
+		unblockSseC(bucketName);
+
+		// AES256 키는 32바이트여야 한다(아래는 16바이트 키와 그 MD5)
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+						.sseCustomerKey("a2tra2tra2tra2tra2traw==").sseCustomerKeyMD5("5eB2YnFGLcav0OwlNDgr8A=="),
+						RequestBody.fromString("content")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testEncryptionSseCWithSseS3() {
+		var key = "testEncryptionSseCWithSseS3";
+		var client = getClientHttps(false);
+		var bucketName = createBucket(client, 23);
+		unblockSseC(bucketName);
+
+		// SSE-C 와 SSE-S3 는 함께 지정할 수 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.putObject(p -> p.bucket(bucketName).key(key)
+						.serverSideEncryption(ServerSideEncryption.AES256)
+						.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM).sseCustomerKey(SSE_KEY)
+						.sseCustomerKeyMD5(SSE_KEY_MD5), RequestBody.fromString("content")));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testEncryptionSseCKeyOnPlainObject() {
+		var key = "testEncryptionSseCKeyOnPlainObject";
+		var client = getClientHttps(false);
+		var bucketName = createBucket(client, 24);
+		unblockSseC(bucketName);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+
+		// SSE-C 로 저장하지 않은 오브젝트에 키를 주면 거부된다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
+						.sseCustomerKey(SSE_KEY).sseCustomerKeyMD5(SSE_KEY_MD5)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testEncryptionSseCInsecureTransport() {
+		var key = "testEncryptionSseCInsecureTransport";
+		var httpsClient = getClientHttps(false);
+		var bucketName = createBucket(httpsClient, 25);
+		unblockSseC(bucketName);
+
+		// SSE-C 요청은 HTTPS 로만 받는다
+		var httpClient = createClient(false, config.mainUser, false, RequestChecksumCalculation.WHEN_REQUIRED,
+				ResponseChecksumValidation.WHEN_REQUIRED);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> httpClient.putObject(p -> p.bucket(bucketName).key(key)
+						.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM).sseCustomerKey(SSE_KEY)
+						.sseCustomerKeyMD5(SSE_KEY_MD5), RequestBody.fromString("content")));
 	}
 }

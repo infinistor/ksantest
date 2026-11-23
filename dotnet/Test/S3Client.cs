@@ -345,12 +345,15 @@ namespace s3tests.Test
 		/// AWS가 MalformedXML로 거부한다. 전용 오퍼레이션은 Owner를 유지한다.
 		/// </summary>
 		public PutBucketAclResponse PutBucketACL(string bucketName, S3CannedACL acl = null, S3AccessControlList accessControlPolicy = null,
-			string grantFullControl = null, string grantWrite = null)
+			string grantFullControl = null, string grantWrite = null, string grantRead = null,
+			List<KeyValuePair<string, string>> headerList = null)
 		{
 			var request = new PutBucketAclRequest()
 			{
 				BucketName = bucketName
 			};
+			if (grantRead != null) request.GrantRead = grantRead;
+			ApplyRequestHeaders(request, null, headerList);
 
 			if (acl != null) request.ACL = acl;
 			if (accessControlPolicy != null) request.AccessControlPolicy = accessControlPolicy;
@@ -475,13 +478,15 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public PutLifecycleConfigurationResponse PutLifecycleConfiguration(string bucketName, LifecycleConfiguration configuration)
+		public PutLifecycleConfigurationResponse PutLifecycleConfiguration(string bucketName, LifecycleConfiguration configuration,
+			TransitionDefaultMinimumObjectSize transitionDefaultMinimumObjectSize = null)
 		{
 			var request = new PutLifecycleConfigurationRequest()
 			{
 				BucketName = bucketName,
 				Configuration = configuration,
 			};
+			if (transitionDefaultMinimumObjectSize != null) request.TransitionDefaultMinimumObjectSize = transitionDefaultMinimumObjectSize;
 
 			return PutLifecycleConfiguration(request);
 		}
@@ -789,12 +794,13 @@ namespace s3tests.Test
 			return response.Result;
 		}
 
-		public ListBucketInventoryConfigurationsResponse ListBucketInventoryConfigurations(string bucketName)
+		public ListBucketInventoryConfigurationsResponse ListBucketInventoryConfigurations(string bucketName, string continuationToken = null)
 		{
 			var request = new ListBucketInventoryConfigurationsRequest()
 			{
 				BucketName = bucketName
 			};
+			if (continuationToken != null) request.ContinuationToken = continuationToken;
 
 			return ListBucketInventoryConfigurations(request);
 		}
@@ -826,12 +832,14 @@ namespace s3tests.Test
 			return response.Result;
 		}
 
-		public PutBucketInventoryConfigurationResponse PutBucketInventoryConfiguration(string bucketName, InventoryConfiguration inventoryConfig)
+		/// <param name="id">쿼리의 id. 생략하면 본문의 Id 와 같은 값을 쓴다.</param>
+		public PutBucketInventoryConfigurationResponse PutBucketInventoryConfiguration(string bucketName, InventoryConfiguration inventoryConfig,
+			string id = null)
 		{
 			var request = new PutBucketInventoryConfigurationRequest()
 			{
 				BucketName = bucketName,
-				InventoryId = inventoryConfig.InventoryId,
+				InventoryId = id ?? inventoryConfig.InventoryId,
 				InventoryConfiguration = inventoryConfig
 			};
 
@@ -904,9 +912,10 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public ListBucketMetricsConfigurationsResponse ListBucketMetricsConfigurations(string bucketName)
+		public ListBucketMetricsConfigurationsResponse ListBucketMetricsConfigurations(string bucketName, string continuationToken = null)
 		{
 			var request = new ListBucketMetricsConfigurationsRequest() { BucketName = bucketName };
+			if (continuationToken != null) request.ContinuationToken = continuationToken;
 			return ListBucketMetricsConfigurations(request);
 		}
 
@@ -1058,13 +1067,16 @@ namespace s3tests.Test
 			S3CannedACL acl = null, List<S3Grant> grants = null, ServerSideEncryptionMethod sseKey = null,
 			ObjectLockLegalHoldStatus objectLockLegalHoldStatus = null, DateTime? objectLockRetainUntilDate = null,
 			ObjectLockMode objectLockMode = null, bool? useChunkEncoding = null, bool? disablePayloadSigning = null,
-			string expectedBucketOwner = null, string contentEncoding = null, string websiteRedirectLocation = null)
+			string expectedBucketOwner = null, string contentEncoding = null, string websiteRedirectLocation = null,
+			S3StorageClass storageClass = null)
 		{
 			var request = new PutObjectRequest()
 			{
 				BucketName = bucketName,
 				Key = key,
 			};
+
+			if (storageClass != null) request.StorageClass = storageClass;
 
 			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			if (contentEncoding != null) request.Headers.ContentEncoding = contentEncoding;
@@ -1206,7 +1218,8 @@ namespace s3tests.Test
 			DateTime? modifiedSince = null, DateTime? unmodifiedSince = null,
 			string ifMatch = null, string ifNoneMatch = null,
 			string expectedBucketOwner = null, string expectedSourceBucketOwner = null,
-			string contentEncoding = null, List<Tag> tagSet = null, TaggingDirective taggingDirective = null)
+			string contentEncoding = null, List<Tag> tagSet = null, TaggingDirective taggingDirective = null,
+			S3StorageClass storageClass = null, string websiteRedirectLocation = null)
 		{
 			var request = new CopyObjectRequest()
 			{
@@ -1215,6 +1228,8 @@ namespace s3tests.Test
 				DestinationBucket = bucketName,
 				DestinationKey = key,
 			};
+			if (storageClass != null) request.StorageClass = storageClass;
+			if (websiteRedirectLocation != null) request.WebsiteRedirectLocation = websiteRedirectLocation;
 			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			if (expectedSourceBucketOwner != null) request.ExpectedSourceBucketOwner = expectedSourceBucketOwner;
 			if (acl != null) request.CannedACL = acl;
@@ -1279,7 +1294,8 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public ListObjectsResponse ListObjects(string bucketName, string delimiter = null, string marker = null,
-											int maxKeys = -1, string prefix = null, string encodingTypeName = null)
+											int maxKeys = -1, string prefix = null, string encodingTypeName = null,
+											int? rawMaxKeys = null)
 		{
 			var request = new ListObjectsRequest() { BucketName = bucketName };
 
@@ -1289,6 +1305,8 @@ namespace s3tests.Test
 			if (encodingTypeName != null) request.Encoding = new EncodingType(encodingTypeName);
 
 			if (maxKeys >= 0) request.MaxKeys = maxKeys;
+			// 음수처럼 잘못된 값을 그대로 보낼 때 쓴다
+			if (rawMaxKeys != null) request.MaxKeys = rawMaxKeys.Value;
 
 			return ListObjects(request);
 		}
@@ -1302,7 +1320,7 @@ namespace s3tests.Test
 		}
 		public ListObjectsV2Response ListObjectsV2(string bucketName, string delimiter = null, string continuationToken = null,
 					int maxKeys = -1, string prefix = null, string startAfter = null, string encodingTypeName = null,
-					bool? fetchOwner = null, string expectedBucketOwner = null)
+					bool? fetchOwner = null, string expectedBucketOwner = null, int? rawMaxKeys = null)
 		{
 			var request = new ListObjectsV2Request() { BucketName = bucketName };
 
@@ -1315,6 +1333,8 @@ namespace s3tests.Test
 			if (fetchOwner != null) request.FetchOwner = fetchOwner.Value;
 
 			if (maxKeys >= 0) request.MaxKeys = maxKeys;
+			// 음수처럼 잘못된 값을 그대로 보낼 때 쓴다
+			if (rawMaxKeys != null) request.MaxKeys = rawMaxKeys.Value;
 
 			return ListObjectsV2(request);
 		}
@@ -1327,9 +1347,12 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public ListVersionsResponse ListVersions(string bucketName, string delimiter = null, string keyMarker = null,
-			int maxKeys = -1, string prefix = null, string encodingTypeName = null, bool useLegacyMaxKeys = true)
+			int maxKeys = -1, string prefix = null, string encodingTypeName = null, bool useLegacyMaxKeys = true,
+			string versionIdMarker = null, int? rawMaxKeys = null)
 		{
 			var request = new ListVersionsRequest() { BucketName = bucketName };
+
+			if (versionIdMarker != null) request.VersionIdMarker = versionIdMarker;
 
 			if (delimiter != null) request.Delimiter = delimiter;
 			if (keyMarker != null) request.KeyMarker = keyMarker;
@@ -1337,6 +1360,8 @@ namespace s3tests.Test
 			if (encodingTypeName != null) request.Encoding = new EncodingType(encodingTypeName);
 			if (maxKeys >= 0) request.MaxKeys = maxKeys;
 			else if (useLegacyMaxKeys) request.MaxKeys = 2000;
+			// 음수처럼 잘못된 값을 그대로 보낼 때 쓴다
+			if (rawMaxKeys != null) request.MaxKeys = rawMaxKeys.Value;
 
 			return ListVersions(request);
 		}
@@ -1425,13 +1450,24 @@ namespace s3tests.Test
 		public GetObjectMetadataResponse HeadObject(string bucketName, string key, string ifMatch = null,
 			string ifNoneMatch = null, string ifModifiedSince = null, DateTime? ifModifiedSinceDateTime = null,
 			string ifUnmodifiedSince = null, DateTime? ifUnmodifiedSinceDateTime = null,
-			string versionId = null, SSECustomerKey sseCustomerKey = null, ChecksumMode checksumMode = null)
+			string versionId = null, SSECustomerKey sseCustomerKey = null, ChecksumMode checksumMode = null,
+			string range = null, int? partNumber = null, string responseContentType = null,
+			string responseContentLanguage = null, string responseCacheControl = null,
+			string responseContentDisposition = null, string responseContentEncoding = null)
 		{
 			var request = new GetObjectMetadataRequest()
 			{
 				BucketName = bucketName,
 				Key = key
 			};
+
+			if (range != null) request.Range = range;
+			if (partNumber != null) request.PartNumber = partNumber.Value;
+			if (responseContentType != null) request.ResponseContentType = responseContentType;
+			if (responseContentLanguage != null) request.ResponseContentLanguage = responseContentLanguage;
+			if (responseCacheControl != null) request.ResponseCacheControl = responseCacheControl;
+			if (responseContentDisposition != null) request.ResponseContentDisposition = responseContentDisposition;
+			if (responseContentEncoding != null) request.ResponseContentEncoding = responseContentEncoding;
 
 			if (versionId != null) request.VersionId = versionId;
 			if (checksumMode != null) request.ChecksumMode = checksumMode;
@@ -1476,13 +1512,16 @@ namespace s3tests.Test
 		}
 
 		public PutObjectAclResponse PutObjectACL(string bucketName, string key, S3CannedACL acl = null,
-			S3AccessControlList accessControlPolicy = null, string versionId = null)
+			S3AccessControlList accessControlPolicy = null, string versionId = null, string grantRead = null,
+			List<KeyValuePair<string, string>> headerList = null)
 		{
 			var request = new PutObjectAclRequest()
 			{
 				BucketName = bucketName,
 				Key = key
 			};
+			if (grantRead != null) request.GrantRead = grantRead;
+			ApplyRequestHeaders(request, null, headerList);
 			if (acl != null) request.ACL = acl;
 			if (accessControlPolicy != null) request.AccessControlPolicy = accessControlPolicy;
 			if (versionId != null) request.VersionId = versionId;
@@ -1600,7 +1639,8 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public PutObjectLegalHoldResponse PutObjectLegalHold(string bucketName, string key, ObjectLockLegalHold legalHold)
+		public PutObjectLegalHoldResponse PutObjectLegalHold(string bucketName, string key, ObjectLockLegalHold legalHold,
+			string versionId = null)
 		{
 			var request = new PutObjectLegalHoldRequest()
 			{
@@ -1608,6 +1648,7 @@ namespace s3tests.Test
 				Key = key,
 				LegalHold = legalHold,
 			};
+			if (versionId != null) request.VersionId = versionId;
 
 			return PutObjectLegalHold(request);
 		}
@@ -1715,13 +1756,15 @@ namespace s3tests.Test
 		public InitiateMultipartUploadResponse InitiateMultipartUpload(string bucketName, string key, string contentType = null,
 			List<KeyValuePair<string, string>> metadataList = null, ServerSideEncryptionMethod sseKey = null, SSECustomerKey sseCustomerKey = null,
 			ChecksumAlgorithm checksumAlgorithm = null, ChecksumType checksumType = null,
-			List<KeyValuePair<string, string>> headerList = null, List<Tag> tagSet = null)
+			List<KeyValuePair<string, string>> headerList = null, List<Tag> tagSet = null,
+			S3StorageClass storageClass = null)
 		{
 			var request = new InitiateMultipartUploadRequest()
 			{
 				BucketName = bucketName,
 				Key = key
 			};
+			if (storageClass != null) request.StorageClass = storageClass;
 			if (metadataList != null)
 			{
 				foreach (var metaData in metadataList)
@@ -1755,7 +1798,8 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public UploadPartResponse UploadPart(string bucketName, string key, string uploadId, string body,
-			int partNumber, SSECustomerKey sseC = null, ChecksumAlgorithm checksumAlgorithm = null, string checksumValue = null)
+			int partNumber, SSECustomerKey sseC = null, ChecksumAlgorithm checksumAlgorithm = null, string checksumValue = null,
+			string md5Digest = null)
 		{
 			var request = new UploadPartRequest()
 			{
@@ -1765,6 +1809,8 @@ namespace s3tests.Test
 				UploadId = uploadId,
 				InputStream = new MemoryStream(Encoding.UTF8.GetBytes(body))
 			};
+
+			if (md5Digest != null) request.MD5Digest = md5Digest;
 
 			if (checksumValue != null && checksumAlgorithm != null)
 				s3tests.Utils.CheckSum.SetChecksum(request, checksumAlgorithm, checksumValue);
@@ -1801,7 +1847,8 @@ namespace s3tests.Test
 			string eTagToMatch = null, string eTagToNotMatch = null,
 			DateTime? modifiedSince = null, DateTime? unmodifiedSince = null,
 			string ifMatch = null, string ifNoneMatch = null,
-			string expectedBucketOwner = null, string expectedSourceBucketOwner = null)
+			string expectedBucketOwner = null, string expectedSourceBucketOwner = null,
+			string copySourceRange = null)
 		{
 			var request = new CopyPartRequest()
 			{
@@ -1832,6 +1879,10 @@ namespace s3tests.Test
 				if (ifNoneMatch != null) conditions.Add(new("If-None-Match", ifNoneMatch));
 				ApplyRequestHeaders(request, null, conditions);
 			}
+
+			// 잘못된 형식의 범위는 SDK 속성(FirstByte/LastByte)으로 만들 수 없어 헤더를 직접 덮어쓴다.
+			if (copySourceRange != null)
+				ApplyRequestHeaders(request, null, [new("x-amz-copy-source-range", copySourceRange)]);
 
 			////SSE-C
 			if (srcEncryptionKey != null)
@@ -1924,12 +1975,16 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public ListMultipartUploadsResponse ListMultipartUploads(string bucketName, string keyMarker = null,
-			string uploadIdMarker = null)
+			string uploadIdMarker = null, string prefix = null, string delimiter = null, int? maxUploads = null)
 		{
 			var request = new ListMultipartUploadsRequest()
 			{
 				BucketName = bucketName
 			};
+
+			if (prefix != null) request.Prefix = prefix;
+			if (delimiter != null) request.Delimiter = delimiter;
+			if (maxUploads != null) request.MaxUploads = maxUploads.Value;
 
 			if (keyMarker != null) request.KeyMarker = keyMarker;
 			if (uploadIdMarker != null) request.UploadIdMarker = uploadIdMarker;

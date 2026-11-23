@@ -1064,3 +1064,69 @@ class TestVersioning(S3TestBase):
             )
         else:
             self.delete_suspended_versioning_obj(client, bucket_name, key, version_ids, contents, delete_marker_ids)
+
+    @pytest.mark.tag("Check")
+    def test_versioning_get_new_bucket(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 40)
+        # 버저닝을 한 번도 설정하지 않은 버킷은 Status 가 없다
+        response = client.get_bucket_versioning(Bucket=bucket_name)
+        assert "Status" not in response
+        assert "MFADelete" not in response
+
+    @pytest.mark.tag("ERROR")
+    def test_versioning_invalid_status(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 41)
+        # Enabled, Suspended 외의 값은 거부된다(버저닝을 끈 상태로 되돌릴 수 없다)
+        for status in ("Invalid", "Disabled"):
+            self.assert_client_error(
+                lambda status=status: client.put_bucket_versioning(
+                    Bucket=bucket_name, VersioningConfiguration={"Status": status}
+                ),
+                400,
+                md.MALFORMED_XML,
+            )
+        assert "Status" not in client.get_bucket_versioning(Bucket=bucket_name)
+
+    @pytest.mark.tag("ERROR")
+    def test_versioning_empty_configuration(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 42)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        # Status 가 없는 설정은 거부되고 기존 상태가 유지된다
+        self.assert_client_error(
+            lambda: client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={}),
+            400,
+            md.ILLEGAL_VERSIONING_CONFIGURATION_EXCEPTION,
+        )
+        assert client.get_bucket_versioning(Bucket=bucket_name)["Status"] == "Enabled"
+
+    @pytest.mark.tag("ERROR")
+    def test_versioning_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(43)
+        self.assert_client_error(lambda: client.get_bucket_versioning(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+        self.assert_client_error(
+            lambda: client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}),
+            404,
+            md.NO_SUCH_BUCKET,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_versioning_access_denied(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket(client, 44)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        self.assert_client_error(
+            lambda: alt_client.get_bucket_versioning(Bucket=bucket_name), 403, md.ACCESS_DENIED
+        )
+        self.assert_client_error(
+            lambda: alt_client.put_bucket_versioning(
+                Bucket=bucket_name, VersioningConfiguration={"Status": "Suspended"}
+            ),
+            403,
+            md.ACCESS_DENIED,
+        )
+        assert client.get_bucket_versioning(Bucket=bucket_name)["Status"] == "Enabled"

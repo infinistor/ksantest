@@ -171,4 +171,73 @@ class Metrics {
 		test.testMetricsFilter();
 		testV2.testMetricsFilter();
 	}
+
+	/**
+	 * Metrics ID 는 64자까지 허용되고 65자는 거부되는지 확인
+	 */
+	@Test
+	@Tag("Max")
+	void testPutMetricsIdLength() {
+		test.testPutMetricsIdLength();
+		testV2.testPutMetricsIdLength();
+	}
+
+	/**
+	 * 허용하지 않는 문자가 든 Metrics ID 가 거부되는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testPutMetricsInvalidId() {
+		test.testPutMetricsInvalidId();
+		testV2.testPutMetricsInvalidId();
+	}
+
+	/**
+	 * 쿼리의 id 와 본문의 Id 가 다르면 거부되는지 확인 (SDK v1 은 두 값을 따로 줄 수 없으므로 V2만)
+	 */
+	@Test
+	@Tag("Error")
+	void testPutMetricsIdMismatch() {
+		testV2.testPutMetricsIdMismatch();
+	}
+
+	/**
+	 * 올바르지 않은 Metrics 필터가 거부되는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testPutMetricsInvalidFilter() {
+		test.testPutMetricsInvalidFilter();
+		testV2.testPutMetricsInvalidFilter();
+	}
+
+	/**
+	 * Metrics 설정 목록이 100개씩 나뉘어 조회되는지 확인
+	 */
+	@Test
+	@Tag("List")
+	void testListMetricsPagination() {
+		test.testListMetricsPagination();
+		testV2.testListMetricsPagination();
+	}
+
+	/**
+	 * 올바르지 않은 ContinuationToken 으로 Metrics 목록을 조회하면 실패하는지 확인
+	 */
+	@Test
+	@Tag("List")
+	void testListMetricsInvalidToken() {
+		test.testListMetricsInvalidToken();
+		testV2.testListMetricsInvalidToken();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 Metrics 목록·조회·삭제가 NoSuchBucket 으로 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testMetricsBucketNotExist() {
+		test.testMetricsBucketNotExist();
+		testV2.testMetricsBucketNotExist();
+	}
 }

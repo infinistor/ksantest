@@ -513,3 +513,84 @@ class TestListObjects(S3TestBase):
         response = client.list_objects(Bucket=bucket_name)
         assert len(response.get("Contents", [])) == 3
         assert self.get_keys(response.get("Contents")) == key_names
+
+    _TREE_KEYS = ["a/1", "a/2", "b/1", "c", "d"]
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_list_max_keys_negative(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 41)
+        self.assert_client_error(
+            lambda: client.list_objects(Bucket=bucket_name, MaxKeys=-1), 400, md.INVALID_ARGUMENT
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_list_encoding_invalid(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 42)
+        self.assert_client_error(
+            lambda: client.list_objects(Bucket=bucket_name, EncodingType="invalid"), 400, md.INVALID_ARGUMENT
+        )
+
+    @pytest.mark.tag("Marker")
+    def test_bucket_list_next_marker(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 43, self._TREE_KEYS)
+
+        # 구분자가 없으면 잘려도 NextMarker 를 주지 않는다(마지막 키를 마커로 쓴다)
+        response = client.list_objects(Bucket=bucket_name, MaxKeys=2)
+        assert self.get_keys(response.get("Contents")) == ["a/1", "a/2"]
+        assert response["IsTruncated"] is True
+        assert "NextMarker" not in response
+
+        # 구분자가 있으면 마지막으로 돌려준 항목을 NextMarker 로 준다
+        response = client.list_objects(Bucket=bucket_name, MaxKeys=2, Delimiter="/")
+        assert not response.get("Contents")
+        assert self.get_prefix_list(response.get("CommonPrefixes")) == ["a/", "b/"]
+        assert response["IsTruncated"] is True
+        assert response["NextMarker"] == "b/"
+
+        response = client.list_objects(Bucket=bucket_name, MaxKeys=2, Delimiter="/", Marker=response["NextMarker"])
+        assert self.get_keys(response.get("Contents")) == ["c", "d"]
+        assert not response.get("CommonPrefixes")
+        assert response["IsTruncated"] is False
+
+    @pytest.mark.tag("Marker")
+    def test_bucket_list_marker_in_common_prefix(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 44, self._TREE_KEYS)
+        # 마커가 공통 접두어 안의 키이면 그 접두어는 통째로 건너뛴다
+        response = client.list_objects(Bucket=bucket_name, Marker="a/1", Delimiter="/")
+        assert self.get_keys(response.get("Contents")) == ["c", "d"]
+        assert self.get_prefix_list(response.get("CommonPrefixes")) == ["b/"]
+
+    @pytest.mark.tag("Delimiter")
+    def test_bucket_list_delimiter_multi_char(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 45, self._TREE_KEYS)
+        # 구분자는 여러 글자일 수 있다
+        response = client.list_objects(Bucket=bucket_name, Delimiter="/1")
+        assert self.get_keys(response.get("Contents")) == ["a/2", "c", "d"]
+        assert self.get_prefix_list(response.get("CommonPrefixes")) == ["a/1", "b/1"]
+
+    @pytest.mark.tag("Access")
+    def test_bucket_list_alt_user(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 46, self._TREE_KEYS)
+        self.assert_client_error(
+            lambda: self.get_alt_client().list_objects(Bucket=bucket_name), 403, md.ACCESS_DENIED
+        )
+
+    @pytest.mark.tag("Metadata")
+    def test_bucket_list_response_fields(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 47, self._TREE_KEYS)
+        # 요청에 준 값을 응답에 그대로 돌려준다
+        response = client.list_objects(Bucket=bucket_name, Prefix="a/", Marker="a/0", MaxKeys=5, Delimiter="/")
+        assert response["Name"] == bucket_name
+        assert response["Prefix"] == "a/"
+        assert response["Marker"] == "a/0"
+        assert response["MaxKeys"] == 5
+        assert response["Delimiter"] == "/"
+        assert response["IsTruncated"] is False
+        assert self.get_keys(response.get("Contents")) == ["a/1", "a/2"]

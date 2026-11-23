@@ -749,3 +749,128 @@ func versionPrefixes(out *s3.ListObjectVersionsOutput, decode bool) []string {
 	}
 	return result
 }
+
+// putKeyVersions는 버저닝을 켠 버킷에 같은 키로 count 개 버전을 만들고 오래된 순 버전 ID 목록을 돌려준다.
+func putKeyVersions(t *testing.T, id int, key string, count int) (*suite, string, []string) {
+	t.Helper()
+	s, b := listFixture(t, nil, id)
+	enableVersioning(t, s, b)
+	versionIDs := make([]string, count)
+	for index := range versionIDs {
+		versionIDs[index] = aws.ToString(put(t, s, b, key, strconv.Itoa(index), nil).VersionId)
+	}
+	return s, b, versionIDs
+}
+
+// max-keys 가 음수이면 거부된다
+func TestBucketListVersionsMaxKeysNegative(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, nil, 41)
+	_, err := s.client.ListObjectVersions(context.Background(), &s3.ListObjectVersionsInput{Bucket: aws.String(b), MaxKeys: aws.Int32(-1)})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 알 수 없는 encoding-type 은 거부된다
+func TestBucketListVersionsEncodingInvalid(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, nil, 42)
+	_, err := s.client.ListObjectVersions(context.Background(), &s3.ListObjectVersionsInput{Bucket: aws.String(b), EncodingType: types.EncodingType("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 버전 마커는 키 마커 없이 쓸 수 없고 형식이 맞아야 한다
+func TestBucketListVersionsVersionIdMarkerInvalid(t *testing.T) {
+	t.Parallel()
+	key := "TestBucketListVersionsVersionIdMarkerInvalid"
+	s, b, versionIDs := putKeyVersions(t, 43, key, 2)
+	ctx := context.Background()
+	// 버전 마커는 키 마커 없이 쓸 수 없다
+	_, err := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(b), VersionIdMarker: aws.String(versionIDs[0])})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	// 형식이 잘못된 버전 마커
+	_, err = s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(b), KeyMarker: aws.String(key), VersionIdMarker: aws.String("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 버전 목록을 한 건씩 이어서 조회한다
+func TestBucketListVersionsPagination(t *testing.T) {
+	t.Parallel()
+	key := "TestBucketListVersionsPagination"
+	s, b, versionIDs := putKeyVersions(t, 44, key, 3)
+
+	var listed []string
+	input := &s3.ListObjectVersionsInput{Bucket: aws.String(b), MaxKeys: aws.Int32(1)}
+	for page := 0; page < 3; page++ {
+		out := listVersions(t, s.client, input)
+		if len(out.Versions) != 1 {
+			t.Fatalf("page=%d versions=%d", page, len(out.Versions))
+		}
+		version := out.Versions[0]
+		if aws.ToString(version.Key) != key || aws.ToBool(version.IsLatest) != (page == 0) || aws.ToBool(out.IsTruncated) != (page < 2) {
+			t.Fatalf("page=%d key=%q latest=%v truncated=%v", page, aws.ToString(version.Key), aws.ToBool(version.IsLatest), aws.ToBool(out.IsTruncated))
+		}
+		listed = append(listed, aws.ToString(version.VersionId))
+		if aws.ToBool(out.IsTruncated) {
+			if aws.ToString(out.NextKeyMarker) != key || aws.ToString(out.NextVersionIdMarker) != aws.ToString(version.VersionId) {
+				t.Fatalf("page=%d NextKeyMarker=%q NextVersionIdMarker=%q", page, aws.ToString(out.NextKeyMarker), aws.ToString(out.NextVersionIdMarker))
+			}
+			input.KeyMarker, input.VersionIdMarker = out.NextKeyMarker, out.NextVersionIdMarker
+		}
+	}
+	// 최신 버전부터 나온다
+	assertStringList(t, listed, []string{versionIDs[2], versionIDs[1], versionIDs[0]})
+
+	// 키 마커만 주면 그 키의 버전은 모두 건너뛴다
+	if out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), KeyMarker: aws.String(key)}); len(out.Versions) != 0 {
+		t.Fatalf("versions=%v", versionKeys(out, false))
+	}
+}
+
+// 삭제 마커가 최신이 되고 기존 버전은 모두 최신이 아니게 된다
+func TestBucketListVersionsDeleteMarker(t *testing.T) {
+	t.Parallel()
+	key := "TestBucketListVersionsDeleteMarker"
+	s, b, versionIDs := putKeyVersions(t, 45, key, 2)
+	deleted, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
+	if len(out.DeleteMarkers) != 1 || aws.ToString(out.DeleteMarkers[0].VersionId) != aws.ToString(deleted.VersionId) || !aws.ToBool(out.DeleteMarkers[0].IsLatest) {
+		t.Fatalf("markers=%v want=%q", out.DeleteMarkers, aws.ToString(deleted.VersionId))
+	}
+	if len(out.Versions) != 2 {
+		t.Fatalf("versions=%d", len(out.Versions))
+	}
+	for index, want := range []string{versionIDs[1], versionIDs[0]} {
+		if version := out.Versions[index]; aws.ToString(version.VersionId) != want || aws.ToBool(version.IsLatest) {
+			t.Fatalf("version[%d]=%q latest=%v want=%q", index, aws.ToString(version.VersionId), aws.ToBool(version.IsLatest), want)
+		}
+	}
+}
+
+// 버저닝을 쓰지 않는 버킷의 오브젝트는 모두 null 버전이고 최신이다
+func TestBucketListVersionsUnversioned(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, []string{"a/1", "a/2", "b/1", "c", "d"}, 46)
+	out := listVersions(t, s.client, &s3.ListObjectVersionsInput{Bucket: aws.String(b), Delimiter: aws.String("/")})
+	assertStringList(t, versionKeys(out, false), []string{"c", "d"})
+	for _, version := range out.Versions {
+		if aws.ToString(version.VersionId) != "null" || !aws.ToBool(version.IsLatest) {
+			t.Fatalf("key=%q version=%q latest=%v", aws.ToString(version.Key), aws.ToString(version.VersionId), aws.ToBool(version.IsLatest))
+		}
+	}
+	assertStringList(t, versionPrefixes(out, false), []string{"a/", "b/"})
+	if len(out.DeleteMarkers) != 0 {
+		t.Fatalf("markers=%v", out.DeleteMarkers)
+	}
+}
+
+// 권한이 없는 사용자는 버전 목록을 볼 수 없다
+func TestBucketListVersionsAltUser(t *testing.T) {
+	t.Parallel()
+	s, b := listFixture(t, []string{"a", "b"}, 47)
+	_, err := altClientOrSkip(t, s).ListObjectVersions(context.Background(), &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
+	assertS3Error(t, err, 403, "AccessDenied")
+}

@@ -224,4 +224,49 @@ class SSE_C {
 	void testEncryptionSseCPutObjectOverwriteMultipartUpload() {
 		testV2.testEncryptionSseCPutObjectOverwriteMultipartUpload();
 	}
+
+	/**
+	 * SSE-C 알고리즘이 AES256 이 아니면 InvalidEncryptionAlgorithmError 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testEncryptionSseCInvalidAlgorithm() {
+		testV2.testEncryptionSseCInvalidAlgorithm();
+	}
+
+	/**
+	 * SSE-C 키가 32바이트가 아니면 InvalidArgument 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testEncryptionSseCInvalidKeyLength() {
+		testV2.testEncryptionSseCInvalidKeyLength();
+	}
+
+	/**
+	 * SSE-C 와 SSE-S3 를 함께 지정하면 InvalidArgument 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testEncryptionSseCWithSseS3() {
+		testV2.testEncryptionSseCWithSseS3();
+	}
+
+	/**
+	 * SSE-C 로 저장하지 않은 오브젝트를 SSE-C 키로 조회하면 InvalidRequest 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testEncryptionSseCKeyOnPlainObject() {
+		testV2.testEncryptionSseCKeyOnPlainObject();
+	}
+
+	/**
+	 * HTTP 로 보낸 SSE-C 요청이 InvalidArgument 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testEncryptionSseCInsecureTransport() {
+		testV2.testEncryptionSseCInsecureTransport();
+	}
 }

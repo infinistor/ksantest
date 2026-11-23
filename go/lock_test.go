@@ -654,3 +654,270 @@ func putWithMD5(t *testing.T, s *suite, bucket, key, value string) *s3.PutObject
 func retention(mode types.ObjectLockRetentionMode, until time.Time) *types.ObjectLockRetention {
 	return &types.ObjectLockRetention{Mode: mode, RetainUntilDate: &until}
 }
+
+var (
+	lockRetentionDate = time.Date(2030, 2, 1, 0, 0, 0, 0, time.UTC)
+	lockPastDate      = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+)
+
+// lockBucket은 Object Lock 을 켠 버킷을 테스트 ID 가 들어간 이름으로 만든다.
+func lockBucket(t *testing.T, s *suite, id int) string {
+	t.Helper()
+	name := s.bucketNameOnly(id)
+	input := createBucketInput(s.cfg, name)
+	input.ObjectLockEnabledForBucket = aws.Bool(true)
+	if _, err := s.client.CreateBucket(context.Background(), input); err != nil {
+		t.Fatalf("CreateBucket: %v", err)
+	}
+	t.Cleanup(func() {
+		if !s.cfg.NotDelete {
+			cleanupBucket(t, s, name)
+		}
+	})
+	return name
+}
+
+// 보존 기한·법적 보존을 설정한 적이 없는 오브젝트는 조회에 실패한다
+func TestObjectLockGetNotConfigured(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "TestObjectLockGetNotConfigured"
+	b := lockBucket(t, s, 37)
+	put(t, s, b, key, "content", nil)
+	_, err := s.client.GetObjectRetention(ctx, &s3.GetObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchObjectLockConfiguration")
+	_, err = s.client.GetObjectLegalHold(ctx, &s3.GetObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchObjectLockConfiguration")
+}
+
+// 지난 날짜로는 보존 기한을 설정할 수 없다
+func TestObjectLockPutObjRetentionPastDate(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestObjectLockPutObjRetentionPastDate"
+	b := lockBucket(t, s, 38)
+	put(t, s, b, key, "content", nil)
+	_, err := s.client.PutObjectRetention(context.Background(), &s3.PutObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key), Retention: retention(types.ObjectLockRetentionModeGovernance, lockPastDate)})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 없는 오브젝트에는 보존 기한·법적 보존을 설정·조회할 수 없다
+func TestObjectLockKeyNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "TestObjectLockKeyNotExist"
+	b := lockBucket(t, s, 39)
+	_, err := s.client.PutObjectRetention(ctx, &s3.PutObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key), Retention: retention(types.ObjectLockRetentionModeGovernance, lockRetentionDate)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+	_, err = s.client.GetObjectRetention(ctx, &s3.GetObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+	_, err = s.client.PutObjectLegalHold(ctx, &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatusOn}})
+	assertS3Error(t, err, 404, "NoSuchKey")
+	_, err = s.client.GetObjectLegalHold(ctx, &s3.GetObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+}
+
+// 잠금 헤더가 잘못된 PutObject 는 거부된다
+func TestObjectLockPutObjectInvalidHeaders(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "TestObjectLockPutObjectInvalidHeaders"
+	b := lockBucket(t, s, 40)
+	invalidHeaders := []s3.PutObjectInput{
+		{ObjectLockMode: types.ObjectLockModeGovernance},                                                    // 모드만
+		{ObjectLockRetainUntilDate: aws.Time(lockRetentionDate)},                                            // 기한만
+		{ObjectLockMode: types.ObjectLockModeGovernance, ObjectLockRetainUntilDate: aws.Time(lockPastDate)}, // 지난 기한
+		{ObjectLockMode: types.ObjectLockMode("INVALID"), ObjectLockRetainUntilDate: aws.Time(lockRetentionDate)},
+		{ObjectLockLegalHoldStatus: types.ObjectLockLegalHoldStatus("INVALID")},
+	}
+	for i := range invalidHeaders {
+		input := &invalidHeaders[i]
+		input.Bucket, input.Key, input.Body = aws.String(b), aws.String(key), bytes.NewReader([]byte("content"))
+		_, err := s.client.PutObject(ctx, input)
+		assertS3Error(t, err, 400, "InvalidArgument")
+	}
+	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Status(t, err, 404)
+}
+
+// Object Lock 을 켜지 않은 버킷에는 잠금 헤더를 쓸 수 없다
+func TestObjectLockPutObjectInvalidBucket(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestObjectLockPutObjectInvalidBucket"
+	b := s.bucket(t, 41)
+	headers := []s3.PutObjectInput{
+		{ObjectLockMode: types.ObjectLockModeGovernance, ObjectLockRetainUntilDate: aws.Time(lockRetentionDate)},
+		{ObjectLockLegalHoldStatus: types.ObjectLockLegalHoldStatusOn},
+	}
+	for i := range headers {
+		input := &headers[i]
+		input.Bucket, input.Key, input.Body = aws.String(b), aws.String(key), bytes.NewReader([]byte("content"))
+		_, err := s.client.PutObject(context.Background(), input)
+		assertS3Error(t, err, 400, "InvalidRequest")
+	}
+}
+
+// PutObject 의 법적 보존 헤더가 적용되고, 그 버전은 bypass 로도 지울 수 없다
+func TestObjectLockLegalHoldOnPutObject(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "TestObjectLockLegalHoldOnPutObject"
+	b := lockBucket(t, s, 42)
+	// 잠금 헤더가 있는 PutObject 는 Content-MD5 나 체크섬이 있어야 한다
+	created, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: bytes.NewReader([]byte("content")), ContentMD5: aws.String(md5Base64("content")), ObjectLockLegalHoldStatus: types.ObjectLockLegalHoldStatusOn})
+	if err != nil {
+		t.Fatal(err)
+	}
+	version := created.VersionId
+	// 끝나면 법적 보존을 풀어 버킷을 지울 수 있게 한다
+	defer func() {
+		if _, err := s.client.PutObjectLegalHold(ctx, &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: version, LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatusOff}}); err != nil {
+			t.Errorf("PutObjectLegalHold OFF: %v", err)
+		}
+	}()
+
+	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if head.ObjectLockLegalHoldStatus != types.ObjectLockLegalHoldStatusOn || head.ObjectLockMode != "" {
+		t.Fatalf("legal hold=%q mode=%q, want ON and no mode", head.ObjectLockLegalHoldStatus, head.ObjectLockMode)
+	}
+
+	// 버전을 지정하지 않은 삭제(삭제 마커)와 덮어쓰기는 막지 않는다
+	deleted, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !aws.ToBool(deleted.DeleteMarker) {
+		t.Fatalf("DeleteMarker = %v, want true", deleted.DeleteMarker)
+	}
+	if overwritten := put(t, s, b, key, "new", nil); aws.ToString(overwritten.VersionId) == aws.ToString(version) {
+		t.Fatalf("overwrite kept version %q", aws.ToString(version))
+	}
+
+	// 법적 보존 중인 버전은 bypass 를 줘도 지울 수 없다
+	_, err = s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: version, BypassGovernanceRetention: aws.Bool(true)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	multi, err := s.client.DeleteObjects(ctx, &s3.DeleteObjectsInput{Bucket: aws.String(b), Delete: &types.Delete{Objects: []types.ObjectIdentifier{{Key: aws.String(key), VersionId: version}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(multi.Deleted) != 0 || len(multi.Errors) == 0 || aws.ToString(multi.Errors[0].Code) != "AccessDenied" {
+		t.Fatalf("deleted=%#v errors=%#v, want AccessDenied error only", multi.Deleted, multi.Errors)
+	}
+	got, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: version})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer got.Body.Close()
+	var body bytes.Buffer
+	if _, err := body.ReadFrom(got.Body); err != nil || body.String() != "content" {
+		t.Fatalf("body=%q err=%v, want %q", body.String(), err, "content")
+	}
+}
+
+// 삭제 마커에는 보존 기한·법적 보존을 걸 수 없다(버전을 지정하든 않든)
+func TestObjectLockDeleteMarker(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "TestObjectLockDeleteMarker"
+	b := lockBucket(t, s, 43)
+	put(t, s, b, key, "content", nil)
+	marker, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, version := range []*string{marker.VersionId, nil} {
+		_, err := s.client.PutObjectRetention(ctx, &s3.PutObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: version, Retention: retention(types.ObjectLockRetentionModeGovernance, lockRetentionDate)})
+		assertS3Error(t, err, 405, "MethodNotAllowed")
+		_, err = s.client.GetObjectRetention(ctx, &s3.GetObjectRetentionInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: version})
+		assertS3Error(t, err, 405, "MethodNotAllowed")
+		_, err = s.client.PutObjectLegalHold(ctx, &s3.PutObjectLegalHoldInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: version, LegalHold: &types.ObjectLockLegalHold{Status: types.ObjectLockLegalHoldStatusOn}})
+		assertS3Error(t, err, 405, "MethodNotAllowed")
+	}
+}
+
+// 잘못된 기본 보존 규칙은 거부된다
+func TestObjectLockPutObjLockInvalidRule(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := lockBucket(t, s, 44)
+	governance := types.ObjectLockRetentionModeGovernance
+
+	// ObjectLockEnabled 누락, 모드 누락
+	err := putLockConfiguration(t, s, b, &types.ObjectLockConfiguration{Rule: &types.ObjectLockRule{DefaultRetention: &types.DefaultRetention{Mode: governance, Days: aws.Int32(1)}}})
+	assertS3Error(t, err, 400, "MalformedXML")
+	err = putLockConfiguration(t, s, b, lockConfiguration("", 1, 0))
+	assertS3Error(t, err, 400, "MalformedXML")
+	// 기간 누락
+	err = putLockConfiguration(t, s, b, lockConfiguration(governance, 0, 0))
+	assertS3Error(t, err, 400, "InvalidRequest")
+	// 기본 보존 기간은 36500일(100년)까지
+	err = putLockConfiguration(t, s, b, lockConfiguration(governance, 36501, 0))
+	assertS3Error(t, err, 400, "InvalidArgument")
+	err = putLockConfiguration(t, s, b, lockConfiguration(governance, 0, 101))
+	assertS3Error(t, err, 400, "InvalidArgument")
+	if err := putLockConfiguration(t, s, b, lockConfiguration(governance, 36500, 0)); err != nil {
+		t.Fatal(err)
+	}
+	out, err := s.client.GetObjectLockConfiguration(context.Background(), &s3.GetObjectLockConfigurationInput{Bucket: aws.String(b)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.ObjectLockConfiguration == nil || out.ObjectLockConfiguration.Rule == nil || out.ObjectLockConfiguration.Rule.DefaultRetention == nil {
+		t.Fatalf("configuration=%#v, want default retention", out.ObjectLockConfiguration)
+	}
+	if got := out.ObjectLockConfiguration.Rule.DefaultRetention; got.Mode != governance || aws.ToInt32(got.Days) != 36500 || got.Years != nil {
+		t.Fatalf("default retention=%#v, want GOVERNANCE 36500 days", got)
+	}
+}
+
+// Rule 없이 다시 넣으면 기본 보존 규칙이 지워진다
+func TestObjectLockPutObjLockRemoveRule(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := lockBucket(t, s, 45)
+	if err := putLockConfiguration(t, s, b, lockConfiguration(types.ObjectLockRetentionModeGovernance, 1, 0)); err != nil {
+		t.Fatal(err)
+	}
+	if err := putLockConfiguration(t, s, b, &types.ObjectLockConfiguration{ObjectLockEnabled: types.ObjectLockEnabledEnabled}); err != nil {
+		t.Fatal(err)
+	}
+	out, err := s.client.GetObjectLockConfiguration(ctx, &s3.GetObjectLockConfigurationInput{Bucket: aws.String(b)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.ObjectLockConfiguration == nil || out.ObjectLockConfiguration.ObjectLockEnabled != types.ObjectLockEnabledEnabled || out.ObjectLockConfiguration.Rule != nil {
+		t.Fatalf("configuration=%#v, want Enabled without rule", out.ObjectLockConfiguration)
+	}
+
+	key := "TestObjectLockPutObjLockRemoveRule"
+	put(t, s, b, key, "content", nil)
+	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if head.ObjectLockMode != "" {
+		t.Fatalf("mode=%q, want none", head.ObjectLockMode)
+	}
+}
+
+// 다른 사용자와 없는 버킷은 Object Lock 설정을 조회할 수 없다
+func TestObjectLockGetObjLockAccessDenied(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	alt := altClientOrSkip(t, s)
+	b := lockBucket(t, s, 46)
+	_, err := alt.GetObjectLockConfiguration(context.Background(), &s3.GetObjectLockConfigurationInput{Bucket: aws.String(b)})
+	assertS3Error(t, err, 403, "AccessDenied")
+	_, err = s.client.GetObjectLockConfiguration(context.Background(), &s3.GetObjectLockConfigurationInput{Bucket: aws.String(s.bucketNameOnly(46))})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}

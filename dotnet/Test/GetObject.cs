@@ -676,5 +676,310 @@ namespace s3tests.Test
 			}
 		}
 
+		/// <summary>10바이트(0123456789) 오브젝트를 하나 넣은 버킷을 만든다. TestId를 먼저 대입해야 한다.</summary>
+		private string PutDigits(S3Client client, string key)
+		{
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, key, body: Digits);
+			return bucketName;
+		}
+
+		private const string Digits = "0123456789";
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 버킷의 오브젝트를 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestGetObjectBucketNotExist()
+		{
+			TestId = 37;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.GetObject(bucketName, "key"));
+			// HEAD 는 본문이 없어 상태 코드만 온다
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.HeadObject(bucketName, "key"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 오브젝트에 HeadObject를 하면 404인지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestHeadObjectNotExist()
+		{
+			TestId = 38;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.HeadObject(bucketName, "key"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자와 익명 사용자의 조회가 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestGetObjectAccessDenied()
+		{
+			TestId = 39;
+			var key = "TestGetObjectAccessDenied";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			foreach (var otherClient in new[] { GetAltClient(), GetPublicClient() })
+			{
+				AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => otherClient.GetObject(bucketName, key));
+				// 목록 권한이 없으면 없는 키도 404 가 아니라 403 이다
+				AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED,
+					() => otherClient.GetObject(bucketName, "not_exist"));
+				AssertS3Error(HttpStatusCode.Forbidden, null, () => otherClient.HeadObject(bucketName, key));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Range")]
+		[Trait(MainData.Explanation, "해석할 수 없는 Range는 무시하고 전체를 200으로 돌려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestRangedRequestIgnored()
+		{
+			TestId = 40;
+			var key = "TestRangedRequestIgnored";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			// 여러 구간, 잘못된 형식, 다른 단위, 뒤집힌 구간은 무시하고 전체를 200 으로 돌려준다
+			foreach (var value in new[] { "bytes=0-1,3-4", "bytes=abc", "items=0-1", "bytes=5-2" })
+			{
+				var response = client.GetObject(bucketName, key, range: new ByteRange(value));
+				Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+				Assert.True(string.IsNullOrEmpty(response.ContentRange));
+				Assert.Equal(Digits, GetBody(response));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Range")]
+		[Trait(MainData.Explanation, "Range가 오브젝트 끝을 넘으면 잘라서 돌려주고, 범위 밖이면 416인지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestRangedRequestBeyondEnd()
+		{
+			TestId = 41;
+			var key = "TestRangedRequestBeyondEnd";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			// 끝이 크기를 넘으면 마지막 바이트까지로 잘린다
+			var response = client.GetObject(bucketName, key, range: new ByteRange("bytes=5-100"));
+			Assert.Equal(HttpStatusCode.PartialContent, response.HttpStatusCode);
+			Assert.Equal("bytes 5-9/10", response.ContentRange);
+			Assert.Equal("56789", GetBody(response));
+
+			// 뒤에서부터의 길이가 크기를 넘으면 전체를 206 으로 돌려준다
+			response = client.GetObject(bucketName, key, range: new ByteRange("bytes=-100"));
+			Assert.Equal(HttpStatusCode.PartialContent, response.HttpStatusCode);
+			Assert.Equal("bytes 0-9/10", response.ContentRange);
+			Assert.Equal(Digits, GetBody(response));
+
+			// 시작이 크기와 같거나, 뒤에서 0바이트를 요청하면 416
+			foreach (var value in new[] { "bytes=10-20", "bytes=-0" })
+				AssertS3Error(HttpStatusCode.RequestedRangeNotSatisfiable, MainData.INVALID_RANGE,
+					() => client.GetObject(bucketName, key, range: new ByteRange(value)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Range")]
+		[Trait(MainData.Explanation, "HeadObject에 Range를 주면 206과 해당 구간 정보를 돌려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestHeadObjectRange()
+		{
+			TestId = 42;
+			var key = "TestHeadObjectRange";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			var response = client.HeadObject(bucketName, key, range: "bytes=0-4");
+			Assert.Equal(HttpStatusCode.PartialContent, response.HttpStatusCode);
+			Assert.Equal(5, response.ContentLength);
+			Assert.Equal("bytes 0-4/10", response.ContentRange);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "PartNumber")]
+		[Trait(MainData.Explanation, "멀티파트가 아닌 오브젝트는 1번 파트가 전체이고 2번 파트는 없는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestGetObjectPartNumber()
+		{
+			TestId = 43;
+			var key = "TestGetObjectPartNumber";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			// 멀티파트가 아닌 오브젝트는 1번 파트가 전체다
+			var response = client.GetObject(bucketName, key, partNumber: 1);
+			Assert.Equal(HttpStatusCode.PartialContent, response.HttpStatusCode);
+			Assert.Equal("bytes 0-9/10", response.ContentRange);
+			Assert.Null(response.PartsCount);
+			Assert.Equal(Digits, GetBody(response));
+
+			var headResponse = client.HeadObject(bucketName, key, partNumber: 1);
+			Assert.Equal(HttpStatusCode.PartialContent, headResponse.HttpStatusCode);
+			Assert.Equal(10, headResponse.ContentLength);
+
+			AssertS3Error(HttpStatusCode.RequestedRangeNotSatisfiable, MainData.INVALID_PART_NUMBER,
+				() => client.GetObject(bucketName, key, partNumber: 2));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "PartNumber")]
+		[Trait(MainData.Explanation, "Range와 함께 쓴 partNumber는 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestGetObjectPartNumberInvalid()
+		{
+			TestId = 44;
+			var key = "TestGetObjectPartNumberInvalid";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			// 파트 번호는 1~10000 이지만, .NET SDK가 범위를 벗어난 값(0, 10001)을 요청 전에 ArgumentException으로 막아 보낼 수 없다
+			// Range 와 partNumber 는 함께 쓸 수 없다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => client.GetObject(bucketName, key, partNumber: 1, range: new ByteRange("bytes=0-1")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "버저닝을 쓰지 않는 버킷에서 null 버전은 조회되고 잘못된 버전 ID는 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestGetObjectVersionIdUnversioned()
+		{
+			TestId = 45;
+			var key = "TestGetObjectVersionIdUnversioned";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전이다
+			Assert.Equal(Digits, GetBody(client.GetObject(bucketName, key, versionId: "null")));
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.GetObject(bucketName, key, versionId: "invalid"));
+			AssertS3Error(HttpStatusCode.BadRequest, null, () => client.HeadObject(bucketName, key, versionId: "invalid"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestGetObjectNullVersionNotExist()
+		{
+			TestId = 46;
+			var key = "TestGetObjectNullVersionNotExist";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			client.PutObject(bucketName, key, body: "content");
+
+			// 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_VERSION,
+				() => client.GetObject(bucketName, key, versionId: "null"));
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.HeadObject(bucketName, key, versionId: "null"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Header")]
+		[Trait(MainData.Explanation, "익명 요청에 response-* 재정의를 쓰면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestGetObjectResponseHeadersAnonymous()
+		{
+			TestId = 47;
+			var key = "TestGetObjectResponseHeadersAnonymous";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			// 익명 요청에는 response-* 재정의를 쓸 수 없다
+			// .NET SDK는 익명 자격 증명에 response-* 재정의를 주면 요청 전에 NullReferenceException이 나므로 서명 없는 HTTP 요청으로 보낸다
+			using var response = GetObject(GetURL(bucketName, key) + "?response-content-type=text/html");
+			Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+			Assert.Equal(MainData.INVALID_REQUEST, GetResponseErrorCode(response.Content.ReadAsStream()));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Header")]
+		[Trait(MainData.Explanation, "HeadObject에서도 response-* 재정의가 적용되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestHeadObjectResponseHeaders()
+		{
+			TestId = 48;
+			var key = "TestHeadObjectResponseHeaders";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			var response = client.HeadObject(bucketName, key,
+				responseContentType: "text/html",
+				responseContentDisposition: "inline",
+				responseCacheControl: "max-age=1",
+				responseContentEncoding: "identity",
+				responseContentLanguage: "en");
+			Assert.Equal("text/html", response.Headers.ContentType);
+			Assert.Equal("inline", response.Headers.ContentDisposition);
+			Assert.Equal("max-age=1", response.Headers.CacheControl);
+			Assert.Equal("identity", response.Headers.ContentEncoding);
+			Assert.Equal("en", response.ContentLanguage);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "Header")]
+		[Trait(MainData.Explanation, "아무 설정 없이 올린 오브젝트의 기본 응답 헤더 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestGetObjectDefaultHeaders()
+		{
+			TestId = 49;
+			var key = "TestGetObjectDefaultHeaders";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+			var eTag = "\"781e5e245d69b566979b86e28d23f2c7\"";
+
+			// 기본 Content-Type(binary/octet-stream)은 .NET SDK가 PutObject에 항상 Content-Type을 붙여 보내므로 확인할 수 없다
+			using (var response = client.GetObject(bucketName, key))
+			{
+				Assert.Equal("bytes", response.AcceptRanges);
+				Assert.Equal(10, response.ContentLength);
+				Assert.Equal(eTag, response.ETag);
+				Assert.NotNull(response.LastModified);
+			}
+
+			var headResponse = client.HeadObject(bucketName, key);
+			Assert.Equal("bytes", headResponse.AcceptRanges);
+			Assert.Equal(10, headResponse.ContentLength);
+			Assert.Equal(eTag, headResponse.ETag);
+			Assert.NotNull(headResponse.LastModified);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "GetObject")]
+		[Trait(MainData.Minor, "IfMatch")]
+		[Trait(MainData.Explanation, "If-Match: * 는 통과하고 If-None-Match: * 는 304인지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestGetObjectIfMatchWildcard()
+		{
+			TestId = 50;
+			var key = "TestGetObjectIfMatchWildcard";
+			var client = GetClient();
+			var bucketName = PutDigits(client, key);
+
+			// If-Match: * 는 오브젝트가 있으면 통과, If-None-Match: * 는 304
+			Assert.Equal(Digits, GetBody(client.GetObject(bucketName, key, ifMatch: "*")));
+			AssertS3Error(HttpStatusCode.NotModified, null, () => client.GetObject(bucketName, key, ifNoneMatch: "*"));
+		}
 	}
 }

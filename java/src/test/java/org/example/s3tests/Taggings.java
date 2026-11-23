@@ -195,4 +195,163 @@ class Taggings {
 	void testMultipartUploadWithTagsEncoded() {
 		testV2.testMultipartUploadWithTagsEncoded();
 	}
+
+	/**
+	 * 버킷 태그를 50개까지 넣을 수 있고 51개는 거부되는지 확인
+	 */
+	@Test
+	@Tag("Max")
+	void testBucketTaggingMax() {
+		test.testBucketTaggingMax();
+		testV2.testBucketTaggingMax();
+	}
+
+	/**
+	 * 버킷 태그의 키가 중복되면 거부되는지 확인 (SDK v1 의 TagSet 은 키 중복을 표현할 수 없으므로 V2만)
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketTaggingDuplicateKey() {
+		testV2.testBucketTaggingDuplicateKey();
+	}
+
+	/**
+	 * 올바르지 않은 버킷 태그(aws: 접두어, 길이 초과, 허용하지 않는 문자)가 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketTaggingInvalidTag() {
+		test.testBucketTaggingInvalidTag();
+		testV2.testBucketTaggingInvalidTag();
+	}
+
+	/**
+	 * 값이 빈 버킷 태그가 그대로 저장되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testBucketTaggingEmptyValue() {
+		test.testBucketTaggingEmptyValue();
+		testV2.testBucketTaggingEmptyValue();
+	}
+
+	/**
+	 * 빈 태그 목록을 넣으면 버킷 태그가 지워지고, 태그가 없어도 삭제가 성공하는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testBucketTaggingEmptySet() {
+		test.testBucketTaggingEmptySet();
+		testV2.testBucketTaggingEmptySet();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 태그 조회·설정·삭제가 NoSuchBucket 으로 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketTaggingBucketNotExist() {
+		test.testBucketTaggingBucketNotExist();
+		testV2.testBucketTaggingBucketNotExist();
+	}
+
+	/**
+	 * 오브젝트 태그의 키가 중복되면 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjTaggingDuplicateKey() {
+		test.testObjTaggingDuplicateKey();
+		testV2.testObjTaggingDuplicateKey();
+	}
+
+	/**
+	 * 올바르지 않은 오브젝트 태그가 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjTaggingInvalidTag() {
+		test.testObjTaggingInvalidTag();
+		testV2.testObjTaggingInvalidTag();
+	}
+
+	/**
+	 * 허용되는 특수문자와 빈 값이 든 오브젝트 태그가 그대로 저장되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testObjTaggingSpecialCharacters() {
+		test.testObjTaggingSpecialCharacters();
+		testV2.testObjTaggingSpecialCharacters();
+	}
+
+	/**
+	 * 빈 태그 목록을 넣으면 오브젝트 태그가 지워지고, 태그가 없어도 삭제가 성공하는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testObjTaggingEmptySet() {
+		test.testObjTaggingEmptySet();
+		testV2.testObjTaggingEmptySet();
+	}
+
+	/**
+	 * 존재하지 않는 오브젝트의 태그 조회·설정·삭제가 NoSuchKey 로 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjTaggingKeyNotExist() {
+		test.testObjTaggingKeyNotExist();
+		testV2.testObjTaggingKeyNotExist();
+	}
+
+	/**
+	 * 태그 11개를 헤더로 주고 업로드하면 실패하고 오브젝트가 만들어지지 않는지 확인
+	 */
+	@Test
+	@Tag("Overflow")
+	void testPutObjWithExcessTags() {
+		test.testPutObjWithExcessTags();
+		testV2.testPutObjWithExcessTags();
+	}
+
+	/**
+	 * 올바르지 않은 태그를 헤더로 주고 업로드하면 실패하고 오브젝트가 만들어지지 않는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testPutObjWithInvalidTags() {
+		test.testPutObjWithInvalidTags();
+		testV2.testPutObjWithInvalidTags();
+	}
+
+	/**
+	 * 버전을 지정한 태그 설정·조회·삭제가 그 버전에만 적용되는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testObjTaggingVersion() {
+		test.testObjTaggingVersion();
+		testV2.testObjTaggingVersion();
+	}
+
+	/**
+	 * 올바르지 않은 버전 ID 로 태그를 요청하면 InvalidArgument 인지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testObjTaggingInvalidVersion() {
+		test.testObjTaggingInvalidVersion();
+		testV2.testObjTaggingInvalidVersion();
+	}
+
+	/**
+	 * 최신 버전이 삭제 마커이면 태그 요청이 MethodNotAllowed 인지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testObjTaggingDeleteMarker() {
+		test.testObjTaggingDeleteMarker();
+		testV2.testObjTaggingDeleteMarker();
+	}
 }

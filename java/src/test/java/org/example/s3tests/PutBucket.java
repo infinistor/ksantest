@@ -283,4 +283,92 @@ class PutBucket {
 		test.testGetBucketLocation();
 		testV2.testGetBucketLocation();
 	}
+
+	/**
+	 * 대문자가 든 이름으로 버킷을 만들 수 없는지 확인
+	 */
+	@Test
+	@Tag("CreationRules")
+	void testBucketCreateNamingBadUppercase() {
+		test.testBucketCreateNamingBadUppercase();
+		testV2.testBucketCreateNamingBadUppercase();
+	}
+
+	/**
+	 * xn-- 로 시작하는 이름으로 버킷을 만들 수 없는지 확인
+	 */
+	@Test
+	@Tag("CreationRules")
+	void testBucketCreateNamingBadPunycodePrefix() {
+		test.testBucketCreateNamingBadPunycodePrefix();
+		testV2.testBucketCreateNamingBadPunycodePrefix();
+	}
+
+	/**
+	 * 마침표로 시작하거나 끝나는 이름으로 버킷을 만들 수 없는지 확인
+	 */
+	@Test
+	@Tag("CreationRules")
+	void testBucketCreateNamingBadDotAtEdge() {
+		test.testBucketCreateNamingBadDotAtEdge();
+		testV2.testBucketCreateNamingBadDotAtEdge();
+	}
+
+	/**
+	 * 예약된 접두어·접미어가 붙은 이름으로 버킷을 만들 수 없는지 확인
+	 */
+	@Test
+	@Tag("CreationRules")
+	void testBucketCreateNamingReserved() {
+		test.testBucketCreateNamingReserved();
+		testV2.testBucketCreateNamingReserved();
+	}
+
+	/**
+	 * 올바르지 않은 LocationConstraint 로 버킷을 만들 수 없는지 확인
+	 */
+	@Test
+	@Tag("location")
+	void testBucketCreateInvalidLocation() {
+		test.testBucketCreateInvalidLocation();
+		testV2.testBucketCreateInvalidLocation();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 location 조회가 NoSuchBucket 으로 실패하는지 확인
+	 */
+	@Test
+	@Tag("location")
+	void testGetBucketLocationNotExist() {
+		test.testGetBucketLocationNotExist();
+		testV2.testGetBucketLocationNotExist();
+	}
+
+	/**
+	 * 다른 사용자의 버킷 location 조회가 AccessDenied 로 실패하는지 확인
+	 */
+	@Test
+	@Tag("location")
+	void testGetBucketLocationAltUser() {
+		test.testGetBucketLocationAltUser();
+		testV2.testGetBucketLocationAltUser();
+	}
+
+	/**
+	 * 캔드 ACL 과 권한 부여 헤더를 함께 주면 버킷 생성이 실패하는지 확인 (SDK v1 은 둘 중 하나만 보내므로 V2만)
+	 */
+	@Test
+	@Tag("ACL")
+	void testBucketCreateAclWithGrant() {
+		testV2.testBucketCreateAclWithGrant();
+	}
+
+	/**
+	 * 올바르지 않은 캔드 ACL 로 버킷을 만들 수 없는지 확인 (SDK v1 은 열거형만 받으므로 V2만)
+	 */
+	@Test
+	@Tag("ACL")
+	void testBucketCreateInvalidAcl() {
+		testV2.testBucketCreateInvalidAcl();
+	}
 }

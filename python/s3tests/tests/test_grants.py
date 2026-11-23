@@ -438,3 +438,226 @@ class TestGrants(S3TestBase):
             400,
             md.MALFORMED_ACL_ERROR,
         )
+
+    @staticmethod
+    def _owner_policy(client, bucket_name: str, *grants) -> dict:
+        """버킷 소유자를 Owner 로 하는 AccessControlPolicy. grants 가 없으면 소유자 FULL_CONTROL."""
+        owner = client.get_bucket_acl(Bucket=bucket_name)["Owner"]
+        default = {"Grantee": {"Type": "CanonicalUser", "ID": owner["ID"]}, "Permission": "FULL_CONTROL"}
+        return {"Owner": {"ID": owner["ID"]}, "Grants": list(grants) if grants else [default]}
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_acl_invalid_canned(self):
+        key = "test_bucket_acl_invalid_canned"
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 36)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        self.assert_client_error(
+            lambda: client.put_bucket_acl(Bucket=bucket_name, ACL="invalid"), 400, md.INVALID_ARGUMENT
+        )
+        self.assert_client_error(
+            lambda: client.put_object_acl(Bucket=bucket_name, Key=key, ACL="invalid"), 400, md.INVALID_ARGUMENT
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_acl_canned_with_grant_header(self):
+        key = "test_acl_canned_with_grant_header"
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 37)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        grant = f'uri="{md.AUTHENTICATED_USERS}"'
+        # 캔드 ACL 과 권한 부여 헤더는 함께 쓸 수 없다
+        requests = [
+            lambda: client.put_bucket_acl(Bucket=bucket_name, ACL="private", GrantRead=grant),
+            lambda: client.put_object_acl(Bucket=bucket_name, Key=key, ACL="private", GrantRead=grant),
+            lambda: client.put_object(Bucket=bucket_name, Key=key + "2", Body=b"content", ACL="private", GrantRead=grant),
+        ]
+        for request in requests:
+            self.assert_client_error(request, 400, md.INVALID_REQUEST)
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_acl_canned_with_body(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 38)
+        # 캔드 ACL 과 본문(AccessControlPolicy)은 함께 쓸 수 없다
+        self.assert_client_error(
+            lambda: client.put_bucket_acl(
+                Bucket=bucket_name, ACL="private", AccessControlPolicy=self._owner_policy(client, bucket_name)
+            ),
+            400,
+            md.UNEXPECTED_CONTENT,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_acl_missing(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 39)
+        # 캔드 ACL, 권한 부여 헤더, 본문 중 아무것도 없다
+        self.assert_client_error(
+            lambda: client.put_bucket_acl(Bucket=bucket_name), 400, md.MISSING_SECURITY_HEADER
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_acl_invalid_permission(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 40)
+        owner_id = client.get_bucket_acl(Bucket=bucket_name)["Owner"]["ID"]
+        grant = {"Grantee": {"Type": "CanonicalUser", "ID": owner_id}, "Permission": "INVALID"}
+        self.assert_client_error(
+            lambda: client.put_bucket_acl(
+                Bucket=bucket_name, AccessControlPolicy=self._owner_policy(client, bucket_name, grant)
+            ),
+            400,
+            md.MALFORMED_ACL_ERROR,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_acl_change_owner(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 41)
+        policy = self._owner_policy(client, bucket_name)
+        policy["Owner"] = {"ID": self.config.alt_user.id}
+        # ACL 로 소유자를 바꿀 수 없다
+        self.assert_client_error(
+            lambda: client.put_bucket_acl(Bucket=bucket_name, AccessControlPolicy=policy), 403, md.ACCESS_DENIED
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_acl_invalid_grant_header(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 42)
+        # 형식 오류, 없는 사용자 ID, 없는 그룹 URI
+        for grant in ("invalid", 'id="invalid"', 'uri="http://example.com/invalid"'):
+            self.assert_client_error(
+                lambda grant=grant: client.put_bucket_acl(Bucket=bucket_name, GrantRead=grant),
+                400,
+                md.INVALID_ARGUMENT,
+            )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_acl_invalid_group_uri(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 43)
+        grant = {"Grantee": {"Type": "Group", "URI": "http://example.com/invalid"}, "Permission": "READ"}
+        self.assert_client_error(
+            lambda: client.put_bucket_acl(
+                Bucket=bucket_name, AccessControlPolicy=self._owner_policy(client, bucket_name, grant)
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("Max")
+    def test_bucket_acl_max_grants(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 44)
+        owner_id = client.get_bucket_acl(Bucket=bucket_name)["Owner"]["ID"]
+        grant = {"Grantee": {"Type": "CanonicalUser", "ID": owner_id}, "Permission": "FULL_CONTROL"}
+        # 권한 부여는 100개까지
+        client.put_bucket_acl(
+            Bucket=bucket_name, AccessControlPolicy=self._owner_policy(client, bucket_name, *([grant] * 100))
+        )
+        self.assert_client_error(
+            lambda: client.put_bucket_acl(
+                Bucket=bucket_name, AccessControlPolicy=self._owner_policy(client, bucket_name, *([grant] * 101))
+            ),
+            400,
+            md.MALFORMED_ACL_ERROR,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_acl_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(45)
+        self.assert_client_error(lambda: client.get_bucket_acl(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+        self.assert_client_error(
+            lambda: client.put_bucket_acl(Bucket=bucket_name, ACL="private"), 404, md.NO_SUCH_BUCKET
+        )
+
+    @pytest.mark.tag("Access")
+    def test_acl_access_denied(self):
+        key = "test_acl_access_denied"
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket_canned_acl(client, 46)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        requests = [
+            lambda: alt_client.get_bucket_acl(Bucket=bucket_name),
+            lambda: alt_client.put_bucket_acl(Bucket=bucket_name, ACL="private"),
+            lambda: alt_client.get_object_acl(Bucket=bucket_name, Key=key),
+            lambda: alt_client.put_object_acl(Bucket=bucket_name, Key=key, ACL="private"),
+        ]
+        for request in requests:
+            self.assert_client_error(request, 403, md.ACCESS_DENIED)
+
+    @pytest.mark.tag("ERROR")
+    def test_object_acl_key_not_exist(self):
+        key = "test_object_acl_key_not_exist"
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 47)
+        self.assert_client_error(lambda: client.get_object_acl(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY)
+        self.assert_client_error(
+            lambda: client.put_object_acl(Bucket=bucket_name, Key=key, ACL="private"), 404, md.NO_SUCH_KEY
+        )
+
+    @pytest.mark.tag("Version")
+    def test_object_acl_version_id(self):
+        key = "test_object_acl_version_id"
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 48)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        # 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전이다
+        assert len(client.get_object_acl(Bucket=bucket_name, Key=key, VersionId="null")["Grants"]) == 1
+        self.assert_client_error(
+            lambda: client.get_object_acl(Bucket=bucket_name, Key=key, VersionId="invalid"), 400, md.INVALID_ARGUMENT
+        )
+
+    @pytest.mark.tag("Version")
+    def test_object_acl_delete_marker(self):
+        key = "test_object_acl_delete_marker"
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 49)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        version_id = client.put_object(Bucket=bucket_name, Key=key, Body=b"content")["VersionId"]
+        marker_id = client.delete_object(Bucket=bucket_name, Key=key)["VersionId"]
+
+        # 최신 버전이 삭제 마커이면 없는 키, 삭제 마커 버전을 지정하면 405
+        self.assert_client_error(lambda: client.get_object_acl(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY)
+        self.assert_client_error(
+            lambda: client.get_object_acl(Bucket=bucket_name, Key=key, VersionId=marker_id),
+            405,
+            md.METHOD_NOT_ALLOWED,
+        )
+        self.assert_client_error(
+            lambda: client.put_object_acl(Bucket=bucket_name, Key=key, VersionId=marker_id, ACL="private"),
+            405,
+            md.METHOD_NOT_ALLOWED,
+        )
+        assert len(client.get_object_acl(Bucket=bucket_name, Key=key, VersionId=version_id)["Grants"]) == 1
+
+    @pytest.mark.tag("Check")
+    def test_bucket_acl_log_delivery_write(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 50)
+        client.put_bucket_acl(Bucket=bucket_name, ACL="log-delivery-write")
+        # 로그 전달 그룹에 WRITE, READ_ACP 가 부여된다
+        grants = client.get_bucket_acl(Bucket=bucket_name)["Grants"]
+        log_delivery = sorted(
+            grant["Permission"]
+            for grant in grants
+            if grant["Grantee"].get("URI") == "http://acs.amazonaws.com/groups/s3/LogDelivery"
+        )
+        assert log_delivery == ["READ_ACP", "WRITE"]
+        assert len(grants) == 3
+
+    @pytest.mark.tag("Check")
+    def test_put_object_with_grant_header(self):
+        key = "test_put_object_with_grant_header"
+        client = self.get_client()
+        bucket_name = self.create_bucket_canned_acl(client, 51)
+        alt_id = self.config.alt_user.id
+        # 권한 부여 헤더만 주면 소유자 FULL_CONTROL 없이 지정한 권한만 남는다
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content", GrantRead=f'id="{alt_id}"')
+        grants = client.get_object_acl(Bucket=bucket_name, Key=key)["Grants"]
+        assert [(grant["Grantee"]["ID"], grant["Permission"]) for grant in grants] == [(alt_id, "READ")]
+        assert self.get_body(self.get_alt_client().get_object(Bucket=bucket_name, Key=key)) == "content"

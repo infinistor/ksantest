@@ -513,4 +513,84 @@ class PutObject {
 		test.testPutObjectAwsChunkedSignedPayload();
 		testV2.testPutObjectAwsChunkedSignedPayload();
 	}
+
+	@Test
+	@Tag("ContentMD5")
+	// 본문과 일치하는 Content-MD5를 지정한 업로드가 성공하는지 확인
+	void testPutObjectContentMd5() {
+		test.testPutObjectContentMd5();
+		testV2.testPutObjectContentMd5();
+	}
+
+	@Test
+	@Tag("ContentMD5")
+	// 본문과 다른 Content-MD5를 지정하면 400 BadDigest로 거부되고 저장되지 않는지 확인
+	void testPutObjectContentMd5Mismatch() {
+		test.testPutObjectContentMd5Mismatch();
+		testV2.testPutObjectContentMd5Mismatch();
+	}
+
+	@Test
+	@Tag("ContentMD5")
+	// 형식이 잘못된 Content-MD5를 지정하면 400 InvalidDigest로 거부되는지 확인
+	void testPutObjectContentMd5Invalid() {
+		test.testPutObjectContentMd5Invalid();
+		testV2.testPutObjectContentMd5Invalid();
+	}
+
+	@Test
+	@Tag("StorageClass")
+	// 지정한 스토리지 클래스가 Head/Get/List 응답에 나타나는지 확인
+	void testPutObjectStorageClass() {
+		test.testPutObjectStorageClass();
+		testV2.testPutObjectStorageClass();
+	}
+
+	@Test
+	@Tag("StorageClass")
+	// 잘못된 스토리지 클래스를 지정하면 400 InvalidStorageClass로 거부되는지 확인
+	void testPutObjectInvalidStorageClass() {
+		test.testPutObjectInvalidStorageClass();
+		testV2.testPutObjectInvalidStorageClass();
+	}
+
+	@Test
+	@Tag("Header")
+	// 업로드 때 지정한 Content-* 헤더가 그대로 저장되는지 확인
+	void testPutObjectContentHeaders() {
+		test.testPutObjectContentHeaders();
+		testV2.testPutObjectContentHeaders();
+	}
+
+	@Test
+	@Tag("Header")
+	// 웹사이트 리다이렉트 위치가 저장되고 형식이 잘못되면 400 InvalidRedirectLocation인지 확인
+	void testPutObjectWebsiteRedirectLocation() {
+		test.testPutObjectWebsiteRedirectLocation();
+		testV2.testPutObjectWebsiteRedirectLocation();
+	}
+
+	@Test
+	@Tag("Metadata")
+	// 사용자 메타데이터가 2KB를 넘으면 400 MetadataTooLarge로 거부되는지 확인
+	void testPutObjectMetadataTooLarge() {
+		test.testPutObjectMetadataTooLarge();
+		testV2.testPutObjectMetadataTooLarge();
+	}
+
+	@Test
+	@Tag("ACL")
+	// 잘못된 canned ACL을 지정하면 400 InvalidArgument로 거부되는지 확인
+	// SDK V1은 ACL을 열거형으로만 받아 잘못된 값을 보낼 수 없으므로 V2만 테스트한다.
+	void testPutObjectInvalidAcl() {
+		testV2.testPutObjectInvalidAcl();
+	}
+
+	@Test
+	@Tag("Access")
+	// 권한이 없는 사용자와 익명 사용자의 업로드가 403 AccessDenied로 거부되는지 확인
+	void testPutObjectAccessDenied() {
+		test.testPutObjectAccessDenied();
+		testV2.testPutObjectAccessDenied();
+	}
 }

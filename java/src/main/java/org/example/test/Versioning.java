@@ -25,6 +25,7 @@ import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
@@ -1362,5 +1363,68 @@ public class Versioning extends TestBase {
 			deleteObjectsSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
 		else
 			deleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
+	}
+	private static void assertError(Executable executable, int statusCode, String errorCode) {
+		var e = assertThrows(AmazonServiceException.class, executable);
+		assertEquals(statusCode, e.getStatusCode());
+		assertEquals(errorCode, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testVersioningGetNewBucket() {
+		var client = getClient();
+		var bucketName = createBucket(client, 40);
+
+		// 버저닝을 한 번도 설정하지 않은 버킷은 Status 가 없다(SDK v1 은 이를 Off 로 돌려준다)
+		var response = client.getBucketVersioningConfiguration(bucketName);
+		assertEquals(BucketVersioningConfiguration.OFF, response.getStatus());
+		assertNull(response.isMfaDeleteEnabled());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testVersioningInvalidStatus() {
+		var client = getClient();
+		var bucketName = createBucket(client, 41);
+
+		// Enabled, Suspended 외의 값은 거부된다(버저닝을 끈 상태로 되돌릴 수 없다)
+		for (var status : List.of("Invalid", "Disabled")) {
+			assertError(() -> client.setBucketVersioningConfiguration(
+					new SetBucketVersioningConfigurationRequest(bucketName, new BucketVersioningConfiguration(status))),
+					HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML);
+		}
+		assertEquals(BucketVersioningConfiguration.OFF,
+				client.getBucketVersioningConfiguration(bucketName).getStatus());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testVersioningBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(43);
+
+		assertError(() -> client.getBucketVersioningConfiguration(bucketName), HttpStatus.SC_NOT_FOUND,
+				MainData.NO_SUCH_BUCKET);
+		assertError(() -> client.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(
+				bucketName, new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED))),
+				HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testVersioningAccessDenied() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 44);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+
+		assertError(() -> altClient.getBucketVersioningConfiguration(bucketName), HttpStatus.SC_FORBIDDEN,
+				MainData.ACCESS_DENIED);
+		assertError(() -> altClient.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(
+				bucketName, new BucketVersioningConfiguration(BucketVersioningConfiguration.SUSPENDED))),
+				HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		assertEquals(BucketVersioningConfiguration.ENABLED,
+				client.getBucketVersioningConfiguration(bucketName).getStatus());
 	}
 }

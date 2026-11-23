@@ -389,3 +389,55 @@ class TestGetObjectAttributes(S3TestBase):
         assert response.get("ObjectParts") is not None
         assert response["ObjectParts"]["TotalPartsCount"] == 1
         assert response.get("Checksum") is not None
+
+    @pytest.mark.tag("ERROR")
+    def test_get_object_attributes_invalid_attribute(self):
+        key = "test_get_object_attributes_invalid_attribute"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 16)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        # 알 수 없는 속성 이름이 하나라도 있으면 거부된다
+        for attributes in (["Invalid"], ["ETag", "Invalid"]):
+            self.assert_client_error(
+                lambda attributes=attributes: client.get_object_attributes(
+                    Bucket=bucket_name, Key=key, ObjectAttributes=attributes
+                ),
+                400,
+                md.INVALID_ARGUMENT,
+            )
+
+    @pytest.mark.tag("Access")
+    def test_get_object_attributes_access_denied(self):
+        key = "test_get_object_attributes_access_denied"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 17)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        self.assert_client_error(
+            lambda: self.get_alt_client().get_object_attributes(
+                Bucket=bucket_name, Key=key, ObjectAttributes=["ETag", "ObjectSize"]
+            ),
+            403,
+            md.ACCESS_DENIED,
+        )
+
+    @pytest.mark.tag("Version")
+    def test_get_object_attributes_delete_marker(self):
+        key = "test_get_object_attributes_delete_marker"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 18)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        version_id = client.put_object(Bucket=bucket_name, Key=key, Body=b"content")["VersionId"]
+        client.delete_object(Bucket=bucket_name, Key=key)
+
+        # 최신 버전이 삭제 마커이면 없는 키로 취급한다
+        self.assert_client_error(
+            lambda: client.get_object_attributes(Bucket=bucket_name, Key=key, ObjectAttributes=["ETag"]),
+            404,
+            md.NO_SUCH_KEY,
+        )
+        # 버전을 지정하면 삭제 마커 아래의 버전을 조회할 수 있다
+        response = client.get_object_attributes(
+            Bucket=bucket_name, Key=key, VersionId=version_id, ObjectAttributes=["ObjectSize"]
+        )
+        assert response["VersionId"] == version_id
+        assert response["ObjectSize"] == 7

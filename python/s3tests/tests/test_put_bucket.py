@@ -136,3 +136,78 @@ class TestPutBucket(S3TestBase):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 24)
         client.get_bucket_location(Bucket=bucket_name)
+
+    def _assert_create_error(self, bucket_name: str, status_code: int, error_code: str, **extra) -> None:
+        client = self.get_client()
+        self.assert_client_error(
+            lambda: self._do_create_bucket(client, bucket_name, **extra), status_code, error_code
+        )
+
+    @pytest.mark.tag("CreationRules")
+    def test_bucket_create_naming_bad_uppercase(self):
+        self._assert_create_error(self.get_new_bucket_name_only(25).upper(), 400, md.INVALID_BUCKET_NAME)
+
+    @pytest.mark.tag("CreationRules")
+    def test_bucket_create_naming_bad_punycode_prefix(self):
+        # xn-- 로 시작하는 이름은 쓸 수 없다
+        bucket_name = ("xn--" + self.get_new_bucket_name_only(26))[:63].rstrip("-.")
+        self._assert_create_error(bucket_name, 400, md.INVALID_BUCKET_NAME)
+
+    @pytest.mark.tag("CreationRules")
+    def test_bucket_create_naming_bad_dot_at_edge(self):
+        bucket_name = self.get_new_bucket_name_only(27)[:60].rstrip("-.")
+        self._assert_create_error("." + bucket_name, 400, md.INVALID_BUCKET_NAME)
+        self._assert_create_error(bucket_name + ".", 400, md.INVALID_BUCKET_NAME)
+
+    @pytest.mark.tag("CreationRules")
+    def test_bucket_create_naming_reserved(self):
+        bucket_name = self.get_new_bucket_name_only(28)[:45].rstrip("-.")
+        # 예약된 접두어·접미어가 붙은 이름은 만들 수 없다
+        for prefix in ("sthree-", "amzn-s3-demo-"):
+            self._assert_create_error(prefix + bucket_name, 403, md.ACCESS_DENIED)
+        for suffix in ("-s3alias", "--ol-s3", ".mrap"):
+            self._assert_create_error(bucket_name + suffix, 403, md.ACCESS_DENIED)
+
+    @pytest.mark.tag("location")
+    def test_bucket_create_invalid_location(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(29)
+        with pytest.raises(ClientError) as exc_info:
+            client.create_bucket(
+                Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "invalid-region-1"}
+            )
+        assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        # us-east-1 엔드포인트는 InvalidLocationConstraint, 그 외 리전은 IllegalLocationConstraintException
+        assert exc_info.value.response["Error"]["Code"] in (
+            md.ILLEGAL_LOCATION_CONSTRAINT_EXCEPTION,
+            md.INVALID_LOCATION_CONSTRAINT,
+        )
+        self.assert_client_error(lambda: client.get_bucket_location(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+
+    @pytest.mark.tag("location")
+    def test_get_bucket_location_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(30)
+        self.assert_client_error(lambda: client.get_bucket_location(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+
+    @pytest.mark.tag("location")
+    def test_get_bucket_location_alt_user(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket(client, 31)
+        self.assert_client_error(lambda: alt_client.get_bucket_location(Bucket=bucket_name), 403, md.ACCESS_DENIED)
+
+    @pytest.mark.tag("ACL")
+    def test_bucket_create_acl_with_grant(self):
+        # 캔드 ACL 과 권한 부여 헤더는 함께 쓸 수 없다
+        self._assert_create_error(
+            self.get_new_bucket_name_only(32),
+            400,
+            md.INVALID_REQUEST,
+            ACL="private",
+            GrantRead=f'uri="{md.ALL_USERS}"',
+        )
+
+    @pytest.mark.tag("ACL")
+    def test_bucket_create_invalid_acl(self):
+        self._assert_create_error(self.get_new_bucket_name_only(33), 400, md.INVALID_ARGUMENT, ACL="invalid")

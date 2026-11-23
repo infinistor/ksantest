@@ -983,5 +983,211 @@ namespace s3tests.Test
 			var Response = client.GetBucketPolicyStatus(bucketName);
 			Assert.True(Response.PolicyStatus.IsPublic);
 		}
+
+		/// <summary>모든 주체의 GetObject 를 거부하는 문장. (python _deny_statement)</summary>
+		private static JObject DenyStatement(string bucketName) => new()
+		{
+			{ MainData.PolicyEffect, MainData.PolicyEffectDeny },
+			{ MainData.PolicyPrincipal, "*" },
+			{ MainData.PolicyAction, "s3:GetObject" },
+			{ MainData.PolicyResource, $"{MainData.PolicyResourcePrefix}{bucketName}/*" },
+		};
+
+		/// <summary>거부 문장의 한 항목을 덮어쓴다.</summary>
+		private static JObject DenyStatement(string bucketName, string name, JToken value)
+		{
+			var statement = DenyStatement(bucketName);
+			statement[name] = value;
+			return statement;
+		}
+
+		private static string MakePolicyDocument(string version, params JObject[] statements) => new JObject()
+		{
+			{ MainData.PolicyVersion, version },
+			{ MainData.PolicyStatement, new JArray(statements) },
+		}.ToString(Newtonsoft.Json.Formatting.None);
+
+		private static string MakePolicyDocument(params JObject[] statements)
+			=> MakePolicyDocument(MainData.PolicyVersionDate, statements);
+
+		private static void AssertMalformedPolicy(S3Client client, string bucketName, string policy)
+			=> AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_POLICY, () => client.PutBucketPolicy(bucketName, policy));
+
+		private static void AssertSamePolicy(string expected, string actual)
+			=> Assert.True(JToken.DeepEquals(JObject.Parse(expected), JObject.Parse(actual)), $"expected: {expected}, actual: {actual}");
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "Get")]
+		[Trait(MainData.Explanation, "정책이 없는 버킷의 정책·정책 상태를 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketPolicyGetNotExist()
+		{
+			TestId = 22;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketPolicy(bucketName), MainData.NO_SUCH_BUCKET_POLICY);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET_POLICY, () => client.GetBucketPolicyStatus(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "정책이 없는 버킷의 정책을 삭제해도 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketPolicyDeleteNotExist()
+		{
+			TestId = 23;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 정책이 없어도 삭제는 성공한다
+			var response = client.DeleteBucketPolicy(bucketName);
+			Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "버킷 정책의 설정, 조회, 삭제가 올바르게 동작하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketPolicyPutGetDelete()
+		{
+			TestId = 24;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var policy = MakePolicyDocument(DenyStatement(bucketName, "Sid", "deny-get"));
+			client.PutBucketPolicy(bucketName, policy);
+
+			AssertSamePolicy(policy, client.GetBucketPolicy(bucketName).Policy);
+			Assert.False(client.GetBucketPolicyStatus(bucketName).PolicyStatus.IsPublic);
+
+			client.DeleteBucketPolicy(bucketName);
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketPolicy(bucketName), MainData.NO_SUCH_BUCKET_POLICY);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "존재하지 않는 버킷의 정책을 조회, 설정, 삭제하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketPolicyBucketNotExist()
+		{
+			TestId = 25;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			var policy = MakePolicyDocument(DenyStatement(bucketName));
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketPolicy(bucketName), MainData.NO_SUCH_BUCKET);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.PutBucketPolicy(bucketName, policy));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.DeleteBucketPolicy(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "다른 계정이 버킷 정책을 조회, 설정, 삭제하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketPolicyAccessDenied()
+		{
+			TestId = 26;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+			var policy = MakePolicyDocument(DenyStatement(bucketName));
+			client.PutBucketPolicy(bucketName, policy);
+
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.GetBucketPolicy(bucketName));
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.PutBucketPolicy(bucketName, policy));
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.DeleteBucketPolicy(bucketName));
+			// 정책은 그대로 남아 있다
+			AssertSamePolicy(policy, client.GetBucketPolicy(bucketName).Policy);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "JSON 형식이 아니거나 문장이 없거나 버전이 잘못된 정책을 설정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketPolicyInvalidJson()
+		{
+			TestId = 27;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertMalformedPolicy(client, bucketName, "not json");
+			// Statement 가 비어 있다
+			AssertMalformedPolicy(client, bucketName, MakePolicyDocument());
+			AssertMalformedPolicy(client, bucketName, MakePolicyDocument("2020-01-01", DenyStatement(bucketName)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "정책 문장의 항목 값이 잘못되면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketPolicyInvalidElement()
+		{
+			TestId = 28;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var invalidStatements = new List<JObject>()
+			{
+				DenyStatement(bucketName, MainData.PolicyEffect, "Maybe"),
+				DenyStatement(bucketName, MainData.PolicyAction, "s3:Invalid"),
+				DenyStatement(bucketName, MainData.PolicyPrincipal, new JObject() { { "AWS", "arn:aws:iam::000000000000:user/not-exist" } }),
+				// 없는 조건 키
+				DenyStatement(bucketName, MainData.PolicyCondition, new JObject() { { "StringEquals", new JObject() { { "s3:invalid", "value" } } } }),
+				// 없는 조건 연산자
+				DenyStatement(bucketName, MainData.PolicyCondition, new JObject() { { "InvalidEquals", new JObject() { { "aws:SourceIp", "1.1.1.1" } } } }),
+			};
+			foreach (var statement in invalidStatements)
+				AssertMalformedPolicy(client, bucketName, MakePolicyDocument(statement));
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketPolicy(bucketName), MainData.NO_SUCH_BUCKET_POLICY);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "정책 문장의 리소스가 잘못되거나 필수 항목이 없으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketPolicyInvalidResource()
+		{
+			TestId = 29;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 다른 버킷의 리소스
+			AssertMalformedPolicy(client, bucketName,
+				MakePolicyDocument(DenyStatement(bucketName, MainData.PolicyResource, "arn:aws:s3:::other-bucket-name/*")));
+			// 버킷 대상 액션에 오브젝트 리소스
+			AssertMalformedPolicy(client, bucketName,
+				MakePolicyDocument(DenyStatement(bucketName, MainData.PolicyAction, "s3:ListBucket")));
+			// Resource, Principal 누락
+			foreach (var missing in new[] { MainData.PolicyResource, MainData.PolicyPrincipal })
+			{
+				var statement = DenyStatement(bucketName);
+				statement.Remove(missing);
+				AssertMalformedPolicy(client, bucketName, MakePolicyDocument(statement));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Policy")]
+		[Trait(MainData.Minor, "Max")]
+		[Trait(MainData.Explanation, "20KB를 넘는 정책을 설정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketPolicyTooLarge()
+		{
+			TestId = 30;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 정책 문서는 20KB 까지
+			var statements = new JObject[70];
+			for (int i = 0; i < statements.Length; i++)
+			{
+				statements[i] = DenyStatement(bucketName, "Sid", $"statement{i}");
+				statements[i][MainData.PolicyCondition] = new JObject() { { "StringEquals", new JObject() { { "aws:Referer", new string('x', 180) } } } };
+			}
+			var policy = MakePolicyDocument(statements);
+			Assert.True(policy.Length > 20480);
+			AssertMalformedPolicy(client, bucketName, policy);
+		}
 	}
 }

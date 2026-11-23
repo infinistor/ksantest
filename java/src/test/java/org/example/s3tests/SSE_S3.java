@@ -319,4 +319,64 @@ class SSE_S3 {
 		test.testSseS3PutObjectOverwriteMultipartUpload();
 		testV2.testSseS3PutObjectOverwriteMultipartUpload();
 	}
+
+	/**
+	 * 올바르지 않은 버킷 암호화 설정(없는 알고리즘, 규칙 0개·2개, AES256 에 KMS 키)이 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testPutBucketEncryptionInvalid() {
+		test.testPutBucketEncryptionInvalid();
+		testV2.testPutBucketEncryptionInvalid();
+	}
+
+	/**
+	 * 버킷 암호화 설정의 BucketKeyEnabled 가 저장되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testPutBucketEncryptionBucketKey() {
+		test.testPutBucketEncryptionBucketKey();
+		testV2.testPutBucketEncryptionBucketKey();
+	}
+
+	/**
+	 * 버킷 암호화 설정을 두 번 삭제해도 성공하는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testDeleteBucketEncryptionTwice() {
+		test.testDeleteBucketEncryptionTwice();
+		testV2.testDeleteBucketEncryptionTwice();
+	}
+
+	/**
+	 * 다른 사용자의 버킷 암호화 설정 조회·설정·삭제가 AccessDenied 인지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testBucketEncryptionAccessDenied() {
+		test.testBucketEncryptionAccessDenied();
+		testV2.testBucketEncryptionAccessDenied();
+	}
+
+	/**
+	 * 없는 버킷의 암호화 설정 조회·설정·삭제가 NoSuchBucket 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketEncryptionBucketNotExist() {
+		test.testBucketEncryptionBucketNotExist();
+		testV2.testBucketEncryptionBucketNotExist();
+	}
+
+	/**
+	 * 없는 암호화 알고리즘으로 업로드·멀티파트 시작·복사하면 InvalidArgument 이고 오브젝트가 만들어지지 않는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testSseS3InvalidAlgorithm() {
+		test.testSseS3InvalidAlgorithm();
+		testV2.testSseS3InvalidAlgorithm();
+	}
 }

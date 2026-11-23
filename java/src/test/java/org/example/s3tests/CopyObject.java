@@ -732,4 +732,134 @@ class CopyObject {
 	void testCopyObjectReplaceTagsEncoded() {
 		testV2.testCopyObjectReplaceTagsEncoded();
 	}
+
+	/**
+	 * 잘못된 MetadataDirective/TaggingDirective가 400 InvalidArgument로 거부되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testCopyObjectInvalidDirective() {
+		test.testCopyObjectInvalidDirective();
+		testV2.testCopyObjectInvalidDirective();
+	}
+
+	/**
+	 * 키가 없는 x-amz-copy-source는 400 InvalidArgument이고 앞에 /가 붙은 형식은 허용되는지 확인
+	 * SDK V1은 x-amz-copy-source를 버킷과 키로 조립하므로 임의 문자열을 보낼 수 없어 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testCopyObjectInvalidSource() {
+		testV2.testCopyObjectInvalidSource();
+	}
+
+	/**
+	 * 원본 버전 ID가 잘못되면 400 InvalidRequest, 없는 null 버전이면 404 NoSuchVersion인지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testCopyObjectSourceInvalidVersionId() {
+		test.testCopyObjectSourceInvalidVersionId();
+		testV2.testCopyObjectSourceInvalidVersionId();
+	}
+
+	/**
+	 * 원본 버전을 지정해 복사하면 그 버전의 내용이 복사되는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testCopyObjectSourceVersionId() {
+		test.testCopyObjectSourceVersionId();
+		testV2.testCopyObjectSourceVersionId();
+	}
+
+	/**
+	 * 복사 시 메타데이터는 복사되고 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는지 확인
+	 */
+	@Test
+	@Tag("Metadata")
+	void testCopyObjectAttributesNotCopied() {
+		test.testCopyObjectAttributesNotCopied();
+		testV2.testCopyObjectAttributesNotCopied();
+	}
+
+	/**
+	 * MetadataDirective=REPLACE에 아무것도 주지 않으면 원본 메타데이터가 모두 빠지는지 확인
+	 */
+	@Test
+	@Tag("Metadata")
+	void testCopyObjectReplaceWithoutMetadata() {
+		test.testCopyObjectReplaceWithoutMetadata();
+		testV2.testCopyObjectReplaceWithoutMetadata();
+	}
+
+	/**
+	 * 복사 시 스토리지 클래스를 지정할 수 있고 잘못된 값은 400 InvalidStorageClass인지 확인
+	 */
+	@Test
+	@Tag("StorageClass")
+	void testCopyObjectStorageClass() {
+		test.testCopyObjectStorageClass();
+		testV2.testCopyObjectStorageClass();
+	}
+
+	/**
+	 * 자기 자신으로의 복사가 태그 변경만으로는 거부되고 스토리지 클래스 등을 바꾸면 허용되는지 확인
+	 */
+	@Test
+	@Tag("Overwrite")
+	void testCopyObjectToItselfWithChanges() {
+		test.testCopyObjectToItselfWithChanges();
+		testV2.testCopyObjectToItselfWithChanges();
+	}
+
+	/**
+	 * 이전 버전을 지정하면 변경 없이도 자기 자신에게 복사할 수 있는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testCopyObjectToItselfFromOldVersion() {
+		test.testCopyObjectToItselfFromOldVersion();
+		testV2.testCopyObjectToItselfFromOldVersion();
+	}
+
+	/**
+	 * 복사 시 사용자 메타데이터가 2KB를 넘으면 400 MetadataTooLarge인지 확인
+	 */
+	@Test
+	@Tag("Metadata")
+	void testCopyObjectMetadataTooLarge() {
+		test.testCopyObjectMetadataTooLarge();
+		testV2.testCopyObjectMetadataTooLarge();
+	}
+
+	/**
+	 * 복사 시 잘못된 canned ACL을 지정하면 400 InvalidArgument인지 확인
+	 * SDK V1은 ACL을 열거형으로만 받아 잘못된 값을 보낼 수 없으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ACL")
+	void testCopyObjectInvalidAcl() {
+		testV2.testCopyObjectInvalidAcl();
+	}
+
+	/**
+	 * 없는 버킷으로 복사하면 404 NoSuchBucket인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testCopyObjectTargetBucketNotExist() {
+		test.testCopyObjectTargetBucketNotExist();
+		testV2.testCopyObjectTargetBucketNotExist();
+	}
+
+	/**
+	 * 대상 버킷에 쓰기 권한이 없으면 복사가 403 AccessDenied로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testCopyObjectTargetAccessDenied() {
+		test.testCopyObjectTargetAccessDenied();
+		testV2.testCopyObjectTargetAccessDenied();
+	}
 }

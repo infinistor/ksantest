@@ -13,6 +13,8 @@ package org.example.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.MalformedURLException;
 import java.util.List;
@@ -38,6 +40,9 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.ObjectTagging;
 import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.Headers;
+import java.util.Map;
 
 @Execution(ExecutionMode.CONCURRENT)
 public class CopyObject extends TestBase {
@@ -961,6 +966,215 @@ public class CopyObject extends TestBase {
 
 			var getResponse = client.getObject(bucketName, targetKey);
 			assertEquals(content, getBody(getResponse.getObjectContent()));
+		}
+	}
+
+	private static final String DIGITS = "0123456789";
+
+	/** 10바이트(0123456789) 원본 오브젝트(source)를 하나 넣은 버킷을 만든다. */
+	private String copySourceBucket(AmazonS3 client, int testId) {
+		var bucketName = createBucket(client, testId);
+		client.putObject(bucketName, "source", DIGITS);
+		return bucketName;
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testCopyObjectInvalidDirective() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 69);
+		// (SDK 가 x-amz-tagging-directive 를 직접 지정하지 못해 메타데이터 지시자만 확인한다)
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.copyObject(new CopyObjectRequest(bucketName, "source", bucketName, "target")
+						.withMetadataDirective("INVALID")));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.getObjectMetadata(bucketName, "target"));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testCopyObjectSourceInvalidVersionId() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 71);
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.copyObject(new CopyObjectRequest(bucketName, "source", bucketName, "target")
+						.withSourceVersionId("invalid")));
+		// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전으로 복사할 수 있다
+		client.copyObject(
+				new CopyObjectRequest(bucketName, "source", bucketName, "target").withSourceVersionId("null"));
+		assertEquals(DIGITS, getBody(client.getObject(bucketName, "target").getObjectContent()));
+
+		// 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		client.putObject(bucketName, "versioned", "content");
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_VERSION,
+				() -> client.copyObject(new CopyObjectRequest(bucketName, "versioned", bucketName, "target2")
+						.withSourceVersionId("null")));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testCopyObjectSourceVersionId() {
+		var key = "testCopyObjectSourceVersionId";
+		var client = getClient();
+		var bucketName = createBucket(client, 72);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var version1 = client.putObject(bucketName, key, "version1").getVersionId();
+		client.putObject(bucketName, key, "version2");
+
+		// 지정한 버전을 복사하고 새로 만든 버전을 알려준다
+		// (SDK 가 x-amz-copy-source-version-id 응답 헤더를 돌려주지 않아 복사된 내용으로 확인한다)
+		var response = client.copyObject(
+				new CopyObjectRequest(bucketName, key, bucketName, "target1").withSourceVersionId(version1));
+		assertNotNull(response.getVersionId());
+		assertEquals("version1", getBody(client.getObject(bucketName, "target1").getObjectContent()));
+
+		client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, "target2"));
+		assertEquals("version2", getBody(client.getObject(bucketName, "target2").getObjectContent()));
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testCopyObjectAttributesNotCopied() {
+		var client = getClient();
+		var bucketName = createBucket(client, 73);
+		var metadata = new ObjectMetadata();
+		metadata.setContentLength(DIGITS.length());
+		metadata.setContentType("text/plain");
+		metadata.setCacheControl("no-cache");
+		metadata.addUserMetadata("key", "value");
+		client.putObject(new PutObjectRequest(bucketName, "source", createBody(DIGITS), metadata)
+				.withRedirectLocation("/other").withStorageClass("STANDARD_IA"));
+		client.copyObject(new CopyObjectRequest(bucketName, "source", bucketName, "target"));
+
+		var response = client.getObjectMetadata(bucketName, "target");
+		assertEquals("text/plain", response.getContentType());
+		assertEquals("no-cache", response.getCacheControl());
+		assertEquals(Map.of("key", "value"), response.getUserMetadata());
+		// 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
+		assertNull(response.getStorageClass());
+		assertNull(response.getRawMetadataValue(Headers.REDIRECT_LOCATION));
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testCopyObjectReplaceWithoutMetadata() {
+		var client = getClient();
+		var bucketName = createBucket(client, 74);
+		var metadata = new ObjectMetadata();
+		metadata.setContentLength(DIGITS.length());
+		metadata.setContentType("text/plain");
+		metadata.setCacheControl("no-cache");
+		metadata.addUserMetadata("key", "value");
+		client.putObject(bucketName, "source", createBody(DIGITS), metadata);
+		client.copyObject(new CopyObjectRequest(bucketName, "source", bucketName, "target")
+				.withMetadataDirective(MetadataDirective.REPLACE));
+		// REPLACE 인데 아무것도 주지 않으면 원본의 메타데이터가 모두 빠진다
+		// (SDK 가 Content-Type 을 항상 붙여 보내므로 기본값 binary/octet-stream 은 확인하지 않는다)
+		var response = client.getObjectMetadata(bucketName, "target");
+		assertEquals(0, response.getUserMetadata().size());
+		assertNull(response.getCacheControl());
+	}
+
+	@Test
+	@Tag("StorageClass")
+	public void testCopyObjectStorageClass() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 75);
+		client.copyObject(
+				new CopyObjectRequest(bucketName, "source", bucketName, "target").withStorageClass("STANDARD_IA"));
+		assertEquals("STANDARD_IA", client.getObjectMetadata(bucketName, "target").getStorageClass());
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_STORAGE_CLASS,
+				() -> client.copyObject(
+						new CopyObjectRequest(bucketName, "source", bucketName, "target2").withStorageClass("INVALID")));
+	}
+
+	@Test
+	@Tag("Overwrite")
+	public void testCopyObjectToItselfWithChanges() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 76);
+
+		// 태그만 바꾸는 것은 변경으로 치지 않는다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.copyObject(new CopyObjectRequest(bucketName, "source", bucketName, "source")
+						.withNewObjectTagging(new ObjectTagging(List.of(new com.amazonaws.services.s3.model.Tag("key", "value"))))));
+
+		// 스토리지 클래스, 웹사이트 리다이렉트 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
+		// (SDK 는 암호화 설정을 새 메타데이터로만 줄 수 있어 메타데이터 교체가 함께 일어나므로 확인하지 않는다)
+		client.copyObject(
+				new CopyObjectRequest(bucketName, "source", bucketName, "source").withStorageClass("STANDARD_IA"));
+		assertEquals("STANDARD_IA", client.getObjectMetadata(bucketName, "source").getStorageClass());
+		client.copyObject(
+				new CopyObjectRequest(bucketName, "source", bucketName, "source").withRedirectLocation("/other"));
+		assertEquals("/other",
+				client.getObjectMetadata(bucketName, "source").getRawMetadataValue(Headers.REDIRECT_LOCATION));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testCopyObjectToItselfFromOldVersion() {
+		var key = "testCopyObjectToItselfFromOldVersion";
+		var client = getClient();
+		var bucketName = createBucket(client, 77);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var version1 = client.putObject(bucketName, key, "version1").getVersionId();
+		var version2 = client.putObject(bucketName, key, "version2").getVersionId();
+
+		// 버저닝 버킷이어도 최신 버전을 그대로 자기 자신에게 복사할 수는 없다
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> client.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key)));
+
+		// 이전 버전을 지정하면 변경 없이도 복사되어 그 내용이 새 최신 버전이 된다
+		var response = client
+				.copyObject(new CopyObjectRequest(bucketName, key, bucketName, key).withSourceVersionId(version1));
+		assertNotNull(response.getVersionId());
+		assertTrue(!List.of(version1, version2).contains(response.getVersionId()));
+		assertEquals("version1", getBody(client.getObject(bucketName, key).getObjectContent()));
+		assertEquals(3, client.listVersions(bucketName, "").getVersionSummaries().size());
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testCopyObjectMetadataTooLarge() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 78);
+		var metadata = new ObjectMetadata();
+		metadata.addUserMetadata("key", "v".repeat(2100));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.METADATA_TOO_LARGE,
+				() -> client.copyObject(new CopyObjectRequest(bucketName, "source", bucketName, "target")
+						.withNewObjectMetadata(metadata)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testCopyObjectTargetBucketNotExist() {
+		var client = getClient();
+		var bucketName = copySourceBucket(client, 80);
+		var targetBucketName = getNewBucketNameOnly(80);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.copyObject(new CopyObjectRequest(bucketName, "source", targetBucketName, "target")));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testCopyObjectTargetAccessDenied() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = copySourceBucket(client, 81);
+		var altBucketName = createBucket(altClient, 81);
+		try {
+			altClient.putObject(altBucketName, "source", "content");
+			// 원본은 읽을 수 있어도 대상 버킷에 쓸 권한이 없으면 거부된다
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+					() -> altClient.copyObject(new CopyObjectRequest(altBucketName, "source", bucketName, "target")));
+			assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.getObjectMetadata(bucketName, "target"));
+		} finally {
+			// 보조 사용자의 버킷은 기본 정리 대상이 아니므로 직접 지운다
+			altClient.deleteObject(altBucketName, "source");
+			altClient.deleteBucket(altBucketName);
+			deleteBucketList(altBucketName);
 		}
 	}
 }

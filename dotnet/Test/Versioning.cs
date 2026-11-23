@@ -1585,5 +1585,89 @@ namespace s3tests.Test
 			else
 				DeleteSuspendedVersioningObj(client, bucketName, key, versionIds, contents, deleteMarkerIds);
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "버저닝을 한 번도 설정하지 않은 버킷은 Status 와 MFADelete 가 없는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestVersioningGetNewBucket()
+		{
+			TestId = 40;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 버저닝을 한 번도 설정하지 않은 버킷은 Status 가 없다(SDK v4 는 Status 가 없으면 Off 로 돌려준다)
+			var config = client.GetBucketVersioning(bucketName).VersioningConfig;
+			Assert.Equal(VersionStatus.Off, config.Status);
+			Assert.Null(config.EnableMfaDelete);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "Enabled, Suspended 외의 값으로 버저닝을 설정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestVersioningInvalidStatus()
+		{
+			TestId = 41;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// Enabled, Suspended 외의 값은 거부된다(버저닝을 끈 상태로 되돌릴 수 없다)
+			foreach (var status in new[] { "Invalid", "Disabled" })
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+					() => client.PutBucketVersioning(bucketName, status: new VersionStatus(status)));
+			// SDK v4 는 Status 가 없으면 Off 로 돌려준다
+			Assert.Equal(VersionStatus.Off, client.GetBucketVersioning(bucketName).VersioningConfig.Status);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "Status 가 없는 버저닝 설정은 실패하고 기존 상태가 유지되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestVersioningEmptyConfiguration()
+		{
+			TestId = 42;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			// Status 가 없는 설정은 거부되고 기존 상태가 유지된다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.ILLEGAL_VERSIONING_CONFIGURATION_EXCEPTION,
+				() => client.PutBucketVersioning(bucketName));
+			Assert.Equal(VersionStatus.Enabled, client.GetBucketVersioning(bucketName).VersioningConfig.Status);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 버킷에 버저닝 조회/설정을 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestVersioningBucketNotExist()
+		{
+			TestId = 43;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.GetBucketVersioning(bucketName));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET,
+				() => client.PutBucketVersioning(bucketName, status: VersionStatus.Enabled));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Versioning")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자가 버저닝 조회/설정을 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestVersioningAccessDenied()
+		{
+			TestId = 44;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.GetBucketVersioning(bucketName));
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED,
+				() => altClient.PutBucketVersioning(bucketName, status: VersionStatus.Suspended));
+			Assert.Equal(VersionStatus.Enabled, client.GetBucketVersioning(bucketName).VersioningConfig.Status);
+		}
 	}
 }

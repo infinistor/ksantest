@@ -39,6 +39,11 @@ import software.amazon.awssdk.services.s3.model.ObjectLockLegalHoldStatus;
 import software.amazon.awssdk.services.s3.model.ObjectLockMode;
 import software.amazon.awssdk.services.s3.model.ObjectLockRetention;
 import software.amazon.awssdk.services.s3.model.ObjectLockRetentionMode;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class Lock extends TestBase {
 	@Test
@@ -1235,6 +1240,232 @@ public class Lock extends TestBase {
 				delay(1000);
 			}
 		}
+	}
+	// endregion
+
+	// region 오브젝트 잠금 API 검증
+	static final Instant RETENTION_DATE = Instant.parse("2030-02-01T00:00:00Z");
+	static final Instant PAST_DATE = Instant.parse("2020-01-01T00:00:00Z");
+
+	String createBucketObjectLock(S3Client client, int testId) {
+		var bucketName = getNewBucketName(testId);
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+		return bucketName;
+	}
+
+	/** 기본 보존 규칙이 있는 잠금 설정. null 인 항목은 보내지 않는다. */
+	static ObjectLockConfiguration lockRule(ObjectLockRetentionMode mode, Integer days, Integer years) {
+		return ObjectLockConfiguration.builder().objectLockEnabled(ObjectLockEnabled.ENABLED)
+				.rule(r -> r.defaultRetention(d -> d.mode(mode).days(days).years(years))).build();
+	}
+
+	@Test
+	@Tag("retention")
+	public void testObjectLockGetNotConfigured() {
+		var key = "testObjectLockGetNotConfigured";
+		var client = getClient();
+		var bucketName = createBucketObjectLock(client, 37);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+
+		// 보존 기한·법적 보존을 설정한 적이 없는 오브젝트
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_OBJECT_LOCK_CONFIGURATION,
+				() -> client.getObjectRetention(g -> g.bucket(bucketName).key(key)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_OBJECT_LOCK_CONFIGURATION,
+				() -> client.getObjectLegalHold(g -> g.bucket(bucketName).key(key)));
+	}
+
+	@Test
+	@Tag("retention")
+	public void testObjectLockPutObjRetentionPastDate() {
+		var key = "testObjectLockPutObjRetentionPastDate";
+		var client = getClient();
+		var bucketName = createBucketObjectLock(client, 38);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.putObjectRetention(p -> p.bucket(bucketName).key(key)
+						.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE).retainUntilDate(PAST_DATE))));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjectLockKeyNotExist() {
+		var key = "testObjectLockKeyNotExist";
+		var client = getClient();
+		var bucketName = createBucketObjectLock(client, 39);
+
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.putObjectRetention(p -> p.bucket(bucketName).key(key)
+						.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE).retainUntilDate(RETENTION_DATE))));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.getObjectRetention(g -> g.bucket(bucketName).key(key)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.putObjectLegalHold(p -> p.bucket(bucketName).key(key)
+						.legalHold(l -> l.status(ObjectLockLegalHoldStatus.ON))));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.getObjectLegalHold(g -> g.bucket(bucketName).key(key)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjectLockPutObjectInvalidHeaders() {
+		var key = "testObjectLockPutObjectInvalidHeaders";
+		var client = getClient();
+		var bucketName = createBucketObjectLock(client, 40);
+
+		var invalidHeaders = List.<Consumer<PutObjectRequest.Builder>>of(
+				p -> p.objectLockMode(ObjectLockMode.GOVERNANCE), // 모드만
+				p -> p.objectLockRetainUntilDate(RETENTION_DATE), // 기한만
+				p -> p.objectLockMode(ObjectLockMode.GOVERNANCE).objectLockRetainUntilDate(PAST_DATE), // 지난 기한
+				p -> p.objectLockMode("INVALID").objectLockRetainUntilDate(RETENTION_DATE),
+				p -> p.objectLockLegalHoldStatus("INVALID"));
+		for (var headers : invalidHeaders)
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+					() -> client.putObject(p -> headers.accept(p.bucket(bucketName).key(key)),
+							RequestBody.fromString("content")));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.headObject(h -> h.bucket(bucketName).key(key)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjectLockPutObjectInvalidBucket() {
+		var key = "testObjectLockPutObjectInvalidBucket";
+		var client = getClient();
+		var bucketName = createBucket(client, 41);
+
+		// Object Lock 을 켜지 않은 버킷에는 잠금 헤더를 쓸 수 없다
+		var lockHeaders = List.<Consumer<PutObjectRequest.Builder>>of(
+				p -> p.objectLockMode(ObjectLockMode.GOVERNANCE).objectLockRetainUntilDate(RETENTION_DATE),
+				p -> p.objectLockLegalHoldStatus(ObjectLockLegalHoldStatus.ON));
+		for (var headers : lockHeaders)
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+					() -> client.putObject(p -> headers.accept(p.bucket(bucketName).key(key)),
+							RequestBody.fromString("content")));
+	}
+
+	@Test
+	@Tag("legalhold")
+	public void testObjectLockLegalHoldOnPutObject() {
+		var key = "testObjectLockLegalHoldOnPutObject";
+		var content = "content";
+		var client = getClient();
+		var bucketName = createBucketObjectLock(client, 42);
+
+		// 잠금 헤더가 있는 PutObject 는 Content-MD5 나 체크섬이 있어야 한다
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key).contentMD5(Utils.getMD5(content))
+				.objectLockLegalHoldStatus(ObjectLockLegalHoldStatus.ON), RequestBody.fromString(content)).versionId();
+		try {
+			var head = client.headObject(h -> h.bucket(bucketName).key(key));
+			assertEquals(ObjectLockLegalHoldStatus.ON, head.objectLockLegalHoldStatus());
+			assertNull(head.objectLockMode());
+
+			// 버전을 지정하지 않은 삭제(삭제 마커)와 덮어쓰기는 막지 않는다
+			assertEquals(true, client.deleteObject(d -> d.bucket(bucketName).key(key)).deleteMarker());
+			assertNotEquals(versionId,
+					client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("new")).versionId());
+
+			// 법적 보존 중인 버전은 bypass 를 줘도 지울 수 없다
+			assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED, () -> client.deleteObject(
+					d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true)));
+			var response = client.deleteObjects(d -> d.bucket(bucketName)
+					.delete(o -> o.objects(ObjectIdentifier.builder().key(key).versionId(versionId).build())));
+			assertEquals(0, response.deleted().size());
+			assertEquals(MainData.ACCESS_DENIED, response.errors().get(0).code());
+			assertEquals(content,
+					getBody(client.getObject(g -> g.bucket(bucketName).key(key).versionId(versionId))));
+		} finally {
+			// 법적 보존을 풀어야 버킷을 정리할 수 있다
+			client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).versionId(versionId)
+					.legalHold(l -> l.status(ObjectLockLegalHoldStatus.OFF)));
+		}
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjectLockDeleteMarker() {
+		var key = "testObjectLockDeleteMarker";
+		var client = getClient();
+		var bucketName = createBucketObjectLock(client, 43);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		var markerId = client.deleteObject(d -> d.bucket(bucketName).key(key)).versionId();
+		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
+				.retainUntilDate(RETENTION_DATE).build();
+
+		// 삭제 마커에는 보존 기한·법적 보존을 걸 수 없다(버전을 지정하든 않든. versionId 가 null 이면 지정하지 않은 요청)
+		for (var target : Arrays.asList(markerId, null)) {
+			assertS3Error(HttpStatus.SC_METHOD_NOT_ALLOWED, MainData.METHOD_NOT_ALLOWED,
+					() -> client.putObjectRetention(
+							p -> p.bucket(bucketName).key(key).versionId(target).retention(retention)));
+			assertS3Error(HttpStatus.SC_METHOD_NOT_ALLOWED, MainData.METHOD_NOT_ALLOWED,
+					() -> client.getObjectRetention(g -> g.bucket(bucketName).key(key).versionId(target)));
+			assertS3Error(HttpStatus.SC_METHOD_NOT_ALLOWED, MainData.METHOD_NOT_ALLOWED,
+					() -> client.putObjectLegalHold(p -> p.bucket(bucketName).key(key).versionId(target)
+							.legalHold(l -> l.status(ObjectLockLegalHoldStatus.ON))));
+		}
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testObjectLockPutObjLockInvalidRule() {
+		var client = getClient();
+		var bucketName = createBucketObjectLock(client, 44);
+		Consumer<ObjectLockConfiguration> put = conf -> client
+				.putObjectLockConfiguration(p -> p.bucket(bucketName).objectLockConfiguration(conf));
+
+		// ObjectLockEnabled 누락, 모드 누락
+		var noEnabled = ObjectLockConfiguration.builder()
+				.rule(r -> r.defaultRetention(d -> d.mode(ObjectLockRetentionMode.GOVERNANCE).days(1))).build();
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML, () -> put.accept(noEnabled));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML,
+				() -> put.accept(lockRule(null, 1, null)));
+		// 기간 누락
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
+				() -> put.accept(lockRule(ObjectLockRetentionMode.GOVERNANCE, null, null)));
+		// 기본 보존 기간은 36500일(100년)까지
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> put.accept(lockRule(ObjectLockRetentionMode.GOVERNANCE, 36501, null)));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> put.accept(lockRule(ObjectLockRetentionMode.GOVERNANCE, null, 101)));
+
+		put.accept(lockRule(ObjectLockRetentionMode.GOVERNANCE, 36500, null));
+		var retention = client.getObjectLockConfiguration(g -> g.bucket(bucketName)).objectLockConfiguration().rule()
+				.defaultRetention();
+		assertEquals(ObjectLockRetentionMode.GOVERNANCE, retention.mode());
+		assertEquals(36500, retention.days());
+		assertNull(retention.years());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testObjectLockPutObjLockRemoveRule() {
+		var client = getClient();
+		var bucketName = createBucketObjectLock(client, 45);
+		client.putObjectLockConfiguration(p -> p.bucket(bucketName)
+				.objectLockConfiguration(lockRule(ObjectLockRetentionMode.GOVERNANCE, 1, null)));
+
+		// Rule 없이 다시 넣으면 기본 보존 규칙이 지워진다
+		client.putObjectLockConfiguration(p -> p.bucket(bucketName)
+				.objectLockConfiguration(c -> c.objectLockEnabled(ObjectLockEnabled.ENABLED)));
+		var conf = client.getObjectLockConfiguration(g -> g.bucket(bucketName)).objectLockConfiguration();
+		assertEquals(ObjectLockEnabled.ENABLED, conf.objectLockEnabled());
+		assertNull(conf.rule());
+
+		var key = "testObjectLockPutObjLockRemoveRule";
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		assertNull(client.headObject(h -> h.bucket(bucketName).key(key)).objectLockMode());
+	}
+
+	@Test
+	@Tag("Access")
+	public void testObjectLockGetObjLockAccessDenied() {
+		var client = getClient();
+		var bucketName = createBucketObjectLock(client, 46);
+
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> getAltClient().getObjectLockConfiguration(g -> g.bucket(bucketName)));
+		var notExist = getNewBucketNameOnly(46);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.getObjectLockConfiguration(g -> g.bucket(notExist)));
 	}
 	// endregion
 }

@@ -12,6 +12,7 @@ package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.model.CreateBucketRequest;
 
 public class PutBucket extends TestBase {
 	@Test
@@ -202,5 +204,102 @@ public class PutBucket extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 24);
 		client.getBucketLocation(bucketName);
+	}
+
+	/** 버킷 생성이 주어진 에러로 실패하는지 확인한다. 혹시 만들어지면 남지 않게 바로 지운다. */
+	private void assertCreateError(String bucketName, int statusCode, String errorCode) {
+		var client = getClient();
+		var e = assertThrows(AmazonServiceException.class, () -> {
+			client.createBucket(bucketName);
+			client.deleteBucket(bucketName);
+		});
+		assertEquals(statusCode, e.getStatusCode());
+		assertEquals(errorCode, e.getErrorCode());
+	}
+
+	/** 이름을 length 자로 자르고 끝에 남은 '-', '.' 를 떼어낸다. */
+	private static String trimBucketName(String bucketName, int length) {
+		if (bucketName.length() > length)
+			bucketName = bucketName.substring(0, length);
+		return bucketName.replaceAll("[-.]+$", "");
+	}
+
+	@Test
+	@Tag("CreationRules")
+	public void testBucketCreateNamingBadUppercase() {
+		// SDK 가 요청을 보내기 전에 이름을 검사해 막는다
+		checkBadBucketName(getNewBucketNameOnly(25).toUpperCase());
+	}
+
+	@Test
+	@Tag("CreationRules")
+	public void testBucketCreateNamingBadPunycodePrefix() {
+		// xn-- 로 시작하는 이름은 쓸 수 없다
+		var bucketName = trimBucketName("xn--" + getNewBucketNameOnly(26), 63);
+		assertCreateError(bucketName, HttpStatus.SC_BAD_REQUEST, MainData.INVALID_BUCKET_NAME);
+	}
+
+	@Test
+	@Tag("CreationRules")
+	public void testBucketCreateNamingBadDotAtEdge() {
+		// SDK 가 요청을 보내기 전에 이름을 검사해 막는다
+		var bucketName = trimBucketName(getNewBucketNameOnly(27), 60);
+		checkBadBucketName("." + bucketName);
+		checkBadBucketName(bucketName + ".");
+	}
+
+	@Test
+	@Tag("CreationRules")
+	public void testBucketCreateNamingReserved() {
+		var bucketName = trimBucketName(getNewBucketNameOnly(28), 45);
+
+		// 예약된 접두어·접미어가 붙은 이름은 만들 수 없다
+		for (var prefix : List.of("sthree-", "amzn-s3-demo-"))
+			assertCreateError(prefix + bucketName, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+		for (var suffix : List.of("-s3alias", "--ol-s3", ".mrap"))
+			assertCreateError(bucketName + suffix, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
+	}
+
+	@Test
+	@Tag("location")
+	public void testBucketCreateInvalidLocation() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(29);
+
+		var e = assertThrows(AmazonServiceException.class, () -> {
+			client.createBucket(new CreateBucketRequest(bucketName, "invalid-region-1"));
+			client.deleteBucket(bucketName);
+		});
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		// us-east-1 엔드포인트는 InvalidLocationConstraint, 그 외 리전은 IllegalLocationConstraintException
+		assertTrue(List.of(MainData.ILLEGAL_LOCATION_CONSTRAINT_EXCEPTION, MainData.INVALID_LOCATION_CONSTRAINT)
+				.contains(e.getErrorCode()), e.getErrorCode());
+
+		e = assertThrows(AmazonServiceException.class, () -> client.getBucketLocation(bucketName));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("location")
+	public void testGetBucketLocationNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(30);
+
+		var e = assertThrows(AmazonServiceException.class, () -> client.getBucketLocation(bucketName));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("location")
+	public void testGetBucketLocationAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 31);
+
+		var e = assertThrows(AmazonServiceException.class, () -> altClient.getBucketLocation(bucketName));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
 	}
 }

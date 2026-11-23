@@ -774,3 +774,212 @@ class TestLock(S3TestBase):
             VersionId=put_response["VersionId"],
             BypassGovernanceRetention=True,
         )
+
+    PAST_DATE = datetime(2020, 1, 1, tzinfo=timezone.utc)
+
+    @pytest.mark.tag("retention")
+    def test_object_lock_get_not_configured(self):
+        key = "test_object_lock_get_not_configured"
+        client = self.get_client()
+        bucket_name = self.create_bucket_object_lock(client, 37)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        # 보존 기한·법적 보존을 설정한 적이 없는 오브젝트
+        self.assert_client_error(
+            lambda: client.get_object_retention(Bucket=bucket_name, Key=key),
+            404,
+            md.NO_SUCH_OBJECT_LOCK_CONFIGURATION,
+        )
+        self.assert_client_error(
+            lambda: client.get_object_legal_hold(Bucket=bucket_name, Key=key),
+            404,
+            md.NO_SUCH_OBJECT_LOCK_CONFIGURATION,
+        )
+
+    @pytest.mark.tag("retention")
+    def test_object_lock_put_obj_retention_past_date(self):
+        key = "test_object_lock_put_obj_retention_past_date"
+        client = self.get_client()
+        bucket_name = self.create_bucket_object_lock(client, 38)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        self.assert_client_error(
+            lambda: client.put_object_retention(
+                Bucket=bucket_name, Key=key, Retention={"Mode": "GOVERNANCE", "RetainUntilDate": self.PAST_DATE}
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_object_lock_key_not_exist(self):
+        key = "test_object_lock_key_not_exist"
+        client = self.get_client()
+        bucket_name = self.create_bucket_object_lock(client, 39)
+        requests = [
+            lambda: client.put_object_retention(
+                Bucket=bucket_name, Key=key, Retention={"Mode": "GOVERNANCE", "RetainUntilDate": RETENTION_DATE}
+            ),
+            lambda: client.get_object_retention(Bucket=bucket_name, Key=key),
+            lambda: client.put_object_legal_hold(Bucket=bucket_name, Key=key, LegalHold={"Status": "ON"}),
+            lambda: client.get_object_legal_hold(Bucket=bucket_name, Key=key),
+        ]
+        for request in requests:
+            self.assert_client_error(request, 404, md.NO_SUCH_KEY)
+
+    @pytest.mark.tag("ERROR")
+    def test_object_lock_put_object_invalid_headers(self):
+        key = "test_object_lock_put_object_invalid_headers"
+        client = self.get_client()
+        bucket_name = self.create_bucket_object_lock(client, 40)
+        invalid_headers = [
+            {"ObjectLockMode": "GOVERNANCE"},  # 모드만
+            {"ObjectLockRetainUntilDate": RETENTION_DATE},  # 기한만
+            {"ObjectLockMode": "GOVERNANCE", "ObjectLockRetainUntilDate": self.PAST_DATE},  # 지난 기한
+            {"ObjectLockMode": "INVALID", "ObjectLockRetainUntilDate": RETENTION_DATE},
+            {"ObjectLockLegalHoldStatus": "INVALID"},
+        ]
+        for headers in invalid_headers:
+            self.assert_client_error(
+                lambda headers=headers: client.put_object(Bucket=bucket_name, Key=key, Body=b"content", **headers),
+                400,
+                md.INVALID_ARGUMENT,
+            )
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key=key), 404, "404")
+
+    @pytest.mark.tag("ERROR")
+    def test_object_lock_put_object_invalid_bucket(self):
+        key = "test_object_lock_put_object_invalid_bucket"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 41)
+        # Object Lock 을 켜지 않은 버킷에는 잠금 헤더를 쓸 수 없다
+        for headers in (
+            {"ObjectLockMode": "GOVERNANCE", "ObjectLockRetainUntilDate": RETENTION_DATE},
+            {"ObjectLockLegalHoldStatus": "ON"},
+        ):
+            self.assert_client_error(
+                lambda headers=headers: client.put_object(Bucket=bucket_name, Key=key, Body=b"content", **headers),
+                400,
+                md.INVALID_REQUEST,
+            )
+
+    @pytest.mark.tag("legalhold")
+    def test_object_lock_legal_hold_on_put_object(self):
+        key = "test_object_lock_legal_hold_on_put_object"
+        client = self.get_client()
+        bucket_name = self.create_bucket_object_lock(client, 42)
+        # 잠금 헤더가 있는 PutObject 는 Content-MD5 나 체크섬이 있어야 한다
+        version_id = client.put_object(
+            Bucket=bucket_name,
+            Key=key,
+            Body=b"content",
+            ContentMD5=utils.get_md5("content"),
+            ObjectLockLegalHoldStatus="ON",
+        )["VersionId"]
+        try:
+            response = client.head_object(Bucket=bucket_name, Key=key)
+            assert response["ObjectLockLegalHoldStatus"] == "ON"
+            assert "ObjectLockMode" not in response
+
+            # 버전을 지정하지 않은 삭제(삭제 마커)와 덮어쓰기는 막지 않는다
+            assert client.delete_object(Bucket=bucket_name, Key=key)["DeleteMarker"] is True
+            assert client.put_object(Bucket=bucket_name, Key=key, Body=b"new")["VersionId"] != version_id
+
+            # 법적 보존 중인 버전은 bypass 를 줘도 지울 수 없다
+            self.assert_client_error(
+                lambda: client.delete_object(
+                    Bucket=bucket_name, Key=key, VersionId=version_id, BypassGovernanceRetention=True
+                ),
+                403,
+                md.ACCESS_DENIED,
+            )
+            response = client.delete_objects(
+                Bucket=bucket_name, Delete={"Objects": [{"Key": key, "VersionId": version_id}]}
+            )
+            assert not response.get("Deleted")
+            assert response["Errors"][0]["Code"] == md.ACCESS_DENIED
+            assert self.get_body(client.get_object(Bucket=bucket_name, Key=key, VersionId=version_id)) == "content"
+        finally:
+            client.put_object_legal_hold(
+                Bucket=bucket_name, Key=key, VersionId=version_id, LegalHold={"Status": "OFF"}
+            )
+
+    @pytest.mark.tag("ERROR")
+    def test_object_lock_delete_marker(self):
+        key = "test_object_lock_delete_marker"
+        client = self.get_client()
+        bucket_name = self.create_bucket_object_lock(client, 43)
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        marker_id = client.delete_object(Bucket=bucket_name, Key=key)["VersionId"]
+        retention = {"Mode": "GOVERNANCE", "RetainUntilDate": RETENTION_DATE}
+        # 삭제 마커에는 보존 기한·법적 보존을 걸 수 없다(버전을 지정하든 않든)
+        for extra in ({"VersionId": marker_id}, {}):
+            requests = [
+                lambda extra=extra: client.put_object_retention(
+                    Bucket=bucket_name, Key=key, Retention=retention, **extra
+                ),
+                lambda extra=extra: client.get_object_retention(Bucket=bucket_name, Key=key, **extra),
+                lambda extra=extra: client.put_object_legal_hold(
+                    Bucket=bucket_name, Key=key, LegalHold={"Status": "ON"}, **extra
+                ),
+            ]
+            for request in requests:
+                self.assert_client_error(request, 405, md.METHOD_NOT_ALLOWED)
+
+    @pytest.mark.tag("ERROR")
+    def test_object_lock_put_obj_lock_invalid_rule(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_object_lock(client, 44)
+
+        def put(conf: dict):
+            return client.put_object_lock_configuration(Bucket=bucket_name, ObjectLockConfiguration=conf)
+
+        def rule(**retention) -> dict:
+            return {"ObjectLockEnabled": "Enabled", "Rule": {"DefaultRetention": retention}}
+
+        # ObjectLockEnabled 누락, 모드 누락
+        self.assert_client_error(
+            lambda: put({"Rule": {"DefaultRetention": {"Mode": "GOVERNANCE", "Days": 1}}}), 400, md.MALFORMED_XML
+        )
+        self.assert_client_error(lambda: put(rule(Days=1)), 400, md.MALFORMED_XML)
+        # 기간 누락
+        self.assert_client_error(lambda: put(rule(Mode="GOVERNANCE")), 400, md.INVALID_REQUEST)
+        # 기본 보존 기간은 36500일(100년)까지
+        self.assert_client_error(lambda: put(rule(Mode="GOVERNANCE", Days=36501)), 400, md.INVALID_ARGUMENT)
+        self.assert_client_error(lambda: put(rule(Mode="GOVERNANCE", Years=101)), 400, md.INVALID_ARGUMENT)
+        put(rule(Mode="GOVERNANCE", Days=36500))
+        response = client.get_object_lock_configuration(Bucket=bucket_name)
+        assert response["ObjectLockConfiguration"]["Rule"]["DefaultRetention"] == {"Mode": "GOVERNANCE", "Days": 36500}
+
+    @pytest.mark.tag("Check")
+    def test_object_lock_put_obj_lock_remove_rule(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_object_lock(client, 45)
+        client.put_object_lock_configuration(
+            Bucket=bucket_name,
+            ObjectLockConfiguration={
+                "ObjectLockEnabled": "Enabled",
+                "Rule": {"DefaultRetention": {"Mode": "GOVERNANCE", "Days": 1}},
+            },
+        )
+        # Rule 없이 다시 넣으면 기본 보존 규칙이 지워진다
+        client.put_object_lock_configuration(
+            Bucket=bucket_name, ObjectLockConfiguration={"ObjectLockEnabled": "Enabled"}
+        )
+        response = client.get_object_lock_configuration(Bucket=bucket_name)
+        assert response["ObjectLockConfiguration"] == {"ObjectLockEnabled": "Enabled"}
+
+        key = "test_object_lock_put_obj_lock_remove_rule"
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"content")
+        assert "ObjectLockMode" not in client.head_object(Bucket=bucket_name, Key=key)
+
+    @pytest.mark.tag("Access")
+    def test_object_lock_get_obj_lock_access_denied(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket_object_lock(client, 46)
+        self.assert_client_error(
+            lambda: self.get_alt_client().get_object_lock_configuration(Bucket=bucket_name), 403, md.ACCESS_DENIED
+        )
+        self.assert_client_error(
+            lambda: client.get_object_lock_configuration(Bucket=self.get_new_bucket_name_only(46)),
+            404,
+            md.NO_SUCH_BUCKET,
+        )

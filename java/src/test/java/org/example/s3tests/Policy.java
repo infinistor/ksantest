@@ -262,4 +262,93 @@ class Policy {
 		testV2.testBucketPolicyStatusWithTagCondition();
 	}
 
+	/**
+	 * 정책이 없는 버킷의 정책·정책 상태 조회가 NoSuchBucketPolicy 인지 확인
+	 */
+	@Test
+	@Tag("Get")
+	void testBucketPolicyGetNotExist() {
+		test.testBucketPolicyGetNotExist();
+		testV2.testBucketPolicyGetNotExist();
+	}
+
+	/**
+	 * 정책이 없는 버킷의 정책 삭제가 성공하는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testBucketPolicyDeleteNotExist() {
+		test.testBucketPolicyDeleteNotExist();
+		testV2.testBucketPolicyDeleteNotExist();
+	}
+
+	/**
+	 * 정책을 설정·조회·삭제하고 삭제 뒤에는 NoSuchBucketPolicy 인지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testBucketPolicyPutGetDelete() {
+		test.testBucketPolicyPutGetDelete();
+		testV2.testBucketPolicyPutGetDelete();
+	}
+
+	/**
+	 * 없는 버킷의 정책 조회·설정·삭제가 NoSuchBucket 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketPolicyBucketNotExist() {
+		test.testBucketPolicyBucketNotExist();
+		testV2.testBucketPolicyBucketNotExist();
+	}
+
+	/**
+	 * 다른 사용자의 정책 조회·설정·삭제가 AccessDenied 이고 정책이 그대로인지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testBucketPolicyAccessDenied() {
+		test.testBucketPolicyAccessDenied();
+		testV2.testBucketPolicyAccessDenied();
+	}
+
+	/**
+	 * JSON 이 아니거나 Statement 가 비었거나 Version 이 잘못된 정책이 MalformedPolicy 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketPolicyInvalidJson() {
+		test.testBucketPolicyInvalidJson();
+		testV2.testBucketPolicyInvalidJson();
+	}
+
+	/**
+	 * Effect·Action·Principal·Condition 이 올바르지 않은 정책이 MalformedPolicy 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketPolicyInvalidElement() {
+		test.testBucketPolicyInvalidElement();
+		testV2.testBucketPolicyInvalidElement();
+	}
+
+	/**
+	 * 다른 버킷 리소스, 액션과 맞지 않는 리소스, Resource·Principal 누락이 MalformedPolicy 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketPolicyInvalidResource() {
+		test.testBucketPolicyInvalidResource();
+		testV2.testBucketPolicyInvalidResource();
+	}
+
+	/**
+	 * 20KB 를 넘는 정책이 MalformedPolicy 인지 확인
+	 */
+	@Test
+	@Tag("Max")
+	void testBucketPolicyTooLarge() {
+		test.testBucketPolicyTooLarge();
+		testV2.testBucketPolicyTooLarge();
+	}
 }

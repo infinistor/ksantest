@@ -443,4 +443,73 @@ class ListObjectsVersions {
 		testV2.testVersioningObjListMarker();
 	}
 
+	/**
+	 * max-keys가 음수이면 400 InvalidArgument인지 확인
+	 * SDK V1은 음수 max-keys를 요청에 싣지 않으므로 V2만 테스트한다.
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketListVersionsMaxKeysNegative() {
+		testV2.testBucketListVersionsMaxKeysNegative();
+	}
+
+	/**
+	 * encoding-type이 잘못되면 400 InvalidArgument인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketListVersionsEncodingInvalid() {
+		test.testBucketListVersionsEncodingInvalid();
+		testV2.testBucketListVersionsEncodingInvalid();
+	}
+
+	/**
+	 * 키 마커 없는 버전 마커와 형식이 잘못된 버전 마커가 400 InvalidArgument인지 확인
+	 */
+	@Test
+	@Tag("Marker")
+	void testBucketListVersionsVersionIdMarkerInvalid() {
+		test.testBucketListVersionsVersionIdMarkerInvalid();
+		testV2.testBucketListVersionsVersionIdMarkerInvalid();
+	}
+
+	/**
+	 * 버전 목록을 한 건씩 나눠 조회하면 최신 버전부터 순서대로 나오는지 확인
+	 */
+	@Test
+	@Tag("Marker")
+	void testBucketListVersionsPagination() {
+		test.testBucketListVersionsPagination();
+		testV2.testBucketListVersionsPagination();
+	}
+
+	/**
+	 * 삭제 마커가 최신이 되고 기존 버전은 최신이 아니게 되는지 확인
+	 */
+	@Test
+	@Tag("DeleteMarker")
+	void testBucketListVersionsDeleteMarker() {
+		test.testBucketListVersionsDeleteMarker();
+		testV2.testBucketListVersionsDeleteMarker();
+	}
+
+	/**
+	 * 버저닝을 쓰지 않는 버킷의 오브젝트가 모두 null 버전이고 최신인지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testBucketListVersionsUnversioned() {
+		test.testBucketListVersionsUnversioned();
+		testV2.testBucketListVersionsUnversioned();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 버전 목록 조회가 403 AccessDenied로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testBucketListVersionsAltUser() {
+		test.testBucketListVersionsAltUser();
+		testV2.testBucketListVersionsAltUser();
+	}
 }

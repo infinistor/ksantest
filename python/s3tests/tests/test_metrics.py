@@ -181,3 +181,113 @@ class TestMetrics(S3TestBase):
         assert response["MetricsConfiguration"]["Filter"]["And"]["Prefix"] == prefix
         assert response["MetricsConfiguration"]["Filter"]["And"]["Tags"][0]["Key"] == tag["Key"]
         assert response["MetricsConfiguration"]["Filter"]["And"]["Tags"][0]["Value"] == tag["Value"]
+
+    @staticmethod
+    def _put_metrics(client, bucket_name: str, metric_id: str, config: dict | None = None):
+        return client.put_bucket_metrics_configuration(
+            Bucket=bucket_name,
+            Id=metric_id,
+            MetricsConfiguration=config if config is not None else {"Id": metric_id},
+        )
+
+    @pytest.mark.tag("Max")
+    def test_put_metrics_id_length(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 15)
+        # ID 는 64자까지 허용한다
+        metric_id = "a" * 64
+        self._put_metrics(client, bucket_name, metric_id)
+        response = client.get_bucket_metrics_configuration(Bucket=bucket_name, Id=metric_id)
+        assert response["MetricsConfiguration"]["Id"] == metric_id
+
+        self.assert_client_error(lambda: self._put_metrics(client, bucket_name, "a" * 65), 400, md.MALFORMED_XML)
+
+    @pytest.mark.tag("Error")
+    def test_put_metrics_invalid_id(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 16)
+        # ID 에는 영숫자와 - _ . 만 쓸 수 있다
+        self.assert_client_error(lambda: self._put_metrics(client, bucket_name, "a b/c"), 400, md.MALFORMED_XML)
+        assert not client.list_bucket_metrics_configurations(Bucket=bucket_name).get("MetricsConfigurationList")
+
+    @pytest.mark.tag("Error")
+    def test_put_metrics_id_mismatch(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 17)
+        # 쿼리의 id 와 본문의 Id 가 다르면 거부된다
+        self.assert_client_error(
+            lambda: self._put_metrics(client, bucket_name, "metrics-id", {"Id": "other-id"}), 400, md.MALFORMED_XML
+        )
+        assert not client.list_bucket_metrics_configurations(Bucket=bucket_name).get("MetricsConfigurationList")
+
+    @pytest.mark.tag("Error")
+    def test_put_metrics_invalid_filter(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 18)
+        tag = {"Key": "key", "Value": "value"}
+        # And 안에 조건이 하나뿐이면 거부된다
+        self.assert_client_error(
+            lambda: self._put_metrics(
+                client, bucket_name, "metrics-id", {"Id": "metrics-id", "Filter": {"And": {"Prefix": "test"}}}
+            ),
+            400,
+            md.MALFORMED_XML,
+        )
+        # And 없이 Prefix 와 Tag 를 함께 줄 수 없다
+        self.assert_client_error(
+            lambda: self._put_metrics(
+                client, bucket_name, "metrics-id", {"Id": "metrics-id", "Filter": {"Prefix": "test", "Tag": tag}}
+            ),
+            400,
+            md.MALFORMED_XML,
+        )
+
+    @pytest.mark.tag("List")
+    def test_list_metrics_pagination(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 19)
+        ids = [f"metrics-{i:03d}" for i in range(101)]
+        for metric_id in ids:
+            self._put_metrics(client, bucket_name, metric_id)
+
+        # 한 번에 100개까지만 돌려주고 나머지는 토큰으로 이어서 받는다
+        response = client.list_bucket_metrics_configurations(Bucket=bucket_name)
+        assert len(response["MetricsConfigurationList"]) == 100
+        assert response["IsTruncated"] is True
+        listed = [config["Id"] for config in response["MetricsConfigurationList"]]
+
+        response = client.list_bucket_metrics_configurations(
+            Bucket=bucket_name, ContinuationToken=response["NextContinuationToken"]
+        )
+        assert len(response["MetricsConfigurationList"]) == 1
+        assert response["IsTruncated"] is False
+        listed += [config["Id"] for config in response["MetricsConfigurationList"]]
+        assert sorted(listed) == ids
+
+    @pytest.mark.tag("List")
+    def test_list_metrics_invalid_token(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 20)
+        self.assert_client_error(
+            lambda: client.list_bucket_metrics_configurations(Bucket=bucket_name, ContinuationToken="invalid"),
+            400,
+            md.MALFORMED_CONTINUATION_TOKEN,
+        )
+
+    @pytest.mark.tag("Error")
+    def test_metrics_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(21)
+        self.assert_client_error(
+            lambda: client.list_bucket_metrics_configurations(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET
+        )
+        self.assert_client_error(
+            lambda: client.get_bucket_metrics_configuration(Bucket=bucket_name, Id="metrics-id"),
+            404,
+            md.NO_SUCH_BUCKET,
+        )
+        self.assert_client_error(
+            lambda: client.delete_bucket_metrics_configuration(Bucket=bucket_name, Id="metrics-id"),
+            404,
+            md.NO_SUCH_BUCKET,
+        )

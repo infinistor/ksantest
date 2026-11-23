@@ -11,15 +11,19 @@
 package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.Test;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.function.Executable;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.ListBucketInventoryConfigurationsRequest;
@@ -29,6 +33,7 @@ import com.amazonaws.services.s3.model.inventory.InventoryFrequency;
 import com.amazonaws.services.s3.model.inventory.InventoryIncludedObjectVersions;
 import com.amazonaws.services.s3.model.inventory.InventoryS3BucketDestination;
 import com.amazonaws.services.s3.model.inventory.InventorySchedule;
+import com.amazonaws.services.s3.model.inventory.ServerSideEncryptionS3;
 
 public class Inventory extends TestBase {
 	@Test
@@ -414,5 +419,197 @@ public class Inventory extends TestBase {
 
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.MALFORMED_XML, e.getErrorCode());
+	}
+
+	/** 대상 버킷 ARN·CSV·Daily·Current 인 기본 인벤토리 설정. 필요한 항목을 덮어써서 쓴다. */
+	private static InventoryConfiguration inventoryConfig(String inventoryId, String targetBucketName) {
+		return inventoryConfig(inventoryId, targetBucketName, "Current", "Daily", "CSV");
+	}
+
+	private static InventoryConfiguration inventoryConfig(String inventoryId, String targetBucketName,
+			String versions, String frequency, String format) {
+		return new InventoryConfiguration()
+				.withId(inventoryId)
+				.withDestination(new InventoryDestination().withS3BucketDestination(new InventoryS3BucketDestination()
+						.withBucketArn("arn:aws:s3:::" + targetBucketName).withFormat(format)))
+				.withEnabled(true)
+				.withIncludedObjectVersions(versions)
+				.withSchedule(new InventorySchedule().withFrequency(frequency));
+	}
+
+	private static void assertError(Executable executable, int statusCode, String errorCode) {
+		var e = assertThrows(AmazonServiceException.class, executable);
+		assertEquals(statusCode, e.getStatusCode());
+		assertEquals(errorCode, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Max")
+	public void testPutBucketInventoryIdLength() {
+		var client = getClient();
+		var bucketName = createBucket(client, 18);
+		var targetBucketName = createBucket(client, 18);
+
+		// ID 는 64자까지 허용한다
+		var inventoryId = "a".repeat(64);
+		client.setBucketInventoryConfiguration(bucketName, inventoryConfig(inventoryId, targetBucketName));
+		var response = client.getBucketInventoryConfiguration(bucketName, inventoryId);
+		assertEquals(inventoryId, response.getInventoryConfiguration().getId());
+
+		assertError(() -> client.setBucketInventoryConfiguration(bucketName,
+				inventoryConfig("a".repeat(65), targetBucketName)), HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML);
+	}
+
+	@Test
+	@Tag("Error")
+	public void testPutBucketInventoryInvalidId() {
+		var client = getClient();
+		var bucketName = createBucket(client, 19);
+		var targetBucketName = createBucket(client, 19);
+
+		// ID 에는 영숫자와 - _ . 만 쓸 수 있다
+		assertError(() -> client.setBucketInventoryConfiguration(bucketName,
+				inventoryConfig("a b/c", targetBucketName)), HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML);
+	}
+
+	@Test
+	@Tag("Check")
+	public void testPutBucketInventoryDisabled() {
+		var client = getClient();
+		var bucketName = createBucket(client, 21);
+		var targetBucketName = createBucket(client, 21);
+		var inventoryId = "my-inventory";
+
+		client.setBucketInventoryConfiguration(bucketName,
+				inventoryConfig(inventoryId, targetBucketName).withEnabled(false));
+		var response = client.getBucketInventoryConfiguration(bucketName, inventoryId);
+		assertEquals(false, response.getInventoryConfiguration().isEnabled());
+	}
+
+	@Test
+	@Tag("Error")
+	public void testPutBucketInventoryInvalidVersions() {
+		var client = getClient();
+		var bucketName = createBucket(client, 22);
+		var targetBucketName = createBucket(client, 22);
+
+		assertError(() -> client.setBucketInventoryConfiguration(bucketName,
+				inventoryConfig("my-inventory", targetBucketName, "Invalid", "Daily", "CSV")),
+				HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML);
+	}
+
+	@Test
+	@Tag("Check")
+	public void testPutBucketInventoryFormats() {
+		var client = getClient();
+		var bucketName = createBucket(client, 23);
+		var targetBucketName = createBucket(client, 23);
+
+		// 형식(CSV/ORC/Parquet), 주기(Daily/Weekly), 대상 버전(All/Current)이 그대로 저장된다
+		// 순서: ID, 형식, 주기, 대상 버전
+		var cases = Arrays.asList(
+				Arrays.asList("inventory-csv", "CSV", "Daily", "All"),
+				Arrays.asList("inventory-orc", "ORC", "Weekly", "Current"),
+				Arrays.asList("inventory-parquet", "Parquet", "Weekly", "All"));
+		for (var item : cases) {
+			client.setBucketInventoryConfiguration(bucketName,
+					inventoryConfig(item.get(0), targetBucketName, item.get(3), item.get(2), item.get(1)));
+		}
+		for (var item : cases) {
+			var config = client.getBucketInventoryConfiguration(bucketName, item.get(0)).getInventoryConfiguration();
+			assertEquals(item.get(1), config.getDestination().getS3BucketDestination().getFormat());
+			assertEquals(item.get(2), config.getSchedule().getFrequency());
+			assertEquals(item.get(3), config.getIncludedObjectVersions());
+		}
+	}
+
+	@Test
+	@Tag("Check")
+	public void testPutBucketInventoryDestination() {
+		var client = getClient();
+		var bucketName = createBucket(client, 24);
+		var targetBucketName = createBucket(client, 24);
+		var inventoryId = "my-inventory";
+
+		// 대상의 접두어와 SSE-S3 암호화 설정이 그대로 저장된다
+		var config = inventoryConfig(inventoryId, targetBucketName);
+		config.getDestination().getS3BucketDestination().withPrefix("inventory/")
+				.withEncryption(new ServerSideEncryptionS3());
+		client.setBucketInventoryConfiguration(bucketName, config);
+
+		var destination = client.getBucketInventoryConfiguration(bucketName, inventoryId).getInventoryConfiguration()
+				.getDestination().getS3BucketDestination();
+		assertEquals("arn:aws:s3:::" + targetBucketName, destination.getBucketArn());
+		assertEquals("inventory/", destination.getPrefix());
+		assertInstanceOf(ServerSideEncryptionS3.class, destination.getEncryption());
+	}
+
+	@Test
+	@Tag("Error")
+	public void testPutBucketInventoryInvalidDestinationArn() {
+		var client = getClient();
+		var bucketName = createBucket(client, 25);
+		var targetBucketName = createBucket(client, 25);
+
+		// 대상 버킷은 ARN 형식이어야 한다
+		var config = inventoryConfig("my-inventory", targetBucketName);
+		config.getDestination().getS3BucketDestination().withBucketArn(targetBucketName);
+		assertError(() -> client.setBucketInventoryConfiguration(bucketName, config), HttpStatus.SC_BAD_REQUEST,
+				MainData.INVALID_S3_DESTINATION_BUCKET);
+	}
+
+	@Test
+	@Tag("List")
+	public void testListBucketInventoryPagination() {
+		var client = getClient();
+		var bucketName = createBucket(client, 26);
+		var targetBucketName = createBucket(client, 26);
+		var ids = new ArrayList<String>();
+		for (int i = 0; i < 101; i++)
+			ids.add(String.format("inventory-%03d", i));
+		for (var inventoryId : ids)
+			client.setBucketInventoryConfiguration(bucketName, inventoryConfig(inventoryId, targetBucketName));
+
+		// 한 번에 100개까지만 돌려주고 나머지는 토큰으로 이어서 받는다
+		var response = client.listBucketInventoryConfigurations(
+				new ListBucketInventoryConfigurationsRequest().withBucketName(bucketName));
+		assertEquals(100, response.getInventoryConfigurationList().size());
+		assertEquals(true, response.isTruncated());
+		var listed = new ArrayList<String>();
+		response.getInventoryConfigurationList().forEach(c -> listed.add(c.getId()));
+
+		response = client.listBucketInventoryConfigurations(new ListBucketInventoryConfigurationsRequest()
+				.withBucketName(bucketName).withContinuationToken(response.getNextContinuationToken()));
+		assertEquals(1, response.getInventoryConfigurationList().size());
+		assertEquals(false, response.isTruncated());
+		response.getInventoryConfigurationList().forEach(c -> listed.add(c.getId()));
+		Collections.sort(listed);
+		assertEquals(ids, listed);
+	}
+
+	@Test
+	@Tag("List")
+	public void testListBucketInventoryInvalidToken() {
+		var client = getClient();
+		var bucketName = createBucket(client, 27);
+
+		assertError(() -> client.listBucketInventoryConfigurations(new ListBucketInventoryConfigurationsRequest()
+				.withBucketName(bucketName).withContinuationToken("invalid")),
+				HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_CONTINUATION_TOKEN);
+	}
+
+	@Test
+	@Tag("Error")
+	public void testBucketInventoryBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(28);
+
+		assertError(() -> client.listBucketInventoryConfigurations(
+				new ListBucketInventoryConfigurationsRequest().withBucketName(bucketName)),
+				HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET);
+		assertError(() -> client.getBucketInventoryConfiguration(bucketName, "my-inventory"),
+				HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET);
+		assertError(() -> client.deleteBucketInventoryConfiguration(bucketName, "my-inventory"),
+				HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET);
 	}
 }

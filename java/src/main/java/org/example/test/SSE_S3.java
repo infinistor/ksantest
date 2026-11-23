@@ -35,6 +35,8 @@ import com.amazonaws.services.s3.model.ServerSideEncryptionConfiguration;
 import com.amazonaws.services.s3.model.ServerSideEncryptionRule;
 import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
 
 public class SSE_S3 extends TestBase { // NOSONAR
 	@Test
@@ -729,4 +731,124 @@ public class SSE_S3 extends TestBase { // NOSONAR
 
 		checkContentUsingRange(bucketName, multiKey2, uploadData2.body.toString(), MainData.MB);
 	}
+
+	// region 버킷 암호화 설정 API 검증
+	static ServerSideEncryptionRule encryptionRule(String algorithm, Boolean bucketKeyEnabled) {
+		var rule = new ServerSideEncryptionRule().withApplyServerSideEncryptionByDefault(
+				new ServerSideEncryptionByDefault().withSSEAlgorithm(algorithm));
+		if (bucketKeyEnabled != null)
+			rule.setBucketKeyEnabled(bucketKeyEnabled);
+		return rule;
+	}
+
+	static ServerSideEncryptionRule encryptionRule() {
+		return encryptionRule(SSEAlgorithm.AES256.toString(), null);
+	}
+
+	static void putEncryption(AmazonS3 client, String bucketName, List<ServerSideEncryptionRule> rules) {
+		var configuration = new ServerSideEncryptionConfiguration();
+		configuration.setRules(new ArrayList<>(rules));
+		client.setBucketEncryption(new SetBucketEncryptionRequest().withBucketName(bucketName)
+				.withServerSideEncryptionConfiguration(configuration));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testPutBucketEncryptionInvalid() {
+		var client = getClient();
+		var bucketName = createBucket(client, 26);
+
+		var invalidRules = List.of(
+				List.of(encryptionRule("INVALID", null)), // 없는 알고리즘
+				List.<ServerSideEncryptionRule>of(), // 규칙 없음
+				List.of(encryptionRule(), encryptionRule())); // 규칙은 하나만
+		for (var rules : invalidRules)
+			assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML,
+					() -> putEncryption(client, bucketName, rules));
+
+		// AES256 에는 KMS 키를 지정할 수 없다
+		var rule = new ServerSideEncryptionRule().withApplyServerSideEncryptionByDefault(
+				new ServerSideEncryptionByDefault().withSSEAlgorithm(SSEAlgorithm.AES256)
+						.withKMSMasterKeyID("key-id"));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> putEncryption(client, bucketName, List.of(rule)));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testPutBucketEncryptionBucketKey() {
+		var client = getClient();
+		var bucketName = createBucket(client, 27);
+
+		putEncryption(client, bucketName, List.of(encryptionRule(SSEAlgorithm.AES256.toString(), true)));
+		var rule = client.getBucketEncryption(bucketName).getServerSideEncryptionConfiguration().getRules().get(0);
+		assertEquals(SSEAlgorithm.AES256.toString(), rule.getApplyServerSideEncryptionByDefault().getSSEAlgorithm());
+		assertEquals(true, rule.getBucketKeyEnabled());
+	}
+
+	@Test
+	@Tag("Delete")
+	public void testDeleteBucketEncryptionTwice() {
+		var client = getClient();
+		var bucketName = createBucket(client, 28);
+
+		putEncryption(client, bucketName, List.of(encryptionRule(SSEAlgorithm.AES256.toString(), true)));
+		// 설정이 없어도 삭제는 성공한다
+		for (int i = 0; i < 2; i++)
+			client.deleteBucketEncryption(bucketName);
+	}
+
+	@Test
+	@Tag("Access")
+	public void testBucketEncryptionAccessDenied() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 29);
+
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED, () -> altClient.getBucketEncryption(bucketName));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> putEncryption(altClient, bucketName, List.of(encryptionRule())));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.deleteBucketEncryption(bucketName));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketEncryptionBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(30);
+
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET, () -> client.getBucketEncryption(bucketName));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> putEncryption(client, bucketName, List.of(encryptionRule())));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+				() -> client.deleteBucketEncryption(bucketName));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testSseS3InvalidAlgorithm() {
+		var key = "testSseS3InvalidAlgorithm";
+		var content = "content";
+		var client = getClient();
+		var bucketName = createBucket(client, 31);
+		client.putObject(bucketName, "source", content);
+
+		var metadata = new ObjectMetadata();
+		metadata.setSSEAlgorithm("INVALID");
+
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT, () -> {
+			var putMetadata = new ObjectMetadata();
+			putMetadata.setSSEAlgorithm("INVALID");
+			putMetadata.setContentLength(content.length());
+			client.putObject(bucketName, key, createBody(content), putMetadata);
+		});
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key, metadata)));
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.copyObject(new CopyObjectRequest(bucketName, "source", bucketName, key)
+						.withNewObjectMetadata(metadata)));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.getObjectMetadata(bucketName, key));
+	}
+	// endregion
 }

@@ -347,3 +347,278 @@ class TestTaggings(S3TestBase):
 
         get_response = client.get_object_tagging(Bucket=bucket_name, Key=key)
         self.tag_compare(tags, get_response["TagSet"])
+
+    @staticmethod
+    def _tagging(*pairs) -> dict:
+        return {"TagSet": [{"Key": key, "Value": value} for key, value in pairs]}
+
+    @pytest.mark.tag("Max")
+    def test_bucket_tagging_max(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 16)
+
+        # 버킷 태그는 50개까지 넣을 수 있다
+        tag_set = self.make_simple_tag_set(50)
+        client.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": tag_set})
+        self.tag_compare(tag_set, client.get_bucket_tagging(Bucket=bucket_name)["TagSet"])
+
+        self.assert_client_error(
+            lambda: client.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": self.make_simple_tag_set(51)}),
+            400,
+            md.BAD_REQUEST,
+        )
+        assert len(client.get_bucket_tagging(Bucket=bucket_name)["TagSet"]) == 50
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_tagging_duplicate_key(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 17)
+        self.assert_client_error(
+            lambda: client.put_bucket_tagging(
+                Bucket=bucket_name, Tagging=self._tagging(("key", "value1"), ("key", "value2"))
+            ),
+            400,
+            md.INVALID_TAG,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_tagging_invalid_tag(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 18)
+        invalid_tags = [
+            ("aws:key", "value"),  # aws: 접두어는 시스템 태그 전용
+            ("k" * 129, "value"),  # 키 128자 초과
+            ("key", "v" * 257),  # 값 256자 초과
+            ("key?<>", "value"),  # 허용하지 않는 문자
+        ]
+        for key, value in invalid_tags:
+            self.assert_client_error(
+                lambda key=key, value=value: client.put_bucket_tagging(
+                    Bucket=bucket_name, Tagging=self._tagging((key, value))
+                ),
+                400,
+                md.INVALID_TAG,
+            )
+        self.assert_client_error(lambda: client.get_bucket_tagging(Bucket=bucket_name), 404, md.NO_SUCH_TAG_SET)
+
+    @pytest.mark.tag("Check")
+    def test_bucket_tagging_empty_value(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 19)
+        tagging = self._tagging(("key", ""))
+        client.put_bucket_tagging(Bucket=bucket_name, Tagging=tagging)
+        self.tag_compare(tagging["TagSet"], client.get_bucket_tagging(Bucket=bucket_name)["TagSet"])
+
+    @pytest.mark.tag("Delete")
+    def test_bucket_tagging_empty_set(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 20)
+        client.put_bucket_tagging(Bucket=bucket_name, Tagging=self._tagging(("key", "value")))
+
+        # 빈 태그 목록을 넣으면 태그가 지워진다
+        client.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": []})
+        self.assert_client_error(lambda: client.get_bucket_tagging(Bucket=bucket_name), 404, md.NO_SUCH_TAG_SET)
+
+        # 태그가 없어도 삭제는 성공한다
+        response = client.delete_bucket_tagging(Bucket=bucket_name)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_tagging_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(21)
+        self.assert_client_error(lambda: client.get_bucket_tagging(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+        self.assert_client_error(
+            lambda: client.put_bucket_tagging(Bucket=bucket_name, Tagging=self._tagging(("key", "value"))),
+            404,
+            md.NO_SUCH_BUCKET,
+        )
+        self.assert_client_error(lambda: client.delete_bucket_tagging(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+
+    @pytest.mark.tag("ERROR")
+    def test_obj_tagging_duplicate_key(self):
+        key = "test_obj_tagging_duplicate_key"
+        client = self.get_client()
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=22)
+        self.assert_client_error(
+            lambda: client.put_object_tagging(
+                Bucket=bucket_name, Key=key, Tagging=self._tagging(("key", "value1"), ("key", "value2"))
+            ),
+            400,
+            md.INVALID_TAG,
+        )
+        assert len(client.get_object_tagging(Bucket=bucket_name, Key=key)["TagSet"]) == 0
+
+    @pytest.mark.tag("ERROR")
+    def test_obj_tagging_invalid_tag(self):
+        key = "test_obj_tagging_invalid_tag"
+        client = self.get_client()
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=23)
+        invalid_tags = [
+            ("aws:key", "value"),  # aws: 접두어는 시스템 태그 전용
+            ("key?<>", "value"),  # 허용하지 않는 문자
+        ]
+        for tag_key, tag_value in invalid_tags:
+            self.assert_client_error(
+                lambda tag_key=tag_key, tag_value=tag_value: client.put_object_tagging(
+                    Bucket=bucket_name, Key=key, Tagging=self._tagging((tag_key, tag_value))
+                ),
+                400,
+                md.INVALID_TAG,
+            )
+        assert len(client.get_object_tagging(Bucket=bucket_name, Key=key)["TagSet"]) == 0
+
+    @pytest.mark.tag("Check")
+    def test_obj_tagging_special_characters(self):
+        key = "test_obj_tagging_special_characters"
+        client = self.get_client()
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=24)
+        # 허용 문자(영숫자, 공백, + - = . _ : / @)와 빈 값은 그대로 저장된다
+        tagging = self._tagging(("a+b-=._:/@ c", "v+-=._:/@ d"), ("empty", ""))
+        client.put_object_tagging(Bucket=bucket_name, Key=key, Tagging=tagging)
+        self.tag_compare(tagging["TagSet"], client.get_object_tagging(Bucket=bucket_name, Key=key)["TagSet"])
+
+    @pytest.mark.tag("Delete")
+    def test_obj_tagging_empty_set(self):
+        key = "test_obj_tagging_empty_set"
+        client = self.get_client()
+        bucket_name = self.create_key_with_random_content(client, key, 0, test_id=25)
+        client.put_object_tagging(Bucket=bucket_name, Key=key, Tagging=self._tagging(("key", "value")))
+
+        # 빈 태그 목록을 넣으면 태그가 지워진다
+        client.put_object_tagging(Bucket=bucket_name, Key=key, Tagging={"TagSet": []})
+        assert len(client.get_object_tagging(Bucket=bucket_name, Key=key)["TagSet"]) == 0
+
+        # 태그가 없어도 삭제는 성공한다
+        response = client.delete_object_tagging(Bucket=bucket_name, Key=key)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+
+    @pytest.mark.tag("ERROR")
+    def test_obj_tagging_key_not_exist(self):
+        key = "test_obj_tagging_key_not_exist"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 26)
+        self.assert_client_error(
+            lambda: client.put_object_tagging(Bucket=bucket_name, Key=key, Tagging=self._tagging(("key", "value"))),
+            404,
+            md.NO_SUCH_KEY,
+        )
+        self.assert_client_error(lambda: client.get_object_tagging(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY)
+        self.assert_client_error(
+            lambda: client.delete_object_tagging(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY
+        )
+
+    @pytest.mark.tag("Overflow")
+    def test_put_obj_with_excess_tags(self):
+        key = "test_put_obj_with_excess_tags"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 27)
+        tagging = "&".join(f"key{i}=value{i}" for i in range(11))
+        self.assert_client_error(
+            lambda: client.put_object(Bucket=bucket_name, Key=key, Body=b"", Tagging=tagging), 400, md.BAD_REQUEST
+        )
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key=key), 404, "404")
+
+    @pytest.mark.tag("ERROR")
+    def test_put_obj_with_invalid_tags(self):
+        key = "test_put_obj_with_invalid_tags"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 28)
+        # 헤더로 준 태그의 키가 중복되면 InvalidArgument
+        self.assert_client_error(
+            lambda: client.put_object(Bucket=bucket_name, Key=key, Body=b"", Tagging="key=value1&key=value2"),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+        for tagging in ("aws:key=value", "key%3F=value", "k" * 129 + "=value"):
+            self.assert_client_error(
+                lambda tagging=tagging: client.put_object(Bucket=bucket_name, Key=key, Body=b"", Tagging=tagging),
+                400,
+                md.INVALID_TAG,
+            )
+        self.assert_client_error(lambda: client.head_object(Bucket=bucket_name, Key=key), 404, "404")
+
+    @pytest.mark.tag("Version")
+    def test_obj_tagging_version(self):
+        key = "test_obj_tagging_version"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 29)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        version1 = client.put_object(Bucket=bucket_name, Key=key, Body=b"1")["VersionId"]
+        version2 = client.put_object(Bucket=bucket_name, Key=key, Body=b"2")["VersionId"]
+        tagging = self._tagging(("version", "1"))
+
+        # 버전을 지정하면 그 버전의 태그만 바뀐다
+        response = client.put_object_tagging(Bucket=bucket_name, Key=key, VersionId=version1, Tagging=tagging)
+        assert response["VersionId"] == version1
+
+        response = client.get_object_tagging(Bucket=bucket_name, Key=key, VersionId=version1)
+        assert response["VersionId"] == version1
+        self.tag_compare(tagging["TagSet"], response["TagSet"])
+
+        # 버전을 지정하지 않으면 최신 버전이 대상이다
+        response = client.get_object_tagging(Bucket=bucket_name, Key=key)
+        assert response["VersionId"] == version2
+        assert len(response["TagSet"]) == 0
+
+        response = client.delete_object_tagging(Bucket=bucket_name, Key=key, VersionId=version1)
+        assert response["VersionId"] == version1
+        assert len(client.get_object_tagging(Bucket=bucket_name, Key=key, VersionId=version1)["TagSet"]) == 0
+
+    @pytest.mark.tag("Version")
+    def test_obj_tagging_invalid_version(self):
+        key = "test_obj_tagging_invalid_version"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 30)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"1")
+        self.assert_client_error(
+            lambda: client.get_object_tagging(Bucket=bucket_name, Key=key, VersionId="invalid"),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+        self.assert_client_error(
+            lambda: client.put_object_tagging(
+                Bucket=bucket_name, Key=key, VersionId="invalid", Tagging=self._tagging(("key", "value"))
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+        self.assert_client_error(
+            lambda: client.delete_object_tagging(Bucket=bucket_name, Key=key, VersionId="invalid"),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("Version")
+    def test_obj_tagging_delete_marker(self):
+        key = "test_obj_tagging_delete_marker"
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 31)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        version_id = client.put_object(Bucket=bucket_name, Key=key, Body=b"1")["VersionId"]
+        client.put_object_tagging(Bucket=bucket_name, Key=key, Tagging=self._tagging(("key", "value")))
+        delete_marker = client.delete_object(Bucket=bucket_name, Key=key)["VersionId"]
+        tagging = self._tagging(("key", "value2"))
+
+        # 최신 버전이 삭제 마커이면 버전을 지정하든 않든 태그 요청은 405
+        for extra in ({}, {"VersionId": delete_marker}):
+            self.assert_client_error(
+                lambda extra=extra: client.get_object_tagging(Bucket=bucket_name, Key=key, **extra),
+                405,
+                md.METHOD_NOT_ALLOWED,
+            )
+            self.assert_client_error(
+                lambda extra=extra: client.put_object_tagging(Bucket=bucket_name, Key=key, Tagging=tagging, **extra),
+                405,
+                md.METHOD_NOT_ALLOWED,
+            )
+            self.assert_client_error(
+                lambda extra=extra: client.delete_object_tagging(Bucket=bucket_name, Key=key, **extra),
+                405,
+                md.METHOD_NOT_ALLOWED,
+            )
+
+        # 삭제 마커 아래의 실제 버전은 버전을 지정하면 그대로 조회된다
+        response = client.get_object_tagging(Bucket=bucket_name, Key=key, VersionId=version_id)
+        self.tag_compare(self._tagging(("key", "value"))["TagSet"], response["TagSet"])

@@ -3,6 +3,7 @@ package s3tests
 import (
 	"context"
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -457,4 +458,246 @@ func deleteMany(t *testing.T, client *s3.Client, bucket string, objects []types.
 		t.Fatal(err)
 	}
 	return out
+}
+
+// 없는 키를 지워도 성공한다
+func TestDeleteObjectNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	out, err := s.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(s.bucket(t, 22)), Key: aws.String("not_exist")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status := responseStatus(t, out.ResultMetadata); status != 204 || out.DeleteMarker != nil || out.VersionId != nil {
+		t.Fatalf("status=%d DeleteMarker=%v VersionId=%q", status, out.DeleteMarker, aws.ToString(out.VersionId))
+	}
+}
+
+// 없는 버킷에 삭제를 요청하면 NoSuchBucket
+func TestDeleteObjectBucketNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := s.bucketNameOnly(23)
+	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String("key")})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	_, err = s.client.DeleteObjects(ctx, &s3.DeleteObjectsInput{Bucket: aws.String(b), Delete: &types.Delete{Objects: deleteIdentifiers([]string{"key"})}})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+}
+
+// 권한이 없는 사용자는 지울 수 없다
+func TestDeleteObjectAccessDenied(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	alt := altClientOrSkip(t, s)
+	b, key := s.bucket(t, 24), "TestDeleteObjectAccessDenied"
+	put(t, s, b, key, key, nil)
+	_, err := alt.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 403, "AccessDenied")
+
+	// DeleteObjects 는 요청 자체는 200 이고 키마다 AccessDenied 를 돌려준다
+	out := deleteMany(t, alt, b, deleteIdentifiers([]string{key}), false)
+	if len(out.Deleted) != 0 || len(out.Errors) != 1 || aws.ToString(out.Errors[0].Key) != key || aws.ToString(out.Errors[0].Code) != "AccessDenied" {
+		t.Fatalf("deleted=%v errors=%v", out.Deleted, out.Errors)
+	}
+
+	if _, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전으로 지울 수 있다
+func TestDeleteObjectVersionIdUnversioned(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 25), "TestDeleteObjectVersionIdUnversioned"
+	put(t, s, b, key, key, nil)
+	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	if _, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)}); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("null")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if aws.ToString(out.VersionId) != "null" || out.DeleteMarker != nil {
+		t.Fatalf("VersionId=%q DeleteMarker=%v", aws.ToString(out.VersionId), out.DeleteMarker)
+	}
+	_, err = s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+}
+
+// DeleteObjects 는 없는 키도 삭제된 것으로 응답한다
+func TestDeleteObjectsNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	keys := []string{"not_exist1", "not_exist2"}
+	out := deleteMany(t, s.client, s.bucket(t, 26), deleteIdentifiers(keys), false)
+	deleted := make([]string, 0, len(out.Deleted))
+	for _, item := range out.Deleted {
+		deleted = append(deleted, aws.ToString(item.Key))
+	}
+	sort.Strings(deleted)
+	assertStringList(t, deleted, keys)
+	if len(out.Errors) != 0 {
+		t.Fatalf("errors=%v", out.Errors)
+	}
+}
+
+// 키가 하나도 없는 DeleteObjects 는 거부된다
+func TestDeleteObjectsEmpty(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	_, err := s.client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{Bucket: aws.String(s.bucket(t, 27)), Delete: &types.Delete{Objects: []types.ObjectIdentifier{}}})
+	assertS3Error(t, err, 400, "MalformedXML")
+}
+
+// 한 번에 1000개까지 지울 수 있다
+func TestDeleteObjectsMaxKeys(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b := s.bucket(t, 28)
+	keys := make([]string, 1001)
+	for index := range keys {
+		keys[index] = fmt.Sprintf("key%d", index)
+	}
+	out := deleteMany(t, s.client, b, deleteIdentifiers(keys[:1000]), false)
+	if len(out.Deleted) != 1000 {
+		t.Fatalf("deleted=%d errors=%v", len(out.Deleted), out.Errors)
+	}
+	_, err := s.client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{Bucket: aws.String(b), Delete: &types.Delete{Objects: deleteIdentifiers(keys)}})
+	assertS3Error(t, err, 400, "MalformedXML")
+}
+
+// 같은 키를 두 번 넣어도 한 번만 응답한다
+func TestDeleteObjectsDuplicateKeys(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 29), "TestDeleteObjectsDuplicateKeys"
+	put(t, s, b, key, key, nil)
+	out := deleteMany(t, s.client, b, deleteIdentifiers([]string{key, key}), false)
+	if len(out.Deleted) != 1 || aws.ToString(out.Deleted[0].Key) != key || len(out.Errors) != 0 {
+		t.Fatalf("deleted=%v errors=%v", out.Deleted, out.Errors)
+	}
+}
+
+// DeleteObjects 에 잘못된 버전 ID 를 주면 요청은 200 이고 키마다 NoSuchVersion 을 돌려준다
+func TestDeleteObjectsInvalidVersionId(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	b, key := s.bucket(t, 30), "TestDeleteObjectsInvalidVersionId"
+	put(t, s, b, key, key, nil)
+	checkNoSuchVersion := func() {
+		t.Helper()
+		out := deleteMany(t, s.client, b, []types.ObjectIdentifier{{Key: aws.String(key), VersionId: aws.String("invalid")}}, false)
+		if len(out.Deleted) != 0 || len(out.Errors) != 1 {
+			t.Fatalf("deleted=%v errors=%v", out.Deleted, out.Errors)
+		}
+		if failed := out.Errors[0]; aws.ToString(failed.Key) != key || aws.ToString(failed.VersionId) != "invalid" || aws.ToString(failed.Code) != "NoSuchVersion" {
+			t.Fatalf("error key=%q version=%q code=%q", aws.ToString(failed.Key), aws.ToString(failed.VersionId), aws.ToString(failed.Code))
+		}
+	}
+
+	checkNoSuchVersion()
+	enableVersioning(t, s, b)
+	checkNoSuchVersion()
+	if _, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// 버저닝 버킷에서는 없는 키를 지워도 삭제 마커가 생긴다
+func TestDeleteObjectVersioningNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := s.bucket(t, 31)
+	enableVersioning(t, s, b)
+	deleted, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String("not_exist")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !aws.ToBool(deleted.DeleteMarker) || aws.ToString(deleted.VersionId) == "" {
+		t.Fatalf("DeleteObject DeleteMarker=%v VersionId=%q", deleted.DeleteMarker, aws.ToString(deleted.VersionId))
+	}
+
+	out := deleteMany(t, s.client, b, deleteIdentifiers([]string{"not_exist2"}), false)
+	if len(out.Deleted) != 1 || !aws.ToBool(out.Deleted[0].DeleteMarker) || aws.ToString(out.Deleted[0].DeleteMarkerVersionId) == "" {
+		t.Fatalf("DeleteObjects deleted=%v errors=%v", out.Deleted, out.Errors)
+	}
+
+	listed, err := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	markers := make([]string, 0, len(listed.DeleteMarkers))
+	for _, marker := range listed.DeleteMarkers {
+		markers = append(markers, aws.ToString(marker.Key))
+	}
+	sort.Strings(markers)
+	assertStringList(t, markers, []string{"not_exist", "not_exist2"})
+}
+
+// 버저닝 버킷에서 없는 null 버전을 지워도 성공하고 삭제 마커는 생기지 않는다
+func TestDeleteObjectVersioningInvalidVersionId(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 32), "TestDeleteObjectVersioningInvalidVersionId"
+	enableVersioning(t, s, b)
+	versionID := aws.ToString(put(t, s, b, key, "content", nil).VersionId)
+	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+
+	out, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("null")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if aws.ToString(out.VersionId) != "null" || out.DeleteMarker != nil {
+		t.Fatalf("VersionId=%q DeleteMarker=%v", aws.ToString(out.VersionId), out.DeleteMarker)
+	}
+
+	listed, err := s.client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{Bucket: aws.String(b)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Versions) != 1 || aws.ToString(listed.Versions[0].VersionId) != versionID || len(listed.DeleteMarkers) != 0 {
+		t.Fatalf("versions=%v markers=%v want version=%q", listed.Versions, listed.DeleteMarkers, versionID)
+	}
+}
+
+// 삭제 마커를 지우면 x-amz-delete-marker: true 로 응답하고 이전 버전이 다시 보인다
+func TestDeleteObjectRemoveDeleteMarker(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 33), "TestDeleteObjectRemoveDeleteMarker"
+	enableVersioning(t, s, b)
+	versionID := aws.ToString(put(t, s, b, key, "content", nil).VersionId)
+	marker, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	assertS3Error(t, err, 404, "NoSuchKey")
+
+	out, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: marker.VersionId})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !aws.ToBool(out.DeleteMarker) || aws.ToString(out.VersionId) != aws.ToString(marker.VersionId) {
+		t.Fatalf("DeleteMarker=%v VersionId=%q want=%q", out.DeleteMarker, aws.ToString(out.VersionId), aws.ToString(marker.VersionId))
+	}
+	got, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got.Body.Close()
+	if aws.ToString(got.VersionId) != versionID {
+		t.Fatalf("VersionId=%q want=%q", aws.ToString(got.VersionId), versionID)
+	}
 }

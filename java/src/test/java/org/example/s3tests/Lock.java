@@ -664,4 +664,104 @@ class Lock {
 	void testObjectLockChangeModeHeaderComplianceToGovernanceBypass() {
 		testV2.testObjectLockChangeModeHeaderComplianceToGovernanceBypass();
 	}
+
+	/**
+	 * 보존 기한·법적 보존을 설정한 적 없는 오브젝트의 조회가 NoSuchObjectLockConfiguration 인지 확인
+	 */
+	@Test
+	@Tag("retention")
+	void testObjectLockGetNotConfigured() {
+		test.testObjectLockGetNotConfigured();
+		testV2.testObjectLockGetNotConfigured();
+	}
+
+	/**
+	 * 지난 날짜로 보존 기한을 설정하면 InvalidArgument 인지 확인
+	 */
+	@Test
+	@Tag("retention")
+	void testObjectLockPutObjRetentionPastDate() {
+		test.testObjectLockPutObjRetentionPastDate();
+		testV2.testObjectLockPutObjRetentionPastDate();
+	}
+
+	/**
+	 * 없는 오브젝트의 보존 기한·법적 보존 설정·조회가 NoSuchKey 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjectLockKeyNotExist() {
+		test.testObjectLockKeyNotExist();
+		testV2.testObjectLockKeyNotExist();
+	}
+
+	/**
+	 * 올바르지 않은 잠금 헤더로 업로드하면 InvalidArgument 이고 오브젝트가 만들어지지 않는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjectLockPutObjectInvalidHeaders() {
+		test.testObjectLockPutObjectInvalidHeaders();
+		testV2.testObjectLockPutObjectInvalidHeaders();
+	}
+
+	/**
+	 * Object Lock 을 켜지 않은 버킷에 잠금 헤더로 업로드하면 InvalidRequest 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjectLockPutObjectInvalidBucket() {
+		test.testObjectLockPutObjectInvalidBucket();
+		testV2.testObjectLockPutObjectInvalidBucket();
+	}
+
+	/**
+	 * 업로드 헤더로 건 법적 보존이 적용되고 그 버전은 bypass 로도 지울 수 없는지 확인
+	 */
+	@Test
+	@Tag("legalhold")
+	void testObjectLockLegalHoldOnPutObject() {
+		test.testObjectLockLegalHoldOnPutObject();
+		testV2.testObjectLockLegalHoldOnPutObject();
+	}
+
+	/**
+	 * 삭제 마커에 보존 기한·법적 보존을 요청하면 MethodNotAllowed 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjectLockDeleteMarker() {
+		test.testObjectLockDeleteMarker();
+		testV2.testObjectLockDeleteMarker();
+	}
+
+	/**
+	 * 올바르지 않은 기본 보존 규칙(항목 누락, 기간 초과)이 거부되고 최대 기간은 저장되는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testObjectLockPutObjLockInvalidRule() {
+		test.testObjectLockPutObjLockInvalidRule();
+		testV2.testObjectLockPutObjLockInvalidRule();
+	}
+
+	/**
+	 * Rule 없이 잠금 설정을 다시 넣으면 기본 보존 규칙이 지워지는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testObjectLockPutObjLockRemoveRule() {
+		test.testObjectLockPutObjLockRemoveRule();
+		testV2.testObjectLockPutObjLockRemoveRule();
+	}
+
+	/**
+	 * 다른 사용자의 잠금 설정 조회는 AccessDenied, 없는 버킷은 NoSuchBucket 인지 확인
+	 */
+	@Test
+	@Tag("Access")
+	void testObjectLockGetObjLockAccessDenied() {
+		test.testObjectLockGetObjLockAccessDenied();
+		testV2.testObjectLockGetObjLockAccessDenied();
+	}
 }

@@ -651,3 +651,253 @@ func stringsRepeatPattern(size int) string {
 	}
 	return string(data)
 }
+
+// putDigits는 10바이트(0123456789) 오브젝트를 하나 넣은 버킷을 만든다.
+func putDigits(t *testing.T, s *suite, id int, key string) string {
+	t.Helper()
+	bucket := s.bucket(t, id)
+	put(t, s, bucket, key, "0123456789", nil)
+	return bucket
+}
+
+// getObjectBody는 GetObject 응답과 본문을 함께 돌려준다.
+func getObjectBody(t *testing.T, client *s3.Client, input *s3.GetObjectInput) (*s3.GetObjectOutput, string) {
+	t.Helper()
+	out, err := client.GetObject(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	body, err := io.ReadAll(out.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out, string(body)
+}
+
+// 없는 버킷의 오브젝트를 조회하면 NoSuchBucket
+func TestGetObjectBucketNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b := s.bucketNameOnly(37)
+	_, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String("key")})
+	assertS3Error(t, err, 404, "NoSuchBucket")
+	// HEAD 는 본문이 없어 상태 코드만 온다
+	_, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String("key")})
+	assertS3Status(t, err, 404)
+}
+
+// 없는 오브젝트의 HEAD 는 404
+func TestHeadObjectNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	_, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(s.bucket(t, 38)), Key: aws.String("key")})
+	assertS3Status(t, err, 404)
+}
+
+// 권한이 없는 사용자와 익명 사용자는 조회할 수 없다
+func TestGetObjectAccessDenied(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	alt := altClientOrSkip(t, s)
+	key := "TestGetObjectAccessDenied"
+	b := putDigits(t, s, 39, key)
+	for _, other := range []*s3.Client{alt, anonymousClient(s)} {
+		_, err := other.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+		assertS3Error(t, err, 403, "AccessDenied")
+		// 목록 권한이 없으면 없는 키도 404 가 아니라 403 이다
+		_, err = other.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String("not_exist")})
+		assertS3Error(t, err, 403, "AccessDenied")
+		_, err = other.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+		assertS3Status(t, err, 403)
+	}
+}
+
+// 여러 구간, 잘못된 형식, 다른 단위, 뒤집힌 구간은 무시하고 전체를 200 으로 돌려준다
+func TestRangedRequestIgnored(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestRangedRequestIgnored"
+	b := putDigits(t, s, 40, key)
+	for _, value := range []string{"bytes=0-1,3-4", "bytes=abc", "items=0-1", "bytes=5-2"} {
+		out, body := getObjectBody(t, s.client, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), Range: aws.String(value)})
+		if status := responseStatus(t, out.ResultMetadata); status != 200 || out.ContentRange != nil || body != "0123456789" {
+			t.Fatalf("range=%q status=%d ContentRange=%q body=%q", value, status, aws.ToString(out.ContentRange), body)
+		}
+	}
+}
+
+// 크기를 넘는 구간은 잘라서 돌려주고, 시작이 크기 이상이면 416
+func TestRangedRequestBeyondEnd(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestRangedRequestBeyondEnd"
+	b := putDigits(t, s, 41, key)
+	// 끝이 크기를 넘으면 마지막 바이트까지로 잘린다
+	out, body := getObjectBody(t, s.client, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), Range: aws.String("bytes=5-100")})
+	if status := responseStatus(t, out.ResultMetadata); status != 206 || aws.ToString(out.ContentRange) != "bytes 5-9/10" || body != "56789" {
+		t.Fatalf("status=%d ContentRange=%q body=%q", status, aws.ToString(out.ContentRange), body)
+	}
+
+	// 뒤에서부터의 길이가 크기를 넘으면 전체를 206 으로 돌려준다
+	out, body = getObjectBody(t, s.client, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), Range: aws.String("bytes=-100")})
+	if status := responseStatus(t, out.ResultMetadata); status != 206 || aws.ToString(out.ContentRange) != "bytes 0-9/10" || body != "0123456789" {
+		t.Fatalf("status=%d ContentRange=%q body=%q", status, aws.ToString(out.ContentRange), body)
+	}
+
+	// 시작이 크기와 같거나, 뒤에서 0바이트를 요청하면 416
+	for _, value := range []string{"bytes=10-20", "bytes=-0"} {
+		_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), Range: aws.String(value)})
+		assertS3Error(t, err, 416, "InvalidRange")
+	}
+}
+
+// HEAD 에도 Range 를 줄 수 있다
+func TestHeadObjectRange(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestHeadObjectRange"
+	b := putDigits(t, s, 42, key)
+	out, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key), Range: aws.String("bytes=0-4")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status := responseStatus(t, out.ResultMetadata); status != 206 || aws.ToInt64(out.ContentLength) != 5 || aws.ToString(out.ContentRange) != "bytes 0-4/10" {
+		t.Fatalf("status=%d ContentLength=%d ContentRange=%q", status, aws.ToInt64(out.ContentLength), aws.ToString(out.ContentRange))
+	}
+}
+
+// 멀티파트가 아닌 오브젝트는 1번 파트가 전체다
+func TestGetObjectPartNumber(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "TestGetObjectPartNumber"
+	b := putDigits(t, s, 43, key)
+	out, body := getObjectBody(t, s.client, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), PartNumber: aws.Int32(1)})
+	if status := responseStatus(t, out.ResultMetadata); status != 206 || aws.ToString(out.ContentRange) != "bytes 0-9/10" || out.PartsCount != nil || body != "0123456789" {
+		t.Fatalf("status=%d ContentRange=%q PartsCount=%v body=%q", status, aws.ToString(out.ContentRange), out.PartsCount, body)
+	}
+
+	head, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key), PartNumber: aws.Int32(1)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status := responseStatus(t, head.ResultMetadata); status != 206 || aws.ToInt64(head.ContentLength) != 10 {
+		t.Fatalf("HeadObject status=%d ContentLength=%d", status, aws.ToInt64(head.ContentLength))
+	}
+
+	_, err = s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), PartNumber: aws.Int32(2)})
+	assertS3Error(t, err, 416, "InvalidPartNumber")
+}
+
+// 파트 번호는 1~10000 이고 Range 와 함께 쓸 수 없다
+func TestGetObjectPartNumberInvalid(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "TestGetObjectPartNumberInvalid"
+	b := putDigits(t, s, 44, key)
+	for _, partNumber := range []int32{0, 10001} {
+		_, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), PartNumber: aws.Int32(partNumber)})
+		assertS3Error(t, err, 400, "InvalidArgument")
+	}
+	_, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), PartNumber: aws.Int32(1), Range: aws.String("bytes=0-1")})
+	assertS3Error(t, err, 400, "InvalidRequest")
+}
+
+// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전이다
+func TestGetObjectVersionIdUnversioned(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "TestGetObjectVersionIdUnversioned"
+	b := putDigits(t, s, 45, key)
+	if _, body := getObjectBody(t, s.client, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("null")}); body != "0123456789" {
+		t.Fatalf("body=%q", body)
+	}
+	_, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("invalid")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+	_, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("invalid")})
+	assertS3Status(t, err, 400)
+}
+
+// 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+func TestGetObjectNullVersionNotExist(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	ctx := context.Background()
+	b, key := s.bucket(t, 46), "TestGetObjectNullVersionNotExist"
+	enableVersioning(t, s, b)
+	put(t, s, b, key, "content", nil)
+	_, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("null")})
+	assertS3Error(t, err, 404, "NoSuchVersion")
+	_, err = s.client.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(b), Key: aws.String(key), VersionId: aws.String("null")})
+	assertS3Status(t, err, 404)
+}
+
+// 익명 요청에는 response-* 재정의를 쓸 수 없다
+func TestGetObjectResponseHeadersAnonymous(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestGetObjectResponseHeadersAnonymous"
+	b := putDigits(t, s, 47, key)
+	_, err := anonymousClient(s).GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), ResponseContentType: aws.String("text/html")})
+	assertS3Error(t, err, 400, "InvalidRequest")
+}
+
+// HEAD 에도 response-* 재정의가 적용된다
+func TestHeadObjectResponseHeaders(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestHeadObjectResponseHeaders"
+	b := putDigits(t, s, 48, key)
+	out, err := s.client.HeadObject(context.Background(), &s3.HeadObjectInput{
+		Bucket: aws.String(b), Key: aws.String(key),
+		ResponseContentType:        aws.String("text/html"),
+		ResponseContentDisposition: aws.String("inline"),
+		ResponseCacheControl:       aws.String("max-age=1"),
+		ResponseContentEncoding:    aws.String("identity"),
+		ResponseContentLanguage:    aws.String("en"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if aws.ToString(out.ContentType) != "text/html" || aws.ToString(out.ContentDisposition) != "inline" || aws.ToString(out.CacheControl) != "max-age=1" || aws.ToString(out.ContentEncoding) != "identity" || aws.ToString(out.ContentLanguage) != "en" {
+		t.Fatalf("type=%q disposition=%q cache=%q encoding=%q language=%q", aws.ToString(out.ContentType), aws.ToString(out.ContentDisposition), aws.ToString(out.CacheControl), aws.ToString(out.ContentEncoding), aws.ToString(out.ContentLanguage))
+	}
+}
+
+// 아무것도 지정하지 않고 올린 오브젝트의 기본 응답 헤더
+// (Content-Type 기본값 binary/octet-stream 은 확인하지 않는다: go SDK 가 PutObject 에 항상 application/octet-stream 을 붙인다)
+func TestGetObjectDefaultHeaders(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestGetObjectDefaultHeaders"
+	b := putDigits(t, s, 49, key)
+	check := func(name string, acceptRanges, etag *string, contentLength *int64, lastModified *time.Time) {
+		t.Helper()
+		if aws.ToString(acceptRanges) != "bytes" || aws.ToInt64(contentLength) != 10 || aws.ToString(etag) != `"781e5e245d69b566979b86e28d23f2c7"` || lastModified == nil {
+			t.Fatalf("%s AcceptRanges=%q ContentLength=%d ETag=%q LastModified=%v", name, aws.ToString(acceptRanges), aws.ToInt64(contentLength), aws.ToString(etag), lastModified)
+		}
+	}
+	got, _ := getObjectBody(t, s.client, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
+	check("GetObject", got.AcceptRanges, got.ETag, got.ContentLength, got.LastModified)
+	head := headObject(t, s.client, b, key)
+	check("HeadObject", head.AcceptRanges, head.ETag, head.ContentLength, head.LastModified)
+}
+
+// If-Match: * 는 오브젝트가 있으면 통과, If-None-Match: * 는 304
+func TestGetObjectIfMatchWildcard(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	key := "TestGetObjectIfMatchWildcard"
+	b := putDigits(t, s, 50, key)
+	if _, body := getObjectBody(t, s.client, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), IfMatch: aws.String("*")}); body != "0123456789" {
+		t.Fatalf("body=%q", body)
+	}
+	_, err := s.client.GetObject(context.Background(), &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key), IfNoneMatch: aws.String("*")})
+	assertS3Status(t, err, 304)
+}

@@ -316,7 +316,7 @@ namespace s3tests.Test
 
 				var response = client.GetObject(bucketName, key2);
 				Assert.Equal(contentType, response.Headers.ContentType);
-				Assert.Equal(newMetaData, GetMetaData(response.Metadata));
+				CheckMetaData(newMetaData, response.Metadata);
 				Assert.Equal(size, response.ContentLength);
 			}
 		}
@@ -1690,6 +1690,301 @@ namespace s3tests.Test
 
 			var tagResponse = client.GetObjectTagging(bucketName, targetKey);
 			TaggingCompare(targetTagSet, tagResponse.Tagging);
+		}
+
+		private const string CopySourceKey = "source";
+		private const string CopySourceBody = "0123456789";
+
+		/// <summary>10바이트(0123456789) 원본 오브젝트를 하나 넣은 버킷을 만든다. TestId를 먼저 대입해야 한다.</summary>
+		private string CopySourceBucket(S3Client client)
+		{
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, CopySourceKey, body: CopySourceBody);
+			return bucketName;
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "잘못된 MetadataDirective/TaggingDirective로 복사하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectInvalidDirective()
+		{
+			TestId = 69;
+			var client = GetClient();
+			var bucketName = CopySourceBucket(client);
+
+			// MetadataDirective는 SDK에서 enum이고 TaggingDirective는 잘못된 값을 보내지 않아 헤더로 직접 넣는다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.CopyObject(bucketName, CopySourceKey, bucketName, "target",
+					headerList: [new("x-amz-metadata-directive", "INVALID")]));
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.CopyObject(bucketName, CopySourceKey, bucketName, "target",
+					headerList: [new("x-amz-tagging-directive", "INVALID")]));
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.HeadObject(bucketName, "target"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "원본에 키가 없는 x-amz-copy-source는 실패하고, 앞에 /가 붙은 형식은 허용하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectInvalidSource()
+		{
+			TestId = 70;
+			var client = GetClient();
+			var bucketName = CopySourceBucket(client);
+
+			// 원본에 키가 없으면 거부된다. SDK가 헤더를 조립하므로 x-amz-copy-source를 직접 덮어쓴다
+			foreach (var copySource in new[] { bucketName, bucketName + "/" })
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+					() => client.CopyObject(bucketName, CopySourceKey, bucketName, "target",
+						headerList: [new("x-amz-copy-source", copySource)]));
+			// 앞에 / 가 붙은 형식은 허용한다
+			client.CopyObject(bucketName, CopySourceKey, bucketName, "target",
+				headerList: [new("x-amz-copy-source", $"/{bucketName}/{CopySourceKey}")]);
+			Assert.Equal(CopySourceBody, GetBody(client.GetObject(bucketName, "target")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "원본 버전 ID가 잘못되었거나 없는 null 버전이면 실패하고, 버저닝을 쓰지 않는 버킷의 null 버전은 복사되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectSourceInvalidVersionId()
+		{
+			TestId = 71;
+			var client = GetClient();
+			var bucketName = CopySourceBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => client.CopyObject(bucketName, CopySourceKey, bucketName, "target", versionId: "invalid"));
+			// 버저닝을 쓰지 않는 버킷의 오브젝트는 null 버전으로 복사할 수 있다
+			Assert.Equal("null", client.CopyObject(bucketName, CopySourceKey, bucketName, "target", versionId: "null").SourceVersionId);
+
+			// 버저닝을 켠 뒤에 만든 오브젝트에는 null 버전이 없다
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			client.PutObject(bucketName, "versioned", body: "content");
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_VERSION,
+				() => client.CopyObject(bucketName, "versioned", bucketName, "target2", versionId: "null"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "복사 응답이 복사한 원본 버전과 새로 만든 버전을 알려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectSourceVersionId()
+		{
+			TestId = 72;
+			var key = "TestCopyObjectSourceVersionId";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var version1 = client.PutObject(bucketName, key, body: "version1").VersionId;
+			var version2 = client.PutObject(bucketName, key, body: "version2").VersionId;
+
+			// 응답으로 복사한 원본 버전과 새로 만든 버전을 알려준다
+			var response = client.CopyObject(bucketName, key, bucketName, "target1", versionId: version1);
+			Assert.Equal(version1, response.SourceVersionId);
+			Assert.False(string.IsNullOrEmpty(response.VersionId));
+			Assert.Equal("version1", GetBody(client.GetObject(bucketName, "target1")));
+
+			response = client.CopyObject(bucketName, key, bucketName, "target2");
+			Assert.Equal(version2, response.SourceVersionId);
+			Assert.Equal("version2", GetBody(client.GetObject(bucketName, "target2")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "복사 시 메타데이터는 따라가고 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectAttributesNotCopied()
+		{
+			TestId = 73;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var metadata = new List<KeyValuePair<string, string>> { new("key", "value") };
+			client.PutObject(bucketName, CopySourceKey, body: CopySourceBody, contentType: "text/plain",
+				headerList: [new("Cache-Control", "no-cache")], metadataList: metadata,
+				websiteRedirectLocation: "/other", storageClass: S3StorageClass.StandardInfrequentAccess);
+
+			client.CopyObject(bucketName, CopySourceKey, bucketName, "target");
+
+			var response = client.HeadObject(bucketName, "target");
+			Assert.Equal("text/plain", response.Headers.ContentType);
+			Assert.Equal("no-cache", response.Headers.CacheControl);
+			CheckMetaData(metadata, response.Metadata);
+			// 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
+			Assert.Null(response.StorageClass);
+			Assert.Null(response.WebsiteRedirectLocation);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "MetadataDirective=REPLACE인데 아무것도 주지 않으면 원본 메타데이터가 모두 빠지는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectReplaceWithoutMetadata()
+		{
+			TestId = 74;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			client.PutObject(bucketName, CopySourceKey, body: CopySourceBody, contentType: "text/plain",
+				headerList: [new("Cache-Control", "no-cache")], metadataList: [new("key", "value")]);
+
+			client.CopyObject(bucketName, CopySourceKey, bucketName, "target", metadataDirective: S3MetadataDirective.REPLACE);
+
+			// REPLACE 인데 아무것도 주지 않으면 원본의 메타데이터가 모두 빠진다
+			var response = client.HeadObject(bucketName, "target");
+			Assert.Equal("binary/octet-stream", response.Headers.ContentType);
+			Assert.Empty(response.Metadata.Keys);
+			Assert.True(string.IsNullOrEmpty(response.Headers.CacheControl));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "StorageClass")]
+		[Trait(MainData.Explanation, "복사 시 지정한 스토리지 클래스가 적용되고 잘못된 값은 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectStorageClass()
+		{
+			TestId = 75;
+			var client = GetClient();
+			var bucketName = CopySourceBucket(client);
+
+			client.CopyObject(bucketName, CopySourceKey, bucketName, "target", storageClass: S3StorageClass.StandardInfrequentAccess);
+			Assert.Equal("STANDARD_IA", client.HeadObject(bucketName, "target").StorageClass?.Value);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_STORAGE_CLASS,
+				() => client.CopyObject(bucketName, CopySourceKey, bucketName, "target2", storageClass: new S3StorageClass("INVALID")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Overwrite")]
+		[Trait(MainData.Explanation, "스토리지 클래스/웹사이트 리다이렉트/암호화 설정을 바꾸면 자기 자신에게 복사할 수 있고 태그만 바꾸면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectToItselfWithChanges()
+		{
+			TestId = 76;
+			var client = GetClient();
+			var bucketName = CopySourceBucket(client);
+
+			// 태그만 바꾸는 것은 변경으로 치지 않는다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => client.CopyObject(bucketName, CopySourceKey, bucketName, CopySourceKey,
+					taggingDirective: TaggingDirective.REPLACE, tagSet: [new() { Key = "key", Value = "value" }]));
+
+			// 스토리지 클래스, 웹사이트 리다이렉트, 암호화 설정 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
+			client.CopyObject(bucketName, CopySourceKey, bucketName, CopySourceKey, storageClass: S3StorageClass.StandardInfrequentAccess);
+			Assert.Equal("STANDARD_IA", client.HeadObject(bucketName, CopySourceKey).StorageClass?.Value);
+			client.CopyObject(bucketName, CopySourceKey, bucketName, CopySourceKey, websiteRedirectLocation: "/other");
+			Assert.Equal("/other", client.HeadObject(bucketName, CopySourceKey).WebsiteRedirectLocation);
+			client.CopyObject(bucketName, CopySourceKey, bucketName, CopySourceKey, sseKey: ServerSideEncryptionMethod.AES256);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "버저닝 버킷에서 이전 버전을 지정하면 변경 없이도 자기 자신에게 복사되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCopyObjectToItselfFromOldVersion()
+		{
+			TestId = 77;
+			var key = "TestCopyObjectToItselfFromOldVersion";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var version1 = client.PutObject(bucketName, key, body: "version1").VersionId;
+			var version2 = client.PutObject(bucketName, key, body: "version2").VersionId;
+
+			// 버저닝 버킷이어도 최신 버전을 그대로 자기 자신에게 복사할 수는 없다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => client.CopyObject(bucketName, key, bucketName, key));
+
+			// 이전 버전을 지정하면 변경 없이도 복사되어 그 내용이 새 최신 버전이 된다
+			var response = client.CopyObject(bucketName, key, bucketName, key, versionId: version1);
+			Assert.False(string.IsNullOrEmpty(response.VersionId));
+			Assert.NotEqual(version1, response.VersionId);
+			Assert.NotEqual(version2, response.VersionId);
+			Assert.Equal("version1", GetBody(client.GetObject(bucketName, key)));
+			Assert.Equal(3, GetVersions(client.ListVersions(bucketName).Versions).Count);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "복사 시 교체할 사용자 메타데이터가 2KB를 넘으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectMetadataTooLarge()
+		{
+			TestId = 78;
+			var client = GetClient();
+			var bucketName = CopySourceBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.METADATA_TOO_LARGE,
+				() => client.CopyObject(bucketName, CopySourceKey, bucketName, "target",
+					metadataDirective: S3MetadataDirective.REPLACE, metadataList: [new("key", new string('v', 2100))]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ACL")]
+		[Trait(MainData.Explanation, "잘못된 canned ACL로 복사하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectInvalidAcl()
+		{
+			TestId = 79;
+			var client = GetClient();
+			var bucketName = CopySourceBucket(client);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => client.CopyObject(bucketName, CopySourceKey, bucketName, "target", acl: new S3CannedACL("invalid")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 대상 버킷으로 복사하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectTargetBucketNotExist()
+		{
+			TestId = 80;
+			var client = GetClient();
+			var bucketName = CopySourceBucket(client);
+
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET,
+				() => client.CopyObject(bucketName, CopySourceKey, GetNewBucketName(false), "target"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "CopyObject")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "대상 버킷에 쓸 권한이 없으면 복사가 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCopyObjectTargetAccessDenied()
+		{
+			TestId = 81;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = CopySourceBucket(client);
+			var altBucketName = GetNewBucket(altClient);
+
+			try
+			{
+				altClient.PutObject(altBucketName, CopySourceKey, body: "content");
+				// 원본은 읽을 수 있어도 대상 버킷에 쓸 권한이 없으면 거부된다
+				AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED,
+					() => altClient.CopyObject(altBucketName, CopySourceKey, bucketName, "target"));
+				AssertS3Error(HttpStatusCode.NotFound, null, () => client.HeadObject(bucketName, "target"));
+			}
+			finally
+			{
+				// 보조 사용자의 버킷은 공용 정리(메인 사용자)로 지울 수 없어 여기서 지운다
+				DeleteBucketWithContents(altClient, altBucketName);
+			}
 		}
 	}
 }

@@ -99,6 +99,22 @@ public class MainData {
 	public static final String KEY_TOO_LONG = "KeyTooLongError";
 	public static final String NOT_MATCHED = "Source does not match target";
 	public static final String METHOD_NOT_ALLOWED = "MethodNotAllowed";
+	public static final String ID_MISMATCH = "IdMismatch";
+	public static final String INVALID_S3_DESTINATION_BUCKET = "InvalidS3DestinationBucket";
+	public static final String MALFORMED_CONTINUATION_TOKEN = "MalformedContinuationToken";
+	public static final String ILLEGAL_LOCATION_CONSTRAINT_EXCEPTION = "IllegalLocationConstraintException";
+	public static final String INVALID_LOCATION_CONSTRAINT = "InvalidLocationConstraint";
+	public static final String ILLEGAL_VERSIONING_CONFIGURATION_EXCEPTION = "IllegalVersioningConfigurationException";
+	public static final String INVALID_DIGEST = "InvalidDigest";
+	public static final String INVALID_STORAGE_CLASS = "InvalidStorageClass";
+	public static final String INVALID_REDIRECT_LOCATION = "InvalidRedirectLocation";
+	public static final String METADATA_TOO_LARGE = "MetadataTooLarge";
+	public static final String INVALID_PART_NUMBER = "InvalidPartNumber";
+	public static final String INVALID_PART_ORDER = "InvalidPartOrder";
+	public static final String MALFORMED_POLICY = "MalformedPolicy";
+	public static final String INVALID_ENCRYPTION_ALGORITHM_ERROR = "InvalidEncryptionAlgorithmError";
+	public static final String UNEXPECTED_CONTENT = "UnexpectedContent";
+	public static final String MISSING_SECURITY_HEADER = "MissingSecurityHeader";
 	
 	public static final String ALL_USERS = "http://acs.amazonaws.com/groups/global/AllUsers";
 	public static final String AUTHENTICATED_USERS = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers";

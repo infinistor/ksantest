@@ -748,4 +748,99 @@ public class ListObjects extends TestBase {
 		assertEquals(3, response.contents().size());
 		assertLinesMatch(List.of("aaa", "bbb", "ccc"), getKeys(response.contents()));
 	}
+
+	private static final List<String> TREE_KEYS = List.of("a/1", "a/2", "b/1", "c", "d");
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListMaxKeysNegative() {
+		var client = getClient();
+		var bucketName = createBucket(client, 41);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjects(l -> l.bucket(bucketName).maxKeys(-1)));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketListEncodingInvalid() {
+		var client = getClient();
+		var bucketName = createBucket(client, 42);
+		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
+				() -> client.listObjects(l -> l.bucket(bucketName).encodingType("invalid")));
+	}
+
+	@Test
+	@Tag("Marker")
+	public void testBucketListNextMarker() {
+		var client = getClient();
+		var bucketName = createObjects(client, 43, TREE_KEYS);
+
+		// 구분자가 없으면 잘려도 NextMarker 를 주지 않는다(마지막 키를 마커로 쓴다)
+		var response = client.listObjects(l -> l.bucket(bucketName).maxKeys(2));
+		assertEquals(List.of("a/1", "a/2"), getKeys(response.contents()));
+		assertEquals(true, response.isTruncated());
+		assertNull(response.nextMarker());
+
+		// 구분자가 있으면 마지막으로 돌려준 항목을 NextMarker 로 준다
+		var first = client.listObjects(l -> l.bucket(bucketName).maxKeys(2).delimiter("/"));
+		assertEquals(0, first.contents().size());
+		assertEquals(List.of("a/", "b/"), getPrefixList(first.commonPrefixes()));
+		assertEquals(true, first.isTruncated());
+		assertEquals("b/", first.nextMarker());
+
+		response = client
+				.listObjects(l -> l.bucket(bucketName).maxKeys(2).delimiter("/").marker(first.nextMarker()));
+		assertEquals(List.of("c", "d"), getKeys(response.contents()));
+		assertEquals(0, response.commonPrefixes().size());
+		assertEquals(false, response.isTruncated());
+	}
+
+	@Test
+	@Tag("Marker")
+	public void testBucketListMarkerInCommonPrefix() {
+		var client = getClient();
+		var bucketName = createObjects(client, 44, TREE_KEYS);
+		// 마커가 공통 접두어 안의 키이면 그 접두어는 통째로 건너뛴다
+		var response = client.listObjects(l -> l.bucket(bucketName).marker("a/1").delimiter("/"));
+		assertEquals(List.of("c", "d"), getKeys(response.contents()));
+		assertEquals(List.of("b/"), getPrefixList(response.commonPrefixes()));
+	}
+
+	@Test
+	@Tag("Delimiter")
+	public void testBucketListDelimiterMultiChar() {
+		var client = getClient();
+		var bucketName = createObjects(client, 45, TREE_KEYS);
+		// 구분자는 여러 글자일 수 있다
+		var response = client.listObjects(l -> l.bucket(bucketName).delimiter("/1"));
+		assertEquals(List.of("a/2", "c", "d"), getKeys(response.contents()));
+		assertEquals(List.of("a/1", "b/1"), getPrefixList(response.commonPrefixes()));
+	}
+
+	@Test
+	@Tag("Access")
+	public void testBucketListAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createObjects(client, 46, TREE_KEYS);
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED,
+				() -> altClient.listObjects(l -> l.bucket(bucketName)));
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testBucketListResponseFields() {
+		var client = getClient();
+		var bucketName = createObjects(client, 47, TREE_KEYS);
+		// 요청에 준 값을 응답에 그대로 돌려준다
+		var response = client
+				.listObjects(l -> l.bucket(bucketName).prefix("a/").marker("a/0").maxKeys(5).delimiter("/"));
+		assertEquals(bucketName, response.name());
+		assertEquals("a/", response.prefix());
+		assertEquals("a/0", response.marker());
+		assertEquals(5, response.maxKeys());
+		assertEquals("/", response.delimiter());
+		assertEquals(false, response.isTruncated());
+		assertEquals(List.of("a/1", "a/2"), getKeys(response.contents()));
+	}
 }

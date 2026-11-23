@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using Xunit;
+using System.Linq;
 
 namespace s3tests.Test
 {
@@ -482,6 +483,592 @@ namespace s3tests.Test
 
 			var response = client.GetObjectMetadata(bucketName, key);
 			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+		}
+
+		/// <summary>ID rule1, 전체 대상(Prefix ""), Enabled 인 규칙을 만들고 주어진 항목을 덮어쓴다.</summary>
+		private static LifecycleRule Rule(Action<LifecycleRule> configure = null)
+		{
+			var rule = new LifecycleRule() { Id = "rule1", Status = LifecycleRuleStatus.Enabled, Filter = PrefixFilter("") };
+			configure?.Invoke(rule);
+			return rule;
+		}
+
+		private static LifecycleRuleExpiration ExpireDays(int days) => new() { Days = days };
+
+		private static PutLifecycleConfigurationResponse PutRules(S3Client client, string bucketName, List<LifecycleRule> rules,
+			TransitionDefaultMinimumObjectSize transitionDefaultMinimumObjectSize = null)
+			=> client.PutLifecycleConfiguration(bucketName, new LifecycleConfiguration() { Rules = rules }, transitionDefaultMinimumObjectSize);
+
+		private static List<LifecycleRule> GetRules(S3Client client, string bucketName)
+			=> client.GetLifecycleConfiguration(bucketName).Configuration?.Rules ?? [];
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Get")]
+		[Trait(MainData.Explanation, "Lifecycle 설정이 없는 버킷을 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleGetNotExist()
+		{
+			TestId = 21;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// SDK v4 는 이 조회의 404 를 예외로 던지지 않고 상태 코드만 채운 응답을 돌려줘 에러 코드는 확인할 수 없다
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetLifecycleConfiguration(bucketName), MainData.NO_SUCH_LIFECYCLE_CONFIGURATION);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "Lifecycle 설정이 없는 버킷에서도 삭제가 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleDeleteNotExist()
+		{
+			TestId = 22;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 설정이 없어도 삭제는 성공한다
+			var response = client.DeleteLifecycleConfiguration(bucketName);
+			Assert.Equal(HttpStatusCode.NoContent, response.HttpStatusCode);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "없는 버킷에 Lifecycle 조회/설정/삭제를 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleBucketNotExist()
+		{
+			TestId = 23;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			var rules = new List<LifecycleRule>() { Rule(r => r.Expiration = ExpireDays(1)) };
+			// SDK v4 는 조회의 404 를 예외로 던지지 않고 상태 코드만 채운 응답을 돌려준다
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetLifecycleConfiguration(bucketName), MainData.NO_SUCH_BUCKET);
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => PutRules(client, bucketName, rules));
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.DeleteLifecycleConfiguration(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자가 Lifecycle 조회/설정/삭제를 하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleAccessDenied()
+		{
+			TestId = 24;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+			var rules = new List<LifecycleRule>() { Rule(r => r.Expiration = ExpireDays(1)) };
+			PutRules(client, bucketName, rules);
+
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.GetLifecycleConfiguration(bucketName));
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => PutRules(altClient, bucketName, rules));
+			AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, () => altClient.DeleteLifecycleConfiguration(bucketName));
+			// 설정은 그대로 남아 있다
+			Assert.Single(GetRules(client, bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "동작이 하나도 없는 Lifecycle 규칙은 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleNoAction()
+		{
+			TestId = 25;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST, () => PutRules(client, bucketName, [Rule()]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "Filter 도 Prefix 도 없는 Lifecycle 규칙은 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleNoFilter()
+		{
+			TestId = 26;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// Filter 도 Prefix 도 없는 규칙은 거부된다
+			var rule = new LifecycleRule() { Id = "rule1", Status = LifecycleRuleStatus.Enabled, Expiration = ExpireDays(1) };
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => PutRules(client, bucketName, [rule]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "규칙이 없는 Lifecycle 설정은 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleEmptyRules()
+		{
+			TestId = 27;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => PutRules(client, bucketName, []));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "만료 규칙에 Days 와 Date 를 함께 주면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleDaysAndDate()
+		{
+			TestId = 28;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var expiration = new LifecycleRuleExpiration() { Days = 1, Date = new DateTime(2099, 11, 10, 0, 0, 0, DateTimeKind.Utc) };
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => PutRules(client, bucketName, [Rule(r => r.Expiration = expiration)]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "만료일을 음수로 설정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleNegativeDays()
+		{
+			TestId = 29;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => PutRules(client, bucketName, [Rule(r => r.Expiration = ExpireDays(-1))]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "스토리지 클래스 전환 규칙이 그대로 저장·조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleTransition()
+		{
+			TestId = 30;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var transitions = new List<LifecycleTransition>()
+			{
+				new() { Days = 30, StorageClass = S3StorageClass.StandardInfrequentAccess },
+				new() { Days = 60, StorageClass = S3StorageClass.Glacier },
+			};
+			PutRules(client, bucketName, [Rule(r => { r.Transitions = transitions; r.Expiration = ExpireDays(90); })]);
+
+			var rules = GetRules(client, bucketName);
+			Assert.Single(rules);
+			var actual = (rules[0].Transitions ?? []).OrderBy(t => t.Days).ToList();
+			Assert.Equal(transitions.Count, actual.Count);
+			for (int i = 0; i < transitions.Count; i++)
+			{
+				Assert.Equal(transitions[i].Days, actual[i].Days);
+				Assert.Equal(transitions[i].StorageClass, actual[i].StorageClass);
+			}
+			Assert.Equal(90, rules[0].Expiration.Days);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "전환할 수 없는 스토리지 클래스를 지정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleTransitionInvalidStorageClass()
+		{
+			TestId = 31;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// STANDARD 로는 전환할 수 없다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => PutRules(client, bucketName, [Rule(r => r.Transitions = [new() { Days = 30, StorageClass = S3StorageClass.Standard }])]));
+			// 없는 스토리지 클래스
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => PutRules(client, bucketName, [Rule(r => r.Transitions = [new() { Days = 30, StorageClass = new S3StorageClass("INVALID") }])]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "만료일이 전환일보다 크지 않으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleExpirationBeforeTransition()
+		{
+			TestId = 32;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			static List<LifecycleTransition> transitions() => [new() { Days = 30, StorageClass = S3StorageClass.StandardInfrequentAccess }];
+			// 만료일은 전환일보다 커야 한다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => PutRules(client, bucketName, [Rule(r => { r.Transitions = transitions(); r.Expiration = ExpireDays(30); })]));
+			PutRules(client, bucketName, [Rule(r => { r.Transitions = transitions(); r.Expiration = ExpireDays(31); })]);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "STANDARD_IA 에서 GLACIER 로의 전환 간격이 30일 미만이면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleTransitionInterval()
+		{
+			TestId = 33;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// STANDARD_IA 에서 GLACIER 로는 30일 이상 지나야 전환할 수 있다
+			var transitions = new List<LifecycleTransition>()
+			{
+				new() { Days = 30, StorageClass = S3StorageClass.StandardInfrequentAccess },
+				new() { Days = 40, StorageClass = S3StorageClass.Glacier },
+			};
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => PutRules(client, bucketName, [Rule(r => r.Transitions = transitions)]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "이전 버전 전환 규칙이 그대로 저장·조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleNoncurrentTransition()
+		{
+			TestId = 34;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var transitions = new List<LifecycleRuleNoncurrentVersionTransition>()
+			{
+				new() { NoncurrentDays = 30, StorageClass = S3StorageClass.StandardInfrequentAccess },
+			};
+			PutRules(client, bucketName, [Rule(r => r.NoncurrentVersionTransitions = transitions)]);
+
+			var actual = GetRules(client, bucketName)[0].NoncurrentVersionTransitions;
+			Assert.Single(actual);
+			Assert.Equal(30, actual[0].NoncurrentDays);
+			Assert.Equal(S3StorageClass.StandardInfrequentAccess, actual[0].StorageClass);
+			Assert.Null(actual[0].NewerNoncurrentVersions);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "이전 버전 만료일을 0일로 설정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleNoncurrentZeroDays()
+		{
+			TestId = 35;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => PutRules(client, bucketName, [Rule(r => r.NoncurrentVersionExpiration = new() { NoncurrentDays = 0 })]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Version")]
+		[Trait(MainData.Explanation, "보존할 이전 버전 수(NewerNoncurrentVersions)가 저장되고 1~100 범위만 허용하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleNewerNoncurrentVersions()
+		{
+			TestId = 36;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			PutRules(client, bucketName, [Rule(r => r.NoncurrentVersionExpiration = new() { NoncurrentDays = 1, NewerNoncurrentVersions = 5 })]);
+
+			var actual = GetRules(client, bucketName)[0].NoncurrentVersionExpiration;
+			Assert.Equal(1, actual.NoncurrentDays);
+			Assert.Equal(5, actual.NewerNoncurrentVersions);
+
+			// 보존할 버전 수는 1~100 만 허용한다
+			foreach (var count in new[] { 0, 101 })
+			{
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+					() => PutRules(client, bucketName, [Rule(r => r.NoncurrentVersionExpiration = new() { NoncurrentDays = 1, NewerNoncurrentVersions = count })]));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "ExpiredObjectDeleteMarker 를 Days 와 함께 주면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleDeleteMarkerWithDays()
+		{
+			TestId = 37;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// ExpiredObjectDeleteMarker 는 Days 와 함께 쓸 수 없다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => PutRules(client, bucketName, [Rule(r => r.Expiration = new() { Days = 1, ExpiredObjectDeleteMarker = true })]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "ExpiredObjectDeleteMarker 를 태그 필터와 함께 주면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleDeleteMarkerWithTag()
+		{
+			TestId = 38;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var rule = Rule(r =>
+			{
+				r.Filter = new LifecycleFilter() { Tag = new Tag() { Key = "key", Value = "value" } };
+				r.Expiration = new() { ExpiredObjectDeleteMarker = true };
+			});
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST, () => PutRules(client, bucketName, [rule]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "AbortIncompleteMultipartUpload 를 태그·크기 필터와 함께 주면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleAbortMultipartWithFilter()
+		{
+			TestId = 39;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// AbortIncompleteMultipartUpload 는 태그·크기 필터와 함께 쓸 수 없다
+			var filters = new List<LifecycleFilter>()
+			{
+				new() { Tag = new Tag() { Key = "key", Value = "value" } },
+				new() { ObjectSizeGreaterThan = 10 },
+			};
+			foreach (var filter in filters)
+			{
+				var rule = Rule(r =>
+				{
+					r.Filter = filter;
+					r.AbortIncompleteMultipartUpload = new() { DaysAfterInitiation = 1 };
+				});
+				AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST, () => PutRules(client, bucketName, [rule]));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "AbortIncompleteMultipartUpload 의 기한을 0일로 설정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleAbortMultipartZeroDays()
+		{
+			TestId = 40;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
+				() => PutRules(client, bucketName, [Rule(r => r.AbortIncompleteMultipartUpload = new() { DaysAfterInitiation = 0 })]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Filter")]
+		[Trait(MainData.Explanation, "태그 필터가 그대로 저장·조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleTagFilter()
+		{
+			TestId = 41;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var filter = new LifecycleFilter() { Tag = new Tag() { Key = "key", Value = "value" } };
+			PutRules(client, bucketName, [Rule(r => { r.Filter = filter; r.Expiration = ExpireDays(1); })]);
+
+			// SDK v4 는 응답의 필터를 LifecycleFilterPredicate 로만 채운다
+			var actual = Assert.IsType<LifecycleTagPredicate>(GetRules(client, bucketName)[0].Filter.LifecycleFilterPredicate);
+			Assert.Equal("key", actual.Tag.Key);
+			Assert.Equal("value", actual.Tag.Value);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Filter")]
+		[Trait(MainData.Explanation, "And 필터(접두어·태그·크기)가 그대로 저장·조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleAndFilter()
+		{
+			TestId = 42;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var tags = new List<Tag>() { new() { Key = "key1", Value = "value1" }, new() { Key = "key2", Value = "value2" } };
+			var filter = new LifecycleFilter()
+			{
+				And = new LifecycleRuleAndOperator() { Prefix = "test1/", Tags = tags, ObjectSizeGreaterThan = 10, ObjectSizeLessThan = 100 },
+			};
+			PutRules(client, bucketName, [Rule(r => { r.Filter = filter; r.Expiration = ExpireDays(1); })]);
+
+			// SDK v4 는 응답의 필터를 LifecycleFilterPredicate 로만 채운다
+			var actual = Assert.IsType<LifecycleAndOperator>(GetRules(client, bucketName)[0].Filter.LifecycleFilterPredicate).Operands;
+			Assert.Equal(5, actual.Count);
+			Assert.Equal("test1/", actual.OfType<LifecyclePrefixPredicate>().Single().Prefix);
+			TaggingCompare(tags, actual.OfType<LifecycleTagPredicate>().Select(p => p.Tag).ToList());
+			Assert.Equal(10, actual.OfType<LifecycleObjectSizeGreaterThanPredicate>().Single().ObjectSizeGreaterThan);
+			Assert.Equal(100, actual.OfType<LifecycleObjectSizeLessThanPredicate>().Single().ObjectSizeLessThan);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Filter")]
+		[Trait(MainData.Explanation, "And 필터의 조건이 하나뿐이거나 태그 키가 중복되면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleAndFilterInvalid()
+		{
+			TestId = 43;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// And 안에 조건이 하나뿐이면 거부된다
+			var single = new LifecycleFilter() { And = new LifecycleRuleAndOperator() { Prefix = "test1/" } };
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML,
+				() => PutRules(client, bucketName, [Rule(r => { r.Filter = single; r.Expiration = ExpireDays(1); })]));
+			// And 안의 태그 키는 중복될 수 없다
+			var duplicated = new LifecycleFilter()
+			{
+				And = new LifecycleRuleAndOperator()
+				{
+					Prefix = "test1/",
+					Tags = [new() { Key = "key", Value = "1" }, new() { Key = "key", Value = "2" }],
+				},
+			};
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => PutRules(client, bucketName, [Rule(r => { r.Filter = duplicated; r.Expiration = ExpireDays(1); })]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Filter")]
+		[Trait(MainData.Explanation, "오브젝트 크기 필터가 그대로 저장·조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleObjectSizeFilter()
+		{
+			TestId = 44;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			PutRules(client, bucketName, [Rule(r => { r.Filter = new LifecycleFilter() { ObjectSizeGreaterThan = 500 }; r.Expiration = ExpireDays(1); })]);
+			// SDK v4 는 응답의 필터를 LifecycleFilterPredicate 로만 채운다
+			var greater = Assert.IsType<LifecycleObjectSizeGreaterThanPredicate>(GetRules(client, bucketName)[0].Filter.LifecycleFilterPredicate);
+			Assert.Equal(500, greater.ObjectSizeGreaterThan);
+
+			PutRules(client, bucketName, [Rule(r => { r.Filter = new LifecycleFilter() { ObjectSizeLessThan = 500 }; r.Expiration = ExpireDays(1); })]);
+			var less = Assert.IsType<LifecycleObjectSizeLessThanPredicate>(GetRules(client, bucketName)[0].Filter.LifecycleFilterPredicate);
+			Assert.Equal(500, less.ObjectSizeLessThan);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Filter")]
+		[Trait(MainData.Explanation, "오브젝트 크기 필터의 값이 올바르지 않으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestLifecycleObjectSizeFilterInvalid()
+		{
+			TestId = 45;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// ObjectSizeLessThan 은 1 이상이어야 한다
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => PutRules(client, bucketName, [Rule(r => { r.Filter = new LifecycleFilter() { ObjectSizeLessThan = 0 }; r.Expiration = ExpireDays(1); })]));
+			// ObjectSizeLessThan 은 ObjectSizeGreaterThan 보다 커야 한다
+			var sizeFilter = new LifecycleFilter() { And = new LifecycleRuleAndOperator() { ObjectSizeGreaterThan = 100, ObjectSizeLessThan = 100 } };
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => PutRules(client, bucketName, [Rule(r => { r.Filter = sizeFilter; r.Expiration = ExpireDays(1); })]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Filter")]
+		[Trait(MainData.Explanation, "Filter 대신 규칙 바로 아래에 Prefix 를 두는 예전 형식이 그대로 저장·조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleLegacyPrefix()
+		{
+			TestId = 46;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// Filter 대신 규칙 바로 아래에 Prefix 를 두는 예전 형식도 그대로 저장·조회된다
+			static LifecycleRule legacy() => new() { Id = "rule1", Status = LifecycleRuleStatus.Enabled, Prefix = "legacy/", Expiration = ExpireDays(1) };
+			PutRules(client, bucketName, [legacy()]);
+			var rules = GetRules(client, bucketName);
+			Assert.Equal("legacy/", rules[0].Prefix);
+			Assert.Null(rules[0].Filter);
+
+			// Prefix 와 Filter 를 함께 줄 수는 없다
+			var both = legacy();
+			both.Filter = new LifecycleFilter() { Prefix = "test1/" };
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => PutRules(client, bucketName, [both]));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Max")]
+		[Trait(MainData.Explanation, "Lifecycle 규칙은 1000개까지만 넣을 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleMaxRules()
+		{
+			TestId = 47;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			static List<LifecycleRule> makeRules(int count)
+			{
+				var rules = new List<LifecycleRule>();
+				for (int i = 0; i < count; i++)
+					rules.Add(new() { Id = $"rule{i}", Status = LifecycleRuleStatus.Enabled, Filter = PrefixFilter($"test{i}/"), Expiration = ExpireDays(1) });
+				return rules;
+			}
+
+			// 규칙은 1000개까지 넣을 수 있다
+			PutRules(client, bucketName, makeRules(1000));
+			Assert.Equal(1000, GetRules(client, bucketName).Count);
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => PutRules(client, bucketName, makeRules(1001)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Transition")]
+		[Trait(MainData.Explanation, "TransitionDefaultMinimumObjectSize 의 기본값과 지정한 값이 조회되고 잘못된 값은 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleTransitionDefaultMinimumObjectSize()
+		{
+			TestId = 48;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			static List<LifecycleRule> rules() => [Rule(r => r.Expiration = ExpireDays(1))];
+
+			// 지정하지 않으면 all_storage_classes_128K
+			PutRules(client, bucketName, rules());
+			var getResponse = client.GetLifecycleConfiguration(bucketName);
+			Assert.Equal(TransitionDefaultMinimumObjectSize.AllStorageClasses128K, getResponse.TransitionDefaultMinimumObjectSize);
+
+			var putResponse = PutRules(client, bucketName, rules(), TransitionDefaultMinimumObjectSize.VariesByStorageClass);
+			Assert.Equal(TransitionDefaultMinimumObjectSize.VariesByStorageClass, putResponse.TransitionDefaultMinimumObjectSize);
+			// AWS 는 변경 직후 조회에서 이전 값을 돌려줄 때가 있어 반영될 때까지 기다린다
+			WaitUntil(() => client.GetLifecycleConfiguration(bucketName).TransitionDefaultMinimumObjectSize == TransitionDefaultMinimumObjectSize.VariesByStorageClass);
+
+			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
+				() => PutRules(client, bucketName, rules(), new TransitionDefaultMinimumObjectSize("invalid")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Lifecycle")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "만료 규칙에 걸리는 오브젝트만 x-amz-expiration 헤더로 만료 예정일과 규칙 ID 를 돌려주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestLifecycleExpirationHeader()
+		{
+			TestId = 49;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var rule = new LifecycleRule() { Id = "rule1", Status = LifecycleRuleStatus.Enabled, Filter = PrefixFilter("test1/"), Expiration = ExpireDays(1) };
+			PutRules(client, bucketName, [rule]);
+
+			// 만료 규칙에 걸리는 오브젝트는 x-amz-expiration 헤더로 만료 예정일과 규칙 ID 를 돌려준다
+			var key = "test1/TestLifecycleExpirationHeader";
+			var putResponse = client.PutObject(bucketName, key, body: "test");
+			Assert.Equal("rule1", putResponse.Expiration.RuleId);
+			Assert.True(putResponse.Expiration.ExpiryDate > DateTime.UtcNow.AddHours(-1));
+			Assert.Equal("rule1", client.GetObjectMetadata(bucketName, key).Expiration.RuleId);
+			using (var getResponse = client.GetObject(bucketName, key))
+				Assert.Equal("rule1", getResponse.Expiration.RuleId);
+
+			// 규칙에 걸리지 않는 오브젝트에는 헤더가 없다
+			var other = "test2/TestLifecycleExpirationHeader";
+			Assert.Null(client.PutObject(bucketName, other, body: "test").Expiration);
+			Assert.Null(client.GetObjectMetadata(bucketName, other).Expiration);
 		}
 	}
 }

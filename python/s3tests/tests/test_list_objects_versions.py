@@ -586,3 +586,110 @@ class TestListObjectsVersions(S3TestBase):
 
         for index, version_id in enumerate(objects):
             assert version_id == response["Versions"][index]["VersionId"]
+
+    def _put_versions(self, client, test_id: int, key: str, count: int) -> tuple:
+        """버저닝을 켠 버킷에 같은 키로 count 개 버전을 만든다. (bucket, 오래된 순 버전 ID 목록)"""
+        bucket_name = self.create_bucket(client, test_id)
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+        version_ids = [
+            client.put_object(Bucket=bucket_name, Key=key, Body=str(index).encode("utf-8"))["VersionId"]
+            for index in range(count)
+        ]
+        return bucket_name, version_ids
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_list_versions_max_keys_negative(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 41)
+        self.assert_client_error(
+            lambda: client.list_object_versions(Bucket=bucket_name, MaxKeys=-1), 400, md.INVALID_ARGUMENT
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_bucket_list_versions_encoding_invalid(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 42)
+        self.assert_client_error(
+            lambda: client.list_object_versions(Bucket=bucket_name, EncodingType="invalid"), 400, md.INVALID_ARGUMENT
+        )
+
+    @pytest.mark.tag("Marker")
+    def test_bucket_list_versions_version_id_marker_invalid(self):
+        key = "test_bucket_list_versions_version_id_marker_invalid"
+        client = self.get_client()
+        bucket_name, version_ids = self._put_versions(client, 43, key, 2)
+        # 버전 마커는 키 마커 없이 쓸 수 없다
+        self.assert_client_error(
+            lambda: client.list_object_versions(Bucket=bucket_name, VersionIdMarker=version_ids[0]),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+        # 형식이 잘못된 버전 마커
+        self.assert_client_error(
+            lambda: client.list_object_versions(Bucket=bucket_name, KeyMarker=key, VersionIdMarker="invalid"),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("Marker")
+    def test_bucket_list_versions_pagination(self):
+        key = "test_bucket_list_versions_pagination"
+        client = self.get_client()
+        bucket_name, version_ids = self._put_versions(client, 44, key, 3)
+        expected = list(reversed(version_ids))  # 최신 버전부터 나온다
+
+        listed = []
+        kwargs = {}
+        for page in range(3):
+            response = client.list_object_versions(Bucket=bucket_name, MaxKeys=1, **kwargs)
+            assert len(response["Versions"]) == 1
+            version = response["Versions"][0]
+            assert version["Key"] == key
+            assert version["IsLatest"] is (page == 0)
+            listed.append(version["VersionId"])
+            assert response["IsTruncated"] is (page < 2)
+            if response["IsTruncated"]:
+                assert response["NextKeyMarker"] == key
+                assert response["NextVersionIdMarker"] == version["VersionId"]
+                kwargs = {"KeyMarker": response["NextKeyMarker"], "VersionIdMarker": response["NextVersionIdMarker"]}
+        assert listed == expected
+
+        # 키 마커만 주면 그 키의 버전은 모두 건너뛴다
+        response = client.list_object_versions(Bucket=bucket_name, KeyMarker=key)
+        assert not response.get("Versions")
+
+    @pytest.mark.tag("DeleteMarker")
+    def test_bucket_list_versions_delete_marker(self):
+        key = "test_bucket_list_versions_delete_marker"
+        client = self.get_client()
+        bucket_name, version_ids = self._put_versions(client, 45, key, 2)
+        marker_id = client.delete_object(Bucket=bucket_name, Key=key)["VersionId"]
+
+        # 삭제 마커가 최신이 되고 기존 버전은 모두 최신이 아니게 된다
+        response = client.list_object_versions(Bucket=bucket_name)
+        assert [(m["VersionId"], m["IsLatest"]) for m in response["DeleteMarkers"]] == [(marker_id, True)]
+        assert [(v["VersionId"], v["IsLatest"]) for v in response["Versions"]] == [
+            (version_ids[1], False),
+            (version_ids[0], False),
+        ]
+
+    @pytest.mark.tag("Check")
+    def test_bucket_list_versions_unversioned(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 46, ["a/1", "a/2", "b/1", "c", "d"])
+        # 버저닝을 쓰지 않는 버킷의 오브젝트는 모두 null 버전이고 최신이다
+        response = client.list_object_versions(Bucket=bucket_name, Delimiter="/")
+        assert [(v["Key"], v["VersionId"], v["IsLatest"]) for v in response["Versions"]] == [
+            ("c", "null", True),
+            ("d", "null", True),
+        ]
+        assert self.get_prefix_list(response.get("CommonPrefixes")) == ["a/", "b/"]
+        assert not response.get("DeleteMarkers")
+
+    @pytest.mark.tag("Access")
+    def test_bucket_list_versions_alt_user(self):
+        client = self.get_client()
+        bucket_name = self.create_objects(client, 47, ["a", "b"])
+        self.assert_client_error(
+            lambda: self.get_alt_client().list_object_versions(Bucket=bucket_name), 403, md.ACCESS_DENIED
+        )
