@@ -12,7 +12,6 @@ package org.example.s3tests;
 
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -143,11 +142,10 @@ class Inventory {
 	}
 
 	/**
-	 * 타깃 버킷이 존재하지 않을 경우 실패하는지 확인
+	 * 타깃 버킷이 존재하지 않아도 설정이 저장되는지 확인 (AWS 는 타깃 버킷 존재 여부를 확인하지 않음)
 	 */
-	@Disabled("aws에서 타깃 버킷이 존재하는지 확인하지 않음")
 	@Test
-	@Tag("Error")
+	@Tag("Put")
 	void testPutBucketInventoryTargetNotExist() {
 		test.testPutBucketInventoryTargetNotExist();
 		testV2.testPutBucketInventoryTargetNotExist();

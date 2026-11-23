@@ -125,19 +125,21 @@ func TestPutBucketInventoryIdDuplicate(t *testing.T) {
 	}
 }
 
-// 타깃 버킷이 존재하지 않을 경우 실패하는지 확인
+// 타깃 버킷이 존재하지 않아도 설정이 저장되는지 확인 (AWS 는 타깃 버킷 존재 여부를 확인하지 않음)
 func TestPutBucketInventoryTargetNotExist(t *testing.T) {
 	t.Parallel()
 
 	s := newSuite(t)
-
-	if s.cfg.Endpoint() == "" {
-		t.Skip("AWS does not validate inventory destination bucket existence")
-	}
-	source := s.bucket(t, 11)
+	source, id := s.bucket(t, 11), "my-inventory"
 	target := "missing-" + uniqueBucketSuffix(t)
-	_, err := putInventoryError(s, source, "my-inventory", standardInventory("my-inventory", target))
-	assertS3Error(t, err, 404, "NoSuchBucket")
+	putInventory(t, s, source, id, standardInventory(id, target))
+	out, err := s.client.GetBucketInventoryConfiguration(context.Background(), &s3.GetBucketInventoryConfigurationInput{Bucket: aws.String(source), Id: aws.String(id)})
+	if err != nil || out.InventoryConfiguration == nil || aws.ToString(out.InventoryConfiguration.Id) != id {
+		t.Fatalf("configuration=%#v err=%v", out.InventoryConfiguration, err)
+	}
+	if got := aws.ToString(out.InventoryConfiguration.Destination.S3BucketDestination.Bucket); got != "arn:aws:s3:::"+target {
+		t.Fatalf("destination bucket = %q, want %q", got, "arn:aws:s3:::"+target)
+	}
 }
 
 // 지원하지 않는 파일 형식의 인벤토리를 설정하려고 할 경우 실패하는지 확인

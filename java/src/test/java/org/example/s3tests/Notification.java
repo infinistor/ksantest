@@ -72,4 +72,24 @@ class Notification {
 		test.testNotificationDelete();
 		testV2.testNotificationDelete();
 	}
+
+	/**
+	 * 형식이 잘못된 Lambda ARN으로 알람 설정 시 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testNotificationPutInvalidArn() {
+		test.testNotificationPutInvalidArn();
+		testV2.testNotificationPutInvalidArn();
+	}
+
+	/**
+	 * 버킷에 EventBridge 알람 설정, 조회, 삭제가 가능한지 확인
+	 */
+	@Test
+	@Tag("EventBridge")
+	void testNotificationEventBridge() {
+		test.testNotificationEventBridge();
+		testV2.testNotificationEventBridge();
+	}
 }

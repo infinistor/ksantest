@@ -982,14 +982,16 @@ namespace s3tests.Test
 		public PutBucketNotificationResponse PutBucketNotificationConfiguration(string bucketName,
 			List<LambdaFunctionConfiguration> lambdaFunctionConfigurations = null,
 			List<TopicConfiguration> topicConfigurations = null,
-			List<QueueConfiguration> queueConfigurations = null)
+			List<QueueConfiguration> queueConfigurations = null,
+			EventBridgeConfiguration eventBridgeConfiguration = null)
 		{
 			var request = new PutBucketNotificationRequest()
 			{
 				BucketName = bucketName,
 				LambdaFunctionConfigurations = lambdaFunctionConfigurations,
 				TopicConfigurations = topicConfigurations,
-				QueueConfigurations = queueConfigurations
+				QueueConfigurations = queueConfigurations,
+				EventBridgeConfiguration = eventBridgeConfiguration
 			};
 			return PutBucketNotification(request);
 		}

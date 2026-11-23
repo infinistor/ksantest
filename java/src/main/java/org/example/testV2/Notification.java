@@ -11,14 +11,21 @@
 package org.example.testV2;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.util.List;
 
+import org.apache.hc.core5.http.HttpStatus;
+import org.example.Data.MainData;
 import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.model.Event;
+import software.amazon.awssdk.services.s3.model.EventBridgeConfiguration;
 import software.amazon.awssdk.services.s3.model.LambdaFunctionConfiguration;
 import software.amazon.awssdk.services.s3.model.NotificationConfiguration;
 
@@ -45,8 +52,7 @@ public class Notification extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 2);
 		var roleId = "my-lambda";
-		var mainUserId = config.mainUser.id;
-		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
+		var functionARN = lambdaFunctionArn();
 		var s3Events = List.of(Event.S3_OBJECT_CREATED, Event.S3_OBJECT_REMOVED);
 
 		var notification = NotificationConfiguration.builder();
@@ -66,8 +72,7 @@ public class Notification extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 3);
 		var roleId = "my-lambda";
-		var mainUserId = config.mainUser.id;
-		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
+		var functionARN = lambdaFunctionArn();
 		var s3Events = List.of(Event.S3_OBJECT_CREATED, Event.S3_OBJECT_REMOVED);
 
 		var notification = NotificationConfiguration.builder();
@@ -92,8 +97,7 @@ public class Notification extends TestBase {
 		var client = getClient();
 		var bucketName = createBucket(client, 4);
 		var roleId = "my-lambda";
-		var mainUserId = config.mainUser.id;
-		var functionARN = "aws:lambda::" + mainUserId + ":function:my-function";
+		var functionARN = lambdaFunctionArn();
 		var s3Events = List.of(Event.S3_OBJECT_CREATED, Event.S3_OBJECT_REMOVED);
 
 		var notification = NotificationConfiguration.builder();
@@ -114,5 +118,54 @@ public class Notification extends TestBase {
 		var deleteResult = client.getBucketNotificationConfiguration(g -> g.bucket(bucketName));
 		
 		assertEquals(0, deleteResult.lambdaFunctionConfigurations().size());
+	}
+
+	@Test
+	@Tag("Error")
+	public void testNotificationPutInvalidArn() {
+		var client = getClient();
+		var bucketName = createBucket(client, 5);
+		// arn: 접두어와 리전이 없는 잘못된 형식
+		var functionARN = "aws:lambda::" + config.mainUser.id + ":function:my-function";
+
+		var notification = NotificationConfiguration.builder()
+				.lambdaFunctionConfigurations(LambdaFunctionConfiguration.builder().id("my-lambda")
+						.lambdaFunctionArn(functionARN).events(List.of(Event.S3_OBJECT_CREATED)).build())
+				.build();
+
+		var e = assertThrows(AwsServiceException.class, () -> client.putBucketNotificationConfiguration(
+				p -> p.bucket(bucketName).notificationConfiguration(notification)));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("EventBridge")
+	public void testNotificationEventBridge() {
+		var client = getClient();
+		var bucketName = createBucket(client, 6);
+
+		// EventBridge 는 대상 리소스가 없어 AWS 에서도 그대로 설정된다
+		client.putBucketNotificationConfiguration(p -> p.bucket(bucketName)
+				.notificationConfiguration(n -> n.eventBridgeConfiguration(EventBridgeConfiguration.builder().build())));
+
+		var result = client.getBucketNotificationConfiguration(g -> g.bucket(bucketName));
+		assertNotNull(result.eventBridgeConfiguration());
+		assertEquals(0, result.lambdaFunctionConfigurations().size());
+
+		client.putBucketNotificationConfiguration(
+				p -> p.bucket(bucketName).notificationConfiguration(NotificationConfiguration.builder().build()));
+
+		var deleteResult = client.getBucketNotificationConfiguration(g -> g.bucket(bucketName));
+		assertNull(deleteResult.eventBridgeConfiguration());
+	}
+
+	/**
+	 * Lambda 함수 ARN을 정식 형식(arn:aws:lambda:리전:계정:function:이름)으로 만든다.
+	 * AWS는 형식이 틀린 ARN을 400 InvalidArgument 로 거부한다.
+	 */
+	private String lambdaFunctionArn() {
+		var region = (config.regionName == null || config.regionName.isBlank()) ? "us-east-1" : config.regionName;
+		return "arn:aws:lambda:" + region + ":" + config.mainUser.getExpectedOwnerId() + ":function:my-function";
 	}
 }

@@ -224,11 +224,11 @@ namespace s3tests.Test
 			Assert.Single(response.InventoryConfigurationList);
 		}
 
-		[Fact(Skip = "aws에서 타깃 버킷이 존재하는지 확인하지 않음")]
+		[Fact]
 		[Trait(MainData.Major, "Inventory")]
-		[Trait(MainData.Minor, "Error")]
-		[Trait(MainData.Explanation, "타깃 버킷이 존재하지 않을 경우 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
+		[Trait(MainData.Minor, "Put")]
+		[Trait(MainData.Explanation, "타깃 버킷이 존재하지 않아도 설정이 저장되는지 확인 (AWS 는 타깃 버킷 존재 여부를 확인하지 않음)")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutBucketInventoryTargetNotExist()
 		{
 			TestId = 11;
@@ -237,10 +237,13 @@ namespace s3tests.Test
 			var targetBucketName = GetNewBucketName();
 			var inventoryId = "my-inventory";
 
-			var e = Assert.Throws<AggregateException>(()
-				=> client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName)));
-			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
-			Assert.Equal(MainData.NO_SUCH_BUCKET, GetErrorCode(e));
+			// AWS 는 타깃 버킷의 존재 여부를 확인하지 않고 설정을 저장한다
+			client.PutBucketInventoryConfiguration(bucketName, GetInventoryConfig(inventoryId, targetBucketName));
+
+			var response = client.GetBucketInventoryConfiguration(bucketName, inventoryId);
+			Assert.Equal(inventoryId, response.InventoryConfiguration.InventoryId);
+			Assert.Equal("arn:aws:s3:::" + targetBucketName,
+				response.InventoryConfiguration.Destination.S3BucketDestination.BucketName);
 		}
 
 		[Fact]

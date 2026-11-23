@@ -10,7 +10,9 @@
 */
 using Amazon.S3;
 using Amazon.S3.Model;
+using System;
 using System.Collections.Generic;
+using System.Net;
 using Xunit;
 
 namespace s3tests.Test
@@ -36,6 +38,16 @@ namespace s3tests.Test
 					Events = S3Events
 				}
 			];
+		}
+
+		/// <summary>
+		/// Lambda 함수 ARN을 정식 형식(arn:aws:lambda:리전:계정:function:이름)으로 만든다.
+		/// AWS는 형식이 틀린 ARN을 400 InvalidArgument 로 거부한다.
+		/// </summary>
+		private string LambdaFunctionArn()
+		{
+			var region = string.IsNullOrWhiteSpace(Config.S3.RegionName) ? "us-east-1" : Config.S3.RegionName;
+			return "arn:aws:lambda:" + region + ":" + Config.MainUser.ExpectedOwnerId + ":function:my-function";
 		}
 
 		[Fact]
@@ -69,7 +81,7 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var roleId = "my-lambda";
-			var functionArn = "aws:lambda::" + Config.MainUser.UserId + ":function:my-function";
+			var functionArn = LambdaFunctionArn();
 
 			client.PutBucketNotificationConfiguration(bucketName,
 				lambdaFunctionConfigurations: BuildLambdaConfigs(roleId, functionArn));
@@ -88,7 +100,7 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var roleId = "my-lambda";
-			var functionArn = "aws:lambda::" + Config.MainUser.UserId + ":function:my-function";
+			var functionArn = LambdaFunctionArn();
 
 			client.PutBucketNotificationConfiguration(bucketName,
 				lambdaFunctionConfigurations: BuildLambdaConfigs(roleId, functionArn));
@@ -111,7 +123,7 @@ namespace s3tests.Test
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var roleId = "my-lambda";
-			var functionArn = "aws:lambda::" + Config.MainUser.UserId + ":function:my-function";
+			var functionArn = LambdaFunctionArn();
 
 			client.PutBucketNotificationConfiguration(bucketName,
 				lambdaFunctionConfigurations: BuildLambdaConfigs(roleId, functionArn));
@@ -124,6 +136,52 @@ namespace s3tests.Test
 
 			var deleteResult = client.GetBucketNotificationConfiguration(bucketName);
 			Assert.Empty(deleteResult.LambdaFunctionConfigurations ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "형식이 잘못된 Lambda ARN으로 알림 설정 시 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestNotificationPutInvalidArn()
+		{
+			TestId = 5;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// arn: 접두어와 리전이 없는 잘못된 형식
+			var functionArn = "aws:lambda::" + Config.MainUser.UserId + ":function:my-function";
+
+			var e = Assert.Throws<AggregateException>(()
+				=> client.PutBucketNotificationConfiguration(bucketName,
+					lambdaFunctionConfigurations: BuildLambdaConfigs("my-lambda", functionArn)));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "EventBridge")]
+		[Trait(MainData.Explanation, "버킷에 EventBridge 알림 설정, 조회, 삭제가 가능한지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestNotificationEventBridge()
+		{
+			TestId = 6;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			// EventBridge 는 대상 리소스가 없어 AWS 에서도 그대로 설정된다
+			client.PutBucketNotificationConfiguration(bucketName,
+				eventBridgeConfiguration: new EventBridgeConfiguration());
+
+			var result = client.GetBucketNotificationConfiguration(bucketName);
+			Assert.NotNull(result.EventBridgeConfiguration);
+			Assert.Empty(result.LambdaFunctionConfigurations ?? []);
+
+			client.PutBucketNotificationConfiguration(bucketName,
+				lambdaFunctionConfigurations: []);
+
+			var deleteResult = client.GetBucketNotificationConfiguration(bucketName);
+			Assert.Null(deleteResult.EventBridgeConfiguration);
 		}
 	}
 }

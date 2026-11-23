@@ -19,7 +19,6 @@ import java.util.Arrays;
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 
 import com.amazonaws.AmazonServiceException;
@@ -236,9 +235,8 @@ public class Inventory extends TestBase {
 		assertEquals(1, response.getInventoryConfigurationList().size());
 	}
 
-	@Disabled("aws에서 타깃 버킷이 존재하는지 확인하지 않음")
 	@Test
-	@Tag("Error")
+	@Tag("Put")
 	public void testPutBucketInventoryTargetNotExist() {
 		var client = getClient();
 		var bucketName = createBucket(client, 11);
@@ -253,11 +251,13 @@ public class Inventory extends TestBase {
 				.withIncludedObjectVersions(InventoryIncludedObjectVersions.Current)
 				.withSchedule(new InventorySchedule().withFrequency(InventoryFrequency.Daily));
 
-		var e = assertThrows(AmazonServiceException.class,
-				() -> client.setBucketInventoryConfiguration(bucketName, inventory));
+		// AWS 는 타깃 버킷의 존재 여부를 확인하지 않고 설정을 저장한다
+		client.setBucketInventoryConfiguration(bucketName, inventory);
 
-		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
-		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+		var response = client.getBucketInventoryConfiguration(bucketName, inventoryId);
+		assertEquals(inventoryId, response.getInventoryConfiguration().getId());
+		assertEquals("arn:aws:s3:::" + targetBucketName,
+				response.getInventoryConfiguration().getDestination().getS3BucketDestination().getBucketArn());
 	}
 
 	@Test

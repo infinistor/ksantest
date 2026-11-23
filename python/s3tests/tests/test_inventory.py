@@ -164,21 +164,23 @@ class TestInventory(S3TestBase):
         response = client.list_bucket_inventory_configurations(Bucket=bucket_name)
         assert len(response.get("InventoryConfigurationList", [])) == 1
 
-    @pytest.mark.skip(reason="AWS에서 타깃 버킷이 존재하는지 확인하지 않음")
-    @pytest.mark.tag("Error")
+    @pytest.mark.tag("Put")
     def test_put_bucket_inventory_target_not_exist(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 11)
         target_bucket_name = self.get_new_bucket_name(11)
         inventory_id = "my-inventory"
-        self.assert_client_error(
-            lambda: client.put_bucket_inventory_configuration(
-                Bucket=bucket_name,
-                Id=inventory_id,
-                InventoryConfiguration=self._inventory_config(inventory_id, target_bucket_name),
-            ),
-            404,
-            md.NO_SUCH_BUCKET,
+        # AWS 는 타깃 버킷의 존재 여부를 확인하지 않고 설정을 저장한다
+        client.put_bucket_inventory_configuration(
+            Bucket=bucket_name,
+            Id=inventory_id,
+            InventoryConfiguration=self._inventory_config(inventory_id, target_bucket_name),
+        )
+        response = client.get_bucket_inventory_configuration(Bucket=bucket_name, Id=inventory_id)
+        assert response["InventoryConfiguration"]["Id"] == inventory_id
+        assert (
+            response["InventoryConfiguration"]["Destination"]["S3BucketDestination"]["Bucket"]
+            == f"arn:aws:s3:::{target_bucket_name}"
         )
 
     @pytest.mark.tag("Error")
