@@ -6,6 +6,7 @@ import pytest
 
 from s3tests.data import main_data as md
 from s3tests.test_base import S3TestBase
+from s3tests.utils import net_utils
 
 
 class TestCors(S3TestBase):
@@ -154,3 +155,262 @@ class TestCors(S3TestBase):
             "Access-Control-Request-Method": "GET",
         }
         self.cors_request_and_check("OPTIONS", bucket_name, headers, 403, None, None, "bar")
+
+    @staticmethod
+    def _cors_rule(methods, origins, **extra) -> dict:
+        rule: dict = {"AllowedMethods": list(methods), "AllowedOrigins": list(origins)}
+        rule.update(extra)
+        return rule
+
+    def _cors_request(self, method: str, bucket_name: str, headers: dict, key=None):
+        return net_utils.cors_request(self.create_url(bucket_name, key), method, headers)
+
+    def _assert_invalid_cors(self, client, bucket_name: str, rules: list) -> None:
+        self.assert_client_error(
+            lambda: client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules}),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("Check")
+    def test_cors_all_fields(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 5)
+        rules = [
+            self._cors_rule(
+                ["GET", "PUT"],
+                ["http://a.example.com"],
+                ID="rule-1",
+                AllowedHeaders=["x-amz-*", "content-type"],
+                ExposeHeaders=["ETag", "x-amz-meta-foo"],
+                MaxAgeSeconds=600,
+            ),
+            self._cors_rule(["GET"], ["*"], ID="rule-2", MaxAgeSeconds=20),
+        ]
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+
+        response = client.get_bucket_cors(Bucket=bucket_name)
+        assert len(response["CORSRules"]) == 2
+        first, second = response["CORSRules"]
+        assert first["ID"] == "rule-1"
+        assert first["AllowedMethods"] == ["GET", "PUT"]
+        assert first["AllowedOrigins"] == ["http://a.example.com"]
+        assert first["AllowedHeaders"] == ["x-amz-*", "content-type"]
+        assert first["ExposeHeaders"] == ["ETag", "x-amz-meta-foo"]
+        assert first["MaxAgeSeconds"] == 600
+        assert second["ID"] == "rule-2"
+        assert second["AllowedMethods"] == ["GET"]
+        assert second["AllowedOrigins"] == ["*"]
+        assert second["MaxAgeSeconds"] == 20
+
+    @pytest.mark.tag("Preflight")
+    def test_cors_preflight_headers(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 6)
+        rules = [
+            self._cors_rule(
+                ["GET", "PUT"],
+                ["http://a.example.com"],
+                AllowedHeaders=["x-amz-*", "content-type"],
+                ExposeHeaders=["ETag", "x-amz-meta-foo"],
+                MaxAgeSeconds=600,
+            )
+        ]
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+
+        # 허용된 헤더(와일드카드, 대소문자 무시)로 preflight 요청
+        code, headers = self._cors_request(
+            "OPTIONS",
+            bucket_name,
+            {
+                "Origin": "http://a.example.com",
+                "Access-Control-Request-Method": "PUT",
+                "Access-Control-Request-Headers": "X-Amz-Meta-A, Content-Type",
+            },
+        )
+        assert code == 200
+        assert headers.get("access-control-allow-origin") == "http://a.example.com"
+        assert headers.get("access-control-allow-methods") == "GET, PUT"
+        assert headers.get("access-control-allow-headers") == "x-amz-meta-a, content-type"
+        assert headers.get("access-control-expose-headers") == "ETag, x-amz-meta-foo"
+        assert headers.get("access-control-max-age") == "600"
+        assert headers.get("access-control-allow-credentials") == "true"
+
+        # 허용되지 않은 헤더를 요청하면 거부된다
+        code, headers = self._cors_request(
+            "OPTIONS",
+            bucket_name,
+            {
+                "Origin": "http://a.example.com",
+                "Access-Control-Request-Method": "PUT",
+                "Access-Control-Request-Headers": "authorization",
+            },
+        )
+        assert code == 403
+        assert headers.get("access-control-allow-origin") is None
+
+    @pytest.mark.tag("Preflight")
+    def test_cors_rule_order(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 7)
+        rules = [
+            self._cors_rule(["GET", "PUT"], ["http://a.example.com"], MaxAgeSeconds=600),
+            self._cors_rule(["GET"], ["*"], MaxAgeSeconds=20),
+        ]
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+
+        # 두 규칙 모두에 맞으면 먼저 선언된 규칙이 적용된다
+        code, headers = self._cors_request(
+            "OPTIONS", bucket_name, {"Origin": "http://a.example.com", "Access-Control-Request-Method": "GET"}
+        )
+        assert code == 200
+        assert headers.get("access-control-allow-origin") == "http://a.example.com"
+        assert headers.get("access-control-allow-methods") == "GET, PUT"
+        assert headers.get("access-control-max-age") == "600"
+
+        # 첫 규칙에 맞지 않으면 다음 규칙이 적용된다
+        code, headers = self._cors_request(
+            "OPTIONS", bucket_name, {"Origin": "http://b.example.com", "Access-Control-Request-Method": "GET"}
+        )
+        assert code == 200
+        assert headers.get("access-control-allow-origin") == "*"
+        assert headers.get("access-control-allow-methods") == "GET"
+        assert headers.get("access-control-max-age") == "20"
+        assert headers.get("access-control-allow-credentials") is None
+
+        # 어느 규칙에도 맞지 않으면 거부된다
+        code, headers = self._cors_request(
+            "OPTIONS", bucket_name, {"Origin": "http://b.example.com", "Access-Control-Request-Method": "PUT"}
+        )
+        assert code == 403
+        assert headers.get("access-control-allow-origin") is None
+
+    @pytest.mark.tag("Object")
+    def test_cors_object_request(self):
+        client = self.get_client()
+        bucket_name = self._create_public_cors_bucket(client, 8)
+        key = "test_cors_object_request"
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"cors", ACL="public-read")
+        rules = [self._cors_rule(["GET", "HEAD"], ["http://a.example.com"], ExposeHeaders=["ETag"])]
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+
+        for method in ("GET", "HEAD"):
+            code, headers = self._cors_request(method, bucket_name, {"Origin": "http://a.example.com"}, key)
+            assert code == 200
+            assert headers.get("access-control-allow-origin") == "http://a.example.com"
+            assert headers.get("access-control-allow-methods") == "GET, HEAD"
+            assert headers.get("access-control-expose-headers") == "ETag"
+
+            # 규칙에 맞지 않는 Origin 이면 요청은 성공하지만 CORS 헤더가 없다
+            code, headers = self._cors_request(method, bucket_name, {"Origin": "http://b.example.com"}, key)
+            assert code == 200
+            assert headers.get("access-control-allow-origin") is None
+
+        # 오브젝트 키에 대한 preflight
+        code, headers = self._cors_request(
+            "OPTIONS",
+            bucket_name,
+            {"Origin": "http://a.example.com", "Access-Control-Request-Method": "GET"},
+            key,
+        )
+        assert code == 200
+        assert headers.get("access-control-allow-origin") == "http://a.example.com"
+
+    @pytest.mark.tag("Error")
+    def test_cors_invalid_method(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 9)
+        self._assert_invalid_cors(client, bucket_name, [self._cors_rule(["PATCH"], ["*"])])
+        # 메서드 이름은 대문자만 허용된다
+        self._assert_invalid_cors(client, bucket_name, [self._cors_rule(["get"], ["*"])])
+
+    @pytest.mark.tag("Error")
+    def test_cors_invalid_origin_wildcard(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 10)
+        self._assert_invalid_cors(client, bucket_name, [self._cors_rule(["GET"], ["*a*"])])
+
+    @pytest.mark.tag("Error")
+    def test_cors_invalid_header_wildcard(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 11)
+        self._assert_invalid_cors(
+            client, bucket_name, [self._cors_rule(["GET"], ["*"], AllowedHeaders=["*a*"])]
+        )
+
+    @pytest.mark.tag("Error")
+    def test_cors_expose_header_wildcard(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 12)
+        self._assert_invalid_cors(
+            client, bucket_name, [self._cors_rule(["GET"], ["*"], ExposeHeaders=["x-amz-*"])]
+        )
+
+    @pytest.mark.tag("Error")
+    def test_cors_rule_limit(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 13)
+        rules = [self._cors_rule(["GET"], [f"http://{i}.example.com"]) for i in range(100)]
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+        assert len(client.get_bucket_cors(Bucket=bucket_name)["CORSRules"]) == 100
+
+        rules.append(self._cors_rule(["GET"], ["http://100.example.com"]))
+        self._assert_invalid_cors(client, bucket_name, rules)
+
+    @pytest.mark.tag("Check")
+    def test_cors_overwrite(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 14)
+        client.put_bucket_cors(
+            Bucket=bucket_name,
+            CORSConfiguration={
+                "CORSRules": [
+                    self._cors_rule(["GET"], ["http://a.example.com"]),
+                    self._cors_rule(["PUT"], ["http://b.example.com"]),
+                ]
+            },
+        )
+        client.put_bucket_cors(
+            Bucket=bucket_name,
+            CORSConfiguration={"CORSRules": [self._cors_rule(["HEAD"], ["http://z.example.com"])]},
+        )
+        response = client.get_bucket_cors(Bucket=bucket_name)
+        assert len(response["CORSRules"]) == 1
+        assert response["CORSRules"][0]["AllowedMethods"] == ["HEAD"]
+        assert response["CORSRules"][0]["AllowedOrigins"] == ["http://z.example.com"]
+
+    @pytest.mark.tag("Delete")
+    def test_cors_delete_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 15)
+        # 설정이 없어도 삭제는 성공한다
+        client.delete_bucket_cors(Bucket=bucket_name)
+        self._assert_no_cors_configuration(client, bucket_name)
+
+    @pytest.mark.tag("Error")
+    def test_cors_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(16)
+        config = {"CORSRules": [self._cors_rule(["GET"], ["*"])]}
+        self.assert_client_error(lambda: client.get_bucket_cors(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+        self.assert_client_error(
+            lambda: client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=config),
+            404,
+            md.NO_SUCH_BUCKET,
+        )
+        self.assert_client_error(lambda: client.delete_bucket_cors(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+
+    @pytest.mark.tag("Permission")
+    def test_cors_alt_user(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket(client, 17)
+        config = {"CORSRules": [self._cors_rule(["GET"], ["*"])]}
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=config)
+        self.assert_client_error(lambda: alt_client.get_bucket_cors(Bucket=bucket_name), 403, md.ACCESS_DENIED)
+        self.assert_client_error(
+            lambda: alt_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=config),
+            403,
+            md.ACCESS_DENIED,
+        )
+        self.assert_client_error(lambda: alt_client.delete_bucket_cors(Bucket=bucket_name), 403, md.ACCESS_DENIED)

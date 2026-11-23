@@ -14,9 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -24,11 +25,17 @@ import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.BucketNotificationConfiguration;
 import com.amazonaws.services.s3.model.EventBridgeConfiguration;
+import com.amazonaws.services.s3.model.Filter;
+import com.amazonaws.services.s3.model.FilterRule;
 import com.amazonaws.services.s3.model.LambdaConfiguration;
+import com.amazonaws.services.s3.model.QueueConfiguration;
 import com.amazonaws.services.s3.model.S3Event;
+import com.amazonaws.services.s3.model.S3KeyFilter;
 import com.amazonaws.services.s3.model.SetBucketNotificationConfigurationRequest;
+import com.amazonaws.services.s3.model.TopicConfiguration;
 
 public class Notification extends TestBase {
 	@Test
@@ -45,8 +52,6 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Put")
 	public void testNotificationPut() {
-		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
-		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client, 2);
 		var functionARN = lambdaFunctionArn();
@@ -58,16 +63,12 @@ public class Notification extends TestBase {
 		var lambdaFunction = new LambdaConfiguration(functionARN, s3Events);
 		notification.addConfiguration("my-lambda", lambdaFunction);
 
-		var request = new SetBucketNotificationConfigurationRequest(bucketName, notification);
-
-		client.setBucketNotificationConfiguration(request);
+		putNotification(client, bucketName, notification);
 	}
 
 	@Test
 	@Tag("Get")
 	public void testNotificationGet() {
-		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
-		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client, 3);
 		var functionARN = lambdaFunctionArn();
@@ -79,9 +80,7 @@ public class Notification extends TestBase {
 		var lambdaFunction = new LambdaConfiguration(functionARN, s3Events);
 		notification.addConfiguration("my-lambda", lambdaFunction);
 
-		var request = new SetBucketNotificationConfigurationRequest(bucketName, notification);
-
-		client.setBucketNotificationConfiguration(request);
+		putNotification(client, bucketName, notification);
 
 		var result = client.getBucketNotificationConfiguration(bucketName);
 		var resultLambda = result.getConfigurationByName("my-lambda");
@@ -92,8 +91,6 @@ public class Notification extends TestBase {
 	@Test
 	@Tag("Delete")
 	public void testNotificationDelete() {
-		// AWS는 Lambda ARN 유효성을 검증하므로 실제 리소스 없이는 테스트 불가
-		assumeFalse(config.isAWS());
 		var client = getClient();
 		var bucketName = createBucket(client, 4);
 		var functionARN = lambdaFunctionArn();
@@ -105,9 +102,7 @@ public class Notification extends TestBase {
 		var lambdaFunction = new LambdaConfiguration(functionARN, s3Events);
 		notification.addConfiguration("my-lambda", lambdaFunction);
 
-		var request = new SetBucketNotificationConfigurationRequest(bucketName, notification);
-
-		client.setBucketNotificationConfiguration(request);
+		putNotification(client, bucketName, notification);
 
 		var result = client.getBucketNotificationConfiguration(bucketName);
 		var resultLambda = result.getConfigurationByName("my-lambda");
@@ -138,9 +133,7 @@ public class Notification extends TestBase {
 		var notification = new BucketNotificationConfiguration();
 		notification.addConfiguration("my-lambda", new LambdaConfiguration(functionARN, s3Events));
 
-		var request = new SetBucketNotificationConfigurationRequest(bucketName, notification);
-
-		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketNotificationConfiguration(request));
+		var e = assertThrows(AmazonServiceException.class, () -> putNotification(client, bucketName, notification));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 	}
@@ -168,6 +161,176 @@ public class Notification extends TestBase {
 		assertNull(deleteResult.getEventBridgeConfiguration());
 	}
 
+	@Test
+	@Tag("Queue")
+	public void testNotificationQueue() {
+		var client = getClient();
+		var bucketName = createBucket(client, 7);
+		var queueArn = arn("sqs", "my-queue");
+		var s3Events = EnumSet.of(S3Event.ObjectCreated, S3Event.ObjectRemoved);
+
+		var notification = new BucketNotificationConfiguration();
+		notification.addConfiguration("my-queue", new QueueConfiguration(queueArn, s3Events));
+		putNotification(client, bucketName, notification);
+
+		var result = client.getBucketNotificationConfiguration(bucketName);
+		assertEquals(1, result.getConfigurations().size());
+		var resultQueue = (QueueConfiguration) result.getConfigurationByName("my-queue");
+		assertNotNull(resultQueue);
+		assertEquals(queueArn, resultQueue.getQueueARN());
+		s3eventCompare(s3Events.toArray(), resultQueue.getEvents().toArray());
+
+		putNotification(client, bucketName, new BucketNotificationConfiguration());
+		var deleteResult = client.getBucketNotificationConfiguration(bucketName);
+		assertEquals(0, deleteResult.getConfigurations().size());
+	}
+
+	@Test
+	@Tag("Topic")
+	public void testNotificationTopic() {
+		var client = getClient();
+		var bucketName = createBucket(client, 8);
+		var topicArn = arn("sns", "my-topic");
+		var s3Events = EnumSet.of(S3Event.ObjectCreated, S3Event.ObjectRemoved);
+
+		var notification = new BucketNotificationConfiguration();
+		notification.addConfiguration("my-topic", new TopicConfiguration(topicArn, s3Events));
+		putNotification(client, bucketName, notification);
+
+		var result = client.getBucketNotificationConfiguration(bucketName);
+		assertEquals(1, result.getConfigurations().size());
+		var resultTopic = (TopicConfiguration) result.getConfigurationByName("my-topic");
+		assertNotNull(resultTopic);
+		assertEquals(topicArn, resultTopic.getTopicARN());
+		s3eventCompare(s3Events.toArray(), resultTopic.getEvents().toArray());
+
+		putNotification(client, bucketName, new BucketNotificationConfiguration());
+		var deleteResult = client.getBucketNotificationConfiguration(bucketName);
+		assertEquals(0, deleteResult.getConfigurations().size());
+	}
+
+	@Test
+	@Tag("Filter")
+	public void testNotificationFilter() {
+		var client = getClient();
+		var bucketName = createBucket(client, 9);
+		var rules = List.of(filterRule("prefix", "logs/"), filterRule("suffix", ".txt"));
+
+		var notification = new BucketNotificationConfiguration();
+		notification.addConfiguration("my-lambda", lambdaConfig(null, rules));
+		putNotification(client, bucketName, notification);
+
+		var result = client.getBucketNotificationConfiguration(bucketName);
+		var resultRules = result.getConfigurationByName("my-lambda").getFilter().getS3KeyFilter().getFilterRules();
+		// AWS 는 필터 이름을 Prefix/Suffix 로 정규화해 돌려주므로 대소문자를 무시하고 비교한다
+		var actual = new ArrayList<String>();
+		for (var rule : resultRules)
+			actual.add(rule.getName().toLowerCase() + "=" + rule.getValue());
+		actual.sort(null);
+		assertEquals(List.of("prefix=logs/", "suffix=.txt"), actual);
+	}
+
+	@Test
+	@Tag("Error")
+	public void testNotificationDestinationNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 10);
+		var notification = new BucketNotificationConfiguration();
+		notification.addConfiguration("my-lambda", lambdaConfig(null, null));
+
+		// 대상 검증을 건너뛰지 않으면 존재하지 않는 대상은 거부된다
+		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketNotificationConfiguration(
+				new SetBucketNotificationConfigurationRequest(bucketName, notification)));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Error")
+	public void testNotificationInvalidEvent() {
+		var client = getClient();
+		var bucketName = createBucket(client, 11);
+		var notification = new BucketNotificationConfiguration();
+		notification.addConfiguration("my-lambda", lambdaConfig(new String[] { "s3:Foo:*" }, null));
+
+		var e = assertThrows(AmazonServiceException.class, () -> putNotification(client, bucketName, notification));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Error")
+	public void testNotificationInvalidFilterName() {
+		var client = getClient();
+		var bucketName = createBucket(client, 12);
+		var notification = new BucketNotificationConfiguration();
+		notification.addConfiguration("my-lambda", lambdaConfig(null, List.of(filterRule("foo", "a"))));
+
+		var e = assertThrows(AmazonServiceException.class, () -> putNotification(client, bucketName, notification));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Error")
+	public void testNotificationOverlappingEvent() {
+		var client = getClient();
+		var bucketName = createBucket(client, 13);
+
+		// 필터 없이 같은 이벤트를 두 설정이 공유하면 거부된다
+		var overlapping = new BucketNotificationConfiguration();
+		overlapping.addConfiguration("c1", lambdaConfig(null, null));
+		overlapping.addConfiguration("c2", lambdaConfig(null, null));
+		var e = assertThrows(AmazonServiceException.class, () -> putNotification(client, bucketName, overlapping));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
+
+		// 접두어가 겹치지 않으면 같은 이벤트라도 허용된다
+		var notification = new BucketNotificationConfiguration();
+		notification.addConfiguration("c1", lambdaConfig(null, List.of(filterRule("prefix", "a/"))));
+		notification.addConfiguration("c2", lambdaConfig(null, List.of(filterRule("prefix", "b/"))));
+		putNotification(client, bucketName, notification);
+
+		var result = client.getBucketNotificationConfiguration(bucketName);
+		var ids = new ArrayList<>(result.getConfigurations().keySet());
+		ids.sort(null);
+		assertEquals(List.of("c1", "c2"), ids);
+	}
+
+	@Test
+	@Tag("Error")
+	public void testNotificationBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(15);
+
+		var e = assertThrows(AmazonServiceException.class, () -> client.getBucketNotificationConfiguration(bucketName));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+
+		e = assertThrows(AmazonServiceException.class,
+				() -> putNotification(client, bucketName, new BucketNotificationConfiguration()));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testNotificationAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 16);
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> altClient.getBucketNotificationConfiguration(bucketName));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+
+		e = assertThrows(AmazonServiceException.class,
+				() -> putNotification(altClient, bucketName, new BucketNotificationConfiguration()));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+	}
+
 	/**
 	 * Lambda 함수 ARN을 정식 형식(arn:aws:lambda:리전:계정:function:이름)으로 만든다.
 	 * AWS는 형식이 틀린 ARN을 400 InvalidArgument 로 거부한다.
@@ -175,5 +338,33 @@ public class Notification extends TestBase {
 	private String lambdaFunctionArn() {
 		var region = (config.regionName == null || config.regionName.isBlank()) ? "us-east-1" : config.regionName;
 		return "arn:aws:lambda:" + region + ":" + config.mainUser.getExpectedOwnerId() + ":function:my-function";
+	}
+
+	/** 대상 리소스 검증을 건너뛰고 알림 설정을 저장한다 (x-amz-skip-destination-validation). */
+	private void putNotification(AmazonS3 client, String bucketName, BucketNotificationConfiguration notification) {
+		client.setBucketNotificationConfiguration(
+				new SetBucketNotificationConfigurationRequest(bucketName, notification)
+						.withSkipDestinationValidation(true));
+	}
+
+	private String arn(String service, String resource) {
+		var region = (config.regionName == null || config.regionName.isBlank()) ? "us-east-1" : config.regionName;
+		return "arn:aws:" + service + ":" + region + ":" + config.mainUser.getExpectedOwnerId() + ":" + resource;
+	}
+
+	private static FilterRule filterRule(String name, String value) {
+		return new FilterRule().withName(name).withValue(value);
+	}
+
+	/**
+	 * Lambda 알림 설정을 만든다.
+	 * events 가 null 이면 s3:ObjectCreated:* 를 쓰고, filterRules 가 null 이면 필터를 넣지 않는다.
+	 */
+	private LambdaConfiguration lambdaConfig(String[] events, List<FilterRule> filterRules) {
+		var lambda = new LambdaConfiguration(lambdaFunctionArn(),
+				events == null ? new String[] { "s3:ObjectCreated:*" } : events);
+		if (filterRules != null)
+			lambda.setFilter(new Filter().withS3KeyFilter(new S3KeyFilter().withFilterRules(filterRules)));
+		return lambda;
 	}
 }

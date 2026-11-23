@@ -83,4 +83,133 @@ class Cors {
 		test.testCorsHeaderOption();
 		testV2.testCorsHeaderOption();
 	}
+
+	/**
+	 * cors 규칙의 모든 필드(ID, 허용 헤더, 노출 헤더, MaxAge)가 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testCorsAllFields() {
+		test.testCorsAllFields();
+		testV2.testCorsAllFields();
+	}
+
+	/**
+	 * preflight 응답 헤더가 규칙대로 내려오고 허용되지 않은 헤더 요청은 거부되는지 확인
+	 */
+	@Test
+	@Tag("Preflight")
+	void testCorsPreflightHeaders() {
+		test.testCorsPreflightHeaders();
+		testV2.testCorsPreflightHeaders();
+	}
+
+	/**
+	 * 여러 cors 규칙 중 먼저 선언된 규칙이 우선 적용되는지 확인
+	 */
+	@Test
+	@Tag("Preflight")
+	void testCorsRuleOrder() {
+		test.testCorsRuleOrder();
+		testV2.testCorsRuleOrder();
+	}
+
+	/**
+	 * 오브젝트 GET/HEAD/preflight 요청에 cors 응답 헤더가 내려오는지 확인
+	 */
+	@Test
+	@Tag("Object")
+	void testCorsObjectRequest() {
+		test.testCorsObjectRequest();
+		testV2.testCorsObjectRequest();
+	}
+
+	/**
+	 * 허용되지 않는 메서드로 cors 설정 시 실패하는지 확인 (SDK v1 은 AllowedMethods 가 enum 이라 잘못된 메서드를 표현할 수 없어 V2 만 실행)
+	 */
+	@Test
+	@Tag("Error")
+	void testCorsInvalidMethod() {
+		testV2.testCorsInvalidMethod();
+	}
+
+	/**
+	 * Origin 에 와일드카드가 둘 이상이면 cors 설정이 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testCorsInvalidOriginWildcard() {
+		test.testCorsInvalidOriginWildcard();
+		testV2.testCorsInvalidOriginWildcard();
+	}
+
+	/**
+	 * 허용 헤더에 와일드카드가 둘 이상이면 cors 설정이 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testCorsInvalidHeaderWildcard() {
+		test.testCorsInvalidHeaderWildcard();
+		testV2.testCorsInvalidHeaderWildcard();
+	}
+
+	/**
+	 * 노출 헤더에 와일드카드를 쓰면 cors 설정이 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testCorsExposeHeaderWildcard() {
+		test.testCorsExposeHeaderWildcard();
+		testV2.testCorsExposeHeaderWildcard();
+	}
+
+	/**
+	 * cors 규칙은 100개까지 허용되고 101개는 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testCorsRuleLimit() {
+		test.testCorsRuleLimit();
+		testV2.testCorsRuleLimit();
+	}
+
+	/**
+	 * cors 설정을 다시 넣으면 기존 설정을 덮어쓰는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testCorsOverwrite() {
+		test.testCorsOverwrite();
+		testV2.testCorsOverwrite();
+	}
+
+	/**
+	 * cors 설정이 없는 버킷에서도 삭제가 성공하는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testCorsDeleteNotExist() {
+		test.testCorsDeleteNotExist();
+		testV2.testCorsDeleteNotExist();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 cors 설정 조회/저장/삭제가 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testCorsBucketNotExist() {
+		test.testCorsBucketNotExist();
+		testV2.testCorsBucketNotExist();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 cors 설정 조회/저장/삭제가 실패하는지 확인
+	 */
+	@Test
+	@Tag("Permission")
+	void testCorsAltUser() {
+		test.testCorsAltUser();
+		testV2.testCorsAltUser();
+	}
 }

@@ -983,7 +983,8 @@ namespace s3tests.Test
 			List<LambdaFunctionConfiguration> lambdaFunctionConfigurations = null,
 			List<TopicConfiguration> topicConfigurations = null,
 			List<QueueConfiguration> queueConfigurations = null,
-			EventBridgeConfiguration eventBridgeConfiguration = null)
+			EventBridgeConfiguration eventBridgeConfiguration = null,
+			bool? skipDestinationValidation = null)
 		{
 			var request = new PutBucketNotificationRequest()
 			{
@@ -993,6 +994,8 @@ namespace s3tests.Test
 				QueueConfigurations = queueConfigurations,
 				EventBridgeConfiguration = eventBridgeConfiguration
 			};
+			// 대상 리소스 검증 생략 (x-amz-skip-destination-validation)
+			if (skipDestinationValidation != null) request.SkipDestinationValidation = skipDestinationValidation;
 			return PutBucketNotification(request);
 		}
 

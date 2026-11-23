@@ -90,6 +90,7 @@ namespace s3tests
 		public const string BAD_DIGEST = "BadDigest";
 		public const string NO_SUCH_VERSION = "NoSuchVersion";
 		public const string ACCESS_CONTROL_LIST_NOT_SUPPORTED = "AccessControlListNotSupported";
+		public const string REPLICATION_CONFIGURATION_NOT_FOUND_ERROR = "ReplicationConfigurationNotFoundError";
 		#endregion
 	}
 }

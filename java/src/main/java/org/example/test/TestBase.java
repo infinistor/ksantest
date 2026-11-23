@@ -2201,6 +2201,40 @@ public class TestBase {
 		}
 	}
 
+	/** CORS 요청 응답. 헤더 이름은 소문자로 맞춘다. */
+	public record CorsResponse(int statusCode, Map<String, String> headers) {
+		public String header(String name) {
+			return headers.get(name);
+		}
+	}
+
+	// CORS 요청을 보내고 상태 코드와 응답 헤더를 돌려준다
+	public CorsResponse corsRequest(String method, String bucketName, Map<String, String> headers, String key) {
+		try {
+			var url = key == null ? createURL(bucketName) : createURL(bucketName, key);
+
+			var connection = (HttpURLConnection) url.openConnection();
+			for (var entry : headers.entrySet()) {
+				connection.setRequestProperty(entry.getKey(), entry.getValue());
+			}
+			connection.setRequestMethod(method);
+			connection.setUseCaches(false);
+			connection.setConnectTimeout(15000);
+
+			var statusCode = connection.getResponseCode();
+			var responseHeaders = new HashMap<String, String>();
+			for (var entry : connection.getHeaderFields().entrySet()) {
+				if (entry.getKey() != null)
+					responseHeaders.put(entry.getKey().toLowerCase(), String.join(", ", entry.getValue()));
+			}
+			connection.disconnect();
+			return new CorsResponse(statusCode, responseHeaders);
+		} catch (IOException e) {
+			fail(e.getMessage());
+			return null;
+		}
+	}
+
 	public void partsETagCompare(List<PartETag> expected, List<PartSummary> actual) {
 		assertEquals(expected.size(), actual.size());
 

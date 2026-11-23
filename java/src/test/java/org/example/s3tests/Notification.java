@@ -92,4 +92,103 @@ class Notification {
 		test.testNotificationEventBridge();
 		testV2.testNotificationEventBridge();
 	}
+
+	/**
+	 * 버킷에 SQS 큐 알람 설정, 조회, 삭제가 가능한지 확인
+	 */
+	@Test
+	@Tag("Queue")
+	void testNotificationQueue() {
+		test.testNotificationQueue();
+		testV2.testNotificationQueue();
+	}
+
+	/**
+	 * 버킷에 SNS 토픽 알람 설정, 조회, 삭제가 가능한지 확인
+	 */
+	@Test
+	@Tag("Topic")
+	void testNotificationTopic() {
+		test.testNotificationTopic();
+		testV2.testNotificationTopic();
+	}
+
+	/**
+	 * 접두어/접미어 필터가 있는 알람 설정이 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testNotificationFilter() {
+		test.testNotificationFilter();
+		testV2.testNotificationFilter();
+	}
+
+	/**
+	 * 대상 검증을 건너뛰지 않으면 존재하지 않는 대상의 알람 설정이 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testNotificationDestinationNotExist() {
+		test.testNotificationDestinationNotExist();
+		testV2.testNotificationDestinationNotExist();
+	}
+
+	/**
+	 * 잘못된 이벤트 이름으로 알람 설정 시 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testNotificationInvalidEvent() {
+		test.testNotificationInvalidEvent();
+		testV2.testNotificationInvalidEvent();
+	}
+
+	/**
+	 * 잘못된 필터 이름으로 알람 설정 시 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testNotificationInvalidFilterName() {
+		test.testNotificationInvalidFilterName();
+		testV2.testNotificationInvalidFilterName();
+	}
+
+	/**
+	 * 같은 이벤트를 공유하는 설정은 필터가 겹치면 실패하고 겹치지 않으면 성공하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testNotificationOverlappingEvent() {
+		test.testNotificationOverlappingEvent();
+		testV2.testNotificationOverlappingEvent();
+	}
+
+	/**
+	 * 같은 Id 를 가진 알람 설정이 실패하는지 확인 (SDK v1 은 설정을 Id 키의 Map 으로 관리해 중복 Id 를 표현할 수 없어 V2 만 실행)
+	 */
+	@Test
+	@Tag("Error")
+	void testNotificationDuplicateId() {
+		testV2.testNotificationDuplicateId();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 알람 설정 조회/저장이 실패하는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testNotificationBucketNotExist() {
+		test.testNotificationBucketNotExist();
+		testV2.testNotificationBucketNotExist();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 알람 설정 조회/저장이 실패하는지 확인
+	 */
+	@Test
+	@Tag("Permission")
+	void testNotificationAltUser() {
+		test.testNotificationAltUser();
+		testV2.testNotificationAltUser();
+	}
 }

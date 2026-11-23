@@ -208,5 +208,347 @@ namespace s3tests.Test
 
 			CorsRequestAndCheck("OPTIONS", bucketName, [new("Origin", "example.origin"), new("Access-Control-Request-Headers", "x-amz-meta-header2"), new("Access-Control-Request-Method", "GET")], HttpStatusCode.Forbidden, null, null, key: "bar");
 		}
+
+		private static CORSRule CorsRule(List<string> methods, List<string> origins, string id = null,
+			List<string> allowedHeaders = null, List<string> exposeHeaders = null, int? maxAgeSeconds = null)
+		{
+			var rule = new CORSRule { AllowedMethods = methods, AllowedOrigins = origins };
+			if (id != null) rule.Id = id;
+			if (allowedHeaders != null) rule.AllowedHeaders = allowedHeaders;
+			if (exposeHeaders != null) rule.ExposeHeaders = exposeHeaders;
+			if (maxAgeSeconds != null) rule.MaxAgeSeconds = maxAgeSeconds.Value;
+			return rule;
+		}
+
+		private static void PutCors(S3Client client, string bucketName, List<CORSRule> rules)
+			=> client.PutCORSConfiguration(bucketName, new CORSConfiguration { Rules = rules });
+
+		private static void AssertInvalidCors(S3Client client, string bucketName, List<CORSRule> rules)
+		{
+			var e = Assert.Throws<AggregateException>(() => PutCors(client, bucketName, rules));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_REQUEST, GetErrorCode(e));
+		}
+
+		private static string Header(Dictionary<string, string> headers, string name)
+			=> headers.TryGetValue(name, out var value) ? value : null;
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "cors 규칙의 모든 필드(ID, AllowedHeaders, ExposeHeaders, MaxAgeSeconds)가 저장되고 조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCorsAllFields()
+		{
+			TestId = 5;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			List<CORSRule> rules =
+			[
+				CorsRule(["GET", "PUT"], ["http://a.example.com"], id: "rule-1",
+					allowedHeaders: ["x-amz-*", "content-type"],
+					exposeHeaders: ["ETag", "x-amz-meta-foo"],
+					maxAgeSeconds: 600),
+				CorsRule(["GET"], ["*"], id: "rule-2", maxAgeSeconds: 20),
+			];
+			PutCors(client, bucketName, rules);
+
+			var response = client.GetCORSConfiguration(bucketName);
+			Assert.Equal(2, response.Configuration.Rules.Count);
+			var first = response.Configuration.Rules[0];
+			var second = response.Configuration.Rules[1];
+			Assert.Equal("rule-1", first.Id);
+			Assert.Equal(["GET", "PUT"], first.AllowedMethods);
+			Assert.Equal(["http://a.example.com"], first.AllowedOrigins);
+			Assert.Equal(["x-amz-*", "content-type"], first.AllowedHeaders);
+			Assert.Equal(["ETag", "x-amz-meta-foo"], first.ExposeHeaders);
+			Assert.Equal(600, first.MaxAgeSeconds);
+			Assert.Equal("rule-2", second.Id);
+			Assert.Equal(["GET"], second.AllowedMethods);
+			Assert.Equal(["*"], second.AllowedOrigins);
+			Assert.Equal(20, second.MaxAgeSeconds);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Preflight")]
+		[Trait(MainData.Explanation, "preflight 응답에 허용 헤더, 노출 헤더, max-age, credentials 헤더가 내려오고 허용되지 않은 헤더는 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCorsPreflightHeaders()
+		{
+			TestId = 6;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			PutCors(client, bucketName,
+			[
+				CorsRule(["GET", "PUT"], ["http://a.example.com"],
+					allowedHeaders: ["x-amz-*", "content-type"],
+					exposeHeaders: ["ETag", "x-amz-meta-foo"],
+					maxAgeSeconds: 600),
+			]);
+
+			// 허용된 헤더(와일드카드, 대소문자 무시)로 preflight 요청
+			var (code, headers) = CorsRequest("OPTIONS", bucketName,
+			[
+				new("Origin", "http://a.example.com"),
+				new("Access-Control-Request-Method", "PUT"),
+				new("Access-Control-Request-Headers", "X-Amz-Meta-A, Content-Type"),
+			]);
+			Assert.Equal(HttpStatusCode.OK, code);
+			Assert.Equal("http://a.example.com", Header(headers, "access-control-allow-origin"));
+			Assert.Equal("GET, PUT", Header(headers, "access-control-allow-methods"));
+			Assert.Equal("x-amz-meta-a, content-type", Header(headers, "access-control-allow-headers"));
+			Assert.Equal("ETag, x-amz-meta-foo", Header(headers, "access-control-expose-headers"));
+			Assert.Equal("600", Header(headers, "access-control-max-age"));
+			Assert.Equal("true", Header(headers, "access-control-allow-credentials"));
+
+			// 허용되지 않은 헤더를 요청하면 거부된다
+			(code, headers) = CorsRequest("OPTIONS", bucketName,
+			[
+				new("Origin", "http://a.example.com"),
+				new("Access-Control-Request-Method", "PUT"),
+				new("Access-Control-Request-Headers", "authorization"),
+			]);
+			Assert.Equal(HttpStatusCode.Forbidden, code);
+			Assert.Null(Header(headers, "access-control-allow-origin"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Preflight")]
+		[Trait(MainData.Explanation, "여러 cors 규칙 중 먼저 선언된 규칙부터 순서대로 적용되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCorsRuleOrder()
+		{
+			TestId = 7;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			PutCors(client, bucketName,
+			[
+				CorsRule(["GET", "PUT"], ["http://a.example.com"], maxAgeSeconds: 600),
+				CorsRule(["GET"], ["*"], maxAgeSeconds: 20),
+			]);
+
+			// 두 규칙 모두에 맞으면 먼저 선언된 규칙이 적용된다
+			var (code, headers) = CorsRequest("OPTIONS", bucketName,
+				[new("Origin", "http://a.example.com"), new("Access-Control-Request-Method", "GET")]);
+			Assert.Equal(HttpStatusCode.OK, code);
+			Assert.Equal("http://a.example.com", Header(headers, "access-control-allow-origin"));
+			Assert.Equal("GET, PUT", Header(headers, "access-control-allow-methods"));
+			Assert.Equal("600", Header(headers, "access-control-max-age"));
+
+			// 첫 규칙에 맞지 않으면 다음 규칙이 적용된다
+			(code, headers) = CorsRequest("OPTIONS", bucketName,
+				[new("Origin", "http://b.example.com"), new("Access-Control-Request-Method", "GET")]);
+			Assert.Equal(HttpStatusCode.OK, code);
+			Assert.Equal("*", Header(headers, "access-control-allow-origin"));
+			Assert.Equal("GET", Header(headers, "access-control-allow-methods"));
+			Assert.Equal("20", Header(headers, "access-control-max-age"));
+			Assert.Null(Header(headers, "access-control-allow-credentials"));
+
+			// 어느 규칙에도 맞지 않으면 거부된다
+			(code, headers) = CorsRequest("OPTIONS", bucketName,
+				[new("Origin", "http://b.example.com"), new("Access-Control-Request-Method", "PUT")]);
+			Assert.Equal(HttpStatusCode.Forbidden, code);
+			Assert.Null(Header(headers, "access-control-allow-origin"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "오브젝트에 대한 GET/HEAD/preflight 요청에 cors 헤더가 규칙대로 내려오는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCorsObjectRequest()
+		{
+			TestId = 8;
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicRead);
+			var key = "test_cors_object_request";
+			client.PutObject(bucketName, key, body: "cors", acl: S3CannedACL.PublicRead);
+			PutCors(client, bucketName, [CorsRule(["GET", "HEAD"], ["http://a.example.com"], exposeHeaders: ["ETag"])]);
+
+			HttpStatusCode code;
+			Dictionary<string, string> headers;
+			foreach (var method in new[] { "GET", "HEAD" })
+			{
+				(code, headers) = CorsRequest(method, bucketName, [new("Origin", "http://a.example.com")], key);
+				Assert.Equal(HttpStatusCode.OK, code);
+				Assert.Equal("http://a.example.com", Header(headers, "access-control-allow-origin"));
+				Assert.Equal("GET, HEAD", Header(headers, "access-control-allow-methods"));
+				Assert.Equal("ETag", Header(headers, "access-control-expose-headers"));
+
+				// 규칙에 맞지 않는 Origin 이면 요청은 성공하지만 CORS 헤더가 없다
+				(code, headers) = CorsRequest(method, bucketName, [new("Origin", "http://b.example.com")], key);
+				Assert.Equal(HttpStatusCode.OK, code);
+				Assert.Null(Header(headers, "access-control-allow-origin"));
+			}
+
+			// 오브젝트 키에 대한 preflight
+			(code, headers) = CorsRequest("OPTIONS", bucketName,
+				[new("Origin", "http://a.example.com"), new("Access-Control-Request-Method", "GET")], key);
+			Assert.Equal(HttpStatusCode.OK, code);
+			Assert.Equal("http://a.example.com", Header(headers, "access-control-allow-origin"));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "지원하지 않는 메서드나 소문자 메서드로 cors 설정 시 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCorsInvalidMethod()
+		{
+			TestId = 9;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertInvalidCors(client, bucketName, [CorsRule(["PATCH"], ["*"])]);
+			// 메서드 이름은 대문자만 허용된다
+			AssertInvalidCors(client, bucketName, [CorsRule(["get"], ["*"])]);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "AllowedOrigin 에 와일드카드를 두 개 이상 쓰면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCorsInvalidOriginWildcard()
+		{
+			TestId = 10;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertInvalidCors(client, bucketName, [CorsRule(["GET"], ["*a*"])]);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "AllowedHeader 에 와일드카드를 두 개 이상 쓰면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCorsInvalidHeaderWildcard()
+		{
+			TestId = 11;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertInvalidCors(client, bucketName, [CorsRule(["GET"], ["*"], allowedHeaders: ["*a*"])]);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "ExposeHeader 에 와일드카드를 쓰면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCorsExposeHeaderWildcard()
+		{
+			TestId = 12;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertInvalidCors(client, bucketName, [CorsRule(["GET"], ["*"], exposeHeaders: ["x-amz-*"])]);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "cors 규칙은 100개까지 저장되고 101개는 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCorsRuleLimit()
+		{
+			TestId = 13;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var rules = new List<CORSRule>();
+			for (int i = 0; i < 100; i++) rules.Add(CorsRule(["GET"], [$"http://{i}.example.com"]));
+			PutCors(client, bucketName, rules);
+			Assert.Equal(100, client.GetCORSConfiguration(bucketName).Configuration.Rules.Count);
+
+			rules.Add(CorsRule(["GET"], ["http://100.example.com"]));
+			AssertInvalidCors(client, bucketName, rules);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "cors 설정을 다시 저장하면 기존 규칙이 모두 교체되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCorsOverwrite()
+		{
+			TestId = 14;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			PutCors(client, bucketName,
+			[
+				CorsRule(["GET"], ["http://a.example.com"]),
+				CorsRule(["PUT"], ["http://b.example.com"]),
+			]);
+			PutCors(client, bucketName, [CorsRule(["HEAD"], ["http://z.example.com"])]);
+
+			var response = client.GetCORSConfiguration(bucketName);
+			Assert.Single(response.Configuration.Rules);
+			Assert.Equal(["HEAD"], response.Configuration.Rules[0].AllowedMethods);
+			Assert.Equal(["http://z.example.com"], response.Configuration.Rules[0].AllowedOrigins);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "cors 설정이 없는 버킷의 cors 삭제가 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestCorsDeleteNotExist()
+		{
+			TestId = 15;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 설정이 없어도 삭제는 성공한다
+			client.DeleteCORSConfiguration(bucketName);
+			AssertNoCors(client, bucketName);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "존재하지 않는 버킷의 cors 조회, 저장, 삭제가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCorsBucketNotExist()
+		{
+			TestId = 16;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+
+			var e = Assert.Throws<AggregateException>(() => client.GetCORSConfiguration(bucketName));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_BUCKET, GetErrorCode(e));
+
+			e = Assert.Throws<AggregateException>(() => PutCors(client, bucketName, [CorsRule(["GET"], ["*"])]));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_BUCKET, GetErrorCode(e));
+
+			e = Assert.Throws<AggregateException>(() => client.DeleteCORSConfiguration(bucketName));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_BUCKET, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Permission")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자의 cors 조회, 저장, 삭제가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestCorsAltUser()
+		{
+			TestId = 17;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+			PutCors(client, bucketName, [CorsRule(["GET"], ["*"])]);
+
+			var e = Assert.Throws<AggregateException>(() => altClient.GetCORSConfiguration(bucketName));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+			Assert.Equal(MainData.ACCESS_DENIED, GetErrorCode(e));
+
+			e = Assert.Throws<AggregateException>(() => PutCors(altClient, bucketName, [CorsRule(["GET"], ["*"])]));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+			Assert.Equal(MainData.ACCESS_DENIED, GetErrorCode(e));
+
+			e = Assert.Throws<AggregateException>(() => altClient.DeleteCORSConfiguration(bucketName));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+			Assert.Equal(MainData.ACCESS_DENIED, GetErrorCode(e));
+		}
 	}
 }

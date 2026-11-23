@@ -68,7 +68,7 @@ namespace s3tests.Test
 			Assert.Empty(result.TopicConfigurations ?? []);
 		}
 
-		[SkippableFact]
+		[Fact]
 		[Trait(MainData.Major, "Notification")]
 		[Trait(MainData.Minor, "Put")]
 		[Trait(MainData.Explanation, "버킷 알림 설정")]
@@ -76,18 +76,16 @@ namespace s3tests.Test
 		public void TestNotificationPut()
 		{
 			TestId = 2;
-			SkipIfAws();
-
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var roleId = "my-lambda";
 			var functionArn = LambdaFunctionArn();
 
-			client.PutBucketNotificationConfiguration(bucketName,
+			PutNotification(client, bucketName,
 				lambdaFunctionConfigurations: BuildLambdaConfigs(roleId, functionArn));
 		}
 
-		[SkippableFact]
+		[Fact]
 		[Trait(MainData.Major, "Notification")]
 		[Trait(MainData.Minor, "Get")]
 		[Trait(MainData.Explanation, "버킷 알림 설정 조회")]
@@ -95,14 +93,12 @@ namespace s3tests.Test
 		public void TestNotificationGet()
 		{
 			TestId = 3;
-			SkipIfAws();
-
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var roleId = "my-lambda";
 			var functionArn = LambdaFunctionArn();
 
-			client.PutBucketNotificationConfiguration(bucketName,
+			PutNotification(client, bucketName,
 				lambdaFunctionConfigurations: BuildLambdaConfigs(roleId, functionArn));
 
 			var result = client.GetBucketNotificationConfiguration(bucketName);
@@ -110,7 +106,7 @@ namespace s3tests.Test
 			S3EventCompare(S3Events, resultLambda.Events);
 		}
 
-		[SkippableFact]
+		[Fact]
 		[Trait(MainData.Major, "Notification")]
 		[Trait(MainData.Minor, "Delete")]
 		[Trait(MainData.Explanation, "버킷 알림 설정 삭제")]
@@ -118,14 +114,12 @@ namespace s3tests.Test
 		public void TestNotificationDelete()
 		{
 			TestId = 4;
-			SkipIfAws();
-
 			var client = GetClient();
 			var bucketName = GetNewBucket(client);
 			var roleId = "my-lambda";
 			var functionArn = LambdaFunctionArn();
 
-			client.PutBucketNotificationConfiguration(bucketName,
+			PutNotification(client, bucketName,
 				lambdaFunctionConfigurations: BuildLambdaConfigs(roleId, functionArn));
 
 			var result = client.GetBucketNotificationConfiguration(bucketName);
@@ -152,7 +146,7 @@ namespace s3tests.Test
 			var functionArn = "aws:lambda::" + Config.MainUser.UserId + ":function:my-function";
 
 			var e = Assert.Throws<AggregateException>(()
-				=> client.PutBucketNotificationConfiguration(bucketName,
+				=> PutNotification(client, bucketName,
 					lambdaFunctionConfigurations: BuildLambdaConfigs("my-lambda", functionArn)));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
@@ -182,6 +176,273 @@ namespace s3tests.Test
 
 			var deleteResult = client.GetBucketNotificationConfiguration(bucketName);
 			Assert.Null(deleteResult.EventBridgeConfiguration);
+		}
+
+		/// <summary>
+		/// 대상 리소스 검증을 건너뛰고 알림 설정을 저장한다 (x-amz-skip-destination-validation).
+		/// </summary>
+		private static void PutNotification(S3Client client, string bucketName,
+			List<LambdaFunctionConfiguration> lambdaFunctionConfigurations = null,
+			List<TopicConfiguration> topicConfigurations = null,
+			List<QueueConfiguration> queueConfigurations = null)
+		{
+			client.PutBucketNotificationConfiguration(bucketName,
+				lambdaFunctionConfigurations: lambdaFunctionConfigurations,
+				topicConfigurations: topicConfigurations,
+				queueConfigurations: queueConfigurations,
+				skipDestinationValidation: true);
+		}
+
+		private string Arn(string service, string resource)
+		{
+			var region = string.IsNullOrWhiteSpace(Config.S3.RegionName) ? "us-east-1" : Config.S3.RegionName;
+			return "arn:aws:" + service + ":" + region + ":" + Config.MainUser.ExpectedOwnerId + ":" + resource;
+		}
+
+		private static List<FilterRule> PrefixRule(string prefix) => [new FilterRule { Name = "prefix", Value = prefix }];
+
+		private LambdaFunctionConfiguration LambdaConfig(string configId = "my-lambda",
+			List<EventType> events = null, List<FilterRule> filterRules = null)
+		{
+			var config = new LambdaFunctionConfiguration
+			{
+				Id = configId,
+				FunctionArn = LambdaFunctionArn(),
+				Events = events ?? [EventType.ObjectCreatedAll],
+			};
+			if (filterRules != null)
+				config.Filter = new Filter { S3KeyFilter = new S3KeyFilter { FilterRules = filterRules } };
+			return config;
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Queue")]
+		[Trait(MainData.Explanation, "버킷에 SQS 큐 알림 설정, 조회, 삭제가 가능한지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestNotificationQueue()
+		{
+			TestId = 7;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var queueArn = Arn("sqs", "my-queue");
+
+			PutNotification(client, bucketName,
+				queueConfigurations: [new QueueConfiguration { Id = "my-queue", Queue = queueArn, Events = S3Events }]);
+
+			var result = client.GetBucketNotificationConfiguration(bucketName);
+			Assert.Single(result.QueueConfigurations);
+			Assert.Equal("my-queue", result.QueueConfigurations[0].Id);
+			Assert.Equal(queueArn, result.QueueConfigurations[0].Queue);
+			S3EventCompare(S3Events, result.QueueConfigurations[0].Events);
+
+			PutNotification(client, bucketName);
+			var deleteResult = client.GetBucketNotificationConfiguration(bucketName);
+			Assert.Empty(deleteResult.QueueConfigurations ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Topic")]
+		[Trait(MainData.Explanation, "버킷에 SNS 토픽 알림 설정, 조회, 삭제가 가능한지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestNotificationTopic()
+		{
+			TestId = 8;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var topicArn = Arn("sns", "my-topic");
+
+			PutNotification(client, bucketName,
+				topicConfigurations: [new TopicConfiguration { Id = "my-topic", Topic = topicArn, Events = S3Events }]);
+
+			var result = client.GetBucketNotificationConfiguration(bucketName);
+			Assert.Single(result.TopicConfigurations);
+			Assert.Equal("my-topic", result.TopicConfigurations[0].Id);
+			Assert.Equal(topicArn, result.TopicConfigurations[0].Topic);
+			S3EventCompare(S3Events, result.TopicConfigurations[0].Events);
+
+			PutNotification(client, bucketName);
+			var deleteResult = client.GetBucketNotificationConfiguration(bucketName);
+			Assert.Empty(deleteResult.TopicConfigurations ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Filter")]
+		[Trait(MainData.Explanation, "알림 설정의 접두어/접미어 필터가 저장되고 조회되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestNotificationFilter()
+		{
+			TestId = 9;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			List<FilterRule> rules =
+			[
+				new FilterRule { Name = "prefix", Value = "logs/" },
+				new FilterRule { Name = "suffix", Value = ".txt" },
+			];
+
+			PutNotification(client, bucketName, lambdaFunctionConfigurations: [LambdaConfig(filterRules: rules)]);
+
+			var result = client.GetBucketNotificationConfiguration(bucketName);
+			var resultRules = result.LambdaFunctionConfigurations[0].Filter.S3KeyFilter.FilterRules;
+			// AWS 는 필터 이름을 Prefix/Suffix 로 정규화해 돌려주므로 대소문자를 무시하고 비교한다
+			var actual = new List<string>();
+			foreach (var rule in resultRules) actual.Add(rule.Name.ToLowerInvariant() + "=" + rule.Value);
+			actual.Sort(string.CompareOrdinal);
+			Assert.Equal(["prefix=logs/", "suffix=.txt"], actual);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "대상 검증을 건너뛰지 않으면 존재하지 않는 대상으로 알림 설정 시 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestNotificationDestinationNotExist()
+		{
+			TestId = 10;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			// 대상 검증을 건너뛰지 않으면 존재하지 않는 대상은 거부된다
+			var e = Assert.Throws<AggregateException>(()
+				=> client.PutBucketNotificationConfiguration(bucketName,
+					lambdaFunctionConfigurations: [LambdaConfig()]));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "지원하지 않는 이벤트 이름으로 알림 설정 시 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestNotificationInvalidEvent()
+		{
+			TestId = 11;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			var e = Assert.Throws<AggregateException>(()
+				=> PutNotification(client, bucketName,
+					lambdaFunctionConfigurations: [LambdaConfig(events: [new EventType("s3:Foo:*")])]));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "잘못된 필터 이름으로 알림 설정 시 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestNotificationInvalidFilterName()
+		{
+			TestId = 12;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			var e = Assert.Throws<AggregateException>(()
+				=> PutNotification(client, bucketName,
+					lambdaFunctionConfigurations: [LambdaConfig(filterRules: [new FilterRule { Name = "foo", Value = "a" }])]));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "같은 이벤트를 공유하는 설정은 필터가 겹치면 실패하고 겹치지 않으면 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestNotificationOverlappingEvent()
+		{
+			TestId = 13;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			// 필터 없이 같은 이벤트를 두 설정이 공유하면 거부된다
+			var e = Assert.Throws<AggregateException>(()
+				=> PutNotification(client, bucketName,
+					lambdaFunctionConfigurations: [LambdaConfig("c1"), LambdaConfig("c2")]));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+
+			// 접두어가 겹치지 않으면 같은 이벤트라도 허용된다
+			PutNotification(client, bucketName,
+				lambdaFunctionConfigurations:
+				[
+					LambdaConfig("c1", filterRules: PrefixRule("a/")),
+					LambdaConfig("c2", filterRules: PrefixRule("b/")),
+				]);
+
+			var result = client.GetBucketNotificationConfiguration(bucketName);
+			var ids = new List<string>();
+			foreach (var config in result.LambdaFunctionConfigurations) ids.Add(config.Id);
+			ids.Sort(string.CompareOrdinal);
+			Assert.Equal(["c1", "c2"], ids);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "같은 Id 를 가진 알림 설정이 중복되면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestNotificationDuplicateId()
+		{
+			TestId = 14;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			var e = Assert.Throws<AggregateException>(()
+				=> PutNotification(client, bucketName,
+					lambdaFunctionConfigurations:
+					[
+						LambdaConfig("c1", filterRules: PrefixRule("a/")),
+						LambdaConfig("c1", filterRules: PrefixRule("b/")),
+					]));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Error")]
+		[Trait(MainData.Explanation, "존재하지 않는 버킷의 알림 설정 조회, 저장이 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestNotificationBucketNotExist()
+		{
+			TestId = 15;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+
+			var e = Assert.Throws<AggregateException>(() => client.GetBucketNotificationConfiguration(bucketName));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_BUCKET, GetErrorCode(e));
+
+			e = Assert.Throws<AggregateException>(() => PutNotification(client, bucketName));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_BUCKET, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Notification")]
+		[Trait(MainData.Minor, "Permission")]
+		[Trait(MainData.Explanation, "권한이 없는 사용자의 알림 설정 조회, 저장이 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestNotificationAltUser()
+		{
+			TestId = 16;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+
+			var e = Assert.Throws<AggregateException>(() => altClient.GetBucketNotificationConfiguration(bucketName));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+			Assert.Equal(MainData.ACCESS_DENIED, GetErrorCode(e));
+
+			e = Assert.Throws<AggregateException>(() => PutNotification(altClient, bucketName));
+			Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+			Assert.Equal(MainData.ACCESS_DENIED, GetErrorCode(e));
 		}
 	}
 }

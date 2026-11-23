@@ -104,4 +104,172 @@ class Replication {
 		testV2.testReplicationBucketVersioningSuspend();
 	}
 
+	/**
+	 * 복제 설정이 없는 버킷의 조회는 실패하고 삭제는 성공하는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testReplicationGetNotExist() {
+		test.testReplicationGetNotExist();
+		testV2.testReplicationGetNotExist();
+	}
+
+	/**
+	 * 태그 필터를 가진 복제 규칙이 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testReplicationTagFilter() {
+		test.testReplicationTagFilter();
+		testV2.testReplicationTagFilter();
+	}
+
+	/**
+	 * 접두어와 태그를 묶은 And 필터를 가진 복제 규칙이 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testReplicationAndFilter() {
+		test.testReplicationAndFilter();
+		testV2.testReplicationAndFilter();
+	}
+
+	/**
+	 * 빈 접두어 필터를 가진 복제 규칙이 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testReplicationEmptyFilter() {
+		test.testReplicationEmptyFilter();
+		testV2.testReplicationEmptyFilter();
+	}
+
+	/**
+	 * 구버전(V1) 스키마의 복제 규칙이 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("Filter")
+	void testReplicationV1Schema() {
+		test.testReplicationV1Schema();
+		testV2.testReplicationV1Schema();
+	}
+
+	/**
+	 * 여러 복제 규칙이 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testReplicationMultipleRules() {
+		test.testReplicationMultipleRules();
+		testV2.testReplicationMultipleRules();
+	}
+
+	/**
+	 * 복제 규칙의 Priority 가 중복되면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationDuplicatePriority() {
+		test.testReplicationDuplicatePriority();
+		testV2.testReplicationDuplicatePriority();
+	}
+
+	/**
+	 * 복제 규칙의 ID 가 중복되면 실패하는지 확인 (SDK v1 은 규칙을 ID 키의 Map 으로 관리해 중복 ID 를 표현할 수 없어 V2 만 실행)
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationDuplicateId() {
+		testV2.testReplicationDuplicateId();
+	}
+
+	/**
+	 * Filter 를 쓰는 규칙에 Priority 나 DeleteMarkerReplication 이 없으면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationFilterWithoutPriority() {
+		test.testReplicationFilterWithoutPriority();
+		testV2.testReplicationFilterWithoutPriority();
+	}
+
+	/**
+	 * 삭제 마커 복제를 켠 규칙이 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("DeleteMarker")
+	void testReplicationDeleteMarkerEnabled() {
+		test.testReplicationDeleteMarkerEnabled();
+		testV2.testReplicationDeleteMarkerEnabled();
+	}
+
+	/**
+	 * 태그 필터가 있는 규칙에서 삭제 마커 복제를 켜면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationDeleteMarkerWithTagFilter() {
+		test.testReplicationDeleteMarkerWithTagFilter();
+		testV2.testReplicationDeleteMarkerWithTagFilter();
+	}
+
+	/**
+	 * 비활성(Disabled) 복제 규칙이 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testReplicationDisabledRule() {
+		test.testReplicationDisabledRule();
+		testV2.testReplicationDisabledRule();
+	}
+
+	/**
+	 * 대상 스토리지 클래스를 지정한 복제 규칙이 저장되고 조회되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testReplicationStorageClass() {
+		test.testReplicationStorageClass();
+		testV2.testReplicationStorageClass();
+	}
+
+	/**
+	 * 원본 버킷 자신을 대상으로 지정하면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationSameBucket() {
+		test.testReplicationSameBucket();
+		testV2.testReplicationSameBucket();
+	}
+
+	/**
+	 * 대상 버킷이 ARN 형식이 아니면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationInvalidDestinationArn() {
+		test.testReplicationInvalidDestinationArn();
+		testV2.testReplicationInvalidDestinationArn();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 복제 설정 조회/삭제가 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationBucketNotExist() {
+		test.testReplicationBucketNotExist();
+		testV2.testReplicationBucketNotExist();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 복제 설정 조회/저장/삭제가 실패하는지 확인
+	 */
+	@Test
+	@Tag("Permission")
+	void testReplicationAltUser() {
+		test.testReplicationAltUser();
+		testV2.testReplicationAltUser();
+	}
 }

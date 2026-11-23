@@ -11,8 +11,11 @@
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -20,9 +23,12 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.LoggingEnabled;
 import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 import software.amazon.awssdk.services.s3.model.ServerSideEncryptionRule;
+import software.amazon.awssdk.services.s3.model.SimplePrefix;
 
 public class Logging extends TestBase {
 	@Test
@@ -146,4 +152,142 @@ public class Logging extends TestBase {
 		assertEquals(MainData.INVALID_TARGET_BUCKET_FOR_LOGGING, e.awsErrorDetails().errorCode());
 	}
 
+	@Test
+	@Tag("Put/Get")
+	public void testLoggingDisable() {
+		var client = getClient();
+		var sourceBucketName = createBucket(client, 9);
+		var targetBucketName = createBucket(client, 9);
+
+		putLogging(client, sourceBucketName, loggingEnabled(targetBucketName, "logs/").build());
+		assertNotNull(client.getBucketLogging(g -> g.bucket(sourceBucketName)).loggingEnabled());
+
+		// 빈 설정을 넣으면 로깅이 해제된다
+		putLogging(client, sourceBucketName, null);
+		assertNull(client.getBucketLogging(g -> g.bucket(sourceBucketName)).loggingEnabled());
+	}
+
+	@Test
+	@Tag("Put/Get")
+	public void testLoggingOverwrite() {
+		var client = getClient();
+		var sourceBucketName = createBucket(client, 10);
+		var targetBucketName = createBucket(client, 10);
+		var newTargetBucketName = createBucket(client, 10);
+
+		putLogging(client, sourceBucketName, loggingEnabled(targetBucketName, "logs/").build());
+		putLogging(client, sourceBucketName, loggingEnabled(newTargetBucketName, "other/").build());
+
+		var response = client.getBucketLogging(g -> g.bucket(sourceBucketName));
+		assertEquals(newTargetBucketName, response.loggingEnabled().targetBucket());
+		assertEquals("other/", response.loggingEnabled().targetPrefix());
+	}
+
+	@Test
+	@Tag("KeyFormat")
+	public void testLoggingSimplePrefix() {
+		var client = getClient();
+		var sourceBucketName = createBucket(client, 11);
+		var targetBucketName = createBucket(client, 11);
+
+		putLogging(client, sourceBucketName, loggingEnabled(targetBucketName, "logs/")
+				.targetObjectKeyFormat(f -> f.simplePrefix(SimplePrefix.builder().build())).build());
+
+		var response = client.getBucketLogging(g -> g.bucket(sourceBucketName));
+		var keyFormat = response.loggingEnabled().targetObjectKeyFormat();
+		assertNotNull(keyFormat.simplePrefix());
+		assertNull(keyFormat.partitionedPrefix());
+	}
+
+	@Test
+	@Tag("KeyFormat")
+	public void testLoggingPartitionedPrefix() {
+		var client = getClient();
+		var sourceBucketName = createBucket(client, 12);
+		var targetBucketName = createBucket(client, 12);
+
+		for (var dateSource : List.of("EventTime", "DeliveryTime")) {
+			putLogging(client, sourceBucketName, loggingEnabled(targetBucketName, "logs/")
+					.targetObjectKeyFormat(f -> f.partitionedPrefix(p -> p.partitionDateSource(dateSource))).build());
+
+			var response = client.getBucketLogging(g -> g.bucket(sourceBucketName));
+			var keyFormat = response.loggingEnabled().targetObjectKeyFormat();
+			assertEquals(dateSource, keyFormat.partitionedPrefix().partitionDateSourceAsString());
+			assertNull(keyFormat.simplePrefix());
+		}
+	}
+
+	@Test
+	@Tag("Put/Get")
+	public void testLoggingSameBucket() {
+		var client = getClient();
+		var bucketName = createBucket(client, 13);
+
+		// 소스 버킷 자신을 타깃으로 지정할 수 있다
+		putLogging(client, bucketName, loggingEnabled(bucketName, "self/").build());
+
+		var response = client.getBucketLogging(g -> g.bucket(bucketName));
+		assertEquals(bucketName, response.loggingEnabled().targetBucket());
+		assertEquals("self/", response.loggingEnabled().targetPrefix());
+	}
+
+	@Test
+	@Tag("Error")
+	public void testLoggingTargetBucketOtherOwner() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var sourceBucketName = createBucket(client, 14);
+		var targetBucketName = createBucket(altClient, 14);
+
+		try {
+			// 소스와 타깃 버킷의 소유자가 다르면 거부된다
+			var e = assertThrows(AwsServiceException.class,
+					() -> putLogging(client, sourceBucketName, loggingEnabled(targetBucketName, "logs/").build()));
+			assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+			assertEquals(MainData.INVALID_TARGET_BUCKET_FOR_LOGGING, e.awsErrorDetails().errorCode());
+		} finally {
+			altClient.deleteBucket(d -> d.bucket(targetBucketName));
+			deleteBucketList(targetBucketName);
+		}
+	}
+
+	@Test
+	@Tag("Error")
+	public void testLoggingGetBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(15);
+
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketLogging(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testLoggingAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var sourceBucketName = createBucket(client, 16);
+		var targetBucketName = createBucket(client, 16);
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> altClient.getBucketLogging(g -> g.bucket(sourceBucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class,
+				() -> putLogging(altClient, sourceBucketName, loggingEnabled(targetBucketName, "logs/").build()));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+	}
+
+	private static LoggingEnabled.Builder loggingEnabled(String targetBucketName, String prefix) {
+		return LoggingEnabled.builder().targetBucket(targetBucketName).targetPrefix(prefix);
+	}
+
+	/** 로깅 설정을 저장한다. loggingEnabled 가 null 이면 빈 설정을 넣어 로깅을 해제한다. */
+	private void putLogging(S3Client client, String sourceBucketName, LoggingEnabled loggingEnabled) {
+		client.putBucketLogging(
+				p -> p.bucket(sourceBucketName).bucketLoggingStatus(s -> s.loggingEnabled(loggingEnabled)));
+	}
 }

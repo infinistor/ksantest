@@ -78,6 +78,7 @@ public class MainData {
 	public static final String INVALID_BUCKET_STATE = "InvalidBucketState";
 	public static final String INVALID_RETENTION_PERIOD = "InvalidRetentionPeriod";
 	public static final String OBJECT_LOCK_CONFIGURATION_NOT_FOUND_ERROR = "ObjectLockConfigurationNotFoundError";
+	public static final String REPLICATION_CONFIGURATION_NOT_FOUND_ERROR = "ReplicationConfigurationNotFoundError";
 	public static final String NOT_IMPLEMENTED = "NotImplemented";
 	public static final String SIGNATURE_DOES_NOT_MATCH = "SignatureDoesNotMatch";
 	public static final String INVALID_TARGET_BUCKET_FOR_LOGGING = "InvalidTargetBucketForLogging";

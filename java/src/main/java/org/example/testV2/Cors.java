@@ -11,6 +11,7 @@
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
@@ -23,9 +24,12 @@ import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.CORSConfiguration;
 import software.amazon.awssdk.services.s3.model.CORSRule;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 
 public class Cors extends TestBase {
 	@Test
@@ -270,5 +274,297 @@ public class Cors extends TestBase {
 		headers.put("Access-Control-Request-headers", "x-amz-meta-header2");
 		headers.put("Access-Control-Request-Method", "GET");
 		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, "bar");
+	}
+
+	@Test
+	@Tag("Check")
+	public void testCorsAllFields() {
+		var client = getClient();
+		var bucketName = createBucket(client, 5);
+		var rules = List.of(
+				CORSRule.builder().id("rule-1")
+						.allowedMethods(List.of("GET", "PUT"))
+						.allowedOrigins(List.of("http://a.example.com"))
+						.allowedHeaders(List.of("x-amz-*", "content-type"))
+						.exposeHeaders(List.of("ETag", "x-amz-meta-foo"))
+						.maxAgeSeconds(600).build(),
+				CORSRule.builder().id("rule-2")
+						.allowedMethods(List.of("GET"))
+						.allowedOrigins(List.of("*"))
+						.maxAgeSeconds(20).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+
+		var response = client.getBucketCors(g -> g.bucket(bucketName));
+		assertEquals(2, response.corsRules().size());
+		var first = response.corsRules().get(0);
+		var second = response.corsRules().get(1);
+		assertEquals("rule-1", first.id());
+		assertEquals(List.of("GET", "PUT"), first.allowedMethods());
+		assertEquals(List.of("http://a.example.com"), first.allowedOrigins());
+		assertEquals(List.of("x-amz-*", "content-type"), first.allowedHeaders());
+		assertEquals(List.of("ETag", "x-amz-meta-foo"), first.exposeHeaders());
+		assertEquals(600, first.maxAgeSeconds());
+		assertEquals("rule-2", second.id());
+		assertEquals(List.of("GET"), second.allowedMethods());
+		assertEquals(List.of("*"), second.allowedOrigins());
+		assertEquals(20, second.maxAgeSeconds());
+	}
+
+	@Test
+	@Tag("Preflight")
+	public void testCorsPreflightHeaders() {
+		var client = getClient();
+		var bucketName = createBucket(client, 6);
+		var rules = List.of(CORSRule.builder()
+				.allowedMethods(List.of("GET", "PUT"))
+				.allowedOrigins(List.of("http://a.example.com"))
+				.allowedHeaders(List.of("x-amz-*", "content-type"))
+				.exposeHeaders(List.of("ETag", "x-amz-meta-foo"))
+				.maxAgeSeconds(600).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+
+		// 허용된 헤더(와일드카드, 대소문자 무시)로 preflight 요청
+		var headers = new HashMap<String, String>();
+		headers.put("Origin", "http://a.example.com");
+		headers.put("Access-Control-Request-Method", "PUT");
+		headers.put("Access-Control-Request-Headers", "X-Amz-Meta-A, Content-Type");
+		var response = corsRequest("OPTIONS", bucketName, headers, null);
+		assertEquals(200, response.statusCode());
+		assertEquals("http://a.example.com", response.header("access-control-allow-origin"));
+		assertEquals("GET, PUT", response.header("access-control-allow-methods"));
+		assertEquals("x-amz-meta-a, content-type", response.header("access-control-allow-headers"));
+		assertEquals("ETag, x-amz-meta-foo", response.header("access-control-expose-headers"));
+		assertEquals("600", response.header("access-control-max-age"));
+		assertEquals("true", response.header("access-control-allow-credentials"));
+
+		// 허용되지 않은 헤더를 요청하면 거부된다
+		headers.clear();
+		headers.put("Origin", "http://a.example.com");
+		headers.put("Access-Control-Request-Method", "PUT");
+		headers.put("Access-Control-Request-Headers", "authorization");
+		response = corsRequest("OPTIONS", bucketName, headers, null);
+		assertEquals(HttpStatus.SC_FORBIDDEN, response.statusCode());
+		assertNull(response.header("access-control-allow-origin"));
+	}
+
+	@Test
+	@Tag("Preflight")
+	public void testCorsRuleOrder() {
+		var client = getClient();
+		var bucketName = createBucket(client, 7);
+		var rules = List.of(
+				CORSRule.builder().allowedMethods(List.of("GET", "PUT"))
+						.allowedOrigins(List.of("http://a.example.com")).maxAgeSeconds(600).build(),
+				CORSRule.builder().allowedMethods(List.of("GET"))
+						.allowedOrigins(List.of("*")).maxAgeSeconds(20).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+
+		// 두 규칙 모두에 맞으면 먼저 선언된 규칙이 적용된다
+		var headers = new HashMap<String, String>();
+		headers.put("Origin", "http://a.example.com");
+		headers.put("Access-Control-Request-Method", "GET");
+		var response = corsRequest("OPTIONS", bucketName, headers, null);
+		assertEquals(200, response.statusCode());
+		assertEquals("http://a.example.com", response.header("access-control-allow-origin"));
+		assertEquals("GET, PUT", response.header("access-control-allow-methods"));
+		assertEquals("600", response.header("access-control-max-age"));
+
+		// 첫 규칙에 맞지 않으면 다음 규칙이 적용된다
+		headers.clear();
+		headers.put("Origin", "http://b.example.com");
+		headers.put("Access-Control-Request-Method", "GET");
+		response = corsRequest("OPTIONS", bucketName, headers, null);
+		assertEquals(200, response.statusCode());
+		assertEquals("*", response.header("access-control-allow-origin"));
+		assertEquals("GET", response.header("access-control-allow-methods"));
+		assertEquals("20", response.header("access-control-max-age"));
+		assertNull(response.header("access-control-allow-credentials"));
+
+		// 어느 규칙에도 맞지 않으면 거부된다
+		headers.clear();
+		headers.put("Origin", "http://b.example.com");
+		headers.put("Access-Control-Request-Method", "PUT");
+		response = corsRequest("OPTIONS", bucketName, headers, null);
+		assertEquals(HttpStatus.SC_FORBIDDEN, response.statusCode());
+		assertNull(response.header("access-control-allow-origin"));
+	}
+
+	@Test
+	@Tag("Object")
+	public void testCorsObjectRequest() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 8);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var key = "testCorsObjectRequest";
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString("cors"));
+		var rules = List.of(CORSRule.builder()
+				.allowedMethods(List.of("GET", "HEAD"))
+				.allowedOrigins(List.of("http://a.example.com"))
+				.exposeHeaders(List.of("ETag")).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+
+		var headers = new HashMap<String, String>();
+		for (var method : List.of("GET", "HEAD")) {
+			headers.clear();
+			headers.put("Origin", "http://a.example.com");
+			var response = corsRequest(method, bucketName, headers, key);
+			assertEquals(200, response.statusCode());
+			assertEquals("http://a.example.com", response.header("access-control-allow-origin"));
+			assertEquals("GET, HEAD", response.header("access-control-allow-methods"));
+			assertEquals("ETag", response.header("access-control-expose-headers"));
+
+			// 규칙에 맞지 않는 Origin 이면 요청은 성공하지만 CORS 헤더가 없다
+			headers.clear();
+			headers.put("Origin", "http://b.example.com");
+			response = corsRequest(method, bucketName, headers, key);
+			assertEquals(200, response.statusCode());
+			assertNull(response.header("access-control-allow-origin"));
+		}
+
+		// 오브젝트 키에 대한 preflight
+		headers.clear();
+		headers.put("Origin", "http://a.example.com");
+		headers.put("Access-Control-Request-Method", "GET");
+		var response = corsRequest("OPTIONS", bucketName, headers, key);
+		assertEquals(200, response.statusCode());
+		assertEquals("http://a.example.com", response.header("access-control-allow-origin"));
+	}
+
+	@Test
+	@Tag("Error")
+	public void testCorsInvalidMethod() {
+		var client = getClient();
+		var bucketName = createBucket(client, 9);
+		assertInvalidCors(client, bucketName, List.of(corsRule(List.of("PATCH"), List.of("*"))));
+		// 메서드 이름은 대문자만 허용된다
+		assertInvalidCors(client, bucketName, List.of(corsRule(List.of("get"), List.of("*"))));
+	}
+
+	@Test
+	@Tag("Error")
+	public void testCorsInvalidOriginWildcard() {
+		var client = getClient();
+		var bucketName = createBucket(client, 10);
+		assertInvalidCors(client, bucketName, List.of(corsRule(List.of("GET"), List.of("*a*"))));
+	}
+
+	@Test
+	@Tag("Error")
+	public void testCorsInvalidHeaderWildcard() {
+		var client = getClient();
+		var bucketName = createBucket(client, 11);
+		assertInvalidCors(client, bucketName, List.of(CORSRule.builder()
+				.allowedMethods(List.of("GET")).allowedOrigins(List.of("*")).allowedHeaders(List.of("*a*")).build()));
+	}
+
+	@Test
+	@Tag("Error")
+	public void testCorsExposeHeaderWildcard() {
+		var client = getClient();
+		var bucketName = createBucket(client, 12);
+		assertInvalidCors(client, bucketName, List.of(CORSRule.builder()
+				.allowedMethods(List.of("GET")).allowedOrigins(List.of("*")).exposeHeaders(List.of("x-amz-*")).build()));
+	}
+
+	@Test
+	@Tag("Error")
+	public void testCorsRuleLimit() {
+		var client = getClient();
+		var bucketName = createBucket(client, 13);
+		var rules = new ArrayList<CORSRule>();
+		for (int i = 0; i < 100; i++)
+			rules.add(corsRule(List.of("GET"), List.of("http://" + i + ".example.com")));
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+		assertEquals(100, client.getBucketCors(g -> g.bucket(bucketName)).corsRules().size());
+
+		rules.add(corsRule(List.of("GET"), List.of("http://100.example.com")));
+		assertInvalidCors(client, bucketName, rules);
+	}
+
+	@Test
+	@Tag("Check")
+	public void testCorsOverwrite() {
+		var client = getClient();
+		var bucketName = createBucket(client, 14);
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(
+				corsRule(List.of("GET"), List.of("http://a.example.com")),
+				corsRule(List.of("PUT"), List.of("http://b.example.com")))));
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(
+				corsRule(List.of("HEAD"), List.of("http://z.example.com")))));
+
+		var response = client.getBucketCors(g -> g.bucket(bucketName));
+		assertEquals(1, response.corsRules().size());
+		assertEquals(List.of("HEAD"), response.corsRules().get(0).allowedMethods());
+		assertEquals(List.of("http://z.example.com"), response.corsRules().get(0).allowedOrigins());
+	}
+
+	@Test
+	@Tag("Delete")
+	public void testCorsDeleteNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 15);
+		// 설정이 없어도 삭제는 성공한다
+		client.deleteBucketCors(d -> d.bucket(bucketName));
+
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_CORS_CONFIGURATION, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("Error")
+	public void testCorsBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(16);
+		var rules = List.of(corsRule(List.of("GET"), List.of("*")));
+
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class,
+				() -> client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules))));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class, () -> client.deleteBucketCors(d -> d.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testCorsAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 17);
+		var rules = List.of(corsRule(List.of("GET"), List.of("*")));
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+
+		var e = assertThrows(AwsServiceException.class, () -> altClient.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class,
+				() -> altClient.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules))));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class, () -> altClient.deleteBucketCors(d -> d.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+	}
+
+	private static CORSRule corsRule(List<String> methods, List<String> origins) {
+		return CORSRule.builder().allowedMethods(methods).allowedOrigins(origins).build();
+	}
+
+	/** 잘못된 CORS 설정이 400 InvalidRequest 로 거부되는지 확인한다. */
+	private void assertInvalidCors(S3Client client, String bucketName, List<CORSRule> rules) {
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules))));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 }

@@ -121,4 +121,84 @@ class Logging {
 		test.testLoggingTargetBucketNotFound();
 		testV2.testLoggingTargetBucketNotFound();
 	}
+
+	/**
+	 * 빈 설정을 넣으면 버킷의 로깅이 해제되는지 확인
+	 */
+	@Test
+	@Tag("Put/Get")
+	void testLoggingDisable() {
+		test.testLoggingDisable();
+		testV2.testLoggingDisable();
+	}
+
+	/**
+	 * 로깅 설정을 다시 넣으면 기존 설정을 덮어쓰는지 확인
+	 */
+	@Test
+	@Tag("Put/Get")
+	void testLoggingOverwrite() {
+		test.testLoggingOverwrite();
+		testV2.testLoggingOverwrite();
+	}
+
+	/**
+	 * 로그 오브젝트 키 형식을 SimplePrefix 로 설정하고 조회되는지 확인
+	 */
+	@Test
+	@Tag("KeyFormat")
+	void testLoggingSimplePrefix() {
+		test.testLoggingSimplePrefix();
+		testV2.testLoggingSimplePrefix();
+	}
+
+	/**
+	 * 로그 오브젝트 키 형식을 PartitionedPrefix(EventTime/DeliveryTime)로 설정하고 조회되는지 확인
+	 */
+	@Test
+	@Tag("KeyFormat")
+	void testLoggingPartitionedPrefix() {
+		test.testLoggingPartitionedPrefix();
+		testV2.testLoggingPartitionedPrefix();
+	}
+
+	/**
+	 * 소스 버킷 자신을 타깃 버킷으로 지정할 수 있는지 확인
+	 */
+	@Test
+	@Tag("Put/Get")
+	void testLoggingSameBucket() {
+		test.testLoggingSameBucket();
+		testV2.testLoggingSameBucket();
+	}
+
+	/**
+	 * 타깃 버킷의 소유자가 다를때 로깅 설정 실패 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testLoggingTargetBucketOtherOwner() {
+		test.testLoggingTargetBucketOtherOwner();
+		testV2.testLoggingTargetBucketOtherOwner();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 로깅 설정 조회 실패 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testLoggingGetBucketNotExist() {
+		test.testLoggingGetBucketNotExist();
+		testV2.testLoggingGetBucketNotExist();
+	}
+
+	/**
+	 * 권한이 없는 사용자의 로깅 설정 조회/저장 실패 확인
+	 */
+	@Test
+	@Tag("Permission")
+	void testLoggingAltUser() {
+		test.testLoggingAltUser();
+		testV2.testLoggingAltUser();
+	}
 }

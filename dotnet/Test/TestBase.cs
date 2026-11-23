@@ -855,6 +855,29 @@ namespace s3tests.Test
 			Assert.Equal(result.Headers.Get("access-control-allow-methods"), expectAllowMethods);
 		}
 
+		/// <summary>
+		/// 서명 없는 CORS 요청을 보내고 상태 코드와 응답 헤더(이름은 대소문자 무시)를 돌려준다.
+		/// 같은 이름의 헤더가 여러 값이면 ", " 로 이어 붙인다.
+		/// </summary>
+		public (HttpStatusCode StatusCode, Dictionary<string, string> Headers) CorsRequest(string method, string bucketName,
+			List<KeyValuePair<string, string>> headers, string key = null)
+		{
+			var url = key == null ? GetURL(bucketName) : GetURL(bucketName, key);
+
+			using var client = new HttpClient() { Timeout = TimeSpan.FromSeconds(15) };
+			using var request = new HttpRequestMessage(new HttpMethod(method), url);
+			foreach (var item in headers)
+				request.Headers.TryAddWithoutValidation(item.Key, item.Value);
+
+			using var response = client.SendAsync(request).GetAwaiter().GetResult();
+			var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+			foreach (var header in response.Headers)
+				result[header.Key] = string.Join(", ", header.Value);
+			foreach (var header in response.Content.Headers)
+				result[header.Key] = string.Join(", ", header.Value);
+			return (response.StatusCode, result);
+		}
+
 		public static void TaggingCompare(List<Tag> expected, List<Tag> actual)
 		{
 			Assert.Equal(expected.Count, actual.Count);

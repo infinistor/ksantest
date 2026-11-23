@@ -10,7 +10,9 @@ from s3tests.test_base import S3TestBase
 
 
 class TestReplication(S3TestBase):
-    _REPLICATION_ROLE = "arn:aws:iam::635518764071:role/replication"
+    def _replication_role(self) -> str:
+        """복제 역할 ARN. 계정 아이디는 설정의 AccountId(없으면 UserID)를 쓴다."""
+        return f"arn:aws:iam::{self.config.main_user.expected_owner_id}:role/replication"
 
     def _replication_config(self, target_bucket_arn: str, prefix: str | None = None) -> dict:
         rule: dict = {
@@ -21,7 +23,7 @@ class TestReplication(S3TestBase):
             rule["Priority"] = 1
             rule["Filter"] = {"Prefix": prefix}
             rule["DeleteMarkerReplication"] = {"Status": "Disabled"}
-        return {"Role": self._REPLICATION_ROLE, "Rules": [rule]}
+        return {"Role": self._replication_role(), "Rules": [rule]}
 
     @pytest.mark.tag("Check")
     def test_replication_set(self):
@@ -133,4 +135,273 @@ class TestReplication(S3TestBase):
             ),
             409,
             md.INVALID_BUCKET_STATE,
+        )
+
+    def _setup_replication_buckets(self, client, test_id: int) -> tuple[str, str]:
+        """버저닝이 켜진 원본·대상 버킷을 만들고 (원본 버킷명, 대상 버킷 ARN)을 돌려준다."""
+        source_bucket_name = self.create_bucket(client, test_id)
+        target_bucket_name = self.create_bucket(client, test_id)
+        self.check_configure_versioning_retry(source_bucket_name, "Enabled")
+        self.check_configure_versioning_retry(target_bucket_name, "Enabled")
+        return source_bucket_name, f"arn:aws:s3:::{target_bucket_name}"
+
+    @staticmethod
+    def _replication_rule(target_bucket_arn: str, **overrides) -> dict:
+        rule: dict = {
+            "Status": "Enabled",
+            "Priority": 1,
+            "Filter": {"Prefix": "test/"},
+            "Destination": {"Bucket": target_bucket_arn},
+            "DeleteMarkerReplication": {"Status": "Disabled"},
+        }
+        rule.update(overrides)
+        return {key: value for key, value in rule.items() if value is not None}
+
+    def _put_replication(self, client, source_bucket_name: str, rules: list) -> None:
+        client.put_bucket_replication(
+            Bucket=source_bucket_name,
+            ReplicationConfiguration={"Role": self._replication_role(), "Rules": rules},
+        )
+
+    @staticmethod
+    def _get_replication_rules(client, source_bucket_name: str) -> list:
+        return client.get_bucket_replication(Bucket=source_bucket_name)["ReplicationConfiguration"]["Rules"]
+
+    @pytest.mark.tag("Check")
+    def test_replication_get_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 7)
+        self.assert_client_error(
+            lambda: client.get_bucket_replication(Bucket=bucket_name),
+            404,
+            "ReplicationConfigurationNotFoundError",
+        )
+        # 설정이 없어도 삭제는 성공한다
+        client.delete_bucket_replication(Bucket=bucket_name)
+
+    @pytest.mark.tag("Filter")
+    def test_replication_tag_filter(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 8)
+        filter_ = {"Tag": {"Key": "key1", "Value": "value1"}}
+        self._put_replication(client, source_bucket_name, [self._replication_rule(target_bucket_arn, Filter=filter_)])
+        rules = self._get_replication_rules(client, source_bucket_name)
+        assert rules[0]["Filter"] == filter_
+
+    @pytest.mark.tag("Filter")
+    def test_replication_and_filter(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 9)
+        filter_ = {
+            "And": {
+                "Prefix": "test/",
+                "Tags": [{"Key": "key1", "Value": "value1"}, {"Key": "key2", "Value": "value2"}],
+            }
+        }
+        self._put_replication(client, source_bucket_name, [self._replication_rule(target_bucket_arn, Filter=filter_)])
+        rules = self._get_replication_rules(client, source_bucket_name)
+        assert rules[0]["Filter"] == filter_
+
+    @pytest.mark.tag("Filter")
+    def test_replication_empty_filter(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 10)
+        # 빈 접두어는 버킷 전체를 대상으로 한다
+        self._put_replication(
+            client, source_bucket_name, [self._replication_rule(target_bucket_arn, Filter={"Prefix": ""})]
+        )
+        rules = self._get_replication_rules(client, source_bucket_name)
+        assert rules[0]["Filter"].get("Prefix", "") == ""
+        assert "Tag" not in rules[0]["Filter"]
+        assert "And" not in rules[0]["Filter"]
+
+    @pytest.mark.tag("Filter")
+    def test_replication_v1_schema(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 11)
+        # 구버전(V1) 스키마: Filter/Priority/DeleteMarkerReplication 없이 규칙 직속 Prefix 를 쓴다
+        rule = {"ID": "v1-rule", "Status": "Enabled", "Prefix": "v1/", "Destination": {"Bucket": target_bucket_arn}}
+        self._put_replication(client, source_bucket_name, [rule])
+        rules = self._get_replication_rules(client, source_bucket_name)
+        assert rules[0]["ID"] == "v1-rule"
+        assert rules[0]["Prefix"] == "v1/"
+        assert rules[0]["Status"] == "Enabled"
+        assert rules[0]["Destination"]["Bucket"] == target_bucket_arn
+        assert "Filter" not in rules[0]
+
+    @pytest.mark.tag("Check")
+    def test_replication_multiple_rules(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 12)
+        self._put_replication(
+            client,
+            source_bucket_name,
+            [
+                self._replication_rule(target_bucket_arn, ID="rule-1", Priority=1, Filter={"Prefix": "a/"}),
+                self._replication_rule(target_bucket_arn, ID="rule-2", Priority=2, Filter={"Prefix": "b/"}),
+            ],
+        )
+        rules = self._get_replication_rules(client, source_bucket_name)
+        assert [(r["ID"], r["Priority"], r["Filter"]["Prefix"]) for r in rules] == [
+            ("rule-1", 1, "a/"),
+            ("rule-2", 2, "b/"),
+        ]
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_duplicate_priority(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 13)
+        self.assert_client_error(
+            lambda: self._put_replication(
+                client,
+                source_bucket_name,
+                [
+                    self._replication_rule(target_bucket_arn, ID="rule-1", Priority=1, Filter={"Prefix": "a/"}),
+                    self._replication_rule(target_bucket_arn, ID="rule-2", Priority=1, Filter={"Prefix": "b/"}),
+                ],
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_duplicate_id(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 14)
+        self.assert_client_error(
+            lambda: self._put_replication(
+                client,
+                source_bucket_name,
+                [
+                    self._replication_rule(target_bucket_arn, ID="rule-1", Priority=1, Filter={"Prefix": "a/"}),
+                    self._replication_rule(target_bucket_arn, ID="rule-1", Priority=2, Filter={"Prefix": "b/"}),
+                ],
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_filter_without_priority(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 15)
+        # Filter 를 쓰는 V2 스키마에서는 Priority 와 DeleteMarkerReplication 이 필수다
+        self.assert_client_error(
+            lambda: self._put_replication(
+                client, source_bucket_name, [self._replication_rule(target_bucket_arn, Priority=None)]
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+        self.assert_client_error(
+            lambda: self._put_replication(
+                client, source_bucket_name, [self._replication_rule(target_bucket_arn, DeleteMarkerReplication=None)]
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("DeleteMarker")
+    def test_replication_delete_marker_enabled(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 16)
+        self._put_replication(
+            client,
+            source_bucket_name,
+            [self._replication_rule(target_bucket_arn, DeleteMarkerReplication={"Status": "Enabled"})],
+        )
+        rules = self._get_replication_rules(client, source_bucket_name)
+        assert rules[0]["DeleteMarkerReplication"]["Status"] == "Enabled"
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_delete_marker_with_tag_filter(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 17)
+        # 태그 필터가 있으면 삭제 마커 복제를 켤 수 없다
+        self.assert_client_error(
+            lambda: self._put_replication(
+                client,
+                source_bucket_name,
+                [
+                    self._replication_rule(
+                        target_bucket_arn,
+                        Filter={"Tag": {"Key": "key1", "Value": "value1"}},
+                        DeleteMarkerReplication={"Status": "Enabled"},
+                    )
+                ],
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("Check")
+    def test_replication_disabled_rule(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 18)
+        self._put_replication(client, source_bucket_name, [self._replication_rule(target_bucket_arn, Status="Disabled")])
+        rules = self._get_replication_rules(client, source_bucket_name)
+        assert rules[0]["Status"] == "Disabled"
+
+    @pytest.mark.tag("Check")
+    def test_replication_storage_class(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 19)
+        destination = {"Bucket": target_bucket_arn, "StorageClass": "STANDARD_IA"}
+        self._put_replication(
+            client, source_bucket_name, [self._replication_rule(target_bucket_arn, Destination=destination)]
+        )
+        rules = self._get_replication_rules(client, source_bucket_name)
+        assert rules[0]["Destination"] == destination
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_same_bucket(self):
+        client = self.get_client()
+        source_bucket_name = self.create_bucket(client, 20)
+        self.check_configure_versioning_retry(source_bucket_name, "Enabled")
+        self.assert_client_error(
+            lambda: self._put_replication(
+                client, source_bucket_name, [self._replication_rule(f"arn:aws:s3:::{source_bucket_name}")]
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_invalid_destination_arn(self):
+        client = self.get_client()
+        source_bucket_name = self.create_bucket(client, 21)
+        target_bucket_name = self.create_bucket(client, 21)
+        self.check_configure_versioning_retry(source_bucket_name, "Enabled")
+        self.check_configure_versioning_retry(target_bucket_name, "Enabled")
+        # 대상 버킷은 ARN 형식이어야 한다
+        self.assert_client_error(
+            lambda: self._put_replication(client, source_bucket_name, [self._replication_rule(target_bucket_name)]),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(22)
+        self.assert_client_error(lambda: client.get_bucket_replication(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
+        self.assert_client_error(
+            lambda: client.delete_bucket_replication(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET
+        )
+
+    @pytest.mark.tag("Permission")
+    def test_replication_alt_user(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 23)
+        rules = [self._replication_rule(target_bucket_arn)]
+        self._put_replication(client, source_bucket_name, rules)
+        self.assert_client_error(
+            lambda: alt_client.get_bucket_replication(Bucket=source_bucket_name), 403, md.ACCESS_DENIED
+        )
+        self.assert_client_error(
+            lambda: self._put_replication(alt_client, source_bucket_name, rules), 403, md.ACCESS_DENIED
+        )
+        self.assert_client_error(
+            lambda: alt_client.delete_bucket_replication(Bucket=source_bucket_name), 403, md.ACCESS_DENIED
         )

@@ -11,12 +11,20 @@
 package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 
 import org.apache.hc.core5.http.HttpStatus;
+import org.example.Data.MainData;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.DeleteMarkerReplication;
 import software.amazon.awssdk.services.s3.model.Destination;
 import software.amazon.awssdk.services.s3.model.ReplicationConfiguration;
 import software.amazon.awssdk.services.s3.model.ReplicationRule;
@@ -39,7 +47,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
+		var config = ReplicationConfiguration.builder().role(replicationRole())
 				.rules(ReplicationRule.builder().status("Enabled").priority(1)
 						.destination(Destination.builder().bucket(targetBucketARN).build())
 						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
@@ -67,7 +75,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
+		var config = ReplicationConfiguration.builder().role(replicationRole())
 				.rules(ReplicationRule.builder().status("Enabled")
 						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
 				.build();
@@ -87,7 +95,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
+		var config = ReplicationConfiguration.builder().role(replicationRole())
 				.rules(ReplicationRule.builder().status("Enabled")
 						.destination(Destination.builder().bucket(targetBucketARN).build()).build())
 				.build();
@@ -111,7 +119,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
+		var config = ReplicationConfiguration.builder().role(replicationRole())
 				.rules(ReplicationRule.builder().status("Enabled").priority(1)
 						.destination(Destination.builder().bucket(targetBucketARN).build())
 						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
@@ -139,7 +147,7 @@ public class Replication extends TestBase {
 
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
+		var config = ReplicationConfiguration.builder().role(replicationRole())
 				.rules(ReplicationRule.builder().status("Enabled").priority(1)
 						.destination(Destination.builder().bucket(targetBucketARN).build())
 						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
@@ -168,7 +176,7 @@ public class Replication extends TestBase {
 		String targetBucketARN = "arn:aws:s3:::" + targetBucketName;
 
 		// 원본 버킷 복제 설정
-		var config = ReplicationConfiguration.builder().role("arn:aws:iam::635518764071:role/replication")
+		var config = ReplicationConfiguration.builder().role(replicationRole())
 				.rules(ReplicationRule.builder().status("Enabled").priority(1)
 						.destination(Destination.builder().bucket(targetBucketARN).build())
 						.filter(ReplicationRuleFilter.builder().prefix(prefix).build())
@@ -184,5 +192,329 @@ public class Replication extends TestBase {
 				() -> checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.SUSPENDED));
 		assertEquals(HttpStatus.SC_CONFLICT, e1.statusCode());
 		assertEquals("InvalidBucketState", e1.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testReplicationGetNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 7);
+
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketReplication(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.REPLICATION_CONFIGURATION_NOT_FOUND_ERROR, e.awsErrorDetails().errorCode());
+
+		// 설정이 없어도 삭제는 성공한다
+		client.deleteBucketReplication(d -> d.bucket(bucketName));
+	}
+
+	@Test
+	@Tag("Filter")
+	public void testReplicationTagFilter() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 8);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		putReplication(client, sourceBucketName, replicationRule(targetBucketARN)
+				.filter(f -> f.tag(t -> t.key("key1").value("value1"))).build());
+
+		var filter = getReplicationRules(client, sourceBucketName).get(0).filter();
+		assertEquals("key1", filter.tag().key());
+		assertEquals("value1", filter.tag().value());
+		assertNull(filter.prefix());
+		assertNull(filter.and());
+	}
+
+	@Test
+	@Tag("Filter")
+	public void testReplicationAndFilter() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 9);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+		var tags = List.of(software.amazon.awssdk.services.s3.model.Tag.builder().key("key1").value("value1").build(),
+				software.amazon.awssdk.services.s3.model.Tag.builder().key("key2").value("value2").build());
+
+		putReplication(client, sourceBucketName, replicationRule(targetBucketARN)
+				.filter(f -> f.and(a -> a.prefix("test/").tags(tags))).build());
+
+		var filter = getReplicationRules(client, sourceBucketName).get(0).filter();
+		assertEquals("test/", filter.and().prefix());
+		assertEquals(tags, filter.and().tags());
+		assertNull(filter.prefix());
+		assertNull(filter.tag());
+	}
+
+	@Test
+	@Tag("Filter")
+	public void testReplicationEmptyFilter() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 10);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		// 빈 접두어는 버킷 전체를 대상으로 한다
+		putReplication(client, sourceBucketName, replicationRule(targetBucketARN).filter(f -> f.prefix("")).build());
+
+		var filter = getReplicationRules(client, sourceBucketName).get(0).filter();
+		assertNotNull(filter);
+		assertTrue(filter.prefix() == null || filter.prefix().isEmpty());
+		assertNull(filter.tag());
+		assertNull(filter.and());
+	}
+
+	@Test
+	@Tag("Filter")
+	public void testReplicationV1Schema() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 11);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		// 구버전(V1) 스키마: Filter/Priority/DeleteMarkerReplication 없이 규칙 직속 Prefix 를 쓴다
+		putReplication(client, sourceBucketName, ReplicationRule.builder().id("v1-rule").status("Enabled")
+				.prefix("v1/").destination(d -> d.bucket(targetBucketARN)).build());
+
+		var rule = getReplicationRules(client, sourceBucketName).get(0);
+		assertEquals("v1-rule", rule.id());
+		assertEquals("v1/", rule.prefix());
+		assertEquals("Enabled", rule.statusAsString());
+		assertEquals(targetBucketARN, rule.destination().bucket());
+		assertNull(rule.filter());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testReplicationMultipleRules() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 12);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		putReplication(client, sourceBucketName,
+				replicationRule(targetBucketARN).id("rule-1").priority(1).filter(f -> f.prefix("a/")).build(),
+				replicationRule(targetBucketARN).id("rule-2").priority(2).filter(f -> f.prefix("b/")).build());
+
+		var rules = getReplicationRules(client, sourceBucketName);
+		assertEquals(2, rules.size());
+		assertEquals("rule-1", rules.get(0).id());
+		assertEquals(1, rules.get(0).priority());
+		assertEquals("a/", rules.get(0).filter().prefix());
+		assertEquals("rule-2", rules.get(1).id());
+		assertEquals(2, rules.get(1).priority());
+		assertEquals("b/", rules.get(1).filter().prefix());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationDuplicatePriority() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 13);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		var e = assertThrows(AwsServiceException.class, () -> putReplication(client, sourceBucketName,
+				replicationRule(targetBucketARN).id("rule-1").priority(1).filter(f -> f.prefix("a/")).build(),
+				replicationRule(targetBucketARN).id("rule-2").priority(1).filter(f -> f.prefix("b/")).build()));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationDuplicateId() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 14);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		var e = assertThrows(AwsServiceException.class, () -> putReplication(client, sourceBucketName,
+				replicationRule(targetBucketARN).id("rule-1").priority(1).filter(f -> f.prefix("a/")).build(),
+				replicationRule(targetBucketARN).id("rule-1").priority(2).filter(f -> f.prefix("b/")).build()));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationFilterWithoutPriority() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 15);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		// Filter 를 쓰는 V2 스키마에서는 Priority 와 DeleteMarkerReplication 이 필수다
+		var e = assertThrows(AwsServiceException.class, () -> putReplication(client, sourceBucketName,
+				replicationRule(targetBucketARN).priority(null).build()));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class, () -> putReplication(client, sourceBucketName,
+				replicationRule(targetBucketARN).deleteMarkerReplication((DeleteMarkerReplication) null).build()));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("DeleteMarker")
+	public void testReplicationDeleteMarkerEnabled() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 16);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		putReplication(client, sourceBucketName,
+				replicationRule(targetBucketARN).deleteMarkerReplication(d -> d.status("Enabled")).build());
+
+		var rules = getReplicationRules(client, sourceBucketName);
+		assertEquals("Enabled", rules.get(0).deleteMarkerReplication().statusAsString());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationDeleteMarkerWithTagFilter() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 17);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		// 태그 필터가 있으면 삭제 마커 복제를 켤 수 없다
+		var e = assertThrows(AwsServiceException.class, () -> putReplication(client, sourceBucketName,
+				replicationRule(targetBucketARN).filter(f -> f.tag(t -> t.key("key1").value("value1")))
+						.deleteMarkerReplication(d -> d.status("Enabled")).build()));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testReplicationDisabledRule() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 18);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		putReplication(client, sourceBucketName, replicationRule(targetBucketARN).status("Disabled").build());
+
+		var rules = getReplicationRules(client, sourceBucketName);
+		assertEquals("Disabled", rules.get(0).statusAsString());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testReplicationStorageClass() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 19);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		putReplication(client, sourceBucketName, replicationRule(targetBucketARN)
+				.destination(d -> d.bucket(targetBucketARN).storageClass("STANDARD_IA")).build());
+
+		var destination = getReplicationRules(client, sourceBucketName).get(0).destination();
+		assertEquals(targetBucketARN, destination.bucket());
+		assertEquals("STANDARD_IA", destination.storageClassAsString());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationSameBucket() {
+		var client = getClient();
+		var sourceBucketName = createBucket(client, 20);
+		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
+
+		var e = assertThrows(AwsServiceException.class, () -> putReplication(client, sourceBucketName,
+				replicationRule("arn:aws:s3:::" + sourceBucketName).build()));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationInvalidDestinationArn() {
+		var client = getClient();
+		var sourceBucketName = createBucket(client, 21);
+		var targetBucketName = createBucket(client, 21);
+		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
+		checkConfigureVersioningRetry(targetBucketName, BucketVersioningStatus.ENABLED);
+
+		// 대상 버킷은 ARN 형식이어야 한다
+		var e = assertThrows(AwsServiceException.class,
+				() -> putReplication(client, sourceBucketName, replicationRule(targetBucketName).build()));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(22);
+
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketReplication(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class, () -> client.deleteBucketReplication(d -> d.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testReplicationAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var buckets = setupReplicationBuckets(client, 23);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+		var rule = replicationRule(targetBucketARN).build();
+		putReplication(client, sourceBucketName, rule);
+
+		var e = assertThrows(AwsServiceException.class,
+				() -> altClient.getBucketReplication(g -> g.bucket(sourceBucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class, () -> putReplication(altClient, sourceBucketName, rule));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+
+		e = assertThrows(AwsServiceException.class,
+				() -> altClient.deleteBucketReplication(d -> d.bucket(sourceBucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.statusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+	}
+
+	/** 복제 역할 ARN. 계정 아이디는 설정의 AccountId(없으면 UserID)를 쓴다. */
+	private String replicationRole() {
+		return "arn:aws:iam::" + config.mainUser.getExpectedOwnerId() + ":role/replication";
+	}
+
+	/** 버저닝이 켜진 원본·대상 버킷을 만들고 {원본 버킷명, 대상 버킷 ARN}을 돌려준다. */
+	private String[] setupReplicationBuckets(S3Client client, int testId) {
+		var sourceBucketName = createBucket(client, testId);
+		var targetBucketName = createBucket(client, testId);
+		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningStatus.ENABLED);
+		checkConfigureVersioningRetry(targetBucketName, BucketVersioningStatus.ENABLED);
+		return new String[] { sourceBucketName, "arn:aws:s3:::" + targetBucketName };
+	}
+
+	/** 기본 복제 규칙(Enabled, Priority 1, 접두어 test/, 삭제 마커 복제 Disabled). 필요한 항목만 덮어쓴다. */
+	private static ReplicationRule.Builder replicationRule(String targetBucketARN) {
+		return ReplicationRule.builder().status("Enabled").priority(1)
+				.filter(f -> f.prefix("test/"))
+				.destination(d -> d.bucket(targetBucketARN))
+				.deleteMarkerReplication(d -> d.status("Disabled"));
+	}
+
+	private void putReplication(S3Client client, String sourceBucketName, ReplicationRule... rules) {
+		client.putBucketReplication(p -> p.bucket(sourceBucketName)
+				.replicationConfiguration(c -> c.role(replicationRole()).rules(rules)));
+	}
+
+	private static List<ReplicationRule> getReplicationRules(S3Client client, String sourceBucketName) {
+		return client.getBucketReplication(g -> g.bucket(sourceBucketName)).replicationConfiguration().rules();
 	}
 }
