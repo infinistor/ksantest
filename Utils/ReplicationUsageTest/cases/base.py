@@ -21,6 +21,11 @@ RULE_ID = "rtest-rule"
 SHOWN_ITEMS = 20  # 실패 메시지에 보여 줄 항목 수
 # 대상에 "없어야 할" 것(필터 제외·마커·버전 지정 삭제)이 늦게 도착하는지 보려고 복제 완료 뒤 더 기다리는 시간
 NEGATIVE_SETTLE_SEC = 20
+# 원본 복제 상태(x-amz-replication-status)를 기다리는 시간·조회 간격.
+# 복제기는 대상 쓰기가 끝난 뒤 원본 상태를 갱신하므로 대상 확인보다 조금 늦을 수 있다
+STATUS_TIMEOUT_SEC = 60
+STATUS_POLL_SEC = 3
+STATUS_COMPLETED = "COMPLETED"
 META_KEY = "test"  # 모든 PUT 에 붙이는 사용자 메타데이터(x-amz-meta-test)
 SOURCE_TAG = "source"  # 모든 PUT 에 붙이는 기본 태그(값은 키)
 
@@ -64,6 +69,7 @@ class ReplicationCase(Case):
         "작업",  # 하위 클래스가 OPERATION 으로 이름을 바꾼다
         "복제 완료까지 대기",
         "버전 비교",
+        "원본 복제 상태 비교",
         "bucket usage 비교(portal api)",
     ]
     OPERATION = "작업"
@@ -185,8 +191,12 @@ class ReplicationCase(Case):
         with self.step(6):
             self.compare_versions()
 
+        status_detail: list[str] = []
+        with self.step(7, status_detail):
+            self.compare_replication_status(status_detail)
+
         usage_detail: list[str] = []
-        with self.step(7, usage_detail):
+        with self.step(8, usage_detail):
             self.compare_usage(usage_detail)
 
     def expected_markers(self, src_markers: set[VersionId]) -> set[VersionId]:
@@ -249,6 +259,30 @@ class ReplicationCase(Case):
                         diffs.append(f"{bucket}/{key}?versionId={vid} {field}: 기대 {want[field]} != {got.get(field)}")
         if diffs:
             raise CaseFailed(f"버전 불일치 {len(diffs)}건: {diffs[:SHOWN_ITEMS]}")
+
+    def expected_replication_status(self) -> dict[VersionId, str | None]:
+        """원본 파일 버전마다 HeadObject 의 ReplicationStatus 기대값.
+        룰에 맞아 복제된 버전은 COMPLETED, 룰에 맞지 않는 버전은 헤더가 없어야 한다(AWS 와 같음)."""
+        return {kv: (STATUS_COMPLETED if kv in self.dst_expected else None) for kv in self.src_expected}
+
+    def compare_replication_status(self, detail: list) -> None:
+        expected = self.expected_replication_status()
+
+        def status_matched():
+            diffs = []
+            for (key, vid), want in expected.items():
+                got = self.s3.head_object(Bucket=self.src, Key=key, VersionId=vid).get("ReplicationStatus")
+                if got != want:
+                    diffs.append(f"{self.src}/{key}?versionId={vid} ReplicationStatus: 기대 {want} != {got}")
+            return not diffs, diffs
+
+        done, diffs, elapsed = wait_until(status_matched, STATUS_TIMEOUT_SEC, STATUS_POLL_SEC)
+        if not done:
+            raise CaseFailed(f"{STATUS_TIMEOUT_SEC}초 안에 원본 복제 상태가 맞지 않음 {len(diffs)}건: "
+                             f"{diffs[:SHOWN_ITEMS]}")
+        completed = sum(1 for v in expected.values() if v == STATUS_COMPLETED)
+        detail.append(f"{STATUS_COMPLETED} {completed}개, 상태 없음 {len(expected) - completed}개, "
+                      f"수렴 {elapsed:.1f}초")
 
     def compare_usage(self, detail: list) -> None:
         want_src, want_dst = usage_of(self.src_expected), usage_of(self.dst_expected)

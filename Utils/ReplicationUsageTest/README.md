@@ -32,9 +32,10 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
   4. 파일 업로드 (개수·크기는 설정값)
   5. 복제 완료까지 대기 (dst 가 기대와 같아질 때까지)
   6. 버전 비교
-  7. bucket usage 비교 (포털 API `GET /api/v2/S3Api/Buckets/<버킷>` 의 FileCount·UsedSize)
+  7. 원본 복제 상태 비교 (원본 HeadObject 의 `x-amz-replication-status`)
+  8. bucket usage 비교 (포털 API `GET /api/v2/S3Api/Buckets/<버킷>` 의 FileCount·UsedSize)
 
-모든 케이스는 이 7단계 틀(`cases/base.py` 의 `ReplicationCase`)을 쓰고 4단계만 다르다.
+모든 케이스는 이 8단계 틀(`cases/base.py` 의 `ReplicationCase`)을 쓰고 4단계만 다르다.
 통과하면 버킷을 지우고, 실패하면 원인 확인용으로 남긴다.
 
 비교는 **버전 단위**(`list_object_versions`)다.
@@ -42,6 +43,9 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
 - 대상 버전 목록 = 원본 파일 버전 중 룰에 맞는 것, versionId 까지 같아야 함(빠짐·남음 모두 실패)
 - 버전마다 크기·ETag·사용자 메타데이터(`x-amz-meta-test`)·태그를 원본·대상 모두 기대값과 비교
 - 삭제 마커는 DeleteMarker 복제를 켠 케이스에서만 대상에 있어야 함
+- 원본 파일 버전의 `x-amz-replication-status`(boto3 `ReplicationStatus`): 룰에 맞아 복제된 버전은 `COMPLETED`,
+  룰에 맞지 않는 버전은 헤더가 없어야 함(AWS 와 같음). 복제기가 대상 쓰기 뒤에 원본 상태를 갱신하므로 최대 60초 기다린다
+  - KSAN 은 Replication 설정 `ReplicationStatusUpdate: true` 와, 복제 상태 API 가 있는 GW 가 있어야 갱신된다
 - usage 기대값 = 파일 버전 수·크기 합. **삭제 마커는 세지 않는다**
 - 대상에 "없어야 할 것"이 있는 케이스는 복제 완료 뒤 20초 더 기다렸다 다시 확인한다
 
