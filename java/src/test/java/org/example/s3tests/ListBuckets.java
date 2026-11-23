@@ -105,4 +105,94 @@ class ListBuckets {
 		test.testListBucketsContinuationToken();
 		testV2.testListBucketsContinuationToken();
 	}
+
+	/**
+	 * 존재하지 않는 버킷의 메타데이터를 조회할 경우 404 확인
+	 */
+	@Test
+	@Tag("Metadata")
+	void testHeadBucketNotExist() {
+		test.testHeadBucketNotExist();
+		testV2.testHeadBucketNotExist();
+	}
+
+	/**
+	 * 다른 사용자의 버킷 메타데이터를 조회할 경우 403 확인
+	 */
+	@Test
+	@Tag("Permission")
+	void testHeadBucketAltUser() {
+		test.testHeadBucketAltUser();
+		testV2.testHeadBucketAltUser();
+	}
+
+	/**
+	 * 버킷의 메타데이터 조회시 버킷 리전(x-amz-bucket-region)을 돌려주는지 확인
+	 */
+	@Test
+	@Tag("Metadata")
+	void testHeadBucketRegion() {
+		test.testHeadBucketRegion();
+		testV2.testHeadBucketRegion();
+	}
+
+	/**
+	 * 버킷 목록 조회시 일치하는 버킷이 없는 Prefix를 지정하면 빈 목록을 돌려주는지 확인
+	 */
+	@Test
+	@Tag("Prefix")
+	void testListBucketsPrefixNotMatch() {
+		test.testListBucketsPrefixNotMatch();
+		testV2.testListBucketsPrefixNotMatch();
+	}
+
+	/**
+	 * 버킷 목록 조회시 허용 범위를 벗어난 MaxBuckets를 지정할 경우 실패 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testListBucketsMaxBucketsInvalid() {
+		test.testListBucketsMaxBucketsInvalid();
+		testV2.testListBucketsMaxBucketsInvalid();
+	}
+
+	/**
+	 * 버킷 목록 조회시 잘못된 ContinuationToken을 지정할 경우 실패 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testListBucketsInvalidContinuationToken() {
+		test.testListBucketsInvalidContinuationToken();
+		testV2.testListBucketsInvalidContinuationToken();
+	}
+
+	/**
+	 * 버킷 목록을 ContinuationToken으로 끝까지 넘기면 전체 목록과 순서까지 같은지 확인
+	 */
+	@Test
+	@Tag("ContinuationToken")
+	void testListBucketsPaging() {
+		test.testListBucketsPaging();
+		testV2.testListBucketsPaging();
+	}
+
+	/**
+	 * 버킷 목록 조회시 버킷 이름, 생성일, 소유자 정보가 올바른지 확인
+	 */
+	@Test
+	@Tag("Get")
+	void testListBucketsOwner() {
+		test.testListBucketsOwner();
+		testV2.testListBucketsOwner();
+	}
+
+	/**
+	 * 다른 사용자의 버킷 목록에는 내 버킷이 나오지 않는지 확인
+	 */
+	@Test
+	@Tag("Permission")
+	void testListBucketsAltUser() {
+		test.testListBucketsAltUser();
+		testV2.testListBucketsAltUser();
+	}
 }

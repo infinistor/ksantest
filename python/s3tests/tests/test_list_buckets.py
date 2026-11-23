@@ -112,3 +112,104 @@ class TestListBuckets(S3TestBase):
         bucket_list2 = self.get_bucket_list(response2)
         assert len(bucket_list2) == 2
         assert bucket_list2 == full_bucket_list[2:4]
+
+    @staticmethod
+    def _http_status(func) -> int:
+        """HEAD 요청은 응답 본문이 없어 에러 코드 대신 상태 코드만 확인한다."""
+        with pytest.raises(ClientError) as exc_info:
+            func()
+        return exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"]
+
+    @pytest.mark.tag("Metadata")
+    def test_head_bucket_not_exist(self):
+        client = self.get_client()
+        bucket_name = self.get_new_bucket_name_only(8)
+        assert self._http_status(lambda: client.head_bucket(Bucket=bucket_name)) == 404
+
+    @pytest.mark.tag("Permission")
+    def test_head_bucket_alt_user(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket(client, 9)
+        assert self._http_status(lambda: alt_client.head_bucket(Bucket=bucket_name)) == 403
+
+    @pytest.mark.tag("Metadata")
+    def test_head_bucket_region(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 10)
+        response = client.head_bucket(Bucket=bucket_name)
+        region = response["ResponseMetadata"]["HTTPHeaders"].get("x-amz-bucket-region")
+        assert region
+        if self.config.region_name:
+            assert region == self.config.region_name
+
+    @pytest.mark.tag("Prefix")
+    def test_list_buckets_prefix_not_match(self):
+        client = self.get_client()
+        self.create_bucket(client, 11)
+        response = client.list_buckets(Prefix="zzzz-no-such-bucket-prefix-" + self.get_suite_id())
+        assert len(response.get("Buckets", [])) == 0
+        assert response.get("ContinuationToken") is None
+
+    @pytest.mark.tag("ERROR")
+    def test_list_buckets_max_buckets_invalid(self):
+        client = self.get_client()
+        # max-buckets 는 1 이상 10000 이하만 허용된다
+        self.assert_client_error(lambda: client.list_buckets(MaxBuckets=10001), 400, md.INVALID_ARGUMENT)
+
+    @pytest.mark.tag("ERROR")
+    def test_list_buckets_invalid_continuation_token(self):
+        client = self.get_client()
+        self.assert_client_error(
+            lambda: client.list_buckets(ContinuationToken="invalid-continuation-token"),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+    @pytest.mark.tag("ContinuationToken")
+    def test_list_buckets_paging(self):
+        client = self.get_client()
+        for _ in range(5):
+            self.create_bucket(client, 14)
+        prefix = f"{self.get_prefix()}{self.get_suite_id()}-14-"
+        full_bucket_list = self.get_bucket_list(client.list_buckets(Prefix=prefix))
+        assert len(full_bucket_list) == 5
+
+        # 토큰이 없어질 때까지 끝까지 넘기면 전체 목록과 순서까지 같다
+        paged_bucket_list = []
+        page_count = 0
+        token = None
+        while True:
+            params = {"Prefix": prefix, "MaxBuckets": 2}
+            if token:
+                params["ContinuationToken"] = token
+            response = client.list_buckets(**params)
+            page = self.get_bucket_list(response)
+            assert len(page) <= 2
+            paged_bucket_list.extend(page)
+            page_count += 1
+            token = response.get("ContinuationToken")
+            if not token:
+                break
+        assert page_count == 3
+        assert paged_bucket_list == full_bucket_list
+        assert paged_bucket_list == sorted(paged_bucket_list)
+
+    @pytest.mark.tag("Get")
+    def test_list_buckets_owner(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 15)
+        response = client.list_buckets(Prefix=bucket_name)
+        assert len(response["Buckets"]) == 1
+        assert response["Buckets"][0]["Name"] == bucket_name
+        assert response["Buckets"][0]["CreationDate"] is not None
+        assert response["Owner"]["ID"] == self.config.main_user.id
+
+    @pytest.mark.tag("Permission")
+    def test_list_buckets_alt_user(self):
+        client = self.get_client()
+        alt_client = self.get_alt_client()
+        bucket_name = self.create_bucket(client, 16)
+        # 다른 사용자의 목록에는 내 버킷이 나오지 않는다
+        response = alt_client.list_buckets(Prefix=bucket_name)
+        assert len(response.get("Buckets", [])) == 0

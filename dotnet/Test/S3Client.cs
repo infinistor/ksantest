@@ -344,7 +344,8 @@ namespace s3tests.Test
 		/// PutACL 마셜러는 Grants가 비어 있으면 &lt;Owner&gt;까지 통째로 빼고 &lt;AccessControlPolicy/&gt;만 보내
 		/// AWS가 MalformedXML로 거부한다. 전용 오퍼레이션은 Owner를 유지한다.
 		/// </summary>
-		public PutBucketAclResponse PutBucketACL(string bucketName, S3CannedACL acl = null, S3AccessControlList accessControlPolicy = null)
+		public PutBucketAclResponse PutBucketACL(string bucketName, S3CannedACL acl = null, S3AccessControlList accessControlPolicy = null,
+			string grantFullControl = null, string grantWrite = null)
 		{
 			var request = new PutBucketAclRequest()
 			{
@@ -353,6 +354,9 @@ namespace s3tests.Test
 
 			if (acl != null) request.ACL = acl;
 			if (accessControlPolicy != null) request.AccessControlPolicy = accessControlPolicy;
+			// x-amz-grant-* 헤더 (예: "id=<canonical user id>")
+			if (grantFullControl != null) request.GrantFullControl = grantFullControl;
+			if (grantWrite != null) request.GrantWrite = grantWrite;
 
 			if (Client == null) return null;
 			var response = Client.PutBucketAclAsync(request);
@@ -1027,6 +1031,15 @@ namespace s3tests.Test
 				OwnershipControls = ownershipControls
 			};
 			return PutBucketOwnershipControls(request);
+		}
+
+		public DeleteBucketOwnershipControlsResponse DeleteBucketOwnershipControls(string bucketName)
+		{
+			var request = new DeleteBucketOwnershipControlsRequest() { BucketName = bucketName };
+			if (Client == null) return null;
+			var response = Client.DeleteBucketOwnershipControlsAsync(request);
+			response.Wait();
+			return response.Result;
 		}
 		#endregion
 

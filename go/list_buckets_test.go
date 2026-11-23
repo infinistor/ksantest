@@ -2,6 +2,7 @@ package s3tests
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"ksantest/go-s3tests/internal/testconfig"
 )
 
@@ -119,6 +121,188 @@ func TestListBucketsContinuationToken(t *testing.T) {
 	}
 	if got := bucketNames(next); !slices.Equal(got, created[2:4]) {
 		t.Fatalf("second page = %v, want %v", got, created[2:4])
+	}
+}
+
+// 존재하지 않는 버킷의 메타데이터 조회가 실패하는지 확인
+func TestHeadBucketNotExist(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := buildBucketName(s.cfg.BucketPrefix, s.suiteID, 8)
+	_, err := s.client.HeadBucket(context.Background(), &s3.HeadBucketInput{Bucket: aws.String(bucket)})
+	assertHTTPStatus(t, err, 404)
+}
+
+// 버킷 소유자가 아닌 사용자의 버킷 메타데이터 조회가 실패하는지 확인
+func TestHeadBucketAltUser(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	requireAltUser(t, s)
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	bucket := s.bucket(t, 9)
+	_, err := alt.HeadBucket(context.Background(), &s3.HeadBucketInput{Bucket: aws.String(bucket)})
+	assertHTTPStatus(t, err, 403)
+}
+
+// 버킷 메타데이터 조회시 버킷의 리전을 돌려주는지 확인
+func TestHeadBucketRegion(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 10)
+	out, err := s.client.HeadBucket(context.Background(), &s3.HeadBucketInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatalf("HeadBucket: %v", err)
+	}
+	region := aws.ToString(out.BucketRegion)
+	if region == "" {
+		t.Fatal("x-amz-bucket-region 헤더가 없습니다")
+	}
+	if s.cfg.Region != "" && region != s.cfg.Region {
+		t.Fatalf("bucket region = %q, want %q", region, s.cfg.Region)
+	}
+}
+
+// 버킷 목록 조회시 일치하는 버킷이 없는 Prefix를 주면 빈 목록을 돌려주는지 확인
+func TestListBucketsPrefixNotMatch(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	s.bucket(t, 11)
+	out, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{Prefix: aws.String("zzzz-no-such-bucket-prefix-" + s.suiteID)})
+	if err != nil {
+		t.Fatalf("ListBuckets: %v", err)
+	}
+	if len(out.Buckets) != 0 {
+		t.Fatalf("buckets = %v, want empty", bucketNames(out))
+	}
+	if out.ContinuationToken != nil {
+		t.Fatalf("continuation token = %q, want none", aws.ToString(out.ContinuationToken))
+	}
+}
+
+// 버킷 목록 조회시 허용 범위를 벗어난 MaxBuckets를 주면 실패하는지 확인
+func TestListBucketsMaxBucketsInvalid(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	// max-buckets 는 1 이상 10000 이하만 허용된다
+	_, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{MaxBuckets: aws.Int32(10001)})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 버킷 목록 조회시 잘못된 ContinuationToken을 주면 실패하는지 확인
+func TestListBucketsInvalidContinuationToken(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	_, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{ContinuationToken: aws.String("invalid-continuation-token")})
+	assertS3Error(t, err, 400, "InvalidArgument")
+}
+
+// 버킷 목록을 ContinuationToken으로 끝까지 넘기면 전체 목록과 같은지 확인
+func TestListBucketsPaging(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	for range 5 {
+		s.bucket(t, 14)
+	}
+	prefix := fmt.Sprintf("%s%s-14-", s.cfg.BucketPrefix, s.suiteID)
+	full, err := s.client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String(prefix)})
+	if err != nil {
+		t.Fatalf("ListBuckets: %v", err)
+	}
+	fullList := bucketNames(full)
+	if len(fullList) != 5 {
+		t.Fatalf("buckets = %v, want 5 buckets", fullList)
+	}
+
+	// 토큰이 없어질 때까지 끝까지 넘기면 전체 목록과 순서까지 같다
+	var pagedList []string
+	pageCount := 0
+	var token *string
+	for {
+		out, err := s.client.ListBuckets(ctx, &s3.ListBucketsInput{Prefix: aws.String(prefix), MaxBuckets: aws.Int32(2), ContinuationToken: token})
+		if err != nil {
+			t.Fatalf("ListBuckets page %d: %v", pageCount+1, err)
+		}
+		page := bucketNames(out)
+		if len(page) > 2 {
+			t.Fatalf("page %d = %v, want at most 2 buckets", pageCount+1, page)
+		}
+		pagedList = append(pagedList, page...)
+		pageCount++
+		token = out.ContinuationToken
+		if aws.ToString(token) == "" {
+			break
+		}
+	}
+	if pageCount != 3 {
+		t.Fatalf("page count = %d, want 3", pageCount)
+	}
+	if !slices.Equal(pagedList, fullList) {
+		t.Fatalf("paged = %v, want %v", pagedList, fullList)
+	}
+	if !slices.IsSorted(pagedList) {
+		t.Fatalf("paged list is not sorted: %v", pagedList)
+	}
+}
+
+// 버킷 목록 조회시 버킷 정보와 소유자를 돌려주는지 확인
+func TestListBucketsOwner(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 15)
+	out, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{Prefix: aws.String(bucket)})
+	if err != nil {
+		t.Fatalf("ListBuckets: %v", err)
+	}
+	if len(out.Buckets) != 1 || aws.ToString(out.Buckets[0].Name) != bucket {
+		t.Fatalf("buckets = %v, want [%s]", bucketNames(out), bucket)
+	}
+	if out.Buckets[0].CreationDate == nil {
+		t.Fatal("CreationDate 가 없습니다")
+	}
+	if out.Owner == nil || aws.ToString(out.Owner.ID) != s.cfg.Main.ID {
+		t.Fatalf("owner = %#v, want ID %q", out.Owner, s.cfg.Main.ID)
+	}
+}
+
+// 다른 사용자의 버킷 목록에는 내 버킷이 나오지 않는지 확인
+func TestListBucketsAltUser(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	requireAltUser(t, s)
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	bucket := s.bucket(t, 16)
+	// 다른 사용자의 목록에는 내 버킷이 나오지 않는다
+	out, err := alt.ListBuckets(context.Background(), &s3.ListBucketsInput{Prefix: aws.String(bucket)})
+	if err != nil {
+		t.Fatalf("Alt ListBuckets: %v", err)
+	}
+	if len(out.Buckets) != 0 {
+		t.Fatalf("buckets = %v, want empty", bucketNames(out))
+	}
+}
+
+// HEAD 요청은 응답 본문이 없어 에러 코드 대신 상태 코드만 확인한다.
+func assertHTTPStatus(t *testing.T, err error, status int) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("expected HTTP %d error, got nil", status)
+	}
+	var responseErr *smithyhttp.ResponseError
+	if !errors.As(err, &responseErr) {
+		t.Fatalf("error type = %T, want HTTP response error: %v", err, err)
+	}
+	if got := responseErr.HTTPStatusCode(); got != status {
+		t.Fatalf("HTTP status = %d, want %d", got, status)
 	}
 }
 

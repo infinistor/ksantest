@@ -93,6 +93,9 @@ public class MainData {
 	public static final String NO_SUCH_INVENTORY_CONFIGURATION = "NoSuchInventoryConfiguration";
 	public static final String NO_SUCH_PUBLIC_ACCESS_BLOCK_CONFIGURATION = "NoSuchPublicAccessBlockConfiguration";
 	public static final String ACCESS_CONTROL_LIST_NOT_SUPPORTED = "AccessControlListNotSupported";
+	public static final String NO_SUCH_BUCKET_POLICY = "NoSuchBucketPolicy";
+	public static final String OWNERSHIP_CONTROLS_NOT_FOUND_ERROR = "OwnershipControlsNotFoundError";
+	public static final String INVALID_BUCKET_ACL_WITH_OBJECT_OWNERSHIP = "InvalidBucketAclWithObjectOwnership";
 	public static final String KEY_TOO_LONG = "KeyTooLongError";
 	public static final String NOT_MATCHED = "Source does not match target";
 	public static final String METHOD_NOT_ALLOWED = "MethodNotAllowed";

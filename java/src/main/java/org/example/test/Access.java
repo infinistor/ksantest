@@ -12,12 +12,21 @@ package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Tag;
+import org.apache.commons.lang3.StringUtils;
+
+import com.google.gson.JsonObject;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -28,6 +37,8 @@ import com.amazonaws.services.s3.model.PublicAccessBlockConfiguration;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.SetPublicAccessBlockRequest;
 import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetBucketPolicyStatusRequest;
 
 public class Access extends TestBase {
 	@Test
@@ -196,5 +207,237 @@ public class Access extends TestBase {
 		assertEquals(accessConf.getRestrictPublicBuckets(),
 				response.getPublicAccessBlockConfiguration().getRestrictPublicBuckets());
 		client.deletePublicAccessBlock(new DeletePublicAccessBlockRequest().withBucketName(bucketName));
+	}
+
+	private static void putPublicBlock(AmazonS3 client, String bucketName, boolean blockPublicAcls,
+			boolean ignorePublicAcls, boolean blockPublicPolicy, boolean restrictPublicBuckets) {
+		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
+				.withPublicAccessBlockConfiguration(new PublicAccessBlockConfiguration()
+						.withBlockPublicAcls(blockPublicAcls).withIgnorePublicAcls(ignorePublicAcls)
+						.withBlockPublicPolicy(blockPublicPolicy).withRestrictPublicBuckets(restrictPublicBuckets)));
+	}
+
+	/** 설정 변경이 반영될 때까지 check 가 true 를 돌려주기를 기다린다. */
+	private void waitUntil(BooleanSupplier check) {
+		var deadline = System.nanoTime() + 60_000_000_000L;
+		while (true) {
+			if (check.getAsBoolean())
+				return;
+			if (System.nanoTime() >= deadline)
+				fail("설정 변경이 제한 시간 안에 반영되지 않았습니다");
+			delay(2000);
+		}
+	}
+
+	private static int getObjectStatus(AmazonS3 client, String bucketName, String key) {
+		try {
+			client.getObjectAsString(bucketName, key);
+			return HttpStatus.SC_OK;
+		} catch (AmazonServiceException e) {
+			return e.getStatusCode();
+		}
+	}
+
+	/**
+	 * 새 연결로 오브젝트를 조회한다.
+	 * AWS 는 유지 중인 연결(keep-alive)에 이전 인가 결과를 계속 돌려주는 경우가 있어,
+	 * 설정 변경이 반영됐는지는 매번 새 클라이언트로 확인한다.
+	 */
+	private static int getObjectStatusNewConnection(Supplier<AmazonS3> clientFactory, String bucketName, String key) {
+		var client = clientFactory.get();
+		try {
+			return getObjectStatus(client, bucketName, key);
+		} finally {
+			client.shutdown();
+		}
+	}
+
+	private JsonObject altUserPrincipal() {
+		var principal = new JsonObject();
+		principal.addProperty("CanonicalUser", config.altUser.id);
+		return principal;
+	}
+
+	@Test
+	@Tag("Check")
+	public void testPublicBlockDefault() {
+		var client = getClient();
+		// createBucket(client, testId) 는 퍼블릭 액세스 차단 설정을 건드리지 않고 기본값 그대로 버킷을 만든다
+		var bucketName = createBucket(client, 7);
+		// 새 버킷은 네 가지 차단이 모두 켜진 상태로 만들어진다
+		var response = client.getPublicAccessBlock(new GetPublicAccessBlockRequest().withBucketName(bucketName))
+				.getPublicAccessBlockConfiguration();
+		assertTrue(response.getBlockPublicAcls());
+		assertTrue(response.getIgnorePublicAcls());
+		assertTrue(response.getBlockPublicPolicy());
+		assertTrue(response.getRestrictPublicBuckets());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testPutPublicBlockPartial() {
+		var client = getClient();
+		var bucketName = createBucket(client, 8);
+		// 지정하지 않은 항목은 false 로 저장된다
+		client.setPublicAccessBlock(new SetPublicAccessBlockRequest().withBucketName(bucketName)
+				.withPublicAccessBlockConfiguration(new PublicAccessBlockConfiguration().withBlockPublicAcls(true)));
+		var response = client.getPublicAccessBlock(new GetPublicAccessBlockRequest().withBucketName(bucketName))
+				.getPublicAccessBlockConfiguration();
+		assertTrue(response.getBlockPublicAcls());
+		assertFalse(response.getIgnorePublicAcls());
+		assertFalse(response.getBlockPublicPolicy());
+		assertFalse(response.getRestrictPublicBuckets());
+	}
+
+	@Test
+	@Tag("Check")
+	public void testDeletePublicBlockNotExist() {
+		var client = getClient();
+		var bucketName = createBucket(client, 9);
+		client.deletePublicAccessBlock(new DeletePublicAccessBlockRequest().withBucketName(bucketName));
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.getPublicAccessBlock(new GetPublicAccessBlockRequest().withBucketName(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_PUBLIC_ACCESS_BLOCK_CONFIGURATION, e.getErrorCode());
+		// 설정이 없어도 삭제는 성공한다
+		client.deletePublicAccessBlock(new DeletePublicAccessBlockRequest().withBucketName(bucketName));
+	}
+
+	@Test
+	@Tag("Error")
+	public void testPublicBlockBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(10);
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.getPublicAccessBlock(new GetPublicAccessBlockRequest().withBucketName(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+
+		e = assertThrows(AmazonServiceException.class,
+				() -> putPublicBlock(client, bucketName, false, false, false, false));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+
+		e = assertThrows(AmazonServiceException.class, () -> client
+				.deletePublicAccessBlock(new DeletePublicAccessBlockRequest().withBucketName(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testPublicBlockAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 11);
+		putPublicBlock(client, bucketName, true, false, false, false);
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> altClient.getPublicAccessBlock(new GetPublicAccessBlockRequest().withBucketName(bucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+
+		e = assertThrows(AmazonServiceException.class,
+				() -> putPublicBlock(altClient, bucketName, false, false, false, false));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+
+		e = assertThrows(AmazonServiceException.class, () -> altClient
+				.deletePublicAccessBlock(new DeletePublicAccessBlockRequest().withBucketName(bucketName)));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Denied")
+	public void testBlockPublicAclsAllowPrivate() {
+		var key = "testBlockPublicAclsAllowPrivate";
+		var client = getClient();
+		var bucketName = createBucket(client, 12, ObjectOwnership.ObjectWriter);
+		putPublicBlock(client, bucketName, true, false, false, false);
+		client.putObject(bucketName, key, key);
+
+		// 퍼블릭 ACL 은 오브젝트 ACL 변경에서도 거부된다
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+
+		// 퍼블릭이 아닌 ACL 은 허용된다
+		client.setObjectAcl(bucketName, key, CannedAccessControlList.Private);
+		client.putObject(new PutObjectRequest(bucketName, key + "2", createBody(key), new ObjectMetadata())
+				.withCannedAcl(CannedAccessControlList.Private));
+		client.setBucketAcl(bucketName, CannedAccessControlList.Private);
+	}
+
+	@Test
+	@Tag("Policy")
+	public void testBucketPolicyStatus() {
+		var client = getClient();
+		var bucketName = createBucket(client, 13);
+		putPublicBlock(client, bucketName, false, false, false, false);
+		var resource = Utils.makeArnResource(String.format("%s/*", bucketName));
+
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET_POLICY, e.getErrorCode());
+
+		// 모든 사용자에게 여는 정책은 퍼블릭으로 판정된다
+		client.setBucketPolicy(bucketName, makeJsonPolicy("s3:GetObject", resource, null, null).toString());
+		assertTrue(client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName))
+				.getPolicyStatus().getIsPublic());
+
+		// 특정 사용자에게만 여는 정책은 퍼블릭이 아니다
+		client.setBucketPolicy(bucketName,
+				makeJsonPolicy("s3:GetObject", resource, altUserPrincipal(), null).toString());
+		assertFalse(client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName))
+				.getPolicyStatus().getIsPublic());
+	}
+
+	@Test
+	@Tag("Policy")
+	public void testBlockPublicPolicyAllowNonPublic() {
+		var client = getClient();
+		var bucketName = createBucket(client, 14);
+		putPublicBlock(client, bucketName, false, false, true, false);
+		var resource = Utils.makeArnResource(String.format("%s/*", bucketName));
+
+		// 퍼블릭 정책은 거부되지만 특정 사용자에게만 여는 정책은 허용된다
+		var publicPolicy = makeJsonPolicy("s3:GetObject", resource, null, null);
+		var e = assertThrows(AmazonServiceException.class,
+				() -> client.setBucketPolicy(bucketName, publicPolicy.toString()));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+
+		client.setBucketPolicy(bucketName,
+				makeJsonPolicy("s3:GetObject", resource, altUserPrincipal(), null).toString());
+		assertTrue(StringUtils.isNotBlank(client.getBucketPolicy(bucketName).getPolicyText()));
+	}
+
+	@Test
+	@Tag("Denied")
+	public void testRestrictPublicBuckets() {
+		var key = "testRestrictPublicBuckets";
+		var client = getClient();
+		var altClient = getAltClient();
+		var publicClient = getPublicClient();
+		var bucketName = createBucket(client, 15);
+		putPublicBlock(client, bucketName, false, false, false, false);
+		client.putObject(bucketName, key, key);
+		// 익명 사용자가 버킷의 모든 객체를 읽을 수 있도록 정책을 건다
+		var resource = Utils.makeArnResource(String.format("%s/*", bucketName));
+		client.setBucketPolicy(bucketName, makeJsonPolicy("s3:GetObject", resource, null, null).toString());
+
+		// 퍼블릭 정책으로 누구나 읽을 수 있다
+		waitUntil(() -> getObjectStatus(publicClient, bucketName, key) == HttpStatus.SC_OK);
+		waitUntil(() -> getObjectStatus(altClient, bucketName, key) == HttpStatus.SC_OK);
+
+		// RestrictPublicBuckets 를 켜면 퍼블릭 정책이 있어도 버킷 소유자만 접근할 수 있다
+		putPublicBlock(client, bucketName, false, false, false, true);
+		waitUntil(() -> getObjectStatusNewConnection(this::getPublicClient, bucketName, key) == HttpStatus.SC_FORBIDDEN);
+		waitUntil(() -> getObjectStatusNewConnection(this::getAltClient, bucketName, key) == HttpStatus.SC_FORBIDDEN);
+		assertEquals(HttpStatus.SC_OK, getObjectStatus(client, bucketName, key));
 	}
 }

@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 
@@ -22,8 +24,10 @@ import org.example.Data.MainData;
 import org.example.Utility.Utils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.apache.commons.lang3.StringUtils;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.s3.model.ListBucketsRequest;
 
 public class ListBuckets extends TestBase {
 	@Test
@@ -147,5 +151,128 @@ public class ListBuckets extends TestBase {
 		var bucketList2 = getBucketList(response2);
 		assertEquals(2, bucketList2.size());
 		assertEquals(fullBucketList.subList(2, 4), bucketList2);
+	}
+
+	/** HEAD 요청은 응답 본문이 없어 에러 코드 대신 상태 코드만 확인한다. */
+	private static int httpStatus(Runnable func) {
+		var e = assertThrows(AwsServiceException.class, func::run);
+		return e.statusCode();
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testHeadBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(8);
+		assertEquals(HttpStatus.SC_NOT_FOUND, httpStatus(() -> client.headBucket(h -> h.bucket(bucketName))));
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testHeadBucketAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 9);
+		assertEquals(HttpStatus.SC_FORBIDDEN, httpStatus(() -> altClient.headBucket(h -> h.bucket(bucketName))));
+	}
+
+	@Test
+	@Tag("Metadata")
+	public void testHeadBucketRegion() {
+		var client = getClient();
+		var bucketName = createBucket(client, 10);
+		var response = client.headBucket(h -> h.bucket(bucketName));
+		var region = response.bucketRegion();
+		assertTrue(StringUtils.isNotBlank(region));
+		if (StringUtils.isNotBlank(config.regionName))
+			assertEquals(config.regionName, region);
+	}
+
+	@Test
+	@Tag("Prefix")
+	public void testListBucketsPrefixNotMatch() {
+		var client = getClient();
+		createBucket(client, 11);
+		var response = client.listBuckets(l -> l.prefix("zzzz-no-such-bucket-prefix-" + getSuiteId()));
+		assertEquals(0, response.buckets().size());
+		assertNull(response.continuationToken());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testListBucketsMaxBucketsInvalid() {
+		var client = getClient();
+		// max-buckets 는 1 이상 10000 이하만 허용된다
+		var e = assertThrows(AwsServiceException.class, () -> client.listBuckets(l -> l.maxBuckets(10001)));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testListBucketsInvalidContinuationToken() {
+		var client = getClient();
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.listBuckets(l -> l.continuationToken("invalid-continuation-token")));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+	}
+
+	@Test
+	@Tag("ContinuationToken")
+	public void testListBucketsPaging() {
+		var client = getClient();
+		for (int i = 0; i < 5; i++) {
+			createBucket(client, 14);
+		}
+		var prefix = getPrefix() + getSuiteId() + "-14-";
+		var fullBucketList = getBucketList(client.listBuckets(l -> l.prefix(prefix)));
+		assertEquals(5, fullBucketList.size());
+
+		// 토큰이 없어질 때까지 끝까지 넘기면 전체 목록과 순서까지 같다
+		var pagedBucketList = new ArrayList<String>();
+		var pageCount = 0;
+		String token = null;
+		while (true) {
+			var request = ListBucketsRequest.builder().prefix(prefix).maxBuckets(2);
+			if (StringUtils.isNotEmpty(token))
+				request.continuationToken(token);
+			var response = client.listBuckets(request.build());
+			var page = getBucketList(response);
+			assertTrue(page.size() <= 2);
+			pagedBucketList.addAll(page);
+			pageCount++;
+			token = response.continuationToken();
+			if (StringUtils.isEmpty(token))
+				break;
+		}
+		assertEquals(3, pageCount);
+		assertEquals(fullBucketList, pagedBucketList);
+		var sortedBucketList = new ArrayList<>(pagedBucketList);
+		sortedBucketList.sort(String::compareTo);
+		assertEquals(sortedBucketList, pagedBucketList);
+	}
+
+	@Test
+	@Tag("Get")
+	public void testListBucketsOwner() {
+		var client = getClient();
+		var bucketName = createBucket(client, 15);
+		var response = client.listBuckets(l -> l.prefix(bucketName));
+		assertEquals(1, response.buckets().size());
+		assertEquals(bucketName, response.buckets().get(0).name());
+		assertNotNull(response.buckets().get(0).creationDate());
+		assertEquals(config.mainUser.id, response.owner().id());
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testListBucketsAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 16);
+		// 다른 사용자의 목록에는 내 버킷이 나오지 않는다
+		var response = altClient.listBuckets(l -> l.prefix(bucketName));
+		assertEquals(0, response.buckets().size());
 	}
 }

@@ -163,5 +163,168 @@ namespace s3tests.Test
 		{
 			TestId = 4;
 		}
+
+		/// <summary>HEAD 요청은 응답 본문이 없어 에러 코드 대신 상태 코드만 확인한다.</summary>
+		private static HttpStatusCode HttpStatus(Action call)
+		{
+			var e = Assert.Throws<AggregateException>(call);
+			return GetStatus(e);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "존재하지 않는 버킷의 메타데이터를 조회하면 404가 반환되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestHeadBucketNotExist()
+		{
+			TestId = 8;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			Assert.Equal(HttpStatusCode.NotFound, HttpStatus(() => client.HeadBucket(bucketName)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "Permission")]
+		[Trait(MainData.Explanation, "다른 사용자가 버킷의 메타데이터를 조회하면 403이 반환되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestHeadBucketAltUser()
+		{
+			TestId = 9;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+			Assert.Equal(HttpStatusCode.Forbidden, HttpStatus(() => altClient.HeadBucket(bucketName)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "Metadata")]
+		[Trait(MainData.Explanation, "버킷의 메타데이터 조회 응답에 버킷의 리전이 포함되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestHeadBucketRegion()
+		{
+			TestId = 10;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// x-amz-bucket-region 헤더
+			var region = client.HeadBucket(bucketName).BucketRegion;
+			Assert.False(string.IsNullOrEmpty(region));
+			if (!string.IsNullOrEmpty(Config.S3.RegionName))
+				Assert.Equal(Config.S3.RegionName, region);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "Prefix")]
+		[Trait(MainData.Explanation, "일치하는 버킷이 없는 prefix로 조회하면 빈 목록이 반환되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListBucketsPrefixNotMatch()
+		{
+			TestId = 11;
+			var client = GetClient();
+			GetNewBucket(client);
+			var response = client.ListBuckets(prefix: "zzzz-no-such-bucket-prefix-" + GetSuiteId());
+			Assert.Empty(response.Buckets ?? []);
+			Assert.Null(response.ContinuationToken);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "maxBuckets가 허용 범위를 벗어나면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestListBucketsMaxBucketsInvalid()
+		{
+			TestId = 12;
+			var client = GetClient();
+			// max-buckets 는 1 이상 10000 이하만 허용된다
+			var e = Assert.Throws<AggregateException>(() => client.ListBuckets(maxBuckets: 10001));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "잘못된 continuationToken으로 조회하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestListBucketsInvalidContinuationToken()
+		{
+			TestId = 13;
+			var client = GetClient();
+			var e = Assert.Throws<AggregateException>(() => client.ListBuckets(continuationToken: "invalid-continuation-token"));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "ContinuationToken")]
+		[Trait(MainData.Explanation, "continuationToken으로 끝까지 페이징한 결과가 전체 목록과 순서까지 같은지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListBucketsPaging()
+		{
+			TestId = 14;
+			var client = GetClient();
+			for (int i = 0; i < 5; i++) GetNewBucket(client);
+			var prefix = GetPrefix() + GetSuiteId() + $"-{TestId}-";
+			var fullBucketList = GetBucketList(client.ListBuckets(prefix: prefix));
+			Assert.Equal(5, fullBucketList.Count);
+
+			// 토큰이 없어질 때까지 끝까지 넘기면 전체 목록과 순서까지 같다
+			var pagedBucketList = new List<string>();
+			var pageCount = 0;
+			string token = null;
+			while (true)
+			{
+				var response = client.ListBuckets(prefix: prefix, maxBuckets: 2, continuationToken: token);
+				var page = (response.Buckets ?? []).ConvertAll(bucket => bucket.BucketName);
+				Assert.True(page.Count <= 2);
+				pagedBucketList.AddRange(page);
+				pageCount++;
+				token = response.ContinuationToken;
+				if (string.IsNullOrEmpty(token)) break;
+			}
+			Assert.Equal(3, pageCount);
+			Assert.Equal(fullBucketList, pagedBucketList);
+			var sortedBucketList = new List<string>(pagedBucketList);
+			sortedBucketList.Sort(StringComparer.Ordinal);
+			Assert.Equal(sortedBucketList, pagedBucketList);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "Get")]
+		[Trait(MainData.Explanation, "버킷 목록 조회 응답에 버킷 정보와 소유자 정보가 포함되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListBucketsOwner()
+		{
+			TestId = 15;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var response = client.ListBuckets(prefix: bucketName);
+			Assert.Single(response.Buckets);
+			Assert.Equal(bucketName, response.Buckets[0].BucketName);
+			Assert.NotNull(response.Buckets[0].CreationDate);
+			Assert.Equal(Config.MainUser.UserId, response.Owner.Id);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ListBuckets")]
+		[Trait(MainData.Minor, "Permission")]
+		[Trait(MainData.Explanation, "다른 사용자의 버킷 목록에는 내 버킷이 나오지 않는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestListBucketsAltUser()
+		{
+			TestId = 16;
+			var client = GetClient();
+			var altClient = GetAltClient();
+			var bucketName = GetNewBucket(client);
+			// 다른 사용자의 목록에는 내 버킷이 나오지 않는다
+			var response = altClient.ListBuckets(prefix: bucketName);
+			Assert.Empty(response.Buckets ?? []);
+		}
 	}
 }

@@ -12,6 +12,10 @@ package org.example.test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.util.List;
+import java.util.Map;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -19,6 +23,18 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
+import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
+import com.amazonaws.services.s3.model.BucketTaggingConfiguration;
+import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
+import com.amazonaws.services.s3.model.CORSRule.AllowedMethods;
+import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.HeadBucketRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.TagSet;
+import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.amazonaws.services.s3.model.lifecycle.LifecycleFilter;
+import com.amazonaws.services.s3.model.lifecycle.LifecyclePrefixPredicate;
 
 public class DeleteBucket extends TestBase {
 	@Test
@@ -58,5 +74,104 @@ public class DeleteBucket extends TestBase {
 		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
 		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
 		deleteBucketList(bucketName);
+	}
+
+	@Test
+	@Tag("Versioning")
+	public void testBucketDeleteVersioned() {
+		var client = getClient();
+		var bucketName = createBucket(client, 4);
+		var key = "testBucketDeleteVersioned";
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		client.putObject(bucketName, key, key);
+		client.deleteObject(bucketName, key);
+
+		// 현재 오브젝트가 없어도 이전 버전과 삭제 마커가 남아 있으면 삭제할 수 없다
+		assertEquals(0, client.listObjectsV2(bucketName).getKeyCount());
+		var e = assertThrows(AmazonServiceException.class, () -> client.deleteBucket(bucketName));
+		assertEquals(HttpStatus.SC_CONFLICT, e.getStatusCode());
+		assertEquals(MainData.BUCKET_NOT_EMPTY, e.getErrorCode());
+
+		// SDK v1 은 버전과 삭제 마커를 한 목록(VersionSummaries)으로 돌려준다
+		var versions = client.listVersions(bucketName, null);
+		for (var version : versions.getVersionSummaries())
+			client.deleteVersion(bucketName, version.getKey(), version.getVersionId());
+		client.deleteBucket(bucketName);
+		deleteBucketList(bucketName);
+	}
+
+	@Test
+	@Tag("Multipart")
+	public void testBucketDeleteWithMultipartUpload() {
+		var client = getClient();
+		var bucketName = createBucket(client, 5);
+		var key = "testBucketDeleteWithMultipartUpload";
+		var upload = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key));
+		client.uploadPart(new UploadPartRequest().withBucketName(bucketName).withKey(key)
+				.withUploadId(upload.getUploadId()).withPartNumber(1)
+				.withInputStream(createBody("a".repeat(1024))).withPartSize(1024));
+
+		// 완료되지 않은 멀티파트 업로드만 남아 있는 버킷은 삭제할 수 있다
+		client.deleteBucket(bucketName);
+		var e = assertThrows(AmazonServiceException.class, () -> client.listObjectsV2(bucketName));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+		deleteBucketList(bucketName);
+	}
+
+	@Test
+	@Tag("Permission")
+	public void testBucketDeleteAltUser() {
+		var client = getClient();
+		var altClient = getAltClient();
+		var bucketName = createBucket(client, 6);
+
+		var e = assertThrows(AmazonServiceException.class, () -> altClient.deleteBucket(bucketName));
+		assertEquals(HttpStatus.SC_FORBIDDEN, e.getStatusCode());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrorCode());
+		// 버킷은 그대로 남아 있다
+		client.headBucket(new HeadBucketRequest(bucketName));
+	}
+
+	@Test
+	@Tag("Check")
+	public void testBucketDeleteWithConfigurations() {
+		var client = getClient();
+		var bucketName = createBucket(client, 7);
+		client.setBucketTaggingConfiguration(bucketName,
+				new BucketTaggingConfiguration().withTagSets(new TagSet(Map.of("key", "value"))));
+		client.setBucketCrossOriginConfiguration(bucketName, new BucketCrossOriginConfiguration().withRules(
+				new CORSRule().withAllowedMethods(List.of(AllowedMethods.GET)).withAllowedOrigins(List.of("*"))));
+		client.setBucketLifecycleConfiguration(bucketName,
+				new BucketLifecycleConfiguration().withRules(new BucketLifecycleConfiguration.Rule().withId("rule1")
+						.withStatus(BucketLifecycleConfiguration.ENABLED)
+						.withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("")))
+						.withExpirationInDays(1)));
+
+		// 버킷 설정이 남아 있어도 비어 있으면 삭제할 수 있다
+		client.deleteBucket(bucketName);
+		var e = assertThrows(AmazonServiceException.class, () -> client.listObjectsV2(bucketName));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.getStatusCode());
+		assertEquals(MainData.NO_SUCH_BUCKET, e.getErrorCode());
+		deleteBucketList(bucketName);
+	}
+
+	@Test
+	@Tag("Check")
+	public void testBucketDeleteRecreate() {
+		var client = getClient();
+		var bucketName = createBucket(client, 8);
+		var key = "testBucketDeleteRecreate";
+		client.setBucketTaggingConfiguration(bucketName,
+				new BucketTaggingConfiguration().withTagSets(new TagSet(Map.of("key", "value"))));
+		client.putObject(bucketName, key, key);
+		client.deleteObject(bucketName, key);
+		client.deleteBucket(bucketName);
+
+		// 같은 이름으로 다시 만들면 이전 오브젝트와 설정이 남아 있지 않다
+		client.createBucket(bucketName);
+		assertEquals(0, client.listObjectsV2(bucketName).getKeyCount());
+		// SDK v1 은 NoSuchTagSet(404) 응답을 예외로 던지지 않고 null 로 돌려준다
+		assertNull(client.getBucketTaggingConfiguration(bucketName));
 	}
 }

@@ -84,7 +84,7 @@ class Ownership {
 	}
 
 	/**
-	 * ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경해도 접근 가능한지 확인
+	 * ACL 설정된 오브젝트에 소유권을 BucketOwnerEnforced로 변경하면 퍼블릭 접근이 막히는지 확인
 	 */
 	@Test
 	@Tag("Check")
@@ -101,5 +101,135 @@ class Ownership {
 	void testObjectOwnershipDenyACL() {
 		test.testObjectOwnershipDenyACL();
 		testV2.testObjectOwnershipDenyACL();
+	}
+
+	/**
+	 * 소유권을 지정하지 않고 만든 버킷의 소유권이 BucketOwnerEnforced인지 확인
+	 */
+	@Test
+	@Tag("Get")
+	void testBucketOwnershipDefault() {
+		test.testBucketOwnershipDefault();
+		testV2.testBucketOwnershipDefault();
+	}
+
+	/**
+	 * 버킷의 소유권을 ObjectWriter, BucketOwnerPreferred, BucketOwnerEnforced로 변경할 수 있는지 확인
+	 */
+	@Test
+	@Tag("Put")
+	void testPutBucketOwnershipAllValues() {
+		test.testPutBucketOwnershipAllValues();
+		testV2.testPutBucketOwnershipAllValues();
+	}
+
+	/**
+	 * 버킷의 소유권을 잘못된 값으로 설정할 경우 실패 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testPutBucketOwnershipInvalid() {
+		test.testPutBucketOwnershipInvalid();
+		testV2.testPutBucketOwnershipInvalid();
+	}
+
+	/**
+	 * 버킷의 소유권 설정을 삭제하면 조회는 실패하고 다시 삭제해도 성공하는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testDeleteBucketOwnership() {
+		test.testDeleteBucketOwnership();
+		testV2.testDeleteBucketOwnership();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 소유권을 조회, 설정, 삭제할 경우 실패 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testBucketOwnershipBucketNotExist() {
+		test.testBucketOwnershipBucketNotExist();
+		testV2.testBucketOwnershipBucketNotExist();
+	}
+
+	/**
+	 * 다른 사용자가 버킷의 소유권을 조회, 설정, 삭제할 경우 실패 확인
+	 */
+	@Test
+	@Tag("Permission")
+	void testBucketOwnershipAltUser() {
+		test.testBucketOwnershipAltUser();
+		testV2.testBucketOwnershipAltUser();
+	}
+
+	/**
+	 * BucketOwnerEnforced 버킷을 ACL과 함께 생성할 경우 실패 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testCreateBucketOwnershipEnforcedWithAcl() {
+		test.testCreateBucketOwnershipEnforcedWithAcl();
+		testV2.testCreateBucketOwnershipEnforcedWithAcl();
+	}
+
+	/**
+	 * 잘못된 소유권 값으로 버킷을 생성할 경우 실패 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testCreateBucketInvalidOwnership() {
+		test.testCreateBucketInvalidOwnership();
+		testV2.testCreateBucketInvalidOwnership();
+	}
+
+	/**
+	 * 버킷 ACL에 소유자 외의 권한이 남아 있으면 BucketOwnerEnforced로 변경할 수 없는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testBucketOwnershipEnforcedWithAclGrants() {
+		test.testBucketOwnershipEnforcedWithAclGrants();
+		testV2.testBucketOwnershipEnforcedWithAclGrants();
+	}
+
+	/**
+	 * ObjectWriter 버킷에서는 올린 사용자가 오브젝트 소유자가 되는지 확인
+	 */
+	@Test
+	@Tag("Owner")
+	void testObjectOwnerObjectWriter() {
+		test.testObjectOwnerObjectWriter();
+		testV2.testObjectOwnerObjectWriter();
+	}
+
+	/**
+	 * BucketOwnerPreferred 버킷에서는 bucket-owner-full-control로 올린 오브젝트만 버킷 소유자의 소유가 되는지 확인
+	 */
+	@Test
+	@Tag("Owner")
+	void testObjectOwnerBucketOwnerPreferred() {
+		test.testObjectOwnerBucketOwnerPreferred();
+		testV2.testObjectOwnerBucketOwnerPreferred();
+	}
+
+	/**
+	 * BucketOwnerEnforced 버킷에서는 누가 올려도 버킷 소유자가 오브젝트 소유자가 되는지 확인
+	 */
+	@Test
+	@Tag("Owner")
+	void testObjectOwnerBucketOwnerEnforced() {
+		test.testObjectOwnerBucketOwnerEnforced();
+		testV2.testObjectOwnerBucketOwnerEnforced();
+	}
+
+	/**
+	 * BucketOwnerEnforced 버킷에서 ACL 조회는 가능하고 ACL 변경은 거부되는지 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testBucketOwnershipEnforcedAcl() {
+		test.testBucketOwnershipEnforcedAcl();
+		testV2.testBucketOwnershipEnforcedAcl();
 	}
 }

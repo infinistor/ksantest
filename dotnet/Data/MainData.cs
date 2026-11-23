@@ -91,6 +91,9 @@ namespace s3tests
 		public const string NO_SUCH_VERSION = "NoSuchVersion";
 		public const string ACCESS_CONTROL_LIST_NOT_SUPPORTED = "AccessControlListNotSupported";
 		public const string REPLICATION_CONFIGURATION_NOT_FOUND_ERROR = "ReplicationConfigurationNotFoundError";
+		public const string NO_SUCH_BUCKET_POLICY = "NoSuchBucketPolicy";
+		public const string OWNERSHIP_CONTROLS_NOT_FOUND_ERROR = "OwnershipControlsNotFoundError";
+		public const string INVALID_BUCKET_ACL_WITH_OBJECT_OWNERSHIP = "InvalidBucketAclWithObjectOwnership";
 		#endregion
 	}
 }

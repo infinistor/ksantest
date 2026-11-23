@@ -1050,6 +1050,35 @@ namespace s3tests.Test
 
 		public static string GetErrorCode(AggregateException e) => (e.InnerException is AmazonS3Exception e2) ? e2.ErrorCode : null;
 
+		/// <summary>
+		/// 설정 변경이 반영될 때까지 check 가 true 를 돌려주기를 기다린다.
+		/// AWS는 버킷 정책·퍼블릭 액세스 차단 변경을 지연 반영한다. (python _wait_until)
+		/// </summary>
+		public static void WaitUntil(Func<bool> check, int timeoutSeconds = 60, int intervalSeconds = 2)
+		{
+			var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+			while (true)
+			{
+				if (check()) return;
+				Assert.True(DateTime.UtcNow < deadline, "설정 변경이 제한 시간 안에 반영되지 않았습니다");
+				Thread.Sleep(intervalSeconds * 1000);
+			}
+		}
+
+		/// <summary>요청이 성공하면 200, 실패하면 에러 응답의 상태 코드를 돌려준다. (python _status)</summary>
+		public static HttpStatusCode GetCallStatus(Action call)
+		{
+			try
+			{
+				call();
+				return HttpStatusCode.OK;
+			}
+			catch (AggregateException e)
+			{
+				return GetStatus(e);
+			}
+		}
+
 		public static long GetBytesUsed(ListObjectsV2Response response)
 		{
 			if (response == null) return 0;

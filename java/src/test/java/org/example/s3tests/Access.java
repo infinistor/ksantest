@@ -99,4 +99,94 @@ class Access {
 		test.testPutPublicBlock();
 		testV2.testPutPublicBlock();
 	}
+
+	/**
+	 * 새로 만든 버킷은 네 가지 퍼블릭 액세스 차단이 모두 켜져 있는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testPublicBlockDefault() {
+		test.testPublicBlockDefault();
+		testV2.testPublicBlockDefault();
+	}
+
+	/**
+	 * 퍼블릭 액세스 차단 설정시 지정하지 않은 항목은 false로 저장되는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testPutPublicBlockPartial() {
+		test.testPutPublicBlockPartial();
+		testV2.testPutPublicBlockPartial();
+	}
+
+	/**
+	 * 퍼블릭 액세스 차단 설정이 없는 버킷에서 조회는 실패하고 삭제는 성공하는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testDeletePublicBlockNotExist() {
+		test.testDeletePublicBlockNotExist();
+		testV2.testDeletePublicBlockNotExist();
+	}
+
+	/**
+	 * 존재하지 않는 버킷의 퍼블릭 액세스 차단 설정을 조회, 설정, 삭제할 경우 실패 확인
+	 */
+	@Test
+	@Tag("Error")
+	void testPublicBlockBucketNotExist() {
+		test.testPublicBlockBucketNotExist();
+		testV2.testPublicBlockBucketNotExist();
+	}
+
+	/**
+	 * 다른 사용자가 버킷의 퍼블릭 액세스 차단 설정을 조회, 설정, 삭제할 경우 실패 확인
+	 */
+	@Test
+	@Tag("Permission")
+	void testPublicBlockAltUser() {
+		test.testPublicBlockAltUser();
+		testV2.testPublicBlockAltUser();
+	}
+
+	/**
+	 * BlockPublicAcls 설정시 퍼블릭 ACL은 거부되고 퍼블릭이 아닌 ACL은 허용되는지 확인
+	 */
+	@Test
+	@Tag("Denied")
+	void testBlockPublicAclsAllowPrivate() {
+		test.testBlockPublicAclsAllowPrivate();
+		testV2.testBlockPublicAclsAllowPrivate();
+	}
+
+	/**
+	 * 버킷 정책이 퍼블릭인지 여부를 GetBucketPolicyStatus로 올바르게 판정하는지 확인
+	 */
+	@Test
+	@Tag("Policy")
+	void testBucketPolicyStatus() {
+		test.testBucketPolicyStatus();
+		testV2.testBucketPolicyStatus();
+	}
+
+	/**
+	 * BlockPublicPolicy 설정시 퍼블릭 정책은 거부되고 특정 사용자에게만 여는 정책은 허용되는지 확인
+	 */
+	@Test
+	@Tag("Policy")
+	void testBlockPublicPolicyAllowNonPublic() {
+		test.testBlockPublicPolicyAllowNonPublic();
+		testV2.testBlockPublicPolicyAllowNonPublic();
+	}
+
+	/**
+	 * RestrictPublicBuckets 설정시 퍼블릭 정책이 있어도 버킷 소유자만 접근할 수 있는지 확인
+	 */
+	@Test
+	@Tag("Denied")
+	void testRestrictPublicBuckets() {
+		test.testRestrictPublicBuckets();
+		testV2.testRestrictPublicBuckets();
+	}
 }

@@ -71,4 +71,54 @@ class DeleteBucket {
 		test.testBucketCreateDelete();
 		testV2.testBucketCreateDelete();
 	}
+
+	/**
+	 * 버저닝 버킷에 이전 버전과 삭제 마커가 남아 있으면 삭제에 실패하고, 모두 지우면 삭제되는지 확인
+	 */
+	@Test
+	@Tag("Versioning")
+	void testBucketDeleteVersioned() {
+		test.testBucketDeleteVersioned();
+		testV2.testBucketDeleteVersioned();
+	}
+
+	/**
+	 * 완료되지 않은 멀티파트 업로드만 남아 있는 버킷을 삭제할 수 있는지 확인
+	 */
+	@Test
+	@Tag("Multipart")
+	void testBucketDeleteWithMultipartUpload() {
+		test.testBucketDeleteWithMultipartUpload();
+		testV2.testBucketDeleteWithMultipartUpload();
+	}
+
+	/**
+	 * 다른 사용자가 버킷을 삭제하려 했을 경우 실패 확인
+	 */
+	@Test
+	@Tag("Permission")
+	void testBucketDeleteAltUser() {
+		test.testBucketDeleteAltUser();
+		testV2.testBucketDeleteAltUser();
+	}
+
+	/**
+	 * 태그, CORS, 수명주기 설정이 남아 있어도 비어 있는 버킷은 삭제할 수 있는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testBucketDeleteWithConfigurations() {
+		test.testBucketDeleteWithConfigurations();
+		testV2.testBucketDeleteWithConfigurations();
+	}
+
+	/**
+	 * 버킷을 삭제하고 같은 이름으로 다시 만들면 이전 오브젝트와 설정이 남아 있지 않은지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testBucketDeleteRecreate() {
+		test.testBucketDeleteRecreate();
+		testV2.testBucketDeleteRecreate();
+	}
 }
