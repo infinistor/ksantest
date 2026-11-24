@@ -878,6 +878,220 @@ func TestMultipartUploadChecksumVersioning(t *testing.T) {
 	}
 }
 
+// GOVERNANCE 보존을 bypass + 빈 Retention 으로 제거하면 복제 대상의 보존도 제거되는지 확인
+func TestPutObjectRetentionRemoveReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	ctx := context.Background()
+	bucket := backendLockBucket(t, s)
+	sourceKey, targetKey := "TestPutObjectRetentionRemoveReplicationSource", "TestPutObjectRetentionRemoveReplicationTarget"
+	putOut := put(t, s, bucket, sourceKey, "test content", nil)
+	versionID := aws.ToString(putOut.VersionId)
+	requireVersionID(t, versionID)
+	until := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Second)
+	retention := &types.ObjectLockRetention{Mode: types.ObjectLockRetentionModeGovernance, RetainUntilDate: &until}
+	putSourceRetention := func(r *types.ObjectLockRetention, bypass bool) error {
+		input := &s3.PutObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(sourceKey), Retention: r}
+		if bypass {
+			input.BypassGovernanceRetention = aws.Bool(true)
+		}
+		_, err := s.client.PutObjectRetention(ctx, input)
+		return err
+	}
+	assertTargetRetention := func() {
+		t.Helper()
+		out, err := s.client.GetObjectRetention(ctx, &s3.GetObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), VersionId: aws.String(versionID)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if out.Retention == nil || out.Retention.Mode != retention.Mode ||
+			out.Retention.RetainUntilDate == nil || !out.Retention.RetainUntilDate.Equal(until) {
+			t.Fatalf("target retention=%#v", out.Retention)
+		}
+	}
+
+	// Backend 클라이언트로 복사
+	backendReplicatePut(t, backend, bucket, sourceKey, bucket, targetKey, versionID)
+
+	// 원본에 GOVERNANCE 보존 설정 후 Backend 클라이언트로 보존 복제
+	if err := putSourceRetention(retention, false); err != nil {
+		t.Fatal(err)
+	}
+	backendReplicateRetention(t, backend, bucket, sourceKey, bucket, targetKey, versionID)
+	assertTargetRetention()
+
+	// bypass 없이 빈 Retention 으로 제거하면 거부
+	assertS3Error(t, putSourceRetention(&types.ObjectLockRetention{}, false), 403, "AccessDenied")
+
+	// bypass + 빈 Retention 으로 원본 보존 제거
+	if err := putSourceRetention(&types.ObjectLockRetention{}, true); err != nil {
+		t.Fatal(err)
+	}
+	assertNoRetention(t, s.client, bucket, sourceKey, versionID)
+
+	// Backend 클라이언트로 보존 제거 복제
+	backendReplicateRetention(t, backend, bucket, sourceKey, bucket, targetKey, versionID)
+	assertNoRetention(t, s.client, bucket, targetKey, versionID)
+
+	// 제거 뒤 다시 설정한 보존도 복제
+	if err := putSourceRetention(retention, false); err != nil {
+		t.Fatal(err)
+	}
+	backendReplicateRetention(t, backend, bucket, sourceKey, bucket, targetKey, versionID)
+	assertTargetRetention()
+}
+
+// 복제 상태 갱신 요청(PUT /{bucket}/-)으로 원본의 x-amz-replication-status 가 COMPLETED, FAILED 로 바뀌는지 확인
+func TestPutObjectReplicationStatus(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	ctx := context.Background()
+	bucket, key := s.bucket(t, 45), "TestPutObjectReplicationStatus"
+	enableVersioning(t, s, bucket)
+
+	// 일반 클라이언트로 업로드. 갱신 전에는 복제 상태가 없다
+	putOut := put(t, s, bucket, key, key, nil)
+	versionID := aws.ToString(putOut.VersionId)
+	requireVersionID(t, versionID)
+	assertReplicationStatus(t, s.client, bucket, key, versionID, "")
+
+	objects := []types.ObjectIdentifier{
+		{Key: aws.String(key), VersionId: aws.String(versionID)},
+		{Key: aws.String("not-exist-key"), VersionId: aws.String(versionID)},
+	}
+
+	// Backend 클라이언트로 COMPLETED 기록. 없는 객체가 섞여 있어도 200
+	if err := backendPutReplicationStatus(backend, bucket, "COMPLETED", objects); err != nil {
+		t.Fatal(err)
+	}
+	assertReplicationStatus(t, s.client, bucket, key, versionID, types.ReplicationStatusCompleted)
+	getOut, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	getOut.Body.Close()
+	if getOut.ReplicationStatus != types.ReplicationStatusCompleted {
+		t.Fatalf("GetObject replication status=%q, want COMPLETED", getOut.ReplicationStatus)
+	}
+
+	// Backend 클라이언트로 FAILED 기록
+	if err := backendPutReplicationStatus(backend, bucket, "FAILED", objects); err != nil {
+		t.Fatal(err)
+	}
+	assertReplicationStatus(t, s.client, bucket, key, versionID, types.ReplicationStatusFailed)
+
+	// 갱신 요청이 "-" 객체나 새 버전을 만들지 않는다
+	versions := listBackendVersions(t, s.client, bucket)
+	if len(versions.Versions) != 1 || aws.ToString(versions.Versions[0].Key) != key || aws.ToString(versions.Versions[0].VersionId) != versionID {
+		t.Fatalf("versions=%#v, want only %s(%s)", versions.Versions, key, versionID)
+	}
+}
+
+// 복제 상태 갱신 요청에 REPLICA 상태나 빈 ObjectList 를 보내면 InvalidArgument 로 거부되는지 확인
+func TestPutObjectReplicationStatusInvalid(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+
+	bucket, key := s.bucket(t, 46), "TestPutObjectReplicationStatusInvalid"
+	enableVersioning(t, s, bucket)
+
+	// 일반 클라이언트로 업로드
+	putOut := put(t, s, bucket, key, key, nil)
+	versionID := aws.ToString(putOut.VersionId)
+	requireVersionID(t, versionID)
+	objects := []types.ObjectIdentifier{{Key: aws.String(key), VersionId: aws.String(versionID)}}
+
+	// REPLICA 는 갱신할 수 없다
+	assertS3Error(t, backendPutReplicationStatus(backend, bucket, "REPLICA", objects), 400, "InvalidArgument")
+
+	// 빈 ObjectList 는 거부된다
+	assertS3Error(t, backendPutReplicationStatus(backend, bucket, "COMPLETED", nil), 400, "InvalidArgument")
+
+	// 복제 상태는 그대로 없고, "-" 객체도 만들어지지 않는다
+	assertReplicationStatus(t, s.client, bucket, key, versionID, "")
+	versions := listBackendVersions(t, s.client, bucket)
+	if len(versions.Versions) != 1 || aws.ToString(versions.Versions[0].Key) != key {
+		t.Fatalf("versions=%#v, want only %s", versions.Versions, key)
+	}
+}
+
+// backendReplicationStatusKey는 복제 상태 갱신 API 의 객체 이름이다.
+// GW 는 Backend 헤더 + PUT + 이 이름 + x-amz-replication-status 헤더를 이 API 로 처리한다.
+const backendReplicationStatusKey = "-"
+
+// backendPutReplicationStatus는 복제기와 같이 원본 객체들의 복제 상태를 갱신한다.
+// PUT /{bucket}/- 에 x-amz-replication-status 헤더와 {"ObjectList":[{"path","versionId"}]} 본문을 보낸다.
+func backendPutReplicationStatus(backend *s3.Client, bucket, status string, objects []types.ObjectIdentifier) error {
+	body := `{"ObjectList":[`
+	for i, object := range objects {
+		if i > 0 {
+			body += ","
+		}
+		body += fmt.Sprintf(`{"path":"%s","versionId":"%s"}`, aws.ToString(object.Key), aws.ToString(object.VersionId))
+	}
+	body += "]}"
+	_, err := backend.PutObject(context.Background(), &s3.PutObjectInput{
+		Bucket: aws.String(bucket), Key: aws.String(backendReplicationStatusKey), Body: bytes.NewReader([]byte(body)),
+	}, func(options *s3.Options) {
+		options.APIOptions = append(options.APIOptions, backendHeaders("backend-replication-status", map[string]string{
+			"x-amz-replication-status": status, "x-ksan-replication": "NONE",
+		}))
+	})
+	return err
+}
+
+// assertReplicationStatus는 일반 클라이언트 HeadObject 의 복제 상태가 기대값인지 확인한다. 빈 값은 헤더가 없어야 한다는 뜻이다.
+func assertReplicationStatus(t *testing.T, client *s3.Client, bucket, key, versionID string, want types.ReplicationStatus) {
+	t.Helper()
+	out, err := client.HeadObject(context.Background(), &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.ReplicationStatus != want {
+		t.Fatalf("%s replication status=%q, want %q", key, out.ReplicationStatus, want)
+	}
+}
+
+// backendReplicateRetention은 복제기와 같이 원본 보존을 읽어 대상에 설정한다. 원본에 보존이 없으면 빈 Retention 으로 대상 보존을 제거한다.
+func backendReplicateRetention(t *testing.T, backend *s3.Client, sourceBucket, sourceKey, targetBucket, targetKey, versionID string) {
+	t.Helper()
+	ctx := context.Background()
+	retention := &types.ObjectLockRetention{}
+	out, err := backend.GetObjectRetention(ctx, &s3.GetObjectRetentionInput{Bucket: aws.String(sourceBucket), Key: aws.String(sourceKey), VersionId: aws.String(versionID)})
+	if err == nil {
+		retention = out.Retention
+	} else {
+		assertAPIErrorCode(t, err, "NoSuchObjectLockConfiguration")
+	}
+	if _, err := backend.PutObjectRetention(ctx, &s3.PutObjectRetentionInput{
+		Bucket: aws.String(targetBucket), Key: aws.String(targetKey), VersionId: aws.String(versionID),
+		Retention: retention, BypassGovernanceRetention: aws.Bool(true),
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// assertNoRetention은 GetObjectRetention 이 NoSuchObjectLockConfiguration(404) 인지 확인한다.
+func assertNoRetention(t *testing.T, client *s3.Client, bucket, key, versionID string) {
+	t.Helper()
+	_, err := client.GetObjectRetention(context.Background(), &s3.GetObjectRetentionInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(versionID)})
+	assertS3Error(t, err, 404, "NoSuchObjectLockConfiguration")
+}
+
 // checksumMultipartUpload는 FULL_OBJECT 체크섬을 지정해 파트 2개로 멀티파트 업로드하고 업로드한 본문을 반환한다.
 func checksumMultipartUpload(t *testing.T, client *s3.Client, bucket, key string, algorithm types.ChecksumAlgorithm) []byte {
 	t.Helper()

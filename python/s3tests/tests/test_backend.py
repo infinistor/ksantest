@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 
 import pytest
@@ -1170,6 +1171,201 @@ class TestBackend(S3TestBase):
             self._check_stored_checksum(
                 client, bucket_name, backend_key, None, algorithm, checksum.calculate_checksum(algorithm, backend_body)
             )
+
+    @pytest.mark.tag("Replication")
+    def test_put_object_retention_remove_replication(self):
+        """GOVERNANCE 보존을 bypass + 빈 Retention 으로 제거하면 복제 대상의 보존도 제거되는지 확인"""
+        self.skip_if_aws()
+        client = self.get_client()
+        backend_client = self.get_backend_client()
+        bucket_name = self.create_bucket_object_lock(client, 44)
+        source_key = "test_put_object_retention_remove_replication_source"
+        target_key = "test_put_object_retention_remove_replication_target"
+        content = "test content"
+        retention = {
+            "Mode": "GOVERNANCE",
+            "RetainUntilDate": self.get_expired_date_instant(datetime.now(timezone.utc), 1),
+        }
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+
+        put_response = client.put_object(Bucket=bucket_name, Key=source_key, Body=content.encode("utf-8"))
+        version_id = put_response["VersionId"]
+
+        try:
+            # Backend 클라이언트로 복사
+            self.backend_put_object(backend_client, bucket_name, source_key, bucket_name, target_key, version_id)
+
+            # 원본에 GOVERNANCE 보존 설정 후 Backend 클라이언트로 보존 복제
+            client.put_object_retention(Bucket=bucket_name, Key=source_key, Retention=retention)
+            self._backend_put_object_retention(
+                backend_client, bucket_name, source_key, bucket_name, target_key, version_id
+            )
+            target = client.get_object_retention(Bucket=bucket_name, Key=target_key, VersionId=version_id)
+            assert target["Retention"] == retention
+
+            # bypass 없이 빈 Retention 으로 제거하면 거부
+            self.assert_client_error(
+                lambda: client.put_object_retention(Bucket=bucket_name, Key=source_key, Retention={}),
+                403,
+                md.ACCESS_DENIED,
+            )
+
+            # bypass + 빈 Retention 으로 원본 보존 제거
+            client.put_object_retention(
+                Bucket=bucket_name, Key=source_key, Retention={}, BypassGovernanceRetention=True
+            )
+            self._assert_no_retention(client, bucket_name, source_key, version_id)
+
+            # Backend 클라이언트로 보존 제거 복제
+            self._backend_put_object_retention(
+                backend_client, bucket_name, source_key, bucket_name, target_key, version_id
+            )
+            self._assert_no_retention(client, bucket_name, target_key, version_id)
+
+            # 제거 뒤 다시 설정한 보존도 복제
+            client.put_object_retention(Bucket=bucket_name, Key=source_key, Retention=retention)
+            self._backend_put_object_retention(
+                backend_client, bucket_name, source_key, bucket_name, target_key, version_id
+            )
+            target = client.get_object_retention(Bucket=bucket_name, Key=target_key, VersionId=version_id)
+            assert target["Retention"] == retention
+        finally:
+            for key in (source_key, target_key):
+                client.delete_object(
+                    Bucket=bucket_name, Key=key, VersionId=version_id, BypassGovernanceRetention=True
+                )
+
+    @pytest.mark.tag("Replication")
+    def test_put_object_replication_status(self):
+        """복제 상태 갱신 요청(PUT /{bucket}/-)으로 원본의 x-amz-replication-status 가 COMPLETED, FAILED 로 바뀌는지 확인"""
+        self.skip_if_aws()
+        client = self.get_client()
+        backend_client = self.get_backend_client()
+        bucket_name = self.create_bucket(client, 45)
+        key = "test_put_object_replication_status"
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+
+        # 일반 클라이언트로 업로드. 갱신 전에는 복제 상태가 없다
+        version_id = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["VersionId"]
+        assert "ReplicationStatus" not in client.head_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+
+        objects = [
+            {"Key": key, "VersionId": version_id},
+            {"Key": "not-exist-key", "VersionId": version_id},
+        ]
+
+        # Backend 클라이언트로 COMPLETED 기록. 없는 객체가 섞여 있어도 200
+        response = self._backend_put_replication_status(
+            backend_client, bucket_name, bh.HEADER_REPLICATION_STATUS_COMPLETED, objects
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        head = client.head_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+        assert head.get("ReplicationStatus") == "COMPLETED"
+        get = client.get_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+        get["Body"].read()
+        assert get.get("ReplicationStatus") == "COMPLETED"
+
+        # Backend 클라이언트로 FAILED 기록
+        self._backend_put_replication_status(
+            backend_client, bucket_name, bh.HEADER_REPLICATION_STATUS_FAILED, objects
+        )
+        head = client.head_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+        assert head.get("ReplicationStatus") == "FAILED"
+
+        # 갱신 요청이 "-" 객체나 새 버전을 만들지 않는다
+        versions = client.list_object_versions(Bucket=bucket_name).get("Versions", [])
+        assert [(v["Key"], v["VersionId"]) for v in versions] == [(key, version_id)]
+
+    @pytest.mark.tag("Replication")
+    def test_put_object_replication_status_invalid(self):
+        """복제 상태 갱신 요청에 REPLICA 상태나 빈 ObjectList 를 보내면 InvalidArgument 로 거부되는지 확인"""
+        self.skip_if_aws()
+        client = self.get_client()
+        backend_client = self.get_backend_client()
+        bucket_name = self.create_bucket(client, 46)
+        key = "test_put_object_replication_status_invalid"
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+
+        version_id = client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))["VersionId"]
+        objects = [{"Key": key, "VersionId": version_id}]
+
+        # REPLICA 는 갱신할 수 없다
+        self.assert_client_error(
+            lambda: self._backend_put_replication_status(
+                backend_client, bucket_name, bh.HEADER_REPLICATION_STATUS_REPLICA, objects
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+        # 빈 ObjectList 는 거부된다
+        self.assert_client_error(
+            lambda: self._backend_put_replication_status(
+                backend_client, bucket_name, bh.HEADER_REPLICATION_STATUS_COMPLETED, []
+            ),
+            400,
+            md.INVALID_ARGUMENT,
+        )
+
+        # 복제 상태는 그대로 없고, "-" 객체도 만들어지지 않는다
+        assert "ReplicationStatus" not in client.head_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+        versions = client.list_object_versions(Bucket=bucket_name).get("Versions", [])
+        assert [v["Key"] for v in versions] == [key]
+
+    # 복제 상태 갱신 API 의 객체 이름. GW 는 Backend 헤더 + PUT + 이 이름 + x-amz-replication-status 헤더를 이 API 로 처리한다.
+    REPLICATION_STATUS_KEY = "-"
+
+    @classmethod
+    def _backend_put_replication_status(cls, backend_client, bucket_name: str, status: str, objects: list) -> dict:
+        """복제기와 같이 원본 객체들의 복제 상태를 갱신한다.
+        PUT /{bucket}/- 에 x-amz-replication-status 헤더와 {"ObjectList":[{"path","versionId"}]} 본문을 보낸다."""
+        body = json.dumps(
+            {"ObjectList": [{"path": o["Key"], "versionId": o["VersionId"]} for o in objects]},
+            separators=(",", ":"),
+        )
+
+        def _inject(request, **kwargs):
+            request.headers[bh.HEADER_REPLICATION_STATUS] = status
+            request.headers[bh.KSAN_REPLICATION] = bh.HEADER_DATA
+
+        event = "before-sign.s3.PutObject"
+        backend_client.meta.events.register(event, _inject, unique_id="replication-status")
+        try:
+            return backend_client.put_object(Bucket=bucket_name, Key=cls.REPLICATION_STATUS_KEY, Body=body.encode("utf-8"))
+        finally:
+            backend_client.meta.events.unregister(event, unique_id="replication-status")
+
+    @staticmethod
+    def _backend_put_object_retention(
+        backend_client, source_bucket: str, source_key: str, target_bucket: str, target_key: str, version_id: str
+    ) -> None:
+        """복제기와 같이 원본 보존을 읽어 대상에 설정한다. 원본에 보존이 없으면 빈 Retention 으로 대상 보존을 제거한다."""
+        try:
+            retention = backend_client.get_object_retention(
+                Bucket=source_bucket, Key=source_key, VersionId=version_id
+            )["Retention"]
+        except ClientError as e:
+            assert e.response["Error"]["Code"] == md.NO_SUCH_OBJECT_LOCK_CONFIGURATION
+            retention = {}
+        response = backend_client.put_object_retention(
+            Bucket=target_bucket,
+            Key=target_key,
+            VersionId=version_id,
+            Retention=retention,
+            BypassGovernanceRetention=True,
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+    def _assert_no_retention(self, client, bucket_name: str, key: str, version_id: str) -> None:
+        """GetObjectRetention 이 NoSuchObjectLockConfiguration(404) 인지 확인"""
+        self.assert_client_error(
+            lambda: client.get_object_retention(Bucket=bucket_name, Key=key, VersionId=version_id),
+            404,
+            md.NO_SUCH_OBJECT_LOCK_CONFIGURATION,
+        )
 
     @staticmethod
     def _checksum_multipart_upload(client, bucket_name: str, key: str, algorithm: str) -> str:

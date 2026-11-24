@@ -433,4 +433,31 @@ public class Backend {
 	void testMultipartUploadChecksumVersioning() {
 		testV2.testMultipartUploadChecksumVersioning();
 	}
+
+	/**
+	 * GOVERNANCE 보존을 bypass + 빈 Retention 으로 제거하면 복제 대상의 보존도 제거되는지 확인
+	 */
+	@Test
+	@Tag("Replication")
+	void testPutObjectRetentionRemoveReplication() {
+		testV2.testPutObjectRetentionRemoveReplication();
+	}
+
+	/**
+	 * 복제 상태 갱신 요청(PUT /{bucket}/-)으로 원본의 x-amz-replication-status 가 COMPLETED, FAILED 로 바뀌는지 확인
+	 */
+	@Test
+	@Tag("Replication")
+	void testPutObjectReplicationStatus() {
+		testV2.testPutObjectReplicationStatus();
+	}
+
+	/**
+	 * 복제 상태 갱신 요청에 REPLICA 상태나 빈 ObjectList 를 보내면 InvalidArgument 로 거부되는지 확인
+	 */
+	@Test
+	@Tag("Replication")
+	void testPutObjectReplicationStatusInvalid() {
+		testV2.testPutObjectReplicationStatusInvalid();
+	}
 }

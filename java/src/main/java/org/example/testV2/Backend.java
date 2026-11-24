@@ -33,8 +33,12 @@ import software.amazon.awssdk.services.s3.model.ChecksumMode;
 import software.amazon.awssdk.services.s3.model.ChecksumType;
 import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
+import software.amazon.awssdk.services.s3.model.ObjectLockRetention;
 import software.amazon.awssdk.services.s3.model.ObjectLockRetentionMode;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.Permission;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.s3.model.ReplicationStatus;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.model.Tagging;
 
@@ -48,6 +52,11 @@ public class Backend extends TestBase {
 			ChecksumAlgorithm.CRC64_NVME,
 			ChecksumAlgorithm.SHA1,
 			ChecksumAlgorithm.SHA256);
+
+	/**
+	 * 복제 상태 갱신 API 의 객체 이름. GW 는 Backend 헤더 + PUT + 이 이름 + x-amz-replication-status 헤더를 이 API 로 처리한다.
+	 */
+	static final String REPLICATION_STATUS_KEY = "-";
 
 	/**
 	 * Backend 헤더를 사용하여 오브젝트를 업로드할 수 있는지 확인
@@ -1488,6 +1497,199 @@ public class Backend extends TestBase {
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadData.uploadId)
 				.checksumType(ChecksumType.FULL_OBJECT).multipartUpload(p -> p.parts(uploadData.parts)));
 		return uploadData.getBody();
+	}
+
+	/**
+	 * GOVERNANCE 보존을 bypass + 빈 Retention 으로 제거하면 복제 대상의 보존도 제거되는지 확인
+	 */
+	public void testPutObjectRetentionRemoveReplication() {
+		assumeFalse(config.isAWS());
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = getNewBucketName(44);
+		var sourceKey = "testPutObjectRetentionRemoveReplicationSource";
+		var targetKey = "testPutObjectRetentionRemoveReplicationTarget";
+		var content = "test content";
+		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
+				.retainUntilDate(getExpiredDate(Instant.now(), 1)).build();
+		var empty = ObjectLockRetention.builder().build();
+
+		// 버킷 생성
+		client.createBucket(c -> c.bucket(bucketName).objectLockEnabledForBucket(true));
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 일반 클라이언트로 업로드
+		var putResponse = client.putObject(p -> p.bucket(bucketName).key(sourceKey), RequestBody.fromString(content));
+		var versionId = putResponse.versionId();
+
+		try {
+			// Backend 클라이언트로 복사
+			backendPutObject(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+
+			// 원본에 GOVERNANCE 보존 설정 후 Backend 클라이언트로 보존 복제
+			client.putObjectRetention(p -> p.bucket(bucketName).key(sourceKey).retention(retention));
+			backendPutObjectRetention(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+			var targetResponse = client.getObjectRetention(g -> g.bucket(bucketName).key(targetKey).versionId(versionId));
+			assertEquals(retention.mode(), targetResponse.retention().mode());
+			assertEquals(retention.retainUntilDate(), targetResponse.retention().retainUntilDate());
+
+			// bypass 없이 빈 Retention 으로 제거하면 거부
+			var e = assertThrows(AwsServiceException.class,
+					() -> client.putObjectRetention(p -> p.bucket(bucketName).key(sourceKey).retention(empty)));
+			assertEquals(403, e.statusCode());
+			assertEquals(MainData.ACCESS_DENIED, e.awsErrorDetails().errorCode());
+
+			// bypass + 빈 Retention 으로 원본 보존 제거
+			client.putObjectRetention(p -> p.bucket(bucketName).key(sourceKey).retention(empty)
+					.bypassGovernanceRetention(true));
+			assertNoRetention(client, bucketName, sourceKey, versionId);
+
+			// Backend 클라이언트로 보존 제거 복제
+			backendPutObjectRetention(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+			assertNoRetention(client, bucketName, targetKey, versionId);
+
+			// 제거 뒤 다시 설정한 보존도 복제
+			client.putObjectRetention(p -> p.bucket(bucketName).key(sourceKey).retention(retention));
+			backendPutObjectRetention(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+			var againResponse = client.getObjectRetention(g -> g.bucket(bucketName).key(targetKey).versionId(versionId));
+			assertEquals(retention.mode(), againResponse.retention().mode());
+			assertEquals(retention.retainUntilDate(), againResponse.retention().retainUntilDate());
+		} finally {
+			// 정리
+			for (var key : List.of(sourceKey, targetKey))
+				client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId)
+						.bypassGovernanceRetention(true));
+		}
+	}
+
+	/**
+	 * 복제 상태 갱신 요청(PUT /{bucket}/-)으로 원본의 x-amz-replication-status 가 COMPLETED, FAILED 로 바뀌는지 확인
+	 */
+	public void testPutObjectReplicationStatus() {
+		assumeFalse(config.isAWS());
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucket(client, 45);
+		var key = "testPutObjectReplicationStatus";
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 일반 클라이언트로 업로드. 갱신 전에는 복제 상태가 없다
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).versionId();
+		assertEquals(null, client.headObject(h -> h.bucket(bucketName).key(key).versionId(versionId)).replicationStatus());
+
+		var objects = List.of(ObjectIdentifier.builder().key(key).versionId(versionId).build(),
+				ObjectIdentifier.builder().key("not-exist-key").versionId(versionId).build());
+
+		// Backend 클라이언트로 COMPLETED 기록. 없는 객체가 섞여 있어도 200
+		var response = backendPutReplicationStatus(backendClient, bucketName,
+				BackendHeaders.HEADER_REPLICATION_STATUS_COMPLETED, objects);
+		assertEquals(200, response.sdkHttpResponse().statusCode());
+		assertEquals(ReplicationStatus.COMPLETED,
+				client.headObject(h -> h.bucket(bucketName).key(key).versionId(versionId)).replicationStatus());
+		assertEquals(ReplicationStatus.COMPLETED,
+				client.getObject(g -> g.bucket(bucketName).key(key).versionId(versionId)).response().replicationStatus());
+
+		// Backend 클라이언트로 FAILED 기록
+		backendPutReplicationStatus(backendClient, bucketName, BackendHeaders.HEADER_REPLICATION_STATUS_FAILED, objects);
+		assertEquals(ReplicationStatus.FAILED,
+				client.headObject(h -> h.bucket(bucketName).key(key).versionId(versionId)).replicationStatus());
+
+		// 갱신 요청이 "-" 객체나 새 버전을 만들지 않는다
+		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(1, listResponse.versions().size());
+		assertEquals(key, listResponse.versions().get(0).key());
+		assertEquals(versionId, listResponse.versions().get(0).versionId());
+	}
+
+	/**
+	 * 복제 상태 갱신 요청에 REPLICA 상태나 빈 ObjectList 를 보내면 InvalidArgument 로 거부되는지 확인
+	 */
+	public void testPutObjectReplicationStatusInvalid() {
+		assumeFalse(config.isAWS());
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucket(client, 46);
+		var key = "testPutObjectReplicationStatusInvalid";
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		// 일반 클라이언트로 업로드
+		var versionId = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key)).versionId();
+		var objects = List.of(ObjectIdentifier.builder().key(key).versionId(versionId).build());
+
+		// REPLICA 는 갱신할 수 없다
+		var e = assertThrows(AwsServiceException.class, () -> backendPutReplicationStatus(backendClient, bucketName,
+				BackendHeaders.HEADER_REPLICATION_STATUS_REPLICA, objects));
+		assertEquals(400, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+
+		// 빈 ObjectList 는 거부된다
+		e = assertThrows(AwsServiceException.class, () -> backendPutReplicationStatus(backendClient, bucketName,
+				BackendHeaders.HEADER_REPLICATION_STATUS_COMPLETED, List.of()));
+		assertEquals(400, e.statusCode());
+		assertEquals(MainData.INVALID_ARGUMENT, e.awsErrorDetails().errorCode());
+
+		// 복제 상태는 그대로 없고, "-" 객체도 만들어지지 않는다
+		assertEquals(null, client.headObject(h -> h.bucket(bucketName).key(key).versionId(versionId)).replicationStatus());
+		var listResponse = client.listObjectVersions(l -> l.bucket(bucketName));
+		assertEquals(1, listResponse.versions().size());
+		assertEquals(key, listResponse.versions().get(0).key());
+	}
+
+	/**
+	 * 복제기와 같이 원본 객체들의 복제 상태를 갱신한다.
+	 * PUT /{bucket}/- 에 x-amz-replication-status 헤더와 {"ObjectList":[{"path","versionId"}]} 본문을 보낸다.
+	 */
+	PutObjectResponse backendPutReplicationStatus(S3Client backendClient, String bucketName, String status,
+			List<ObjectIdentifier> objects) {
+		var body = new StringBuilder("{\"ObjectList\":[");
+		for (var i = 0; i < objects.size(); i++) {
+			if (i > 0)
+				body.append(',');
+			body.append(String.format("{\"path\":\"%s\",\"versionId\":\"%s\"}", objects.get(i).key(),
+					objects.get(i).versionId()));
+		}
+		body.append("]}");
+
+		return backendClient.putObject(p -> p.bucket(bucketName).key(REPLICATION_STATUS_KEY)
+				.overrideConfiguration(o -> o
+						.putHeader(BackendHeaders.HEADER_REPLICATION_STATUS, status)
+						.putHeader(BackendHeaders.KSAN_REPLICATION, BackendHeaders.HEADER_DATA)),
+				RequestBody.fromString(body.toString()));
+	}
+
+	/**
+	 * 복제기와 같이 원본 보존을 읽어 대상에 설정한다. 원본에 보존이 없으면 빈 Retention 으로 대상 보존을 제거한다.
+	 */
+	void backendPutObjectRetention(S3Client backendClient, String sourceBucketName, String sourceKey,
+			String targetBucketName, String targetKey, String versionId) {
+		ObjectLockRetention retention;
+		try {
+			retention = backendClient.getObjectRetention(
+					g -> g.bucket(sourceBucketName).key(sourceKey).versionId(versionId)).retention();
+		} catch (AwsServiceException e) {
+			assertEquals(MainData.NO_SUCH_OBJECT_LOCK_CONFIGURATION, e.awsErrorDetails().errorCode());
+			retention = ObjectLockRetention.builder().build();
+		}
+		var target = retention;
+		var response = backendClient.putObjectRetention(p -> p.bucket(targetBucketName).key(targetKey)
+				.versionId(versionId).retention(target).bypassGovernanceRetention(true));
+		assertEquals(200, response.sdkHttpResponse().statusCode());
+	}
+
+	/**
+	 * GetObjectRetention 이 NoSuchObjectLockConfiguration(404) 인지 확인
+	 */
+	void assertNoRetention(S3Client client, String bucketName, String key, String versionId) {
+		var e = assertThrows(AwsServiceException.class,
+				() -> client.getObjectRetention(g -> g.bucket(bucketName).key(key).versionId(versionId)));
+		assertEquals(404, e.statusCode(), key);
+		assertEquals(MainData.NO_SUCH_OBJECT_LOCK_CONFIGURATION, e.awsErrorDetails().errorCode(), key);
 	}
 
 	/**

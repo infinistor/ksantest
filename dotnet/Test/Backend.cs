@@ -1546,6 +1546,218 @@ namespace s3tests.Test
 			}
 		}
 
+		[SkippableFact]
+		[Trait(MainData.Major, "Backend")]
+		[Trait(MainData.Minor, "Replication")]
+		[Trait(MainData.Explanation, "GOVERNANCE 보존을 bypass + 빈 Retention 으로 제거하면 복제 대상의 보존도 제거되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectRetentionRemoveReplication()
+		{
+			TestId = 44;
+			SkipIfAws();
+			var client = GetClient();
+			var backendClient = GetBackendClient();
+			var bucketName = GetNewBucketName();
+			var sourceKey = "TestPutObjectRetentionRemoveReplicationSource";
+			var targetKey = "TestPutObjectRetentionRemoveReplicationTarget";
+			var content = "test content";
+			var now = DateTime.UtcNow.AddDays(1);
+			var retention = new ObjectLockRetention()
+			{
+				Mode = ObjectLockRetentionMode.Governance,
+				RetainUntilDate = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc),
+			};
+
+			// 버킷 생성
+			client.PutBucket(bucketName, objectLockEnabledForBucket: true);
+
+			// 버저닝 활성화
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			// 일반 클라이언트로 업로드
+			var putResponse = client.PutObject(bucketName, sourceKey, body: content);
+			var versionId = putResponse.VersionId;
+
+			try
+			{
+				// Backend 클라이언트로 복사
+				BackendPutObject(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+
+				// 원본에 GOVERNANCE 보존 설정 후 Backend 클라이언트로 보존 복제
+				client.PutObjectRetention(bucketName, sourceKey, retention);
+				BackendPutObjectRetention(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+				var targetResponse = client.GetObjectRetention(bucketName, targetKey, versionId: versionId);
+				Assert.Equal(retention.Mode, targetResponse.Retention.Mode);
+				Assert.Equal(retention.RetainUntilDate, targetResponse.Retention.RetainUntilDate);
+
+				// bypass 없이 빈 Retention 으로 제거하면 거부
+				var e = Assert.Throws<AggregateException>(()
+					=> client.PutObjectRetention(bucketName, sourceKey, new ObjectLockRetention()));
+				Assert.Equal(HttpStatusCode.Forbidden, GetStatus(e));
+				Assert.Equal(MainData.ACCESS_DENIED, GetErrorCode(e));
+
+				// bypass + 빈 Retention 으로 원본 보존 제거
+				client.PutObjectRetention(bucketName, sourceKey, new ObjectLockRetention(), bypassGovernanceRetention: true);
+				AssertNoRetention(client, bucketName, sourceKey, versionId);
+
+				// Backend 클라이언트로 보존 제거 복제
+				BackendPutObjectRetention(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+				AssertNoRetention(client, bucketName, targetKey, versionId);
+
+				// 제거 뒤 다시 설정한 보존도 복제
+				client.PutObjectRetention(bucketName, sourceKey, retention);
+				BackendPutObjectRetention(backendClient, bucketName, sourceKey, bucketName, targetKey, versionId);
+				var againResponse = client.GetObjectRetention(bucketName, targetKey, versionId: versionId);
+				Assert.Equal(retention.Mode, againResponse.Retention.Mode);
+				Assert.Equal(retention.RetainUntilDate, againResponse.Retention.RetainUntilDate);
+			}
+			finally
+			{
+				// 정리
+				foreach (var key in new[] { sourceKey, targetKey })
+					client.DeleteObject(bucketName, key, versionId: versionId, bypassGovernanceRetention: true);
+			}
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Backend")]
+		[Trait(MainData.Minor, "Replication")]
+		[Trait(MainData.Explanation, "복제 상태 갱신 요청(PUT /{bucket}/-)으로 원본의 x-amz-replication-status 가 COMPLETED, FAILED 로 바뀌는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPutObjectReplicationStatus()
+		{
+			TestId = 45;
+			SkipIfAws();
+			var client = GetClient();
+			var backendClient = GetBackendClient();
+			var bucketName = GetNewBucket();
+			var key = "TestPutObjectReplicationStatus";
+
+			// 버저닝 활성화
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			// 일반 클라이언트로 업로드. 갱신 전에는 복제 상태가 없다
+			var versionId = client.PutObject(bucketName, key, body: key).VersionId;
+			Assert.Null(client.HeadObject(bucketName, key, versionId: versionId).ReplicationStatus);
+
+			var objects = new List<KeyVersion>()
+			{
+				new() { Key = key, VersionId = versionId },
+				new() { Key = "not-exist-key", VersionId = versionId },
+			};
+
+			// Backend 클라이언트로 COMPLETED 기록. 없는 객체가 섞여 있어도 200
+			var response = BackendPutReplicationStatus(backendClient, bucketName,
+				BackendHeaders.HEADER_REPLICATION_STATUS_COMPLETED, objects);
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+			Assert.Equal(ReplicationStatus.Completed, client.HeadObject(bucketName, key, versionId: versionId).ReplicationStatus);
+			Assert.Equal(ReplicationStatus.Completed, client.GetObject(bucketName, key, versionId: versionId).ReplicationStatus);
+
+			// Backend 클라이언트로 FAILED 기록
+			BackendPutReplicationStatus(backendClient, bucketName, BackendHeaders.HEADER_REPLICATION_STATUS_FAILED, objects);
+			Assert.Equal(ReplicationStatus.Failed, client.HeadObject(bucketName, key, versionId: versionId).ReplicationStatus);
+
+			// 갱신 요청이 "-" 객체나 새 버전을 만들지 않는다
+			var listResponse = client.ListVersions(bucketName);
+			Assert.Single(listResponse.Versions);
+			Assert.Equal(key, listResponse.Versions[0].Key);
+			Assert.Equal(versionId, listResponse.Versions[0].VersionId);
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Backend")]
+		[Trait(MainData.Minor, "Replication")]
+		[Trait(MainData.Explanation, "복제 상태 갱신 요청에 REPLICA 상태나 빈 ObjectList 를 보내면 InvalidArgument 로 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPutObjectReplicationStatusInvalid()
+		{
+			TestId = 46;
+			SkipIfAws();
+			var client = GetClient();
+			var backendClient = GetBackendClient();
+			var bucketName = GetNewBucket();
+			var key = "TestPutObjectReplicationStatusInvalid";
+
+			// 버저닝 활성화
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			// 일반 클라이언트로 업로드
+			var versionId = client.PutObject(bucketName, key, body: key).VersionId;
+			var objects = new List<KeyVersion>() { new() { Key = key, VersionId = versionId } };
+
+			// REPLICA 는 갱신할 수 없다
+			var e = Assert.Throws<AggregateException>(() => BackendPutReplicationStatus(backendClient, bucketName,
+				BackendHeaders.HEADER_REPLICATION_STATUS_REPLICA, objects));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+
+			// 빈 ObjectList 는 거부된다
+			e = Assert.Throws<AggregateException>(() => BackendPutReplicationStatus(backendClient, bucketName,
+				BackendHeaders.HEADER_REPLICATION_STATUS_COMPLETED, []));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
+
+			// 복제 상태는 그대로 없고, "-" 객체도 만들어지지 않는다
+			Assert.Null(client.HeadObject(bucketName, key, versionId: versionId).ReplicationStatus);
+			var listResponse = client.ListVersions(bucketName);
+			Assert.Single(listResponse.Versions);
+			Assert.Equal(key, listResponse.Versions[0].Key);
+		}
+
+		/// <summary>
+		/// 복제 상태 갱신 API 의 객체 이름. GW 는 Backend 헤더 + PUT + 이 이름 + x-amz-replication-status 헤더를 이 API 로 처리한다.
+		/// </summary>
+		const string ReplicationStatusKey = "-";
+
+		/// <summary>
+		/// 복제기와 같이 원본 객체들의 복제 상태를 갱신한다.
+		/// PUT /{bucket}/- 에 x-amz-replication-status 헤더와 {"ObjectList":[{"path","versionId"}]} 본문을 보낸다.
+		/// </summary>
+		static PutObjectResponse BackendPutReplicationStatus(S3Client backendClient, string bucketName, string status,
+			List<KeyVersion> objects)
+		{
+			var items = new List<string>();
+			foreach (var item in objects)
+				items.Add($"{{\"path\":\"{item.Key}\",\"versionId\":\"{item.VersionId}\"}}");
+			var body = $"{{\"ObjectList\":[{string.Join(",", items)}]}}";
+
+			return backendClient.PutObject(bucketName, ReplicationStatusKey, body: body, headerList: [
+				new(BackendHeaders.HEADER_REPLICATION_STATUS, status),
+				new(BackendHeaders.KSAN_REPLICATION, BackendHeaders.HEADER_DATA),
+			]);
+		}
+
+		/// <summary>
+		/// 복제기와 같이 원본 보존을 읽어 대상에 설정한다. 원본에 보존이 없으면 빈 Retention 으로 대상 보존을 제거한다.
+		/// </summary>
+		static void BackendPutObjectRetention(S3Client backendClient, string sourceBucketName, string sourceKey,
+			string targetBucketName, string targetKey, string versionId)
+		{
+			ObjectLockRetention retention;
+			try
+			{
+				retention = backendClient.GetObjectRetention(sourceBucketName, sourceKey, versionId: versionId).Retention;
+			}
+			catch (AggregateException e)
+			{
+				Assert.Equal(MainData.NO_SUCH_OBJECT_LOCK_CONFIGURATION, GetErrorCode(e));
+				retention = new ObjectLockRetention();
+			}
+			var response = backendClient.PutObjectRetention(targetBucketName, targetKey, retention,
+				versionId: versionId, bypassGovernanceRetention: true);
+			Assert.Equal(HttpStatusCode.OK, response.HttpStatusCode);
+		}
+
+		/// <summary>
+		/// GetObjectRetention 이 NoSuchObjectLockConfiguration(404) 인지 확인
+		/// </summary>
+		static void AssertNoRetention(S3Client client, string bucketName, string key, string versionId)
+		{
+			var e = Assert.Throws<AggregateException>(() => client.GetObjectRetention(bucketName, key, versionId: versionId));
+			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
+			Assert.Equal(MainData.NO_SUCH_OBJECT_LOCK_CONFIGURATION, GetErrorCode(e));
+		}
+
 		/// <summary>
 		/// FULL_OBJECT 체크섬을 지정해 파트 2개로 멀티파트 업로드하고 업로드한 본문을 반환
 		/// </summary>
