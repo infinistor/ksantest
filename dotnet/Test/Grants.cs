@@ -633,6 +633,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delete")]
 		[Trait(MainData.Explanation, "버킷의 acl에서 소유자 정보가 누락될 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 가 Owner 를 비운 ACL 을 보내므로
+		// KSAN 은 요청자를 Owner 로 채워 받는다. AWS 는 400 MalformedACLError 다.
 		public void TestBucketAclRevokeAll()
 		{
 			TestId = 33;
@@ -652,6 +654,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Delete")]
 		[Trait(MainData.Explanation, "오브젝트의 acl에서 소유자 정보가 누락될 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 가 Owner 를 비운 ACL 을 보내므로
+		// KSAN 은 요청자를 Owner 로 채워 받는다. AWS 는 400 MalformedACLError 다.
 		public void TestObjectAclRevokeAll()
 		{
 			TestId = 34;

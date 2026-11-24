@@ -418,6 +418,8 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Delete")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 가 Owner 를 비운 ACL 을 보내므로
+	// KSAN 은 요청자를 Owner 로 채워 받는다. AWS 는 400 MalformedACLError 다.
 	public void testBucketAclRevokeAll() {
 		var key = "testBucketAclRevokeAll";
 		var client = getClient();
@@ -449,6 +451,8 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Delete")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 가 Owner 를 비운 ACL 을 보내므로
+	// KSAN 은 요청자를 Owner 로 채워 받는다. AWS 는 400 MalformedACLError 다.
 	public void testObjectAclRevokeAll() {
 		var key = "testObjectAclRevokeAll";
 		var client = getClient();

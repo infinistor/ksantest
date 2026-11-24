@@ -482,6 +482,8 @@ func TestObjectAclMultiGrants(t *testing.T) {
 }
 
 // 버킷의 acl 설정이 누락될 경우 실패함을 확인
+// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 가 Owner 를 비운 ACL 을 보내므로
+// KSAN 은 요청자를 Owner 로 채워 받는다. AWS 는 400 MalformedACLError 다.
 func TestBucketAclRevokeAll(t *testing.T) {
 	t.Parallel()
 
@@ -501,6 +503,8 @@ func TestBucketAclRevokeAll(t *testing.T) {
 }
 
 // 오브젝트의 acl 설정이 누락될 경우 실패함을 확인
+// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 가 Owner 를 비운 ACL 을 보내므로
+// KSAN 은 요청자를 Owner 로 채워 받는다. AWS 는 400 MalformedACLError 다.
 func TestObjectAclRevokeAll(t *testing.T) {
 	t.Parallel()
 

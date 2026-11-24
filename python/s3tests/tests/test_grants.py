@@ -387,6 +387,8 @@ class TestGrants(S3TestBase):
         self.check_acl(acl, response)
 
     @pytest.mark.tag("Delete")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 가 Owner 를 비운 ACL 을 보내므로
+    # KSAN 은 요청자를 Owner 로 채워 받는다. AWS 는 400 MalformedACLError 다.
     def test_bucket_acl_revoke_all(self):
         key = "test_bucket_acl_revoke_all"
         client = self.get_client()
@@ -402,6 +404,8 @@ class TestGrants(S3TestBase):
             )
 
     @pytest.mark.tag("Delete")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 가 Owner 를 비운 ACL 을 보내므로
+    # KSAN 은 요청자를 Owner 로 채워 받는다. AWS 는 400 MalformedACLError 다.
     def test_object_acl_revoke_all(self):
         key = "test_object_acl_revoke_all"
         client = self.get_client()

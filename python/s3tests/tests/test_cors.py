@@ -58,6 +58,9 @@ class TestCors(S3TestBase):
         )
 
     @pytest.mark.tag("Post")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 CORS 설정이 있는 버킷의
+    # OPTIONS 는 Origin 이 없거나 규칙에 맞지 않아도 200 을 준다(2026-04 InfiniStor 와 같게 맞춤).
+    # AWS 는 Origin 이 없으면 400, 규칙에 맞지 않으면 403 이다.
     def test_cors_origin_response(self):
         client = self.get_client()
         bucket_name = self._create_public_cors_bucket(client, 2)
@@ -133,6 +136,8 @@ class TestCors(S3TestBase):
         )
 
     @pytest.mark.tag("Post")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 허용하지 않은
+    # Access-Control-Request-Headers 로 preflight 해도 200 을 준다(InfiniStor 와 같음). AWS 는 403 이다.
     def test_cors_header_option(self):
         client = self.get_client()
         bucket_name = self._create_public_cors_bucket(client, 4)
