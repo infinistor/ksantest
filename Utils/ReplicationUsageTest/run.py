@@ -20,8 +20,8 @@ import sys
 from datetime import datetime
 
 from cases import CASES
-from common import (CaseFailed, ConfigError, PortalClient, Region, Settings, Target, format_size, logger,
-                    make_s3_client)
+from common import (CaseFailed, ConfigError, PortalClient, Region, Settings, Target, cleanup_old_buckets,
+                    format_size, logger, make_s3_client)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CONFIG = os.path.join(BASE_DIR, "config.ini")
@@ -62,7 +62,7 @@ def append_summary(run_time: str, results) -> None:
 def build_targets(settings: Settings, portal: PortalClient, which: str, regions_wanted: list[str] | None):
     """(원본 리전, 원본 S3 클라이언트, 대상 목록) 을 만든다."""
     home = portal.default_region()
-    s3 = make_s3_client(home.endpoint(settings.use_https), settings.access_key, settings.secret_key)
+    s3 = make_s3_client(settings.source_endpoint(home)[0], settings.access_key, settings.secret_key)
     targets: list[Target] = []
     if which in ("all", "local"):
         targets.append(Target("local", s3))
@@ -98,6 +98,8 @@ def check(settings: Settings, portal: PortalClient, targets_arg: str, regions_wa
         print(f"[FAIL] {e}")
         return EXIT_CONFIG
     print(f"[OK]   포털 {settings.portal_url}, 원본 리전 {describe_region(home, settings.use_https)}")
+    src_url, src_from = settings.source_endpoint(home)
+    print(f"[OK]   원본 S3 {src_url} ({src_from})")
     for label, client in [("원본 사용자 키", s3)] + [
             (f"리전 {t.region.name} 키({t.region.endpoint(settings.use_https)})", t.s3)
             for t in targets if t.region]:
@@ -125,7 +127,12 @@ def main() -> int:
     parser.add_argument("--tc", action="append", metavar="ID", help="실행할 케이스 ID (예: TC01)")
     parser.add_argument("--list", action="store_true", help="케이스 목록만 출력")
     parser.add_argument("--check", action="store_true", help="설정·포털·리전·키 점검만")
+    parser.add_argument("--cleanup-days", type=int, metavar="N",
+                        help="실행 전에 이름의 시각이 N일보다 오래된 시험 버킷(rtest-*)을 지운다 (기본 끔)")
     args = parser.parse_args()
+    if args.cleanup_days is not None and args.cleanup_days < 0:
+        print("--cleanup-days 는 0 이상", file=sys.stderr)
+        return EXIT_CONFIG
 
     if args.list:
         for case in CASES:
@@ -164,6 +171,13 @@ def main() -> int:
                 describe_region(home, settings.use_https),
                 ", ".join("local" if t.region is None else t.region.name for t in targets),
                 settings.file_count, ",".join(format_size(s) for s in settings.file_sizes))
+
+    if args.cleanup_days is not None:
+        # 원본 클라이언트(원본·local 대상)와 remote 대상 클라이언트마다 한 번씩
+        clients = [("원본", s3)] + [(t.region.name, t.s3) for t in targets if t.region]
+        for name, client in clients:
+            n = cleanup_old_buckets(client, args.cleanup_days)
+            logger.info("오래된 시험 버킷 정리(%s, %d일 초과): %d개 삭제", name, args.cleanup_days, n)
 
     results = [case(settings, s3, portal, target).execute() for target in targets for case in selected]
     append_summary(run_time, results)

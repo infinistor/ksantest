@@ -15,9 +15,10 @@ cron 으로 주기 실행하는 것을 전제로 한다. 테스트 케이스는 
   - 리전 주소·포트가 원본과 같으면(같은 시스템) 대상 usage 도 비교하고, 다르면 원본 usage 만 비교한다
     (같은 주소라도 포트가 다르면 앞단 haproxy 가 다른 시스템으로 보낼 수 있어 다른 시스템으로 본다)
 
-원본 S3 주소와 리전 정보는 설정하지 않고 포털에서 가져온다.
+원본 S3 주소와 리전 정보는 포털에서 가져온다.
 
 - 원본 = `GET /api/v2/Regions/Default` (내 리전)의 Address·Port (https 면 SSLPort)
+  - 리전 주소가 실행 PC 에서 풀리지 않는 이름(예: `system-vip`)이면 `[s3] url` 로 원본 주소를 직접 준다. 그 값이 포털 주소보다 우선한다
 - remote 대상 = `GET /api/v2/Regions` 의 나머지 리전
 
 KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로 포털 리전을 찾아 리전으로 바꾸고 키는 버린다.
@@ -37,6 +38,7 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
 
 모든 케이스는 이 8단계 틀(`cases/base.py` 의 `ReplicationCase`)을 쓰고 4단계만 다르다.
 통과하면 버킷을 지우고, 실패하면 원인 확인용으로 남긴다.
+남은 버킷은 `--cleanup-days N` 으로 다음 실행 때 지운다(아래 실행 참고).
 
 비교는 **버전 단위**(`list_object_versions`)다.
 
@@ -80,12 +82,13 @@ cp config.ini.example config.ini   # 값 채우기
 설정 항목은 `config.ini.example` 의 주석 참고.
 
 - `[portal]` `url`, `api_key`
-- `[s3]` `access_key`, `secret_key` (원본 버킷을 만들 기존 사용자 키), `https` (선택)
+- `[s3]` `access_key`, `secret_key` (원본 버킷을 만들 기존 사용자 키), `https` (선택), `url` (선택, 원본 S3 주소 직접 지정)
 - `[test]` `file_count`, `file_sizes` (선택)
 
 대기 시간, 조회 간격, 버킷 접두사 같은 나머지 값은 `common.py` 맨 위 상수에 있다.
 
 먼저 점검부터 한다. 버킷은 만들지 않고 포털 접속, 원본 리전, 원본 사용자 키, remote 리전 키를 확인한다.
+원본 S3 주소 줄에는 어디서 온 값인지(`config` 또는 `포털 기본 리전`)가 붙는다.
 
 ```bash
 python3 run.py --check
@@ -103,7 +106,12 @@ python3 run.py --target remote      # 다른 리전만
 python3 run.py --region kr-ksan-1   # remote 를 이 리전으로만 (여러 번 줄 수 있음)
 python3 run.py --tc TC01            # 지정 케이스만 (여러 번 줄 수 있음)
 python3 run.py --list               # 케이스 목록
+python3 run.py --cleanup-days 3     # 실행 전에 3일보다 오래된 시험 버킷을 지운다
 ```
+
+`--cleanup-days N` 은 기본 꺼져 있다. 켜면 실행 전에 원본 키(원본·local 대상)와 이번 실행의 remote 대상 리전 키로
+버킷 목록을 보고, 이름이 `rtest-*-<yyyyMMddHHmmss>` 이고 그 시각이 N일보다 오래된 버킷을 지운다.
+복제 룰 → 모든 버전·삭제 마커 → 버킷 순서다. 실패는 경고만 남기고 시험은 그대로 돈다.
 
 https 로 확인하려면 `[s3] https = true` 인 설정 파일을 따로 만들어 `--config` 로 준다.
 
@@ -116,7 +124,7 @@ https 로 확인하려면 `[s3] https = true` 인 설정 파일을 따로 만들
 ```bash
 chmod +x run.sh
 # 예: 30분마다
-*/30 * * * * /root/ReplicationUsageTest/run.sh > /dev/null 2>&1
+*/30 * * * * /root/ReplicationUsageTest/run.sh --cleanup-days 3 > /dev/null 2>&1
 ```
 
 ## 결과

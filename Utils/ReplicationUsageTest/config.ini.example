@@ -1,6 +1,6 @@
 ; 복제 usage 테스트 설정 템플릿. config.ini 로 복사해 값을 채운다 (*.ini 는 git 에 올라가지 않는다).
-; S3 주소와 원격 대상은 설정하지 않는다. 포털에서 가져온다.
-;   원본 S3 주소 = 포털 기본 리전(GET /api/v2/Regions/Default) 의 Address·Port(https 면 SSLPort)
+; S3 주소와 원격 대상은 포털에서 가져온다.
+;   원본 S3 주소 = [s3] url 값. 비우면 포털 기본 리전(GET /api/v2/Regions/Default) 의 Address·Port(https 면 SSLPort)
 ;   원격 대상   = 포털에 등록된 나머지 리전(GET /api/v2/Regions). 복제기가 쓰는 리전 키로 대상 버킷을 다룬다
 
 [portal]
@@ -15,8 +15,11 @@ api_key =
 ; [필수] 원본 버킷을 만들 기존 S3 사용자 키 (포털 사용자 목록의 AccessKey·SecretKey)
 access_key =
 secret_key =
-; [선택] true 면 https(리전 SSLPort)로 접속. 비우면 http
+; [선택] true 면 https(리전 SSLPort)로 접속. 비우면 http. url 을 쓰면 원본에는 적용하지 않는다(url 의 스킴을 따름)
 https =
+; [선택] 원본 S3 주소 직접 지정 (http(s)://호스트:포트, 예: http://192.168.31.229:7070)
+;   포털 기본 리전 주소가 이 PC 에서 풀리지 않는 이름(예: system-vip)일 때 쓴다. 비우면 포털 기본 리전 주소
+url =
 
 [test]
 ; [선택] 업로드할 파일 개수. 비우면 10

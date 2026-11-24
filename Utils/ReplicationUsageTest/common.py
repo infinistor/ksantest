@@ -10,7 +10,7 @@ import re
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import boto3
 import requests
@@ -79,6 +79,7 @@ class Settings:
     access_key: str
     secret_key: str
     use_https: bool
+    s3_url: str
     file_count: int
     file_sizes: list[int] = field(default_factory=list)
 
@@ -109,6 +110,9 @@ class Settings:
         https_text = get("s3", "https", required=False).lower()
         if https_text not in ("", "true", "false"):
             raise ConfigError(f"[s3] https 는 true/false: {https_text!r}")
+        s3_url = get("s3", "url", required=False).rstrip("/")
+        if s3_url and not re.fullmatch(r"https?://[^/\s]+", s3_url):
+            raise ConfigError(f"[s3] url 은 http(s)://호스트:포트 형식: {s3_url!r}")
 
         return cls(
             portal_url=get("portal", "url").rstrip("/"),
@@ -116,6 +120,7 @@ class Settings:
             access_key=get("s3", "access_key"),
             secret_key=get("s3", "secret_key"),
             use_https=https_text == "true",
+            s3_url=s3_url,
             file_count=file_count,
             file_sizes=file_sizes,
         )
@@ -123,6 +128,12 @@ class Settings:
     def object_sizes(self) -> list[int]:
         """file_sizes 를 file_count 만큼 돌아가며 배정한 크기 목록."""
         return [self.file_sizes[i % len(self.file_sizes)] for i in range(self.file_count)]
+
+    def source_endpoint(self, home: "Region") -> tuple[str, str]:
+        """원본 S3 주소와 출처. [s3] url 이 있으면 그 값, 없으면 포털 기본 리전 주소."""
+        if self.s3_url:
+            return self.s3_url, "config"
+        return home.endpoint(self.use_https), "포털 기본 리전"
 
 
 # ── 클라이언트 ────────────────────────────────────────────────────────
@@ -347,6 +358,20 @@ def new_bucket_name(kind: str) -> str:
     return f"{BUCKET_PREFIX}-{kind}-{datetime.now():%Y%m%d%H%M%S}"
 
 
+_BUCKET_TIME_RE = re.compile(rf"^{BUCKET_PREFIX}-.+-(\d{{14}})$")
+
+
+def bucket_created_at(bucket: str) -> datetime | None:
+    """new_bucket_name 으로 만든 이름이면 이름의 시각, 아니면 None."""
+    m = _BUCKET_TIME_RE.match(bucket)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(m.group(1), "%Y%m%d%H%M%S")
+    except ValueError:
+        return None
+
+
 def random_body(size: int) -> tuple[bytes, str]:
     body = os.urandom(size)
     return body, hashlib.md5(body).hexdigest()
@@ -376,3 +401,27 @@ def empty_and_delete_bucket(s3, bucket: str) -> None:
         logger.info("버킷 삭제: %s", bucket)
     except Exception as e:  # noqa: BLE001
         logger.warning("버킷 삭제 실패: %s (%s)", bucket, e)
+
+
+def cleanup_old_buckets(s3, days: int, now: datetime | None = None) -> int:
+    """이름의 시각이 days 일보다 오래된 시험 버킷을 지운다(복제 룰 → 버전·삭제 마커 → 버킷).
+    지운 버킷 수를 돌려준다. 실패는 경고만 남긴다."""
+    cutoff = (now or datetime.now()) - timedelta(days=days)
+    try:
+        names = [b["Name"] for b in s3.list_buckets().get("Buckets", [])]
+    except Exception as e:  # noqa: BLE001
+        logger.warning("오래된 시험 버킷 정리: ListBuckets 실패 (%s)", e)
+        return 0
+    old = sorted(n for n in names if (t := bucket_created_at(n)) is not None and t < cutoff)
+    deleted = 0
+    for bucket in old:
+        try:
+            s3.delete_bucket_replication(Bucket=bucket)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("복제 룰 삭제 실패: %s (%s)", bucket, e)
+        empty_and_delete_bucket(s3, bucket)
+        try:
+            s3.head_bucket(Bucket=bucket)
+        except Exception:  # noqa: BLE001
+            deleted += 1
+    return deleted
