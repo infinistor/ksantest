@@ -630,6 +630,44 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "버킷의 acl에서 소유자 정보가 누락될 경우 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketAclRevokeAll()
+		{
+			TestId = 33;
+			var key = "TestBucketAclRevokeAll";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+
+			client.PutObject(bucketName, key, body: key);
+			var response = client.GetBucketACL(bucketName);
+
+			Assert.Throws<AggregateException>(()
+				=> client.PutBucketACL(bucketName, accessControlPolicy: new() { Owner = new(), Grants = response.AccessControlList.Grants }));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
+		[Trait(MainData.Minor, "Delete")]
+		[Trait(MainData.Explanation, "오브젝트의 acl에서 소유자 정보가 누락될 경우 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestObjectAclRevokeAll()
+		{
+			TestId = 34;
+			var key = "TestObjectAclRevokeAll";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+
+			client.PutObject(bucketName, key, body: key);
+			var response = client.GetObjectACL(bucketName, key);
+
+			Assert.Throws<AggregateException>(()
+				=> client.PutObjectACL(bucketName, key, accessControlPolicy: new() { Owner = new(), Grants = response.AccessControlList.Grants }));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "권한 대상 유저의 아이디가 누락될 경우 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]

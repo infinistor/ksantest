@@ -481,6 +481,44 @@ func TestObjectAclMultiGrants(t *testing.T) {
 	}
 }
 
+// 버킷의 acl 설정이 누락될 경우 실패함을 확인
+func TestBucketAclRevokeAll(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket, key := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 33), "revoke-owner"
+	put(t, s, bucket, key, key, nil)
+	emptyOwner := &types.Owner{}
+	out, err := s.client.GetBucketAcl(context.Background(), &s3.GetBucketAclInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{
+		Bucket:              aws.String(bucket),
+		AccessControlPolicy: &types.AccessControlPolicy{Owner: emptyOwner, Grants: out.Grants},
+	})
+	assertS3Error(t, err, 400, "MalformedACLError")
+}
+
+// 오브젝트의 acl 설정이 누락될 경우 실패함을 확인
+func TestObjectAclRevokeAll(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket, key := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 34), "revoke-owner"
+	put(t, s, bucket, key, key, nil)
+	emptyOwner := &types.Owner{}
+	out, err := s.client.GetObjectAcl(context.Background(), &s3.GetObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{
+		Bucket: aws.String(bucket), Key: aws.String(key),
+		AccessControlPolicy: &types.AccessControlPolicy{Owner: emptyOwner, Grants: out.Grants},
+	})
+	assertS3Error(t, err, 400, "MalformedACLError")
+}
+
 // 버킷의 acl 설정에 Id가 누락될 경우 실패함을 확인
 func TestBucketAclRevokeAllId(t *testing.T) {
 	t.Parallel()

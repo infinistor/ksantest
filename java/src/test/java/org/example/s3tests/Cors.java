@@ -55,6 +55,16 @@ class Cors {
 	}
 
 	/**
+	 * 버킷의 cors정보를 URL로 읽고 쓰기 성공/실패 확인
+	 */
+	@Test
+	@Tag("Post")
+	void testCorsOriginResponse() {
+		test.testCorsOriginResponse();
+		testV2.testCorsOriginResponse();
+	}
+
+	/**
 	 * 와일드카드 문자만 입력하여 cors설정을 하였을때 정상적으로 동작하는지 확인
 	 */
 	@Test
@@ -62,6 +72,16 @@ class Cors {
 	void testCorsOriginWildcard() {
 		test.testCorsOriginWildcard();
 		testV2.testCorsOriginWildcard();
+	}
+
+	/**
+	 * cors옵션에서 사용자 추가 헤더를 설정하고 존재하지 않는 헤더를 request 설정한 채로 cors호출하면 실패하는지 확인
+	 */
+	@Test
+	@Tag("Post")
+	void testCorsHeaderOption() {
+		test.testCorsHeaderOption();
+		testV2.testCorsHeaderOption();
 	}
 
 	/**

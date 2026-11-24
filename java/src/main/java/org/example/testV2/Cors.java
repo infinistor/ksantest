@@ -68,6 +68,160 @@ public class Cors extends TestBase {
 
 	@Test
 	@Tag("Post")
+	public void testCorsOriginResponse() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 2);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+
+		var corsConfig = CORSConfiguration.builder();
+		var rules = new ArrayList<CORSRule>();
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("GET"))
+				.allowedOrigins(List.of("*suffix")).build());
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("GET"))
+				.allowedOrigins(List.of("start*end")).build());
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("GET"))
+				.allowedOrigins(List.of("prefix*")).build());
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("PUT"))
+				.allowedOrigins(List.of("*.put")).build());
+		corsConfig.corsRules(rules);
+
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_CORS_CONFIGURATION, e.awsErrorDetails().errorCode());
+
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig.build()));
+
+		var headers = new HashMap<String, String>();
+
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "foo.suffix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "foo.bar");
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.suffix.get");
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
+		headers.clear();
+		headers.put("Origin", "start_end");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "start_end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "start1end");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "start1end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "start12end");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "start12end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "0start12end");
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
+		headers.clear();
+		headers.put("Origin", "prefix");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "prefix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "prefix.suffix");
+		corsRequestAndCheck("GET", bucketName, headers, 200, "prefix.suffix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "bla.prefix");
+		corsRequestAndCheck("GET", bucketName, headers, 200, null, null, null);
+
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		corsRequestAndCheck("GET", bucketName, headers, HttpStatus.SC_NOT_FOUND, "foo.suffix", "GET", "bar");
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("Access-Control-Request-Method", "GET");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, HttpStatus.SC_FORBIDDEN, "foo.suffix", "GET", "bar");
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("Access-Control-Request-Method", "PUT");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, "bar");
+
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("Access-Control-Request-Method", "DELETE");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, "bar");
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, "bar");
+
+		headers.clear();
+		headers.put("Origin", "foo.put");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("PUT", bucketName, headers, HttpStatus.SC_FORBIDDEN, "foo.put", "PUT", "bar");
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		corsRequestAndCheck("GET", bucketName, headers, HttpStatus.SC_NOT_FOUND, "foo.suffix", "GET", "bar");
+
+		headers.clear();
+		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_BAD_REQUEST, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.bla");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.suffix");
+		headers.put("Access-Control-Request-Method", "GET");
+		headers.put("content-length", "0");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "foo.suffix", "GET", "bar");
+		headers.clear();
+		headers.put("Origin", "foo.bar");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.suffix.get");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, null);
+		headers.clear();
+		headers.put("Origin", "start_end");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "start_end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "start1end");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "start1end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "start12end");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "start12end", "GET", null);
+		headers.clear();
+		headers.put("Origin", "0start12end");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, null);
+		headers.clear();
+		headers.put("Origin", "prefix");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "prefix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "prefix.suffix");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "prefix.suffix", "GET", null);
+		headers.clear();
+		headers.put("Origin", "bla.prefix");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.put");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, null);
+		headers.clear();
+		headers.put("Origin", "foo.put");
+		headers.put("Access-Control-Request-Method", "PUT");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, 200, "foo.put", "PUT", null);
+	}
+
+	@Test
+	@Tag("Post")
 	public void testCorsOriginWildcard() {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 3);
@@ -90,6 +244,36 @@ public class Cors extends TestBase {
 		headers.clear();
 		headers.put("Origin", "example.origin");
 		corsRequestAndCheck("GET", bucketName, headers, 200, "*", "GET", null);
+	}
+
+	@Test
+	@Tag("Post")
+	public void testCorsHeaderOption() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 4);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+
+		var corsConfig = CORSConfiguration.builder();
+		var rules = new ArrayList<CORSRule>();
+		rules.add(CORSRule.builder()
+				.allowedMethods(List.of("GET"))
+				.allowedOrigins(List.of("*"))
+				.exposeHeaders(List.of("x-amz-meta-header1"))
+				.build());
+		corsConfig.corsRules(rules);
+
+		var e = assertThrows(AwsServiceException.class, () -> client.getBucketCors(g -> g.bucket(bucketName)));
+		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
+		assertEquals(MainData.NO_SUCH_CORS_CONFIGURATION, e.awsErrorDetails().errorCode());
+
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(corsConfig.build()));
+
+		var headers = new HashMap<String, String>();
+		headers.clear();
+		headers.put("Origin", "example.origin");
+		headers.put("Access-Control-Request-headers", "x-amz-meta-header2");
+		headers.put("Access-Control-Request-Method", "GET");
+		corsRequestAndCheck("OPTIONS", bucketName, headers, HttpStatus.SC_FORBIDDEN, null, null, "bar");
 	}
 
 	@Test

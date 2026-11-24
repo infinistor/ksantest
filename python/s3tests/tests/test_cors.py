@@ -58,6 +58,67 @@ class TestCors(S3TestBase):
         )
 
     @pytest.mark.tag("Post")
+    def test_cors_origin_response(self):
+        client = self.get_client()
+        bucket_name = self._create_public_cors_bucket(client, 2)
+        cors_config = {
+            "CORSRules": [
+                {"AllowedMethods": ["GET"], "AllowedOrigins": ["*suffix"]},
+                {"AllowedMethods": ["GET"], "AllowedOrigins": ["start*end"]},
+                {"AllowedMethods": ["GET"], "AllowedOrigins": ["prefix*"]},
+                {"AllowedMethods": ["PUT"], "AllowedOrigins": ["*.put"]},
+            ]
+        }
+
+        self._assert_no_cors_configuration(client, bucket_name)
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+
+        checks = [
+            ("GET", {}, 200, None, None, None),
+            ("GET", {"Origin": "foo.suffix"}, 200, "foo.suffix", "GET", None),
+            ("GET", {"Origin": "foo.bar"}, 200, None, None, None),
+            ("GET", {"Origin": "foo.suffix.get"}, 200, None, None, None),
+            ("GET", {"Origin": "start_end"}, 200, "start_end", "GET", None),
+            ("GET", {"Origin": "start1end"}, 200, "start1end", "GET", None),
+            ("GET", {"Origin": "start12end"}, 200, "start12end", "GET", None),
+            ("GET", {"Origin": "0start12end"}, 200, None, None, None),
+            ("GET", {"Origin": "prefix"}, 200, "prefix", "GET", None),
+            ("GET", {"Origin": "prefix.suffix"}, 200, "prefix.suffix", "GET", None),
+            ("GET", {"Origin": "bla.prefix"}, 200, None, None, None),
+            ("GET", {"Origin": "foo.suffix"}, 404, "foo.suffix", "GET", "bar"),
+            ("PUT", {"Origin": "foo.suffix", "Access-Control-Request-Method": "GET", "content-length": "0"}, 403, "foo.suffix", "GET", "bar"),
+            ("PUT", {"Origin": "foo.suffix", "Access-Control-Request-Method": "PUT", "content-length": "0"}, 403, None, None, "bar"),
+            ("PUT", {"Origin": "foo.suffix", "Access-Control-Request-Method": "DELETE", "content-length": "0"}, 403, None, None, "bar"),
+            ("PUT", {"Origin": "foo.suffix", "content-length": "0"}, 403, None, None, "bar"),
+            ("PUT", {"Origin": "foo.put", "content-length": "0"}, 403, "foo.put", "PUT", "bar"),
+            ("OPTIONS", {}, 400, None, None, None),
+            ("OPTIONS", {"Origin": "foo.suffix"}, 403, None, None, None),
+            ("OPTIONS", {"Origin": "foo.bla"}, 403, None, None, None),
+            ("OPTIONS", {"Origin": "foo.suffix", "Access-Control-Request-Method": "GET", "content-length": "0"}, 200, "foo.suffix", "GET", "bar"),
+            ("OPTIONS", {"Origin": "foo.bar", "Access-Control-Request-Method": "GET"}, 403, None, None, None),
+            ("OPTIONS", {"Origin": "foo.suffix.get", "Access-Control-Request-Method": "GET"}, 403, None, None, None),
+            ("OPTIONS", {"Origin": "start_end", "Access-Control-Request-Method": "GET"}, 200, "start_end", "GET", None),
+            ("OPTIONS", {"Origin": "start1end", "Access-Control-Request-Method": "GET"}, 200, "start1end", "GET", None),
+            ("OPTIONS", {"Origin": "start12end", "Access-Control-Request-Method": "GET"}, 200, "start12end", "GET", None),
+            ("OPTIONS", {"Origin": "0start12end", "Access-Control-Request-Method": "GET"}, 403, None, None, None),
+            ("OPTIONS", {"Origin": "prefix", "Access-Control-Request-Method": "GET"}, 200, "prefix", "GET", None),
+            ("OPTIONS", {"Origin": "prefix.suffix", "Access-Control-Request-Method": "GET"}, 200, "prefix.suffix", "GET", None),
+            ("OPTIONS", {"Origin": "bla.prefix", "Access-Control-Request-Method": "GET"}, 403, None, None, None),
+            ("OPTIONS", {"Origin": "foo.put", "Access-Control-Request-Method": "GET"}, 403, None, None, None),
+            ("OPTIONS", {"Origin": "foo.put", "Access-Control-Request-Method": "PUT"}, 200, "foo.put", "PUT", None),
+        ]
+        for method, headers, status, allow_origin, allow_methods, key in checks:
+            self.cors_request_and_check(
+                method,
+                bucket_name,
+                headers,
+                status,
+                allow_origin,
+                allow_methods,
+                key,
+            )
+
+    @pytest.mark.tag("Post")
     def test_cors_origin_wildcard(self):
         client = self.get_client()
         bucket_name = self._create_public_cors_bucket(client, 3)
@@ -70,6 +131,30 @@ class TestCors(S3TestBase):
         self.cors_request_and_check(
             "GET", bucket_name, {"Origin": "example.origin"}, 200, "*", "GET"
         )
+
+    @pytest.mark.tag("Post")
+    def test_cors_header_option(self):
+        client = self.get_client()
+        bucket_name = self._create_public_cors_bucket(client, 4)
+        cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedMethods": ["GET"],
+                    "AllowedOrigins": ["*"],
+                    "ExposeHeaders": ["x-amz-meta-header1"],
+                }
+            ]
+        }
+
+        self._assert_no_cors_configuration(client, bucket_name)
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=cors_config)
+
+        headers = {
+            "Origin": "example.origin",
+            "Access-Control-Request-headers": "x-amz-meta-header2",
+            "Access-Control-Request-Method": "GET",
+        }
+        self.cors_request_and_check("OPTIONS", bucket_name, headers, 403, None, None, "bar")
 
     @staticmethod
     def _cors_rule(methods, origins, **extra) -> dict:

@@ -417,6 +417,68 @@ public class Grants extends TestBase {
 	}
 
 	@Test
+	@Tag("Delete")
+	public void testBucketAclRevokeAll() {
+		var key = "testBucketAclRevokeAll";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 33);
+
+		client.putObject(bucketName, key, key);
+		var response = client.getBucketAcl(bucketName);
+
+		var acl1 = new AccessControlList().withOwner(new Owner());
+		for (var Item : response.getGrantsAsList())
+			acl1.grantAllPermissions(Item);
+
+		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, acl1));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.MALFORMED_ACL_ERROR, e.getErrorCode());
+
+		var acl2 = new AccessControlList();
+		acl2.setOwner(response.getOwner());
+
+		client.setBucketAcl(bucketName, acl2);
+
+		var acl3 = new AccessControlList();
+		acl3.setOwner(new Owner());
+
+		e = assertThrows(AmazonServiceException.class, () -> client.setBucketAcl(bucketName, acl3));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.MALFORMED_ACL_ERROR, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("Delete")
+	public void testObjectAclRevokeAll() {
+		var key = "testObjectAclRevokeAll";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 34);
+
+		client.putObject(bucketName, key, key);
+
+		var response = client.getObjectAcl(bucketName, key);
+
+		var acl1 = new AccessControlList();
+		acl1.setOwner(new Owner());
+		for (var Item : response.getGrantsAsList())
+			acl1.grantAllPermissions(Item);
+
+		var e = assertThrows(AmazonServiceException.class, () -> client.setObjectAcl(bucketName, key, acl1));
+		assertEquals(MainData.MALFORMED_ACL_ERROR, e.getErrorCode());
+
+		var acl2 = new AccessControlList();
+		acl2.setOwner(response.getOwner());
+
+		client.setObjectAcl(bucketName, key, acl2);
+
+		var acl3 = new AccessControlList();
+		acl3.setOwner(new Owner());
+
+		e = assertThrows(AmazonServiceException.class, () -> client.setObjectAcl(bucketName, key, acl3));
+		assertEquals(MainData.MALFORMED_ACL_ERROR, e.getErrorCode());
+	}
+
+	@Test
 	@Tag("Error")
 	public void testBucketAclRevokeAllId() {
 		var key = "testBucketAclRevokeAllId";
