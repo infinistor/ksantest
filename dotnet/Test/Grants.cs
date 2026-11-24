@@ -741,6 +741,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "캔드 ACL과 권한 부여 헤더를 함께 쓰면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 x-amz-acl 과 x-amz-grant-* 를 함께 보내면 둘을 합쳐 저장한다.
+		// AWS 는 400 InvalidRequest 다.
 		public void TestAclCannedWithGrantHeader()
 		{
 			TestId = 37;
@@ -766,6 +768,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "캔드 ACL과 본문(AccessControlPolicy)을 함께 쓰면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 x-amz-acl 이 있으면 ACL 본문은 읽지 않고 캔드 ACL 을 적용한다.
+		// AWS 는 400 UnexpectedContent 다.
 		public void TestBucketAclCannedWithBody()
 		{
 			TestId = 38;
@@ -812,6 +816,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "ACL로 버킷 소유자를 바꾸려 하면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 ACL 본문의 Owner 가 실제 소유자와 달라도 기존 소유자로 덮어써 받는다(소유자는 바뀌지 않는다).
+		// AWS 는 403 AccessDenied 다.
 		public void TestBucketAclChangeOwner()
 		{
 			TestId = 41;

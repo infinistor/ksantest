@@ -279,6 +279,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Preflight")]
 		[Trait(MainData.Explanation, "preflight 응답에 허용 헤더, 노출 헤더, max-age, credentials 헤더가 내려오고 허용되지 않은 헤더는 거부되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 OPTIONS 는 Origin 만 보고 규칙을 고르고 항상 200 을 준다.
+		// Access-Control-Allow-Methods 도 GET,PUT 처럼 공백 없이 잇는다. AWS 는 GET, PUT 형식이고 허용하지 않은 헤더는 403 이다.
 		public void TestCorsPreflightHeaders()
 		{
 			TestId = 6;
@@ -323,6 +325,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Preflight")]
 		[Trait(MainData.Explanation, "여러 cors 규칙 중 먼저 선언된 규칙부터 순서대로 적용되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 OPTIONS 는 Origin 만 보고 첫 규칙을 고르고 항상 200 을 준다.
+		// AWS 는 메서드까지 맞는 규칙을 순서대로 찾고, 맞는 규칙이 없으면 403 이다.
 		public void TestCorsRuleOrder()
 		{
 			TestId = 7;

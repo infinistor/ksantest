@@ -209,6 +209,8 @@ class TestCors(S3TestBase):
         assert second["MaxAgeSeconds"] == 20
 
     @pytest.mark.tag("Preflight")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 OPTIONS 는 Origin 만 보고 규칙을 고르고 항상 200 을 준다.
+    # Access-Control-Allow-Methods 도 GET,PUT 처럼 공백 없이 잇는다. AWS 는 GET, PUT 형식이고 허용하지 않은 헤더는 403 이다.
     def test_cors_preflight_headers(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 6)
@@ -255,6 +257,8 @@ class TestCors(S3TestBase):
         assert headers.get("access-control-allow-origin") is None
 
     @pytest.mark.tag("Preflight")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 OPTIONS 는 Origin 만 보고 첫 규칙을 고르고 항상 200 을 준다.
+    # AWS 는 메서드까지 맞는 규칙을 순서대로 찾고, 맞는 규칙이 없으면 403 이다.
     def test_cors_rule_order(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 7)

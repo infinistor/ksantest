@@ -510,6 +510,8 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("ERROR")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 ACL 본문의 Owner 가 실제 소유자와 달라도 기존 소유자로 덮어써 받는다(소유자는 바뀌지 않는다).
+	// AWS 는 403 AccessDenied 다.
 	public void testBucketAclChangeOwner() {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 41);

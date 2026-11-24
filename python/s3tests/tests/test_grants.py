@@ -464,6 +464,8 @@ class TestGrants(S3TestBase):
         )
 
     @pytest.mark.tag("ERROR")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 x-amz-acl 과 x-amz-grant-* 를 함께 보내면 둘을 합쳐 저장한다.
+    # AWS 는 400 InvalidRequest 다.
     def test_acl_canned_with_grant_header(self):
         key = "test_acl_canned_with_grant_header"
         client = self.get_client()
@@ -480,6 +482,8 @@ class TestGrants(S3TestBase):
             self.assert_client_error(request, 400, md.INVALID_REQUEST)
 
     @pytest.mark.tag("ERROR")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 x-amz-acl 이 있으면 ACL 본문은 읽지 않고 캔드 ACL 을 적용한다.
+    # AWS 는 400 UnexpectedContent 다.
     def test_bucket_acl_canned_with_body(self):
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 38)
@@ -516,6 +520,8 @@ class TestGrants(S3TestBase):
         )
 
     @pytest.mark.tag("ERROR")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 ACL 본문의 Owner 가 실제 소유자와 달라도 기존 소유자로 덮어써 받는다(소유자는 바뀌지 않는다).
+    # AWS 는 403 AccessDenied 다.
     def test_bucket_acl_change_owner(self):
         client = self.get_client()
         bucket_name = self.create_bucket_canned_acl(client, 41)

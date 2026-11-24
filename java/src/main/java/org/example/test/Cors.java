@@ -308,6 +308,8 @@ public class Cors extends TestBase {
 
 	@Test
 	@Tag("Preflight")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 OPTIONS 는 Origin 만 보고 규칙을 고르고 항상 200 을 준다.
+	// Access-Control-Allow-Methods 도 GET,PUT 처럼 공백 없이 잇는다. AWS 는 GET, PUT 형식이고 허용하지 않은 헤더는 403 이다.
 	public void testCorsPreflightHeaders() {
 		var client = getClient();
 		var bucketName = createBucket(client, 6);
@@ -346,6 +348,8 @@ public class Cors extends TestBase {
 
 	@Test
 	@Tag("Preflight")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 OPTIONS 는 Origin 만 보고 첫 규칙을 고르고 항상 200 을 준다.
+	// AWS 는 메서드까지 맞는 규칙을 순서대로 찾고, 맞는 규칙이 없으면 403 이다.
 	public void testCorsRuleOrder() {
 		var client = getClient();
 		var bucketName = createBucket(client, 7);

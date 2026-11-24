@@ -404,6 +404,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ACL")]
 		[Trait(MainData.Explanation, "캔드 ACL 과 권한 부여 헤더를 함께 주면 버킷 생성이 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 버킷 생성에서 x-amz-acl 과 x-amz-grant-* 를 함께 보내면 둘을 합쳐 저장한다.
+		// AWS 는 400 InvalidRequest 다.
 		public void TestBucketCreateAclWithGrant()
 		{
 			TestId = 32;
