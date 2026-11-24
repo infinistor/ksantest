@@ -21,6 +21,19 @@ cron 으로 주기 실행하는 것을 전제로 한다. 테스트 케이스는 
   - 리전 주소가 실행 PC 에서 풀리지 않는 이름(예: `system-vip`)이면 `[s3] url` 로 원본 주소를 직접 준다. 그 값이 포털 주소보다 우선한다
 - remote 대상 = `GET /api/v2/Regions` 의 나머지 리전
 
+포털은 KSAN 과 InfiniStor(IFS) 둘 다 쓸 수 있다. `[portal] type` 으로 고른다(비우면 ksan).
+
+| | ksan | ifs |
+|---|---|---|
+| 인증 | `Authorization: Bearer <키>` | `Authorization: <키>` |
+| 리전 목록 | `GET /api/v2/Regions` | `GET /api/v1/Region` (SSL 포트 필드는 HttpsPort) |
+| 원본 리전 | `GET /api/v2/Regions/Default` | API 가 없다. `[portal] region` 이름, 없으면 `[s3] url` 주소·포트와 같은 리전(하나일 때) |
+| bucket usage | `GET /api/v2/S3Api/Buckets/<버킷>` | `GET /api/v1/ExternalApi/Buckets/<버킷>` |
+
+- 두 포털 모두 usage 는 버킷 주인의 키를 헤더(AccessKey·SecretKey)로 줘서 FileCount·UsedSize 를 읽는다
+- ifs 는 실패해도 HTTP 200 이고 응답 Result 가 1 이 아니다. 그때는 실패로 본다
+- `[portal] region` 은 ksan 에서도 쓸 수 있다. 값이 있으면 기본 리전 API 대신 그 이름의 리전을 원본으로 본다
+
 KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로 포털 리전을 찾아 리전으로 바꾸고 키는 버린다.
 그래서 어느 형식이든 원본 포털에 대상 리전이 등록돼 있어야 한다.
 
@@ -34,7 +47,7 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
   5. 복제 완료까지 대기 (dst 가 기대와 같아질 때까지)
   6. 버전 비교
   7. 원본 복제 상태 비교 (원본 HeadObject 의 `x-amz-replication-status`)
-  8. bucket usage 비교 (포털 API `GET /api/v2/S3Api/Buckets/<버킷>` 의 FileCount·UsedSize)
+  8. bucket usage 비교 (포털 API 의 FileCount·UsedSize. ksan `GET /api/v2/S3Api/Buckets/<버킷>`, ifs `GET /api/v1/ExternalApi/Buckets/<버킷>`)
 
 모든 케이스는 이 8단계 틀(`cases/base.py` 의 `ReplicationCase`)을 쓰고 4단계만 다르다.
 통과하면 버킷을 지우고, 실패하면 원인 확인용으로 남긴다.
@@ -62,7 +75,7 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
 | TC07 | 삭제 마커 복제 켬 | 마커가 같은 versionId 로 |
 | TC08 | 버전 지정 삭제 | 복제 안 됨 → usage 원본 1버전·대상 2버전 |
 | TC09 | CopyObject | 같은 버킷·다른 버킷(복제 없는 aux)에서 Copy |
-| TC10 | Multipart | 5M+5M+1M 파트, ETag `-3` |
+| TC10 | Multipart | 5M+5M+1M 파트. 원본 ETag `-3` 확인, 대상은 ETag 대신 내려받은 내용 MD5 비교(복제기가 PartSize 단위로 다시 잘라 올려 ETag 가 달라짐) |
 | TC11 | 체크섬 | CRC32·CRC32C·CRC64NVME·SHA1·SHA256 값 일치(값은 직접 계산해 보냄, awscrt 불필요) |
 | TC12 | 태그 변경 | 복제 후 PutObjectTagging·DeleteObjectTagging 반영, usage 이중 집계 없음 |
 | TC13 | SSE-S3 원본·대상 | 두 버킷 기본 암호화 AES256, 대상도 암호화 |
@@ -81,7 +94,7 @@ cp config.ini.example config.ini   # 값 채우기
 
 설정 항목은 `config.ini.example` 의 주석 참고.
 
-- `[portal]` `url`, `api_key`
+- `[portal]` `url`, `api_key`, `type` (선택, ksan·ifs), `region` (선택, 원본 리전 이름)
 - `[s3]` `access_key`, `secret_key` (원본 버킷을 만들 기존 사용자 키), `https` (선택), `url` (선택, 원본 S3 주소 직접 지정)
 - `[test]` `file_count`, `file_sizes` (선택)
 

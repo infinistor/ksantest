@@ -4,6 +4,13 @@
 ;   원격 대상   = 포털에 등록된 나머지 리전(GET /api/v2/Regions). 복제기가 쓰는 리전 키로 대상 버킷을 다룬다
 
 [portal]
+; [선택] 포털 종류: ksan 또는 ifs(InfiniStor). 비우면 ksan
+;   ksan = /api/v2 (Regions/Default·Regions·S3Api/Buckets), Authorization: Bearer <키>
+;   ifs  = /api/v1 (Region·ExternalApi/Buckets), Authorization: <키>
+type =
+; [선택] 원본 리전 이름. 비우면 ksan 은 포털 기본 리전, ifs 는 [s3] url 주소·포트와 같은 리전(하나일 때)
+;   ifs 에 같은 주소의 리전이 여럿이면(예: 227 kr-west-1·kr-west-2) 꼭 적는다. S3Backend 설정 Region 값과 같게
+region =
 ; [필수] 포털 API 주소 (https://호스트:포트). 브라우저 UI 주소가 아니라 API 포트.
 ;   서버 /usr/local/ksan/etc/ksanAgent.conf 의 PortalHost·PortalPort 참고 (예: https://192.168.11.151:7554)
 url =

@@ -11,6 +11,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
 import boto3
 import requests
@@ -33,10 +34,19 @@ USAGE_TIMEOUT_SEC = 300
 USAGE_POLL_SEC = 10
 KEEP_BUCKETS_ON_FAIL = True
 
+# 포털 종류. 리전·usage API 경로와 인증 헤더가 다르다
+PORTAL_TYPES = ("ksan", "ifs")
+DEFAULT_PORTAL_TYPE = "ksan"
+PORTAL_TYPE_ALIASES = {"infinistor": "ifs"}
+# KSAN 포털
 PORTAL_BUCKET_PATH = "/api/v2/S3Api/Buckets/{bucket}"
 PORTAL_DEFAULT_REGION_PATH = "/api/v2/Regions/Default"  # 원본 시스템(내 리전)
 PORTAL_REGIONS_PATH = "/api/v2/Regions"
 PORTAL_AUTH_SCHEME = "Bearer"
+# InfiniStor 포털. 내 리전을 알려 주는 API 가 없어 [portal] region 또는 [s3] url 주소로 고른다
+IFS_BUCKET_PATH = "/api/v1/ExternalApi/Buckets/{bucket}"  # 버킷 주인 키(accessKey·secretKey 헤더)로 조회
+IFS_REGIONS_PATH = "/api/v1/Region"
+IFS_RESULT_SUCCESS = 1
 
 SIZE_UNITS = {"": 1, "B": 1, "K": 1024, "M": 1024 ** 2, "G": 1024 ** 3}
 
@@ -76,6 +86,8 @@ def format_size(size: int) -> str:
 class Settings:
     portal_url: str
     api_key: str
+    portal_type: str
+    home_region: str
     access_key: str
     secret_key: str
     use_https: bool
@@ -114,9 +126,16 @@ class Settings:
         if s3_url and not re.fullmatch(r"https?://[^/\s]+", s3_url):
             raise ConfigError(f"[s3] url 은 http(s)://호스트:포트 형식: {s3_url!r}")
 
+        portal_type = (get("portal", "type", required=False) or DEFAULT_PORTAL_TYPE).lower()
+        portal_type = PORTAL_TYPE_ALIASES.get(portal_type, portal_type)
+        if portal_type not in PORTAL_TYPES:
+            raise ConfigError(f"[portal] type 은 {'·'.join(PORTAL_TYPES)} 중 하나: {portal_type!r}")
+
         return cls(
             portal_url=get("portal", "url").rstrip("/"),
             api_key=get("portal", "api_key"),
+            portal_type=portal_type,
+            home_region=get("portal", "region", required=False),
             access_key=get("s3", "access_key"),
             secret_key=get("s3", "secret_key"),
             use_https=https_text == "true",
@@ -176,8 +195,9 @@ class Region:
 
     @classmethod
     def from_api(cls, d: dict) -> "Region":
+        # SSL 포트 필드 이름: KSAN SSLPort, InfiniStor HttpsPort
         return cls(str(_get_ci(d, "Name") or ""), str(_get_ci(d, "Address") or ""),
-                   int(_get_ci(d, "Port") or 0), int(_get_ci(d, "SSLPort") or 0),
+                   int(_get_ci(d, "Port") or 0), int(_get_ci(d, "SSLPort") or _get_ci(d, "HttpsPort") or 0),
                    str(_get_ci(d, "AccessKey") or ""), str(_get_ci(d, "SecretKey") or ""))
 
     def endpoint(self, https: bool) -> str:
@@ -185,12 +205,18 @@ class Region:
 
 
 class PortalClient:
+    """포털 호출. KSAN(/api/v2, Bearer)과 InfiniStor(/api/v1, 키 그대로)를 [portal] type 으로 나눈다.
+    응답은 둘 다 {"Data": ...} 봉투이고 리전·버킷 필드 이름(Name·Address·Port·FileCount·UsedSize)도 같다."""
+
     def __init__(self, settings: Settings):
+        self.settings = settings
+        self.is_ifs = settings.portal_type == "ifs"
         self.base_url = settings.portal_url
         self.access_key, self.secret_key = settings.access_key, settings.secret_key
         self.session = requests.Session()
         self.session.verify = VERIFY_TLS
-        self.session.headers.update({"Authorization": f"{PORTAL_AUTH_SCHEME} {settings.api_key}"})
+        auth = settings.api_key if self.is_ifs else f"{PORTAL_AUTH_SCHEME} {settings.api_key}"
+        self.session.headers.update({"Authorization": auth})
 
     def _get(self, path: str, headers: dict | None = None):
         url = self.base_url + path
@@ -201,20 +227,47 @@ class PortalClient:
         if r.status_code != 200:
             raise CaseFailed(f"포털 요청 실패: GET {url} → {r.status_code} {r.text[:300]}")
         body = r.json()
+        # InfiniStor 는 실패해도 HTTP 200 에 Result 가 1 이 아니다
+        if self.is_ifs and isinstance(body, dict) and _get_ci(body, "Result") is not None                 and _get_ci(body, "Result") != IFS_RESULT_SUCCESS:
+            raise CaseFailed(f"포털 요청 실패: GET {url} → Result {_get_ci(body, 'Result')} "
+                             f"{_get_ci(body, 'Code')} {_get_ci(body, 'Message')}")
         # ResponseData 봉투({"Data": ...})로 오거나 내용이 바로 온다
         if isinstance(body, dict) and _get_ci(body, "Data") is not None:
             return _get_ci(body, "Data")
         return body
 
     def default_region(self) -> Region:
+        """원본 리전(내 리전). [portal] region 이 있으면 그 이름, 없으면 KSAN 은 기본 리전 API,
+        InfiniStor 는 [s3] url 의 주소·포트와 같은 리전이 하나뿐일 때 그 리전."""
+        if self.settings.home_region:
+            found = [r for r in self.regions() if r.name == self.settings.home_region]
+            if not found:
+                raise ConfigError(f"[portal] region {self.settings.home_region!r} 이 포털 리전 목록에 없음 "
+                                  f"({', '.join(r.name for r in self.regions()) or '없음'})")
+            return found[0]
+        if self.is_ifs:
+            return self._ifs_home_region()
         data = self._get(PORTAL_DEFAULT_REGION_PATH)
         if not isinstance(data, dict) or not _get_ci(data, "Address"):
             raise CaseFailed(f"포털 기본 리전 응답에 Address 가 없음: {data}")
         return Region.from_api(data)
 
+    def _ifs_home_region(self) -> Region:
+        regions = self.regions()
+        if not self.settings.s3_url:
+            raise ConfigError("InfiniStor 포털은 내 리전 API 가 없어 [portal] region 또는 [s3] url 이 필요함")
+        parsed = urlparse(self.settings.s3_url)
+        matched = [r for r in regions if r.address == parsed.hostname
+                   and parsed.port in (r.port, r.ssl_port)]
+        if len(matched) != 1:
+            names = ", ".join(r.name for r in (matched or regions)) or "없음"
+            raise ConfigError(f"[s3] url 주소와 같은 리전이 {len(matched)}개라 원본 리전을 정할 수 없음 "
+                              f"([portal] region 에 이름을 적는다: {names})")
+        return matched[0]
+
     def regions(self) -> list[Region]:
         """리전 목록. 같은 이름이 주소(IP·도메인)만 달리해 여러 번 오면 하나로 줄이고 IP 주소를 고른다."""
-        data = self._get(PORTAL_REGIONS_PATH)
+        data = self._get(IFS_REGIONS_PATH if self.is_ifs else PORTAL_REGIONS_PATH)
         if isinstance(data, dict):
             data = _get_ci(data, "Items") or []
         by_name: dict[str, Region] = {}
@@ -226,7 +279,8 @@ class PortalClient:
 
     def bucket_usage(self, bucket: str, access_key: str | None = None, secret_key: str | None = None) -> Usage:
         """버킷 usage. 포털은 AccessKey·SecretKey 헤더의 사용자로 버킷을 찾으므로 버킷 주인의 키를 준다."""
-        data = self._get(PORTAL_BUCKET_PATH.format(bucket=bucket), headers={
+        path = IFS_BUCKET_PATH if self.is_ifs else PORTAL_BUCKET_PATH
+        data = self._get(path.format(bucket=bucket), headers={
             "AccessKey": access_key or self.access_key, "SecretKey": secret_key or self.secret_key})
         if not isinstance(data, dict) or _get_ci(data, "FileCount") is None:
             raise CaseFailed(f"포털 응답에 FileCount 가 없음: {str(data)[:300]}")

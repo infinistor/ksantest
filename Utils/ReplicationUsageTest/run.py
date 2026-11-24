@@ -97,7 +97,9 @@ def check(settings: Settings, portal: PortalClient, targets_arg: str, regions_wa
     except (CaseFailed, ConfigError) as e:
         print(f"[FAIL] {e}")
         return EXIT_CONFIG
-    print(f"[OK]   포털 {settings.portal_url}, 원본 리전 {describe_region(home, settings.use_https)}")
+    print(f"[OK]   포털 {settings.portal_url} ({settings.portal_type}), "
+          f"원본 리전 {describe_region(home, settings.use_https)}"
+          f"{' ([portal] region)' if settings.home_region else ''}")
     src_url, src_from = settings.source_endpoint(home)
     print(f"[OK]   원본 S3 {src_url} ({src_from})")
     for label, client in [("원본 사용자 키", s3)] + [
