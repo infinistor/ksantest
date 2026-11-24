@@ -1172,6 +1172,110 @@ class TestBackend(S3TestBase):
                 client, bucket_name, backend_key, None, algorithm, checksum.calculate_checksum(algorithm, backend_body)
             )
 
+    @pytest.mark.tag("MULTIPART")
+    def test_multipart_upload_checksum_replication(self):
+        """복제기와 같이 원본 체크섬 헤더(객체 전체 값)를 멀티파트 시작 요청에 복사하고 파트를 다르게 나눠
+        Backend 헤더로 업로드해도 성공하는지 확인 (COMPOSITE, FULL_OBJECT)"""
+        self.skip_if_aws()
+        client = self.get_client()
+        backend_client = self.get_backend_client()
+        bucket_name = self.create_bucket(client, 47)
+
+        self.check_configure_versioning_retry(bucket_name, "Enabled")
+
+        # 반복마다 값이 바뀌므로 핸들러는 한 번만 등록하고 값을 바꿔 끼운다
+        current = {"checksum_headers": {}, "version_id": ""}
+
+        def _inject_checksum(request, **kwargs):
+            for name, value in current["checksum_headers"].items():
+                request.headers[name] = value
+
+        def _inject_version(request, **kwargs):
+            request.headers[bh.IFS_VERSION_ID] = current["version_id"]
+            request.headers[bh.KSAN_VERSION_ID] = current["version_id"]
+
+        backend_client.meta.events.register("before-sign.s3.CreateMultipartUpload", _inject_checksum)
+        backend_client.meta.events.register("before-sign.s3.CompleteMultipartUpload", _inject_version)
+
+        for checksum_type, algorithms in (
+            ("COMPOSITE", checksum.COMPOSITE_ALGORITHMS),
+            ("FULL_OBJECT", checksum.FULL_OBJECT_ALGORITHMS),
+        ):
+            for algorithm in REPLICATION_CHECKSUMS:
+                if algorithm not in algorithms:
+                    continue
+                source_key = f"source/{checksum_type}/{algorithm}"
+                target_key = f"target/{checksum_type}/{algorithm}"
+
+                # 일반 클라이언트로 6MB + 5MB 멀티파트 업로드
+                upload_data = MultipartUploadV2Data()
+                upload_data.upload_id = client.create_multipart_upload(
+                    Bucket=bucket_name, Key=source_key, ChecksumType=checksum_type, ChecksumAlgorithm=algorithm
+                )["UploadId"]
+                for part in utils.generate_random_string(6 * md.MB, 5 * md.MB):
+                    upload_data.append_body(part)
+                    part_params = checksum.apply_put_checksum_params(
+                        {
+                            "Bucket": bucket_name,
+                            "Key": source_key,
+                            "UploadId": upload_data.upload_id,
+                            "PartNumber": upload_data.next_part_number(),
+                            "Body": part.encode("utf-8"),
+                        },
+                        algorithm,
+                        part,
+                    )
+                    upload_data.add_part_with_checksum(algorithm, client.upload_part(**part_params))
+                version_id = client.complete_multipart_upload(
+                    Bucket=bucket_name,
+                    Key=source_key,
+                    UploadId=upload_data.upload_id,
+                    ChecksumType=checksum_type,
+                    MultipartUpload={"Parts": upload_data.parts},
+                )["VersionId"]
+                body = upload_data.get_body()
+                if checksum_type == "COMPOSITE":
+                    value = checksum.calculate_checksum_by_base64(
+                        algorithm, [checksum.get_checksum(p, algorithm) for p in upload_data.parts]
+                    )
+                else:
+                    value = checksum.calculate_checksum(algorithm, body)
+                self._check_stored_checksum(client, bucket_name, source_key, version_id, algorithm, value)
+
+                # 복제기와 같이 Backend 클라이언트로 원본을 HEAD 하고 체크섬 헤더를 멀티파트 시작 요청에 복사
+                head = backend_client.head_object(Bucket=bucket_name, Key=source_key, VersionId=version_id)
+                current["checksum_headers"] = {
+                    name: value
+                    for name, value in head["ResponseMetadata"]["HTTPHeaders"].items()
+                    if name.lower().startswith("x-amz-checksum-")
+                }
+                target_upload_id = backend_client.create_multipart_upload(Bucket=bucket_name, Key=target_key)[
+                    "UploadId"
+                ]
+
+                # 원본과 다른 경계(5MB 단위)로 나눠 체크섬 없이 업로드
+                target_parts = MultipartUploadV2Data()
+                for start in range(0, len(body), 5 * md.MB):
+                    response = backend_client.upload_part(
+                        Bucket=bucket_name,
+                        Key=target_key,
+                        UploadId=target_upload_id,
+                        PartNumber=target_parts.next_part_number(),
+                        Body=body[start : start + 5 * md.MB].encode("utf-8"),
+                    )
+                    target_parts.add_part(response["ETag"])
+                current["version_id"] = version_id
+                backend_client.complete_multipart_upload(
+                    Bucket=bucket_name,
+                    Key=target_key,
+                    UploadId=target_upload_id,
+                    MultipartUpload={"Parts": target_parts.parts},
+                )
+
+                # 업로드가 성공하고 내용이 같다. 대상 체크섬은 보지 않는다
+                response = client.get_object(Bucket=bucket_name, Key=target_key, VersionId=version_id)
+                assert response["Body"].read().decode("utf-8") == body, target_key
+
     @pytest.mark.tag("Replication")
     def test_put_object_retention_remove_replication(self):
         """GOVERNANCE 보존을 bypass + 빈 Retention 으로 제거하면 복제 대상의 보존도 제거되는지 확인"""

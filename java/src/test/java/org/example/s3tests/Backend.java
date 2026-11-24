@@ -435,6 +435,16 @@ public class Backend {
 	}
 
 	/**
+	 * [Versioning] 복제기와 같이 원본 체크섬 헤더(객체 전체 값)를 멀티파트 시작 요청에 복사하고 파트를 다르게 나눠
+	 * Backend 헤더로 업로드해도 성공하는지 확인 (COMPOSITE, FULL_OBJECT)
+	 */
+	@Test
+	@Tag("MULTIPART")
+	void testMultipartUploadChecksumReplication() {
+		testV2.testMultipartUploadChecksumReplication();
+	}
+
+	/**
 	 * GOVERNANCE 보존을 bypass + 빈 Retention 으로 제거하면 복제 대상의 보존도 제거되는지 확인
 	 */
 	@Test

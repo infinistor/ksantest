@@ -1548,6 +1548,89 @@ namespace s3tests.Test
 
 		[SkippableFact]
 		[Trait(MainData.Major, "Backend")]
+		[Trait(MainData.Minor, "Versioning")]
+		[Trait(MainData.Explanation, "[Versioning] 복제기와 같이 원본 체크섬 헤더(객체 전체 값)를 멀티파트 시작 요청에 복사하고 파트를 다르게 나눠 Backend 헤더로 업로드해도 성공하는지 확인 (COMPOSITE, FULL_OBJECT)")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestMultipartUploadChecksumReplication()
+		{
+			TestId = 47;
+			SkipIfAws();
+			var client = GetClient();
+			var backendClient = GetBackendClient();
+			var bucketName = GetNewBucket();
+
+			// 버저닝 활성화
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+
+			foreach (var type in new[] { ChecksumType.COMPOSITE, ChecksumType.FULL_OBJECT })
+			{
+				var algorithms = type == ChecksumType.COMPOSITE ? CheckSum.CompositeAlgorithms : CheckSum.FullObjectAlgorithms;
+				foreach (var checksum in ReplicationChecksums)
+				{
+					if (!((IList<ChecksumAlgorithm>)algorithms).Contains(checksum))
+						continue;
+					var sourceKey = $"source/{type.Value}/{checksum.Value}";
+					var targetKey = $"target/{type.Value}/{checksum.Value}";
+
+					// 일반 클라이언트로 6MB + 5MB 멀티파트 업로드
+					var uploadData = new MultipartUploadData();
+					uploadData.UploadId = client.InitiateMultipartUpload(bucketName, sourceKey, checksumAlgorithm: checksum,
+						checksumType: type).UploadId;
+					var partChecksums = new List<string>();
+					foreach (var part in new[] { S3Utils.RandomTextToLong(6 * MainData.MB), S3Utils.RandomTextToLong(5 * MainData.MB) })
+					{
+						uploadData.AppendBody(part);
+						var partResponse = client.UploadPart(bucketName, sourceKey, uploadData.UploadId, part,
+							uploadData.NextPartNumber, checksumAlgorithm: checksum);
+						partChecksums.Add(CheckSum.GetChecksum(partResponse, checksum));
+						uploadData.AddPart(checksum, partResponse);
+					}
+					var versionId = client.CompleteMultipartUpload(bucketName, sourceKey, uploadData.UploadId, uploadData.Parts,
+						checksumType: type).VersionId;
+					var body = uploadData.Body;
+					var value = type == ChecksumType.COMPOSITE
+						? CheckSum.CalculateChecksumByBase64(checksum, partChecksums)
+						: CheckSum.CalculateChecksum(checksum, body);
+					CheckStoredChecksum(client, bucketName, sourceKey, versionId, checksum, value);
+
+					// 복제기와 같이 Backend 클라이언트로 원본을 HEAD 하고 체크섬 헤더를 멀티파트 시작 요청에 복사
+					var head = backendClient.HeadObject(bucketName, sourceKey, versionId: versionId);
+					var checksumHeaders = new List<KeyValuePair<string, string>>();
+					foreach (var algorithm in ReplicationChecksums)
+					{
+						var headerValue = CheckSum.GetChecksum(head, algorithm);
+						if (headerValue != null)
+							checksumHeaders.Add(new($"x-amz-checksum-{algorithm.Value.ToLowerInvariant()}", headerValue));
+					}
+					if (head.ChecksumType != null)
+						checksumHeaders.Add(new("x-amz-checksum-type", head.ChecksumType.Value));
+					var targetUploadId = backendClient.InitiateMultipartUpload(bucketName, targetKey,
+						headerList: checksumHeaders).UploadId;
+
+					// 원본과 다른 경계(5MB 단위)로 나눠 체크섬 없이 업로드
+					var targetParts = new MultipartUploadData();
+					for (var start = 0; start < body.Length; start += 5 * MainData.MB)
+					{
+						var part = body.Substring(start, Math.Min(5 * MainData.MB, body.Length - start));
+						var partResponse = backendClient.UploadPart(bucketName, targetKey, targetUploadId, part,
+							targetParts.NextPartNumber);
+						targetParts.AddPart(partResponse.ETag);
+					}
+					backendClient.CompleteMultipartUpload(bucketName, targetKey, targetUploadId, targetParts.Parts,
+						headerList: [
+							new(BackendHeaders.IFS_VERSION_ID, versionId),
+							new(BackendHeaders.KSAN_VERSION_ID, versionId),
+						]);
+
+					// 업로드가 성공하고 내용이 같다. 대상 체크섬은 보지 않는다
+					var getResponse = client.GetObject(bucketName, targetKey, versionId: versionId);
+					Assert.True(body == S3Utils.GetBody(getResponse), targetKey);
+				}
+			}
+		}
+
+		[SkippableFact]
+		[Trait(MainData.Major, "Backend")]
 		[Trait(MainData.Minor, "Replication")]
 		[Trait(MainData.Explanation, "GOVERNANCE 보존을 bypass + 빈 Retention 으로 제거하면 복제 대상의 보존도 제거되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]

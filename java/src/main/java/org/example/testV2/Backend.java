@@ -1500,6 +1500,80 @@ public class Backend extends TestBase {
 	}
 
 	/**
+	 * [Versioning] 복제기와 같이 원본 체크섬 헤더(객체 전체 값)를 멀티파트 시작 요청에 복사하고 파트를 다르게 나눠
+	 * Backend 헤더로 업로드해도 성공하는지 확인 (COMPOSITE, FULL_OBJECT)
+	 */
+	public void testMultipartUploadChecksumReplication() {
+		assumeFalse(config.isAWS());
+		var client = getClient();
+		var backendClient = getBackendClient();
+		var bucketName = createBucket(client, 47);
+
+		// 버저닝 활성화
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+
+		for (var type : List.of(ChecksumType.COMPOSITE, ChecksumType.FULL_OBJECT)) {
+			var algorithms = type == ChecksumType.COMPOSITE ? CheckSum.COMPOSITE_ALGORITHMS
+					: CheckSum.FULL_OBJECT_ALGORITHMS;
+			for (var checksum : REPLICATION_CHECKSUMS) {
+				if (!algorithms.contains(checksum))
+					continue;
+				var sourceKey = "source/" + type + "/" + checksum.name();
+				var targetKey = "target/" + type + "/" + checksum.name();
+
+				// 일반 클라이언트로 6MB + 5MB 멀티파트 업로드
+				var uploadData = new MultipartUploadV2Data();
+				uploadData.uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(sourceKey)
+						.checksumType(type).checksumAlgorithm(checksum)).uploadId();
+				for (var part : Utils.generateRandomString(6 * MainData.MB, 5 * MainData.MB)) {
+					uploadData.appendBody(part);
+					var partResponse = client.uploadPart(u -> CheckSum.applyChecksum(u.bucket(bucketName).key(sourceKey)
+							.uploadId(uploadData.uploadId).partNumber(uploadData.nextPartNumber()), checksum, part),
+							RequestBody.fromString(part));
+					uploadData.addPart(checksum, partResponse);
+				}
+				var completeResponse = client.completeMultipartUpload(c -> c.bucket(bucketName).key(sourceKey)
+						.uploadId(uploadData.uploadId).checksumType(type)
+						.multipartUpload(p -> p.parts(uploadData.parts)));
+				var versionId = completeResponse.versionId();
+				var body = uploadData.getBody();
+				var value = type == ChecksumType.COMPOSITE
+						? CheckSum.calculateChecksumByBase64(checksum,
+								uploadData.parts.stream().map(p -> CheckSum.getChecksum(p, checksum)).toList())
+						: CheckSum.calculateChecksum(checksum, body);
+				checkStoredChecksum(client, bucketName, sourceKey, versionId, checksum, value);
+
+				// 복제기와 같이 Backend 클라이언트로 원본을 HEAD 하고 체크섬 헤더를 멀티파트 시작 요청에 복사
+				var head = backendClient.headObject(h -> h.bucket(bucketName).key(sourceKey).versionId(versionId));
+				var targetUploadId = backendClient.createMultipartUpload(c -> c.bucket(bucketName).key(targetKey)
+						.overrideConfiguration(o -> head.sdkHttpResponse().headers().forEach((name, values) -> {
+							if (name.toLowerCase().startsWith("x-amz-checksum-"))
+								o.putHeader(name, values.get(0));
+						}))).uploadId();
+
+				// 원본과 다른 경계(5MB 단위)로 나눠 체크섬 없이 업로드
+				var targetParts = new MultipartUploadV2Data();
+				for (var start = 0; start < body.length(); start += 5 * MainData.MB) {
+					var part = body.substring(start, Math.min(start + 5 * MainData.MB, body.length()));
+					var partNumber = targetParts.nextPartNumber();
+					var partResponse = backendClient.uploadPart(u -> u.bucket(bucketName).key(targetKey)
+							.uploadId(targetUploadId).partNumber(partNumber), RequestBody.fromString(part));
+					targetParts.addPart(partNumber, partResponse.eTag());
+				}
+				backendClient.completeMultipartUpload(c -> c.bucket(bucketName).key(targetKey).uploadId(targetUploadId)
+						.multipartUpload(p -> p.parts(targetParts.parts))
+						.overrideConfiguration(o -> o
+								.putHeader(BackendHeaders.IFS_VERSION_ID, versionId)
+								.putHeader(BackendHeaders.KSAN_VERSION_ID, versionId)));
+
+				// 업로드가 성공하고 내용이 같다. 대상 체크섬은 보지 않는다
+				var getResponse = client.getObject(g -> g.bucket(bucketName).key(targetKey).versionId(versionId));
+				assertEquals(body, getBody(getResponse), targetKey);
+			}
+		}
+	}
+
+	/**
 	 * GOVERNANCE 보존을 bypass + 빈 Retention 으로 제거하면 복제 대상의 보존도 제거되는지 확인
 	 */
 	public void testPutObjectRetentionRemoveReplication() {

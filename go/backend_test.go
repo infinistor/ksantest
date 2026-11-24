@@ -3,14 +3,17 @@ package s3tests
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/url"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -875,6 +878,117 @@ func TestMultipartUploadChecksumVersioning(t *testing.T) {
 		// Backend 클라이언트로 업로드
 		backendBody := checksumMultipartUpload(t, backend, bucket, backendKey, algorithm)
 		assertStoredChecksum(t, s.client, bucket, backendKey, "", algorithm, checksumValue(algorithm, backendBody))
+	}
+}
+
+// 복제기와 같이 원본 체크섬 헤더(객체 전체 값)를 멀티파트 시작 요청에 복사하고 파트를 다르게 나눠
+// Backend 헤더로 업로드해도 성공하는지 확인 (COMPOSITE, FULL_OBJECT)
+func TestMultipartUploadChecksumReplication(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	if s.cfg.Endpoint() == "" {
+		t.Skip("Backend API is unavailable on AWS")
+	}
+	backend := newBackendClient(t, s)
+	ctx := context.Background()
+	const mb = 1024 * 1024
+
+	bucket := s.bucket(t, 47)
+	enableVersioning(t, s, bucket)
+	combinations := []struct {
+		checksumType types.ChecksumType
+		algorithms   []types.ChecksumAlgorithm
+	}{
+		{types.ChecksumTypeComposite, []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmSha1, types.ChecksumAlgorithmSha256}},
+		{types.ChecksumTypeFullObject, []types.ChecksumAlgorithm{types.ChecksumAlgorithmCrc32, types.ChecksumAlgorithmCrc32c, types.ChecksumAlgorithmCrc64nvme}},
+	}
+	for _, combination := range combinations {
+		checksumType := combination.checksumType
+		for _, algorithm := range combination.algorithms {
+			sourceKey := "source/" + string(checksumType) + "/" + string(algorithm)
+			targetKey := "target/" + string(checksumType) + "/" + string(algorithm)
+
+			// 일반 클라이언트로 6MB + 5MB 멀티파트 업로드
+			created, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(sourceKey), ChecksumAlgorithm: algorithm, ChecksumType: checksumType})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var body, partSums []byte
+			var parts []types.CompletedPart
+			for i, size := range []int{6 * mb, 5 * mb} {
+				partBody := bytes.Repeat([]byte{byte('a' + i)}, size)
+				body = append(body, partBody...)
+				part, err := s.client.UploadPart(ctx, &s3.UploadPartInput{Bucket: aws.String(bucket), Key: aws.String(sourceKey), UploadId: created.UploadId, PartNumber: aws.Int32(int32(i + 1)), Body: bytes.NewReader(partBody), ChecksumAlgorithm: algorithm})
+				if err != nil {
+					t.Fatal(err)
+				}
+				completed := types.CompletedPart{ETag: part.ETag, PartNumber: aws.Int32(int32(i + 1)), ChecksumCRC32: part.ChecksumCRC32, ChecksumCRC32C: part.ChecksumCRC32C, ChecksumCRC64NVME: part.ChecksumCRC64NVME, ChecksumSHA1: part.ChecksumSHA1, ChecksumSHA256: part.ChecksumSHA256}
+				parts = append(parts, completed)
+				sum, err := base64.StdEncoding.DecodeString(checksumValue(algorithm, partBody))
+				if err != nil {
+					t.Fatal(err)
+				}
+				partSums = append(partSums, sum...)
+			}
+			completed, err := s.client.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(sourceKey), UploadId: created.UploadId, ChecksumType: checksumType, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			versionID := aws.ToString(completed.VersionId)
+			want := checksumValue(algorithm, body)
+			if checksumType == types.ChecksumTypeComposite {
+				want = fmt.Sprintf("%s-%d", checksumValue(algorithm, partSums), len(parts))
+			}
+			assertStoredChecksum(t, s.client, bucket, sourceKey, versionID, algorithm, want)
+
+			// 복제기와 같이 Backend 클라이언트로 원본을 HEAD 하고 체크섬 헤더를 멀티파트 시작 요청에 복사
+			head, err := backend.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(sourceKey), VersionId: aws.String(versionID)})
+			if err != nil {
+				t.Fatal(err)
+			}
+			checksumHeaders := map[string]string{}
+			if raw, ok := awsmiddleware.GetRawResponse(head.ResultMetadata).(*smithyhttp.Response); ok {
+				for name, values := range raw.Header {
+					if strings.HasPrefix(strings.ToLower(name), "x-amz-checksum-") && len(values) > 0 {
+						checksumHeaders[name] = values[0]
+					}
+				}
+			}
+			target, err := backend.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(targetKey)}, func(options *s3.Options) {
+				options.APIOptions = append(options.APIOptions, backendHeaders("replication-checksum-headers", checksumHeaders))
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// 원본과 다른 경계(5MB 단위)로 나눠 체크섬 없이 업로드
+			var targetParts []types.CompletedPart
+			for start := 0; start < len(body); start += 5 * mb {
+				number := aws.Int32(int32(len(targetParts) + 1))
+				part, err := backend.UploadPart(ctx, &s3.UploadPartInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), UploadId: target.UploadId, PartNumber: number, Body: bytes.NewReader(body[start:min(start+5*mb, len(body))])})
+				if err != nil {
+					t.Fatalf("%s part %d: %v", targetKey, *number, err)
+				}
+				targetParts = append(targetParts, types.CompletedPart{ETag: part.ETag, PartNumber: number})
+			}
+			if _, err = backend.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), UploadId: target.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: targetParts}}, versionOption(versionID)); err != nil {
+				t.Fatal(err)
+			}
+
+			// 업로드가 성공하고 내용이 같다. 대상 체크섬은 보지 않는다
+			got, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(targetKey), VersionId: aws.String(versionID)})
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, err := io.ReadAll(got.Body)
+			got.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(data, body) {
+				t.Fatalf("%s body mismatch", targetKey)
+			}
+		}
 	}
 }
 

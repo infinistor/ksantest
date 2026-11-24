@@ -13,9 +13,10 @@ from cases.tc11_checksum import Tc11Checksum
 from cases.tc12_tagging import Tc12Tagging
 from cases.tc13_sse_s3 import Tc13SseS3, Tc15SseSourceOnly, Tc16SseTargetOnly
 from cases.tc14_prefix_delete_marker import Tc14PrefixDeleteMarker
+from cases.tc17_multipart_checksum import Tc17MultipartChecksum
 
 CASES = [
     Tc01Basic, Tc02Versions, Tc03Prefix, Tc04Tag, Tc05PrefixTag, Tc06DeleteMarkerOff, Tc07DeleteMarkerOn,
     Tc08VersionDelete, Tc09Copy, Tc10Multipart, Tc11Checksum, Tc12Tagging, Tc13SseS3, Tc14PrefixDeleteMarker,
-    Tc15SseSourceOnly, Tc16SseTargetOnly,
+    Tc15SseSourceOnly, Tc16SseTargetOnly, Tc17MultipartChecksum,
 ]

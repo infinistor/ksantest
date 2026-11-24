@@ -82,6 +82,7 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
 | TC14 | Prefix + 삭제 마커 복제 | `in/` 키의 삭제 마커만 대상에, `out/` 마커는 안 옴 |
 | TC15 | SSE-S3 원본만 | 원본 객체가 암호화돼 있으니 복제본도 AES256 |
 | TC16 | SSE-S3 대상만 | 평문 원본이 대상 버킷 기본 암호화로 AES256 |
+| TC17 | Multipart 체크섬 | COMPOSITE(CRC32·CRC32C·SHA1·SHA256)·FULL_OBJECT(CRC32·CRC32C·CRC64NVME) 5M+5M+1M. 원본 Complete 체크섬이 계산값(COMPOSITE 는 `-3`)과 같은지, 대상은 복제 여부와 내용 MD5(체크섬은 비교 안 함) |
 
 버킷 이름은 `rtest-<케이스>-src-<시각>` 처럼 케이스 ID 가 들어간다. remote 는 `rtest-tc03r1-src-<시각>` 처럼 리전 순번이 붙는다.
 
