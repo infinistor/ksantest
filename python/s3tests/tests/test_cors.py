@@ -322,6 +322,8 @@ class TestCors(S3TestBase):
         assert headers.get("access-control-allow-origin") == "http://a.example.com"
 
     @pytest.mark.tag("Error")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+    # AWS 는 AllowedMethod 가 GET·PUT·POST·DELETE·HEAD(대문자)가 아니면 400 InvalidRequest 다.
     def test_cors_invalid_method(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 9)
@@ -330,12 +332,16 @@ class TestCors(S3TestBase):
         self._assert_invalid_cors(client, bucket_name, [self._cors_rule(["get"], ["*"])])
 
     @pytest.mark.tag("Error")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+    # AWS 는 AllowedOrigin 에 * 가 둘 이상이면 400 InvalidRequest 다.
     def test_cors_invalid_origin_wildcard(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 10)
         self._assert_invalid_cors(client, bucket_name, [self._cors_rule(["GET"], ["*a*"])])
 
     @pytest.mark.tag("Error")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+    # AWS 는 AllowedHeader 에 * 가 둘 이상이면 400 InvalidRequest 다.
     def test_cors_invalid_header_wildcard(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 11)
@@ -344,6 +350,8 @@ class TestCors(S3TestBase):
         )
 
     @pytest.mark.tag("Error")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+    # AWS 는 ExposeHeader 에 * 가 있으면 400 InvalidRequest 다.
     def test_cors_expose_header_wildcard(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 12)
@@ -352,6 +360,8 @@ class TestCors(S3TestBase):
         )
 
     @pytest.mark.tag("Error")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+    # AWS 는 규칙이 101개 이상이면 400 InvalidRequest 다.
     def test_cors_rule_limit(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 13)

@@ -134,6 +134,8 @@ class Cors {
 	 */
 	@Test
 	@Tag("Error")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+	// AWS 는 AllowedMethod 가 GET·PUT·POST·DELETE·HEAD(대문자)가 아니면 400 InvalidRequest 다.
 	void testCorsInvalidMethod() {
 		testV2.testCorsInvalidMethod();
 	}
@@ -143,6 +145,8 @@ class Cors {
 	 */
 	@Test
 	@Tag("Error")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+	// AWS 는 AllowedOrigin 에 * 가 둘 이상이면 400 InvalidRequest 다.
 	void testCorsInvalidOriginWildcard() {
 		test.testCorsInvalidOriginWildcard();
 		testV2.testCorsInvalidOriginWildcard();
@@ -153,6 +157,8 @@ class Cors {
 	 */
 	@Test
 	@Tag("Error")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+	// AWS 는 AllowedHeader 에 * 가 둘 이상이면 400 InvalidRequest 다.
 	void testCorsInvalidHeaderWildcard() {
 		test.testCorsInvalidHeaderWildcard();
 		testV2.testCorsInvalidHeaderWildcard();
@@ -163,6 +169,8 @@ class Cors {
 	 */
 	@Test
 	@Tag("Error")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+	// AWS 는 ExposeHeader 에 * 가 있으면 400 InvalidRequest 다.
 	void testCorsExposeHeaderWildcard() {
 		test.testCorsExposeHeaderWildcard();
 		testV2.testCorsExposeHeaderWildcard();
@@ -173,6 +181,8 @@ class Cors {
 	 */
 	@Test
 	@Tag("Error")
+	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+	// AWS 는 규칙이 101개 이상이면 400 InvalidRequest 다.
 	void testCorsRuleLimit() {
 		test.testCorsRuleLimit();
 		testV2.testCorsRuleLimit();

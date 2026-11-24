@@ -400,6 +400,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "지원하지 않는 메서드나 소문자 메서드로 cors 설정 시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+		// AWS 는 AllowedMethod 가 GET·PUT·POST·DELETE·HEAD(대문자)가 아니면 400 InvalidRequest 다.
 		public void TestCorsInvalidMethod()
 		{
 			TestId = 9;
@@ -415,6 +417,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "AllowedOrigin 에 와일드카드를 두 개 이상 쓰면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+		// AWS 는 AllowedOrigin 에 * 가 둘 이상이면 400 InvalidRequest 다.
 		public void TestCorsInvalidOriginWildcard()
 		{
 			TestId = 10;
@@ -428,6 +432,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "AllowedHeader 에 와일드카드를 두 개 이상 쓰면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+		// AWS 는 AllowedHeader 에 * 가 둘 이상이면 400 InvalidRequest 다.
 		public void TestCorsInvalidHeaderWildcard()
 		{
 			TestId = 11;
@@ -441,6 +447,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "ExposeHeader 에 와일드카드를 쓰면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+		// AWS 는 ExposeHeader 에 * 가 있으면 400 InvalidRequest 다.
 		public void TestCorsExposeHeaderWildcard()
 		{
 			TestId = 12;
@@ -454,6 +462,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "cors 규칙은 100개까지 저장되고 101개는 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+		// AWS 는 규칙이 101개 이상이면 400 InvalidRequest 다.
 		public void TestCorsRuleLimit()
 		{
 			TestId = 13;

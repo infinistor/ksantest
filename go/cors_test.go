@@ -387,6 +387,8 @@ func TestCorsObjectRequest(t *testing.T) {
 }
 
 // 지원하지 않는 메서드로 cors 설정 시 실패하는지 확인
+// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+// AWS 는 AllowedMethod 가 GET·PUT·POST·DELETE·HEAD(대문자)가 아니면 400 InvalidRequest 다.
 func TestCorsInvalidMethod(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -397,6 +399,8 @@ func TestCorsInvalidMethod(t *testing.T) {
 }
 
 // Origin 에 와일드카드를 둘 이상 넣으면 cors 설정이 실패하는지 확인
+// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+// AWS 는 AllowedOrigin 에 * 가 둘 이상이면 400 InvalidRequest 다.
 func TestCorsInvalidOriginWildcard(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -405,6 +409,8 @@ func TestCorsInvalidOriginWildcard(t *testing.T) {
 }
 
 // 허용 헤더에 와일드카드를 둘 이상 넣으면 cors 설정이 실패하는지 확인
+// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+// AWS 는 AllowedHeader 에 * 가 둘 이상이면 400 InvalidRequest 다.
 func TestCorsInvalidHeaderWildcard(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -413,6 +419,8 @@ func TestCorsInvalidHeaderWildcard(t *testing.T) {
 }
 
 // 노출 헤더에 와일드카드를 넣으면 cors 설정이 실패하는지 확인
+// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+// AWS 는 ExposeHeader 에 * 가 있으면 400 InvalidRequest 다.
 func TestCorsExposeHeaderWildcard(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -421,6 +429,8 @@ func TestCorsExposeHeaderWildcard(t *testing.T) {
 }
 
 // cors 규칙은 100개까지만 설정할 수 있는지 확인
+// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
+// AWS 는 규칙이 101개 이상이면 400 InvalidRequest 다.
 func TestCorsRuleLimit(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)

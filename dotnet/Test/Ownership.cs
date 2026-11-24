@@ -193,6 +193,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Get")]
 		[Trait(MainData.Explanation, "소유권을 지정하지 않고 만든 버킷의 소유권 설정이 BucketOwnerEnforced인지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): 새 버킷의 소유권 기본값은 ObjectWriter 다.
+		// SCP 등 ACL 로 권한을 주는 기존 사용 방식을 유지하려고 AWS 의 2023년 기본값(BucketOwnerEnforced)을 따르지 않는다.
 		public void TestBucketOwnershipDefault()
 		{
 			TestId = 8;

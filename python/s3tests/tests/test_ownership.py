@@ -139,6 +139,8 @@ class TestOwnership(S3TestBase):
         return bucket_name
 
     @pytest.mark.tag("Get")
+    # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): 새 버킷의 소유권 기본값은 ObjectWriter 다.
+    # SCP 등 ACL 로 권한을 주는 기존 사용 방식을 유지하려고 AWS 의 2023년 기본값(BucketOwnerEnforced)을 따르지 않는다.
     def test_bucket_ownership_default(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 8)
