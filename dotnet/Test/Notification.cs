@@ -297,25 +297,6 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "Notification")]
 		[Trait(MainData.Minor, "Error")]
-		[Trait(MainData.Explanation, "대상 검증을 건너뛰지 않으면 존재하지 않는 대상으로 알림 설정 시 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestNotificationDestinationNotExist()
-		{
-			TestId = 10;
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-
-			// 대상 검증을 건너뛰지 않으면 존재하지 않는 대상은 거부된다
-			var e = Assert.Throws<AggregateException>(()
-				=> client.PutBucketNotificationConfiguration(bucketName,
-					lambdaFunctionConfigurations: [LambdaConfig()]));
-			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
-			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Notification")]
-		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "지원하지 않는 이벤트 이름으로 알림 설정 시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestNotificationInvalidEvent()

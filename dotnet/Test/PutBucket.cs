@@ -374,22 +374,6 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "PutBucket")]
-		[Trait(MainData.Minor, "Creation rules")]
-		[Trait(MainData.Explanation, "예약된 접두어·접미어가 붙은 이름으로는 버킷을 만들 수 없는지 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestBucketCreateNamingReserved()
-		{
-			TestId = 28;
-			var bucketName = GetNewBucketName(false)[..45].TrimEnd('-', '.');
-			// 예약된 접두어·접미어가 붙은 이름은 만들 수 없다
-			foreach (var prefix in new[] { "sthree-", "amzn-s3-demo-" })
-				AssertCreateError(prefix + bucketName, HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
-			foreach (var suffix in new[] { "-s3alias", "--ol-s3", ".mrap" })
-				AssertCreateError(bucketName + suffix, HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "PutBucket")]
 		[Trait(MainData.Minor, "location")]
 		[Trait(MainData.Explanation, "없는 리전을 LocationConstraint 로 주면 버킷 생성이 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]

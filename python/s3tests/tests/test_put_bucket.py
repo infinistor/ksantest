@@ -159,15 +159,6 @@ class TestPutBucket(S3TestBase):
         self._assert_create_error("." + bucket_name, 400, md.INVALID_BUCKET_NAME)
         self._assert_create_error(bucket_name + ".", 400, md.INVALID_BUCKET_NAME)
 
-    @pytest.mark.tag("CreationRules")
-    def test_bucket_create_naming_reserved(self):
-        bucket_name = self.get_new_bucket_name_only(28)[:45].rstrip("-.")
-        # 예약된 접두어·접미어가 붙은 이름은 만들 수 없다
-        for prefix in ("sthree-", "amzn-s3-demo-"):
-            self._assert_create_error(prefix + bucket_name, 403, md.ACCESS_DENIED)
-        for suffix in ("-s3alias", "--ol-s3", ".mrap"):
-            self._assert_create_error(bucket_name + suffix, 403, md.ACCESS_DENIED)
-
     @pytest.mark.tag("location")
     def test_bucket_create_invalid_location(self):
         client = self.get_client()

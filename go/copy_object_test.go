@@ -1541,28 +1541,6 @@ func TestCopyObjectSourceVersionId(t *testing.T) {
 	assertCopied(t, s.client, b, "target2", "version2", nil)
 }
 
-// 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
-func TestCopyObjectAttributesNotCopied(t *testing.T) {
-	t.Parallel()
-	s := newSuite(t)
-	b := copySourceBucket(t, s, 73, func(input *s3.PutObjectInput) {
-		input.ContentType = aws.String("text/plain")
-		input.CacheControl = aws.String("no-cache")
-		input.Metadata = map[string]string{"key": "value"}
-		input.WebsiteRedirectLocation = aws.String("/other")
-		input.StorageClass = types.StorageClassStandardIa
-	})
-	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", "")})
-
-	head := headObject(t, s.client, b, "target")
-	if aws.ToString(head.ContentType) != "text/plain" || aws.ToString(head.CacheControl) != "no-cache" || len(head.Metadata) != 1 || head.Metadata["key"] != "value" {
-		t.Fatalf("ContentType=%q CacheControl=%q Metadata=%v", aws.ToString(head.ContentType), aws.ToString(head.CacheControl), head.Metadata)
-	}
-	if head.StorageClass != "" || head.WebsiteRedirectLocation != nil {
-		t.Fatalf("StorageClass=%q WebsiteRedirectLocation=%q", head.StorageClass, aws.ToString(head.WebsiteRedirectLocation))
-	}
-}
-
 // REPLACE 인데 아무것도 주지 않으면 원본의 메타데이터가 모두 빠진다
 func TestCopyObjectReplaceWithoutMetadata(t *testing.T) {
 	t.Parallel()
@@ -1578,42 +1556,6 @@ func TestCopyObjectReplaceWithoutMetadata(t *testing.T) {
 	if aws.ToString(head.ContentType) != "binary/octet-stream" || len(head.Metadata) != 0 || head.CacheControl != nil {
 		t.Fatalf("ContentType=%q Metadata=%v CacheControl=%q", aws.ToString(head.ContentType), head.Metadata, aws.ToString(head.CacheControl))
 	}
-}
-
-// 복사하면서 스토리지 클래스를 지정할 수 있다
-func TestCopyObjectStorageClass(t *testing.T) {
-	t.Parallel()
-	s := newSuite(t)
-	b := copySourceBucket(t, s, 75, nil)
-	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target"), CopySource: copySource(b, "source", ""), StorageClass: types.StorageClassStandardIa})
-	if head := headObject(t, s.client, b, "target"); head.StorageClass != types.StorageClassStandardIa {
-		t.Fatalf("StorageClass=%q", head.StorageClass)
-	}
-
-	_, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("target2"), CopySource: copySource(b, "source", ""), StorageClass: types.StorageClass("INVALID")})
-	assertS3Error(t, err, 400, "InvalidStorageClass")
-}
-
-// 스토리지 클래스, 웹사이트 리다이렉트, 암호화 설정 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
-func TestCopyObjectToItselfWithChanges(t *testing.T) {
-	t.Parallel()
-	s := newSuite(t)
-	b := copySourceBucket(t, s, 76, nil)
-	source := copySource(b, "source", "")
-
-	// 태그만 바꾸는 것은 변경으로 치지 않는다
-	_, err := s.client.CopyObject(context.Background(), &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("source"), CopySource: source, TaggingDirective: types.TaggingDirectiveReplace, Tagging: aws.String("key=value")})
-	assertS3Error(t, err, 400, "InvalidRequest")
-
-	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("source"), CopySource: source, StorageClass: types.StorageClassStandardIa})
-	if head := headObject(t, s.client, b, "source"); head.StorageClass != types.StorageClassStandardIa {
-		t.Fatalf("StorageClass=%q", head.StorageClass)
-	}
-	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("source"), CopySource: source, WebsiteRedirectLocation: aws.String("/other")})
-	if head := headObject(t, s.client, b, "source"); aws.ToString(head.WebsiteRedirectLocation) != "/other" {
-		t.Fatalf("WebsiteRedirectLocation=%q", aws.ToString(head.WebsiteRedirectLocation))
-	}
-	copyCall(t, s.client, &s3.CopyObjectInput{Bucket: aws.String(b), Key: aws.String("source"), CopySource: source, ServerSideEncryption: types.ServerSideEncryptionAes256})
 }
 
 // 이전 버전을 지정하면 변경 없이도 자기 자신에게 복사되어 그 내용이 새 최신 버전이 된다

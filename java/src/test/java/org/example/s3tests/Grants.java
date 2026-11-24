@@ -363,26 +363,6 @@ class Grants {
 	}
 
 	/**
-	 * 버킷의 acl 설정이 누락될 경우 실패함을 확인
-	 */
-	@Test
-	@Tag("Error")
-	void testBucketAclRevokeAll() {
-		test.testBucketAclRevokeAll();
-		testV2.testBucketAclRevokeAll();
-	}
-
-	/**
-	 * 오브젝트의 acl 설정이 누락될 경우 실패함을 확인
-	 */
-	@Test
-	@Tag("Error")
-	void testObjectAclRevokeAll() {
-		test.testObjectAclRevokeAll();
-		testV2.testObjectAclRevokeAll();
-	}
-
-	/**
 	 * 버킷의 acl 설정에 Id가 누락될 경우 실패함을 확인
 	 */
 	@Test

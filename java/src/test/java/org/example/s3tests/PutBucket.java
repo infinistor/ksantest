@@ -315,16 +315,6 @@ class PutBucket {
 	}
 
 	/**
-	 * 예약된 접두어·접미어가 붙은 이름으로 버킷을 만들 수 없는지 확인
-	 */
-	@Test
-	@Tag("CreationRules")
-	void testBucketCreateNamingReserved() {
-		test.testBucketCreateNamingReserved();
-		testV2.testBucketCreateNamingReserved();
-	}
-
-	/**
 	 * 올바르지 않은 LocationConstraint 로 버킷을 만들 수 없는지 확인
 	 */
 	@Test

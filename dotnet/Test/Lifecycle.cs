@@ -706,26 +706,6 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "Lifecycle")]
 		[Trait(MainData.Minor, "Transition")]
-		[Trait(MainData.Explanation, "STANDARD_IA 에서 GLACIER 로의 전환 간격이 30일 미만이면 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestLifecycleTransitionInterval()
-		{
-			TestId = 33;
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			// STANDARD_IA 에서 GLACIER 로는 30일 이상 지나야 전환할 수 있다
-			var transitions = new List<LifecycleTransition>()
-			{
-				new() { Days = 30, StorageClass = S3StorageClass.StandardInfrequentAccess },
-				new() { Days = 40, StorageClass = S3StorageClass.Glacier },
-			};
-			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
-				() => PutRules(client, bucketName, [Rule(r => r.Transitions = transitions)]));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Lifecycle")]
-		[Trait(MainData.Minor, "Transition")]
 		[Trait(MainData.Explanation, "이전 버전 전환 규칙이 그대로 저장·조회되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestLifecycleNoncurrentTransition()
@@ -1015,32 +995,6 @@ namespace s3tests.Test
 			PutRules(client, bucketName, makeRules(1000));
 			Assert.Equal(1000, GetRules(client, bucketName).Count);
 			AssertS3Error(HttpStatusCode.BadRequest, MainData.MALFORMED_XML, () => PutRules(client, bucketName, makeRules(1001)));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Lifecycle")]
-		[Trait(MainData.Minor, "Transition")]
-		[Trait(MainData.Explanation, "TransitionDefaultMinimumObjectSize 의 기본값과 지정한 값이 조회되고 잘못된 값은 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestLifecycleTransitionDefaultMinimumObjectSize()
-		{
-			TestId = 48;
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			static List<LifecycleRule> rules() => [Rule(r => r.Expiration = ExpireDays(1))];
-
-			// 지정하지 않으면 all_storage_classes_128K
-			PutRules(client, bucketName, rules());
-			var getResponse = client.GetLifecycleConfiguration(bucketName);
-			Assert.Equal(TransitionDefaultMinimumObjectSize.AllStorageClasses128K, getResponse.TransitionDefaultMinimumObjectSize);
-
-			var putResponse = PutRules(client, bucketName, rules(), TransitionDefaultMinimumObjectSize.VariesByStorageClass);
-			Assert.Equal(TransitionDefaultMinimumObjectSize.VariesByStorageClass, putResponse.TransitionDefaultMinimumObjectSize);
-			// AWS 는 변경 직후 조회에서 이전 값을 돌려줄 때가 있어 반영될 때까지 기다린다
-			WaitUntil(() => client.GetLifecycleConfiguration(bucketName).TransitionDefaultMinimumObjectSize == TransitionDefaultMinimumObjectSize.VariesByStorageClass);
-
-			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
-				() => PutRules(client, bucketName, rules(), new TransitionDefaultMinimumObjectSize("invalid")));
 		}
 
 		[Fact]

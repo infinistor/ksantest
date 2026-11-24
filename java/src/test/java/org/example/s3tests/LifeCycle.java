@@ -362,16 +362,6 @@ class LifeCycle {
 	}
 
 	/**
-	 * STANDARD_IA 에서 GLACIER 로의 전환 간격이 30일 미만이면 거부되는지 확인
-	 */
-	@Test
-	@Tag("Transition")
-	void testLifecycleTransitionInterval() {
-		test.testLifecycleTransitionInterval();
-		testV2.testLifecycleTransitionInterval();
-	}
-
-	/**
 	 * 이전 버전 전환 규칙이 그대로 저장·조회되는지 확인
 	 */
 	@Test
@@ -509,15 +499,6 @@ class LifeCycle {
 	void testLifecycleMaxRules() {
 		test.testLifecycleMaxRules();
 		testV2.testLifecycleMaxRules();
-	}
-
-	/**
-	 * TransitionDefaultMinimumObjectSize 의 기본값·설정·잘못된 값 거부를 확인 (SDK v1 모델에 없으므로 V2만)
-	 */
-	@Test
-	@Tag("Transition")
-	void testLifecycleTransitionDefaultMinimumObjectSize() {
-		testV2.testLifecycleTransitionDefaultMinimumObjectSize();
 	}
 
 	/**

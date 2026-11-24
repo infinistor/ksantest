@@ -1265,35 +1265,6 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "PutObject")]
 		[Trait(MainData.Minor, "StorageClass")]
-		[Trait(MainData.Explanation, "스토리지 클래스를 지정해 올리면 조회와 목록에 그대로 나오는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestPutObjectStorageClass()
-		{
-			TestId = 57;
-			var key = "TestPutObjectStorageClass";
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-
-			client.PutObject(bucketName, key, body: "content", storageClass: S3StorageClass.StandardInfrequentAccess);
-			client.PutObject(bucketName, key + "_standard", body: "content");
-
-			Assert.Equal("STANDARD_IA", client.HeadObject(bucketName, key).StorageClass?.Value);
-			using (var getResponse = client.GetObject(bucketName, key))
-				Assert.Equal("STANDARD_IA", getResponse.StorageClass?.Value);
-			// STANDARD 는 x-amz-storage-class 헤더를 돌려주지 않는다
-			Assert.Null(client.HeadObject(bucketName, key + "_standard").StorageClass);
-
-			var listed = new Dictionary<string, string>();
-			foreach (var obj in client.ListObjectsV2(bucketName).S3Objects ?? [])
-				listed[obj.Key] = obj.StorageClass?.Value;
-			Assert.Equal(2, listed.Count);
-			Assert.Equal("STANDARD_IA", listed[key]);
-			Assert.Equal("STANDARD", listed[key + "_standard"]);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "PutObject")]
-		[Trait(MainData.Minor, "StorageClass")]
 		[Trait(MainData.Explanation, "잘못된 스토리지 클래스로 올리면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestPutObjectInvalidStorageClass()

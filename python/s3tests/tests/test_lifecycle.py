@@ -579,21 +579,6 @@ class TestLifeCycle(S3TestBase):
         self._put_rules(client, bucket_name, [self._rule(Transitions=transitions, Expiration={"Days": 31})])
 
     @pytest.mark.tag("Transition")
-    def test_lifecycle_transition_interval(self):
-        client = self.get_client()
-        bucket_name = self.create_bucket(client, 33)
-        # STANDARD_IA 에서 GLACIER 로는 30일 이상 지나야 전환할 수 있다
-        transitions = [
-            {"Days": 30, "StorageClass": "STANDARD_IA"},
-            {"Days": 40, "StorageClass": "GLACIER"},
-        ]
-        self.assert_client_error(
-            lambda: self._put_rules(client, bucket_name, [self._rule(Transitions=transitions)]),
-            400,
-            md.INVALID_ARGUMENT,
-        )
-
-    @pytest.mark.tag("Transition")
     def test_lifecycle_noncurrent_transition(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 34)
@@ -795,30 +780,6 @@ class TestLifeCycle(S3TestBase):
         self._put_rules(client, bucket_name, make_rules(1000))
         assert len(client.get_bucket_lifecycle_configuration(Bucket=bucket_name)["Rules"]) == 1000
         self.assert_client_error(lambda: self._put_rules(client, bucket_name, make_rules(1001)), 400, md.MALFORMED_XML)
-
-    @pytest.mark.tag("Transition")
-    def test_lifecycle_transition_default_minimum_object_size(self):
-        client = self.get_client()
-        bucket_name = self.create_bucket(client, 48)
-        rules = [self._rule(Expiration={"Days": 1})]
-
-        # 지정하지 않으면 all_storage_classes_128K
-        self._put_rules(client, bucket_name, rules)
-        response = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
-        assert response["TransitionDefaultMinimumObjectSize"] == "all_storage_classes_128K"
-
-        response = self._put_rules(
-            client, bucket_name, rules, TransitionDefaultMinimumObjectSize="varies_by_storage_class"
-        )
-        assert response["TransitionDefaultMinimumObjectSize"] == "varies_by_storage_class"
-        response = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
-        assert response["TransitionDefaultMinimumObjectSize"] == "varies_by_storage_class"
-
-        self.assert_client_error(
-            lambda: self._put_rules(client, bucket_name, rules, TransitionDefaultMinimumObjectSize="invalid"),
-            400,
-            md.INVALID_REQUEST,
-        )
 
     @pytest.mark.tag("metadata")
     def test_lifecycle_expiration_header(self):

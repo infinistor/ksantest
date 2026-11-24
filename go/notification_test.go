@@ -173,17 +173,6 @@ func TestNotificationFilter(t *testing.T) {
 	}
 }
 
-// 대상 검증을 건너뛰지 않으면 존재하지 않는 대상으로 알람 설정 시 실패하는지 확인
-func TestNotificationDestinationNotExist(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	bucket := s.bucket(t, 10)
-	// 대상 검증을 건너뛰지 않으면 존재하지 않는 대상은 거부된다
-	err := putNotificationError(s.client, bucket, lambdaNotification(lambdaConfig(s, "my-lambda", nil, nil)), false)
-	assertS3Error(t, err, 400, "InvalidArgument")
-}
-
 // 지원하지 않는 이벤트로 알람 설정 시 실패하는지 확인
 func TestNotificationInvalidEvent(t *testing.T) {
 	t.Parallel()

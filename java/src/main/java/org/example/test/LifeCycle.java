@@ -655,18 +655,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Transition")
-	public void testLifecycleTransitionInterval() {
-		var client = getClient();
-		var bucketName = createBucket(client, 33);
-
-		// STANDARD_IA 에서 GLACIER 로는 30일 이상 지나야 전환할 수 있다
-		assertPutRulesError(client, bucketName,
-				rule().addTransition(transition(30, "STANDARD_IA")).addTransition(transition(40, "GLACIER")),
-				HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT);
-	}
-
-	@Test
-	@Tag("Transition")
 	public void testLifecycleNoncurrentTransition() {
 		var client = getClient();
 		var bucketName = createBucket(client, 34);

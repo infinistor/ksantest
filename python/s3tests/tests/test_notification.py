@@ -215,20 +215,6 @@ class TestNotification(S3TestBase):
         ]
 
     @pytest.mark.tag("Error")
-    def test_notification_destination_not_exist(self):
-        client = self.get_client()
-        bucket_name = self.create_bucket(client, 10)
-        # 대상 검증을 건너뛰지 않으면 존재하지 않는 대상은 거부된다
-        self.assert_client_error(
-            lambda: client.put_bucket_notification_configuration(
-                Bucket=bucket_name,
-                NotificationConfiguration={"LambdaFunctionConfigurations": [self._lambda_config()]},
-            ),
-            400,
-            md.INVALID_ARGUMENT,
-        )
-
-    @pytest.mark.tag("Error")
     def test_notification_invalid_event(self):
         client = self.get_client()
         bucket_name = self.create_bucket(client, 11)

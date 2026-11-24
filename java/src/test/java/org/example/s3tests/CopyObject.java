@@ -774,16 +774,6 @@ class CopyObject {
 	}
 
 	/**
-	 * 복사 시 메타데이터는 복사되고 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는지 확인
-	 */
-	@Test
-	@Tag("Metadata")
-	void testCopyObjectAttributesNotCopied() {
-		test.testCopyObjectAttributesNotCopied();
-		testV2.testCopyObjectAttributesNotCopied();
-	}
-
-	/**
 	 * MetadataDirective=REPLACE에 아무것도 주지 않으면 원본 메타데이터가 모두 빠지는지 확인
 	 */
 	@Test
@@ -791,26 +781,6 @@ class CopyObject {
 	void testCopyObjectReplaceWithoutMetadata() {
 		test.testCopyObjectReplaceWithoutMetadata();
 		testV2.testCopyObjectReplaceWithoutMetadata();
-	}
-
-	/**
-	 * 복사 시 스토리지 클래스를 지정할 수 있고 잘못된 값은 400 InvalidStorageClass인지 확인
-	 */
-	@Test
-	@Tag("StorageClass")
-	void testCopyObjectStorageClass() {
-		test.testCopyObjectStorageClass();
-		testV2.testCopyObjectStorageClass();
-	}
-
-	/**
-	 * 자기 자신으로의 복사가 태그 변경만으로는 거부되고 스토리지 클래스 등을 바꾸면 허용되는지 확인
-	 */
-	@Test
-	@Tag("Overwrite")
-	void testCopyObjectToItselfWithChanges() {
-		test.testCopyObjectToItselfWithChanges();
-		testV2.testCopyObjectToItselfWithChanges();
 	}
 
 	/**

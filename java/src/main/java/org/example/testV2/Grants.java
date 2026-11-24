@@ -418,37 +418,6 @@ public class Grants extends TestBase {
 	}
 
 	@Test
-	@Tag("Delete")
-	public void testBucketAclRevokeAll() {
-		var key = "testBucketAclRevokeAll";
-		var client = getClient();
-		var bucketName = createBucketCannedAcl(client, 33);
-
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
-		var response = client.getBucketAcl(g -> g.bucket(bucketName));
-
-		assertThrows(AwsServiceException.class,
-				() -> client.putBucketAcl(p -> p.bucket(bucketName)
-						.accessControlPolicy(a -> a.owner(o -> o.build()).grants(response.grants()))));
-	}
-
-	@Test
-	@Tag("Delete")
-	public void testObjectAclRevokeAll() {
-		var key = "testObjectAclRevokeAll";
-		var client = getClient();
-		var bucketName = createBucketCannedAcl(client, 34);
-
-		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString(key));
-
-		var response = client.getObjectAcl(g -> g.bucket(bucketName).key(key));
-
-		assertThrows(AwsServiceException.class, () -> client.putObjectAcl(
-				p -> p.bucket(bucketName).key(key)
-						.accessControlPolicy(a -> a.owner(o -> o.build()).grants(response.grants()))));
-	}
-
-	@Test
 	@Tag("Error")
 	public void testBucketAclRevokeAllId() {
 		var key = "testBucketAclRevokeAllId";

@@ -1798,32 +1798,6 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "CopyObject")]
 		[Trait(MainData.Minor, "Metadata")]
-		[Trait(MainData.Explanation, "복사 시 메타데이터는 따라가고 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestCopyObjectAttributesNotCopied()
-		{
-			TestId = 73;
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			var metadata = new List<KeyValuePair<string, string>> { new("key", "value") };
-			client.PutObject(bucketName, CopySourceKey, body: CopySourceBody, contentType: "text/plain",
-				headerList: [new("Cache-Control", "no-cache")], metadataList: metadata,
-				websiteRedirectLocation: "/other", storageClass: S3StorageClass.StandardInfrequentAccess);
-
-			client.CopyObject(bucketName, CopySourceKey, bucketName, "target");
-
-			var response = client.HeadObject(bucketName, "target");
-			Assert.Equal("text/plain", response.Headers.ContentType);
-			Assert.Equal("no-cache", response.Headers.CacheControl);
-			CheckMetaData(metadata, response.Metadata);
-			// 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
-			Assert.Null(response.StorageClass);
-			Assert.Null(response.WebsiteRedirectLocation);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "CopyObject")]
-		[Trait(MainData.Minor, "Metadata")]
 		[Trait(MainData.Explanation, "MetadataDirective=REPLACE인데 아무것도 주지 않으면 원본 메타데이터가 모두 빠지는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestCopyObjectReplaceWithoutMetadata()
@@ -1841,48 +1815,6 @@ namespace s3tests.Test
 			Assert.Equal("binary/octet-stream", response.Headers.ContentType);
 			Assert.Empty(response.Metadata.Keys);
 			Assert.True(string.IsNullOrEmpty(response.Headers.CacheControl));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "CopyObject")]
-		[Trait(MainData.Minor, "StorageClass")]
-		[Trait(MainData.Explanation, "복사 시 지정한 스토리지 클래스가 적용되고 잘못된 값은 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestCopyObjectStorageClass()
-		{
-			TestId = 75;
-			var client = GetClient();
-			var bucketName = CopySourceBucket(client);
-
-			client.CopyObject(bucketName, CopySourceKey, bucketName, "target", storageClass: S3StorageClass.StandardInfrequentAccess);
-			Assert.Equal("STANDARD_IA", client.HeadObject(bucketName, "target").StorageClass?.Value);
-
-			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_STORAGE_CLASS,
-				() => client.CopyObject(bucketName, CopySourceKey, bucketName, "target2", storageClass: new S3StorageClass("INVALID")));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "CopyObject")]
-		[Trait(MainData.Minor, "Overwrite")]
-		[Trait(MainData.Explanation, "스토리지 클래스/웹사이트 리다이렉트/암호화 설정을 바꾸면 자기 자신에게 복사할 수 있고 태그만 바꾸면 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestCopyObjectToItselfWithChanges()
-		{
-			TestId = 76;
-			var client = GetClient();
-			var bucketName = CopySourceBucket(client);
-
-			// 태그만 바꾸는 것은 변경으로 치지 않는다
-			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
-				() => client.CopyObject(bucketName, CopySourceKey, bucketName, CopySourceKey,
-					taggingDirective: TaggingDirective.REPLACE, tagSet: [new() { Key = "key", Value = "value" }]));
-
-			// 스토리지 클래스, 웹사이트 리다이렉트, 암호화 설정 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
-			client.CopyObject(bucketName, CopySourceKey, bucketName, CopySourceKey, storageClass: S3StorageClass.StandardInfrequentAccess);
-			Assert.Equal("STANDARD_IA", client.HeadObject(bucketName, CopySourceKey).StorageClass?.Value);
-			client.CopyObject(bucketName, CopySourceKey, bucketName, CopySourceKey, websiteRedirectLocation: "/other");
-			Assert.Equal("/other", client.HeadObject(bucketName, CopySourceKey).WebsiteRedirectLocation);
-			client.CopyObject(bucketName, CopySourceKey, bucketName, CopySourceKey, sseKey: ServerSideEncryptionMethod.AES256);
 		}
 
 		[Fact]

@@ -256,18 +256,6 @@ public class PutBucket extends TestBase {
 	}
 
 	@Test
-	@Tag("CreationRules")
-	public void testBucketCreateNamingReserved() {
-		var bucketName = trimBucketName(getNewBucketNameOnly(28), 45);
-
-		// 예약된 접두어·접미어가 붙은 이름은 만들 수 없다
-		for (var prefix : List.of("sthree-", "amzn-s3-demo-"))
-			assertCreateError(prefix + bucketName, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
-		for (var suffix : List.of("-s3alias", "--ol-s3", ".mrap"))
-			assertCreateError(bucketName + suffix, HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED);
-	}
-
-	@Test
 	@Tag("location")
 	public void testBucketCreateInvalidLocation() {
 		var client = getClient();

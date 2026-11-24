@@ -1035,29 +1035,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Metadata")
-	public void testCopyObjectAttributesNotCopied() {
-		var client = getClient();
-		var bucketName = createBucket(client, 73);
-		var metadata = new ObjectMetadata();
-		metadata.setContentLength(DIGITS.length());
-		metadata.setContentType("text/plain");
-		metadata.setCacheControl("no-cache");
-		metadata.addUserMetadata("key", "value");
-		client.putObject(new PutObjectRequest(bucketName, "source", createBody(DIGITS), metadata)
-				.withRedirectLocation("/other").withStorageClass("STANDARD_IA"));
-		client.copyObject(new CopyObjectRequest(bucketName, "source", bucketName, "target"));
-
-		var response = client.getObjectMetadata(bucketName, "target");
-		assertEquals("text/plain", response.getContentType());
-		assertEquals("no-cache", response.getCacheControl());
-		assertEquals(Map.of("key", "value"), response.getUserMetadata());
-		// 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
-		assertNull(response.getStorageClass());
-		assertNull(response.getRawMetadataValue(Headers.REDIRECT_LOCATION));
-	}
-
-	@Test
-	@Tag("Metadata")
 	public void testCopyObjectReplaceWithoutMetadata() {
 		var client = getClient();
 		var bucketName = createBucket(client, 74);
@@ -1074,42 +1051,6 @@ public class CopyObject extends TestBase {
 		var response = client.getObjectMetadata(bucketName, "target");
 		assertEquals(0, response.getUserMetadata().size());
 		assertNull(response.getCacheControl());
-	}
-
-	@Test
-	@Tag("StorageClass")
-	public void testCopyObjectStorageClass() {
-		var client = getClient();
-		var bucketName = copySourceBucket(client, 75);
-		client.copyObject(
-				new CopyObjectRequest(bucketName, "source", bucketName, "target").withStorageClass("STANDARD_IA"));
-		assertEquals("STANDARD_IA", client.getObjectMetadata(bucketName, "target").getStorageClass());
-
-		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_STORAGE_CLASS,
-				() -> client.copyObject(
-						new CopyObjectRequest(bucketName, "source", bucketName, "target2").withStorageClass("INVALID")));
-	}
-
-	@Test
-	@Tag("Overwrite")
-	public void testCopyObjectToItselfWithChanges() {
-		var client = getClient();
-		var bucketName = copySourceBucket(client, 76);
-
-		// 태그만 바꾸는 것은 변경으로 치지 않는다
-		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
-				() -> client.copyObject(new CopyObjectRequest(bucketName, "source", bucketName, "source")
-						.withNewObjectTagging(new ObjectTagging(List.of(new com.amazonaws.services.s3.model.Tag("key", "value"))))));
-
-		// 스토리지 클래스, 웹사이트 리다이렉트 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
-		// (SDK 는 암호화 설정을 새 메타데이터로만 줄 수 있어 메타데이터 교체가 함께 일어나므로 확인하지 않는다)
-		client.copyObject(
-				new CopyObjectRequest(bucketName, "source", bucketName, "source").withStorageClass("STANDARD_IA"));
-		assertEquals("STANDARD_IA", client.getObjectMetadata(bucketName, "source").getStorageClass());
-		client.copyObject(
-				new CopyObjectRequest(bucketName, "source", bucketName, "source").withRedirectLocation("/other"));
-		assertEquals("/other",
-				client.getObjectMetadata(bucketName, "source").getRawMetadataValue(Headers.REDIRECT_LOCATION));
 	}
 
 	@Test

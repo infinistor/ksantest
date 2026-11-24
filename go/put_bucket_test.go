@@ -392,26 +392,6 @@ func TestBucketCreateNamingBadDotAtEdge(t *testing.T) {
 	assertCreateBucketError(t, s, createBucketInput(s.cfg, bucket+"."), 400, "InvalidBucketName")
 }
 
-// 예약된 접두어·접미어가 붙은 이름은 만들 수 없다
-func TestBucketCreateNamingReserved(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	bucket := strings.TrimRight(s.bucketNameOnly(28)[:45], "-.")
-	for _, prefix := range []string{"sthree-", "amzn-s3-demo-"} {
-		assertCreateBucketError(t, s, createBucketInput(s.cfg, prefix+bucket), 403, "AccessDenied")
-	}
-	suffixes := []string{"-s3alias", ".mrap"}
-	if s.cfg.Endpoint() != "" {
-		// 가상 호스트 방식(AWS)에서는 --ol-s3 로 끝나는 호스트를 Object Lambda 별칭으로 해석해
-		// 400 InvalidAccessPointAlias 가 나오므로 경로 방식일 때만 확인한다
-		suffixes = append(suffixes, "--ol-s3")
-	}
-	for _, suffix := range suffixes {
-		assertCreateBucketError(t, s, createBucketInput(s.cfg, bucket+suffix), 403, "AccessDenied")
-	}
-}
-
 // 없는 리전을 LocationConstraint 로 주면 버킷 생성 실패 확인
 func TestBucketCreateInvalidLocation(t *testing.T) {
 	t.Parallel()

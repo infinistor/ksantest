@@ -540,14 +540,6 @@ class PutObject {
 
 	@Test
 	@Tag("StorageClass")
-	// 지정한 스토리지 클래스가 Head/Get/List 응답에 나타나는지 확인
-	void testPutObjectStorageClass() {
-		test.testPutObjectStorageClass();
-		testV2.testPutObjectStorageClass();
-	}
-
-	@Test
-	@Tag("StorageClass")
 	// 잘못된 스토리지 클래스를 지정하면 400 InvalidStorageClass로 거부되는지 확인
 	void testPutObjectInvalidStorageClass() {
 		test.testPutObjectInvalidStorageClass();

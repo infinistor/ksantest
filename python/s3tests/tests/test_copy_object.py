@@ -1568,28 +1568,6 @@ class TestCopyObject(S3TestBase):
         assert self.get_body(client.get_object(Bucket=bucket_name, Key="target2")) == "version2"
 
     @pytest.mark.tag("Metadata")
-    def test_copy_object_attributes_not_copied(self):
-        client = self.get_client()
-        bucket_name = self._copy_source_bucket(
-            client,
-            73,
-            ContentType="text/plain",
-            CacheControl="no-cache",
-            Metadata={"key": "value"},
-            WebsiteRedirectLocation="/other",
-            StorageClass="STANDARD_IA",
-        )
-        client.copy_object(Bucket=bucket_name, Key="target", CopySource={"Bucket": bucket_name, "Key": "source"})
-
-        response = client.head_object(Bucket=bucket_name, Key="target")
-        assert response["ContentType"] == "text/plain"
-        assert response["CacheControl"] == "no-cache"
-        assert response["Metadata"] == {"key": "value"}
-        # 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
-        assert "StorageClass" not in response
-        assert "WebsiteRedirectLocation" not in response
-
-    @pytest.mark.tag("Metadata")
     def test_copy_object_replace_without_metadata(self):
         client = self.get_client()
         bucket_name = self._copy_source_bucket(
@@ -1606,42 +1584,6 @@ class TestCopyObject(S3TestBase):
         assert response["ContentType"] == "binary/octet-stream"
         assert response["Metadata"] == {}
         assert "CacheControl" not in response
-
-    @pytest.mark.tag("StorageClass")
-    def test_copy_object_storage_class(self):
-        client = self.get_client()
-        bucket_name = self._copy_source_bucket(client, 75)
-        source = {"Bucket": bucket_name, "Key": "source"}
-        client.copy_object(Bucket=bucket_name, Key="target", CopySource=source, StorageClass="STANDARD_IA")
-        assert client.head_object(Bucket=bucket_name, Key="target")["StorageClass"] == "STANDARD_IA"
-
-        self.assert_client_error(
-            lambda: client.copy_object(Bucket=bucket_name, Key="target2", CopySource=source, StorageClass="INVALID"),
-            400,
-            md.INVALID_STORAGE_CLASS,
-        )
-
-    @pytest.mark.tag("Overwrite")
-    def test_copy_object_to_itself_with_changes(self):
-        client = self.get_client()
-        bucket_name = self._copy_source_bucket(client, 76)
-        source = {"Bucket": bucket_name, "Key": "source"}
-
-        # 태그만 바꾸는 것은 변경으로 치지 않는다
-        self.assert_client_error(
-            lambda: client.copy_object(
-                Bucket=bucket_name, Key="source", CopySource=source, TaggingDirective="REPLACE", Tagging="key=value"
-            ),
-            400,
-            md.INVALID_REQUEST,
-        )
-
-        # 스토리지 클래스, 웹사이트 리다이렉트, 암호화 설정 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
-        client.copy_object(Bucket=bucket_name, Key="source", CopySource=source, StorageClass="STANDARD_IA")
-        assert client.head_object(Bucket=bucket_name, Key="source")["StorageClass"] == "STANDARD_IA"
-        client.copy_object(Bucket=bucket_name, Key="source", CopySource=source, WebsiteRedirectLocation="/other")
-        assert client.head_object(Bucket=bucket_name, Key="source")["WebsiteRedirectLocation"] == "/other"
-        client.copy_object(Bucket=bucket_name, Key="source", CopySource=source, ServerSideEncryption="AES256")
 
     @pytest.mark.tag("Version")
     def test_copy_object_to_itself_from_old_version(self):

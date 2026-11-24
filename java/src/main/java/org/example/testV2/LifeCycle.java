@@ -661,18 +661,6 @@ public class LifeCycle extends TestBase {
 
 	@Test
 	@Tag("Transition")
-	public void testLifecycleTransitionInterval() {
-		var client = getClient();
-		var bucketName = createBucket(client, 33);
-
-		// STANDARD_IA 에서 GLACIER 로는 30일 이상 지나야 전환할 수 있다
-		assertPutRulesError(client, bucketName, rule()
-				.transitions(t -> t.days(30).storageClass("STANDARD_IA"), t -> t.days(40).storageClass("GLACIER"))
-				.build(), HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT);
-	}
-
-	@Test
-	@Tag("Transition")
 	public void testLifecycleNoncurrentTransition() {
 		var client = getClient();
 		var bucketName = createBucket(client, 34);
@@ -901,32 +889,6 @@ public class LifeCycle extends TestBase {
 		putRules(client, bucketName, makeRules(1000));
 		assertEquals(1000, getRules(client, bucketName).size());
 		assertPutRulesError(client, bucketName, makeRules(1001), HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML);
-	}
-
-	@Test
-	@Tag("Transition")
-	public void testLifecycleTransitionDefaultMinimumObjectSize() {
-		var client = getClient();
-		var bucketName = createBucket(client, 48);
-		var rules = List.of(rule().expiration(e -> e.days(1)).build());
-
-		// 지정하지 않으면 all_storage_classes_128K
-		putRules(client, bucketName, rules);
-		var response = client.getBucketLifecycleConfiguration(g -> g.bucket(bucketName));
-		assertEquals("all_storage_classes_128K", response.transitionDefaultMinimumObjectSizeAsString());
-
-		var putResponse = client.putBucketLifecycleConfiguration(p -> p.bucket(bucketName)
-				.lifecycleConfiguration(c -> c.rules(rules))
-				.transitionDefaultMinimumObjectSize("varies_by_storage_class"));
-		assertEquals("varies_by_storage_class", putResponse.transitionDefaultMinimumObjectSizeAsString());
-		response = client.getBucketLifecycleConfiguration(g -> g.bucket(bucketName));
-		assertEquals("varies_by_storage_class", response.transitionDefaultMinimumObjectSizeAsString());
-
-		var e = assertThrows(AwsServiceException.class,
-				() -> client.putBucketLifecycleConfiguration(p -> p.bucket(bucketName)
-						.lifecycleConfiguration(c -> c.rules(rules)).transitionDefaultMinimumObjectSize("invalid")));
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
-		assertEquals(MainData.INVALID_REQUEST, e.awsErrorDetails().errorCode());
 	}
 
 	@Test

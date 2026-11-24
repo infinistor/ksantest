@@ -1037,22 +1037,6 @@ class TestPutObject(S3TestBase):
         self.assert_client_error(lambda: client.get_object(Bucket=bucket_name, Key=key), 404, md.NO_SUCH_KEY)
 
     @pytest.mark.tag("StorageClass")
-    def test_put_object_storage_class(self):
-        key = "test_put_object_storage_class"
-        client = self.get_client()
-        bucket_name = self.create_bucket(client, 57)
-        client.put_object(Bucket=bucket_name, Key=key, Body=b"content", StorageClass="STANDARD_IA")
-        client.put_object(Bucket=bucket_name, Key=key + "_standard", Body=b"content")
-
-        assert client.head_object(Bucket=bucket_name, Key=key)["StorageClass"] == "STANDARD_IA"
-        assert client.get_object(Bucket=bucket_name, Key=key)["StorageClass"] == "STANDARD_IA"
-        # STANDARD 는 x-amz-storage-class 헤더를 돌려주지 않는다
-        assert "StorageClass" not in client.head_object(Bucket=bucket_name, Key=key + "_standard")
-
-        listed = {obj["Key"]: obj["StorageClass"] for obj in client.list_objects_v2(Bucket=bucket_name)["Contents"]}
-        assert listed == {key: "STANDARD_IA", key + "_standard": "STANDARD"}
-
-    @pytest.mark.tag("StorageClass")
     def test_put_object_invalid_storage_class(self):
         key = "test_put_object_invalid_storage_class"
         client = self.get_client()

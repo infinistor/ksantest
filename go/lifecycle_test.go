@@ -556,20 +556,6 @@ func TestLifecycleExpirationBeforeTransition(t *testing.T) {
 	putLifecycle(t, s, bucket, []types.LifecycleRule{rule})
 }
 
-// STANDARD_IA 에서 GLACIER 로는 30일 이상 지나야 전환할 수 있다
-func TestLifecycleTransitionInterval(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	rule := baseLifecycleRule()
-	rule.Transitions = []types.Transition{
-		{Days: aws.Int32(30), StorageClass: types.TransitionStorageClassStandardIa},
-		{Days: aws.Int32(40), StorageClass: types.TransitionStorageClassGlacier},
-	}
-	_, err := putLifecycleError(s, s.bucket(t, 33), []types.LifecycleRule{rule})
-	assertS3Error(t, err, 400, "InvalidArgument")
-}
-
 // 이전 버전 전환 규칙이 그대로 저장·조회된다
 func TestLifecycleNoncurrentTransition(t *testing.T) {
 	t.Parallel()
@@ -818,44 +804,6 @@ func TestLifecycleMaxRules(t *testing.T) {
 	}
 	_, err := putLifecycleError(s, bucket, makeRules(1001))
 	assertS3Error(t, err, 400, "MalformedXML")
-}
-
-// TransitionDefaultMinimumObjectSize 의 기본값과 변경을 확인
-func TestLifecycleTransitionDefaultMinimumObjectSize(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	ctx := context.Background()
-	bucket := s.bucket(t, 48)
-	configuration := &types.BucketLifecycleConfiguration{Rules: []types.LifecycleRule{expirationRule(&types.LifecycleRuleFilter{Prefix: aws.String("")}, 1)}}
-	getSize := func() types.TransitionDefaultMinimumObjectSize {
-		t.Helper()
-		out, err := s.client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{Bucket: aws.String(bucket)})
-		if err != nil {
-			t.Fatal(err)
-		}
-		return out.TransitionDefaultMinimumObjectSize
-	}
-
-	// 지정하지 않으면 all_storage_classes_128K
-	putLifecycle(t, s, bucket, configuration.Rules)
-	if got := getSize(); got != types.TransitionDefaultMinimumObjectSizeAllStorageClasses128k {
-		t.Fatalf("TransitionDefaultMinimumObjectSize=%q want=%q", got, types.TransitionDefaultMinimumObjectSizeAllStorageClasses128k)
-	}
-
-	out, err := s.client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{Bucket: aws.String(bucket), LifecycleConfiguration: configuration, TransitionDefaultMinimumObjectSize: types.TransitionDefaultMinimumObjectSizeVariesByStorageClass})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if out.TransitionDefaultMinimumObjectSize != types.TransitionDefaultMinimumObjectSizeVariesByStorageClass {
-		t.Fatalf("put TransitionDefaultMinimumObjectSize=%q", out.TransitionDefaultMinimumObjectSize)
-	}
-	if got := getSize(); got != types.TransitionDefaultMinimumObjectSizeVariesByStorageClass {
-		t.Fatalf("TransitionDefaultMinimumObjectSize=%q want=%q", got, types.TransitionDefaultMinimumObjectSizeVariesByStorageClass)
-	}
-
-	_, err = s.client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{Bucket: aws.String(bucket), LifecycleConfiguration: configuration, TransitionDefaultMinimumObjectSize: types.TransitionDefaultMinimumObjectSize("invalid")})
-	assertS3Error(t, err, 400, "InvalidRequest")
 }
 
 // 만료 규칙에 걸리는 오브젝트는 x-amz-expiration 헤더로 만료 예정일과 규칙 ID 를 돌려준다

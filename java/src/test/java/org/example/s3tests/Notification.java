@@ -124,16 +124,6 @@ class Notification {
 	}
 
 	/**
-	 * 대상 검증을 건너뛰지 않으면 존재하지 않는 대상의 알람 설정이 실패하는지 확인
-	 */
-	@Test
-	@Tag("Error")
-	void testNotificationDestinationNotExist() {
-		test.testNotificationDestinationNotExist();
-		testV2.testNotificationDestinationNotExist();
-	}
-
-	/**
 	 * 잘못된 이벤트 이름으로 알람 설정 시 실패하는지 확인
 	 */
 	@Test

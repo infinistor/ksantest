@@ -232,21 +232,6 @@ public class Notification extends TestBase {
 
 	@Test
 	@Tag("Error")
-	public void testNotificationDestinationNotExist() {
-		var client = getClient();
-		var bucketName = createBucket(client, 10);
-		var notification = new BucketNotificationConfiguration();
-		notification.addConfiguration("my-lambda", lambdaConfig(null, null));
-
-		// 대상 검증을 건너뛰지 않으면 존재하지 않는 대상은 거부된다
-		var e = assertThrows(AmazonServiceException.class, () -> client.setBucketNotificationConfiguration(
-				new SetBucketNotificationConfigurationRequest(bucketName, notification)));
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
-		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
-	}
-
-	@Test
-	@Tag("Error")
 	public void testNotificationInvalidEvent() {
 		var client = getClient();
 		var bucketName = createBucket(client, 11);

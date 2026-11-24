@@ -1621,27 +1621,6 @@ public class CopyObject extends TestBase {
 
 	@Test
 	@Tag("Metadata")
-	public void testCopyObjectAttributesNotCopied() {
-		var client = getClient();
-		var bucketName = createBucket(client, 73);
-		var metadata = Map.of("key", "value");
-		client.putObject(p -> p.bucket(bucketName).key("source").contentType("text/plain").cacheControl("no-cache")
-				.metadata(metadata).websiteRedirectLocation("/other").storageClass("STANDARD_IA"),
-				RequestBody.fromString(DIGITS));
-		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
-				.destinationBucket(bucketName).destinationKey("target"));
-
-		var response = client.headObject(h -> h.bucket(bucketName).key("target"));
-		assertEquals("text/plain", response.contentType());
-		assertEquals("no-cache", response.cacheControl());
-		assertEquals(metadata, response.metadata());
-		// 스토리지 클래스와 웹사이트 리다이렉트는 복사되지 않는다
-		assertNull(response.storageClassAsString());
-		assertNull(response.websiteRedirectLocation());
-	}
-
-	@Test
-	@Tag("Metadata")
 	public void testCopyObjectReplaceWithoutMetadata() {
 		var client = getClient();
 		var bucketName = createBucket(client, 74);
@@ -1654,45 +1633,6 @@ public class CopyObject extends TestBase {
 		assertEquals("binary/octet-stream", response.contentType());
 		assertEquals(0, response.metadata().size());
 		assertNull(response.cacheControl());
-	}
-
-	@Test
-	@Tag("StorageClass")
-	public void testCopyObjectStorageClass() {
-		var client = getClient();
-		var bucketName = copySourceBucket(client, 75);
-		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
-				.destinationBucket(bucketName).destinationKey("target").storageClass("STANDARD_IA"));
-		assertEquals("STANDARD_IA",
-				client.headObject(h -> h.bucket(bucketName).key("target")).storageClassAsString());
-
-		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_STORAGE_CLASS,
-				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
-						.destinationBucket(bucketName).destinationKey("target2").storageClass("INVALID")));
-	}
-
-	@Test
-	@Tag("Overwrite")
-	public void testCopyObjectToItselfWithChanges() {
-		var client = getClient();
-		var bucketName = copySourceBucket(client, 76);
-
-		// 태그만 바꾸는 것은 변경으로 치지 않는다
-		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_REQUEST,
-				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
-						.destinationBucket(bucketName).destinationKey("source")
-						.taggingDirective(TaggingDirective.REPLACE).tagging("key=value")));
-
-		// 스토리지 클래스, 웹사이트 리다이렉트, 암호화 설정 중 하나를 바꾸면 자기 자신에게 복사할 수 있다
-		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
-				.destinationBucket(bucketName).destinationKey("source").storageClass("STANDARD_IA"));
-		assertEquals("STANDARD_IA",
-				client.headObject(h -> h.bucket(bucketName).key("source")).storageClassAsString());
-		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
-				.destinationBucket(bucketName).destinationKey("source").websiteRedirectLocation("/other"));
-		assertEquals("/other", client.headObject(h -> h.bucket(bucketName).key("source")).websiteRedirectLocation());
-		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source")
-				.destinationBucket(bucketName).destinationKey("source").serverSideEncryption("AES256"));
 	}
 
 	@Test

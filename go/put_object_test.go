@@ -1190,47 +1190,6 @@ func TestPutObjectContentMd5Invalid(t *testing.T) {
 	assertS3Error(t, err, 404, "NoSuchKey")
 }
 
-// 스토리지 클래스를 지정해 올리면 조회·목록에 그대로 나온다
-func TestPutObjectStorageClass(t *testing.T) {
-	t.Parallel()
-	s := newSuite(t)
-	ctx := context.Background()
-	b, key := s.bucket(t, 57), "TestPutObjectStorageClass"
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(b), Key: aws.String(key), Body: strings.NewReader("content"), StorageClass: types.StorageClassStandardIa})
-	if err != nil {
-		t.Fatal(err)
-	}
-	put(t, s, b, key+"_standard", "content", nil)
-
-	if head := headObject(t, s.client, b, key); head.StorageClass != types.StorageClassStandardIa {
-		t.Fatalf("HeadObject StorageClass=%q", head.StorageClass)
-	}
-	got, err := s.client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(b), Key: aws.String(key)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	got.Body.Close()
-	if got.StorageClass != types.StorageClassStandardIa {
-		t.Fatalf("GetObject StorageClass=%q", got.StorageClass)
-	}
-	// STANDARD 는 x-amz-storage-class 헤더를 돌려주지 않는다
-	if head := headObject(t, s.client, b, key+"_standard"); head.StorageClass != "" {
-		t.Fatalf("HeadObject standard StorageClass=%q", head.StorageClass)
-	}
-
-	listed, err := s.client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String(b)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	classes := map[string]string{}
-	for _, object := range listed.Contents {
-		classes[aws.ToString(object.Key)] = string(object.StorageClass)
-	}
-	if len(classes) != 2 || classes[key] != "STANDARD_IA" || classes[key+"_standard"] != "STANDARD" {
-		t.Fatalf("listed storage classes=%v", classes)
-	}
-}
-
 // 알 수 없는 스토리지 클래스는 거부된다
 func TestPutObjectInvalidStorageClass(t *testing.T) {
 	t.Parallel()

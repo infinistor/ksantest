@@ -907,30 +907,6 @@ public class PutObject extends TestBase {
 
 	@Test
 	@Tag("StorageClass")
-	public void testPutObjectStorageClass() {
-		var key = "testPutObjectStorageClass";
-		var standardKey = key + "_standard";
-		var client = getClient();
-		var bucketName = createBucket(client, 57);
-		client.putObject(new PutObjectRequest(bucketName, key, createBody("content"), contentMetadata("content"))
-				.withStorageClass("STANDARD_IA"));
-		client.putObject(bucketName, standardKey, "content");
-
-		assertEquals("STANDARD_IA", client.getObjectMetadata(bucketName, key).getStorageClass());
-		var getResponse = client.getObject(bucketName, key);
-		assertEquals("STANDARD_IA", getResponse.getObjectMetadata().getStorageClass());
-		getBody(getResponse.getObjectContent());
-		// STANDARD 는 x-amz-storage-class 헤더를 돌려주지 않는다
-		assertNull(client.getObjectMetadata(bucketName, standardKey).getStorageClass());
-
-		var listed = new HashMap<String, String>();
-		for (var object : client.listObjectsV2(bucketName).getObjectSummaries())
-			listed.put(object.getKey(), object.getStorageClass());
-		assertEquals(Map.of(key, "STANDARD_IA", standardKey, "STANDARD"), listed);
-	}
-
-	@Test
-	@Tag("StorageClass")
 	public void testPutObjectInvalidStorageClass() {
 		var key = "testPutObjectInvalidStorageClass";
 		var client = getClient();

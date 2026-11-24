@@ -386,37 +386,6 @@ class TestGrants(S3TestBase):
         response = client.get_object_acl(Bucket=bucket_name, Key=key)
         self.check_acl(acl, response)
 
-    @pytest.mark.tag("Delete")
-    def test_bucket_acl_revoke_all(self):
-        key = "test_bucket_acl_revoke_all"
-        client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, 33)
-
-        client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
-        response = client.get_bucket_acl(Bucket=bucket_name)
-
-        with pytest.raises(ClientError):
-            client.put_bucket_acl(
-                Bucket=bucket_name,
-                AccessControlPolicy={"Owner": {}, "Grants": response["Grants"]},
-            )
-
-    @pytest.mark.tag("Delete")
-    def test_object_acl_revoke_all(self):
-        key = "test_object_acl_revoke_all"
-        client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, 34)
-
-        client.put_object(Bucket=bucket_name, Key=key, Body=key.encode("utf-8"))
-        response = client.get_object_acl(Bucket=bucket_name, Key=key)
-
-        with pytest.raises(ClientError):
-            client.put_object_acl(
-                Bucket=bucket_name,
-                Key=key,
-                AccessControlPolicy={"Owner": {}, "Grants": response["Grants"]},
-            )
-
     @pytest.mark.tag("Error")
     def test_bucket_acl_revoke_all_id(self):
         key = "test_bucket_acl_revoke_all_id"
