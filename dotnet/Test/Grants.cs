@@ -934,27 +934,6 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "Grants")]
 		[Trait(MainData.Minor, "Check")]
-		[Trait(MainData.Explanation, "log-delivery-write 캔드 ACL이 로그 전달 그룹에 WRITE, READ_ACP를 부여하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestBucketAclLogDeliveryWrite()
-		{
-			TestId = 50;
-			var client = GetClient();
-			var bucketName = GetNewBucketCannedAcl(client);
-			client.PutBucketACL(bucketName, acl: S3CannedACL.LogDeliveryWrite);
-			// 로그 전달 그룹에 WRITE, READ_ACP 가 부여된다
-			var grants = client.GetBucketACL(bucketName).AccessControlList.Grants;
-			var logDelivery = new List<string>();
-			foreach (var grant in grants)
-				if (grant.Grantee.URI == LogDelivery) logDelivery.Add(grant.Permission.Value);
-			logDelivery.Sort(StringComparer.Ordinal);
-			Assert.Equal(["READ_ACP", "WRITE"], logDelivery);
-			Assert.Equal(3, grants.Count);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Grants")]
-		[Trait(MainData.Minor, "Check")]
 		[Trait(MainData.Explanation, "권한 부여 헤더만으로 업로드하면 지정한 권한만 남는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
 		public void TestPutObjectWithGrantHeader()

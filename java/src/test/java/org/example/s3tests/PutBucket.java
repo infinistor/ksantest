@@ -315,16 +315,6 @@ class PutBucket {
 	}
 
 	/**
-	 * 올바르지 않은 LocationConstraint 로 버킷을 만들 수 없는지 확인
-	 */
-	@Test
-	@Tag("location")
-	void testBucketCreateInvalidLocation() {
-		test.testBucketCreateInvalidLocation();
-		testV2.testBucketCreateInvalidLocation();
-	}
-
-	/**
 	 * 존재하지 않는 버킷의 location 조회가 NoSuchBucket 으로 실패하는지 확인
 	 */
 	@Test

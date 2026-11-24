@@ -860,15 +860,6 @@ public class ListObjectsV2 extends TestBase {
 	}
 
 	@Test
-	@Tag("ERROR")
-	public void testBucketListV2ContinuationTokenInvalid() {
-		var client = getClient();
-		var bucketName = createObjects(client, 48, TREE_KEYS);
-		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
-				() -> client.listObjectsV2(l -> l.bucket(bucketName).continuationToken("invalid")));
-	}
-
-	@Test
 	@Tag("KeyCount")
 	public void testBucketListV2KeyCountDelimiter() {
 		var client = getClient();

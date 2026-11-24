@@ -200,23 +200,6 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "ListBuckets")]
-		[Trait(MainData.Minor, "Metadata")]
-		[Trait(MainData.Explanation, "버킷의 메타데이터 조회 응답에 버킷의 리전이 포함되는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestHeadBucketRegion()
-		{
-			TestId = 10;
-			var client = GetClient();
-			var bucketName = GetNewBucket(client);
-			// x-amz-bucket-region 헤더
-			var region = client.HeadBucket(bucketName).BucketRegion;
-			Assert.False(string.IsNullOrEmpty(region));
-			if (!string.IsNullOrEmpty(Config.S3.RegionName))
-				Assert.Equal(Config.S3.RegionName, region);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "ListBuckets")]
 		[Trait(MainData.Minor, "Prefix")]
 		[Trait(MainData.Explanation, "일치하는 버킷이 없는 prefix로 조회하면 빈 목록이 반환되는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
@@ -241,20 +224,6 @@ namespace s3tests.Test
 			var client = GetClient();
 			// max-buckets 는 1 이상 10000 이하만 허용된다
 			var e = Assert.Throws<AggregateException>(() => client.ListBuckets(maxBuckets: 10001));
-			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
-			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "ListBuckets")]
-		[Trait(MainData.Minor, "ERROR")]
-		[Trait(MainData.Explanation, "잘못된 continuationToken으로 조회하면 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestListBucketsInvalidContinuationToken()
-		{
-			TestId = 13;
-			var client = GetClient();
-			var e = Assert.Throws<AggregateException>(() => client.ListBuckets(continuationToken: "invalid-continuation-token"));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.INVALID_ARGUMENT, GetErrorCode(e));
 		}

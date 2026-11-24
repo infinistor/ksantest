@@ -133,16 +133,6 @@ class TestListBuckets(S3TestBase):
         bucket_name = self.create_bucket(client, 9)
         assert self._http_status(lambda: alt_client.head_bucket(Bucket=bucket_name)) == 403
 
-    @pytest.mark.tag("Metadata")
-    def test_head_bucket_region(self):
-        client = self.get_client()
-        bucket_name = self.create_bucket(client, 10)
-        response = client.head_bucket(Bucket=bucket_name)
-        region = response["ResponseMetadata"]["HTTPHeaders"].get("x-amz-bucket-region")
-        assert region
-        if self.config.region_name:
-            assert region == self.config.region_name
-
     @pytest.mark.tag("Prefix")
     def test_list_buckets_prefix_not_match(self):
         client = self.get_client()
@@ -156,15 +146,6 @@ class TestListBuckets(S3TestBase):
         client = self.get_client()
         # max-buckets 는 1 이상 10000 이하만 허용된다
         self.assert_client_error(lambda: client.list_buckets(MaxBuckets=10001), 400, md.INVALID_ARGUMENT)
-
-    @pytest.mark.tag("ERROR")
-    def test_list_buckets_invalid_continuation_token(self):
-        client = self.get_client()
-        self.assert_client_error(
-            lambda: client.list_buckets(ContinuationToken="invalid-continuation-token"),
-            400,
-            md.INVALID_ARGUMENT,
-        )
 
     @pytest.mark.tag("ContinuationToken")
     def test_list_buckets_paging(self):

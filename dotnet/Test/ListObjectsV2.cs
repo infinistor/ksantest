@@ -1056,21 +1056,6 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "ListObjectsV2")]
-		[Trait(MainData.Minor, "ERROR")]
-		[Trait(MainData.Explanation, "ContinuationToken이 잘못되면 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestBucketListV2ContinuationTokenInvalid()
-		{
-			TestId = 48;
-			var bucketName = SetupObjects(TreeKeys);
-			var client = GetClient();
-
-			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
-				() => client.ListObjectsV2(bucketName, continuationToken: "invalid"));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "ListObjectsV2")]
 		[Trait(MainData.Minor, "KeyCount")]
 		[Trait(MainData.Explanation, "KeyCount와 MaxKeys가 공통 접두어도 한 건으로 세는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]

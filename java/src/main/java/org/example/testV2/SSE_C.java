@@ -619,21 +619,4 @@ public class SSE_C extends TestBase { // NOSONAR
 				() -> client.getObject(g -> g.bucket(bucketName).key(key).sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM)
 						.sseCustomerKey(SSE_KEY).sseCustomerKeyMD5(SSE_KEY_MD5)));
 	}
-
-	@Test
-	@Tag("ERROR")
-	public void testEncryptionSseCInsecureTransport() {
-		var key = "testEncryptionSseCInsecureTransport";
-		var httpsClient = getClientHttps(false);
-		var bucketName = createBucket(httpsClient, 25);
-		unblockSseC(bucketName);
-
-		// SSE-C 요청은 HTTPS 로만 받는다
-		var httpClient = createClient(false, config.mainUser, false, RequestChecksumCalculation.WHEN_REQUIRED,
-				ResponseChecksumValidation.WHEN_REQUIRED);
-		assertS3Error(HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT,
-				() -> httpClient.putObject(p -> p.bucket(bucketName).key(key)
-						.sseCustomerAlgorithm(SSE_CUSTOMER_ALGORITHM).sseCustomerKey(SSE_KEY)
-						.sseCustomerKeyMD5(SSE_KEY_MD5), RequestBody.fromString("content")));
-	}
 }

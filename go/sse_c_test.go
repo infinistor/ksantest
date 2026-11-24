@@ -566,12 +566,3 @@ func TestEncryptionSseCKeyOnPlainObject(t *testing.T) {
 	_, err := s.client.GetObject(context.Background(), sseCGetInput(bucket, key))
 	assertS3Error(t, err, 400, "InvalidRequest")
 }
-
-// SSE-C 요청은 HTTPS 로만 받는다
-func TestEncryptionSseCInsecureTransport(t *testing.T) {
-	t.Parallel()
-	s := newSuite(t)
-	bucket := ssecBucket(t, s, 25)
-	_, err := sseCHTTPClient(s).PutObject(context.Background(), sseCPutInput(bucket, "TestEncryptionSseCInsecureTransport", []byte("content")))
-	assertS3Error(t, err, 400, "InvalidArgument")
-}

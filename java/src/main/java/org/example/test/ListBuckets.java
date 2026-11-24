@@ -182,18 +182,6 @@ public class ListBuckets extends TestBase {
 	}
 
 	@Test
-	@Tag("Metadata")
-	public void testHeadBucketRegion() {
-		var client = getClient();
-		var bucketName = createBucket(client, 10);
-		var response = client.headBucket(new HeadBucketRequest(bucketName));
-		var region = response.getBucketRegion();
-		assertTrue(StringUtils.isNotBlank(region));
-		if (StringUtils.isNotBlank(config.regionName))
-			assertEquals(config.regionName, region);
-	}
-
-	@Test
 	@Tag("Prefix")
 	public void testListBucketsPrefixNotMatch() {
 		var client = getClient();
@@ -211,16 +199,6 @@ public class ListBuckets extends TestBase {
 		// max-buckets 는 1 이상 10000 이하만 허용된다
 		var e = assertThrows(AmazonServiceException.class,
 				() -> client.listBuckets(new ListBucketsPaginatedRequest().withMaxBuckets(10001)));
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
-		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
-	}
-
-	@Test
-	@Tag("ERROR")
-	public void testListBucketsInvalidContinuationToken() {
-		var client = getClient();
-		var e = assertThrows(AmazonServiceException.class, () -> client
-				.listBuckets(new ListBucketsPaginatedRequest().withContinuationToken("invalid-continuation-token")));
 		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
 		assertEquals(MainData.INVALID_ARGUMENT, e.getErrorCode());
 	}

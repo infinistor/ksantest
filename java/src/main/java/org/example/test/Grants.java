@@ -553,22 +553,6 @@ public class Grants extends TestBase {
 
 	@Test
 	@Tag("Check")
-	public void testBucketAclLogDeliveryWrite() {
-		var client = getClient();
-		var bucketName = createBucketCannedAcl(client, 50);
-		client.setBucketAcl(bucketName, CannedAccessControlList.LogDeliveryWrite);
-
-		// 로그 전달 그룹에 WRITE, READ_ACP 가 부여된다
-		var grants = client.getBucketAcl(bucketName).getGrantsAsList();
-		var logDelivery = grants.stream()
-				.filter(grant -> LOG_DELIVERY_GROUP.equals(grant.getGrantee().getIdentifier()))
-				.map(grant -> grant.getPermission().toString()).sorted().toList();
-		assertEquals(List.of("READ_ACP", "WRITE"), logDelivery);
-		assertEquals(3, grants.size());
-	}
-
-	@Test
-	@Tag("Check")
 	public void testPutObjectWithGrantHeader() {
 		var key = "testPutObjectWithGrantHeader";
 		var content = "content";

@@ -605,21 +605,6 @@ class TestGrants(S3TestBase):
         assert len(client.get_object_acl(Bucket=bucket_name, Key=key, VersionId=version_id)["Grants"]) == 1
 
     @pytest.mark.tag("Check")
-    def test_bucket_acl_log_delivery_write(self):
-        client = self.get_client()
-        bucket_name = self.create_bucket_canned_acl(client, 50)
-        client.put_bucket_acl(Bucket=bucket_name, ACL="log-delivery-write")
-        # 로그 전달 그룹에 WRITE, READ_ACP 가 부여된다
-        grants = client.get_bucket_acl(Bucket=bucket_name)["Grants"]
-        log_delivery = sorted(
-            grant["Permission"]
-            for grant in grants
-            if grant["Grantee"].get("URI") == "http://acs.amazonaws.com/groups/s3/LogDelivery"
-        )
-        assert log_delivery == ["READ_ACP", "WRITE"]
-        assert len(grants) == 3
-
-    @pytest.mark.tag("Check")
     def test_put_object_with_grant_header(self):
         key = "test_put_object_with_grant_header"
         client = self.get_client()

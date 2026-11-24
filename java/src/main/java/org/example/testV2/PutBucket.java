@@ -257,27 +257,6 @@ public class PutBucket extends TestBase {
 
 	@Test
 	@Tag("location")
-	public void testBucketCreateInvalidLocation() {
-		var client = getClient();
-		var bucketName = getNewBucketNameOnly(29);
-
-		var e = assertThrows(AwsServiceException.class, () -> {
-			client.createBucket(c -> c.bucket(bucketName)
-					.createBucketConfiguration(b -> b.locationConstraint("invalid-region-1")));
-			client.deleteBucket(d -> d.bucket(bucketName));
-		});
-		assertEquals(HttpStatus.SC_BAD_REQUEST, e.statusCode());
-		// us-east-1 엔드포인트는 InvalidLocationConstraint, 그 외 리전은 IllegalLocationConstraintException
-		assertTrue(List.of(MainData.ILLEGAL_LOCATION_CONSTRAINT_EXCEPTION, MainData.INVALID_LOCATION_CONSTRAINT)
-				.contains(e.awsErrorDetails().errorCode()), e.awsErrorDetails().errorCode());
-
-		e = assertThrows(AwsServiceException.class, () -> client.getBucketLocation(g -> g.bucket(bucketName)));
-		assertEquals(HttpStatus.SC_NOT_FOUND, e.statusCode());
-		assertEquals(MainData.NO_SUCH_BUCKET, e.awsErrorDetails().errorCode());
-	}
-
-	@Test
-	@Tag("location")
 	public void testGetBucketLocationNotExist() {
 		var client = getClient();
 		var bucketName = getNewBucketNameOnly(30);

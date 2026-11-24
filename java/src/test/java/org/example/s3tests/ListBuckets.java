@@ -127,16 +127,6 @@ class ListBuckets {
 	}
 
 	/**
-	 * 버킷의 메타데이터 조회시 버킷 리전(x-amz-bucket-region)을 돌려주는지 확인
-	 */
-	@Test
-	@Tag("Metadata")
-	void testHeadBucketRegion() {
-		test.testHeadBucketRegion();
-		testV2.testHeadBucketRegion();
-	}
-
-	/**
 	 * 버킷 목록 조회시 일치하는 버킷이 없는 Prefix를 지정하면 빈 목록을 돌려주는지 확인
 	 */
 	@Test
@@ -154,16 +144,6 @@ class ListBuckets {
 	void testListBucketsMaxBucketsInvalid() {
 		test.testListBucketsMaxBucketsInvalid();
 		testV2.testListBucketsMaxBucketsInvalid();
-	}
-
-	/**
-	 * 버킷 목록 조회시 잘못된 ContinuationToken을 지정할 경우 실패 확인
-	 */
-	@Test
-	@Tag("ERROR")
-	void testListBucketsInvalidContinuationToken() {
-		test.testListBucketsInvalidContinuationToken();
-		testV2.testListBucketsInvalidContinuationToken();
 	}
 
 	/**

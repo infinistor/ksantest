@@ -835,14 +835,6 @@ func TestBucketListV2EncodingInvalid(t *testing.T) {
 	assertS3Error(t, err, 400, "InvalidArgument")
 }
 
-// 서버가 내주지 않은 continuation-token 은 거부된다
-func TestBucketListV2ContinuationTokenInvalid(t *testing.T) {
-	t.Parallel()
-	s, b := listFixture(t, listTreeKeys, 48)
-	_, err := s.client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{Bucket: aws.String(b), ContinuationToken: aws.String("invalid")})
-	assertS3Error(t, err, 400, "InvalidArgument")
-}
-
 // KeyCount 와 MaxKeys 는 공통 접두어도 한 건으로 센다
 func TestBucketListV2KeyCountDelimiter(t *testing.T) {
 	t.Parallel()

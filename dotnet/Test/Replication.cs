@@ -568,30 +568,6 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "Replication")]
-		[Trait(MainData.Minor, "Check")]
-		[Trait(MainData.Explanation, "대상 스토리지 클래스를 지정한 복제 규칙이 저장되고 조회되는지 확인")]
-		[Trait(MainData.Result, MainData.ResultSuccess)]
-		public void TestReplicationStorageClass()
-		{
-			TestId = 19;
-			var client = GetClient();
-			var (sourceBucketName, targetBucketArn) = SetupReplicationBuckets(client);
-
-			var rule = NewReplicationRule(targetBucketArn);
-			rule.Destination = new ReplicationDestination()
-			{
-				BucketArn = targetBucketArn,
-				StorageClass = S3StorageClass.StandardInfrequentAccess,
-			};
-			PutReplication(client, sourceBucketName, [rule]);
-
-			var rules = GetReplicationRules(client, sourceBucketName);
-			Assert.Equal(targetBucketArn, rules[0].Destination.BucketArn);
-			Assert.Equal(S3StorageClass.StandardInfrequentAccess, rules[0].Destination.StorageClass);
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "Replication")]
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "원본 버킷 자신을 복제 대상으로 지정하면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]

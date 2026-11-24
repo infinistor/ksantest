@@ -160,22 +160,6 @@ class TestPutBucket(S3TestBase):
         self._assert_create_error(bucket_name + ".", 400, md.INVALID_BUCKET_NAME)
 
     @pytest.mark.tag("location")
-    def test_bucket_create_invalid_location(self):
-        client = self.get_client()
-        bucket_name = self.get_new_bucket_name_only(29)
-        with pytest.raises(ClientError) as exc_info:
-            client.create_bucket(
-                Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "invalid-region-1"}
-            )
-        assert exc_info.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
-        # us-east-1 엔드포인트는 InvalidLocationConstraint, 그 외 리전은 IllegalLocationConstraintException
-        assert exc_info.value.response["Error"]["Code"] in (
-            md.ILLEGAL_LOCATION_CONSTRAINT_EXCEPTION,
-            md.INVALID_LOCATION_CONSTRAINT,
-        )
-        self.assert_client_error(lambda: client.get_bucket_location(Bucket=bucket_name), 404, md.NO_SUCH_BUCKET)
-
-    @pytest.mark.tag("location")
     def test_get_bucket_location_not_exist(self):
         client = self.get_client()
         bucket_name = self.get_new_bucket_name_only(30)

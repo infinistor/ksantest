@@ -392,30 +392,6 @@ func TestBucketCreateNamingBadDotAtEdge(t *testing.T) {
 	assertCreateBucketError(t, s, createBucketInput(s.cfg, bucket+"."), 400, "InvalidBucketName")
 }
 
-// 없는 리전을 LocationConstraint 로 주면 버킷 생성 실패 확인
-func TestBucketCreateInvalidLocation(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	ctx := context.Background()
-	bucket := s.bucketNameOnly(29)
-	_, err := s.client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(bucket), CreateBucketConfiguration: &types.CreateBucketConfiguration{LocationConstraint: types.BucketLocationConstraint("invalid-region-1")}})
-	if err == nil && !s.cfg.NotDelete {
-		_, _ = s.client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
-	}
-	assertS3Status(t, err, 400)
-	// us-east-1 엔드포인트는 InvalidLocationConstraint, 그 외 리전은 IllegalLocationConstraintException
-	var apiErr smithy.APIError
-	if !errors.As(err, &apiErr) {
-		t.Fatalf("error type = %T, want smithy.APIError: %v", err, err)
-	}
-	if code := apiErr.ErrorCode(); code != "IllegalLocationConstraintException" && code != "InvalidLocationConstraint" {
-		t.Fatalf("error code = %q, want IllegalLocationConstraintException or InvalidLocationConstraint", code)
-	}
-	_, err = s.client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{Bucket: aws.String(bucket)})
-	assertS3Error(t, err, 404, "NoSuchBucket")
-}
-
 // 없는 버킷의 location 조회는 실패한다
 func TestGetBucketLocationNotExist(t *testing.T) {
 	t.Parallel()

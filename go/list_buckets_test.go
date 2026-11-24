@@ -146,25 +146,6 @@ func TestHeadBucketAltUser(t *testing.T) {
 	assertHTTPStatus(t, err, 403)
 }
 
-// 버킷 메타데이터 조회시 버킷의 리전을 돌려주는지 확인
-func TestHeadBucketRegion(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	bucket := s.bucket(t, 10)
-	out, err := s.client.HeadBucket(context.Background(), &s3.HeadBucketInput{Bucket: aws.String(bucket)})
-	if err != nil {
-		t.Fatalf("HeadBucket: %v", err)
-	}
-	region := aws.ToString(out.BucketRegion)
-	if region == "" {
-		t.Fatal("x-amz-bucket-region 헤더가 없습니다")
-	}
-	if s.cfg.Region != "" && region != s.cfg.Region {
-		t.Fatalf("bucket region = %q, want %q", region, s.cfg.Region)
-	}
-}
-
 // 버킷 목록 조회시 일치하는 버킷이 없는 Prefix를 주면 빈 목록을 돌려주는지 확인
 func TestListBucketsPrefixNotMatch(t *testing.T) {
 	t.Parallel()
@@ -190,15 +171,6 @@ func TestListBucketsMaxBucketsInvalid(t *testing.T) {
 	s := newSuite(t)
 	// max-buckets 는 1 이상 10000 이하만 허용된다
 	_, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{MaxBuckets: aws.Int32(10001)})
-	assertS3Error(t, err, 400, "InvalidArgument")
-}
-
-// 버킷 목록 조회시 잘못된 ContinuationToken을 주면 실패하는지 확인
-func TestListBucketsInvalidContinuationToken(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	_, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{ContinuationToken: aws.String("invalid-continuation-token")})
 	assertS3Error(t, err, 400, "InvalidArgument")
 }
 

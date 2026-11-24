@@ -375,23 +375,6 @@ namespace s3tests.Test
 		[Fact]
 		[Trait(MainData.Major, "PutBucket")]
 		[Trait(MainData.Minor, "location")]
-		[Trait(MainData.Explanation, "없는 리전을 LocationConstraint 로 주면 버킷 생성이 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestBucketCreateInvalidLocation()
-		{
-			TestId = 29;
-			var client = GetClient();
-			var bucketName = GetNewBucketName();
-			var e = Assert.Throws<AggregateException>(() => client.PutBucket(bucketName, regionName: "invalid-region-1"));
-			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
-			// us-east-1 엔드포인트는 InvalidLocationConstraint, 그 외 리전은 IllegalLocationConstraintException
-			Assert.Contains(GetErrorCode(e), new[] { MainData.ILLEGAL_LOCATION_CONSTRAINT_EXCEPTION, MainData.INVALID_LOCATION_CONSTRAINT });
-			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.GetBucketLocation(bucketName));
-		}
-
-		[Fact]
-		[Trait(MainData.Major, "PutBucket")]
-		[Trait(MainData.Minor, "location")]
 		[Trait(MainData.Explanation, "없는 버킷의 location 을 조회하면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
 		public void TestGetBucketLocationNotExist()

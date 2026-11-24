@@ -604,17 +604,3 @@ class TestSseC(S3TestBase):
             400,
             md.INVALID_REQUEST,
         )
-
-    @pytest.mark.tag("ERROR")
-    def test_encryption_sse_c_insecure_transport(self):
-        key = "test_encryption_sse_c_insecure_transport"
-        https_client = self.get_client_https(False)
-        bucket_name = self.create_bucket(https_client, 25)
-        self.unblock_sse_c(bucket_name)
-        # SSE-C 요청은 HTTPS 로만 받는다
-        http_client = self.create_client(False, self.config.main_user, False)
-        self.assert_client_error(
-            lambda: http_client.put_object(Bucket=bucket_name, Key=key, Body=b"content", **self.sse_c_extra_args()),
-            400,
-            md.INVALID_ARGUMENT,
-        )

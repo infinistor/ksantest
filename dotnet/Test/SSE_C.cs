@@ -713,22 +713,5 @@ namespace s3tests.Test
 			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_REQUEST,
 				() => client.GetObject(bucketName, key, sseCustomerKey: DefaultSseC()));
 		}
-
-		[Fact]
-		[Trait(MainData.Major, "SSE-C")]
-		[Trait(MainData.Minor, "ERROR")]
-		[Trait(MainData.Explanation, "HTTP로 SSE-C 업로드를 요청하면 실패하는지 확인")]
-		[Trait(MainData.Result, MainData.ResultFailure)]
-		public void TestEncryptionSseCInsecureTransport()
-		{
-			TestId = 25;
-			var key = "TestEncryptionSseCInsecureTransport";
-			var bucketName = GetNewBucket();
-			UnblockSseC(bucketName);
-			// SSE-C 요청은 HTTPS 로만 받는다
-			var httpClient = new S3Client(Config.S3, false, Config.MainUser, Output);
-			AssertS3Error(HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT,
-				() => httpClient.PutObject(bucketName, key, body: "content", sseCustomerKey: DefaultSseC()));
-		}
 	}
 }

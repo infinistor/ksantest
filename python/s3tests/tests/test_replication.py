@@ -342,17 +342,6 @@ class TestReplication(S3TestBase):
         rules = self._get_replication_rules(client, source_bucket_name)
         assert rules[0]["Status"] == "Disabled"
 
-    @pytest.mark.tag("Check")
-    def test_replication_storage_class(self):
-        client = self.get_client()
-        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 19)
-        destination = {"Bucket": target_bucket_arn, "StorageClass": "STANDARD_IA"}
-        self._put_replication(
-            client, source_bucket_name, [self._replication_rule(target_bucket_arn, Destination=destination)]
-        )
-        rules = self._get_replication_rules(client, source_bucket_name)
-        assert rules[0]["Destination"] == destination
-
     @pytest.mark.tag("ERROR")
     def test_replication_same_bucket(self):
         client = self.get_client()

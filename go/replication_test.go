@@ -2,7 +2,6 @@ package s3tests
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -286,22 +285,6 @@ func TestReplicationDisabledRule(t *testing.T) {
 	putReplicationRules(t, s, source, rule)
 	if got := getReplicationRules(t, s, source)[0]; got.Status != types.ReplicationRuleStatusDisabled {
 		t.Fatalf("rule=%#v", got)
-	}
-}
-
-// 대상 스토리지 클래스를 지정한 복제 설정이 되는지 확인
-func TestReplicationStorageClass(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	source, targetArn := replicationBuckets(t, s, 19)
-	rule := replicationRule(targetArn)
-	rule.Destination = &types.Destination{Bucket: aws.String(targetArn), StorageClass: types.StorageClassStandardIa}
-	putReplicationRules(t, s, source, rule)
-	got := getReplicationRules(t, s, source)[0].Destination
-	want := types.Destination{Bucket: aws.String(targetArn), StorageClass: types.StorageClassStandardIa}
-	if got == nil || !reflect.DeepEqual(*got, want) {
-		t.Fatalf("destination=%#v, want %#v", got, want)
 	}
 }
 

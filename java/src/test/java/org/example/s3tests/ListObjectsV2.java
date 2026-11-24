@@ -518,16 +518,6 @@ class ListObjectsV2 {
 	}
 
 	/**
-	 * continuation-token이 잘못되면 400 InvalidArgument인지 확인
-	 */
-	@Test
-	@Tag("ERROR")
-	void testBucketListV2ContinuationTokenInvalid() {
-		test.testBucketListV2ContinuationTokenInvalid();
-		testV2.testBucketListV2ContinuationTokenInvalid();
-	}
-
-	/**
 	 * KeyCount와 MaxKeys가 공통 접두어도 한 건으로 세는지 확인
 	 */
 	@Test

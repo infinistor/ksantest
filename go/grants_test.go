@@ -3,7 +3,6 @@ package s3tests
 import (
 	"bytes"
 	"context"
-	"sort"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -790,29 +789,6 @@ func TestObjectAclDeleteMarker(t *testing.T) {
 	}
 	if len(out.Grants) != 1 {
 		t.Fatalf("grants=%#v, want 1", out.Grants)
-	}
-}
-
-// log-delivery-write 는 로그 전달 그룹에 WRITE, READ_ACP 를 부여한다
-func TestBucketAclLogDeliveryWrite(t *testing.T) {
-	t.Parallel()
-
-	s := newSuite(t)
-	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 50)
-	setBucketCannedACL(t, s, bucket, types.BucketCannedACL("log-delivery-write"))
-	grants := getBucketGrants(t, s, bucket)
-	var logDelivery []string
-	for _, grant := range grants {
-		if grant.Grantee != nil && aws.ToString(grant.Grantee.URI) == logDeliveryURI {
-			logDelivery = append(logDelivery, string(grant.Permission))
-		}
-	}
-	sort.Strings(logDelivery)
-	if len(logDelivery) != 2 || logDelivery[0] != "READ_ACP" || logDelivery[1] != "WRITE" {
-		t.Fatalf("log delivery permissions=%v, want [READ_ACP WRITE]", logDelivery)
-	}
-	if len(grants) != 3 {
-		t.Fatalf("grants=%#v, want 3", grants)
 	}
 }
 

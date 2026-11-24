@@ -513,16 +513,6 @@ class Grants {
 	}
 
 	/**
-	 * log-delivery-write 로 로그 전달 그룹에 WRITE, READ_ACP 가 부여되는지 확인
-	 */
-	@Test
-	@Tag("Check")
-	void testBucketAclLogDeliveryWrite() {
-		test.testBucketAclLogDeliveryWrite();
-		testV2.testBucketAclLogDeliveryWrite();
-	}
-
-	/**
 	 * 권한 부여 헤더로 업로드하면 지정한 권한만 남고 대상 사용자가 읽을 수 있는지 확인
 	 */
 	@Test

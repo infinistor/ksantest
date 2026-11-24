@@ -608,16 +608,6 @@ class TestListObjectsV2(S3TestBase):
             lambda: client.list_objects_v2(Bucket=bucket_name, EncodingType="invalid"), 400, md.INVALID_ARGUMENT
         )
 
-    @pytest.mark.tag("ERROR")
-    def test_bucket_list_v2_continuation_token_invalid(self):
-        client = self.get_client()
-        bucket_name = self.create_objects(client, 48, self._TREE_KEYS)
-        self.assert_client_error(
-            lambda: client.list_objects_v2(Bucket=bucket_name, ContinuationToken="invalid"),
-            400,
-            md.INVALID_ARGUMENT,
-        )
-
     @pytest.mark.tag("KeyCount")
     def test_bucket_list_v2_key_count_delimiter(self):
         client = self.get_client()

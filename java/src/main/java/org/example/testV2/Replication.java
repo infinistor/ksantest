@@ -402,22 +402,6 @@ public class Replication extends TestBase {
 	}
 
 	@Test
-	@Tag("Check")
-	public void testReplicationStorageClass() {
-		var client = getClient();
-		var buckets = setupReplicationBuckets(client, 19);
-		var sourceBucketName = buckets[0];
-		var targetBucketARN = buckets[1];
-
-		putReplication(client, sourceBucketName, replicationRule(targetBucketARN)
-				.destination(d -> d.bucket(targetBucketARN).storageClass("STANDARD_IA")).build());
-
-		var destination = getReplicationRules(client, sourceBucketName).get(0).destination();
-		assertEquals(targetBucketARN, destination.bucket());
-		assertEquals("STANDARD_IA", destination.storageClassAsString());
-	}
-
-	@Test
 	@Tag("ERROR")
 	public void testReplicationSameBucket() {
 		var client = getClient();

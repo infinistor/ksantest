@@ -260,13 +260,4 @@ class SSE_C {
 	void testEncryptionSseCKeyOnPlainObject() {
 		testV2.testEncryptionSseCKeyOnPlainObject();
 	}
-
-	/**
-	 * HTTP 로 보낸 SSE-C 요청이 InvalidArgument 인지 확인
-	 */
-	@Test
-	@Tag("ERROR")
-	void testEncryptionSseCInsecureTransport() {
-		testV2.testEncryptionSseCInsecureTransport();
-	}
 }

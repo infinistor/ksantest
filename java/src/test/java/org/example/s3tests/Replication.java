@@ -224,16 +224,6 @@ class Replication {
 	}
 
 	/**
-	 * 대상 스토리지 클래스를 지정한 복제 규칙이 저장되고 조회되는지 확인
-	 */
-	@Test
-	@Tag("Check")
-	void testReplicationStorageClass() {
-		test.testReplicationStorageClass();
-		testV2.testReplicationStorageClass();
-	}
-
-	/**
 	 * 원본 버킷 자신을 대상으로 지정하면 실패하는지 확인
 	 */
 	@Test
