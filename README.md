@@ -37,8 +37,10 @@ git submodule update --init --recursive
 
 ## [S3 compatibility test for .Net Framework](https://github.com/infinistor/ksantest/tree/master/C%23/Framework)
 
-## [S3 Replication test (Java)](https://github.com/infinistor/ksantest/tree/master/Utils/ReplicationUsageTest)
+## KSAN·InfiniStor 제품 기능 테스트 (jenkins 저장소로 이동)
 
-같은 시스템·포털에 등록된 다른 리전으로의 복제와 bucket usage 를 확인한다. 예전 C# ReplicationTest 를 대신한다.
+S3 호환성이 아닌 포털·GW 제품 기능 테스트는 Jenkins 잡과 함께 [jenkins 저장소](https://github.com/infinistor/jenkins)에서 관리한다.
 
-## [S3 Access IP test (Python)](https://github.com/infinistor/ksantest/tree/master/Utils/AccessIpTest)
+- [복제·bucket usage](https://github.com/infinistor/jenkins/tree/master/jenkins_s3backend/replication-usage) (예전 `Utils/ReplicationUsageTest`)
+- [Access IP](https://github.com/infinistor/jenkins/tree/master/jenkins_s3backend/access-ip) (예전 `Utils/AccessIpTest`)
+- [버킷 QoS](https://github.com/infinistor/jenkins/tree/master/jenkins_s3backend/bucket-qos) (예전 `Utils/AccessIpTest --mode qos`)
