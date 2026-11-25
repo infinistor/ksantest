@@ -196,6 +196,46 @@ class Replication {
 	}
 
 	/**
+	 * 빈 Filter 규칙 여러 개로 서로 다른 대상 버킷을 지정할 수 있는지 확인
+	 */
+	@Test
+	@Tag("Check")
+	void testReplicationMultipleDestinations() {
+		test.testReplicationMultipleDestinations();
+		testV2.testReplicationMultipleDestinations();
+	}
+
+	/**
+	 * Filter 없이 규칙 직속 Prefix(V1 스키마)에 Priority 를 넣으면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationPriorityWithoutFilter() {
+		test.testReplicationPriorityWithoutFilter();
+		testV2.testReplicationPriorityWithoutFilter();
+	}
+
+	/**
+	 * V1 스키마 규칙 여러 개는 같은 대상 버킷으로만 둘 수 있는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationV1MultipleDestinations() {
+		test.testReplicationV1MultipleDestinations();
+		testV2.testReplicationV1MultipleDestinations();
+	}
+
+	/**
+	 * V1 스키마 규칙의 접두어가 겹치면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testReplicationV1OverlappingPrefix() {
+		test.testReplicationV1OverlappingPrefix();
+		testV2.testReplicationV1OverlappingPrefix();
+	}
+
+	/**
 	 * 삭제 마커 복제를 켠 규칙이 저장되고 조회되는지 확인
 	 */
 	@Test

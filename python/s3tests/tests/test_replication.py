@@ -145,6 +145,17 @@ class TestReplication(S3TestBase):
         self.check_configure_versioning_retry(target_bucket_name, "Enabled")
         return source_bucket_name, f"arn:aws:s3:::{target_bucket_name}"
 
+    def _setup_target_bucket(self, client, test_id: int) -> str:
+        """버저닝이 켜진 대상 버킷을 하나 더 만들고 ARN 을 돌려준다."""
+        target_bucket_name = self.create_bucket(client, test_id)
+        self.check_configure_versioning_retry(target_bucket_name, "Enabled")
+        return f"arn:aws:s3:::{target_bucket_name}"
+
+    @staticmethod
+    def _v1_rule(rule_id: str, prefix: str, target_bucket_arn: str) -> dict:
+        """구버전(V1) 스키마 규칙: Filter·Priority·DeleteMarkerReplication 없이 규칙 직속 Prefix 를 쓴다."""
+        return {"ID": rule_id, "Status": "Enabled", "Prefix": prefix, "Destination": {"Bucket": target_bucket_arn}}
+
     @staticmethod
     def _replication_rule(target_bucket_arn: str, **overrides) -> dict:
         rule: dict = {
@@ -298,6 +309,92 @@ class TestReplication(S3TestBase):
         self.assert_client_error(
             lambda: self._put_replication(
                 client, source_bucket_name, [self._replication_rule(target_bucket_arn, DeleteMarkerReplication=None)]
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("Check")
+    def test_replication_multiple_destinations(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn1 = self._setup_replication_buckets(client, 24)
+        target_bucket_arn2 = self._setup_target_bucket(client, 24)
+        target_bucket_arn3 = self._setup_target_bucket(client, 24)
+
+        # 빈 Filter 로 버킷 전체를 규칙마다 다른 대상 버킷으로 보낸다. Priority 는 서로 달라야 한다
+        targets = [target_bucket_arn1, target_bucket_arn2, target_bucket_arn3]
+        self._put_replication(
+            client,
+            source_bucket_name,
+            [
+                self._replication_rule(target, ID=f"rule-{i + 1}", Priority=i + 1, Filter={})
+                for i, target in enumerate(targets)
+            ],
+        )
+
+        rules = self._get_replication_rules(client, source_bucket_name)
+        assert len(rules) == 3
+        for i, rule in enumerate(rules):
+            assert rule["ID"] == f"rule-{i + 1}"
+            assert rule["Priority"] == i + 1
+            assert rule["Destination"]["Bucket"] == targets[i]
+            assert rule["DeleteMarkerReplication"]["Status"] == "Disabled"
+            assert "Filter" in rule
+            assert rule["Filter"].get("Prefix", "") == ""
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_priority_without_filter(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 25)
+        # Filter 없이 규칙 직속 Prefix 를 쓰면 구버전(V1) 스키마라 Priority 를 쓸 수 없다.
+        # 빈 Prefix(버킷 전체)여도 같다. Filter 와 Prefix 가 둘 다 없으면 AWS 는 MalformedXML 이다
+        rule = {
+            "ID": "rule-1",
+            "Status": "Enabled",
+            "Priority": 1,
+            "Prefix": "",
+            "Destination": {"Bucket": target_bucket_arn},
+        }
+        self.assert_client_error(
+            lambda: self._put_replication(client, source_bucket_name, [rule]),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_v1_multiple_destinations(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn1 = self._setup_replication_buckets(client, 26)
+        target_bucket_arn2 = self._setup_target_bucket(client, 26)
+
+        # V1 스키마는 대상 버킷이 하나뿐이다. 접두어가 겹치지 않으면 규칙 여러 개는 같은 대상으로만 둘 수 있다
+        self._put_replication(
+            client,
+            source_bucket_name,
+            [self._v1_rule("rule-1", "a/", target_bucket_arn1), self._v1_rule("rule-2", "b/", target_bucket_arn1)],
+        )
+        assert len(self._get_replication_rules(client, source_bucket_name)) == 2
+
+        self.assert_client_error(
+            lambda: self._put_replication(
+                client,
+                source_bucket_name,
+                [self._v1_rule("rule-1", "a/", target_bucket_arn1), self._v1_rule("rule-2", "b/", target_bucket_arn2)],
+            ),
+            400,
+            md.INVALID_REQUEST,
+        )
+
+    @pytest.mark.tag("ERROR")
+    def test_replication_v1_overlapping_prefix(self):
+        client = self.get_client()
+        source_bucket_name, target_bucket_arn = self._setup_replication_buckets(client, 27)
+        # V1 스키마에는 Priority 가 없어 접두어가 겹치는 규칙을 둘 수 없다
+        self.assert_client_error(
+            lambda: self._put_replication(
+                client,
+                source_bucket_name,
+                [self._v1_rule("rule-1", "a/", target_bucket_arn), self._v1_rule("rule-2", "a/b/", target_bucket_arn)],
             ),
             400,
             md.INVALID_REQUEST,

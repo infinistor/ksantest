@@ -389,6 +389,91 @@ public class Replication extends TestBase {
 	}
 
 	@Test
+	@Tag("Check")
+	public void testReplicationMultipleDestinations() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 24);
+		var sourceBucketName = buckets[0];
+		var targetBucketARNs = List.of(buckets[1], setupTargetBucket(client, 24), setupTargetBucket(client, 24));
+
+		// 빈 Filter 로 버킷 전체를 규칙마다 다른 대상 버킷으로 보낸다. Priority 는 서로 달라야 한다
+		var config = replicationConfig();
+		for (int i = 0; i < 3; i++)
+			config.addRule("rule-" + (i + 1), replicationRule(targetBucketARNs.get(i)).withPriority(i + 1)
+					.withFilter(new ReplicationFilter()));
+		putReplication(client, sourceBucketName, config);
+
+		var rules = client.getBucketReplicationConfiguration(sourceBucketName).getRules();
+		assertEquals(3, rules.size());
+		for (int i = 0; i < 3; i++) {
+			var rule = rules.get("rule-" + (i + 1));
+			assertNotNull(rule);
+			assertEquals(i + 1, rule.getPriority());
+			assertEquals(targetBucketARNs.get(i), rule.getDestinationConfig().getBucketARN());
+			assertEquals("Disabled", rule.getDeleteMarkerReplication().getStatus());
+			assertNotNull(rule.getFilter());
+			var predicate = rule.getFilter().getPredicate();
+			assertTrue(predicate == null || (predicate instanceof ReplicationPrefixPredicate
+					&& ((ReplicationPrefixPredicate) predicate).getPrefix().isEmpty()));
+		}
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationPriorityWithoutFilter() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 25);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		// Filter 없이 규칙 직속 Prefix 를 쓰면 구버전(V1) 스키마라 Priority 를 쓸 수 없다.
+		// 빈 Prefix(버킷 전체)여도 같다. Filter 와 Prefix 가 둘 다 없으면 AWS 는 MalformedXML 이다
+		var config = replicationConfig().addRule("rule-1", new ReplicationRule().withStatus("Enabled").withPriority(1)
+				.withPrefix("")
+				.withDestinationConfig(new ReplicationDestinationConfig().withBucketARN(targetBucketARN)));
+		var e = assertThrows(AmazonServiceException.class, () -> putReplication(client, sourceBucketName, config));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationV1MultipleDestinations() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 26);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN1 = buckets[1];
+		var targetBucketARN2 = setupTargetBucket(client, 26);
+
+		// V1 스키마는 대상 버킷이 하나뿐이다. 접두어가 겹치지 않으면 규칙 여러 개는 같은 대상으로만 둘 수 있다
+		putReplication(client, sourceBucketName, replicationConfig().addRule("rule-1", v1Rule("a/", targetBucketARN1))
+				.addRule("rule-2", v1Rule("b/", targetBucketARN1)));
+		assertEquals(2, client.getBucketReplicationConfiguration(sourceBucketName).getRules().size());
+
+		var config = replicationConfig().addRule("rule-1", v1Rule("a/", targetBucketARN1))
+				.addRule("rule-2", v1Rule("b/", targetBucketARN2));
+		var e = assertThrows(AmazonServiceException.class, () -> putReplication(client, sourceBucketName, config));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.getErrorCode());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testReplicationV1OverlappingPrefix() {
+		var client = getClient();
+		var buckets = setupReplicationBuckets(client, 27);
+		var sourceBucketName = buckets[0];
+		var targetBucketARN = buckets[1];
+
+		// V1 스키마에는 Priority 가 없어 접두어가 겹치는 규칙을 둘 수 없다
+		var config = replicationConfig().addRule("rule-1", v1Rule("a/", targetBucketARN))
+				.addRule("rule-2", v1Rule("a/b/", targetBucketARN));
+		var e = assertThrows(AmazonServiceException.class, () -> putReplication(client, sourceBucketName, config));
+		assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+		assertEquals(MainData.INVALID_REQUEST, e.getErrorCode());
+	}
+
+	@Test
 	@Tag("DeleteMarker")
 	public void testReplicationDeleteMarkerEnabled() {
 		var client = getClient();
@@ -517,6 +602,19 @@ public class Replication extends TestBase {
 		checkConfigureVersioningRetry(sourceBucketName, BucketVersioningConfiguration.ENABLED);
 		checkConfigureVersioningRetry(targetBucketName, BucketVersioningConfiguration.ENABLED);
 		return new String[] { sourceBucketName, "arn:aws:s3:::" + targetBucketName };
+	}
+
+	/** 버저닝이 켜진 대상 버킷을 하나 더 만들고 ARN 을 돌려준다. */
+	private String setupTargetBucket(AmazonS3 client, int testId) {
+		var targetBucketName = createBucket(client, testId);
+		checkConfigureVersioningRetry(targetBucketName, BucketVersioningConfiguration.ENABLED);
+		return "arn:aws:s3:::" + targetBucketName;
+	}
+
+	/** 구버전(V1) 스키마 규칙: Filter·Priority·DeleteMarkerReplication 없이 규칙 직속 Prefix 를 쓴다. */
+	private static ReplicationRule v1Rule(String prefix, String targetBucketARN) {
+		return new ReplicationRule().withStatus("Enabled").withPrefix(prefix)
+				.withDestinationConfig(new ReplicationDestinationConfig().withBucketARN(targetBucketARN));
 	}
 
 	/** 기본 복제 규칙(Enabled, Priority 1, 접두어 test/, 삭제 마커 복제 Disabled). 필요한 항목만 덮어쓴다. */

@@ -265,6 +265,23 @@ namespace s3tests.Test
 			return (sourceBucketName, "arn:aws:s3:::" + targetBucketName);
 		}
 
+		/// <summary>버저닝이 켜진 대상 버킷을 하나 더 만들고 ARN 을 돌려준다.</summary>
+		private string SetupTargetBucket(S3Client client)
+		{
+			var targetBucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(targetBucketName, VersionStatus.Enabled);
+			return "arn:aws:s3:::" + targetBucketName;
+		}
+
+		/// <summary>구버전(V1) 스키마 규칙: Filter·Priority·DeleteMarkerReplication 없이 규칙 직속 Prefix 를 쓴다.</summary>
+		private static ReplicationRule V1Rule(string id, string prefix, string targetBucketArn) => new()
+		{
+			Id = id,
+			Status = ReplicationRuleStatus.Enabled,
+			Prefix = prefix,
+			Destination = new ReplicationDestination() { BucketArn = targetBucketArn },
+		};
+
 		/// <summary>V2 스키마 기본 규칙(Priority 1, Prefix 필터 test/, 삭제 마커 복제 Disabled). 테스트에서 필요한 속성만 바꿔 쓴다.</summary>
 		private static ReplicationRule NewReplicationRule(string targetBucketArn, string id = null, int priority = 1, string prefix = "test/")
 		{
@@ -505,6 +522,104 @@ namespace s3tests.Test
 			var noDeleteMarker = NewReplicationRule(targetBucketArn);
 			noDeleteMarker.DeleteMarkerReplication = null;
 			e = Assert.Throws<AggregateException>(() => PutReplication(client, sourceBucketName, [noDeleteMarker]));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_REQUEST, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Replication")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "빈 Filter 규칙 여러 개를 Priority 를 달리해 서로 다른 대상 버킷으로 복제하도록 설정할 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestReplicationMultipleDestinations()
+		{
+			TestId = 24;
+			var client = GetClient();
+			var (sourceBucketName, targetBucketArn1) = SetupReplicationBuckets(client);
+			var targetBucketArn2 = SetupTargetBucket(client);
+			var targetBucketArn3 = SetupTargetBucket(client);
+
+			// 빈 Filter 로 버킷 전체를 규칙마다 다른 대상 버킷으로 보낸다. Priority 는 서로 달라야 한다
+			var targets = new List<string> { targetBucketArn1, targetBucketArn2, targetBucketArn3 };
+			var putRules = new List<ReplicationRule>();
+			for (int i = 0; i < 3; i++)
+			{
+				var rule = NewReplicationRule(targets[i], id: "rule-" + (i + 1), priority: i + 1);
+				rule.Filter = new ReplicationRuleFilter();
+				putRules.Add(rule);
+			}
+			PutReplication(client, sourceBucketName, putRules);
+
+			var rules = GetReplicationRules(client, sourceBucketName);
+			Assert.Equal(3, rules.Count);
+			for (int i = 0; i < 3; i++)
+			{
+				Assert.Equal("rule-" + (i + 1), rules[i].Id);
+				Assert.Equal(i + 1, rules[i].Priority);
+				Assert.Equal(targets[i], rules[i].Destination.BucketArn);
+				Assert.Equal(DeleteMarkerReplicationStatus.Disabled, rules[i].DeleteMarkerReplication.Status);
+				Assert.NotNull(rules[i].Filter);
+				Assert.Equal("", rules[i].Filter.Prefix ?? "");
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Replication")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "Filter 없이 규칙 직속 Prefix 를 쓰는 복제 규칙에 Priority 를 넣으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestReplicationPriorityWithoutFilter()
+		{
+			TestId = 25;
+			var client = GetClient();
+			var (sourceBucketName, targetBucketArn) = SetupReplicationBuckets(client);
+
+			// Filter 없이 규칙 직속 Prefix 를 쓰면 구버전(V1) 스키마라 Priority 를 쓸 수 없다.
+			// 빈 Prefix(버킷 전체)여도 같다. Filter 와 Prefix 가 둘 다 없으면 AWS 는 MalformedXML 이다
+			var rule = V1Rule("rule-1", "", targetBucketArn);
+			rule.Priority = 1;
+			var e = Assert.Throws<AggregateException>(() => PutReplication(client, sourceBucketName, [rule]));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_REQUEST, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Replication")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "구버전(V1) 스키마 복제 규칙은 같은 대상 버킷으로만 여러 개 둘 수 있고 대상이 다르면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestReplicationV1MultipleDestinations()
+		{
+			TestId = 26;
+			var client = GetClient();
+			var (sourceBucketName, targetBucketArn1) = SetupReplicationBuckets(client);
+			var targetBucketArn2 = SetupTargetBucket(client);
+
+			// V1 스키마는 대상 버킷이 하나뿐이다. 접두어가 겹치지 않으면 규칙 여러 개는 같은 대상으로만 둘 수 있다
+			PutReplication(client, sourceBucketName,
+				[V1Rule("rule-1", "a/", targetBucketArn1), V1Rule("rule-2", "b/", targetBucketArn1)]);
+			Assert.Equal(2, GetReplicationRules(client, sourceBucketName).Count);
+
+			var e = Assert.Throws<AggregateException>(() => PutReplication(client, sourceBucketName,
+				[V1Rule("rule-1", "a/", targetBucketArn1), V1Rule("rule-2", "b/", targetBucketArn2)]));
+			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
+			Assert.Equal(MainData.INVALID_REQUEST, GetErrorCode(e));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Replication")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "구버전(V1) 스키마 복제 규칙의 접두어가 겹치면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestReplicationV1OverlappingPrefix()
+		{
+			TestId = 27;
+			var client = GetClient();
+			var (sourceBucketName, targetBucketArn) = SetupReplicationBuckets(client);
+
+			// V1 스키마에는 Priority 가 없어 접두어가 겹치는 규칙을 둘 수 없다
+			var e = Assert.Throws<AggregateException>(() => PutReplication(client, sourceBucketName,
+				[V1Rule("rule-1", "a/", targetBucketArn), V1Rule("rule-2", "a/b/", targetBucketArn)]));
 			Assert.Equal(HttpStatusCode.BadRequest, GetStatus(e));
 			Assert.Equal(MainData.INVALID_REQUEST, GetErrorCode(e));
 		}

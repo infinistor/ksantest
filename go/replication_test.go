@@ -2,6 +2,7 @@ package s3tests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -247,6 +248,83 @@ func TestReplicationFilterWithoutPriority(t *testing.T) {
 	assertS3Error(t, err, 400, "InvalidRequest")
 }
 
+// 빈 필터 규칙 여러 개로 버킷 전체를 서로 다른 대상 버킷에 복제하도록 설정되는지 확인
+func TestReplicationMultipleDestinations(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, targetArn1 := replicationBuckets(t, s, 24)
+	targetArn2 := replicationTargetBucket(t, s, 24)
+	targetArn3 := replicationTargetBucket(t, s, 24)
+	// 빈 Filter 로 버킷 전체를 규칙마다 다른 대상 버킷으로 보낸다. Priority 는 서로 달라야 한다
+	targets := []string{targetArn1, targetArn2, targetArn3}
+	rules := make([]types.ReplicationRule, 0, len(targets))
+	for index, target := range targets {
+		rule := replicationRule(target)
+		rule.ID = aws.String(fmt.Sprintf("rule-%d", index+1))
+		rule.Priority = aws.Int32(int32(index + 1))
+		// go-v2 는 필드가 모두 nil 인 Filter 를 <Filter></Filter> 로 보낸다
+		rule.Filter = &types.ReplicationRuleFilter{}
+		rules = append(rules, rule)
+	}
+	putReplicationRules(t, s, source, rules...)
+
+	got := getReplicationRules(t, s, source)
+	if len(got) != 3 {
+		t.Fatalf("rule count=%d, want 3", len(got))
+	}
+	for index, rule := range got {
+		if aws.ToString(rule.ID) != fmt.Sprintf("rule-%d", index+1) || aws.ToInt32(rule.Priority) != int32(index+1) ||
+			rule.Destination == nil || aws.ToString(rule.Destination.Bucket) != targets[index] ||
+			rule.DeleteMarkerReplication == nil || rule.DeleteMarkerReplication.Status != types.DeleteMarkerReplicationStatusDisabled ||
+			rule.Filter == nil || aws.ToString(rule.Filter.Prefix) != "" {
+			t.Fatalf("rule[%d]=%#v", index, rule)
+		}
+	}
+}
+
+// Filter 없이 규칙 직속 Prefix 를 쓰는 규칙에 Priority 를 넣으면 실패하는지 확인
+func TestReplicationPriorityWithoutFilter(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, targetArn := replicationBuckets(t, s, 25)
+	// Filter 없이 규칙 직속 Prefix 를 쓰면 구버전(V1) 스키마라 Priority 를 쓸 수 없다.
+	// 빈 Prefix(버킷 전체)여도 같다. Filter 와 Prefix 가 둘 다 없으면 AWS 는 MalformedXML 이다
+	rule := replicationV1Rule("rule-1", "", targetArn)
+	rule.Priority = aws.Int32(1)
+	err := putReplicationRulesError(s.client, s, source, rule)
+	assertS3Error(t, err, 400, "InvalidRequest")
+}
+
+// 구버전(V1) 스키마 규칙 여러 개는 같은 대상 버킷으로만 설정되는지 확인
+func TestReplicationV1MultipleDestinations(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, targetArn1 := replicationBuckets(t, s, 26)
+	targetArn2 := replicationTargetBucket(t, s, 26)
+	// V1 스키마는 대상 버킷이 하나뿐이다. 접두어가 겹치지 않으면 규칙 여러 개는 같은 대상으로만 둘 수 있다
+	putReplicationRules(t, s, source, replicationV1Rule("rule-1", "a/", targetArn1), replicationV1Rule("rule-2", "b/", targetArn1))
+	if got := getReplicationRules(t, s, source); len(got) != 2 {
+		t.Fatalf("rule count=%d, want 2", len(got))
+	}
+
+	err := putReplicationRulesError(s.client, s, source, replicationV1Rule("rule-1", "a/", targetArn1), replicationV1Rule("rule-2", "b/", targetArn2))
+	assertS3Error(t, err, 400, "InvalidRequest")
+}
+
+// 구버전(V1) 스키마 규칙의 접두어가 겹치면 실패하는지 확인
+func TestReplicationV1OverlappingPrefix(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	source, targetArn := replicationBuckets(t, s, 27)
+	// V1 스키마에는 Priority 가 없어 접두어가 겹치는 규칙을 둘 수 없다
+	err := putReplicationRulesError(s.client, s, source, replicationV1Rule("rule-1", "a/", targetArn), replicationV1Rule("rule-2", "a/b/", targetArn))
+	assertS3Error(t, err, 400, "InvalidRequest")
+}
+
 // 삭제 마커 복제를 켠 복제 설정이 되는지 확인
 func TestReplicationDeleteMarkerEnabled(t *testing.T) {
 	t.Parallel()
@@ -351,6 +429,23 @@ func replicationBuckets(t *testing.T, s *suite, id int) (string, string) {
 	enableVersioning(t, s, source)
 	enableVersioning(t, s, target)
 	return source, "arn:aws:s3:::" + target
+}
+
+// 버저닝이 켜진 대상 버킷을 하나 더 만들고 ARN 을 돌려준다.
+func replicationTargetBucket(t *testing.T, s *suite, id int) string {
+	t.Helper()
+	target := s.bucket(t, id)
+	enableVersioning(t, s, target)
+	return "arn:aws:s3:::" + target
+}
+
+// 구버전(V1) 스키마 규칙: Filter·Priority·DeleteMarkerReplication 없이 규칙 직속 Prefix 를 쓴다.
+// go-v2 에서 Prefix 필드는 deprecated 지만 그대로 직렬화된다(빈 문자열도 <Prefix></Prefix> 로 보낸다).
+func replicationV1Rule(id, prefix, targetArn string) types.ReplicationRule {
+	return types.ReplicationRule{
+		ID: aws.String(id), Status: types.ReplicationRuleStatusEnabled, Prefix: aws.String(prefix),
+		Destination: &types.Destination{Bucket: aws.String(targetArn)},
+	}
 }
 
 // 기본 규칙(Enabled, Priority 1, 접두어 test/, 삭제 마커 복제 Disabled)을 만든다. 호출부에서 필드를 덮어쓴다.
