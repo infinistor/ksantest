@@ -487,6 +487,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "ERROR")]
 		[Trait(MainData.Explanation, "Filter 를 쓰는 복제 규칙에 Priority 나 DeleteMarkerReplication 이 없으면 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
+		// KSAN 알려진 실패(일부러 다르게 동작, 당분간 유지): Filter 가 있는데 Priority 나 DeleteMarkerReplication 이 없어도 받는다.
+		// 이전부터 받아 온 형태라 검증을 넣으면 기존 설정이 거부될 수 있어 일단 넣지 않는다. AWS 는 400 InvalidRequest 다.
 		public void TestReplicationFilterWithoutPriority()
 		{
 			TestId = 15;
