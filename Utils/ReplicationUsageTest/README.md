@@ -98,11 +98,15 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
 mvn package    # → target/replication-usage-test.jar (의존성까지 든 jar 하나)
 ```
 
-서버에 올릴 묶음은 `package.sh` 로 만든다(Linux·Git Bash). 빌드가 성공하면 jar·`run.sh`·`config.ini.example` 을
-`dist/ReplicationTest-<커밋 수>-<짧은 해시>.tar.gz` 로 묶는다.
+서버에 올릴 묶음은 개발 PC(Windows)에서 `package.ps1` 로 만든다(PowerShell 7.4 이상). 빌드가 성공하면
+jar·`run.sh`·`config.ini.example` 을 `dist\ReplicationTest-<커밋 수>-<짧은 해시>.tar.gz` 로 묶는다.
+`run.sh` 는 CR 을 지우고 실행 권한(755)을 넣어서 묶는다.
+
+```powershell
+.\package.ps1
+```
 
 ```bash
-./package.sh
 # 서버에서
 tar xzf ReplicationTest-547-4aab95d.tar.gz && cd ReplicationTest-547-4aab95d
 cp config.ini.example config.ini   # 값 채우기
