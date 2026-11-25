@@ -37,7 +37,7 @@ git submodule update --init --recursive
 
 ## [S3 compatibility test for .Net Framework](https://github.com/infinistor/ksantest/tree/master/C%23/Framework)
 
-## [S3 Replication test (Python)](https://github.com/infinistor/ksantest/tree/master/Utils/ReplicationUsageTest)
+## [S3 Replication test (Java)](https://github.com/infinistor/ksantest/tree/master/Utils/ReplicationUsageTest)
 
 같은 시스템·포털에 등록된 다른 리전으로의 복제와 bucket usage 를 확인한다. 예전 C# ReplicationTest 를 대신한다.
 

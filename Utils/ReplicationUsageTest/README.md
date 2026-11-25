@@ -1,8 +1,10 @@
 # 복제 usage 테스트
 
 원본 버킷 → 대상 버킷 복제를 걸고, 버전·내용과 bucket usage 가 일치하는지 확인한다.
-cron 으로 주기 실행하는 것을 전제로 한다. 테스트 케이스는 `cases/` 에 하나씩 추가한다.
+cron 으로 주기 실행하는 것을 전제로 한다. 테스트 케이스는 `src/main/java/org/example/replication/cases/` 에 하나씩 추가한다.
 예전 C# `Utils/ReplicationTest` 를 대신한다.
+
+Java(21 이상, 서버 표준은 25)로 만든 jar 하나로 돈다. 서버에는 JRE 만 있으면 되고 다른 패키지는 필요 없다.
 
 ## 대상 (local · remote)
 
@@ -49,7 +51,7 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
   7. 원본 복제 상태 비교 (원본 HeadObject 의 `x-amz-replication-status`)
   8. bucket usage 비교 (포털 API 의 FileCount·UsedSize. ksan `GET /api/v2/S3Api/Buckets/<버킷>`, ifs `GET /api/v1/ExternalApi/Buckets/<버킷>`)
 
-모든 케이스는 이 8단계 틀(`cases/base.py` 의 `ReplicationCase`)을 쓰고 4단계만 다르다.
+모든 케이스는 이 8단계 틀(`cases/ReplicationCase.java`)을 쓰고 4단계만 다르다.
 통과하면 버킷을 지우고, 실패하면 원인 확인용으로 남긴다.
 남은 버킷은 `--cleanup-days N` 으로 다음 실행 때 지운다(아래 실행 참고).
 
@@ -58,7 +60,7 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
 - 대상 버전 목록 = 원본 파일 버전 중 룰에 맞는 것, versionId 까지 같아야 함(빠짐·남음 모두 실패)
 - 버전마다 크기·ETag·사용자 메타데이터(`x-amz-meta-test`)·태그를 원본·대상 모두 기대값과 비교
 - 삭제 마커는 DeleteMarker 복제를 켠 케이스에서만 대상에 있어야 함
-- 원본 파일 버전의 `x-amz-replication-status`(boto3 `ReplicationStatus`): 룰에 맞아 복제된 버전은 `COMPLETED`,
+- 원본 파일 버전의 `x-amz-replication-status`(HeadObject `ReplicationStatus`): 룰에 맞아 복제된 버전은 `COMPLETED`,
   룰에 맞지 않는 버전은 헤더가 없어야 함(AWS 와 같음). 복제기가 대상 쓰기 뒤에 원본 상태를 갱신하므로 최대 60초 기다린다
   - KSAN 은 Replication 설정 `ReplicationStatusUpdate: true` 와, 복제 상태 API 가 있는 GW 가 있어야 갱신된다
 - usage 기대값 = 파일 버전 수·크기 합. **삭제 마커는 세지 않는다**
@@ -76,7 +78,7 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
 | TC08 | 버전 지정 삭제 | 복제 안 됨 → usage 원본 1버전·대상 2버전 |
 | TC09 | CopyObject | 같은 버킷·다른 버킷(복제 없는 aux)에서 Copy |
 | TC10 | Multipart | 5M+5M+1M 파트. 원본 ETag `-3` 확인, 대상은 ETag 대신 내려받은 내용 MD5 비교(복제기가 PartSize 단위로 다시 잘라 올려 ETag 가 달라짐) |
-| TC11 | 체크섬 | CRC32·CRC32C·CRC64NVME·SHA1·SHA256 값 일치(값은 직접 계산해 보냄, awscrt 불필요) |
+| TC11 | 체크섬 | CRC32·CRC32C·CRC64NVME·SHA1·SHA256 값 일치(값은 직접 계산해 보냄) |
 | TC12 | 태그 변경 | 복제 후 PutObjectTagging·DeleteObjectTagging 반영, usage 이중 집계 없음 |
 | TC13 | SSE-S3 원본·대상 | 두 버킷 기본 암호화 AES256, 대상도 암호화 |
 | TC14 | Prefix + 삭제 마커 복제 | `in/` 키의 삭제 마커만 대상에, `out/` 마커는 안 옴 |
@@ -88,11 +90,34 @@ KSAN 은 `arn:aws:s3:<주소>:<AK>-<SK>:<버킷>` 형식도 받지만, 주소로
 
 버킷 이름은 `rtest-<케이스>-src-<시각>` 처럼 케이스 ID 가 들어간다. remote 는 `rtest-tc03r1-src-<시각>` 처럼 리전 순번이 붙는다.
 
-## 준비
+## 빌드
+
+개발 PC 에서 jar 를 만든다(Maven, JDK 21 이상).
 
 ```bash
-pip3 install -r requirements.txt
+mvn package    # → target/replication-usage-test.jar (의존성까지 든 jar 하나)
+```
+
+서버에 올릴 묶음은 `package.sh` 로 만든다(Linux·Git Bash). 빌드가 성공하면 jar·`run.sh`·`config.ini.example` 을
+`dist/ReplicationTest-<커밋 수>-<짧은 해시>.tar.gz` 로 묶는다.
+
+```bash
+./package.sh
+# 서버에서
+tar xzf ReplicationTest-547-4aab95d.tar.gz && cd ReplicationTest-547-4aab95d
 cp config.ini.example config.ini   # 값 채우기
+./run.sh --check
+```
+
+## 준비
+
+서버에 폴더 하나를 만들고 세 파일을 둔다. 서버에는 Java 21 이상만 있으면 된다(CentOS 7·Rocky 8 공통).
+
+```text
+/root/ReplicationUsageTest/
+├── replication-usage-test.jar   # target/ 에서 복사
+├── run.sh                       # cron 진입점
+└── config.ini                   # config.ini.example 을 복사해 값 채우기
 ```
 
 설정 항목은 `config.ini.example` 의 주석 참고.
@@ -101,13 +126,13 @@ cp config.ini.example config.ini   # 값 채우기
 - `[s3]` `access_key`, `secret_key` (원본 버킷을 만들 기존 사용자 키), `https` (선택), `url` (선택, 원본 S3 주소 직접 지정)
 - `[test]` `file_count`, `file_sizes` (선택)
 
-대기 시간, 조회 간격, 버킷 접두사 같은 나머지 값은 `common.py` 맨 위 상수에 있다.
+대기 시간, 조회 간격, 버킷 접두사 같은 나머지 값은 `Common.java` 맨 위 상수에 있다.
 
 먼저 점검부터 한다. 버킷은 만들지 않고 포털 접속, 원본 리전, 원본 사용자 키, remote 리전 키를 확인한다.
 원본 S3 주소 줄에는 어디서 온 값인지(`config` 또는 `포털 기본 리전`)가 붙는다.
 
 ```bash
-python3 run.py --check
+java -jar replication-usage-test.jar --check
 ```
 
 리전 키가 `InvalidAccessKeyId` 로 실패하면 KSAN 복제기도 그 리전으로 복제하지 못한다.
@@ -116,14 +141,16 @@ python3 run.py --check
 ## 실행
 
 ```bash
-python3 run.py                      # local + remote 전부
-python3 run.py --target local       # 같은 시스템만
-python3 run.py --target remote      # 다른 리전만
-python3 run.py --region kr-ksan-1   # remote 를 이 리전으로만 (여러 번 줄 수 있음)
-python3 run.py --tc TC01            # 지정 케이스만 (여러 번 줄 수 있음)
-python3 run.py --list               # 케이스 목록
-python3 run.py --cleanup-days 3     # 실행 전에 3일보다 오래된 시험 버킷을 지운다
+java -jar replication-usage-test.jar                      # local + remote 전부
+java -jar replication-usage-test.jar --target local       # 같은 시스템만
+java -jar replication-usage-test.jar --target remote      # 다른 리전만
+java -jar replication-usage-test.jar --region kr-ksan-1   # remote 를 이 리전으로만 (여러 번 줄 수 있음)
+java -jar replication-usage-test.jar --tc TC01            # 지정 케이스만 (여러 번 줄 수 있음)
+java -jar replication-usage-test.jar --list               # 케이스 목록
+java -jar replication-usage-test.jar --cleanup-days 3     # 실행 전에 3일보다 오래된 시험 버킷을 지운다
 ```
+
+`--config` 를 주지 않으면 jar 옆의 `config.ini` 를 읽고, 결과도 jar 옆 `results/` 에 쓴다.
 
 `--cleanup-days N` 은 기본 꺼져 있다. 켜면 실행 전에 원본 키(원본·local 대상)와 이번 실행의 remote 대상 리전 키로
 버킷 목록을 보고, 이름이 `rtest-*-<yyyyMMddHHmmss>` 이고 그 시각이 N일보다 오래된 버킷을 지운다.
@@ -136,11 +163,14 @@ https 로 확인하려면 `[s3] https = true` 인 설정 파일을 따로 만들
 ## 주기 실행 (cron)
 
 `run.sh` 는 이전 실행이 끝나지 않았으면 그 회차를 건너뛴다(flock).
+cron 은 PATH 가 짧아 `java` 를 못 찾을 수 있다. 그때는 `JAVA=/경로/bin/java` 를 앞에 붙인다.
 
 ```bash
 chmod +x run.sh
 # 예: 30분마다
 */30 * * * * /root/ReplicationUsageTest/run.sh --cleanup-days 3 > /dev/null 2>&1
+# java 가 PATH 에 없을 때
+*/30 * * * * JAVA=/usr/lib/jvm/jdk-25/bin/java /root/ReplicationUsageTest/run.sh --cleanup-days 3 > /dev/null 2>&1
 ```
 
 ## 결과
@@ -151,12 +181,13 @@ chmod +x run.sh
 
 ## 케이스 추가
 
-`cases/base.py` 의 `ReplicationCase` 를 상속한다.
+`src/main/java/org/example/replication/cases/` 의 `ReplicationCase` 를 상속한다.
 
-1. `cases/tcNN_<이름>.py` 에 하위 클래스를 만들고 `CASE_ID`, `TITLE`, `OPERATION`(4단계 이름)을 정한다
-2. 룰이 다르면 `RULE_FILTER`, `DELETE_MARKER_REPLICATION`, 필터 판정 `replicates()` 를 바꾼다
-3. `operate()` 에서 `self.put()`·`self.record()`·`self.delete_version()` 으로 작업하면 원본·대상 기대값이 함께 기록된다
-   - 중간에 복제 완료를 기다려야 하면 `self.wait_replicated()`
-   - 대상 버킷을 직접 다룰 때는 `self.dst_s3`(또는 `self.client_for(버킷)`)를 쓴다. remote 에서는 원본 클라이언트와 다르다
-4. 대상에 없어야 할 것이 있으면 `HAS_NEGATIVE = True`
-5. `cases/__init__.py` 의 `CASES` 목록에 추가한다
+1. `TcNN<이름>.java` 에 하위 클래스를 만들고 생성자에서 `super("TCNN", 제목, 4단계 이름)` 을 부른다
+2. 룰이 다르면 생성자에서 `ruleFilter`, `deleteMarkerReplication` 을 정하고 필터 판정 `replicates()` 를 바꾼다
+   - 대상이 여럿이면 `destinations`, 룰마다 조건이 다르면 `ruleSpec()`·`replicatesTo()` (TC19 참고)
+3. `operate()` 에서 `put()`·`record()`·`deleteVersion()` 으로 작업하면 원본·대상 기대값이 함께 기록된다
+   - 중간에 복제 완료를 기다려야 하면 `waitReplicated()`
+   - 대상 버킷을 직접 다룰 때는 `dstS3`(또는 `clientFor(버킷)`)를 쓴다. remote 에서는 원본 클라이언트와 다르다
+4. 대상에 없어야 할 것이 있으면 생성자에서 `hasNegative = true`
+5. `Cases.java` 의 `ALL` 목록에 추가하고 `mvn package` 로 jar 를 다시 만든다
