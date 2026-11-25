@@ -78,16 +78,22 @@ class ReplicationCase(Case):
     # 대상에 없어야 할 것이 있는 케이스면 True (복제 완료 뒤 NEGATIVE_SETTLE_SEC 더 보고 다시 확인)
     HAS_NEGATIVE = False
     COMPARE_CHECKSUM = False
+    # 대상 버킷 수. 2 이상이면 대상마다 룰을 하나씩(Priority 1, 2, ...) 건다.
+    # 룰마다 Filter·삭제 마커 복제를 다르게 하려면 rule_spec()·replicates_to() 를 바꾼다(TC19)
+    DESTINATIONS = 1
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.STEPS = list(type(self).STEPS)
         self.STEPS[3] = self.OPERATION
         self.src = self.dst = ""
+        self.dsts: list[str] = []  # 대상 버킷 전부(첫 번째가 self.dst)
         self.extra_buckets: list[str] = []
         # 기대값: (키, 버전) → {Size, ETag, Metadata, Tags[, Checksum]}
         self.src_expected: dict[VersionId, dict] = {}
         self.dst_expected: dict[VersionId, dict] = {}
+        # 대상마다의 기대값(첫 번째가 self.dst_expected). 대상 수는 run() 에서 정해진다
+        self.dst_expected_all: list[dict[VersionId, dict]] = [self.dst_expected]
 
     # ── 하위 클래스가 정하는 부분 ─────────────────────────────────────
     def operate(self, detail: list) -> None:
@@ -96,6 +102,14 @@ class ReplicationCase(Case):
     def replicates(self, key: str, tags: dict[str, str]) -> bool:
         """룰 필터에 맞는 객체인지. 필터 케이스가 바꾼다."""
         return True
+
+    def replicates_to(self, index: int, key: str, tags: dict[str, str]) -> bool:
+        """index 번째 대상(룰)으로 복제되는 객체인지. 대상마다 필터가 다른 케이스가 바꾼다."""
+        return self.replicates(key, tags)
+
+    def rule_spec(self, index: int) -> tuple[dict, bool]:
+        """index 번째 대상 룰의 (Filter, 삭제 마커 복제 여부)."""
+        return self.RULE_FILTER, self.DELETE_MARKER_REPLICATION
 
     # ── 작업 도우미 (원본에 작업하고 기대값을 기록) ───────────────────
     def put(self, key: str, size: int, tags: dict[str, str] | None = None, body: bytes | None = None,
@@ -120,8 +134,9 @@ class ReplicationCase(Case):
         if self.COMPARE_CHECKSUM and response is not None:
             info["Checksum"] = {k: v for k, v in response.items() if k.startswith("Checksum") and k != "ChecksumType"}
         self.src_expected[(key, version_id)] = info
-        if self.replicates(key, info["Tags"]):
-            self.dst_expected[(key, version_id)] = dict(info)
+        for index, expected in enumerate(self.dst_expected_all):
+            if self.replicates_to(index, key, info["Tags"]):
+                expected[(key, version_id)] = dict(info)
         return version_id
 
     def delete_version(self, key: str, version_id: str) -> None:
@@ -138,14 +153,18 @@ class ReplicationCase(Case):
     # ── 단계 ─────────────────────────────────────────────────────────
     def run(self) -> None:
         self.src = self.result.src_bucket = self.bucket_name("src")
-        self.dst = self.result.dst_bucket = self.bucket_name("dst")
+        self.dsts = [self.bucket_name("dst" if i == 0 else f"dst{i + 1}") for i in range(self.DESTINATIONS)]
+        self.dst = self.dsts[0]
+        self.dst_expected_all = [self.dst_expected] + [{} for _ in self.dsts[1:]]
+        self.result.dst_bucket = ", ".join(self.dsts)
 
-        with self.step(1, [f"{self.src}, {self.dst}"]):
+        with self.step(1, [f"{self.src}, {', '.join(self.dsts)}"]):
             self.s3.create_bucket(Bucket=self.src)
-            self.dst_s3.create_bucket(Bucket=self.dst)
+            for dst in self.dsts:
+                self.dst_s3.create_bucket(Bucket=dst)
 
         with self.step(2):
-            for bucket in (self.src, self.dst):
+            for bucket in (self.src, *self.dsts):
                 client = self.client_for(bucket)
                 client.put_bucket_versioning(Bucket=bucket, VersioningConfiguration={"Status": "Enabled"})
                 status = client.get_bucket_versioning(Bucket=bucket).get("Status")
@@ -153,22 +172,26 @@ class ReplicationCase(Case):
                     raise CaseFailed(f"{bucket} 버저닝 상태가 Enabled 가 아님: {status}")
 
         with self.step(3):
-            status = "Enabled" if self.DELETE_MARKER_REPLICATION else "Disabled"
             # local 은 리전 없는 ARN, remote 는 arn:aws:s3:<리전>::<버킷>
+            # 대상이 여럿이면 룰도 대상마다 하나씩 두고 Priority 를 겹치지 않게 준다
+            rule_ids = [RULE_ID] if len(self.dsts) == 1 else [f"{RULE_ID}-{i + 1}" for i in range(len(self.dsts))]
+            specs = [self.rule_spec(i) for i in range(len(self.dsts))]
             self.s3.put_bucket_replication(Bucket=self.src, ReplicationConfiguration={
                 "Role": "",
                 "Rules": [{
-                    "ID": RULE_ID,
-                    "Priority": 1,
+                    "ID": rule_id,
+                    "Priority": i + 1,
                     "Status": "Enabled",
-                    "Filter": self.RULE_FILTER,
-                    "Destination": {"Bucket": self.target.arn(self.dst)},
-                    "DeleteMarkerReplication": {"Status": status},
-                }],
+                    "Filter": rule_filter,
+                    "Destination": {"Bucket": self.target.arn(dst)},
+                    "DeleteMarkerReplication": {"Status": "Enabled" if marker else "Disabled"},
+                } for i, (rule_id, dst, (rule_filter, marker)) in enumerate(zip(rule_ids, self.dsts, specs))],
             })
             rules = self.s3.get_bucket_replication(Bucket=self.src)["ReplicationConfiguration"]["Rules"]
-            if not any(r.get("ID") == RULE_ID for r in rules):
-                raise CaseFailed(f"설정한 복제 룰이 조회되지 않음: {rules}")
+            got = {r.get("ID"): r.get("Destination", {}).get("Bucket") for r in rules}
+            want = {rule_id: self.target.arn(dst) for rule_id, dst in zip(rule_ids, self.dsts)}
+            if got != want:
+                raise CaseFailed(f"설정한 복제 룰이 그대로 조회되지 않음: 기대 {want} != {got}")
 
         operate_detail: list[str] = []
         with self.step(4, operate_detail):
@@ -199,17 +222,27 @@ class ReplicationCase(Case):
         with self.step(8, usage_detail):
             self.compare_usage(usage_detail)
 
-    def expected_markers(self, src_markers: set[VersionId]) -> set[VersionId]:
-        if not self.DELETE_MARKER_REPLICATION:
+    def expected_markers(self, src_markers: set[VersionId], index: int = 0) -> set[VersionId]:
+        """index 번째 대상에 있어야 할 삭제 마커. 태그 필터 룰은 삭제 마커 복제를 켤 수 없어 태그는 보지 않는다."""
+        if not self.rule_spec(index)[1]:
             return set()
-        return {(k, v) for k, v in src_markers if self.replicates(k, {})}
+        return {(k, v) for k, v in src_markers if self.replicates_to(index, k, {})}
 
     def dst_matches(self) -> tuple[bool, str]:
         _, src_markers = list_versions(self.s3, self.src)
-        files, markers = list_versions(self.dst_s3, self.dst)
-        want_markers = self.expected_markers(src_markers)
-        missing = set(self.dst_expected) - set(files)
-        extra = set(files) - set(self.dst_expected)
+        diffs = []
+        for index, dst in enumerate(self.dsts):
+            done, diff = self.one_dst_matches(dst, self.dst_expected_all[index],
+                                              self.expected_markers(src_markers, index))
+            if not done:
+                diffs.append(diff if len(self.dsts) == 1 else f"{dst}: {diff}")
+        return not diffs, " // ".join(diffs)
+
+    def one_dst_matches(self, dst: str, expected: dict[VersionId, dict],
+                        want_markers: set[VersionId]) -> tuple[bool, str]:
+        files, markers = list_versions(self.dst_s3, dst)
+        missing = set(expected) - set(files)
+        extra = set(files) - set(expected)
         missing_m = want_markers - markers
         extra_m = markers - want_markers
         if not (missing or extra or missing_m or extra_m):
@@ -233,7 +266,7 @@ class ReplicationCase(Case):
 
     def client_for(self, bucket: str):
         """대상 버킷이면 대상 클라이언트, 나머지(원본·보조 버킷)는 원본 클라이언트."""
-        return self.dst_s3 if bucket == self.dst else self.s3
+        return self.dst_s3 if bucket in self.dsts else self.s3
 
     def describe(self, bucket: str, key: str, version_id: str) -> dict:
         client = self.client_for(bucket)
@@ -251,7 +284,7 @@ class ReplicationCase(Case):
         if set(src_files) != set(self.src_expected):
             diffs.append(f"원본 버전 목록이 기대와 다름: 빠짐 {short(set(self.src_expected) - set(src_files))}, "
                          f"남음 {short(set(src_files) - set(self.src_expected))}")
-        for bucket, expected in ((self.src, self.src_expected), (self.dst, self.dst_expected)):
+        for bucket, expected in ((self.src, self.src_expected), *zip(self.dsts, self.dst_expected_all)):
             for (key, vid), want in expected.items():
                 got = self.describe(bucket, key, vid)
                 for field in want:
@@ -262,8 +295,10 @@ class ReplicationCase(Case):
 
     def expected_replication_status(self) -> dict[VersionId, str | None]:
         """원본 파일 버전마다 HeadObject 의 ReplicationStatus 기대값.
-        룰에 맞아 복제된 버전은 COMPLETED, 룰에 맞지 않는 버전은 헤더가 없어야 한다(AWS 와 같음)."""
-        return {kv: (STATUS_COMPLETED if kv in self.dst_expected else None) for kv in self.src_expected}
+        룰에 맞아 복제된 버전은 COMPLETED, 룰에 맞지 않는 버전은 헤더가 없어야 한다(AWS 와 같음).
+        대상이 여럿이면 맞는 대상 모두에 복제가 끝나야 COMPLETED 다."""
+        return {kv: (STATUS_COMPLETED if any(kv in e for e in self.dst_expected_all) else None)
+                for kv in self.src_expected}
 
     def compare_replication_status(self, detail: list) -> None:
         expected = self.expected_replication_status()
@@ -285,16 +320,21 @@ class ReplicationCase(Case):
                       f"수렴 {elapsed:.1f}초")
 
     def compare_usage(self, detail: list) -> None:
-        want_src, want_dst = usage_of(self.src_expected), usage_of(self.dst_expected)
+        want_src = usage_of(self.src_expected)
+        wants = [usage_of(e) for e in self.dst_expected_all]
+        # 대상이 하나면 그 값, 여럿이면 대상별 목록으로 보인다
+        want_dst = wants[0] if len(wants) == 1 else wants
         # 다른 시스템 리전이면 대상 usage 는 이 포털로 볼 수 없어 원본만 비교한다
         check_dst = self.target.same_portal
         dst_keys = self.target.usage_keys()
 
         def usage_matched():
             s = self.portal.bucket_usage(self.src)
-            d = self.portal.bucket_usage(self.dst, *dst_keys) if check_dst else None
-            self.result.src_usage, self.result.dst_usage = s, d
-            return s == want_src and (not check_dst or d == want_dst), (s, d)
+            ds = [self.portal.bucket_usage(dst, *dst_keys) for dst in self.dsts] if check_dst else []
+            # 결과(CSV)에는 첫 대상 값을 남긴다
+            self.result.src_usage, self.result.dst_usage = s, (ds[0] if ds else None)
+            d = (ds[0] if len(ds) == 1 else ds) if ds else None
+            return s == want_src and (not ds or ds == wants), (s, d)
 
         done, (s, d), elapsed = wait_until(usage_matched, USAGE_TIMEOUT_SEC, USAGE_POLL_SEC)
         if not done:
@@ -313,7 +353,7 @@ class ReplicationCase(Case):
                 self.s3.delete_bucket_replication(Bucket=self.src)
             except Exception as e:  # noqa: BLE001
                 logger.warning("복제 룰 삭제 실패: %s (%s)", self.src, e)
-        for bucket in [self.src, self.dst, *self.extra_buckets]:
+        for bucket in [self.src, *self.dsts, *self.extra_buckets]:
             if bucket:
                 empty_and_delete_bucket(self.client_for(bucket), bucket)
 
