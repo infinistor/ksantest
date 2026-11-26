@@ -516,4 +516,114 @@ class ACL {
 		test.testObjectPermissionAltUserWriteAcp();
 		testV2.testObjectPermissionAltUserWriteAcp();
 	}
+
+	/**
+	 * [Bucket = Read] 서브유저에게 목록 종류만 열리고 오브젝트 읽기·쓰기와 버킷 설정은 막히는지 확인
+	 */
+	@Test
+	@Tag("Scope")
+	void testBucketAclReadScope() {
+		test.testBucketAclReadScope();
+		testV2.testBucketAclReadScope();
+	}
+
+	/**
+	 * [Bucket = Write] 서브유저에게 쓰기·삭제·멀티파트 시작만 열리고 읽기·목록은 막히는지 확인
+	 */
+	@Test
+	@Tag("Scope")
+	void testBucketAclWriteScope() {
+		test.testBucketAclWriteScope();
+		testV2.testBucketAclWriteScope();
+	}
+
+	/**
+	 * [Bucket = FullControl] 서브유저가 버킷 설정과 삭제는 할 수 없는지 확인
+	 */
+	@Test
+	@Tag("Scope")
+	void testBucketAclFullControlScope() {
+		test.testBucketAclFullControlScope();
+		testV2.testBucketAclFullControlScope();
+	}
+
+	/**
+	 * [Object = Read] 서브유저에게 본문과 메타데이터만 열리는지 확인
+	 */
+	@Test
+	@Tag("Scope")
+	void testObjectAclReadScope() {
+		test.testObjectAclReadScope();
+		testV2.testObjectAclReadScope();
+	}
+
+	/**
+	 * [Object = FullControl] 서브유저가 덮어쓰기·삭제·태그는 할 수 없고 ACL 은 바꿀 수 있는지 확인
+	 */
+	@Test
+	@Tag("Scope")
+	void testObjectAclFullControlScope() {
+		test.testObjectAclFullControlScope();
+		testV2.testObjectAclFullControlScope();
+	}
+
+	/**
+	 * 복사본이 원본의 ACL 을 물려받지 않고 복사 요청의 ACL 이 적용되는지 확인
+	 */
+	@Test
+	@Tag("Copy")
+	void testObjectAclNotCopied() {
+		test.testObjectAclNotCopied();
+		testV2.testObjectAclNotCopied();
+	}
+
+	/**
+	 * ACL 없이 덮어쓰면 오브젝트가 비공개로 돌아가는지 확인
+	 */
+	@Test
+	@Tag("Overwrite")
+	void testObjectAclResetOnOverwrite() {
+		test.testObjectAclResetOnOverwrite();
+		testV2.testObjectAclResetOnOverwrite();
+	}
+
+	/**
+	 * 멀티파트를 시작할 때 준 ACL 이 완성된 오브젝트의 ACL 이 되는지 확인
+	 */
+	@Test
+	@Tag("Multipart")
+	void testObjectAclMultipart() {
+		test.testObjectAclMultipart();
+		testV2.testObjectAclMultipart();
+	}
+
+	/**
+	 * ACL 이 버전마다 따로 적용되는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testObjectAclPerVersion() {
+		test.testObjectAclPerVersion();
+		testV2.testObjectAclPerVersion();
+	}
+
+	/**
+	 * bucket-owner-* canned ACL 이 소유자 전권만 남기는지 확인
+	 */
+	@Test
+	@Tag("Canned")
+	void testAclCannedBucketOwner() {
+		test.testAclCannedBucketOwner();
+		testV2.testAclCannedBucketOwner();
+	}
+
+	/**
+	 * [Bucket = public-read-write] 익명 사용자에게 열리는 범위 확인
+	 */
+	@Test
+	@Tag("Scope")
+	void testPublicRwBucketAnonymousScope() {
+		test.testPublicRwBucketAnonymousScope();
+		testV2.testPublicRwBucketAnonymousScope();
+	}
 }

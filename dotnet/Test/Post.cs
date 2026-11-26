@@ -9,6 +9,10 @@
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
 using Amazon.S3;
+using System.Text;
+using System.Security.Cryptography;
+using System.Linq;
+using Amazon.S3.Model;
 using Newtonsoft.Json.Linq;
 using s3tests.Client;
 using System;
@@ -1489,5 +1493,551 @@ namespace s3tests.Test
 			var e = Assert.Throws<AggregateException>(() => client.HeadObject(bucketName, targetKey));
 			Assert.Equal(HttpStatusCode.NotFound, GetStatus(e));
 		}
+
+		#region SigV4 POST (AWS 실측 기준)
+
+		private static string PostExpiration(int minutes) => DateTime.UtcNow.AddMinutes(minutes).ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+		/// <summary>폼 필드(key 제외)를 그대로 정책 조건으로 만든다.</summary>
+		private static JArray FieldConditions(Dictionary<string, object> fields)
+		{
+			var conditions = new JArray();
+			foreach (var field in fields)
+				if (field.Key != "key") conditions.Add(new JObject() { { field.Key, field.Value.ToString() } });
+			return conditions;
+		}
+
+		/// <summary>
+		/// SigV4 로 서명한 폼 업로드. 날짜·자격 증명은 정책과 폼에 같은 값을 쓴다.
+		/// </summary>
+		/// <param name="policy">null 이면 bucket, key(아무 값), x-amz-* 조건에 conditions 를 더한 정책을 만든다. 함수면 기본 조건 목록을 받아 정책 문서를 돌려준다.</param>
+		/// <param name="rawPolicy">null 이 아니면 그대로 policy 필드에 넣는다.</param>
+		/// <param name="mutate">서명까지 끝난 폼 필드를 고치는 함수.</param>
+		private MyResult PostForm(string bucketName, Dictionary<string, object> fields, JArray conditions = null, string body = "bar",
+			UserData user = null, Func<List<JToken>, JObject> policy = null, string rawPolicy = null,
+			Action<Dictionary<string, object>> mutate = null)
+		{
+			user ??= Config.MainUser;
+			var amzDate = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
+			var dateStamp = amzDate[..8];
+			var region = string.IsNullOrWhiteSpace(Config.S3.RegionName) ? "us-east-1" : Config.S3.RegionName;
+			var credential = $"{user.AccessKey}/{dateStamp}/{region}/s3/aws4_request";
+			var baseConditions = new List<JToken>()
+			{
+				new JObject() { { "bucket", bucketName } },
+				new JArray() { "starts-with", "$key", "" },
+				new JObject() { { "x-amz-algorithm", PostPolicyV4.Algorithm } },
+				new JObject() { { "x-amz-credential", credential } },
+				new JObject() { { "x-amz-date", amzDate } },
+			};
+
+			var encoded = rawPolicy;
+			if (encoded == null)
+			{
+				JObject document;
+				if (policy == null)
+				{
+					var all = new JArray(baseConditions);
+					if (conditions != null)
+						foreach (var condition in conditions) all.Add(condition);
+					document = new JObject() { { "expiration", PostExpiration(100) }, { "conditions", all } };
+				}
+				else
+					document = policy(baseConditions);
+				encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(document.ToString()));
+			}
+
+			var payload = new Dictionary<string, object>(fields)
+			{
+				["policy"] = encoded,
+				["x-amz-algorithm"] = PostPolicyV4.Algorithm,
+				["x-amz-credential"] = credential,
+				["x-amz-date"] = amzDate,
+				["x-amz-signature"] = S3Utils.GetPostPolicySignature(user.SecretKey, dateStamp, region, encoded),
+			};
+			mutate?.Invoke(payload);
+			payload["file"] = new FormFile() { Name = "foo.txt", ContentType = "text/plain", Body = body };
+			return PostUpload(bucketName, payload);
+		}
+
+		private static void AssertPostError(MyResult result, HttpStatusCode statusCode, string errorCode)
+		{
+			AssertX.Equal(statusCode, result.StatusCode, result.Message);
+			AssertX.Equal(errorCode, result.ErrorCode, result.Message);
+		}
+
+		private static void AssertPostSuccess(MyResult result)
+			=> AssertX.Equal(HttpStatusCode.NoContent, result.StatusCode, result.Message);
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Upload")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] post 방식으로 올릴 때 폼 필드로 준 헤더·메타데이터·암호화·태그가 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPostObjectV4StoredFields()
+		{
+			TestId = 37;
+			var key = "TestPostObjectV4StoredFields";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var fields = new Dictionary<string, object>()
+			{
+				{ "key", key },
+				{ "Content-Type", "image/png" },
+				{ "Cache-Control", "max-age=60" },
+				{ "Content-Disposition", "attachment; filename=a.txt" },
+				{ "Content-Encoding", "identity" },
+				{ "x-amz-meta-foo", "bar" },
+				{ "x-amz-server-side-encryption", "AES256" },
+				{ "x-amz-website-redirect-location", "/other.txt" },
+				{ "tagging", "<Tagging><TagSet><Tag><Key>k1</Key><Value>v1</Value></Tag></TagSet></Tagging>" },
+			};
+			AssertPostSuccess(PostForm(bucketName, fields, FieldConditions(fields)));
+
+			var response = client.HeadObject(bucketName, key);
+			Assert.Equal(3, response.ContentLength);
+			Assert.Equal("image/png", response.Headers.ContentType);
+			Assert.Equal("max-age=60", response.Headers.CacheControl);
+			Assert.Equal("attachment; filename=a.txt", response.Headers.ContentDisposition);
+			Assert.Equal("identity", response.Headers.ContentEncoding);
+			Assert.Single(response.Metadata.Keys);
+			Assert.Equal("bar", response.Metadata["x-amz-meta-foo"]);
+			Assert.Equal(ServerSideEncryptionMethod.AES256, response.ServerSideEncryptionMethod);
+			Assert.Equal("/other.txt", response.WebsiteRedirectLocation);
+			var tagSet = client.GetObjectTagging(bucketName, key).Tagging;
+			Assert.Single(tagSet);
+			Assert.Equal("k1", tagSet[0].Key);
+			Assert.Equal("v1", tagSet[0].Value);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Upload")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] post 방식으로 같은 키에 다시 올리면 덮어쓰고, 빈 파일도 올릴 수 있는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPostObjectV4Overwrite()
+		{
+			TestId = 38;
+			var key = "TestPostObjectV4Overwrite";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", key } }, body: "first"));
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", key } }, body: "second"));
+			Assert.Equal("second", S3Utils.GetBody(client.GetObject(bucketName, key)));
+			// 빈 파일도 올릴 수 있다
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", "empty" } }, body: ""));
+			Assert.Equal(0, client.HeadObject(bucketName, "empty").ContentLength);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Versioning")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 버전 관리 버킷에 post 방식으로 같은 키를 두 번 올리면 버전이 둘 생기는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPostObjectV4Versioning()
+		{
+			TestId = 39;
+			var key = "TestPostObjectV4Versioning";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", key } }, body: "first"));
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", key } }, body: "second"));
+			var versions = client.ListVersions(bucketName).Versions;
+			Assert.Equal(2, versions.Count);
+			Assert.Equal("second", S3Utils.GetBody(client.GetObject(bucketName, key)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Policy")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 정책 조건에 맞는 폼은 post 방식 업로드에 성공하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestPostObjectV4ConditionMatched()
+		{
+			TestId = 40;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 접두어가 맞는 키
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", "user/a.txt" } },
+				[new JArray() { "starts-with", "$key", "user/" }]));
+			// 빈 접두어는 아무 값이나 받는다
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", "any" }, { "x-amz-meta-foo", "anything" } },
+				[new JArray() { "starts-with", "$x-amz-meta-foo", "" }]));
+			// 조건의 필드 이름은 대소문자를 구분하지 않는다
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", "case" }, { "x-amz-meta-foo", "value" } },
+				[new JArray() { "starts-with", "$X-Amz-Meta-Foo", "" }]));
+			// x-ignore- 로 시작하는 필드는 조건이 없어도 된다
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", "ignore" }, { "x-ignore-foo", "bar" } }));
+			Assert.Equal(4, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Policy")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 정책 조건에 맞지 않는 폼은 post 방식 업로드가 AccessDenied 로 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4ConditionFailed()
+		{
+			TestId = 41;
+			var key = "TestPostObjectV4ConditionFailed";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var cases = new List<(Dictionary<string, object> Fields, JArray Conditions)>()
+			{
+				// (폼 필드, 추가 조건)
+				(new() { { "key", "other/a.txt" } }, [new JArray() { "starts-with", "$key", "user/" }]),
+				(new() { { "key", key }, { "Content-Type", "text/html" } }, [new JArray() { "eq", "$Content-Type", "text/plain" }]),
+				(new() { { "key", key }, { "x-amz-meta-foo", "2" } }, [new JObject() { { "x-amz-meta-foo", "1" } }]),
+				// eq 는 값의 대소문자를 구분한다
+				(new() { { "key", key }, { "x-amz-meta-foo", "ABC" } }, [new JArray() { "eq", "$x-amz-meta-foo", "abc" }]),
+				// 정책에 있는 필드가 폼에 없다
+				(new() { { "key", key } }, [new JObject() { { "x-amz-meta-foo", "bar" } }]),
+				// 폼에 있는 필드가 정책에 없다
+				(new() { { "key", key }, { "x-amz-meta-foo", "bar" } }, []),
+			};
+			foreach (var (fields, conditions) in cases)
+				AssertPostError(PostForm(bucketName, fields, conditions), HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Policy")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 정책에 필수 조건이 하나라도 없거나 버킷 이름이 다르면 post 방식 업로드가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4RequiredConditions()
+		{
+			TestId = 42;
+			var key = "TestPostObjectV4RequiredConditions";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var expiration = PostExpiration(100);
+
+			Func<List<JToken>, JObject> Without(int index) => conditions => new JObject()
+			{
+				{ "expiration", expiration },
+				{ "conditions", new JArray(conditions.Where((_, i) => i != index)) },
+			};
+
+			// bucket, key, x-amz-algorithm, x-amz-credential, x-amz-date 조건은 모두 있어야 한다
+			for (var index = 0; index < 5; index++)
+				AssertPostError(PostForm(bucketName, new() { { "key", key } }, policy: Without(index)),
+					HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
+			// 다른 버킷 이름을 적은 정책
+			JObject Other(List<JToken> conditions)
+			{
+				var all = new JArray() { new JObject() { { "bucket", "other-bucket-name" } } };
+				foreach (var condition in conditions.Skip(1)) all.Add(condition);
+				return new JObject() { { "expiration", expiration }, { "conditions", all } };
+			}
+			AssertPostError(PostForm(bucketName, new() { { "key", key } }, policy: Other), HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Policy")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 만료된 정책으로 post 방식 업로드가 AccessDenied 로 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4ExpiredPolicy()
+		{
+			TestId = 43;
+			var key = "TestPostObjectV4ExpiredPolicy";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			JObject Expired(List<JToken> conditions)
+				=> new() { { "expiration", PostExpiration(-10) }, { "conditions", new JArray(conditions) } };
+			AssertPostError(PostForm(bucketName, new() { { "key", key } }, policy: Expired), HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Policy")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 형식이 잘못된 정책 문서로 post 방식 업로드가 InvalidPolicyDocument 로 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4InvalidPolicyDocument()
+		{
+			TestId = 44;
+			var key = "TestPostObjectV4InvalidPolicyDocument";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var expiration = PostExpiration(100);
+
+			static JArray With(List<JToken> conditions, JToken extra)
+			{
+				var all = new JArray(conditions);
+				all.Add(extra);
+				return all;
+			}
+
+			var rawPolicies = new List<string>()
+			{
+				"!!!not-base64!!!",
+				Convert.ToBase64String(Encoding.ASCII.GetBytes("not json")),
+			};
+			var policies = new List<Func<List<JToken>, JObject>>()
+			{
+				conditions => new() { { "conditions", new JArray(conditions) } }, // expiration 누락
+				conditions => new() { { "expiration", expiration } }, // conditions 누락
+				conditions => new() { { "expiration", expiration }, { "conditions", new JArray() } },
+				conditions => new() { { "expiration", "2030-01-01 00:00:00" }, { "conditions", new JArray(conditions) } }, // ISO8601 이 아니다
+				conditions => new() { { "expiration", expiration }, { "conditions", new JArray(conditions) }, { "unknown", "value" } },
+				conditions => new() { { "EXPIRATION", expiration }, { "CONDITIONS", new JArray(conditions) } }, // 이름은 소문자여야 한다
+				// 조건 형식이 잘못됐다
+				conditions => new() { { "expiration", expiration }, { "conditions", With(conditions, new JArray() { "ends-with", "$key", "txt" }) } },
+				conditions => new() { { "expiration", expiration }, { "conditions", With(conditions, new JArray() { "eq", "$key" }) } },
+				conditions => new() { { "expiration", expiration }, { "conditions", With(conditions, new JArray() { "content-length-range", 0 }) } },
+			};
+			foreach (var rawPolicy in rawPolicies)
+				AssertPostError(PostForm(bucketName, new() { { "key", key } }, rawPolicy: rawPolicy),
+					HttpStatusCode.BadRequest, MainData.INVALID_POLICY_DOCUMENT);
+			foreach (var policy in policies)
+				AssertPostError(PostForm(bucketName, new() { { "key", key } }, policy: policy),
+					HttpStatusCode.BadRequest, MainData.INVALID_POLICY_DOCUMENT);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Policy")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] content-length-range 조건이 양 끝을 포함하고 범위를 벗어나면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4ContentLengthRange()
+		{
+			TestId = 45;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 본문은 3바이트. 범위는 양 끝을 포함한다
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", "max" } }, [new JArray() { "content-length-range", 0, 3 }]));
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", "min" } }, [new JArray() { "content-length-range", 3, 10 }]));
+			AssertPostError(PostForm(bucketName, new() { { "key", "large" } }, [new JArray() { "content-length-range", 0, 2 }]),
+				HttpStatusCode.BadRequest, MainData.ENTITY_TOO_LARGE);
+			AssertPostError(PostForm(bucketName, new() { { "key", "small" } }, [new JArray() { "content-length-range", 4, 10 }]),
+				HttpStatusCode.BadRequest, MainData.ENTITY_TOO_SMALL);
+			Assert.Equal(new List<string>() { "max", "min" }, GetKeys(client.ListObjectsV2(bucketName)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Auth")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 서명이나 액세스 키가 틀리면 post 방식 업로드가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4InvalidSignature()
+		{
+			TestId = 46;
+			var key = "TestPostObjectV4InvalidSignature";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			static void BadAccessKey(Dictionary<string, object> payload)
+			{
+				var scope = payload["x-amz-credential"].ToString().Split('/', 2)[1];
+				payload["x-amz-credential"] = $"AKIAXXXXXXXXXXXXXXXX/{scope}";
+			}
+
+			AssertPostError(PostForm(bucketName, new() { { "key", key } }, mutate: payload => payload["x-amz-signature"] = new string('0', 64)),
+				HttpStatusCode.Forbidden, MainData.SIGNATURE_DOES_NOT_MATCH);
+			AssertPostError(PostForm(bucketName, new() { { "key", key } }, mutate: BadAccessKey),
+				HttpStatusCode.Forbidden, MainData.INVALID_ACCESS_KEY_ID);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Auth")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 서명 필드가 없거나 값이 잘못되면 post 방식 업로드가 InvalidArgument 로 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4InvalidAuthField()
+		{
+			TestId = 47;
+			var key = "TestPostObjectV4InvalidAuthField";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			static Action<Dictionary<string, object>> Remove(string name) => payload => payload.Remove(name);
+			static Action<Dictionary<string, object>> SetField(string name, string value) => payload => payload[name] = value;
+			static void WrongService(Dictionary<string, object> payload)
+				=> payload["x-amz-credential"] = payload["x-amz-credential"].ToString().Replace("/s3/aws4_request", "/ec2/aws4_request");
+
+			var mutations = new List<Action<Dictionary<string, object>>>()
+			{
+				// 서명 필드가 하나라도 없다
+				Remove("x-amz-signature"),
+				Remove("x-amz-date"),
+				Remove("x-amz-algorithm"),
+				Remove("x-amz-credential"),
+				// 값이 잘못됐다
+				SetField("x-amz-algorithm", "AWS4-HMAC-SHA1"),
+				SetField("x-amz-date", "2030-01-01"),
+				SetField("x-amz-credential", "malformed"),
+				WrongService,
+			};
+			foreach (var mutate in mutations)
+				AssertPostError(PostForm(bucketName, new() { { "key", key } }, mutate: mutate),
+					HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 쓰기 권한이 없는 사용자의 폼과 서명 없는 폼은 post 방식 업로드가 AccessDenied 로 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4AccessDenied()
+		{
+			TestId = 48;
+			var key = "TestPostObjectV4AccessDenied";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 쓰기 권한이 없는 사용자가 서명한 폼
+			AssertPostError(PostForm(bucketName, new() { { "key", key } }, user: Config.AltUser),
+				HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
+			// 서명 없는 폼
+			var payload = new Dictionary<string, object>()
+			{
+				{ "key", key },
+				{ "file", new FormFile() { Name = "foo.txt", ContentType = "text/plain", Body = "bar" } },
+			};
+			AssertPostError(PostUpload(bucketName, payload), HttpStatusCode.Forbidden, MainData.ACCESS_DENIED);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] key 필드가 없거나 비었거나 1024바이트를 넘으면 post 방식 업로드가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4InvalidKey()
+		{
+			TestId = 49;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertPostError(PostForm(bucketName, []), HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT);
+			AssertPostError(PostForm(bucketName, new() { { "key", "" } }), HttpStatusCode.BadRequest, MainData.INVALID_ARGUMENT);
+			// 키는 1024바이트까지
+			AssertPostError(PostForm(bucketName, new() { { "key", new string('k', 1025) } }), HttpStatusCode.BadRequest, MainData.KEY_TOO_LONG);
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", new string('k', 1024) } }));
+			Assert.Equal(1, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] 폼 필드 값이 잘못되면 post 방식 업로드가 필드별 에러 코드로 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4InvalidFieldValue()
+		{
+			TestId = 50;
+			var key = "TestPostObjectV4InvalidFieldValue";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var duplicatedTag = "<Tagging><TagSet><Tag><Key>a</Key><Value>1</Value></Tag>"
+				+ "<Tag><Key>a</Key><Value>2</Value></Tag></TagSet></Tagging>";
+			var cases = new List<(string Name, string Value, string ErrorCode)>()
+			{
+				("acl", "invalid", MainData.INVALID_ARGUMENT),
+				("x-amz-server-side-encryption", "AES128", MainData.INVALID_ARGUMENT),
+				("tagging", "<Tagging>", MainData.MALFORMED_XML),
+				("tagging", duplicatedTag, MainData.INVALID_TAG),
+				("x-amz-website-redirect-location", "invalid", MainData.INVALID_REDIRECT_LOCATION),
+				("x-amz-meta-big", new string('v', 2100), MainData.METADATA_TOO_LARGE),
+			};
+			foreach (var (name, value, errorCode) in cases)
+			{
+				var result = PostForm(bucketName, new() { { "key", key }, { name, value } },
+					[new JArray() { "starts-with", $"${name}", "" }]);
+				AssertPostError(result, HttpStatusCode.BadRequest, errorCode);
+			}
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Checksum")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] Content-MD5 필드가 본문과 맞지 않거나 형식이 틀리면 post 방식 업로드가 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4ContentMd5()
+		{
+			TestId = 51;
+			var key = "TestPostObjectV4ContentMd5";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			MyResult Post(string md5) => PostForm(bucketName, new() { { "key", key }, { "Content-MD5", md5 } },
+				[new JObject() { { "Content-MD5", md5 } }]);
+
+			AssertPostError(Post(S3Utils.GetMD5("other")), HttpStatusCode.BadRequest, MainData.BAD_DIGEST);
+			AssertPostError(Post("invalid"), HttpStatusCode.BadRequest, MainData.INVALID_DIGEST);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+			AssertPostSuccess(Post(S3Utils.GetMD5("bar")));
+			Assert.Equal("bar", S3Utils.GetBody(client.GetObject(bucketName, key)));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "Checksum")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] x-amz-checksum-sha256 필드가 본문과 맞지 않으면 실패하고 맞으면 체크섬이 저장되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4Checksum()
+		{
+			TestId = 52;
+			var key = "TestPostObjectV4Checksum";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			MyResult Post(string checksum)
+			{
+				var fields = new Dictionary<string, object>()
+				{
+					{ "key", key },
+					{ "x-amz-checksum-algorithm", "SHA256" },
+					{ "x-amz-checksum-sha256", checksum },
+				};
+				return PostForm(bucketName, fields, FieldConditions(fields));
+			}
+
+			static string Sha256(string value) => Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+
+			AssertPostError(Post(Sha256("other")), HttpStatusCode.BadRequest, MainData.BAD_DIGEST);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+			AssertPostSuccess(Post(Sha256("bar")));
+			var response = client.HeadObject(bucketName, key, checksumMode: ChecksumMode.ENABLED);
+			Assert.Equal(Sha256("bar"), response.ChecksumSHA256);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Post")]
+		[Trait(MainData.Minor, "ACL")]
+		[Trait(MainData.Explanation, "[SignatureVersion4] acl 필드가 오브젝트 ACL 이 되고, ACL 을 끈 버킷은 소유자 전권을 뜻하는 값만 받는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestPostObjectV4Acl()
+		{
+			TestId = 53;
+			var client = GetClient();
+			// ACL 을 쓰는 버킷: acl 필드가 오브젝트 ACL 이 된다
+			var bucketName = GetNewBucketCannedAcl(client);
+			AssertPostSuccess(PostForm(bucketName, new() { { "key", "public" }, { "acl", "public-read" } },
+				[new JObject() { { "acl", "public-read" } }]));
+			var grants = client.GetObjectACL(bucketName, "public").AccessControlList.Grants
+				.Select(g => (Target: g.Grantee.URI ?? "", Permission: g.Permission.Value))
+				.OrderBy(g => g.Target, StringComparer.Ordinal).ThenBy(g => g.Permission, StringComparer.Ordinal).ToList();
+			Assert.Equal(new List<(string, string)>()
+			{
+				("", "FULL_CONTROL"),
+				("http://acs.amazonaws.com/groups/global/AllUsers", "READ"),
+			}, grants);
+
+			// ACL 을 끈 버킷: 소유자 전권을 뜻하는 값만 받는다
+			var enforced = GetNewBucket(client, ObjectOwnership.BucketOwnerEnforced);
+			foreach (var acl in new[] { "private", "bucket-owner-full-control" })
+				AssertPostSuccess(PostForm(enforced, new() { { "key", acl }, { "acl", acl } }, [new JObject() { { "acl", acl } }]));
+			AssertPostError(PostForm(enforced, new() { { "key", "public" }, { "acl", "public-read" } },
+				[new JObject() { { "acl", "public-read" } }]), HttpStatusCode.BadRequest, MainData.ACCESS_CONTROL_LIST_NOT_SUPPORTED);
+			Assert.Equal(2, client.ListObjectsV2(enforced).KeyCount);
+		}
+
+		#endregion
 	}
 }

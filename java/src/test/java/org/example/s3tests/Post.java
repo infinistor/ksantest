@@ -518,4 +518,208 @@ class Post {
 	void testPresignedUrlPutUnsignedCopySource() {
 		testV2.testPresignedUrlPutUnsignedCopySource();
 	}
+
+	/**
+	 * [SigV4] 폼 필드로 준 헤더·메타데이터·SSE·태그가 오브젝트에 저장되는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Upload")
+	void testPostObjectV4StoredFields() throws MalformedURLException {
+		test.testPostObjectV4StoredFields();
+		testV2.testPostObjectV4StoredFields();
+	}
+
+	/**
+	 * [SigV4] 같은 키로 다시 올리면 덮어쓰고 빈 파일도 올라가는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Upload")
+	void testPostObjectV4Overwrite() throws MalformedURLException {
+		test.testPostObjectV4Overwrite();
+		testV2.testPostObjectV4Overwrite();
+	}
+
+	/**
+	 * [SigV4] 버저닝 버킷에 같은 키로 올리면 버전이 쌓이는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Versioning")
+	void testPostObjectV4Versioning() throws MalformedURLException {
+		test.testPostObjectV4Versioning();
+		testV2.testPostObjectV4Versioning();
+	}
+
+	/**
+	 * [SigV4] 정책 조건(starts-with, 대소문자, x-ignore-)에 맞는 폼이 성공하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Policy")
+	void testPostObjectV4ConditionMatched() throws MalformedURLException {
+		test.testPostObjectV4ConditionMatched();
+		testV2.testPostObjectV4ConditionMatched();
+	}
+
+	/**
+	 * [SigV4] 정책 조건에 맞지 않는 폼이 AccessDenied 로 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Policy")
+	void testPostObjectV4ConditionFailed() throws MalformedURLException {
+		test.testPostObjectV4ConditionFailed();
+		testV2.testPostObjectV4ConditionFailed();
+	}
+
+	/**
+	 * [SigV4] bucket, key, x-amz-* 조건이 빠지거나 버킷이 다르면 AccessDenied 로 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Policy")
+	void testPostObjectV4RequiredConditions() throws MalformedURLException {
+		test.testPostObjectV4RequiredConditions();
+		testV2.testPostObjectV4RequiredConditions();
+	}
+
+	/**
+	 * [SigV4] 만료된 정책이 AccessDenied 로 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Policy")
+	void testPostObjectV4ExpiredPolicy() throws MalformedURLException {
+		test.testPostObjectV4ExpiredPolicy();
+		testV2.testPostObjectV4ExpiredPolicy();
+	}
+
+	/**
+	 * [SigV4] 형식이 잘못된 정책 문서가 InvalidPolicyDocument 로 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Policy")
+	void testPostObjectV4InvalidPolicyDocument() throws MalformedURLException {
+		test.testPostObjectV4InvalidPolicyDocument();
+		testV2.testPostObjectV4InvalidPolicyDocument();
+	}
+
+	/**
+	 * [SigV4] content-length-range 의 경계값과 범위 밖 크기의 결과 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Policy")
+	void testPostObjectV4ContentLengthRange() throws MalformedURLException {
+		test.testPostObjectV4ContentLengthRange();
+		testV2.testPostObjectV4ContentLengthRange();
+	}
+
+	/**
+	 * [SigV4] 서명이나 액세스 키가 틀리면 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Auth")
+	void testPostObjectV4InvalidSignature() throws MalformedURLException {
+		test.testPostObjectV4InvalidSignature();
+		testV2.testPostObjectV4InvalidSignature();
+	}
+
+	/**
+	 * [SigV4] 서명 필드가 없거나 값이 잘못되면 InvalidArgument 로 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Auth")
+	void testPostObjectV4InvalidAuthField() throws MalformedURLException {
+		test.testPostObjectV4InvalidAuthField();
+		testV2.testPostObjectV4InvalidAuthField();
+	}
+
+	/**
+	 * [SigV4] 쓰기 권한이 없는 사용자의 폼과 서명 없는 폼이 AccessDenied 로 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Access")
+	void testPostObjectV4AccessDenied() throws MalformedURLException {
+		test.testPostObjectV4AccessDenied();
+		testV2.testPostObjectV4AccessDenied();
+	}
+
+	/**
+	 * [SigV4] key 필드가 없거나 비었거나 1024바이트를 넘으면 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("ERROR")
+	void testPostObjectV4InvalidKey() throws MalformedURLException {
+		test.testPostObjectV4InvalidKey();
+		testV2.testPostObjectV4InvalidKey();
+	}
+
+	/**
+	 * [SigV4] acl, SSE, tagging, redirect, 메타데이터 값이 잘못되면 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("ERROR")
+	void testPostObjectV4InvalidFieldValue() throws MalformedURLException {
+		test.testPostObjectV4InvalidFieldValue();
+		testV2.testPostObjectV4InvalidFieldValue();
+	}
+
+	/**
+	 * [SigV4] Content-MD5 필드가 본문과 다르거나 형식이 잘못되면 실패하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Checksum")
+	void testPostObjectV4ContentMd5() throws MalformedURLException {
+		test.testPostObjectV4ContentMd5();
+		testV2.testPostObjectV4ContentMd5();
+	}
+
+	/**
+	 * [SigV4] x-amz-checksum-sha256 필드를 검증하고 저장하는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("Checksum")
+	void testPostObjectV4Checksum() throws MalformedURLException {
+		test.testPostObjectV4Checksum();
+		testV2.testPostObjectV4Checksum();
+	}
+
+	/**
+	 * [SigV4] acl 필드가 오브젝트 ACL 이 되고 ACL 을 끈 버킷에서는 소유자 전권 값만 받는지 확인
+	 *
+	 * @throws MalformedURLException URL 형식이 잘못된 경우 발생하는 예외
+	 */
+	@Test
+	@Tag("ACL")
+	void testPostObjectV4Acl() throws MalformedURLException {
+		test.testPostObjectV4Acl();
+		testV2.testPostObjectV4Acl();
+	}
 }

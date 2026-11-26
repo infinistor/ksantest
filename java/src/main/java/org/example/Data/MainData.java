@@ -72,6 +72,8 @@ public class MainData {
 	public static final String MALFORMED_ACL_ERROR = "MalformedACLError";
 	public static final String INVALID_RANGE = "InvalidRange";
 	public static final String ENTITY_TOO_SMALL = "EntityTooSmall";
+	public static final String ENTITY_TOO_LARGE = "EntityTooLarge";
+	public static final String INVALID_POLICY_DOCUMENT = "InvalidPolicyDocument";
 	public static final String NO_SUCH_UPLOAD = "NoSuchUpload";
 	public static final String INVALID_PART = "InvalidPart";
 	public static final String INVALID_TAG = "InvalidTag";

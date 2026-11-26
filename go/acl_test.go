@@ -5,6 +5,9 @@ import (
 	"context"
 	"errors"
 	"io"
+	"slices"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -2405,3 +2408,504 @@ func expectACLStatus(t *testing.T, err error, allowed bool) {
 		t.Fatalf("HTTP status = %d, want 403", got)
 	}
 }
+
+// region ACL 권한 범위 (AWS 실측 기준)
+
+const (
+	aclAllUsers           = "http://acs.amazonaws.com/groups/global/AllUsers"
+	aclAuthenticatedUsers = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
+)
+
+func assertACLDenied(t *testing.T, err error) {
+	t.Helper()
+	assertS3Error(t, err, 403, "AccessDenied")
+}
+
+// aclGrant는 ACL 의 (대상, 권한) 한 쌍이다. 대상은 main, alt, 그룹 URI 중 하나다.
+type aclGrant struct{ grantee, permission string }
+
+// ACL 응답의 Grants 를 (대상, 권한) 목록으로 줄여 정렬한다.
+func aclGrantSet(s *suite, grants []types.Grant) []aclGrant {
+	set := make([]aclGrant, 0, len(grants))
+	for _, grant := range grants {
+		grantee := aws.ToString(grant.Grantee.URI)
+		if grantee == "" {
+			switch aws.ToString(grant.Grantee.ID) {
+			case s.cfg.Main.ID:
+				grantee = "main"
+			case s.cfg.Alt.ID:
+				grantee = "alt"
+			default:
+				grantee = "other"
+			}
+		}
+		set = append(set, aclGrant{grantee, string(grant.Permission)})
+	}
+	sort.Slice(set, func(i, j int) bool {
+		if set[i].grantee != set[j].grantee {
+			return set[i].grantee < set[j].grantee
+		}
+		return set[i].permission < set[j].permission
+	})
+	return set
+}
+
+func assertACLGrants(t *testing.T, s *suite, grants []types.Grant, want ...aclGrant) {
+	t.Helper()
+	if got := aclGrantSet(s, grants); !slices.Equal(got, want) {
+		t.Fatalf("grants = %v, want %v", got, want)
+	}
+}
+
+func assertBucketACLGrants(t *testing.T, s *suite, client *s3.Client, bucket string, want ...aclGrant) {
+	t.Helper()
+	out, err := client.GetBucketAcl(context.Background(), &s3.GetBucketAclInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertACLGrants(t, s, out.Grants, want...)
+}
+
+// versionID 가 비어 있으면 버전을 지정하지 않는다.
+func assertObjectACLGrants(t *testing.T, s *suite, bucket, key, versionID string, want ...aclGrant) {
+	t.Helper()
+	input := &s3.GetObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key)}
+	if versionID != "" {
+		input.VersionId = aws.String(versionID)
+	}
+	out, err := s.client.GetObjectAcl(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertACLGrants(t, s, out.Grants, want...)
+}
+
+// 비공개 버킷에 서브 사용자 권한 하나만 준다.
+func setupBucketPermission(t *testing.T, s *suite, permission types.Permission, id int) string {
+	t.Helper()
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, id)
+	if _, err := s.client.PutBucketAcl(context.Background(), &s3.PutBucketAclInput{Bucket: aws.String(bucket), AccessControlPolicy: aclPolicy(s, permission)}); err != nil {
+		t.Fatal(err)
+	}
+	return bucket
+}
+
+// 비공개 버킷의 오브젝트에 서브 사용자 권한 하나만 준다.
+func setupObjectGrant(t *testing.T, s *suite, key string, permission types.Permission, id int) string {
+	t.Helper()
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, id)
+	put(t, s, bucket, key, "content", nil)
+	if _, err := s.client.PutObjectAcl(context.Background(), &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), AccessControlPolicy: aclPolicy(s, permission)}); err != nil {
+		t.Fatal(err)
+	}
+	return bucket
+}
+
+func createMultipartErr(client *s3.Client, bucket, key string) error {
+	_, err := client.CreateMultipartUpload(context.Background(), &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	return err
+}
+
+func deleteObjectErr(client *s3.Client, bucket, key string) error {
+	_, err := client.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	return err
+}
+
+func getObjectTaggingErr(client *s3.Client, bucket, key string) error {
+	_, err := client.GetObjectTagging(context.Background(), &s3.GetObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	return err
+}
+
+// 버전 목록과 미완료 멀티파트 목록의 개수를 확인한다.
+func assertACLVersionAndUploadCount(t *testing.T, client *s3.Client, bucket string, versions, uploads int) {
+	t.Helper()
+	listed, err := client.ListObjectVersions(context.Background(), &s3.ListObjectVersionsInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Versions) != versions {
+		t.Fatalf("versions = %d, want %d", len(listed.Versions), versions)
+	}
+	multiparts, err := client.ListMultipartUploads(context.Background(), &s3.ListMultipartUploadsInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(multiparts.Uploads) != uploads {
+		t.Fatalf("uploads = %d, want %d", len(multiparts.Uploads), uploads)
+	}
+}
+
+// [Bucket = Read] 서브유저에게 열리는 범위가 목록 종류뿐인지 확인
+func TestBucketAclReadScope(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	requireAltUser(t, s)
+	ctx := context.Background()
+	key := "test_bucket_acl_read_scope"
+	bucket := setupBucketPermission(t, s, types.PermissionRead, 47)
+	put(t, s, bucket, key, "content", nil)
+	created, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String("multi")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	// READ 는 목록 종류를 모두 연다
+	if _, err := alt.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(bucket)}); err != nil {
+		t.Fatal(err)
+	}
+	assertListV2KeyCount(t, alt, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)}, 1)
+	assertACLVersionAndUploadCount(t, alt, bucket, 1, 1)
+	// 목록 권한이 있으므로 없는 키는 404 다
+	assertS3Error(t, getObjectErr(alt, bucket, "not-exist", ""), 404, "NoSuchKey")
+
+	// 오브젝트 읽기·쓰기와 버킷 설정은 열지 않는다
+	assertACLDenied(t, getObjectErr(alt, bucket, key, ""))
+	assertACLDenied(t, putObjectErr(alt, bucket, "new", "x", nil))
+	assertACLDenied(t, deleteObjectErr(alt, bucket, key))
+	assertACLDenied(t, createMultipartErr(alt, bucket, "new"))
+	_, err = alt.ListParts(ctx, &s3.ListPartsInput{Bucket: aws.String(bucket), Key: aws.String("multi"), UploadId: created.UploadId})
+	assertACLDenied(t, err)
+	_, err = alt.GetBucketVersioning(ctx, &s3.GetBucketVersioningInput{Bucket: aws.String(bucket)})
+	assertACLDenied(t, err)
+	_, err = alt.GetBucketLocation(ctx, &s3.GetBucketLocationInput{Bucket: aws.String(bucket)})
+	assertACLDenied(t, err)
+	deleted, err := alt.DeleteObjects(ctx, &s3.DeleteObjectsInput{Bucket: aws.String(bucket), Delete: &types.Delete{Objects: []types.ObjectIdentifier{{Key: aws.String(key)}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deleted.Deleted) != 0 {
+		t.Fatalf("deleted = %#v, want none", deleted.Deleted)
+	}
+	if len(deleted.Errors) == 0 || aws.ToString(deleted.Errors[0].Code) != "AccessDenied" {
+		t.Fatalf("errors = %#v, want AccessDenied", deleted.Errors)
+	}
+}
+
+// [Bucket = Write] 서브유저에게 쓰기·삭제만 열리고 읽기·목록은 닫혀 있는지 확인
+func TestBucketAclWriteScope(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	requireAltUser(t, s)
+	ctx := context.Background()
+	key := "test_bucket_acl_write_scope"
+	bucket := setupBucketPermission(t, s, types.PermissionWrite, 48)
+	put(t, s, bucket, key, "content", nil)
+	put(t, s, bucket, "other", "content", nil)
+	created, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String("multi")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	// WRITE 는 쓰기·덮어쓰기·삭제·멀티파트 시작을 연다(소유자가 올린 오브젝트도)
+	if err := putObjectErr(alt, bucket, "new", "x", nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := putObjectErr(alt, bucket, key, "overwritten", nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := deleteObjectErr(alt, bucket, key); err != nil {
+		t.Fatal(err)
+	}
+	deleted, err := alt.DeleteObjects(ctx, &s3.DeleteObjectsInput{Bucket: aws.String(bucket), Delete: &types.Delete{Objects: []types.ObjectIdentifier{{Key: aws.String("other")}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deleted.Deleted) != 1 || aws.ToString(deleted.Deleted[0].Key) != "other" {
+		t.Fatalf("deleted = %#v, want [other]", deleted.Deleted)
+	}
+	altCreated, err := alt.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String("alt-multi")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := alt.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String("alt-multi"), UploadId: altCreated.UploadId}); err != nil {
+		t.Fatal(err)
+	}
+	assertACLList(t, s.client, bucket, []string{"new"}, true)
+
+	// 읽기·목록은 열지 않는다. 목록 권한이 없어 없는 키도 403 이다
+	_, err = alt.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(bucket)})
+	assertS3Status(t, err, 403)
+	assertACLDenied(t, listV2Err(alt, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)}))
+	_, err = alt.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: aws.String(bucket)})
+	assertACLDenied(t, err)
+	assertACLDenied(t, getObjectErr(alt, bucket, "not-exist", ""))
+	_, err = alt.GetBucketAcl(ctx, &s3.GetBucketAclInput{Bucket: aws.String(bucket)})
+	assertACLDenied(t, err)
+	// 다른 사용자가 시작한 멀티파트는 중단할 수 없다
+	_, err = alt.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String("multi"), UploadId: created.UploadId})
+	assertACLDenied(t, err)
+}
+
+// [Bucket = FullControl] 서브유저에게 버킷 설정과 삭제는 열리지 않는지 확인
+func TestBucketAclFullControlScope(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	requireAltUser(t, s)
+	ctx := context.Background()
+	bucket := setupBucketPermission(t, s, types.PermissionFullControl, 49)
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	assertListV2KeyCount(t, alt, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)}, 0)
+	if err := putObjectErr(alt, bucket, "new", "x", nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := deleteObjectErr(alt, bucket, "new"); err != nil {
+		t.Fatal(err)
+	}
+	assertBucketACLGrants(t, s, alt, bucket, aclGrant{"alt", "FULL_CONTROL"}, aclGrant{"main", "FULL_CONTROL"})
+	if _, err := alt.PutBucketAcl(ctx, &s3.PutBucketAclInput{Bucket: aws.String(bucket), AccessControlPolicy: aclPolicy(s, types.PermissionFullControl)}); err != nil {
+		t.Fatal(err)
+	}
+
+	// ACL 의 FULL_CONTROL 은 READ·WRITE·READ_ACP·WRITE_ACP 뿐이다. 버킷 설정과 삭제는 소유자만 한다
+	_, err := alt.GetBucketVersioning(ctx, &s3.GetBucketVersioningInput{Bucket: aws.String(bucket)})
+	assertACLDenied(t, err)
+	_, err = alt.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{Bucket: aws.String(bucket), VersioningConfiguration: &types.VersioningConfiguration{Status: types.BucketVersioningStatusEnabled}})
+	assertACLDenied(t, err)
+	_, err = alt.PutBucketTagging(ctx, &s3.PutBucketTaggingInput{Bucket: aws.String(bucket), Tagging: &types.Tagging{TagSet: []types.Tag{{Key: aws.String("a"), Value: aws.String("b")}}}})
+	assertACLDenied(t, err)
+	_, err = alt.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String(bucket)})
+	assertACLDenied(t, err)
+	_, err = alt.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+	assertACLDenied(t, err)
+	if _, err := s.client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(bucket)}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// [Object = Read] 서브유저에게 본문과 메타데이터만 열리는지 확인
+func TestObjectAclReadScope(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	requireAltUser(t, s)
+	ctx := context.Background()
+	key := "test_object_acl_read_scope"
+	bucket := setupObjectGrant(t, s, key, types.PermissionRead, 50)
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	assertClientObjectBody(t, alt, bucket, key, "content")
+	head, err := alt.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := aws.ToInt64(head.ContentLength); got != 7 {
+		t.Fatalf("ContentLength = %d, want 7", got)
+	}
+	// READ 는 본문과 메타데이터만 연다
+	assertACLDenied(t, getObjectTaggingErr(alt, bucket, key))
+	_, err = alt.GetObjectAttributes(ctx, &s3.GetObjectAttributesInput{Bucket: aws.String(bucket), Key: aws.String(key), ObjectAttributes: []types.ObjectAttributes{types.ObjectAttributesEtag}})
+	assertACLDenied(t, err)
+	_, err = alt.GetObjectAcl(ctx, &s3.GetObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	assertACLDenied(t, err)
+	_, err = alt.PutObjectAcl(ctx, &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPrivate})
+	assertACLDenied(t, err)
+	assertACLDenied(t, putObjectErr(alt, bucket, key, "x", nil))
+	assertACLDenied(t, deleteObjectErr(alt, bucket, key))
+}
+
+// [Object = FullControl] 서브유저에게 쓰기·삭제·태그는 열리지 않는지 확인
+func TestObjectAclFullControlScope(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	requireAltUser(t, s)
+	ctx := context.Background()
+	key := "test_object_acl_full_control_scope"
+	bucket := setupObjectGrant(t, s, key, types.PermissionFullControl, 51)
+	alt := s3Client(s.cfg, s.cfg.Alt)
+	assertClientObjectBody(t, alt, bucket, key, "content")
+	out, err := alt.GetObjectAcl(ctx, &s3.GetObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if grants := aclGrantSet(s, out.Grants); !slices.Contains(grants, aclGrant{"alt", "FULL_CONTROL"}) {
+		t.Fatalf("grants = %v, want alt FULL_CONTROL", grants)
+	}
+	// 오브젝트의 FULL_CONTROL 에는 쓰기가 없다. 덮어쓰기·삭제는 버킷 권한으로 판정한다
+	assertACLDenied(t, putObjectErr(alt, bucket, key, "x", nil))
+	assertACLDenied(t, deleteObjectErr(alt, bucket, key))
+	assertACLDenied(t, getObjectTaggingErr(alt, bucket, key))
+	_, err = alt.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{Bucket: aws.String(bucket), Key: aws.String(key), Tagging: &types.Tagging{TagSet: []types.Tag{{Key: aws.String("a"), Value: aws.String("b")}}}})
+	assertACLDenied(t, err)
+	// WRITE_ACP 가 있으므로 ACL 은 바꿀 수 있다
+	if _, err := alt.PutObjectAcl(ctx, &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPrivate}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// 복사본이 원본의 ACL 을 물려받지 않고 복사 요청의 ACL 을 따르는지 확인
+func TestObjectAclNotCopied(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	requireAltUser(t, s)
+	ctx := context.Background()
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 52)
+	source := aws.String(bucket + "/source")
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("source"), Body: strings.NewReader("content"), ACL: types.ObjectCannedACLPublicRead}); err != nil {
+		t.Fatal(err)
+	}
+	assertObjectACLGrants(t, s, bucket, "source", "", aclGrant{aclAllUsers, "READ"}, aclGrant{"main", "FULL_CONTROL"})
+
+	// 복사본은 원본의 ACL 을 물려받지 않는다
+	if _, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String("copy"), CopySource: source}); err != nil {
+		t.Fatal(err)
+	}
+	assertObjectACLGrants(t, s, bucket, "copy", "", aclGrant{"main", "FULL_CONTROL"})
+	// 복사 요청에 준 ACL 이 적용된다
+	if _, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String("canned"), CopySource: source, ACL: types.ObjectCannedACLAuthenticatedRead}); err != nil {
+		t.Fatal(err)
+	}
+	assertObjectACLGrants(t, s, bucket, "canned", "", aclGrant{aclAuthenticatedUsers, "READ"}, aclGrant{"main", "FULL_CONTROL"})
+	// grant 헤더만 주면 소유자 전권은 붙지 않는다
+	if _, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{Bucket: aws.String(bucket), Key: aws.String("grant"), CopySource: source, GrantRead: aws.String(`id="` + s.cfg.Alt.ID + `"`)}); err != nil {
+		t.Fatal(err)
+	}
+	assertObjectACLGrants(t, s, bucket, "grant", "", aclGrant{"alt", "READ"})
+}
+
+// ACL 없이 덮어쓰면 오브젝트가 비공개로 돌아가는지 확인
+func TestObjectAclResetOnOverwrite(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	key := "test_object_acl_reset_on_overwrite"
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 53)
+	if _, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: strings.NewReader("content"), ACL: types.ObjectCannedACLPublicRead}); err != nil {
+		t.Fatal(err)
+	}
+	assertClientObjectBody(t, freshAnonymousClient(s), bucket, key, "content")
+
+	// ACL 없이 덮어쓰면 비공개로 돌아간다
+	put(t, s, bucket, key, "content", nil)
+	assertObjectACLGrants(t, s, bucket, key, "", aclGrant{"main", "FULL_CONTROL"})
+	assertACLDenied(t, getObjectErr(freshAnonymousClient(s), bucket, key, ""))
+}
+
+// 멀티파트를 시작할 때 준 ACL 이 완성된 오브젝트에 적용되는지 확인
+func TestObjectAclMultipart(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "test_object_acl_multipart"
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 54)
+	created, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: types.ObjectCannedACLPublicRead})
+	if err != nil {
+		t.Fatal(err)
+	}
+	part, err := s.client.UploadPart(ctx, &s3.UploadPartInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId, PartNumber: aws.Int32(1), Body: strings.NewReader("content")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.client.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{Bucket: aws.String(bucket), Key: aws.String(key), UploadId: created.UploadId, MultipartUpload: &types.CompletedMultipartUpload{Parts: []types.CompletedPart{{ETag: part.ETag, PartNumber: aws.Int32(1)}}}}); err != nil {
+		t.Fatal(err)
+	}
+	// 멀티파트를 시작할 때 준 ACL 이 완성된 오브젝트의 ACL 이 된다
+	assertObjectACLGrants(t, s, bucket, key, "", aclGrant{aclAllUsers, "READ"}, aclGrant{"main", "FULL_CONTROL"})
+	public := freshAnonymousClient(s)
+	assertClientObjectBody(t, public, bucket, key, "content")
+	if _, err := public.HeadObject(ctx, &s3.HeadObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)}); err != nil {
+		t.Fatal(err)
+	}
+	// public-read 는 ACL 조회와 태그 조회를 열지 않는다
+	_, err = public.GetObjectAcl(ctx, &s3.GetObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+	assertACLDenied(t, err)
+	assertACLDenied(t, getObjectTaggingErr(public, bucket, key))
+}
+
+// ACL 이 버전마다 따로 적용되는지 확인
+func TestObjectAclPerVersion(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "test_object_acl_per_version"
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 55)
+	checkConfigureVersioningRetry(t, s, bucket, types.BucketVersioningStatusEnabled)
+	first, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: strings.NewReader("1"), ACL: types.ObjectCannedACLPublicRead})
+	if err != nil {
+		t.Fatal(err)
+	}
+	version1 := aws.ToString(first.VersionId)
+	version2 := aws.ToString(put(t, s, bucket, key, "2", nil).VersionId)
+
+	// ACL 은 버전마다 따로다
+	assertObjectACLGrants(t, s, bucket, key, version1, aclGrant{aclAllUsers, "READ"}, aclGrant{"main", "FULL_CONTROL"})
+	assertObjectACLGrants(t, s, bucket, key, version2, aclGrant{"main", "FULL_CONTROL"})
+	public := freshAnonymousClient(s)
+	out, err := public.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), VersionId: aws.String(version1)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Body.Close()
+	if body, err := io.ReadAll(out.Body); err != nil || string(body) != "1" {
+		t.Fatalf("body=%q err=%v, want %q", body, err, "1")
+	}
+	assertACLDenied(t, getObjectErr(public, bucket, key, ""))
+	assertACLDenied(t, getObjectErr(public, bucket, key, version2))
+}
+
+// bucket-owner-read, bucket-owner-full-control 이 소유자 전권만 남기는지 확인
+func TestAclCannedBucketOwner(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "test_acl_canned_bucket_owner"
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 56)
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: strings.NewReader("content"), ACL: types.ObjectCannedACLPublicRead}); err != nil {
+		t.Fatal(err)
+	}
+	// 버킷 소유자가 곧 오브젝트 소유자면 bucket-owner-* 는 소유자 전권만 남긴다
+	for _, acl := range []types.ObjectCannedACL{types.ObjectCannedACLBucketOwnerRead, types.ObjectCannedACLBucketOwnerFullControl} {
+		if _, err := s.client.PutObjectAcl(ctx, &s3.PutObjectAclInput{Bucket: aws.String(bucket), Key: aws.String(key), ACL: acl}); err != nil {
+			t.Fatal(err)
+		}
+		assertObjectACLGrants(t, s, bucket, key, "", aclGrant{"main", "FULL_CONTROL"})
+	}
+	// 버킷에 주면 무시되고 비공개가 된다
+	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPublicRead)
+	for _, acl := range []types.BucketCannedACL{"bucket-owner-read", "bucket-owner-full-control"} {
+		setBucketCannedACL(t, s, bucket, acl)
+		assertBucketACLGrants(t, s, s.client, bucket, aclGrant{"main", "FULL_CONTROL"})
+	}
+}
+
+// [Bucket = public-read-write] 익명 사용자에게 열리는 범위를 확인
+func TestPublicRWBucketAnonymousScope(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	ctx := context.Background()
+	key := "test_public_rw_bucket_anonymous_scope"
+	bucket := ownershipBucket(t, s, types.ObjectOwnershipObjectWriter, 57)
+	setBucketCannedACL(t, s, bucket, types.BucketCannedACLPublicReadWrite)
+	put(t, s, bucket, key, "content", nil)
+	if err := createMultipartErr(s.client, bucket, "multi"); err != nil {
+		t.Fatal(err)
+	}
+
+	public := freshAnonymousClient(s)
+	assertListV2KeyCount(t, public, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)}, 1)
+	assertACLVersionAndUploadCount(t, public, bucket, 1, 1)
+	if err := putObjectErr(public, bucket, "anonymous", "x", nil); err != nil {
+		t.Fatal(err)
+	}
+	assertClientObjectBody(t, public, bucket, "anonymous", "x")
+
+	// 버킷이 열려 있어도 비공개 오브젝트와 ACL 은 열리지 않는다
+	assertACLDenied(t, getObjectErr(public, bucket, key, ""))
+	_, err := public.GetBucketAcl(ctx, &s3.GetBucketAclInput{Bucket: aws.String(bucket)})
+	assertACLDenied(t, err)
+	_, err = public.PutBucketAcl(ctx, &s3.PutBucketAclInput{Bucket: aws.String(bucket), ACL: types.BucketCannedACLPrivate})
+	assertACLDenied(t, err)
+	// 익명 사용자는 멀티파트 업로드를 시작할 수 없다
+	assertACLDenied(t, createMultipartErr(public, bucket, "new"))
+}
+
+// endregion

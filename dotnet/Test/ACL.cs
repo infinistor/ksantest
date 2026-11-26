@@ -1072,5 +1072,332 @@ namespace s3tests.Test
 			CheckObjectAclDenyWrite(altClient, bucketName, key);
 			CheckObjectAclAllowWriteACP(altClient, bucketName, key);
 		}
+
+		#region ACL 권한 범위 (AWS 실측 기준)
+
+		private const string AllUsers = "http://acs.amazonaws.com/groups/global/AllUsers";
+		private const string AuthenticatedUsers = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers";
+
+		private static void AssertDenied(Action call) => AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, call);
+
+		/// <summary>ACL 응답을 (대상, 권한) 목록으로 줄인다. 대상은 main, alt, 그룹 URI 중 하나다.</summary>
+		private List<(string, string)> GrantSet(GetACLResponse response)
+		{
+			var grants = new List<(string Target, string Permission)>();
+			foreach (var grant in response.AccessControlList.Grants ?? [])
+			{
+				var grantee = grant.Grantee;
+				var target = grantee.URI;
+				if (string.IsNullOrEmpty(target))
+				{
+					if (grantee.CanonicalUser == Config.MainUser.UserId) target = "main";
+					else if (grantee.CanonicalUser == Config.AltUser.UserId) target = "alt";
+					else target = "other";
+				}
+				grants.Add((target, grant.Permission.Value));
+			}
+			grants.Sort((a, b) =>
+			{
+				var order = string.CompareOrdinal(a.Target, b.Target);
+				return order != 0 ? order : string.CompareOrdinal(a.Permission, b.Permission);
+			});
+			return grants;
+		}
+
+		/// <summary>비공개 버킷의 오브젝트에 서브 사용자 권한 하나만 준다.</summary>
+		private string SetupObjectGrant(string key, S3Permission permission)
+		{
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			client.PutObject(bucketName, key, body: "content");
+			client.PutObjectACL(bucketName, key, accessControlPolicy: CreateAltAcl(permission));
+			return bucketName;
+		}
+
+		/// <summary>.NET SDK는 키별 오류가 있으면 DeleteObjectsException을 던지므로 예외에서 응답을 꺼낸다.</summary>
+		private static DeleteObjectsResponse DeleteObjectsWithErrors(S3Client client, string bucketName, List<KeyVersion> objects)
+		{
+			try { return client.DeleteObjects(bucketName, objects); }
+			catch (AggregateException e) when (e.InnerException is DeleteObjectsException de) { return de.Response; }
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Scope")]
+		public void TestBucketAclReadScope()
+		{
+			TestId = 47;
+			var key = "TestBucketAclReadScope";
+			var client = GetClient();
+			var bucketName = SetupBucketPermission(S3Permission.READ);
+			client.PutObject(bucketName, key, body: "content");
+			var uploadId = client.InitiateMultipartUpload(bucketName, "multi").UploadId;
+
+			var altClient = GetAltClient();
+			// READ 는 목록 종류를 모두 연다
+			altClient.HeadBucket(bucketName);
+			Assert.Equal(1, altClient.ListObjectsV2(bucketName).KeyCount);
+			Assert.Single(altClient.ListVersions(bucketName).Versions);
+			Assert.Single(altClient.ListMultipartUploads(bucketName).MultipartUploads);
+			// 목록 권한이 있으므로 없는 키는 404 다
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, () => altClient.GetObject(bucketName, "not-exist"));
+
+			// 오브젝트 읽기·쓰기와 버킷 설정은 열지 않는다
+			AssertDenied(() => altClient.GetObject(bucketName, key));
+			AssertDenied(() => altClient.PutObject(bucketName, "new", body: "x"));
+			AssertDenied(() => altClient.DeleteObject(bucketName, key));
+			AssertDenied(() => altClient.InitiateMultipartUpload(bucketName, "new"));
+			AssertDenied(() => altClient.ListParts(bucketName, "multi", uploadId));
+			AssertDenied(() => altClient.GetBucketVersioning(bucketName));
+			AssertDenied(() => altClient.GetBucketLocation(bucketName));
+			var response = DeleteObjectsWithErrors(altClient, bucketName, [new KeyVersion() { Key = key }]);
+			Assert.Empty(response.DeletedObjects ?? []);
+			Assert.Equal(MainData.ACCESS_DENIED, response.DeleteErrors[0].Code);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Scope")]
+		public void TestBucketAclWriteScope()
+		{
+			TestId = 48;
+			var key = "TestBucketAclWriteScope";
+			var client = GetClient();
+			var bucketName = SetupBucketPermission(S3Permission.WRITE);
+			client.PutObject(bucketName, key, body: "content");
+			client.PutObject(bucketName, "other", body: "content");
+			var uploadId = client.InitiateMultipartUpload(bucketName, "multi").UploadId;
+
+			var altClient = GetAltClient();
+			// WRITE 는 쓰기·덮어쓰기·삭제·멀티파트 시작을 연다(소유자가 올린 오브젝트도)
+			altClient.PutObject(bucketName, "new", body: "x");
+			altClient.PutObject(bucketName, key, body: "overwritten");
+			altClient.DeleteObject(bucketName, key);
+			var response = altClient.DeleteObjects(bucketName, [new KeyVersion() { Key = "other" }]);
+			Assert.Equal(new List<string>() { "other" }, response.DeletedObjects.ConvertAll(d => d.Key));
+			var newUploadId = altClient.InitiateMultipartUpload(bucketName, "alt-multi").UploadId;
+			altClient.AbortMultipartUpload(bucketName, "alt-multi", newUploadId);
+			Assert.Equal(new List<string>() { "new" }, GetKeys(client.ListObjectsV2(bucketName)));
+
+			// 읽기·목록은 열지 않는다. 목록 권한이 없어 없는 키도 403 이다
+			AssertS3Error(HttpStatusCode.Forbidden, null, () => altClient.HeadBucket(bucketName));
+			AssertDenied(() => altClient.ListObjectsV2(bucketName));
+			AssertDenied(() => altClient.ListMultipartUploads(bucketName));
+			AssertDenied(() => altClient.GetObject(bucketName, "not-exist"));
+			AssertDenied(() => altClient.GetBucketACL(bucketName));
+			// 다른 사용자가 시작한 멀티파트는 중단할 수 없다
+			AssertDenied(() => altClient.AbortMultipartUpload(bucketName, "multi", uploadId));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Scope")]
+		public void TestBucketAclFullControlScope()
+		{
+			TestId = 49;
+			var client = GetClient();
+			var bucketName = SetupBucketPermission(S3Permission.FULL_CONTROL);
+			var altClient = GetAltClient();
+			Assert.Equal(0, altClient.ListObjectsV2(bucketName).KeyCount);
+			altClient.PutObject(bucketName, "new", body: "x");
+			altClient.DeleteObject(bucketName, "new");
+			Assert.Equal(new List<(string, string)>() { ("alt", "FULL_CONTROL"), ("main", "FULL_CONTROL") },
+				GrantSet(altClient.GetBucketACL(bucketName)));
+			altClient.PutBucketACL(bucketName, accessControlPolicy: CreateAltAcl(S3Permission.FULL_CONTROL));
+
+			// ACL 의 FULL_CONTROL 은 READ·WRITE·READ_ACP·WRITE_ACP 뿐이다. 버킷 설정과 삭제는 소유자만 한다
+			AssertDenied(() => altClient.GetBucketVersioning(bucketName));
+			AssertDenied(() => altClient.PutBucketVersioning(bucketName, status: VersionStatus.Enabled));
+			AssertDenied(() => altClient.PutBucketTagging(bucketName, [new Tag() { Key = "a", Value = "b" }]));
+			AssertDenied(() => altClient.GetBucketPolicy(bucketName));
+			AssertDenied(() => altClient.DeleteBucket(bucketName));
+			client.HeadBucket(bucketName);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Scope")]
+		public void TestObjectAclReadScope()
+		{
+			TestId = 50;
+			var key = "TestObjectAclReadScope";
+			var bucketName = SetupObjectGrant(key, S3Permission.READ);
+			var altClient = GetAltClient();
+			Assert.Equal("content", GetBody(altClient.GetObject(bucketName, key)));
+			Assert.Equal(7, altClient.HeadObject(bucketName, key).ContentLength);
+			// READ 는 본문과 메타데이터만 연다
+			AssertDenied(() => altClient.GetObjectTagging(bucketName, key));
+			AssertDenied(() => altClient.GetObjectAttributes(bucketName, key, [ObjectAttributes.ETag]));
+			AssertDenied(() => altClient.GetObjectACL(bucketName, key));
+			AssertDenied(() => altClient.PutObjectACL(bucketName, key, acl: S3CannedACL.Private));
+			AssertDenied(() => altClient.PutObject(bucketName, key, body: "x"));
+			AssertDenied(() => altClient.DeleteObject(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Scope")]
+		public void TestObjectAclFullControlScope()
+		{
+			TestId = 51;
+			var key = "TestObjectAclFullControlScope";
+			var bucketName = SetupObjectGrant(key, S3Permission.FULL_CONTROL);
+			var altClient = GetAltClient();
+			Assert.Equal("content", GetBody(altClient.GetObject(bucketName, key)));
+			Assert.Contains(("alt", "FULL_CONTROL"), GrantSet(altClient.GetObjectACL(bucketName, key)));
+			// 오브젝트의 FULL_CONTROL 에는 쓰기가 없다. 덮어쓰기·삭제는 버킷 권한으로 판정한다
+			AssertDenied(() => altClient.PutObject(bucketName, key, body: "x"));
+			AssertDenied(() => altClient.DeleteObject(bucketName, key));
+			AssertDenied(() => altClient.GetObjectTagging(bucketName, key));
+			AssertDenied(() => altClient.PutObjectTagging(bucketName, key,
+				new Tagging() { TagSet = [new Tag() { Key = "a", Value = "b" }] }));
+			// WRITE_ACP 가 있으므로 ACL 은 바꿀 수 있다
+			altClient.PutObjectACL(bucketName, key, acl: S3CannedACL.Private);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Copy")]
+		public void TestObjectAclNotCopied()
+		{
+			TestId = 52;
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			client.PutObject(bucketName, "source", body: "content", acl: S3CannedACL.PublicRead);
+			Assert.Equal(new List<(string, string)>() { (AllUsers, "READ"), ("main", "FULL_CONTROL") },
+				GrantSet(client.GetObjectACL(bucketName, "source")));
+
+			// 복사본은 원본의 ACL 을 물려받지 않는다
+			client.CopyObject(bucketName, "source", bucketName, "copy");
+			Assert.Equal(new List<(string, string)>() { ("main", "FULL_CONTROL") }, GrantSet(client.GetObjectACL(bucketName, "copy")));
+			// 복사 요청에 준 ACL 이 적용된다
+			client.CopyObject(bucketName, "source", bucketName, "canned", acl: S3CannedACL.AuthenticatedRead);
+			Assert.Equal(new List<(string, string)>() { (AuthenticatedUsers, "READ"), ("main", "FULL_CONTROL") },
+				GrantSet(client.GetObjectACL(bucketName, "canned")));
+			// grant 헤더만 주면 소유자 전권은 붙지 않는다
+			client.CopyObject(bucketName, "source", bucketName, "grant",
+				headerList: [new("x-amz-grant-read", $"id=\"{Config.AltUser.UserId}\"")]);
+			Assert.Equal(new List<(string, string)>() { ("alt", "READ") }, GrantSet(client.GetObjectACL(bucketName, "grant")));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Overwrite")]
+		public void TestObjectAclResetOnOverwrite()
+		{
+			TestId = 53;
+			var key = "TestObjectAclResetOnOverwrite";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			client.PutObject(bucketName, key, body: "content", acl: S3CannedACL.PublicRead);
+			var publicClient = GetPublicClient();
+			Assert.Equal("content", GetBody(publicClient.GetObject(bucketName, key)));
+
+			// ACL 없이 덮어쓰면 비공개로 돌아간다
+			client.PutObject(bucketName, key, body: "content");
+			Assert.Equal(new List<(string, string)>() { ("main", "FULL_CONTROL") }, GrantSet(client.GetObjectACL(bucketName, key)));
+			AssertDenied(() => GetPublicClient().GetObject(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Multipart")]
+		public void TestObjectAclMultipart()
+		{
+			TestId = 54;
+			var key = "TestObjectAclMultipart";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			var uploadId = client.InitiateMultipartUpload(bucketName, key, headerList: [new("x-amz-acl", "public-read")]).UploadId;
+			var etag = client.UploadPart(bucketName, key, uploadId, "content", 1).ETag;
+			client.CompleteMultipartUpload(bucketName, key, uploadId, [new PartETag(1, etag)]);
+			// 멀티파트를 시작할 때 준 ACL 이 완성된 오브젝트의 ACL 이 된다
+			Assert.Equal(new List<(string, string)>() { (AllUsers, "READ"), ("main", "FULL_CONTROL") },
+				GrantSet(client.GetObjectACL(bucketName, key)));
+			var publicClient = GetPublicClient();
+			Assert.Equal("content", GetBody(publicClient.GetObject(bucketName, key)));
+			publicClient.HeadObject(bucketName, key);
+			// public-read 는 ACL 조회와 태그 조회를 열지 않는다
+			AssertDenied(() => publicClient.GetObjectACL(bucketName, key));
+			AssertDenied(() => publicClient.GetObjectTagging(bucketName, key));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Version")]
+		public void TestObjectAclPerVersion()
+		{
+			TestId = 55;
+			var key = "TestObjectAclPerVersion";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			CheckConfigureVersioningRetry(bucketName, VersionStatus.Enabled);
+			var version1 = client.PutObject(bucketName, key, body: "1", acl: S3CannedACL.PublicRead).VersionId;
+			var version2 = client.PutObject(bucketName, key, body: "2").VersionId;
+
+			// ACL 은 버전마다 따로다
+			Assert.Equal(new List<(string, string)>() { (AllUsers, "READ"), ("main", "FULL_CONTROL") },
+				GrantSet(client.GetObjectACL(bucketName, key, versionId: version1)));
+			Assert.Equal(new List<(string, string)>() { ("main", "FULL_CONTROL") },
+				GrantSet(client.GetObjectACL(bucketName, key, versionId: version2)));
+			var publicClient = GetPublicClient();
+			Assert.Equal("1", GetBody(publicClient.GetObject(bucketName, key, versionId: version1)));
+			AssertDenied(() => publicClient.GetObject(bucketName, key));
+			AssertDenied(() => publicClient.GetObject(bucketName, key, versionId: version2));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Canned")]
+		public void TestAclCannedBucketOwner()
+		{
+			TestId = 56;
+			var key = "TestAclCannedBucketOwner";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client);
+			client.PutObject(bucketName, key, body: "content", acl: S3CannedACL.PublicRead);
+			// 버킷 소유자가 곧 오브젝트 소유자면 bucket-owner-* 는 소유자 전권만 남긴다
+			foreach (var acl in new[] { S3CannedACL.BucketOwnerRead, S3CannedACL.BucketOwnerFullControl })
+			{
+				client.PutObjectACL(bucketName, key, acl: acl);
+				Assert.Equal(new List<(string, string)>() { ("main", "FULL_CONTROL") }, GrantSet(client.GetObjectACL(bucketName, key)));
+			}
+			// 버킷에 주면 무시되고 비공개가 된다
+			client.PutBucketACL(bucketName, acl: S3CannedACL.PublicRead);
+			foreach (var acl in new[] { S3CannedACL.BucketOwnerRead, S3CannedACL.BucketOwnerFullControl })
+			{
+				client.PutBucketACL(bucketName, acl: acl);
+				Assert.Equal(new List<(string, string)>() { ("main", "FULL_CONTROL") }, GrantSet(client.GetBucketACL(bucketName)));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "ACL")]
+		[Trait(MainData.Minor, "Scope")]
+		public void TestPublicRwBucketAnonymousScope()
+		{
+			TestId = 57;
+			var key = "TestPublicRwBucketAnonymousScope";
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicReadWrite);
+			client.PutObject(bucketName, key, body: "content");
+			client.InitiateMultipartUpload(bucketName, "multi");
+
+			var publicClient = GetPublicClient();
+			Assert.Equal(1, publicClient.ListObjectsV2(bucketName).KeyCount);
+			Assert.Single(publicClient.ListVersions(bucketName).Versions);
+			Assert.Single(publicClient.ListMultipartUploads(bucketName).MultipartUploads);
+			publicClient.PutObject(bucketName, "anonymous", body: "x");
+			Assert.Equal("x", GetBody(publicClient.GetObject(bucketName, "anonymous")));
+
+			// 버킷이 열려 있어도 비공개 오브젝트와 ACL 은 열리지 않는다
+			AssertDenied(() => publicClient.GetObject(bucketName, key));
+			AssertDenied(() => publicClient.GetBucketACL(bucketName));
+			AssertDenied(() => publicClient.PutBucketACL(bucketName, acl: S3CannedACL.Private));
+			// 익명 사용자는 멀티파트 업로드를 시작할 수 없다
+			AssertDenied(() => publicClient.InitiateMultipartUpload(bucketName, "new"));
+		}
+
+		#endregion
 	}
 }

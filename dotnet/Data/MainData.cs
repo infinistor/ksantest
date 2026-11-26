@@ -70,6 +70,8 @@ namespace s3tests
 		public const string MALFORMED_XML = "MalformedXML";
 		public const string INVALID_RANGE = "InvalidRange";
 		public const string ENTITY_TOO_SMALL = "EntityTooSmall";
+		public const string ENTITY_TOO_LARGE = "EntityTooLarge";
+		public const string INVALID_POLICY_DOCUMENT = "InvalidPolicyDocument";
 		public const string NO_SUCH_UPLOAD = "NoSuchUpload";
 		public const string INVALID_PART = "InvalidPart";
 		public const string INVALID_TAG = "InvalidTag";

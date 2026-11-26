@@ -21,6 +21,15 @@ import software.amazon.awssdk.services.s3.model.BucketCannedACL;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 import software.amazon.awssdk.services.s3.model.Permission;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.ArrayList;
+import java.util.Collections;
+import org.junit.jupiter.api.function.Executable;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.Grant;
+import software.amazon.awssdk.services.s3.model.ObjectAttributes;
 
 public class ACL extends TestBase {
 	@Test
@@ -968,4 +977,310 @@ public class ACL extends TestBase {
 		checkObjectAclDenyWrite(altClient, bucketName, key);
 		checkObjectAclAllowWriteACP(altClient, bucketName, key);
 	}
+
+	// region ACL 권한 범위 (AWS 실측 기준)
+
+	private static void assertDenied(Executable executable) {
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED, executable);
+	}
+
+	/** ACL 응답을 "대상 권한" 목록으로 줄인다. 대상은 main, alt, 그룹 URI 중 하나다. */
+	private List<String> grantSet(List<Grant> grants) {
+		var result = new ArrayList<String>();
+		for (var grant : grants) {
+			var grantee = grant.grantee();
+			var target = grantee.uri();
+			if (target == null || target.isEmpty()) {
+				if (config.mainUser.id.equals(grantee.id()))
+					target = "main";
+				else if (config.altUser.id.equals(grantee.id()))
+					target = "alt";
+				else
+					target = "other";
+			}
+			result.add(target + " " + grant.permissionAsString());
+		}
+		Collections.sort(result);
+		return result;
+	}
+
+	/** 비공개 버킷의 오브젝트에 서브 사용자 권한 하나만 준다. */
+	private String setupObjectGrant(String key, Permission permission, int testId) {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, testId);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		client.putObjectAcl(p -> p.bucket(bucketName).key(key).accessControlPolicy(createAltAcl(permission)));
+		return bucketName;
+	}
+
+	@Test
+	@Tag("Scope")
+	public void testBucketAclReadScope() {
+		var key = "testBucketAclReadScope";
+		var client = getClient();
+		var bucketName = setupBucketPermission(47, Permission.READ);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key("multi")).uploadId();
+
+		var altClient = getAltClient();
+		// READ 는 목록 종류를 모두 연다
+		altClient.headBucket(h -> h.bucket(bucketName));
+		assertEquals(1, altClient.listObjectsV2(l -> l.bucket(bucketName)).keyCount().intValue());
+		assertEquals(1, altClient.listObjectVersions(l -> l.bucket(bucketName)).versions().size());
+		assertEquals(1, altClient.listMultipartUploads(l -> l.bucket(bucketName)).uploads().size());
+		// 목록 권한이 있으므로 없는 키는 404 다
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> altClient.getObject(g -> g.bucket(bucketName).key("not-exist")));
+
+		// 오브젝트 읽기·쓰기와 버킷 설정은 열지 않는다
+		assertDenied(() -> altClient.getObject(g -> g.bucket(bucketName).key(key)));
+		assertDenied(() -> altClient.putObject(p -> p.bucket(bucketName).key("new"), RequestBody.fromString("x")));
+		assertDenied(() -> altClient.deleteObject(d -> d.bucket(bucketName).key(key)));
+		assertDenied(() -> altClient.createMultipartUpload(c -> c.bucket(bucketName).key("new")));
+		assertDenied(() -> altClient.listParts(l -> l.bucket(bucketName).key("multi").uploadId(uploadId)));
+		assertDenied(() -> altClient.getBucketVersioning(g -> g.bucket(bucketName)));
+		assertDenied(() -> altClient.getBucketLocation(g -> g.bucket(bucketName)));
+		var response = altClient
+				.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(i -> i.key(key))));
+		assertTrue(response.deleted().isEmpty());
+		assertEquals(MainData.ACCESS_DENIED, response.errors().get(0).code());
+	}
+
+	@Test
+	@Tag("Scope")
+	public void testBucketAclWriteScope() {
+		var key = "testBucketAclWriteScope";
+		var client = getClient();
+		var bucketName = setupBucketPermission(48, Permission.WRITE);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		client.putObject(p -> p.bucket(bucketName).key("other"), RequestBody.fromString("content"));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key("multi")).uploadId();
+
+		var altClient = getAltClient();
+		// WRITE 는 쓰기·덮어쓰기·삭제·멀티파트 시작을 연다(소유자가 올린 오브젝트도)
+		altClient.putObject(p -> p.bucket(bucketName).key("new"), RequestBody.fromString("x"));
+		altClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("overwritten"));
+		altClient.deleteObject(d -> d.bucket(bucketName).key(key));
+		var response = altClient
+				.deleteObjects(d -> d.bucket(bucketName).delete(o -> o.objects(i -> i.key("other"))));
+		assertEquals(1, response.deleted().size());
+		assertEquals("other", response.deleted().get(0).key());
+		var newUploadId = altClient.createMultipartUpload(c -> c.bucket(bucketName).key("alt-multi")).uploadId();
+		altClient.abortMultipartUpload(a -> a.bucket(bucketName).key("alt-multi").uploadId(newUploadId));
+		assertEquals(List.of("new"), getKeys(client.listObjectsV2(l -> l.bucket(bucketName)).contents()));
+
+		// 읽기·목록은 열지 않는다. 목록 권한이 없어 없는 키도 403 이다
+		assertS3Error(HttpStatus.SC_FORBIDDEN, null, () -> altClient.headBucket(h -> h.bucket(bucketName)));
+		assertDenied(() -> altClient.listObjectsV2(l -> l.bucket(bucketName)));
+		assertDenied(() -> altClient.listMultipartUploads(l -> l.bucket(bucketName)));
+		assertDenied(() -> altClient.getObject(g -> g.bucket(bucketName).key("not-exist")));
+		assertDenied(() -> altClient.getBucketAcl(g -> g.bucket(bucketName)));
+		// 다른 사용자가 시작한 멀티파트는 중단할 수 없다
+		assertDenied(
+				() -> altClient.abortMultipartUpload(a -> a.bucket(bucketName).key("multi").uploadId(uploadId)));
+	}
+
+	@Test
+	@Tag("Scope")
+	public void testBucketAclFullControlScope() {
+		var client = getClient();
+		var bucketName = setupBucketPermission(49, Permission.FULL_CONTROL);
+		var altClient = getAltClient();
+		assertEquals(0, altClient.listObjectsV2(l -> l.bucket(bucketName)).keyCount().intValue());
+		altClient.putObject(p -> p.bucket(bucketName).key("new"), RequestBody.fromString("x"));
+		altClient.deleteObject(d -> d.bucket(bucketName).key("new"));
+		assertEquals(List.of("alt FULL_CONTROL", "main FULL_CONTROL"),
+				grantSet(altClient.getBucketAcl(g -> g.bucket(bucketName)).grants()));
+		altClient.putBucketAcl(
+				p -> p.bucket(bucketName).accessControlPolicy(createAltAcl(Permission.FULL_CONTROL)));
+
+		// ACL 의 FULL_CONTROL 은 READ·WRITE·READ_ACP·WRITE_ACP 뿐이다. 버킷 설정과 삭제는 소유자만 한다
+		assertDenied(() -> altClient.getBucketVersioning(g -> g.bucket(bucketName)));
+		assertDenied(() -> altClient.putBucketVersioning(
+				p -> p.bucket(bucketName).versioningConfiguration(v -> v.status(BucketVersioningStatus.ENABLED))));
+		assertDenied(() -> altClient
+				.putBucketTagging(p -> p.bucket(bucketName).tagging(t -> t.tagSet(s -> s.key("a").value("b")))));
+		assertDenied(() -> altClient.getBucketPolicy(g -> g.bucket(bucketName)));
+		assertDenied(() -> altClient.deleteBucket(d -> d.bucket(bucketName)));
+		client.headBucket(h -> h.bucket(bucketName));
+	}
+
+	@Test
+	@Tag("Scope")
+	public void testObjectAclReadScope() {
+		var key = "testObjectAclReadScope";
+		var bucketName = setupObjectGrant(key, Permission.READ, 50);
+		var altClient = getAltClient();
+		assertEquals("content", getBody(altClient.getObject(g -> g.bucket(bucketName).key(key))));
+		assertEquals(7L, altClient.headObject(h -> h.bucket(bucketName).key(key)).contentLength().longValue());
+		// READ 는 본문과 메타데이터만 연다
+		assertDenied(() -> altClient.getObjectTagging(g -> g.bucket(bucketName).key(key)));
+		assertDenied(() -> altClient
+				.getObjectAttributes(g -> g.bucket(bucketName).key(key).objectAttributes(ObjectAttributes.E_TAG)));
+		assertDenied(() -> altClient.getObjectAcl(g -> g.bucket(bucketName).key(key)));
+		assertDenied(() -> altClient.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PRIVATE)));
+		assertDenied(() -> altClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("x")));
+		assertDenied(() -> altClient.deleteObject(d -> d.bucket(bucketName).key(key)));
+	}
+
+	@Test
+	@Tag("Scope")
+	public void testObjectAclFullControlScope() {
+		var key = "testObjectAclFullControlScope";
+		var bucketName = setupObjectGrant(key, Permission.FULL_CONTROL, 51);
+		var altClient = getAltClient();
+		assertEquals("content", getBody(altClient.getObject(g -> g.bucket(bucketName).key(key))));
+		assertTrue(grantSet(altClient.getObjectAcl(g -> g.bucket(bucketName).key(key)).grants())
+				.contains("alt FULL_CONTROL"));
+		// 오브젝트의 FULL_CONTROL 에는 쓰기가 없다. 덮어쓰기·삭제는 버킷 권한으로 판정한다
+		assertDenied(() -> altClient.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("x")));
+		assertDenied(() -> altClient.deleteObject(d -> d.bucket(bucketName).key(key)));
+		assertDenied(() -> altClient.getObjectTagging(g -> g.bucket(bucketName).key(key)));
+		assertDenied(() -> altClient.putObjectTagging(
+				p -> p.bucket(bucketName).key(key).tagging(t -> t.tagSet(s -> s.key("a").value("b")))));
+		// WRITE_ACP 가 있으므로 ACL 은 바꿀 수 있다
+		altClient.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PRIVATE));
+	}
+
+	@Test
+	@Tag("Copy")
+	public void testObjectAclNotCopied() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 52);
+		client.putObject(p -> p.bucket(bucketName).key("source").acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString("content"));
+		assertEquals(List.of(MainData.ALL_USERS + " READ", "main FULL_CONTROL"),
+				grantSet(client.getObjectAcl(g -> g.bucket(bucketName).key("source")).grants()));
+
+		// 복사본은 원본의 ACL 을 물려받지 않는다
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source").destinationBucket(bucketName)
+				.destinationKey("copy"));
+		assertEquals(List.of("main FULL_CONTROL"),
+				grantSet(client.getObjectAcl(g -> g.bucket(bucketName).key("copy")).grants()));
+		// 복사 요청에 준 ACL 이 적용된다
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source").destinationBucket(bucketName)
+				.destinationKey("canned").acl(ObjectCannedACL.AUTHENTICATED_READ));
+		assertEquals(List.of(MainData.AUTHENTICATED_USERS + " READ", "main FULL_CONTROL"),
+				grantSet(client.getObjectAcl(g -> g.bucket(bucketName).key("canned")).grants()));
+		// grant 헤더만 주면 소유자 전권은 붙지 않는다
+		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey("source").destinationBucket(bucketName)
+				.destinationKey("grant").grantRead("id=\"" + config.altUser.id + "\""));
+		assertEquals(List.of("alt READ"),
+				grantSet(client.getObjectAcl(g -> g.bucket(bucketName).key("grant")).grants()));
+	}
+
+	@Test
+	@Tag("Overwrite")
+	public void testObjectAclResetOnOverwrite() {
+		var key = "testObjectAclResetOnOverwrite";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 53);
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString("content"));
+		var publicClient = getPublicClient();
+		assertEquals("content", getBody(publicClient.getObject(g -> g.bucket(bucketName).key(key))));
+
+		// ACL 없이 덮어쓰면 비공개로 돌아간다
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		assertEquals(List.of("main FULL_CONTROL"),
+				grantSet(client.getObjectAcl(g -> g.bucket(bucketName).key(key)).grants()));
+		assertDenied(() -> getPublicClient().getObject(g -> g.bucket(bucketName).key(key)));
+	}
+
+	@Test
+	@Tag("Multipart")
+	public void testObjectAclMultipart() {
+		var key = "testObjectAclMultipart";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 54);
+		var uploadId = client
+				.createMultipartUpload(c -> c.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ))
+				.uploadId();
+		var eTag = client.uploadPart(u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(1),
+				RequestBody.fromString("content")).eTag();
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key).uploadId(uploadId)
+				.multipartUpload(m -> m.parts(p -> p.eTag(eTag).partNumber(1))));
+		// 멀티파트를 시작할 때 준 ACL 이 완성된 오브젝트의 ACL 이 된다
+		assertEquals(List.of(MainData.ALL_USERS + " READ", "main FULL_CONTROL"),
+				grantSet(client.getObjectAcl(g -> g.bucket(bucketName).key(key)).grants()));
+		var publicClient = getPublicClient();
+		assertEquals("content", getBody(publicClient.getObject(g -> g.bucket(bucketName).key(key))));
+		publicClient.headObject(h -> h.bucket(bucketName).key(key));
+		// public-read 는 ACL 조회와 태그 조회를 열지 않는다
+		assertDenied(() -> publicClient.getObjectAcl(g -> g.bucket(bucketName).key(key)));
+		assertDenied(() -> publicClient.getObjectTagging(g -> g.bucket(bucketName).key(key)));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testObjectAclPerVersion() {
+		var key = "testObjectAclPerVersion";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 55);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningStatus.ENABLED);
+		var version1 = client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString("1")).versionId();
+		var version2 = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("2"))
+				.versionId();
+
+		// ACL 은 버전마다 따로다
+		assertEquals(List.of(MainData.ALL_USERS + " READ", "main FULL_CONTROL"),
+				grantSet(client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId(version1)).grants()));
+		assertEquals(List.of("main FULL_CONTROL"),
+				grantSet(client.getObjectAcl(g -> g.bucket(bucketName).key(key).versionId(version2)).grants()));
+		var publicClient = getPublicClient();
+		assertEquals("1",
+				getBody(publicClient.getObject(g -> g.bucket(bucketName).key(key).versionId(version1))));
+		assertDenied(() -> publicClient.getObject(g -> g.bucket(bucketName).key(key)));
+		assertDenied(() -> publicClient.getObject(g -> g.bucket(bucketName).key(key).versionId(version2)));
+	}
+
+	@Test
+	@Tag("Canned")
+	public void testAclCannedBucketOwner() {
+		var key = "testAclCannedBucketOwner";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 56);
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString("content"));
+		// 버킷 소유자가 곧 오브젝트 소유자면 bucket-owner-* 는 소유자 전권만 남긴다
+		for (var acl : List.of("bucket-owner-read", "bucket-owner-full-control")) {
+			client.putObjectAcl(p -> p.bucket(bucketName).key(key).acl(acl));
+			assertEquals(List.of("main FULL_CONTROL"),
+					grantSet(client.getObjectAcl(g -> g.bucket(bucketName).key(key)).grants()));
+		}
+		// 버킷에 주면 무시되고 비공개가 된다
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		for (var acl : List.of("bucket-owner-read", "bucket-owner-full-control")) {
+			client.putBucketAcl(p -> p.bucket(bucketName).acl(acl));
+			assertEquals(List.of("main FULL_CONTROL"),
+					grantSet(client.getBucketAcl(g -> g.bucket(bucketName)).grants()));
+		}
+	}
+
+	@Test
+	@Tag("Scope")
+	public void testPublicRwBucketAnonymousScope() {
+		var key = "testPublicRwBucketAnonymousScope";
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 57, BucketCannedACL.PUBLIC_READ_WRITE);
+		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("content"));
+		client.createMultipartUpload(c -> c.bucket(bucketName).key("multi"));
+
+		var publicClient = getPublicClient();
+		assertEquals(1, publicClient.listObjectsV2(l -> l.bucket(bucketName)).keyCount().intValue());
+		assertEquals(1, publicClient.listObjectVersions(l -> l.bucket(bucketName)).versions().size());
+		assertEquals(1, publicClient.listMultipartUploads(l -> l.bucket(bucketName)).uploads().size());
+		publicClient.putObject(p -> p.bucket(bucketName).key("anonymous"), RequestBody.fromString("x"));
+		assertEquals("x", getBody(publicClient.getObject(g -> g.bucket(bucketName).key("anonymous"))));
+
+		// 버킷이 열려 있어도 비공개 오브젝트와 ACL 은 열리지 않는다
+		assertDenied(() -> publicClient.getObject(g -> g.bucket(bucketName).key(key)));
+		assertDenied(() -> publicClient.getBucketAcl(g -> g.bucket(bucketName)));
+		assertDenied(() -> publicClient.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PRIVATE)));
+		// 익명 사용자는 멀티파트 업로드를 시작할 수 없다
+		assertDenied(() -> publicClient.createMultipartUpload(c -> c.bucket(bucketName).key("new")));
+	}
+
+	// endregion
 }
