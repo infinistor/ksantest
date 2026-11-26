@@ -295,8 +295,6 @@ class TestCors(S3TestBase):
         assert headers.get("access-control-allow-origin") is None
 
     @pytest.mark.tag("Object")
-    # KSAN 알려진 실패(ifs32, 일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 일반 요청의 CORS 헤더를 s3gw 와 같게 낸다.
-    # Access-Control-Allow-Methods 는 "GET,HEAD"(쉼표만)다. AWS 는 "GET, HEAD" 다. 확인은 test_cors_scp_compat.
     def test_cors_object_request(self):
         client = self.get_client()
         bucket_name = self._create_public_cors_bucket(client, 8)
@@ -355,6 +353,63 @@ class TestCors(S3TestBase):
             assert self._cors_set(headers.get("access-control-allow-headers")) == self._cors_set(allow_headers), what
             assert self._cors_set(headers.get("access-control-expose-headers")) == self._cors_set(expose_headers), what
             assert "origin" in self._cors_set(headers.get("vary")), what
+
+    @pytest.mark.tag("Preflight")
+    # KSAN(ifs32) SCP 호환 케이스: CORS 설정이 있는 버킷의 preflight(OPTIONS) 는 Origin 이 규칙에 맞으면
+    # 요청 메서드·요청 헤더가 규칙에 없어도 200 과 CORS 헤더를 준다 (브라우저 SDK 가 규칙에 없는 헤더를 보내도 동작).
+    # AWS 는 규칙에 없는 메서드·헤더면 403 이라 AWS 에서는 실패한다.
+    def test_cors_scp_preflight(self):
+        client = self.get_client()
+        bucket_name = self._create_public_cors_bucket(client, 19)
+        key = "test_cors_scp_preflight"
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"cors", ACL="public-read")
+        methods = ["PUT", "POST", "GET"]
+        rules = [self._cors_rule(methods, ["*"], AllowedHeaders=["authorization", "content-type", "x-amz-date"])]
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+
+        cases = [
+            ("PUT", "authorization,content-type,x-amz-date", None),  # 규칙에 맞는 preflight
+            ("HEAD", "authorization,x-amz-date", None),  # 규칙에 없는 메서드 (버킷 연결 확인)
+            ("DELETE", "authorization", key),  # 규칙에 없는 메서드
+            ("PUT", "amz-sdk-invocation-id,amz-sdk-request,authorization,x-amz-checksum-crc32", key),  # 규칙에 없는 헤더
+            (None, None, None),  # Access-Control-Request-Method 없음
+        ]
+        for method, req_headers, target in cases:
+            headers = {"Origin": "http://console.example.com"}
+            if method:
+                headers["Access-Control-Request-Method"] = method
+            if req_headers:
+                headers["Access-Control-Request-Headers"] = req_headers
+            what = f"OPTIONS {method} {req_headers} {'object' if target else 'bucket'}"
+            code, response = self._cors_request("OPTIONS", bucket_name, headers, target)
+            assert code == 200, what
+            assert response.get("access-control-allow-origin") == "*", what
+            assert self._cors_set(response.get("access-control-allow-methods")) <= self._cors_set(methods), what
+            assert self._cors_set(response.get("access-control-allow-methods")), what
+
+    @pytest.mark.tag("Check")
+    # KSAN(ifs32) SCP 호환 케이스: PutBucketCors 는 규칙 내용을 검사하지 않고 그대로 저장한다 (SCP 포털이 넣는 값을 거부하지 않는다).
+    # AWS 는 아래 규칙을 모두 400 InvalidRequest 로 거부해 AWS 에서는 실패한다.
+    def test_cors_scp_put_any_rule(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 20)
+        cases = [
+            [self._cors_rule(["PATCH"], ["*"])],  # 지원하지 않는 메서드
+            [self._cors_rule(["get"], ["*"])],  # 소문자 메서드
+            [self._cors_rule(["GET"], ["*a*"])],  # Origin 에 * 둘
+            [self._cors_rule(["GET"], ["*"], AllowedHeaders=["*a*"])],  # AllowedHeader 에 * 둘
+            [self._cors_rule(["GET"], ["*"], ExposeHeaders=["x-amz-*"])],  # ExposeHeader 에 *
+            [self._cors_rule(["GET"], [f"http://{i}.example.com"]) for i in range(101)],  # 규칙 101개
+        ]
+        for rules in cases:
+            client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+            stored = client.get_bucket_cors(Bucket=bucket_name)["CORSRules"]
+            assert len(stored) == len(rules)
+            assert stored[0]["AllowedMethods"] == rules[0]["AllowedMethods"]
+            assert stored[0]["AllowedOrigins"] == rules[0]["AllowedOrigins"]
+            for field in ("AllowedHeaders", "ExposeHeaders"):
+                if field in rules[0]:
+                    assert stored[0][field] == rules[0][field]
 
     @staticmethod
     def _cors_set(value) -> set:

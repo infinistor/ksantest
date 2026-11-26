@@ -128,8 +128,6 @@ class Cors {
 	 */
 	@Test
 	@Tag("Object")
-	// KSAN 알려진 실패(ifs32, 일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 일반 요청의 CORS 헤더를 s3gw 와 같게 낸다.
-	// Access-Control-Allow-Methods 는 "GET,HEAD"(쉼표만)다. AWS 는 "GET, HEAD" 다. 확인은 testCorsScpCompat.
 	void testCorsObjectRequest() {
 		test.testCorsObjectRequest();
 		testV2.testCorsObjectRequest();
@@ -143,6 +141,26 @@ class Cors {
 	@Tag("Object")
 	void testCorsScpCompat() {
 		testV2.testCorsScpCompat();
+	}
+
+	/**
+	 * KSAN(ifs32) SCP 호환: 규칙에 없는 메서드·헤더로 preflight 해도 Origin 이 맞으면 200 과 CORS 헤더를 주는지 확인.
+	 * AWS 에서는 실패한다. (V2 만 실행)
+	 */
+	@Test
+	@Tag("Preflight")
+	void testCorsScpPreflight() {
+		testV2.testCorsScpPreflight();
+	}
+
+	/**
+	 * KSAN(ifs32) SCP 호환: AWS 가 거부하는 CORS 규칙(소문자·미지원 메서드, 와일드카드, 101개)도 그대로 저장하는지 확인.
+	 * AWS 에서는 실패한다. (V2 만 실행)
+	 */
+	@Test
+	@Tag("Check")
+	void testCorsScpPutAnyRule() {
+		testV2.testCorsScpPutAnyRule();
 	}
 
 	/**

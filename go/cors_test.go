@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -357,8 +358,6 @@ func TestCorsRuleOrder(t *testing.T) {
 }
 
 // 오브젝트에 대한 GET/HEAD/preflight 요청에 cors 헤더가 담기는지 확인
-// KSAN 알려진 실패(ifs32, 일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 일반 요청의 CORS 헤더를 s3gw 와 같게 낸다.
-// Access-Control-Allow-Methods 는 "GET,HEAD"(쉼표만)다. AWS 는 "GET, HEAD" 다. 확인은 TestCorsScpCompat.
 func TestCorsObjectRequest(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -438,6 +437,96 @@ func TestCorsScpCompat(t *testing.T) {
 		}
 		if !corsSet(headers.Values("Vary")...)["origin"] {
 			t.Fatalf("%s: Vary = %q, want Origin in it", what, headers.Values("Vary"))
+		}
+	}
+}
+
+// KSAN(ifs32) SCP 호환 케이스: CORS 설정이 있는 버킷의 preflight(OPTIONS) 는 Origin 이 규칙에 맞으면
+// 요청 메서드·요청 헤더가 규칙에 없어도 200 과 CORS 헤더를 준다 (브라우저 SDK 가 규칙에 없는 헤더를 보내도 동작).
+// AWS 는 규칙에 없는 메서드·헤더면 403 이라 AWS 에서는 실패한다.
+func TestCorsScpPreflight(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := publicBucket(t, s, 19)
+	key := "test_cors_scp_preflight"
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{
+		Bucket: aws.String(bucket), Key: aws.String(key), Body: strings.NewReader("cors"), ACL: types.ObjectCannedACLPublicRead,
+	})
+	if err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+	methods := []string{"PUT", "POST", "GET"}
+	putCors(t, s, bucket, []types.CORSRule{{
+		AllowedMethods: methods, AllowedOrigins: []string{"*"}, AllowedHeaders: []string{"authorization", "content-type", "x-amz-date"},
+	}})
+
+	cases := []struct{ method, reqHeaders, key string }{
+		{"PUT", "authorization,content-type,x-amz-date", ""},                                     // 규칙에 맞는 preflight
+		{"HEAD", "authorization,x-amz-date", ""},                                                 // 규칙에 없는 메서드 (버킷 연결 확인)
+		{"DELETE", "authorization", key},                                                         // 규칙에 없는 메서드
+		{"PUT", "amz-sdk-invocation-id,amz-sdk-request,authorization,x-amz-checksum-crc32", key}, // 규칙에 없는 헤더
+		{"", "", ""}, // Access-Control-Request-Method 없음
+	}
+	for _, c := range cases {
+		headers := map[string]string{"Origin": "http://console.example.com"}
+		if c.method != "" {
+			headers["Access-Control-Request-Method"] = c.method
+		}
+		if c.reqHeaders != "" {
+			headers["Access-Control-Request-Headers"] = c.reqHeaders
+		}
+		target := "object"
+		if c.key == "" {
+			target = "bucket"
+		}
+		what := "OPTIONS " + c.method + " " + c.reqHeaders + " " + target
+		status, got := corsRequest(t, s, "OPTIONS", bucket, c.key, headers)
+		if status != 200 {
+			t.Fatalf("%s: status = %d, want 200", what, status)
+		}
+		if o := got.Get("Access-Control-Allow-Origin"); o != "*" {
+			t.Fatalf("%s: Access-Control-Allow-Origin = %q, want *", what, o)
+		}
+		allow, rule := corsSet(got.Values("Access-Control-Allow-Methods")...), corsSet(methods...)
+		ok := len(allow) > 0
+		for m := range allow {
+			ok = ok && rule[m]
+		}
+		if !ok {
+			t.Fatalf("%s: Access-Control-Allow-Methods = %q, want some of %q", what, got.Values("Access-Control-Allow-Methods"), methods)
+		}
+	}
+}
+
+// KSAN(ifs32) SCP 호환 케이스: PutBucketCors 는 규칙 내용을 검사하지 않고 그대로 저장한다 (SCP 포털이 넣는 값을 거부하지 않는다).
+// AWS 는 아래 규칙을 모두 400 InvalidRequest 로 거부해 AWS 에서는 실패한다.
+func TestCorsScpPutAnyRule(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := s.bucket(t, 20)
+	var many []types.CORSRule
+	for i := 0; i < 101; i++ {
+		many = append(many, types.CORSRule{AllowedMethods: []string{"GET"}, AllowedOrigins: []string{"http://" + strconv.Itoa(i) + ".example.com"}})
+	}
+	cases := [][]types.CORSRule{
+		{{AllowedMethods: []string{"PATCH"}, AllowedOrigins: []string{"*"}}},                                   // 지원하지 않는 메서드
+		{{AllowedMethods: []string{"get"}, AllowedOrigins: []string{"*"}}},                                     // 소문자 메서드
+		{{AllowedMethods: []string{"GET"}, AllowedOrigins: []string{"*a*"}}},                                   // Origin 에 * 둘
+		{{AllowedMethods: []string{"GET"}, AllowedOrigins: []string{"*"}, AllowedHeaders: []string{"*a*"}}},    // AllowedHeader 에 * 둘
+		{{AllowedMethods: []string{"GET"}, AllowedOrigins: []string{"*"}, ExposeHeaders: []string{"x-amz-*"}}}, // ExposeHeader 에 *
+		many, // 규칙 101개
+	}
+	for _, rules := range cases {
+		putCors(t, s, bucket, rules)
+		stored := getCorsRules(t, s, bucket)
+		if len(stored) != len(rules) {
+			t.Fatalf("stored %d rules, want %d", len(stored), len(rules))
+		}
+		want, got := rules[0], stored[0]
+		if !reflect.DeepEqual(want.AllowedMethods, got.AllowedMethods) || !reflect.DeepEqual(want.AllowedOrigins, got.AllowedOrigins) ||
+			(want.AllowedHeaders != nil && !reflect.DeepEqual(want.AllowedHeaders, got.AllowedHeaders)) ||
+			(want.ExposeHeaders != nil && !reflect.DeepEqual(want.ExposeHeaders, got.ExposeHeaders)) {
+			t.Fatalf("stored rule = %+v, want %+v", got, want)
 		}
 	}
 }
