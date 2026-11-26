@@ -441,6 +441,128 @@ public class Cors extends TestBase {
 	}
 
 	@Test
+	@Tag("Object")
+	// KSAN(ifs32) SCP 호환 케이스: 일반 요청의 CORS 헤더가 s3gw(운영계)와 같은지 확인한다.
+	// Origin 이 맞는 첫 규칙의 메서드·허용 헤더·노출 헤더를 요청 메서드와 상관없이 붙이고 vary 에 Origin 이 있다.
+	// 규칙에 HEAD 가 없어도 HeadBucket·HeadObject 에 헤더가 붙어야 브라우저 콘솔의 버킷 연결 확인이 된다.
+	// AWS 는 규칙에 없는 메서드(HEAD)에는 CORS 헤더를 주지 않고 일반 요청에는 Allow-Headers 를 주지 않아 AWS 에서는 실패한다.
+	public void testCorsScpCompat() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 18);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var key = "testCorsScpCompat";
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString("cors"));
+		var methods = List.of("PUT", "POST", "GET");
+		var allowHeaders = List.of("x-amz-content-sha256", "x-amz-user-agent", "x-amz-date", "authorization",
+				"Content-Type", "Content-MD5", "x-amz-acl");
+		var exposeHeaders = List.of("x-amz-meta-custom-header", "x-amz-request-id", "x-amz-id-2", "ETag", "date",
+				"x-amz-server-side-encryption");
+		var rules = List.of(CORSRule.builder().allowedMethods(methods).allowedOrigins(List.of("*"))
+				.allowedHeaders(allowHeaders).exposeHeaders(exposeHeaders).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+
+		var headers = new HashMap<String, String>();
+		headers.put("Origin", "http://console.example.com");
+		// HEAD·GET 버킷(연결 확인·목록), HEAD·GET 오브젝트
+		for (var target : new String[][] { { "HEAD", null }, { "GET", null }, { "HEAD", key }, { "GET", key } }) {
+			var response = corsRequest(target[0], bucketName, headers, target[1]);
+			var what = target[0] + " " + (target[1] == null ? "bucket" : "object");
+			assertEquals(200, response.statusCode(), what);
+			assertEquals("*", response.header("access-control-allow-origin"), what);
+			assertEquals(corsSet(methods), corsSet(response.header("access-control-allow-methods")), what);
+			assertEquals(corsSet(allowHeaders), corsSet(response.header("access-control-allow-headers")), what);
+			assertEquals(corsSet(exposeHeaders), corsSet(response.header("access-control-expose-headers")), what);
+			assertEquals(true, corsSet(response.header("vary")).contains("origin"), what);
+		}
+	}
+
+	@Test
+	@Tag("Preflight")
+	// KSAN(ifs32) SCP 호환 케이스: CORS 설정이 있는 버킷의 preflight(OPTIONS) 는 Origin 이 규칙에 맞으면
+	// 요청 메서드·요청 헤더가 규칙에 없어도 200 과 CORS 헤더를 준다 (브라우저 SDK 가 규칙에 없는 헤더를 보내도 동작).
+	// AWS 는 규칙에 없는 메서드·헤더면 403 이라 AWS 에서는 실패한다.
+	public void testCorsScpPreflight() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 19);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var key = "testCorsScpPreflight";
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString("cors"));
+		var methods = List.of("PUT", "POST", "GET");
+		var rules = List.of(CORSRule.builder().allowedMethods(methods).allowedOrigins(List.of("*"))
+				.allowedHeaders(List.of("authorization", "content-type", "x-amz-date")).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+
+		// { 요청 메서드, 요청 헤더, 키 }
+		String[][] cases = {
+				{ "PUT", "authorization,content-type,x-amz-date", null }, // 규칙에 맞는 preflight
+				{ "HEAD", "authorization,x-amz-date", null }, // 규칙에 없는 메서드 (버킷 연결 확인)
+				{ "DELETE", "authorization", key }, // 규칙에 없는 메서드
+				{ "PUT", "amz-sdk-invocation-id,amz-sdk-request,authorization,x-amz-checksum-crc32", key }, // 규칙에 없는 헤더
+				{ null, null, null }, // Access-Control-Request-Method 없음
+		};
+		for (var c : cases) {
+			var headers = new HashMap<String, String>();
+			headers.put("Origin", "http://console.example.com");
+			if (c[0] != null)
+				headers.put("Access-Control-Request-Method", c[0]);
+			if (c[1] != null)
+				headers.put("Access-Control-Request-Headers", c[1]);
+			var what = "OPTIONS " + c[0] + " " + c[1] + " " + (c[2] == null ? "bucket" : "object");
+			var response = corsRequest("OPTIONS", bucketName, headers, c[2]);
+			assertEquals(200, response.statusCode(), what);
+			assertEquals("*", response.header("access-control-allow-origin"), what);
+			var allowMethods = corsSet(response.header("access-control-allow-methods"));
+			assertEquals(true, !allowMethods.isEmpty() && corsSet(methods).containsAll(allowMethods), what);
+		}
+	}
+
+	@Test
+	@Tag("Check")
+	// KSAN(ifs32) SCP 호환 케이스: PutBucketCors 는 규칙 내용을 검사하지 않고 그대로 저장한다 (SCP 포털이 넣는 값을 거부하지 않는다).
+	// AWS 는 아래 규칙을 모두 400 InvalidRequest 로 거부해 AWS 에서는 실패한다.
+	public void testCorsScpPutAnyRule() {
+		var client = getClient();
+		var bucketName = createBucket(client, 20);
+		var manyRules = new ArrayList<CORSRule>();
+		for (int i = 0; i < 101; i++)
+			manyRules.add(corsRule(List.of("GET"), List.of("http://" + i + ".example.com")));
+		List<List<CORSRule>> cases = List.of(
+				List.of(corsRule(List.of("PATCH"), List.of("*"))), // 지원하지 않는 메서드
+				List.of(corsRule(List.of("get"), List.of("*"))), // 소문자 메서드
+				List.of(corsRule(List.of("GET"), List.of("*a*"))), // Origin 에 * 둘
+				List.of(CORSRule.builder().allowedMethods("GET").allowedOrigins("*").allowedHeaders("*a*").build()), // AllowedHeader 에 * 둘
+				List.of(CORSRule.builder().allowedMethods("GET").allowedOrigins("*").exposeHeaders("x-amz-*").build()), // ExposeHeader 에 *
+				manyRules); // 규칙 101개
+		for (var rules : cases) {
+			client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+			var stored = client.getBucketCors(p -> p.bucket(bucketName)).corsRules();
+			assertEquals(rules.size(), stored.size());
+			assertEquals(rules.get(0).allowedMethods(), stored.get(0).allowedMethods());
+			assertEquals(rules.get(0).allowedOrigins(), stored.get(0).allowedOrigins());
+			if (rules.get(0).hasAllowedHeaders())
+				assertEquals(rules.get(0).allowedHeaders(), stored.get(0).allowedHeaders());
+			if (rules.get(0).hasExposeHeaders())
+				assertEquals(rules.get(0).exposeHeaders(), stored.get(0).exposeHeaders());
+		}
+	}
+
+	/** 쉼표로 나눈 CORS 헤더 값을 소문자 집합으로 (구분자 "," 와 ", " 를 같게 본다) */
+	private static java.util.Set<String> corsSet(String value) {
+		var set = new java.util.TreeSet<String>();
+		if (value != null)
+			for (var v : value.split(","))
+				if (!v.isBlank())
+					set.add(v.trim().toLowerCase());
+		return set;
+	}
+
+	private static java.util.Set<String> corsSet(List<String> values) {
+		return corsSet(String.join(",", values));
+	}
+
+	@Test
 	@Tag("Error")
 	// KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
 	// AWS 는 AllowedMethod 가 GET·PUT·POST·DELETE·HEAD(대문자)가 아니면 400 InvalidRequest 다.

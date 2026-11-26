@@ -325,6 +325,101 @@ class TestCors(S3TestBase):
         assert code == 200
         assert headers.get("access-control-allow-origin") == "http://a.example.com"
 
+    @pytest.mark.tag("Object")
+    # KSAN(ifs32) SCP 호환 케이스: 일반 요청의 CORS 헤더가 s3gw(운영계)와 같은지 확인한다.
+    # Origin 이 맞는 첫 규칙의 메서드·허용 헤더·노출 헤더를 요청 메서드와 상관없이 붙이고 vary 에 Origin 이 있다.
+    # 규칙에 HEAD 가 없어도 HeadBucket·HeadObject 에 헤더가 붙어야 브라우저 콘솔의 버킷 연결 확인이 된다.
+    # AWS 는 규칙에 없는 메서드(HEAD)에는 CORS 헤더를 주지 않고 일반 요청에는 Allow-Headers 를 주지 않아 AWS 에서는 실패한다.
+    def test_cors_scp_compat(self):
+        client = self.get_client()
+        bucket_name = self._create_public_cors_bucket(client, 18)
+        key = "test_cors_scp_compat"
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"cors", ACL="public-read")
+        methods = ["PUT", "POST", "GET"]
+        allow_headers = ["x-amz-content-sha256", "x-amz-user-agent", "x-amz-date", "authorization",
+                         "Content-Type", "Content-MD5", "x-amz-acl"]
+        expose_headers = ["x-amz-meta-custom-header", "x-amz-request-id", "x-amz-id-2", "ETag", "date",
+                          "x-amz-server-side-encryption"]
+        rules = [self._cors_rule(methods, ["*"], AllowedHeaders=allow_headers, ExposeHeaders=expose_headers)]
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+
+        # HEAD·GET 버킷(연결 확인·목록), HEAD·GET 오브젝트
+        for method, target in (("HEAD", None), ("GET", None), ("HEAD", key), ("GET", key)):
+            what = f"{method} {'bucket' if target is None else 'object'}"
+            code, headers = self._cors_request(method, bucket_name, {"Origin": "http://console.example.com"}, target)
+            assert code == 200, what
+            assert headers.get("access-control-allow-origin") == "*", what
+            assert self._cors_set(headers.get("access-control-allow-methods")) == self._cors_set(methods), what
+            assert self._cors_set(headers.get("access-control-allow-headers")) == self._cors_set(allow_headers), what
+            assert self._cors_set(headers.get("access-control-expose-headers")) == self._cors_set(expose_headers), what
+            assert "origin" in self._cors_set(headers.get("vary")), what
+
+    @pytest.mark.tag("Preflight")
+    # KSAN(ifs32) SCP 호환 케이스: CORS 설정이 있는 버킷의 preflight(OPTIONS) 는 Origin 이 규칙에 맞으면
+    # 요청 메서드·요청 헤더가 규칙에 없어도 200 과 CORS 헤더를 준다 (브라우저 SDK 가 규칙에 없는 헤더를 보내도 동작).
+    # AWS 는 규칙에 없는 메서드·헤더면 403 이라 AWS 에서는 실패한다.
+    def test_cors_scp_preflight(self):
+        client = self.get_client()
+        bucket_name = self._create_public_cors_bucket(client, 19)
+        key = "test_cors_scp_preflight"
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"cors", ACL="public-read")
+        methods = ["PUT", "POST", "GET"]
+        rules = [self._cors_rule(methods, ["*"], AllowedHeaders=["authorization", "content-type", "x-amz-date"])]
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+
+        cases = [
+            ("PUT", "authorization,content-type,x-amz-date", None),  # 규칙에 맞는 preflight
+            ("HEAD", "authorization,x-amz-date", None),  # 규칙에 없는 메서드 (버킷 연결 확인)
+            ("DELETE", "authorization", key),  # 규칙에 없는 메서드
+            ("PUT", "amz-sdk-invocation-id,amz-sdk-request,authorization,x-amz-checksum-crc32", key),  # 규칙에 없는 헤더
+            (None, None, None),  # Access-Control-Request-Method 없음
+        ]
+        for method, req_headers, target in cases:
+            headers = {"Origin": "http://console.example.com"}
+            if method:
+                headers["Access-Control-Request-Method"] = method
+            if req_headers:
+                headers["Access-Control-Request-Headers"] = req_headers
+            what = f"OPTIONS {method} {req_headers} {'object' if target else 'bucket'}"
+            code, response = self._cors_request("OPTIONS", bucket_name, headers, target)
+            assert code == 200, what
+            assert response.get("access-control-allow-origin") == "*", what
+            assert self._cors_set(response.get("access-control-allow-methods")) <= self._cors_set(methods), what
+            assert self._cors_set(response.get("access-control-allow-methods")), what
+
+    @pytest.mark.tag("Check")
+    # KSAN(ifs32) SCP 호환 케이스: PutBucketCors 는 규칙 내용을 검사하지 않고 그대로 저장한다 (SCP 포털이 넣는 값을 거부하지 않는다).
+    # AWS 는 아래 규칙을 모두 400 InvalidRequest 로 거부해 AWS 에서는 실패한다.
+    def test_cors_scp_put_any_rule(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 20)
+        cases = [
+            [self._cors_rule(["PATCH"], ["*"])],  # 지원하지 않는 메서드
+            [self._cors_rule(["get"], ["*"])],  # 소문자 메서드
+            [self._cors_rule(["GET"], ["*a*"])],  # Origin 에 * 둘
+            [self._cors_rule(["GET"], ["*"], AllowedHeaders=["*a*"])],  # AllowedHeader 에 * 둘
+            [self._cors_rule(["GET"], ["*"], ExposeHeaders=["x-amz-*"])],  # ExposeHeader 에 *
+            [self._cors_rule(["GET"], [f"http://{i}.example.com"]) for i in range(101)],  # 규칙 101개
+        ]
+        for rules in cases:
+            client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+            stored = client.get_bucket_cors(Bucket=bucket_name)["CORSRules"]
+            assert len(stored) == len(rules)
+            assert stored[0]["AllowedMethods"] == rules[0]["AllowedMethods"]
+            assert stored[0]["AllowedOrigins"] == rules[0]["AllowedOrigins"]
+            for field in ("AllowedHeaders", "ExposeHeaders"):
+                if field in rules[0]:
+                    assert stored[0][field] == rules[0][field]
+
+    @staticmethod
+    def _cors_set(value) -> set:
+        """쉼표로 나눈 CORS 헤더 값을 소문자 집합으로 (구분자 "," 와 ", " 를 같게 본다)"""
+        if value is None:
+            return set()
+        if isinstance(value, (list, tuple)):
+            value = ",".join(value)
+        return {v.strip().lower() for v in value.split(",") if v.strip()}
+
     @pytest.mark.tag("Error")
     # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.
     # AWS 는 AllowedMethod 가 GET·PUT·POST·DELETE·HEAD(대문자)가 아니면 400 InvalidRequest 다.

@@ -134,6 +134,36 @@ class Cors {
 	}
 
 	/**
+	 * KSAN(ifs32) SCP 호환: 일반 요청(HEAD·GET 버킷과 오브젝트)의 CORS 헤더가 s3gw 와 같은지 확인.
+	 * 규칙에 HEAD 가 없어도 헤더가 붙고 Allow-Headers 도 붙는다. AWS 에서는 실패한다. (V2 만 실행)
+	 */
+	@Test
+	@Tag("Object")
+	void testCorsScpCompat() {
+		testV2.testCorsScpCompat();
+	}
+
+	/**
+	 * KSAN(ifs32) SCP 호환: 규칙에 없는 메서드·헤더로 preflight 해도 Origin 이 맞으면 200 과 CORS 헤더를 주는지 확인.
+	 * AWS 에서는 실패한다. (V2 만 실행)
+	 */
+	@Test
+	@Tag("Preflight")
+	void testCorsScpPreflight() {
+		testV2.testCorsScpPreflight();
+	}
+
+	/**
+	 * KSAN(ifs32) SCP 호환: AWS 가 거부하는 CORS 규칙(소문자·미지원 메서드, 와일드카드, 101개)도 그대로 저장하는지 확인.
+	 * AWS 에서는 실패한다. (V2 만 실행)
+	 */
+	@Test
+	@Tag("Check")
+	void testCorsScpPutAnyRule() {
+		testV2.testCorsScpPutAnyRule();
+	}
+
+	/**
 	 * 허용되지 않는 메서드로 cors 설정 시 실패하는지 확인 (SDK v1 은 AllowedMethods 가 enum 이라 잘못된 메서드를 표현할 수 없어 V2 만 실행)
 	 */
 	@Test

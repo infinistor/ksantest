@@ -401,6 +401,124 @@ namespace s3tests.Test
 
 		[Fact]
 		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "KSAN(ifs32) SCP 호환: HEAD·GET 버킷과 오브젝트 요청의 CORS 헤더가 s3gw 와 같은지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		// KSAN(ifs32) SCP 호환 케이스: 일반 요청의 CORS 헤더가 s3gw(운영계)와 같은지 확인한다.
+		// Origin 이 맞는 첫 규칙의 메서드·허용 헤더·노출 헤더를 요청 메서드와 상관없이 붙이고 vary 에 Origin 이 있다.
+		// 규칙에 HEAD 가 없어도 HeadBucket·HeadObject 에 헤더가 붙어야 브라우저 콘솔의 버킷 연결 확인이 된다.
+		// AWS 는 규칙에 없는 메서드(HEAD)에는 CORS 헤더를 주지 않고 일반 요청에는 Allow-Headers 를 주지 않아 AWS 에서는 실패한다.
+		public void TestCorsScpCompat()
+		{
+			TestId = 18;
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicRead);
+			var key = "test_cors_scp_compat";
+			client.PutObject(bucketName, key, body: "cors", acl: S3CannedACL.PublicRead);
+			var methods = new List<string> { "PUT", "POST", "GET" };
+			var allowHeaders = new List<string> { "x-amz-content-sha256", "x-amz-user-agent", "x-amz-date", "authorization",
+				"Content-Type", "Content-MD5", "x-amz-acl" };
+			var exposeHeaders = new List<string> { "x-amz-meta-custom-header", "x-amz-request-id", "x-amz-id-2", "ETag", "date",
+				"x-amz-server-side-encryption" };
+			PutCors(client, bucketName, [CorsRule(methods, ["*"], allowedHeaders: allowHeaders, exposeHeaders: exposeHeaders)]);
+
+			// HEAD·GET 버킷(연결 확인·목록), HEAD·GET 오브젝트
+			foreach (var (method, target) in new (string, string)[] { ("HEAD", null), ("GET", null), ("HEAD", key), ("GET", key) })
+			{
+				var what = method + (target == null ? " bucket" : " object");
+				var (code, headers) = CorsRequest(method, bucketName, [new("Origin", "http://console.example.com")], target);
+				Assert.True(code == HttpStatusCode.OK, $"{what}: status {code}");
+				Assert.True(Header(headers, "access-control-allow-origin") == "*", $"{what}: allow-origin {Header(headers, "access-control-allow-origin")}");
+				Assert.True(CorsSet(methods).SetEquals(CorsSet(Header(headers, "access-control-allow-methods"))), $"{what}: allow-methods {Header(headers, "access-control-allow-methods")}");
+				Assert.True(CorsSet(allowHeaders).SetEquals(CorsSet(Header(headers, "access-control-allow-headers"))), $"{what}: allow-headers {Header(headers, "access-control-allow-headers")}");
+				Assert.True(CorsSet(exposeHeaders).SetEquals(CorsSet(Header(headers, "access-control-expose-headers"))), $"{what}: expose-headers {Header(headers, "access-control-expose-headers")}");
+				Assert.True(CorsSet(Header(headers, "vary")).Contains("origin"), $"{what}: vary {Header(headers, "vary")}");
+			}
+		}
+
+		/// <summary>쉼표로 나눈 CORS 헤더 값을 소문자 집합으로 (구분자 "," 와 ", " 를 같게 본다)</summary>
+		private static HashSet<string> CorsSet(string value)
+			=> value == null ? [] : [.. System.Linq.Enumerable.Where(System.Linq.Enumerable.Select(value.Split(','), v => v.Trim().ToLowerInvariant()), v => v.Length > 0)];
+
+		private static HashSet<string> CorsSet(IEnumerable<string> values) => CorsSet(string.Join(",", values));
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Preflight")]
+		[Trait(MainData.Explanation, "KSAN(ifs32) SCP 호환: 규칙에 없는 메서드·헤더로 preflight 해도 Origin 이 맞으면 200 과 CORS 헤더를 주는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		// KSAN(ifs32) SCP 호환 케이스: CORS 설정이 있는 버킷의 preflight(OPTIONS) 는 Origin 이 규칙에 맞으면
+		// 요청 메서드·요청 헤더가 규칙에 없어도 200 과 CORS 헤더를 준다 (브라우저 SDK 가 규칙에 없는 헤더를 보내도 동작).
+		// AWS 는 규칙에 없는 메서드·헤더면 403 이라 AWS 에서는 실패한다.
+		public void TestCorsScpPreflight()
+		{
+			TestId = 19;
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicRead);
+			var key = "test_cors_scp_preflight";
+			client.PutObject(bucketName, key, body: "cors", acl: S3CannedACL.PublicRead);
+			var methods = new List<string> { "PUT", "POST", "GET" };
+			PutCors(client, bucketName, [CorsRule(methods, ["*"], allowedHeaders: ["authorization", "content-type", "x-amz-date"])]);
+
+			var cases = new (string Method, string Headers, string Key)[]
+			{
+				("PUT", "authorization,content-type,x-amz-date", null), // 규칙에 맞는 preflight
+				("HEAD", "authorization,x-amz-date", null), // 규칙에 없는 메서드 (버킷 연결 확인)
+				("DELETE", "authorization", key), // 규칙에 없는 메서드
+				("PUT", "amz-sdk-invocation-id,amz-sdk-request,authorization,x-amz-checksum-crc32", key), // 규칙에 없는 헤더
+				(null, null, null), // Access-Control-Request-Method 없음
+			};
+			foreach (var c in cases)
+			{
+				var headers = new List<KeyValuePair<string, string>> { new("Origin", "http://console.example.com") };
+				if (c.Method != null) headers.Add(new("Access-Control-Request-Method", c.Method));
+				if (c.Headers != null) headers.Add(new("Access-Control-Request-Headers", c.Headers));
+				var what = $"OPTIONS {c.Method} {c.Headers} {(c.Key == null ? "bucket" : "object")}";
+				var (code, response) = CorsRequest("OPTIONS", bucketName, headers, c.Key);
+				Assert.True(code == HttpStatusCode.OK, $"{what}: status {code}");
+				Assert.True(Header(response, "access-control-allow-origin") == "*", $"{what}: allow-origin {Header(response, "access-control-allow-origin")}");
+				var allow = CorsSet(Header(response, "access-control-allow-methods"));
+				Assert.True(allow.Count > 0 && allow.IsSubsetOf(CorsSet(methods)), $"{what}: allow-methods {Header(response, "access-control-allow-methods")}");
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Check")]
+		[Trait(MainData.Explanation, "KSAN(ifs32) SCP 호환: AWS 가 거부하는 CORS 규칙(소문자·미지원 메서드, 와일드카드, 101개)도 그대로 저장하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		// KSAN(ifs32) SCP 호환 케이스: PutBucketCors 는 규칙 내용을 검사하지 않고 그대로 저장한다 (SCP 포털이 넣는 값을 거부하지 않는다).
+		// AWS 는 아래 규칙을 모두 400 InvalidRequest 로 거부해 AWS 에서는 실패한다.
+		public void TestCorsScpPutAnyRule()
+		{
+			TestId = 20;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var many = new List<CORSRule>();
+			for (int i = 0; i < 101; i++) many.Add(CorsRule(["GET"], [$"http://{i}.example.com"]));
+			var cases = new List<List<CORSRule>>
+			{
+				new() { CorsRule(["PATCH"], ["*"]) }, // 지원하지 않는 메서드
+				new() { CorsRule(["get"], ["*"]) }, // 소문자 메서드
+				new() { CorsRule(["GET"], ["*a*"]) }, // Origin 에 * 둘
+				new() { CorsRule(["GET"], ["*"], allowedHeaders: ["*a*"]) }, // AllowedHeader 에 * 둘
+				new() { CorsRule(["GET"], ["*"], exposeHeaders: ["x-amz-*"]) }, // ExposeHeader 에 *
+				many, // 규칙 101개
+			};
+			foreach (var rules in cases)
+			{
+				PutCors(client, bucketName, rules);
+				var stored = client.GetCORSConfiguration(bucketName).Configuration.Rules;
+				Assert.Equal(rules.Count, stored.Count);
+				Assert.Equal(rules[0].AllowedMethods, stored[0].AllowedMethods);
+				Assert.Equal(rules[0].AllowedOrigins, stored[0].AllowedOrigins);
+				if (rules[0].AllowedHeaders?.Count > 0) Assert.Equal(rules[0].AllowedHeaders, stored[0].AllowedHeaders);
+				if (rules[0].ExposeHeaders?.Count > 0) Assert.Equal(rules[0].ExposeHeaders, stored[0].ExposeHeaders);
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
 		[Trait(MainData.Minor, "Error")]
 		[Trait(MainData.Explanation, "지원하지 않는 메서드나 소문자 메서드로 cors 설정 시 실패하는지 확인")]
 		[Trait(MainData.Result, MainData.ResultFailure)]
