@@ -119,6 +119,8 @@ namespace s3tests.Test
 
 		public S3Client GetClientV4() => new(Config.S3, Config.IsSecure, Config.MainUser, Output);
 		public S3Client GetClientHttps() => new(Config.S3, true, Config.MainUser, Output);
+		/// <summary>설정과 무관하게 http 로 붙는 클라이언트.</summary>
+		public S3Client GetClientHttp() => new(Config.S3, false, Config.MainUser, Output);
 		/// <summary>모든 요청을 UNSIGNED-PAYLOAD로 서명하는 클라이언트. SDK v4는 이 경우 HTTPS를 요구한다.</summary>
 		public S3Client GetClientUnsignedPayload() => new(Config.S3, true, Config.MainUser, Output, unsignedPayload: true);
 		public S3Client GetClientHttpsV4(RequestChecksumCalculation? requestChecksumCalculation = null,

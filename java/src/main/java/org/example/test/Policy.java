@@ -41,6 +41,34 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.amazonaws.services.s3.AmazonS3;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import org.junit.jupiter.api.function.Executable;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
+import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
+import com.amazonaws.services.s3.model.BucketTaggingConfiguration;
+import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
+import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.HeadBucketRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.ListMultipartUploadsRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListPartsRequest;
+import com.amazonaws.services.s3.model.ListVersionsRequest;
+import com.amazonaws.services.s3.model.MultiObjectDeleteException;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
+import com.amazonaws.services.s3.model.TagSet;
+import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
 
 public class Policy extends TestBase {
 	@Test
@@ -1083,6 +1111,794 @@ public class Policy extends TestBase {
 		var policy = policyDocumentOf(statements);
 		assertTrue(policy.length() > 20480);
 		assertMalformedPolicy(client, bucketName, policy);
+	}
+	// endregion
+
+	// region 정책 효과 (AWS 실측 기준)
+	// 정책을 바꾼 뒤에는 새 클라이언트로 확인한다(같은 연결은 바뀌기 전 권한으로 답할 수 있다).
+	// Deny 는 정리에 필요 없는 액션(GetObject, PutObject 등)으로만 건다.
+
+	static JsonElement jsonOf(Object value) {
+		if (value instanceof JsonElement element)
+			return element;
+		if (value instanceof List<?> list) {
+			var array = new JsonArray();
+			for (var item : list)
+				array.add(jsonOf(item));
+			return array;
+		}
+		return new JsonPrimitive(value.toString());
+	}
+
+	/** 항목을 바꾼 객체를 돌려준다. value 가 null 이면 그 항목을 뺀다(NotAction 등으로 바꿀 때). */
+	static JsonObject with(JsonObject object, String name, Object value) {
+		if (value == null)
+			object.remove(name);
+		else
+			object.add(name, jsonOf(value));
+		return object;
+	}
+
+	static JsonObject jsonObjectOf(String name, Object value) {
+		return with(new JsonObject(), name, value);
+	}
+
+	static String arnOf(String resource) {
+		return MainData.POLICY_RESOURCE_PREFIX + resource;
+	}
+
+	JsonObject altPrincipal() {
+		return jsonObjectOf("CanonicalUser", config.altUser.id);
+	}
+
+	/** 주체가 서브 사용자인 문장을 만든다. action, resource 는 문자열이나 목록이고, null 이면 넣지 않는다. */
+	JsonObject statementOf(String effect, Object action, Object resource) {
+		var statement = new JsonObject();
+		statement.addProperty(MainData.POLICY_EFFECT, effect);
+		statement.add(MainData.POLICY_PRINCIPAL, altPrincipal());
+		with(statement, MainData.POLICY_ACTION, action);
+		with(statement, MainData.POLICY_RESOURCE, resource);
+		return statement;
+	}
+
+	static void putPolicy(AmazonS3 client, String bucketName, JsonObject... statements) {
+		client.setBucketPolicy(bucketName, policyDocumentOf(statements));
+	}
+
+	static void assertDenied(Executable executable) {
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED, executable);
+	}
+
+	/** 본문이 문자열인 업로드 요청. 태그·암호화 헤더를 덧붙일 때 쓴다. */
+	static PutObjectRequest putRequestOf(String bucketName, String key, String body, String sseAlgorithm) {
+		var bytes = body.getBytes(StandardCharsets.UTF_8);
+		var metadata = new ObjectMetadata();
+		metadata.setContentLength(bytes.length);
+		if (sseAlgorithm != null)
+			metadata.setSSEAlgorithm(sseAlgorithm);
+		return new PutObjectRequest(bucketName, key, new ByteArrayInputStream(bytes), metadata);
+	}
+
+	static ObjectTagging taggingOf(String... keyValues) {
+		var tags = new ArrayList<com.amazonaws.services.s3.model.Tag>();
+		for (int i = 0; i < keyValues.length; i += 2)
+			tags.add(new com.amazonaws.services.s3.model.Tag(keyValues[i], keyValues[i + 1]));
+		return new ObjectTagging(tags);
+	}
+
+	static UploadPartRequest partRequestOf(String bucketName, String key, String uploadId, int partNumber) {
+		return new UploadPartRequest().withBucketName(bucketName).withKey(key).withUploadId(uploadId)
+				.withPartNumber(partNumber).withInputStream(new ByteArrayInputStream(new byte[] { 'x' }))
+				.withPartSize(1);
+	}
+
+	@Test
+	@Tag("Effect")
+	public void testBucketPolicyAllowUser() {
+		var key = "testBucketPolicyAllowUser";
+		var client = getClient();
+		var bucketName = createBucket(client, 31);
+		client.putObject(bucketName, key, "content");
+		putPolicy(client, bucketName, statementOf("Allow", "s3:GetObject", arnOf(bucketName + "/*")));
+		assertFalse(client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName))
+				.getPolicyStatus().getIsPublic());
+
+		var altClient = getAltClient();
+		assertEquals("content", getBody(altClient.getObject(bucketName, key).getObjectContent()));
+		assertEquals(7, altClient.getObjectMetadata(bucketName, key).getContentLength());
+		// 허용한 액션 말고는 그대로 거부된다
+		assertDenied(() -> altClient.putObject(bucketName, "new", "x"));
+		assertDenied(() -> altClient.listObjectsV2(bucketName));
+		assertDenied(() -> altClient.getObjectAcl(bucketName, key));
+		assertDenied(() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)));
+		assertDenied(() -> altClient.deleteObject(bucketName, key));
+		// 목록 권한이 없으면 없는 키도 403 이다
+		assertDenied(() -> altClient.getObject(bucketName, "not-exist"));
+		// 정책에 없는 주체
+		assertDenied(() -> getPublicClient().getObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("Effect")
+	public void testBucketPolicyDenyOverridesAllow() {
+		var client = getClient();
+		var bucketName = createBucket(client, 32);
+		createObjects(client, bucketName, List.of("public/a", "private/a"));
+		putPolicy(client, bucketName,
+				statementOf("Allow", "s3:GetObject", arnOf(bucketName + "/*")),
+				statementOf("Deny", "s3:GetObject", arnOf(bucketName + "/private/*")));
+
+		var altClient = getAltClient();
+		assertEquals("public/a", getBody(altClient.getObject(bucketName, "public/a").getObjectContent()));
+		assertDenied(() -> altClient.getObject(bucketName, "private/a"));
+		// Deny 의 주체가 아닌 소유자는 읽을 수 있다
+		assertEquals("private/a", getBody(getClient().getObject(bucketName, "private/a").getObjectContent()));
+	}
+
+	@Test
+	@Tag("Effect")
+	public void testBucketPolicyDenyOwner() {
+		var key = "testBucketPolicyDenyOwner";
+		var client = getClient();
+		var bucketName = createBucket(client, 33);
+		client.putObject(bucketName, key, "content");
+		putPolicy(client, bucketName, with(statementOf("Deny", "s3:GetObject", arnOf(bucketName + "/*")),
+				MainData.POLICY_PRINCIPAL, "*"));
+
+		// 명시적 Deny 는 버킷 소유자에게도 적용된다
+		var owner = getClient();
+		assertDenied(() -> owner.getObject(bucketName, key));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, null, () -> owner.getObjectMetadata(bucketName, key));
+		assertDenied(() -> owner.copyObject(bucketName, key, bucketName, "copy"));
+		// 거부하지 않은 액션은 그대로 된다
+		owner.putObject(bucketName, "new", "x");
+		assertTrue(owner.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)).getTagSet().isEmpty());
+	}
+
+	@Test
+	@Tag("NotAction")
+	public void testBucketPolicyNotActionDeny() {
+		var key = "testBucketPolicyNotActionDeny";
+		var client = getClient();
+		var bucketName = createBucket(client, 34);
+		client.putObject(bucketName, key, "content");
+		var resources = List.of(arnOf(bucketName), arnOf(bucketName + "/*"));
+		putPolicy(client, bucketName,
+				statementOf("Allow", "s3:*", resources),
+				// GetObject, ListBucket 이 아닌 모든 액션을 거부
+				with(statementOf("Deny", null, resources), "NotAction", List.of("s3:GetObject", "s3:ListBucket")));
+
+		var altClient = getAltClient();
+		assertEquals("content", getBody(altClient.getObject(bucketName, key).getObjectContent()));
+		assertEquals(1, altClient.listObjectsV2(bucketName).getKeyCount());
+		assertDenied(() -> altClient.putObject(bucketName, "new", "x"));
+		assertDenied(() -> altClient.deleteObject(bucketName, key));
+		assertDenied(() -> altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)));
+	}
+
+	@Test
+	@Tag("NotAction")
+	public void testBucketPolicyNotActionAllow() {
+		var key = "testBucketPolicyNotActionAllow";
+		var client = getClient();
+		var bucketName = createBucket(client, 35);
+		client.putObject(bucketName, key, "content");
+		// PutObject, DeleteObject 가 아닌 모든 오브젝트 액션을 허용
+		putPolicy(client, bucketName, with(statementOf("Allow", null, arnOf(bucketName + "/*")),
+				"NotAction", List.of("s3:PutObject", "s3:DeleteObject")));
+
+		var altClient = getAltClient();
+		assertEquals("content", getBody(altClient.getObject(bucketName, key).getObjectContent()));
+		assertTrue(altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)).getTagSet().isEmpty());
+		assertDenied(() -> altClient.putObject(bucketName, "new", "x"));
+		assertDenied(() -> altClient.deleteObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("NotResource")
+	public void testBucketPolicyNotResourceAllow() {
+		var client = getClient();
+		var bucketName = createBucket(client, 36);
+		createObjects(client, bucketName, List.of("public/a", "private/a"));
+		putPolicy(client, bucketName, with(statementOf("Allow", "s3:GetObject", null),
+				"NotResource", arnOf(bucketName + "/private/*")));
+
+		var altClient = getAltClient();
+		assertEquals("public/a", getBody(altClient.getObject(bucketName, "public/a").getObjectContent()));
+		assertDenied(() -> altClient.getObject(bucketName, "private/a"));
+	}
+
+	@Test
+	@Tag("NotResource")
+	public void testBucketPolicyNotResourceDeny() {
+		var client = getClient();
+		var bucketName = createBucket(client, 37);
+		createObjects(client, bucketName, List.of("public/a", "private/a"));
+		putPolicy(client, bucketName,
+				statementOf("Allow", "s3:GetObject", arnOf(bucketName + "/*")),
+				// public/ 아래가 아닌 것은 모두 거부
+				with(statementOf("Deny", "s3:GetObject", null), "NotResource", arnOf(bucketName + "/public/*")));
+
+		var altClient = getAltClient();
+		assertEquals("public/a", getBody(altClient.getObject(bucketName, "public/a").getObjectContent()));
+		assertDenied(() -> altClient.getObject(bucketName, "private/a"));
+	}
+
+	@Test
+	@Tag("NotPrincipal")
+	public void testBucketPolicyNotPrincipal() {
+		var key = "testBucketPolicyNotPrincipal";
+		var client = getClient();
+		var bucketName = createBucket(client, 38);
+		client.putObject(bucketName, key, "content");
+		var resource = arnOf(bucketName + "/*");
+		// Allow 에는 NotPrincipal 을 쓸 수 없다
+		var allowNotPrincipal = with(statementOf("Allow", "s3:GetObject", resource), MainData.POLICY_PRINCIPAL, null);
+		with(allowNotPrincipal, MainData.POLICY_NOT_PRINCIPAL, altPrincipal());
+		assertMalformedPolicy(client, bucketName, policyDocumentOf(allowNotPrincipal));
+
+		// 서브 사용자가 아닌 모든 주체의 GetObject 를 거부(소유자 포함)
+		var deny = with(statementOf("Deny", "s3:GetObject", resource), MainData.POLICY_PRINCIPAL, null);
+		with(deny, MainData.POLICY_NOT_PRINCIPAL, altPrincipal());
+		putPolicy(client, bucketName, statementOf("Allow", "s3:GetObject", resource), deny);
+
+		assertEquals("content", getBody(getAltClient().getObject(bucketName, key).getObjectContent()));
+		assertDenied(() -> getClient().getObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("Wildcard")
+	public void testBucketPolicyResourceWildcard() {
+		var client = getClient();
+		var bucketName = createBucket(client, 39);
+		createObjects(client, bucketName,
+				List.of("a1/file1.txt", "a1/file10.txt", "b1/file1.txt", "a1/sub/file2.txt", "a1/file1.TXT"));
+		// * 는 0자 이상(/ 포함), ? 는 정확히 한 글자, 대소문자를 구분한다
+		putPolicy(client, bucketName, statementOf("Allow", "s3:GetObject", arnOf(bucketName + "/a*/file?.txt")));
+
+		var altClient = getAltClient();
+		for (var key : List.of("a1/file1.txt", "a1/sub/file2.txt"))
+			assertEquals(key, getBody(altClient.getObject(bucketName, key).getObjectContent()));
+		for (var key : List.of("a1/file10.txt", "b1/file1.txt", "a1/file1.TXT"))
+			assertDenied(() -> altClient.getObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("Wildcard")
+	public void testBucketPolicyActionWildcard() {
+		var key = "testBucketPolicyActionWildcard";
+		var client = getClient();
+		var bucketName = createBucket(client, 40);
+		client.putObject(bucketName, key, "content");
+		putPolicy(client, bucketName,
+				statementOf("Allow", "s3:Get*", List.of(arnOf(bucketName), arnOf(bucketName + "/*"))));
+
+		var altClient = getAltClient();
+		assertEquals("content", getBody(altClient.getObject(bucketName, key).getObjectContent()));
+		assertEquals(1, altClient.getObjectAcl(bucketName, key).getGrantsAsList().size());
+		assertTrue(altClient.getObjectTagging(new GetObjectTaggingRequest(bucketName, key)).getTagSet().isEmpty());
+		assertEquals(BucketVersioningConfiguration.OFF,
+				altClient.getBucketVersioningConfiguration(bucketName).getStatus());
+		altClient.getBucketLocation(bucketName);
+		altClient.getBucketAcl(bucketName);
+		// Get 으로 시작하지 않는 액션
+		assertDenied(() -> altClient.listObjectsV2(bucketName));
+		assertDenied(() -> altClient.putObject(bucketName, "new", "x"));
+	}
+
+	@Test
+	@Tag("Wildcard")
+	public void testBucketPolicyActionCaseInsensitive() {
+		var key = "testBucketPolicyActionCaseInsensitive";
+		var client = getClient();
+		var bucketName = createBucket(client, 41);
+		client.putObject(bucketName, key, "content");
+		// 액션 이름은 대소문자를 구분하지 않는다
+		putPolicy(client, bucketName, statementOf("Allow", "s3:getobject", arnOf(bucketName + "/*")));
+		assertEquals("content", getBody(getAltClient().getObject(bucketName, key).getObjectContent()));
+	}
+
+	@Test
+	@Tag("Resource")
+	public void testBucketPolicyListBucketResource() {
+		var key = "testBucketPolicyListBucketResource";
+		var client = getClient();
+		var bucketName = createBucket(client, 42);
+		client.putObject(bucketName, key, "content");
+		putPolicy(client, bucketName, statementOf("Allow", "s3:ListBucket", arnOf(bucketName)));
+
+		var altClient = getAltClient();
+		assertEquals(1, altClient.listObjectsV2(bucketName).getKeyCount());
+		assertEquals(1, altClient.listObjects(bucketName).getObjectSummaries().size());
+		altClient.headBucket(new HeadBucketRequest(bucketName));
+		// ListBucket 만으로는 읽을 수 없고, 버전·멀티파트 목록은 다른 액션이다
+		assertDenied(() -> altClient.getObject(bucketName, key));
+		assertDenied(() -> altClient.listVersions(new ListVersionsRequest().withBucketName(bucketName)));
+		assertDenied(() -> altClient.listMultipartUploads(new ListMultipartUploadsRequest(bucketName)));
+		// 목록 권한이 있으면 없는 키는 404 다
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> altClient.getObject(bucketName, "not-exist"));
+	}
+
+	@Test
+	@Tag("Condition")
+	public void testBucketPolicyListPrefixCondition() {
+		var client = getClient();
+		var bucketName = createBucket(client, 43);
+		createObjects(client, bucketName, List.of("public/a", "private/a"));
+		putPolicy(client, bucketName, with(statementOf("Allow", "s3:ListBucket", arnOf(bucketName)),
+				MainData.POLICY_CONDITION, conditionOf("StringEquals", "s3:prefix", "public/")));
+
+		var altClient = getAltClient();
+		assertEquals(1, altClient.listObjectsV2(bucketName, "public/").getKeyCount());
+		assertEquals(1, altClient.listObjects(bucketName, "public/").getObjectSummaries().size());
+		assertDenied(() -> altClient.listObjectsV2(bucketName));
+		assertDenied(() -> altClient.listObjectsV2(bucketName, "public/a"));
+		assertDenied(() -> altClient.listObjectsV2(bucketName, "private/"));
+	}
+
+	@Test
+	@Tag("Condition")
+	public void testBucketPolicyListConditionKeys() {
+		var client = getClient();
+		var bucketName = createBucket(client, 44);
+		createObjects(client, bucketName, List.of("public/a", "private/a"));
+		// 조건 연산자가 여럿이면 모두 맞아야 한다
+		var condition = conditionOf("StringLike", "s3:prefix", "public/*");
+		with(condition, "StringEquals", jsonObjectOf("s3:delimiter", "/"));
+		with(condition, "NumericLessThanEquals", jsonObjectOf("s3:max-keys", "10"));
+		putPolicy(client, bucketName, with(statementOf("Allow", "s3:ListBucket", arnOf(bucketName)),
+				MainData.POLICY_CONDITION, condition));
+
+		var altClient = getAltClient();
+		var response = altClient.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName)
+				.withPrefix("public/").withDelimiter("/").withMaxKeys(10));
+		assertEquals(1, response.getKeyCount());
+		assertDenied(() -> altClient.listObjectsV2(
+				new ListObjectsV2Request().withBucketName(bucketName).withPrefix("public/").withMaxKeys(10)));
+		assertDenied(() -> altClient.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName)
+				.withPrefix("public/").withDelimiter("/").withMaxKeys(11)));
+		assertDenied(() -> altClient.listObjectsV2(
+				new ListObjectsV2Request().withBucketName(bucketName).withPrefix("public/").withDelimiter("/")));
+		assertDenied(() -> altClient.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName)
+				.withPrefix("private/").withDelimiter("/").withMaxKeys(10)));
+	}
+
+	@Test
+	@Tag("Condition")
+	public void testBucketPolicyListDenyPrefix() {
+		var client = getClient();
+		var bucketName = createBucket(client, 45);
+		createObjects(client, bucketName, List.of("public/a", "private/a"));
+		var resource = arnOf(bucketName);
+		putPolicy(client, bucketName,
+				statementOf("Allow", "s3:ListBucket", resource),
+				with(statementOf("Deny", "s3:ListBucket", resource),
+						MainData.POLICY_CONDITION, conditionOf("StringLike", "s3:prefix", "private/*")));
+
+		var altClient = getAltClient();
+		assertDenied(() -> altClient.listObjectsV2(bucketName, "private/"));
+		// 조건은 요청의 prefix 값만 본다. 응답에 private/ 아래 키가 들어 있어도 막지 않는다
+		assertEquals(2, altClient.listObjectsV2(bucketName).getKeyCount());
+		assertEquals(1, altClient.listObjectsV2(bucketName, "priv").getKeyCount());
+	}
+
+	@Test
+	@Tag("Condition")
+	public void testBucketPolicyListMaxKeys() {
+		var client = getClient();
+		var bucketName = createBucket(client, 46);
+		createObjects(client, bucketName, List.of("a"));
+		putPolicy(client, bucketName, with(statementOf("Allow", "s3:ListBucket", arnOf(bucketName)),
+				MainData.POLICY_CONDITION, conditionOf("NumericLessThanEquals", "s3:max-keys", "10")));
+
+		var altClient = getAltClient();
+		assertEquals(1, altClient
+				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(10)).getKeyCount());
+		assertEquals(1, altClient.listObjects(new ListObjectsRequest().withBucketName(bucketName).withMaxKeys(5))
+				.getObjectSummaries().size());
+		assertDenied(() -> altClient
+				.listObjectsV2(new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(11)));
+		// max-keys 를 보내지 않으면 조건 키가 없어 맞지 않는다
+		assertDenied(() -> altClient.listObjectsV2(bucketName));
+	}
+
+	@Test
+	@Tag("Condition")
+	public void testBucketPolicySecureTransport() {
+		var key = "testBucketPolicySecureTransport";
+		var client = getClient();
+		var bucketName = createBucket(client, 47);
+		client.putObject(bucketName, key, "content");
+		var deny = with(statementOf("Deny", "s3:GetObject", arnOf(bucketName + "/*")), MainData.POLICY_PRINCIPAL, "*");
+		with(deny, MainData.POLICY_CONDITION, conditionOf("Bool", "aws:SecureTransport", "false"));
+		putPolicy(client, bucketName, deny);
+
+		var httpClient = createClient(false, config.mainUser, true, true, config.getSignatureVersion());
+		var httpsClient = getClientHttps();
+		assertEquals("content", getBody(httpsClient.getObject(bucketName, key).getObjectContent()));
+		assertDenied(() -> httpClient.getObject(bucketName, key));
+		// 거부한 액션이 아니면 http 로도 된다
+		httpClient.putObject(bucketName, "new", "x");
+	}
+
+	@Test
+	@Tag("Condition")
+	public void testBucketPolicySourceIp() {
+		var key = "testBucketPolicySourceIp";
+		var client = getClient();
+		// 조건과, 서브 사용자의 GetObject 가 되는지. 192.0.2.0/24 는 문서용 대역이라 요청 주소가 될 수 없다
+		var conditions = List.of(
+				conditionOf("IpAddress", "aws:SourceIp", "0.0.0.0/0"),
+				conditionOf("IpAddress", "aws:SourceIp", "192.0.2.0/24"),
+				conditionOf("NotIpAddress", "aws:SourceIp", "192.0.2.0/24"),
+				conditionOf("NotIpAddress", "aws:SourceIp", "0.0.0.0/0"),
+				jsonObjectOf("IpAddress", jsonObjectOf("aws:SourceIp", List.of("192.0.2.0/24", "0.0.0.0/0"))));
+		var allowed = List.of(true, false, true, false, true);
+		for (int i = 0; i < conditions.size(); i++) {
+			var bucketName = createBucket(client, 48);
+			client.putObject(bucketName, key, "content");
+			putPolicy(client, bucketName, with(statementOf("Allow", "s3:GetObject", arnOf(bucketName + "/*")),
+					MainData.POLICY_CONDITION, conditions.get(i)));
+			var altClient = getAltClient();
+			if (allowed.get(i))
+				assertEquals("content", getBody(altClient.getObject(bucketName, key).getObjectContent()));
+			else
+				assertDenied(() -> altClient.getObject(bucketName, key));
+		}
+
+		var bucketName = createBucket(client, 48);
+		assertMalformedPolicy(client, bucketName,
+				policyDocumentOf(with(statementOf("Allow", "s3:GetObject", arnOf(bucketName + "/*")),
+						MainData.POLICY_CONDITION, conditionOf("IpAddress", "aws:SourceIp", "not-an-ip"))));
+	}
+
+	@Test
+	@Tag("Condition")
+	public void testBucketPolicyDenyUnencryptedPut() {
+		var key = "testBucketPolicyDenyUnencryptedPut";
+		var client = getClient();
+		var bucketName = createBucket(client, 49);
+		var deny = with(statementOf("Deny", "s3:PutObject", arnOf(bucketName + "/*")), MainData.POLICY_PRINCIPAL, "*");
+		with(deny, MainData.POLICY_CONDITION,
+				conditionOf("StringNotEquals", "s3:x-amz-server-side-encryption", "AES256"));
+		putPolicy(client, bucketName, deny);
+
+		var owner = getClient();
+		// 헤더가 없으면 값이 AES256 이 아닌 것으로 본다
+		assertDenied(() -> owner.putObject(bucketName, key, "content"));
+		owner.putObject(putRequestOf(bucketName, key, "content", ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION));
+		// 멀티파트 시작과 복사도 PutObject 액션이다
+		assertDenied(() -> owner.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, "multi")));
+		assertDenied(() -> owner.copyObject(bucketName, key, bucketName, "copy"));
+		var metadata = new ObjectMetadata();
+		metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+		owner.copyObject(new CopyObjectRequest(bucketName, key, bucketName, "copy").withNewObjectMetadata(metadata));
+		assertEquals("content", getBody(owner.getObject(bucketName, "copy").getObjectContent()));
+	}
+
+	@Test
+	@Tag("Condition")
+	public void testBucketPolicyNullCondition() {
+		var key = "testBucketPolicyNullCondition";
+		var client = getClient();
+		var bucketName = createBucket(client, 50);
+		// 암호화 헤더가 없는(Null) 업로드를 거부
+		var deny = with(statementOf("Deny", "s3:PutObject", arnOf(bucketName + "/*")), MainData.POLICY_PRINCIPAL, "*");
+		with(deny, MainData.POLICY_CONDITION, conditionOf("Null", "s3:x-amz-server-side-encryption", "true"));
+		putPolicy(client, bucketName, deny);
+
+		var owner = getClient();
+		assertDenied(() -> owner.putObject(bucketName, key, "content"));
+		owner.putObject(putRequestOf(bucketName, key, "content", ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION));
+		assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION,
+				owner.getObjectMetadata(bucketName, key).getSSEAlgorithm());
+	}
+
+	@Test
+	@Tag("Version")
+	public void testBucketPolicyGetObjectVersionAction() {
+		var key = "testBucketPolicyGetObjectVersionAction";
+		var client = getClient();
+		var bucketName = createBucket(client, 51);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var version1 = client.putObject(bucketName, key, "1").getVersionId();
+		var version2 = client.putObject(bucketName, key, "2").getVersionId();
+		putPolicy(client, bucketName, statementOf("Allow", "s3:GetObject", arnOf(bucketName + "/*")));
+
+		var altClient = getAltClient();
+		assertEquals("2", getBody(altClient.getObject(bucketName, key).getObjectContent()));
+		// 버전을 지정한 조회는 s3:GetObjectVersion 이 필요하다(최신 버전이어도)
+		for (var versionId : List.of(version1, version2))
+			assertDenied(() -> altClient.getObject(new GetObjectRequest(bucketName, key, versionId)));
+		assertS3Error(HttpStatus.SC_FORBIDDEN, null,
+				() -> altClient.getObjectMetadata(new GetObjectMetadataRequest(bucketName, key, version1)));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testBucketPolicyVersionIdCondition() {
+		var key = "testBucketPolicyVersionIdCondition";
+		var client = getClient();
+		var bucketName = createBucket(client, 52);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var version1 = client.putObject(bucketName, key, "1").getVersionId();
+		var version2 = client.putObject(bucketName, key, "2").getVersionId();
+		putPolicy(client, bucketName, with(statementOf("Allow", "s3:GetObjectVersion", arnOf(bucketName + "/*")),
+				MainData.POLICY_CONDITION, conditionOf("StringEquals", "s3:VersionId", version1)));
+
+		var altClient = getAltClient();
+		assertEquals("1",
+				getBody(altClient.getObject(new GetObjectRequest(bucketName, key, version1)).getObjectContent()));
+		assertDenied(() -> altClient.getObject(new GetObjectRequest(bucketName, key, version2)));
+		// 버전을 지정하지 않은 조회는 s3:GetObject 가 필요하다
+		assertDenied(() -> altClient.getObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("Version")
+	public void testBucketPolicyDeleteObjectVersionAction() {
+		var key = "testBucketPolicyDeleteObjectVersionAction";
+		var client = getClient();
+		var bucketName = createBucket(client, 53);
+		checkConfigureVersioningRetry(bucketName, BucketVersioningConfiguration.ENABLED);
+		var versionId = client.putObject(bucketName, key, "1").getVersionId();
+		putPolicy(client, bucketName, statementOf("Allow", "s3:DeleteObject", arnOf(bucketName + "/*")));
+
+		var altClient = getAltClient();
+		// 버전을 지정한 삭제는 s3:DeleteObjectVersion 이 필요하다
+		assertDenied(() -> altClient.deleteVersion(bucketName, key, versionId));
+		// SDK V1 은 일부라도 실패하면 MultiObjectDeleteException 을 던진다
+		var e = assertThrows(MultiObjectDeleteException.class, () -> altClient.deleteObjects(
+				new DeleteObjectsRequest(bucketName).withKeys(List.of(new KeyVersion(key, versionId)))));
+		assertTrue(e.getDeletedObjects().isEmpty());
+		assertEquals(MainData.ACCESS_DENIED, e.getErrors().get(0).getCode());
+		// 버전을 지정하지 않은 삭제(삭제 마커)는 된다. SDK V1 의 deleteObject 는 응답이 없어 버전 목록으로 확인한다
+		altClient.deleteObject(bucketName, key);
+		var versions = client.listVersions(new ListVersionsRequest().withBucketName(bucketName))
+				.getVersionSummaries();
+		assertTrue(versions.stream().anyMatch(v -> v.isLatest() && v.isDeleteMarker()));
+		assertEquals("1",
+				getBody(client.getObject(new GetObjectRequest(bucketName, key, versionId)).getObjectContent()));
+	}
+
+	@Test
+	@Tag("Condition")
+	public void testBucketPolicyRequestObjectTagKeys() {
+		var client = getClient();
+		var bucketName = createBucket(client, 54, ObjectOwnership.BucketOwnerEnforced);
+		// 요청의 태그 키가 모두 project, team 안에 있어야 한다
+		putPolicy(client, bucketName,
+				with(statementOf("Allow", List.of("s3:PutObject", "s3:PutObjectTagging"), arnOf(bucketName + "/*")),
+						MainData.POLICY_CONDITION, jsonObjectOf("ForAllValues:StringEquals",
+								jsonObjectOf("s3:RequestObjectTagKeys", List.of("project", "team")))));
+
+		var altClient = getAltClient();
+		altClient.putObject(putRequestOf(bucketName, "allowed", "x", null).withTagging(taggingOf("project", "a")));
+		// 태그가 없으면 ForAllValues 는 참이다
+		altClient.putObject(bucketName, "no-tag", "x");
+		assertDenied(() -> altClient.putObject(
+				putRequestOf(bucketName, "denied", "x", null).withTagging(taggingOf("project", "a", "owner", "b"))));
+		var tagSet = client.getObjectTagging(new GetObjectTaggingRequest(bucketName, "allowed")).getTagSet();
+		assertEquals(1, tagSet.size());
+		assertEquals("project", tagSet.get(0).getKey());
+		assertEquals("a", tagSet.get(0).getValue());
+	}
+
+	@Test
+	@Tag("Action")
+	public void testBucketPolicyPutObjectAction() {
+		var key = "testBucketPolicyPutObjectAction";
+		var client = getClient();
+		var bucketName = createBucket(client, 55, ObjectOwnership.BucketOwnerEnforced);
+		client.putObject(bucketName, key, "content");
+		putPolicy(client, bucketName, statementOf("Allow", "s3:PutObject", arnOf(bucketName + "/*")));
+
+		var altClient = getAltClient();
+		altClient.putObject(bucketName, "new", "x");
+		// 멀티파트 시작·파트 업로드는 PutObject 로, 시작한 사용자는 파트 목록·중단도 할 수 있다
+		var uploadId = altClient.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, "multi"))
+				.getUploadId();
+		altClient.uploadPart(partRequestOf(bucketName, "multi", uploadId, 1));
+		assertEquals(1, altClient.listParts(new ListPartsRequest(bucketName, "multi", uploadId)).getParts().size());
+		altClient.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, "multi", uploadId));
+
+		// 태그를 붙이려면 PutObjectTagging, 복사하려면 원본의 GetObject 가 필요하다
+		assertDenied(() -> altClient
+				.putObject(putRequestOf(bucketName, "tagged", "x", null).withTagging(taggingOf("a", "b"))));
+		assertDenied(() -> altClient.copyObject(bucketName, key, bucketName, "copy"));
+		assertDenied(() -> altClient.listMultipartUploads(new ListMultipartUploadsRequest(bucketName)));
+		assertDenied(() -> altClient.getObject(bucketName, "new"));
+		assertDenied(() -> altClient.deleteObject(bucketName, "new"));
+	}
+
+	@Test
+	@Tag("Action")
+	public void testBucketPolicyMultipartListActions() {
+		var key = "testBucketPolicyMultipartListActions";
+		var client = getClient();
+		var bucketName = createBucket(client, 56);
+		var uploadId = client.initiateMultipartUpload(new InitiateMultipartUploadRequest(bucketName, key))
+				.getUploadId();
+		client.uploadPart(partRequestOf(bucketName, key, uploadId, 1));
+		putPolicy(client, bucketName,
+				statementOf("Allow", List.of("s3:ListMultipartUploadParts", "s3:ListBucketMultipartUploads"),
+						List.of(arnOf(bucketName), arnOf(bucketName + "/*"))));
+
+		var altClient = getAltClient();
+		assertEquals(1, altClient.listParts(new ListPartsRequest(bucketName, key, uploadId)).getParts().size());
+		assertEquals(1, altClient.listMultipartUploads(new ListMultipartUploadsRequest(bucketName))
+				.getMultipartUploads().size());
+		assertDenied(
+				() -> altClient.abortMultipartUpload(new AbortMultipartUploadRequest(bucketName, key, uploadId)));
+		assertDenied(() -> altClient.uploadPart(partRequestOf(bucketName, key, uploadId, 2)));
+	}
+
+	@Test
+	@Tag("Action")
+	public void testBucketPolicyBucketConfigActions() {
+		var client = getClient();
+		var bucketName = createBucket(client, 57);
+		var actions = List.of("s3:GetBucketVersioning", "s3:GetBucketTagging", "s3:PutBucketTagging",
+				"s3:GetBucketCORS", "s3:PutBucketCORS", "s3:GetBucketAcl", "s3:GetBucketLocation",
+				"s3:ListBucketVersions");
+		putPolicy(client, bucketName, statementOf("Allow", actions, arnOf(bucketName)));
+
+		var altClient = getAltClient();
+		assertEquals(BucketVersioningConfiguration.OFF,
+				altClient.getBucketVersioningConfiguration(bucketName).getStatus());
+		altClient.getBucketAcl(bucketName);
+		altClient.getBucketLocation(bucketName);
+		assertTrue(altClient.listVersions(new ListVersionsRequest().withBucketName(bucketName)).getVersionSummaries()
+				.isEmpty());
+		// 권한은 있고 설정이 없으면 403 이 아니라 404 다(SDK V1 은 404 를 삼키고 null 을 돌려준다)
+		assertNull(altClient.getBucketTaggingConfiguration(bucketName));
+		assertNull(altClient.getBucketCrossOriginConfiguration(bucketName));
+		// 설정 삭제는 Put 액션으로 판정한다
+		altClient.setBucketTaggingConfiguration(bucketName,
+				new BucketTaggingConfiguration(List.of(new TagSet(Map.of("a", "b")))));
+		assertEquals(Map.of("a", "b"), client.getBucketTaggingConfiguration(bucketName).getTagSet().getAllTags());
+		altClient.deleteBucketTaggingConfiguration(bucketName);
+		altClient.setBucketCrossOriginConfiguration(bucketName, new BucketCrossOriginConfiguration(List.of(
+				new CORSRule().withAllowedMethods(List.of(CORSRule.AllowedMethods.GET)).withAllowedOrigins(List.of("*")))));
+		altClient.deleteBucketCrossOriginConfiguration(bucketName);
+
+		// 허용하지 않은 액션
+		assertDenied(() -> altClient.listObjectsV2(bucketName));
+		assertDenied(() -> altClient.setBucketVersioningConfiguration(new SetBucketVersioningConfigurationRequest(
+				bucketName, new BucketVersioningConfiguration(BucketVersioningConfiguration.ENABLED))));
+		assertDenied(() -> altClient.getBucketLifecycleConfiguration(bucketName));
+		assertDenied(() -> altClient.deleteBucket(bucketName));
+	}
+
+	@Test
+	@Tag("Form")
+	public void testBucketPolicyStatementForms() {
+		var key = "testBucketPolicyStatementForms";
+		var client = getClient();
+		var bucketName = createBucket(client, 58);
+		client.putObject(bucketName, key, "content");
+		var resource = arnOf(bucketName + "/*");
+		var statement = statementOf("Allow", "s3:GetObject", resource);
+
+		// Statement 는 배열이 아니라 객체 하나여도 된다
+		var single = with(jsonObjectOf(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE),
+				MainData.POLICY_STATEMENT, statement);
+		client.setBucketPolicy(bucketName, single.toString());
+		assertEquals("content", getBody(getAltClient().getObject(bucketName, key).getObjectContent()));
+
+		// Version 을 빼면 2008-10-17 로 저장된다
+		var noVersion = jsonObjectOf(MainData.POLICY_STATEMENT, List.of(statement));
+		client.setBucketPolicy(bucketName, noVersion.toString());
+		assertEquals("2008-10-17", JsonParser.parseString(client.getBucketPolicy(bucketName).getPolicyText())
+				.getAsJsonObject().get(MainData.POLICY_VERSION).getAsString());
+		client.setBucketPolicy(bucketName, policyDocumentOf("2008-10-17", statement));
+
+		// Id 와 Sid 는 그대로 돌려준다. Sid 가 겹쳐도 받는다
+		var policy = jsonObjectOf(MainData.POLICY_VERSION, MainData.POLICY_VERSION_DATE);
+		with(policy, "Id", "policy-id");
+		with(policy, MainData.POLICY_STATEMENT, List.of(
+				with(statementOf("Allow", "s3:GetObject", resource), "Sid", "same"),
+				with(statementOf("Allow", "s3:GetObjectTagging", resource), "Sid", "same")));
+		client.setBucketPolicy(bucketName, policy.toString());
+		var actual = JsonParser.parseString(client.getBucketPolicy(bucketName).getPolicyText()).getAsJsonObject();
+		assertEquals("policy-id", actual.get("Id").getAsString());
+		var actualStatements = actual.getAsJsonArray(MainData.POLICY_STATEMENT);
+		var expectedActions = List.of("s3:GetObject", "s3:GetObjectTagging");
+		assertEquals(expectedActions.size(), actualStatements.size());
+		for (int i = 0; i < actualStatements.size(); i++) {
+			var actualStatement = actualStatements.get(i).getAsJsonObject();
+			assertEquals("same", actualStatement.get("Sid").getAsString());
+			assertEquals(expectedActions.get(i), actualStatement.get(MainData.POLICY_ACTION).getAsString());
+		}
+
+		// 주체를 여럿 적을 수 있다
+		putPolicy(client, bucketName, with(statementOf("Allow", "s3:GetObject", resource), MainData.POLICY_PRINCIPAL,
+				jsonObjectOf("CanonicalUser", List.of(config.altUser.id, config.mainUser.id))));
+		assertEquals("content", getBody(getAltClient().getObject(bucketName, key).getObjectContent()));
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testBucketPolicyInvalidStatement() {
+		var client = getClient();
+		var bucketName = createBucket(client, 59);
+		var resource = arnOf(bucketName + "/*");
+		var invalidStatements = List.of(
+				// 같은 뜻의 항목을 함께 쓴다
+				with(statementOf("Allow", "s3:GetObject", resource), "NotAction", "s3:PutObject"),
+				with(statementOf("Allow", "s3:GetObject", resource), "NotResource", arnOf(bucketName + "/a/*")),
+				with(statementOf("Deny", "s3:GetObject", resource), MainData.POLICY_NOT_PRINCIPAL, altPrincipal()),
+				// 필수 항목 누락
+				statementOf("Allow", null, resource),
+				with(statementOf("Allow", "s3:GetObject", resource), MainData.POLICY_EFFECT, null),
+				new JsonObject(),
+				// 값이 잘못됐다
+				with(statementOf("Allow", "s3:GetObject", resource), "Unknown", "value"),
+				statementOf("Allow", List.of(), resource),
+				statementOf("Allow", "ec2:RunInstances", resource),
+				statementOf("Allow", "s3:GetObject", "*"),
+				with(statementOf("Allow", "s3:GetObject", resource), MainData.POLICY_PRINCIPAL,
+						jsonObjectOf("CanonicalUser", "0".repeat(64))));
+		for (var statement : invalidStatements)
+			assertMalformedPolicy(client, bucketName, policyDocumentOf(statement));
+		// 최상위가 객체가 아니다
+		assertMalformedPolicy(client, bucketName, "[]");
+		// 정책이 저장되지 않았다(SDK V1 은 NoSuchBucketPolicy 를 빈 정책으로 돌려준다)
+		assertNull(client.getBucketPolicy(bucketName).getPolicyText());
+	}
+
+	@Test
+	@Tag("Delete")
+	public void testBucketPolicyDeleteRevokes() {
+		var key = "testBucketPolicyDeleteRevokes";
+		var client = getClient();
+		var bucketName = createBucket(client, 60);
+		client.putObject(bucketName, key, "content");
+		putPolicy(client, bucketName, statementOf("Allow", "s3:GetObject", arnOf(bucketName + "/*")));
+		assertEquals("content", getBody(getAltClient().getObject(bucketName, key).getObjectContent()));
+
+		client.deleteBucketPolicy(bucketName);
+		assertDenied(() -> getAltClient().getObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("Effect")
+	public void testBucketPolicyOtherUserWrite() {
+		var key = "testBucketPolicyOtherUserWrite";
+		var client = getClient();
+		var bucketName = createBucket(client, 61, ObjectOwnership.BucketOwnerEnforced);
+		putPolicy(client, bucketName, statementOf("Allow",
+				List.of("s3:PutObject", "s3:GetObject", "s3:DeleteObject"), arnOf(bucketName + "/*")));
+
+		var altClient = getAltClient();
+		altClient.putObject(bucketName, key, "content");
+		// 다른 사용자가 올린 오브젝트도 버킷 소유자의 것이다
+		assertEquals("content", getBody(client.getObject(bucketName, key).getObjectContent()));
+		assertEquals("content", getBody(altClient.getObject(bucketName, key).getObjectContent()));
+		// 실패한 항목이 있으면 SDK V1 은 예외를 던지므로, 정상 반환이 곧 Errors 없음이다
+		var response = altClient.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(key, "not-exist"));
+		assertEquals(List.of("not-exist", key),
+				response.getDeletedObjects().stream().map(d -> d.getKey()).sorted().toList());
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY, () -> client.getObject(bucketName, key));
+	}
+
+	@Test
+	@Tag("Effect")
+	public void testBucketPolicyAnonymousPrefix() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 62);
+		createObjects(client, bucketName, List.of("public/a", "private/a"));
+		putPolicy(client, bucketName, with(statementOf("Allow", "s3:GetObject", arnOf(bucketName + "/public/*")),
+				MainData.POLICY_PRINCIPAL, "*"));
+		assertTrue(client.getBucketPolicyStatus(new GetBucketPolicyStatusRequest().withBucketName(bucketName))
+				.getPolicyStatus().getIsPublic());
+
+		var publicClient = getPublicClient();
+		assertEquals("public/a", getBody(publicClient.getObject(bucketName, "public/a").getObjectContent()));
+		assertDenied(() -> publicClient.getObject(bucketName, "private/a"));
+		assertDenied(() -> publicClient.putObject(bucketName, "public/b", "x"));
+		assertDenied(() -> publicClient.listObjectsV2(bucketName));
 	}
 	// endregion
 }

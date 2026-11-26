@@ -351,4 +351,324 @@ class Policy {
 		test.testBucketPolicyTooLarge();
 		testV2.testBucketPolicyTooLarge();
 	}
+
+	/**
+	 * 허용한 사용자가 허용한 액션만 할 수 있고 나머지는 AccessDenied 인지 확인
+	 */
+	@Test
+	@Tag("Effect")
+	void testBucketPolicyAllowUser() {
+		test.testBucketPolicyAllowUser();
+		testV2.testBucketPolicyAllowUser();
+	}
+
+	/**
+	 * Allow 와 Deny 가 겹치면 Deny 가 이기는지 확인
+	 */
+	@Test
+	@Tag("Effect")
+	void testBucketPolicyDenyOverridesAllow() {
+		test.testBucketPolicyDenyOverridesAllow();
+		testV2.testBucketPolicyDenyOverridesAllow();
+	}
+
+	/**
+	 * 명시적 Deny 가 버킷 소유자에게도 적용되는지 확인
+	 */
+	@Test
+	@Tag("Effect")
+	void testBucketPolicyDenyOwner() {
+		test.testBucketPolicyDenyOwner();
+		testV2.testBucketPolicyDenyOwner();
+	}
+
+	/**
+	 * Deny 의 NotAction 에 없는 액션만 거부되는지 확인
+	 */
+	@Test
+	@Tag("NotAction")
+	void testBucketPolicyNotActionDeny() {
+		test.testBucketPolicyNotActionDeny();
+		testV2.testBucketPolicyNotActionDeny();
+	}
+
+	/**
+	 * Allow 의 NotAction 에 없는 액션만 허용되는지 확인
+	 */
+	@Test
+	@Tag("NotAction")
+	void testBucketPolicyNotActionAllow() {
+		test.testBucketPolicyNotActionAllow();
+		testV2.testBucketPolicyNotActionAllow();
+	}
+
+	/**
+	 * Allow 의 NotResource 에 해당하지 않는 오브젝트만 허용되는지 확인
+	 */
+	@Test
+	@Tag("NotResource")
+	void testBucketPolicyNotResourceAllow() {
+		test.testBucketPolicyNotResourceAllow();
+		testV2.testBucketPolicyNotResourceAllow();
+	}
+
+	/**
+	 * Deny 의 NotResource 에 해당하지 않는 오브젝트만 거부되는지 확인
+	 */
+	@Test
+	@Tag("NotResource")
+	void testBucketPolicyNotResourceDeny() {
+		test.testBucketPolicyNotResourceDeny();
+		testV2.testBucketPolicyNotResourceDeny();
+	}
+
+	/**
+	 * NotPrincipal 은 Deny 에만 쓸 수 있고 그 주체만 거부를 피하는지 확인
+	 */
+	@Test
+	@Tag("NotPrincipal")
+	void testBucketPolicyNotPrincipal() {
+		test.testBucketPolicyNotPrincipal();
+		testV2.testBucketPolicyNotPrincipal();
+	}
+
+	/**
+	 * Resource 의 *, ? 와일드카드와 대소문자 구분을 확인
+	 */
+	@Test
+	@Tag("Wildcard")
+	void testBucketPolicyResourceWildcard() {
+		test.testBucketPolicyResourceWildcard();
+		testV2.testBucketPolicyResourceWildcard();
+	}
+
+	/**
+	 * Action 의 와일드카드(s3:Get*)가 해당 액션만 허용하는지 확인
+	 */
+	@Test
+	@Tag("Wildcard")
+	void testBucketPolicyActionWildcard() {
+		test.testBucketPolicyActionWildcard();
+		testV2.testBucketPolicyActionWildcard();
+	}
+
+	/**
+	 * Action 이름이 대소문자를 구분하지 않는지 확인
+	 */
+	@Test
+	@Tag("Wildcard")
+	void testBucketPolicyActionCaseInsensitive() {
+		test.testBucketPolicyActionCaseInsensitive();
+		testV2.testBucketPolicyActionCaseInsensitive();
+	}
+
+	/**
+	 * s3:ListBucket 만 허용하면 목록 조회만 되는지 확인
+	 */
+	@Test
+	@Tag("Resource")
+	void testBucketPolicyListBucketResource() {
+		test.testBucketPolicyListBucketResource();
+		testV2.testBucketPolicyListBucketResource();
+	}
+
+	/**
+	 * s3:prefix 조건과 일치하는 목록 조회만 허용되는지 확인
+	 */
+	@Test
+	@Tag("Condition")
+	void testBucketPolicyListPrefixCondition() {
+		test.testBucketPolicyListPrefixCondition();
+		testV2.testBucketPolicyListPrefixCondition();
+	}
+
+	/**
+	 * 조건 연산자가 여럿이면 모두 맞아야 허용되는지 확인
+	 */
+	@Test
+	@Tag("Condition")
+	void testBucketPolicyListConditionKeys() {
+		test.testBucketPolicyListConditionKeys();
+		testV2.testBucketPolicyListConditionKeys();
+	}
+
+	/**
+	 * s3:prefix 조건의 Deny 가 요청의 prefix 값만 보는지 확인
+	 */
+	@Test
+	@Tag("Condition")
+	void testBucketPolicyListDenyPrefix() {
+		test.testBucketPolicyListDenyPrefix();
+		testV2.testBucketPolicyListDenyPrefix();
+	}
+
+	/**
+	 * s3:max-keys 조건이 요청 값으로 판정되는지 확인
+	 */
+	@Test
+	@Tag("Condition")
+	void testBucketPolicyListMaxKeys() {
+		test.testBucketPolicyListMaxKeys();
+		testV2.testBucketPolicyListMaxKeys();
+	}
+
+	/**
+	 * aws:SecureTransport 조건으로 http 요청만 거부되는지 확인
+	 */
+	@Test
+	@Tag("Condition")
+	void testBucketPolicySecureTransport() {
+		test.testBucketPolicySecureTransport();
+		testV2.testBucketPolicySecureTransport();
+	}
+
+	/**
+	 * aws:SourceIp 조건(IpAddress, NotIpAddress)이 올바르게 판정되는지 확인
+	 */
+	@Test
+	@Tag("Condition")
+	void testBucketPolicySourceIp() {
+		test.testBucketPolicySourceIp();
+		testV2.testBucketPolicySourceIp();
+	}
+
+	/**
+	 * 암호화 헤더가 AES256 이 아닌 업로드·멀티파트·복사가 거부되는지 확인
+	 */
+	@Test
+	@Tag("Condition")
+	void testBucketPolicyDenyUnencryptedPut() {
+		test.testBucketPolicyDenyUnencryptedPut();
+		testV2.testBucketPolicyDenyUnencryptedPut();
+	}
+
+	/**
+	 * Null 조건으로 암호화 헤더가 없는 업로드가 거부되는지 확인
+	 */
+	@Test
+	@Tag("Condition")
+	void testBucketPolicyNullCondition() {
+		test.testBucketPolicyNullCondition();
+		testV2.testBucketPolicyNullCondition();
+	}
+
+	/**
+	 * 버전을 지정한 조회는 s3:GetObjectVersion 이 필요한지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testBucketPolicyGetObjectVersionAction() {
+		test.testBucketPolicyGetObjectVersionAction();
+		testV2.testBucketPolicyGetObjectVersionAction();
+	}
+
+	/**
+	 * s3:VersionId 조건과 일치하는 버전만 조회되는지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testBucketPolicyVersionIdCondition() {
+		test.testBucketPolicyVersionIdCondition();
+		testV2.testBucketPolicyVersionIdCondition();
+	}
+
+	/**
+	 * 버전을 지정한 삭제는 s3:DeleteObjectVersion 이 필요한지 확인
+	 */
+	@Test
+	@Tag("Version")
+	void testBucketPolicyDeleteObjectVersionAction() {
+		test.testBucketPolicyDeleteObjectVersionAction();
+		testV2.testBucketPolicyDeleteObjectVersionAction();
+	}
+
+	/**
+	 * s3:RequestObjectTagKeys 조건으로 허용한 태그 키만 올릴 수 있는지 확인
+	 */
+	@Test
+	@Tag("Condition")
+	void testBucketPolicyRequestObjectTagKeys() {
+		test.testBucketPolicyRequestObjectTagKeys();
+		testV2.testBucketPolicyRequestObjectTagKeys();
+	}
+
+	/**
+	 * s3:PutObject 가 허용하는 범위(업로드·멀티파트)와 허용하지 않는 범위를 확인
+	 */
+	@Test
+	@Tag("Action")
+	void testBucketPolicyPutObjectAction() {
+		test.testBucketPolicyPutObjectAction();
+		testV2.testBucketPolicyPutObjectAction();
+	}
+
+	/**
+	 * 멀티파트 목록 액션만 허용하면 목록 조회만 되는지 확인
+	 */
+	@Test
+	@Tag("Action")
+	void testBucketPolicyMultipartListActions() {
+		test.testBucketPolicyMultipartListActions();
+		testV2.testBucketPolicyMultipartListActions();
+	}
+
+	/**
+	 * 버킷 설정 액션을 허용한 만큼만 조회·설정·삭제되는지 확인
+	 */
+	@Test
+	@Tag("Action")
+	void testBucketPolicyBucketConfigActions() {
+		test.testBucketPolicyBucketConfigActions();
+		testV2.testBucketPolicyBucketConfigActions();
+	}
+
+	/**
+	 * Statement 단일 객체, Version 생략, Id·Sid, 여러 주체 형식을 받는지 확인
+	 */
+	@Test
+	@Tag("Form")
+	void testBucketPolicyStatementForms() {
+		test.testBucketPolicyStatementForms();
+		testV2.testBucketPolicyStatementForms();
+	}
+
+	/**
+	 * 형식이 올바르지 않은 문장이 MalformedPolicy 인지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testBucketPolicyInvalidStatement() {
+		test.testBucketPolicyInvalidStatement();
+		testV2.testBucketPolicyInvalidStatement();
+	}
+
+	/**
+	 * 정책을 삭제하면 허용했던 권한이 사라지는지 확인
+	 */
+	@Test
+	@Tag("Delete")
+	void testBucketPolicyDeleteRevokes() {
+		test.testBucketPolicyDeleteRevokes();
+		testV2.testBucketPolicyDeleteRevokes();
+	}
+
+	/**
+	 * 다른 사용자가 정책으로 올린 오브젝트를 소유자와 그 사용자가 읽고 지울 수 있는지 확인
+	 */
+	@Test
+	@Tag("Effect")
+	void testBucketPolicyOtherUserWrite() {
+		test.testBucketPolicyOtherUserWrite();
+		testV2.testBucketPolicyOtherUserWrite();
+	}
+
+	/**
+	 * 익명 사용자에게 허용한 접두어의 오브젝트만 읽을 수 있는지 확인
+	 */
+	@Test
+	@Tag("Effect")
+	void testBucketPolicyAnonymousPrefix() {
+		test.testBucketPolicyAnonymousPrefix();
+		testV2.testBucketPolicyAnonymousPrefix();
+	}
 }
