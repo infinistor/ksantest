@@ -361,4 +361,54 @@ class Website {
 	void testWebsiteAccessNoConfiguration() {
 		testV2.testWebsiteAccessNoConfiguration();
 	}
+
+	/**
+	 * 조건 두 가지 동시 사용, 307/503 코드, '/'가 든 ErrorDocument 키로 설정이 가능한지 확인
+	 */
+	@Test
+	@Tag("RoutingRule")
+	void testWebsiteValidForms() {
+		test.testWebsiteValidForms();
+		testV2.testWebsiteValidForms();
+	}
+
+	/**
+	 * RedirectAllRequestsTo의 HostName이 비어있으면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRedirectAllEmptyHost() {
+		test.testWebsiteRedirectAllEmptyHost();
+		testV2.testWebsiteRedirectAllEmptyHost();
+	}
+
+	/**
+	 * RedirectAllRequestsTo와 ErrorDocument를 함께 설정하면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRedirectAllWithErrorDocument() {
+		test.testWebsiteRedirectAllWithErrorDocument();
+		testV2.testWebsiteRedirectAllWithErrorDocument();
+	}
+
+	/**
+	 * RoutingRule의 Protocol이 http/https가 아니면 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRoutingRuleInvalidProtocol() {
+		test.testWebsiteRoutingRuleInvalidProtocol();
+		testV2.testWebsiteRoutingRuleInvalidProtocol();
+	}
+
+	/**
+	 * RoutingRule의 리다이렉트 코드 300과 오류 코드 600은 실패하는지 확인
+	 */
+	@Test
+	@Tag("ERROR")
+	void testWebsiteRoutingRuleCodeOutOfRange() {
+		test.testWebsiteRoutingRuleCodeOutOfRange();
+		testV2.testWebsiteRoutingRuleCodeOutOfRange();
+	}
 }

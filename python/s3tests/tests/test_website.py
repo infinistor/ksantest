@@ -524,3 +524,75 @@ class TestWebsite(S3TestBase):
         self.assert_client_error(
             lambda: client.get_bucket_website(Bucket=bucket_name), 404, md.NO_SUCH_WEBSITE_CONFIGURATION
         )
+
+    # region 설정 검증 보강 (AWS 실측 기준)
+
+    @pytest.mark.tag("RoutingRule")
+    def test_website_valid_forms(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 34)
+        rules = [
+            # 조건 두 가지를 함께 쓸 수 있다
+            {
+                "Condition": {"KeyPrefixEquals": "docs/", "HttpErrorCodeReturnedEquals": "404"},
+                "Redirect": {"HostName": "example.com"},
+            },
+            # 리다이렉트 코드는 300 을 뺀 3XX, 오류 코드는 4XX·5XX
+            {
+                "Condition": {"HttpErrorCodeReturnedEquals": "503"},
+                "Redirect": {"HostName": "example.com", "HttpRedirectCode": "307"},
+            },
+        ]
+        web_config = {
+            "IndexDocument": {"Suffix": "index.html"},
+            # 오류 문서 키에는 / 를 쓸 수 있다(인덱스 접미어와 다르다)
+            "ErrorDocument": {"Key": "errors/404.html"},
+            "RoutingRules": rules,
+        }
+        client.put_bucket_website(Bucket=bucket_name, WebsiteConfiguration=web_config)
+        response = client.get_bucket_website(Bucket=bucket_name)
+        assert response["ErrorDocument"] == {"Key": "errors/404.html"}
+        assert response["RoutingRules"] == rules
+
+    @pytest.mark.tag("ERROR")
+    def test_website_redirect_all_empty_host(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 35)
+        web_config = {"RedirectAllRequestsTo": {"HostName": ""}}
+        self._check_put_website_failed(client, bucket_name, web_config, md.INVALID_REQUEST)
+
+    @pytest.mark.tag("ERROR")
+    def test_website_redirect_all_with_error_document(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 36)
+        web_config = {
+            "RedirectAllRequestsTo": {"HostName": "example.com"},
+            "ErrorDocument": {"Key": "error.html"},
+        }
+        self._check_put_website_failed(client, bucket_name, web_config, md.INVALID_ARGUMENT)
+
+    @pytest.mark.tag("ERROR")
+    def test_website_routing_rule_invalid_protocol(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 37)
+        web_config = {
+            "IndexDocument": {"Suffix": "index.html"},
+            "RoutingRules": [{"Redirect": {"HostName": "example.com", "Protocol": "ftp"}}],
+        }
+        self._check_put_website_failed(client, bucket_name, web_config, md.INVALID_REQUEST)
+
+    @pytest.mark.tag("ERROR")
+    def test_website_routing_rule_code_out_of_range(self):
+        client = self.get_client()
+        bucket_name = self.create_bucket(client, 38)
+        invalid_rules = [
+            # 300 은 리다이렉트 코드로 쓸 수 없다
+            {"Redirect": {"HostName": "example.com", "HttpRedirectCode": "300"}},
+            # 오류 코드는 4XX·5XX 만
+            {"Condition": {"HttpErrorCodeReturnedEquals": "600"}, "Redirect": {"HostName": "example.com"}},
+        ]
+        for rule in invalid_rules:
+            web_config = {"IndexDocument": {"Suffix": "index.html"}, "RoutingRules": [rule]}
+            self._check_put_website_failed(client, bucket_name, web_config, md.INVALID_REQUEST)
+
+    # endregion

@@ -184,4 +184,112 @@ class BucketOwner {
 	void testBucketOwnerUploadPartCopyMismatch() {
 		testV2.testBucketOwnerUploadPartCopyMismatch();
 	}
+
+	/**
+	 * ListObjects/ListObjectVersions/ListMultipartUploads가 소유자 아이디를 확인하는지 테스트
+	 */
+	@Test
+	@Tag("List")
+	void testBucketOwnerListOperations() {
+		testV2.testBucketOwnerListOperations();
+	}
+
+	/**
+	 * 버킷 위치/ACL/버저닝 API가 소유자 아이디를 확인하고, 다르면 설정이 바뀌지 않는지 테스트
+	 */
+	@Test
+	@Tag("Bucket")
+	void testBucketOwnerBucketConfig() {
+		testV2.testBucketOwnerBucketConfig();
+	}
+
+	/**
+	 * 버킷 태그/CORS 설정·조회·삭제가 소유자 아이디를 확인하는지 테스트
+	 */
+	@Test
+	@Tag("Bucket")
+	void testBucketOwnerBucketTaggingCors() {
+		testV2.testBucketOwnerBucketTaggingCors();
+	}
+
+	/**
+	 * 설정이 없는 버킷에서 소유자가 맞으면 404, 다르면 403을 반환하는지 테스트
+	 */
+	@Test
+	@Tag("Priority")
+	void testBucketOwnerNotConfigured() {
+		testV2.testBucketOwnerNotConfigured();
+	}
+
+	/**
+	 * HeadObject/GetObjectAcl/GetObjectAttributes가 소유자 아이디를 확인하는지 테스트
+	 */
+	@Test
+	@Tag("Object")
+	void testBucketOwnerObjectRead() {
+		testV2.testBucketOwnerObjectRead();
+	}
+
+	/**
+	 * 오브젝트 태그 설정·조회·삭제가 소유자 아이디를 확인하는지 테스트
+	 */
+	@Test
+	@Tag("Object")
+	void testBucketOwnerObjectTagging() {
+		testV2.testBucketOwnerObjectTagging();
+	}
+
+	/**
+	 * 없는 키를 조회할 때 소유자가 맞으면 404, 다르면 403을 반환하는지 테스트
+	 */
+	@Test
+	@Tag("Priority")
+	void testBucketOwnerKeyNotExist() {
+		testV2.testBucketOwnerKeyNotExist();
+	}
+
+	/**
+	 * 잘못된 소유자 아이디로 DeleteObjects를 하면 하나도 지워지지 않는지 테스트
+	 */
+	@Test
+	@Tag("Object")
+	void testBucketOwnerDeleteObjects() {
+		testV2.testBucketOwnerDeleteObjects();
+	}
+
+	/**
+	 * 멀티파트 업로드의 각 단계가 소유자 아이디를 확인하는지 테스트
+	 */
+	@Test
+	@Tag("Multipart")
+	void testBucketOwnerMultipart() {
+		testV2.testBucketOwnerMultipart();
+	}
+
+	/**
+	 * 잘못된 소유자 아이디로 버킷 삭제를 실패하고, 올바른 아이디로는 삭제되는지 테스트
+	 */
+	@Test
+	@Tag("Bucket")
+	void testBucketOwnerDeleteBucket() {
+		testV2.testBucketOwnerDeleteBucket();
+	}
+
+	/**
+	 * 버킷이 없으면 소유자 아이디와 상관없이 404를 반환하는지 테스트
+	 */
+	@Test
+	@Tag("Priority")
+	void testBucketOwnerBucketNotExist() {
+		testV2.testBucketOwnerBucketNotExist();
+	}
+
+	/**
+	 * 다른 사용자는 소유자 아이디가 맞아도 접근할 수 없는지 테스트
+	 */
+	@Test
+	@Tag("Access")
+	void testBucketOwnerOtherUser() {
+		testV2.testBucketOwnerOtherUser();
+	}
 }

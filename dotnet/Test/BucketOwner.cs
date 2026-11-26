@@ -8,8 +8,12 @@
 * KSAN 프로젝트의 개발자 및 개발사는 이 프로그램을 사용한 결과에 따른 어떠한 책임도 지지 않습니다.
 * KSAN 개발팀은 사전 공지, 허락, 동의 없이 KSAN 개발에 관련된 모든 결과물에 대한 LICENSE 방식을 변경 할 권리가 있습니다.
 */
+using Amazon.Runtime;
+using Amazon.S3;
+using Amazon.S3.Model;
 using s3tests.Utils;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using Xunit;
 
@@ -320,5 +324,289 @@ namespace s3tests.Test
 
 			client.AbortMultipartUpload(targetBucket, target, uploadId);
 		}
+
+		#region 그 밖의 API (AWS 실측 기준)
+		// x-amz-expected-bucket-owner 는 버킷·오브젝트를 다루는 거의 모든 API 가 받는다.
+		// 소유자가 다르면 다른 검사보다 먼저 403 AccessDenied 다.
+
+		private static void AssertOwnerMismatch(Action call) => AssertS3Error(HttpStatusCode.Forbidden, MainData.ACCESS_DENIED, call);
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "List")]
+		[Trait(MainData.Explanation, "목록 조회 API(ListObjects, ListObjectVersions, ListMultipartUploads)가 소유자 아이디를 확인하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketOwnerListOperations()
+		{
+			TestId = 17;
+			var key = "TestBucketOwnerListOperations";
+			var bucketName = SetupObjects([key]);
+			var client = GetClient();
+			client.InitiateMultipartUpload(bucketName, "multi");
+
+			Assert.Single(client.ListObjects(bucketName, expectedBucketOwner: Owner).S3Objects);
+			Assert.Single(client.ListVersions(bucketName, expectedBucketOwner: Owner).Versions);
+			Assert.Single(client.ListMultipartUploads(bucketName, expectedBucketOwner: Owner).MultipartUploads);
+
+			AssertOwnerMismatch(() => client.ListObjects(bucketName, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.ListVersions(bucketName, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.ListMultipartUploads(bucketName, expectedBucketOwner: WrongOwner));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Bucket")]
+		[Trait(MainData.Explanation, "버킷 설정 API(Location, ACL, Versioning)가 소유자 아이디를 확인하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketOwnerBucketConfig()
+		{
+			TestId = 18;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			client.GetBucketLocation(bucketName, expectedBucketOwner: Owner);
+			client.GetBucketACL(bucketName, expectedBucketOwner: Owner);
+			AssertOwnerMismatch(() => client.GetBucketLocation(bucketName, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.GetBucketACL(bucketName, expectedBucketOwner: WrongOwner));
+
+			// 소유자가 다르면 설정이 바뀌지 않는다
+			AssertOwnerMismatch(() => client.PutBucketVersioning(bucketName, status: VersionStatus.Enabled, expectedBucketOwner: WrongOwner));
+			Assert.Equal(VersionStatus.Off, client.GetBucketVersioning(bucketName, expectedBucketOwner: Owner).VersioningConfig.Status);
+			client.PutBucketVersioning(bucketName, status: VersionStatus.Enabled, expectedBucketOwner: Owner);
+			AssertOwnerMismatch(() => client.GetBucketVersioning(bucketName, expectedBucketOwner: WrongOwner));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Bucket")]
+		[Trait(MainData.Explanation, "버킷 태그·CORS 설정/조회/삭제가 소유자 아이디를 확인하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketOwnerBucketTaggingCors()
+		{
+			TestId = 19;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var tagSet = new List<Tag>() { new() { Key = "a", Value = "b" } };
+			var cors = new CORSConfiguration() { Rules = [new CORSRule() { AllowedMethods = ["GET"], AllowedOrigins = ["*"] }] };
+
+			AssertOwnerMismatch(() => client.PutBucketTagging(bucketName, tagSet, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.PutCORSConfiguration(bucketName, cors, expectedBucketOwner: WrongOwner));
+			client.PutBucketTagging(bucketName, tagSet, expectedBucketOwner: Owner);
+			client.PutCORSConfiguration(bucketName, cors, expectedBucketOwner: Owner);
+			CheckTagSet(tagSet, client.GetBucketTagging(bucketName, expectedBucketOwner: Owner).TagSet);
+			Assert.Single(client.GetCORSConfiguration(bucketName, expectedBucketOwner: Owner).Configuration.Rules);
+
+			AssertOwnerMismatch(() => client.GetBucketTagging(bucketName, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.GetCORSConfiguration(bucketName, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.DeleteBucketTagging(bucketName, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.DeleteCORSConfiguration(bucketName, expectedBucketOwner: WrongOwner));
+			// 삭제되지 않았다
+			CheckTagSet(tagSet, client.GetBucketTagging(bucketName).TagSet);
+			client.DeleteBucketTagging(bucketName, expectedBucketOwner: Owner);
+			client.DeleteCORSConfiguration(bucketName, expectedBucketOwner: Owner);
+			CheckErrorResponse(HttpStatusCode.NotFound, () => client.GetBucketTagging(bucketName), MainData.NO_SUCH_TAG_SET);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Priority")]
+		[Trait(MainData.Explanation, "설정이 없는 버킷에서 소유자가 맞으면 404, 다르면 403인지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketOwnerNotConfigured()
+		{
+			TestId = 20;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			var requests = new List<(Func<string, AmazonWebServiceResponse> Request, string ErrorCode)>()
+			{
+				(o => client.GetBucketPolicy(bucketName, expectedBucketOwner: o), MainData.NO_SUCH_BUCKET_POLICY),
+				(o => client.GetLifecycleConfiguration(bucketName, expectedBucketOwner: o), MainData.NO_SUCH_LIFECYCLE_CONFIGURATION),
+				(o => client.GetCORSConfiguration(bucketName, expectedBucketOwner: o), MainData.NO_SUCH_CORS_CONFIGURATION),
+				(o => client.GetBucketWebsite(bucketName, expectedBucketOwner: o), MainData.NO_SUCH_WEBSITE_CONFIGURATION),
+			};
+			foreach (var (request, errorCode) in requests)
+			{
+				// 소유자가 맞으면 설정 없음(404), 다르면 설정을 보기 전에 403 이다
+				CheckErrorResponse(HttpStatusCode.NotFound, () => request(Owner), errorCode);
+				AssertOwnerMismatch(() => request(WrongOwner));
+			}
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "오브젝트 조회 API(HeadObject, GetObjectAcl, GetObjectAttributes)가 소유자 아이디를 확인하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketOwnerObjectRead()
+		{
+			TestId = 21;
+			var key = "TestBucketOwnerObjectRead";
+			var bucketName = SetupObjects([key]);
+			var client = GetClient();
+
+			Assert.Equal(key.Length, client.HeadObject(bucketName, key, expectedBucketOwner: Owner).ContentLength);
+			Assert.Single(client.GetObjectACL(bucketName, key, expectedBucketOwner: Owner).AccessControlList.Grants);
+			var response = client.GetObjectAttributes(bucketName, key, [ObjectAttributes.ObjectSize], expectedBucketOwner: Owner);
+			Assert.Equal(key.Length, response.ObjectSize);
+
+			AssertS3Error(HttpStatusCode.Forbidden, null, () => client.HeadObject(bucketName, key, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.GetObjectACL(bucketName, key, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.GetObjectAttributes(bucketName, key, [ObjectAttributes.ObjectSize], expectedBucketOwner: WrongOwner));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "오브젝트 태그 설정/조회/삭제가 소유자 아이디를 확인하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketOwnerObjectTagging()
+		{
+			TestId = 22;
+			var key = "TestBucketOwnerObjectTagging";
+			var bucketName = SetupObjects([key]);
+			var client = GetClient();
+			var tagging = new Tagging() { TagSet = [new Tag() { Key = "a", Value = "b" }] };
+
+			AssertOwnerMismatch(() => client.PutObjectTagging(bucketName, key, tagging, expectedBucketOwner: WrongOwner));
+			Assert.Empty(client.GetObjectTagging(bucketName, key, expectedBucketOwner: Owner).Tagging ?? []);
+			client.PutObjectTagging(bucketName, key, tagging, expectedBucketOwner: Owner);
+
+			AssertOwnerMismatch(() => client.GetObjectTagging(bucketName, key, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.DeleteObjectTagging(bucketName, key, expectedBucketOwner: WrongOwner));
+			CheckTagSet(tagging.TagSet, client.GetObjectTagging(bucketName, key, expectedBucketOwner: Owner).Tagging);
+			client.DeleteObjectTagging(bucketName, key, expectedBucketOwner: Owner);
+			Assert.Empty(client.GetObjectTagging(bucketName, key).Tagging ?? []);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Priority")]
+		[Trait(MainData.Explanation, "없는 키를 조회할 때 소유자가 맞으면 404, 다르면 403인지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketOwnerKeyNotExist()
+		{
+			TestId = 23;
+			var key = "TestBucketOwnerKeyNotExist";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			// 소유자가 맞으면 없는 키(404), 다르면 키를 보기 전에 403 이다
+			AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_KEY, () => client.GetObject(bucketName, key, expectedBucketOwner: Owner));
+			AssertOwnerMismatch(() => client.GetObject(bucketName, key, expectedBucketOwner: WrongOwner));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "잘못된 소유자 아이디로 DeleteObjects를 하면 하나도 지워지지 않는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketOwnerDeleteObjects()
+		{
+			TestId = 24;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			SetupObjects(["a", "b"], bucketName);
+			var delete = new List<KeyVersion>() { new() { Key = "a" }, new() { Key = "b" } };
+
+			// 요청 전체가 거부되고 하나도 지워지지 않는다
+			AssertOwnerMismatch(() => client.DeleteObjects(bucketName, delete, expectedBucketOwner: WrongOwner));
+			Assert.Equal(2, client.ListObjectsV2(bucketName).KeyCount);
+
+			var response = client.DeleteObjects(bucketName, delete, expectedBucketOwner: Owner);
+			Assert.Equal(2, response.DeletedObjects.Count);
+			Assert.Equal(0, client.ListObjectsV2(bucketName).KeyCount);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Multipart")]
+		[Trait(MainData.Explanation, "멀티파트 API 전체가 소유자 아이디를 확인하고 거부된 요청은 업로드를 건드리지 않는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketOwnerMultipart()
+		{
+			TestId = 25;
+			var key = "TestBucketOwnerMultipart";
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			AssertOwnerMismatch(() => client.InitiateMultipartUpload(bucketName, key, expectedBucketOwner: WrongOwner));
+			var uploadId = client.InitiateMultipartUpload(bucketName, key, expectedBucketOwner: Owner).UploadId;
+
+			AssertOwnerMismatch(() => client.UploadPart(bucketName, key, uploadId, "content", 1, expectedBucketOwner: WrongOwner));
+			var etag = client.UploadPart(bucketName, key, uploadId, "content", 1, expectedBucketOwner: Owner).ETag;
+
+			AssertOwnerMismatch(() => client.ListParts(bucketName, key, uploadId, expectedBucketOwner: WrongOwner));
+			var response = client.ListParts(bucketName, key, uploadId, expectedBucketOwner: Owner);
+			Assert.Single(response.Parts);
+
+			var parts = new List<PartETag>() { new(1, etag) };
+			AssertOwnerMismatch(() => client.AbortMultipartUpload(bucketName, key, uploadId, expectedBucketOwner: WrongOwner));
+			AssertOwnerMismatch(() => client.CompleteMultipartUpload(bucketName, key, uploadId, parts, expectedBucketOwner: WrongOwner));
+			// 거부된 중단·완료는 업로드를 건드리지 않는다
+			client.CompleteMultipartUpload(bucketName, key, uploadId, parts, expectedBucketOwner: Owner);
+			SucceedGetObject(client, bucketName, key, "content");
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Bucket")]
+		[Trait(MainData.Explanation, "잘못된 소유자 아이디로는 버킷을 지울 수 없고 올바른 소유자 아이디로는 지워지는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestBucketOwnerDeleteBucket()
+		{
+			TestId = 26;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+			AssertOwnerMismatch(() => client.DeleteBucket(bucketName, expectedBucketOwner: WrongOwner));
+			client.HeadBucket(bucketName);
+
+			client.DeleteBucket(bucketName, expectedBucketOwner: Owner);
+			AssertS3Error(HttpStatusCode.NotFound, null, () => client.HeadBucket(bucketName));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Priority")]
+		[Trait(MainData.Explanation, "버킷이 없으면 소유자 값과 상관없이 404 NoSuchBucket인지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketOwnerBucketNotExist()
+		{
+			TestId = 27;
+			var client = GetClient();
+			var bucketName = GetNewBucketName(false);
+			// 버킷이 없으면 소유자 값과 상관없이 404 다
+			foreach (var owner in new[] { Owner, WrongOwner })
+				AssertS3Error(HttpStatusCode.NotFound, MainData.NO_SUCH_BUCKET, () => client.ListObjectsV2(bucketName, expectedBucketOwner: owner));
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "BucketOwner")]
+		[Trait(MainData.Minor, "Access")]
+		[Trait(MainData.Explanation, "소유자 아이디가 맞아도 다른 사용자에게 권한이 생기지 않는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestBucketOwnerOtherUser()
+		{
+			TestId = 28;
+			var key = "TestBucketOwnerOtherUser";
+			var bucketName = SetupObjects([key]);
+			var altClient = GetAltClient();
+			// 소유자 값이 맞아도 권한이 생기지는 않는다
+			foreach (var owner in new[] { Owner, WrongOwner })
+			{
+				AssertOwnerMismatch(() => altClient.ListObjectsV2(bucketName, expectedBucketOwner: owner));
+				AssertOwnerMismatch(() => altClient.GetObject(bucketName, key, expectedBucketOwner: owner));
+			}
+		}
+
+		private static void CheckTagSet(List<Tag> expected, List<Tag> actual)
+		{
+			Assert.Equal(expected.Count, actual.Count);
+			for (int i = 0; i < expected.Count; i++)
+			{
+				Assert.Equal(expected[i].Key, actual[i].Key);
+				Assert.Equal(expected[i].Value, actual[i].Value);
+			}
+		}
+
+		#endregion
 	}
 }

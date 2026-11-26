@@ -222,9 +222,10 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public DeleteBucketResponse DeleteBucket(string bucketName)
+		public DeleteBucketResponse DeleteBucket(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new DeleteBucketRequest() { BucketName = bucketName };
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return DeleteBucket(request);
 		}
 
@@ -235,9 +236,10 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetBucketLocationResponse GetBucketLocation(string bucketName)
+		public GetBucketLocationResponse GetBucketLocation(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new GetBucketLocationRequest() { BucketName = bucketName };
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetBucketLocation(request);
 		}
 
@@ -273,7 +275,7 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public PutBucketVersioningResponse PutBucketVersioning(string bucketName, bool? enableMfaDelete = null, VersionStatus status = null)
+		public PutBucketVersioningResponse PutBucketVersioning(string bucketName, bool? enableMfaDelete = null, VersionStatus status = null, string expectedBucketOwner = null)
 		{
 			// SDK v4의 VersioningConfig getter는 값을 저장하지 않는 새 인스턴스를 돌려주므로
 			// 프로퍼티 경유로 설정하면 유실된다. 반드시 객체를 만들어 대입할 것.
@@ -287,6 +289,7 @@ namespace s3tests.Test
 				VersioningConfig = config,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return PutBucketVersioning(request);
 		}
 
@@ -297,20 +300,22 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetBucketVersioningResponse GetBucketVersioning(string bucketName)
+		public GetBucketVersioningResponse GetBucketVersioning(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new GetBucketVersioningRequest() { BucketName = bucketName };
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetBucketVersioning(request);
 		}
 
-		public GetACLResponse GetBucketACL(string bucketName)
+		public GetACLResponse GetBucketACL(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new GetBucketAclRequest()
 			{
 				BucketName = bucketName
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			if (Client == null) return null;
 			var response = Client.GetBucketAclAsync(request);
 			response.Wait();
@@ -374,7 +379,7 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public PutCORSConfigurationResponse PutCORSConfiguration(string bucketName, CORSConfiguration Configuration)
+		public PutCORSConfigurationResponse PutCORSConfiguration(string bucketName, CORSConfiguration Configuration, string expectedBucketOwner = null)
 		{
 			var request = new PutCORSConfigurationRequest()
 			{
@@ -382,6 +387,7 @@ namespace s3tests.Test
 				Configuration = Configuration,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return PutCORSConfiguration(request);
 		}
 
@@ -392,13 +398,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetCORSConfigurationResponse GetCORSConfiguration(string bucketName)
+		public GetCORSConfigurationResponse GetCORSConfiguration(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new GetCORSConfigurationRequest()
 			{
 				BucketName = bucketName,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetCORSConfiguration(request);
 		}
 
@@ -409,13 +416,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public DeleteCORSConfigurationResponse DeleteCORSConfiguration(string bucketName)
+		public DeleteCORSConfigurationResponse DeleteCORSConfiguration(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new DeleteCORSConfigurationRequest()
 			{
 				BucketName = bucketName,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return DeleteCORSConfiguration(request);
 		}
 
@@ -426,13 +434,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetBucketTaggingResponse GetBucketTagging(string bucketName)
+		public GetBucketTaggingResponse GetBucketTagging(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new GetBucketTaggingRequest()
 			{
 				BucketName = bucketName,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetBucketTagging(request);
 		}
 
@@ -443,7 +452,7 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public PutBucketTaggingResponse PutBucketTagging(string bucketName, List<Tag> tagSet)
+		public PutBucketTaggingResponse PutBucketTagging(string bucketName, List<Tag> tagSet, string expectedBucketOwner = null)
 		{
 			var request = new PutBucketTaggingRequest()
 			{
@@ -451,6 +460,7 @@ namespace s3tests.Test
 				TagSet = tagSet,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return PutBucketTagging(request);
 		}
 
@@ -461,13 +471,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public DeleteBucketTaggingResponse DeleteBucketTagging(string bucketName)
+		public DeleteBucketTaggingResponse DeleteBucketTagging(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new DeleteBucketTaggingRequest()
 			{
 				BucketName = bucketName,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return DeleteBucketTagging(request);
 		}
 
@@ -498,13 +509,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetLifecycleConfigurationResponse GetLifecycleConfiguration(string bucketName)
+		public GetLifecycleConfigurationResponse GetLifecycleConfiguration(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new GetLifecycleConfigurationRequest()
 			{
 				BucketName = bucketName,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetLifecycleConfiguration(request);
 		}
 
@@ -551,13 +563,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetBucketPolicyResponse GetBucketPolicy(string bucketName)
+		public GetBucketPolicyResponse GetBucketPolicy(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new GetBucketPolicyRequest()
 			{
 				BucketName = bucketName,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetBucketPolicy(request);
 		}
 
@@ -741,13 +754,14 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetBucketWebsiteResponse GetBucketWebsite(string bucketName)
+		public GetBucketWebsiteResponse GetBucketWebsite(string bucketName, string expectedBucketOwner = null)
 		{
 			var request = new GetBucketWebsiteRequest()
 			{
 				BucketName = bucketName
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetBucketWebsite(request);
 		}
 
@@ -1295,7 +1309,7 @@ namespace s3tests.Test
 		}
 		public ListObjectsResponse ListObjects(string bucketName, string delimiter = null, string marker = null,
 											int maxKeys = -1, string prefix = null, string encodingTypeName = null,
-											int? rawMaxKeys = null)
+											int? rawMaxKeys = null, string expectedBucketOwner = null)
 		{
 			var request = new ListObjectsRequest() { BucketName = bucketName };
 
@@ -1308,6 +1322,7 @@ namespace s3tests.Test
 			// 음수처럼 잘못된 값을 그대로 보낼 때 쓴다
 			if (rawMaxKeys != null) request.MaxKeys = rawMaxKeys.Value;
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return ListObjects(request);
 		}
 
@@ -1348,7 +1363,7 @@ namespace s3tests.Test
 		}
 		public ListVersionsResponse ListVersions(string bucketName, string delimiter = null, string keyMarker = null,
 			int maxKeys = -1, string prefix = null, string encodingTypeName = null, bool useLegacyMaxKeys = true,
-			string versionIdMarker = null, int? rawMaxKeys = null)
+			string versionIdMarker = null, int? rawMaxKeys = null, string expectedBucketOwner = null)
 		{
 			var request = new ListVersionsRequest() { BucketName = bucketName };
 
@@ -1363,6 +1378,7 @@ namespace s3tests.Test
 			// 음수처럼 잘못된 값을 그대로 보낼 때 쓴다
 			if (rawMaxKeys != null) request.MaxKeys = rawMaxKeys.Value;
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return ListVersions(request);
 		}
 
@@ -1400,7 +1416,7 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public DeleteObjectsResponse DeleteObjects(string bucketName, List<KeyVersion> keyList, bool? quiet = null,
-			List<KeyValuePair<string, string>> headerList = null, bool? bypassGovernanceRetention = null)
+			List<KeyValuePair<string, string>> headerList = null, bool? bypassGovernanceRetention = null, string expectedBucketOwner = null)
 		{
 			var request = new DeleteObjectsRequest()
 			{
@@ -1412,6 +1428,7 @@ namespace s3tests.Test
 			if (bypassGovernanceRetention.HasValue) request.BypassGovernanceRetention = bypassGovernanceRetention.Value;
 			ApplyRequestHeaders(request, null, headerList);
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return DeleteObjects(request);
 		}
 
@@ -1453,7 +1470,7 @@ namespace s3tests.Test
 			string versionId = null, SSECustomerKey sseCustomerKey = null, ChecksumMode checksumMode = null,
 			string range = null, int? partNumber = null, string responseContentType = null,
 			string responseContentLanguage = null, string responseCacheControl = null,
-			string responseContentDisposition = null, string responseContentEncoding = null)
+			string responseContentDisposition = null, string responseContentEncoding = null, string expectedBucketOwner = null)
 		{
 			var request = new GetObjectMetadataRequest()
 			{
@@ -1485,10 +1502,11 @@ namespace s3tests.Test
 				request.ServerSideEncryptionCustomerProvidedKeyMD5 = sseCustomerKey.MD5;
 			}
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetObjectMetadata(request);
 		}
 
-		public GetACLResponse GetObjectACL(string bucketName, string key, string versionId = null)
+		public GetACLResponse GetObjectACL(string bucketName, string key, string versionId = null, string expectedBucketOwner = null)
 		{
 			var request = new GetObjectAclRequest()
 			{
@@ -1498,6 +1516,7 @@ namespace s3tests.Test
 
 			if (versionId != null) request.VersionId = versionId;
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			if (Client == null) return null;
 			var response = Client.GetObjectAclAsync(request);
 			response.Wait();
@@ -1539,7 +1558,7 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public GetObjectTaggingResponse GetObjectTagging(string bucketName, string key, string versionId = null)
+		public GetObjectTaggingResponse GetObjectTagging(string bucketName, string key, string versionId = null, string expectedBucketOwner = null)
 		{
 			var request = new GetObjectTaggingRequest()
 			{
@@ -1548,6 +1567,7 @@ namespace s3tests.Test
 			};
 			if (versionId != null) request.VersionId = versionId;
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetObjectTagging(request);
 		}
 
@@ -1558,7 +1578,7 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public PutObjectTaggingResponse PutObjectTagging(string bucketName, string key, Tagging tagging, string versionId = null)
+		public PutObjectTaggingResponse PutObjectTagging(string bucketName, string key, Tagging tagging, string versionId = null, string expectedBucketOwner = null)
 		{
 			var request = new PutObjectTaggingRequest()
 			{
@@ -1568,6 +1588,7 @@ namespace s3tests.Test
 			};
 			if (versionId != null) request.VersionId = versionId;
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return PutObjectTagging(request);
 		}
 
@@ -1578,7 +1599,7 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public DeleteObjectTaggingResponse DeleteObjectTagging(string bucketName, string key, string versionId = null)
+		public DeleteObjectTaggingResponse DeleteObjectTagging(string bucketName, string key, string versionId = null, string expectedBucketOwner = null)
 		{
 			var request = new DeleteObjectTaggingRequest()
 			{
@@ -1587,6 +1608,7 @@ namespace s3tests.Test
 			};
 			if (versionId != null) request.VersionId = versionId;
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return DeleteObjectTagging(request);
 		}
 
@@ -1757,7 +1779,7 @@ namespace s3tests.Test
 			List<KeyValuePair<string, string>> metadataList = null, ServerSideEncryptionMethod sseKey = null, SSECustomerKey sseCustomerKey = null,
 			ChecksumAlgorithm checksumAlgorithm = null, ChecksumType checksumType = null,
 			List<KeyValuePair<string, string>> headerList = null, List<Tag> tagSet = null,
-			S3StorageClass storageClass = null)
+			S3StorageClass storageClass = null, string expectedBucketOwner = null)
 		{
 			var request = new InitiateMultipartUploadRequest()
 			{
@@ -1787,6 +1809,7 @@ namespace s3tests.Test
 				request.ServerSideEncryptionCustomerProvidedKeyMD5 = sseCustomerKey.MD5;
 			}
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return InitiateMultipartUpload(request);
 		}
 
@@ -1799,7 +1822,7 @@ namespace s3tests.Test
 		}
 		public UploadPartResponse UploadPart(string bucketName, string key, string uploadId, string body,
 			int partNumber, SSECustomerKey sseC = null, ChecksumAlgorithm checksumAlgorithm = null, string checksumValue = null,
-			string md5Digest = null)
+			string md5Digest = null, string expectedBucketOwner = null)
 		{
 			var request = new UploadPartRequest()
 			{
@@ -1831,6 +1854,7 @@ namespace s3tests.Test
 				request.ServerSideEncryptionCustomerProvidedKeyMD5 = sseC.MD5;
 			}
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return UploadPart(request);
 		}
 
@@ -1910,7 +1934,7 @@ namespace s3tests.Test
 		public CompleteMultipartUploadResponse CompleteMultipartUpload(string bucketName, string key,
 			string uploadId, List<PartETag> parts, ChecksumType checksumType = null,
 			string ifMatch = null, string ifNoneMatch = null,
-			List<KeyValuePair<string, string>> headerList = null)
+			List<KeyValuePair<string, string>> headerList = null, string expectedBucketOwner = null)
 		{
 			var request = new CompleteMultipartUploadRequest()
 			{
@@ -1924,6 +1948,7 @@ namespace s3tests.Test
 			if (ifNoneMatch != null) request.IfNoneMatch = ifNoneMatch;
 			ApplyRequestHeaders(request, null, headerList);
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return CompleteMultipartUpload(request);
 		}
 
@@ -1936,7 +1961,7 @@ namespace s3tests.Test
 		}
 
 		public GetObjectAttributesResponse GetObjectAttributes(string bucketName, string key,
-			List<ObjectAttributes> objectAttributes = null, string versionId = null)
+			List<ObjectAttributes> objectAttributes = null, string versionId = null, string expectedBucketOwner = null)
 		{
 			var request = new GetObjectAttributesRequest()
 			{
@@ -1945,6 +1970,7 @@ namespace s3tests.Test
 			};
 			if (objectAttributes != null) request.ObjectAttributes = objectAttributes;
 			if (versionId != null) request.VersionId = versionId;
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return GetObjectAttributes(request);
 		}
 
@@ -1955,7 +1981,7 @@ namespace s3tests.Test
 			response.Wait();
 			return response.Result;
 		}
-		public AbortMultipartUploadResponse AbortMultipartUpload(string bucketName, string key, string uploadId)
+		public AbortMultipartUploadResponse AbortMultipartUpload(string bucketName, string key, string uploadId, string expectedBucketOwner = null)
 		{
 			var request = new AbortMultipartUploadRequest()
 			{
@@ -1964,6 +1990,7 @@ namespace s3tests.Test
 				UploadId = uploadId,
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return AbortMultipartUpload(request);
 		}
 
@@ -1975,7 +2002,7 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public ListMultipartUploadsResponse ListMultipartUploads(string bucketName, string keyMarker = null,
-			string uploadIdMarker = null, string prefix = null, string delimiter = null, int? maxUploads = null)
+			string uploadIdMarker = null, string prefix = null, string delimiter = null, int? maxUploads = null, string expectedBucketOwner = null)
 		{
 			var request = new ListMultipartUploadsRequest()
 			{
@@ -1989,6 +2016,7 @@ namespace s3tests.Test
 			if (keyMarker != null) request.KeyMarker = keyMarker;
 			if (uploadIdMarker != null) request.UploadIdMarker = uploadIdMarker;
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return ListMultipartUploads(request);
 		}
 
@@ -2000,7 +2028,7 @@ namespace s3tests.Test
 			return response.Result;
 		}
 		public ListPartsResponse ListParts(string bucketName, string key, string uploadId,
-			int maxParts = 1000, int partNumberMarker = 0)
+			int maxParts = 1000, int partNumberMarker = 0, string expectedBucketOwner = null)
 		{
 			var request = new ListPartsRequest()
 			{
@@ -2011,6 +2039,7 @@ namespace s3tests.Test
 				PartNumberMarker = partNumberMarker.ToString(),
 			};
 
+			if (expectedBucketOwner != null) request.ExpectedBucketOwner = expectedBucketOwner;
 			return ListParts(request);
 		}
 		#endregion

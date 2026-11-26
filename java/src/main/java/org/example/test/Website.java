@@ -375,6 +375,98 @@ public class Website extends TestBase
 		assertEquals("index.html", response.getIndexDocumentSuffix());
 	}
 
+	// region 설정 검증 보강 (AWS 실측 기준)
+
+	@Test
+	@Tag("RoutingRule")
+	public void testWebsiteValidForms() {
+		var client = getClient();
+		var bucketName = createBucket(client, 34);
+
+		var rules = List.of(
+				// 조건 두 가지를 함께 쓸 수 있다
+				new RoutingRule()
+						.withCondition(new RoutingRuleCondition().withKeyPrefixEquals("docs/")
+								.withHttpErrorCodeReturnedEquals("404"))
+						.withRedirect(new RedirectRule().withHostName("example.com")),
+				// 리다이렉트 코드는 300 을 뺀 3XX, 오류 코드는 4XX·5XX
+				new RoutingRule()
+						.withCondition(new RoutingRuleCondition().withHttpErrorCodeReturnedEquals("503"))
+						.withRedirect(new RedirectRule().withHostName("example.com").withHttpRedirectCode("307")));
+
+		// 오류 문서 키에는 / 를 쓸 수 있다(인덱스 접미어와 다르다)
+		var webConfig = new BucketWebsiteConfiguration("index.html", "errors/404.html");
+		webConfig.setRoutingRules(rules);
+		client.setBucketWebsiteConfiguration(bucketName, webConfig);
+
+		var response = client.getBucketWebsiteConfiguration(bucketName);
+		assertEquals("errors/404.html", response.getErrorDocument());
+		checkRoutingRules(rules, response.getRoutingRules());
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testWebsiteRedirectAllEmptyHost() {
+		var client = getClient();
+		var bucketName = createBucket(client, 35);
+
+		var webConfig = new BucketWebsiteConfiguration();
+		webConfig.setRedirectAllRequestsTo(new RedirectRule().withHostName(""));
+
+		checkPutWebsiteFailed(client, bucketName, webConfig, MainData.INVALID_REQUEST);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testWebsiteRedirectAllWithErrorDocument() {
+		var client = getClient();
+		var bucketName = createBucket(client, 36);
+
+		var webConfig = new BucketWebsiteConfiguration();
+		webConfig.setRedirectAllRequestsTo(new RedirectRule().withHostName("example.com"));
+		webConfig.setErrorDocument("error.html");
+
+		checkPutWebsiteFailed(client, bucketName, webConfig, MainData.INVALID_ARGUMENT);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testWebsiteRoutingRuleInvalidProtocol() {
+		var client = getClient();
+		var bucketName = createBucket(client, 37);
+
+		var webConfig = new BucketWebsiteConfiguration("index.html");
+		webConfig.setRoutingRules(List.of(new RoutingRule()
+				.withRedirect(new RedirectRule().withHostName("example.com").withProtocol("ftp"))));
+
+		checkPutWebsiteFailed(client, bucketName, webConfig, MainData.INVALID_REQUEST);
+	}
+
+	@Test
+	@Tag("ERROR")
+	public void testWebsiteRoutingRuleCodeOutOfRange() {
+		var client = getClient();
+		var bucketName = createBucket(client, 38);
+
+		var invalidRules = List.of(
+				// 300 은 리다이렉트 코드로 쓸 수 없다
+				new RoutingRule()
+						.withRedirect(new RedirectRule().withHostName("example.com").withHttpRedirectCode("300")),
+				// 오류 코드는 4XX·5XX 만
+				new RoutingRule()
+						.withCondition(new RoutingRuleCondition().withHttpErrorCodeReturnedEquals("600"))
+						.withRedirect(new RedirectRule().withHostName("example.com")));
+
+		for (var rule : invalidRules) {
+			var webConfig = new BucketWebsiteConfiguration("index.html");
+			webConfig.setRoutingRules(List.of(rule));
+
+			checkPutWebsiteFailed(client, bucketName, webConfig, MainData.INVALID_REQUEST);
+		}
+	}
+
+	// endregion
+
 	private List<RoutingRule> createRoutingRules(int count) {
 		var rules = new ArrayList<RoutingRule>();
 		for (int i = 0; i < count; i++) {

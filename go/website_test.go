@@ -676,3 +676,96 @@ func checkPutWebsiteFailed(t *testing.T, s *suite, bucket string, configuration 
 	_, err = s.client.GetBucketWebsite(ctx, &s3.GetBucketWebsiteInput{Bucket: aws.String(bucket)})
 	assertS3Error(t, err, 404, "NoSuchWebsiteConfiguration")
 }
+
+// region 설정 검증 보강 (AWS 실측 기준)
+
+// 조건 두 가지, 307·503 코드, / 가 든 오류 문서 키를 설정할 수 있는지 확인
+func TestWebsiteValidForms(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 34)
+	rules := []types.RoutingRule{
+		// 조건 두 가지를 함께 쓸 수 있다
+		{
+			Condition: &types.Condition{KeyPrefixEquals: aws.String("docs/"), HttpErrorCodeReturnedEquals: aws.String("404")},
+			Redirect:  &types.Redirect{HostName: aws.String("example.com")},
+		},
+		// 리다이렉트 코드는 300 을 뺀 3XX, 오류 코드는 4XX·5XX
+		{
+			Condition: &types.Condition{HttpErrorCodeReturnedEquals: aws.String("503")},
+			Redirect:  &types.Redirect{HostName: aws.String("example.com"), HttpRedirectCode: aws.String("307")},
+		},
+	}
+	putWebsite(t, s, bucket, &types.WebsiteConfiguration{
+		IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")},
+		// 오류 문서 키에는 / 를 쓸 수 있다(인덱스 접미어와 다르다)
+		ErrorDocument: &types.ErrorDocument{Key: aws.String("errors/404.html")},
+		RoutingRules:  rules,
+	})
+
+	out := getWebsite(t, s, bucket)
+	if out.ErrorDocument == nil || aws.ToString(out.ErrorDocument.Key) != "errors/404.html" {
+		t.Fatalf("ErrorDocument = %#v, want errors/404.html", out.ErrorDocument)
+	}
+	assertRoutingRules(t, rules, out.RoutingRules)
+}
+
+// RedirectAllRequestsTo의 HostName이 비어있으면 실패하는지 확인
+func TestWebsiteRedirectAllEmptyHost(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 35)
+	checkPutWebsiteFailed(t, s, bucket, &types.WebsiteConfiguration{
+		RedirectAllRequestsTo: &types.RedirectAllRequestsTo{HostName: aws.String("")},
+	}, "InvalidRequest")
+}
+
+// RedirectAllRequestsTo와 ErrorDocument를 함께 설정하면 실패하는지 확인
+func TestWebsiteRedirectAllWithErrorDocument(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 36)
+	checkPutWebsiteFailed(t, s, bucket, &types.WebsiteConfiguration{
+		RedirectAllRequestsTo: &types.RedirectAllRequestsTo{HostName: aws.String("example.com")},
+		ErrorDocument:         &types.ErrorDocument{Key: aws.String("error.html")},
+	}, "InvalidArgument")
+}
+
+// RoutingRule의 Protocol이 http/https가 아니면 실패하는지 확인
+func TestWebsiteRoutingRuleInvalidProtocol(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 37)
+	checkPutWebsiteFailed(t, s, bucket, &types.WebsiteConfiguration{
+		IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")},
+		RoutingRules: []types.RoutingRule{{
+			Redirect: &types.Redirect{HostName: aws.String("example.com"), Protocol: types.Protocol("ftp")},
+		}},
+	}, "InvalidRequest")
+}
+
+// RoutingRule의 리다이렉트 코드 300과 오류 코드 600이 실패하는지 확인
+func TestWebsiteRoutingRuleCodeOutOfRange(t *testing.T) {
+	t.Parallel()
+
+	s := newSuite(t)
+	bucket := s.bucket(t, 38)
+	invalidRules := []types.RoutingRule{
+		// 300 은 리다이렉트 코드로 쓸 수 없다
+		{Redirect: &types.Redirect{HostName: aws.String("example.com"), HttpRedirectCode: aws.String("300")}},
+		// 오류 코드는 4XX·5XX 만
+		{Condition: &types.Condition{HttpErrorCodeReturnedEquals: aws.String("600")}, Redirect: &types.Redirect{HostName: aws.String("example.com")}},
+	}
+	for _, rule := range invalidRules {
+		checkPutWebsiteFailed(t, s, bucket, &types.WebsiteConfiguration{
+			IndexDocument: &types.IndexDocument{Suffix: aws.String("index.html")},
+			RoutingRules:  []types.RoutingRule{rule},
+		}, "InvalidRequest")
+	}
+}
+
+// endregion

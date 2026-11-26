@@ -12,17 +12,29 @@ package org.example.testV2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
+import software.amazon.awssdk.services.s3.model.CORSConfiguration;
+import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.ObjectAttributes;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.Tagging;
 
 @Execution(ExecutionMode.CONCURRENT)
 public class BucketOwner extends TestBase {
@@ -273,4 +285,275 @@ public class BucketOwner extends TestBase {
 
 		client.abortMultipartUpload(a -> a.bucket(targetBucket).key(target).uploadId(uploadId));
 	}
+
+	// region 그 밖의 API (AWS 실측 기준)
+	// x-amz-expected-bucket-owner 는 버킷·오브젝트를 다루는 거의 모든 API 가 받는다.
+	// 소유자가 다르면 다른 검사보다 먼저 403 AccessDenied 다.
+
+	private void assertOwnerMismatch(Executable executable) {
+		assertS3Error(HttpStatus.SC_FORBIDDEN, MainData.ACCESS_DENIED, executable);
+	}
+
+	@Test
+	@Tag("List")
+	public void testBucketOwnerListOperations() {
+		var key = "testBucketOwnerListOperations";
+		var client = getClient();
+		var bucketName = createObjects(client, 17, key);
+		client.createMultipartUpload(c -> c.bucket(bucketName).key("multi"));
+		var owner = getOwner();
+		var wrong = getWrongOwner();
+
+		assertEquals(1, client.listObjects(l -> l.bucket(bucketName).expectedBucketOwner(owner)).contents().size());
+		assertEquals(1,
+				client.listObjectVersions(l -> l.bucket(bucketName).expectedBucketOwner(owner)).versions().size());
+		assertEquals(1,
+				client.listMultipartUploads(l -> l.bucket(bucketName).expectedBucketOwner(owner)).uploads().size());
+
+		assertOwnerMismatch(() -> client.listObjects(l -> l.bucket(bucketName).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(() -> client.listObjectVersions(l -> l.bucket(bucketName).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(() -> client.listMultipartUploads(l -> l.bucket(bucketName).expectedBucketOwner(wrong)));
+	}
+
+	@Test
+	@Tag("Bucket")
+	public void testBucketOwnerBucketConfig() {
+		var client = getClient();
+		var bucketName = createBucket(client, 18);
+		var owner = getOwner();
+		var wrong = getWrongOwner();
+
+		client.getBucketLocation(g -> g.bucket(bucketName).expectedBucketOwner(owner));
+		client.getBucketAcl(g -> g.bucket(bucketName).expectedBucketOwner(owner));
+		assertOwnerMismatch(() -> client.getBucketLocation(g -> g.bucket(bucketName).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(() -> client.getBucketAcl(g -> g.bucket(bucketName).expectedBucketOwner(wrong)));
+
+		// 소유자가 다르면 설정이 바뀌지 않는다
+		assertOwnerMismatch(() -> client.putBucketVersioning(p -> p.bucket(bucketName)
+				.versioningConfiguration(v -> v.status(BucketVersioningStatus.ENABLED)).expectedBucketOwner(wrong)));
+		assertNull(client.getBucketVersioning(g -> g.bucket(bucketName).expectedBucketOwner(owner)).status());
+		client.putBucketVersioning(p -> p.bucket(bucketName)
+				.versioningConfiguration(v -> v.status(BucketVersioningStatus.ENABLED)).expectedBucketOwner(owner));
+		assertOwnerMismatch(() -> client.getBucketVersioning(g -> g.bucket(bucketName).expectedBucketOwner(wrong)));
+	}
+
+	@Test
+	@Tag("Bucket")
+	public void testBucketOwnerBucketTaggingCors() {
+		var client = getClient();
+		var bucketName = createBucket(client, 19);
+		var owner = getOwner();
+		var wrong = getWrongOwner();
+		var tagging = Tagging.builder().tagSet(t -> t.key("a").value("b")).build();
+		var cors = CORSConfiguration.builder().corsRules(r -> r.allowedMethods("GET").allowedOrigins("*")).build();
+
+		assertOwnerMismatch(
+				() -> client.putBucketTagging(p -> p.bucket(bucketName).tagging(tagging).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(() -> client
+				.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(cors).expectedBucketOwner(wrong)));
+		client.putBucketTagging(p -> p.bucket(bucketName).tagging(tagging).expectedBucketOwner(owner));
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(cors).expectedBucketOwner(owner));
+		assertEquals(tagging.tagSet(),
+				client.getBucketTagging(g -> g.bucket(bucketName).expectedBucketOwner(owner)).tagSet());
+		assertEquals(1, client.getBucketCors(g -> g.bucket(bucketName).expectedBucketOwner(owner)).corsRules().size());
+
+		assertOwnerMismatch(() -> client.getBucketTagging(g -> g.bucket(bucketName).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(() -> client.getBucketCors(g -> g.bucket(bucketName).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(() -> client.deleteBucketTagging(d -> d.bucket(bucketName).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(() -> client.deleteBucketCors(d -> d.bucket(bucketName).expectedBucketOwner(wrong)));
+		// 삭제되지 않았다
+		assertEquals(tagging.tagSet(), client.getBucketTagging(g -> g.bucket(bucketName)).tagSet());
+		client.deleteBucketTagging(d -> d.bucket(bucketName).expectedBucketOwner(owner));
+		client.deleteBucketCors(d -> d.bucket(bucketName).expectedBucketOwner(owner));
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_TAG_SET,
+				() -> client.getBucketTagging(g -> g.bucket(bucketName)));
+	}
+
+	@Test
+	@Tag("Priority")
+	public void testBucketOwnerNotConfigured() {
+		var client = getClient();
+		var bucketName = createBucket(client, 20);
+		var owner = getOwner();
+		var wrong = getWrongOwner();
+		Consumer<String> getPolicy = o -> client.getBucketPolicy(g -> g.bucket(bucketName).expectedBucketOwner(o));
+		Consumer<String> getLifecycle = o -> client
+				.getBucketLifecycleConfiguration(g -> g.bucket(bucketName).expectedBucketOwner(o));
+		Consumer<String> getCors = o -> client.getBucketCors(g -> g.bucket(bucketName).expectedBucketOwner(o));
+		Consumer<String> getWebsite = o -> client.getBucketWebsite(g -> g.bucket(bucketName).expectedBucketOwner(o));
+		var requests = List.of(
+				Map.entry(getPolicy, MainData.NO_SUCH_BUCKET_POLICY),
+				Map.entry(getLifecycle, MainData.NO_SUCH_LIFECYCLE_CONFIGURATION),
+				Map.entry(getCors, MainData.NO_SUCH_CORS_CONFIGURATION),
+				Map.entry(getWebsite, MainData.NO_SUCH_WEBSITE_CONFIGURATION));
+		for (var request : requests) {
+			// 소유자가 맞으면 설정 없음(404), 다르면 설정을 보기 전에 403 이다
+			assertS3Error(HttpStatus.SC_NOT_FOUND, request.getValue(), () -> request.getKey().accept(owner));
+			assertOwnerMismatch(() -> request.getKey().accept(wrong));
+		}
+	}
+
+	@Test
+	@Tag("Object")
+	public void testBucketOwnerObjectRead() {
+		var key = "testBucketOwnerObjectRead";
+		var client = getClient();
+		var bucketName = createObjects(client, 21, key);
+		var owner = getOwner();
+		var wrong = getWrongOwner();
+
+		assertEquals(key.length(),
+				client.headObject(h -> h.bucket(bucketName).key(key).expectedBucketOwner(owner)).contentLength());
+		assertEquals(1,
+				client.getObjectAcl(g -> g.bucket(bucketName).key(key).expectedBucketOwner(owner)).grants().size());
+		var response = client.getObjectAttributes(g -> g.bucket(bucketName).key(key)
+				.objectAttributes(ObjectAttributes.OBJECT_SIZE).expectedBucketOwner(owner));
+		assertEquals(key.length(), response.objectSize());
+
+		assertS3Error(HttpStatus.SC_FORBIDDEN, null,
+				() -> client.headObject(h -> h.bucket(bucketName).key(key).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(
+				() -> client.getObjectAcl(g -> g.bucket(bucketName).key(key).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(() -> client.getObjectAttributes(g -> g.bucket(bucketName).key(key)
+				.objectAttributes(ObjectAttributes.OBJECT_SIZE).expectedBucketOwner(wrong)));
+	}
+
+	@Test
+	@Tag("Object")
+	public void testBucketOwnerObjectTagging() {
+		var key = "testBucketOwnerObjectTagging";
+		var client = getClient();
+		var bucketName = createObjects(client, 22, key);
+		var owner = getOwner();
+		var wrong = getWrongOwner();
+		var tagging = Tagging.builder().tagSet(t -> t.key("a").value("b")).build();
+
+		assertOwnerMismatch(() -> client
+				.putObjectTagging(p -> p.bucket(bucketName).key(key).tagging(tagging).expectedBucketOwner(wrong)));
+		assertEquals(0,
+				client.getObjectTagging(g -> g.bucket(bucketName).key(key).expectedBucketOwner(owner)).tagSet().size());
+		client.putObjectTagging(p -> p.bucket(bucketName).key(key).tagging(tagging).expectedBucketOwner(owner));
+
+		assertOwnerMismatch(
+				() -> client.getObjectTagging(g -> g.bucket(bucketName).key(key).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(
+				() -> client.deleteObjectTagging(d -> d.bucket(bucketName).key(key).expectedBucketOwner(wrong)));
+		assertEquals(tagging.tagSet(),
+				client.getObjectTagging(g -> g.bucket(bucketName).key(key).expectedBucketOwner(owner)).tagSet());
+		client.deleteObjectTagging(d -> d.bucket(bucketName).key(key).expectedBucketOwner(owner));
+		assertEquals(0, client.getObjectTagging(g -> g.bucket(bucketName).key(key)).tagSet().size());
+	}
+
+	@Test
+	@Tag("Priority")
+	public void testBucketOwnerKeyNotExist() {
+		var key = "testBucketOwnerKeyNotExist";
+		var client = getClient();
+		var bucketName = createBucket(client, 23);
+		// 소유자가 맞으면 없는 키(404), 다르면 키를 보기 전에 403 이다
+		assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_KEY,
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).expectedBucketOwner(getOwner())));
+		assertOwnerMismatch(
+				() -> client.getObject(g -> g.bucket(bucketName).key(key).expectedBucketOwner(getWrongOwner())));
+	}
+
+	@Test
+	@Tag("Object")
+	public void testBucketOwnerDeleteObjects() {
+		var client = getClient();
+		var bucketName = createBucket(client, 24);
+		createObjects(client, bucketName, List.of("a", "b"));
+		var delete = Delete.builder().objects(o -> o.key("a"), o -> o.key("b")).build();
+
+		// 요청 전체가 거부되고 하나도 지워지지 않는다
+		assertOwnerMismatch(() -> client
+				.deleteObjects(d -> d.bucket(bucketName).delete(delete).expectedBucketOwner(getWrongOwner())));
+		assertEquals(2, client.listObjectsV2(l -> l.bucket(bucketName)).keyCount());
+
+		var response = client
+				.deleteObjects(d -> d.bucket(bucketName).delete(delete).expectedBucketOwner(getOwner()));
+		assertEquals(2, response.deleted().size());
+		assertEquals(0, client.listObjectsV2(l -> l.bucket(bucketName)).keyCount());
+	}
+
+	@Test
+	@Tag("Multipart")
+	public void testBucketOwnerMultipart() {
+		var key = "testBucketOwnerMultipart";
+		var client = getClient();
+		var bucketName = createBucket(client, 25);
+		var owner = getOwner();
+		var wrong = getWrongOwner();
+
+		assertOwnerMismatch(
+				() -> client.createMultipartUpload(c -> c.bucket(bucketName).key(key).expectedBucketOwner(wrong)));
+		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(key).expectedBucketOwner(owner))
+				.uploadId();
+
+		assertOwnerMismatch(() -> client.uploadPart(
+				u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(1).expectedBucketOwner(wrong),
+				RequestBody.fromString("content")));
+		var eTag = client.uploadPart(
+				u -> u.bucket(bucketName).key(key).uploadId(uploadId).partNumber(1).expectedBucketOwner(owner),
+				RequestBody.fromString("content")).eTag();
+
+		assertOwnerMismatch(() -> client
+				.listParts(l -> l.bucket(bucketName).key(key).uploadId(uploadId).expectedBucketOwner(wrong)));
+		var response = client
+				.listParts(l -> l.bucket(bucketName).key(key).uploadId(uploadId).expectedBucketOwner(owner));
+		assertEquals(1, response.parts().size());
+
+		var parts = CompletedMultipartUpload.builder().parts(p -> p.eTag(eTag).partNumber(1)).build();
+		assertOwnerMismatch(() -> client.abortMultipartUpload(
+				a -> a.bucket(bucketName).key(key).uploadId(uploadId).expectedBucketOwner(wrong)));
+		assertOwnerMismatch(() -> client.completeMultipartUpload(c -> c.bucket(bucketName).key(key)
+				.uploadId(uploadId).multipartUpload(parts).expectedBucketOwner(wrong)));
+		// 거부된 중단·완료는 업로드를 건드리지 않는다
+		client.completeMultipartUpload(c -> c.bucket(bucketName).key(key)
+				.uploadId(uploadId).multipartUpload(parts).expectedBucketOwner(owner));
+		assertEquals("content", getBody(client.getObject(g -> g.bucket(bucketName).key(key))));
+	}
+
+	@Test
+	@Tag("Bucket")
+	public void testBucketOwnerDeleteBucket() {
+		var client = getClient();
+		var bucketName = createBucket(client, 26);
+		assertOwnerMismatch(
+				() -> client.deleteBucket(d -> d.bucket(bucketName).expectedBucketOwner(getWrongOwner())));
+		client.headBucket(h -> h.bucket(bucketName));
+
+		client.deleteBucket(d -> d.bucket(bucketName).expectedBucketOwner(getOwner()));
+		deleteBucketList(bucketName);
+		assertS3Error(HttpStatus.SC_NOT_FOUND, null, () -> client.headBucket(h -> h.bucket(bucketName)));
+	}
+
+	@Test
+	@Tag("Priority")
+	public void testBucketOwnerBucketNotExist() {
+		var client = getClient();
+		var bucketName = getNewBucketNameOnly(27);
+		// 버킷이 없으면 소유자 값과 상관없이 404 다
+		for (var owner : List.of(getOwner(), getWrongOwner())) {
+			assertS3Error(HttpStatus.SC_NOT_FOUND, MainData.NO_SUCH_BUCKET,
+					() -> client.listObjectsV2(l -> l.bucket(bucketName).expectedBucketOwner(owner)));
+		}
+	}
+
+	@Test
+	@Tag("Access")
+	public void testBucketOwnerOtherUser() {
+		var key = "testBucketOwnerOtherUser";
+		var client = getClient();
+		var bucketName = createObjects(client, 28, key);
+		var altClient = getAltClient();
+		// 소유자 값이 맞아도 권한이 생기지는 않는다
+		for (var owner : List.of(getOwner(), getWrongOwner())) {
+			assertOwnerMismatch(() -> altClient.listObjectsV2(l -> l.bucket(bucketName).expectedBucketOwner(owner)));
+			assertOwnerMismatch(
+					() -> altClient.getObject(g -> g.bucket(bucketName).key(key).expectedBucketOwner(owner)));
+		}
+	}
+
+	// endregion
 }

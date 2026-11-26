@@ -503,6 +503,135 @@ namespace s3tests.Test
 			Assert.Equal("index.html", client.GetBucketWebsite(bucketName).WebsiteConfiguration.IndexDocumentSuffix);
 		}
 
+		#region 설정 검증 보강 (AWS 실측 기준)
+
+		[Fact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "RoutingRule")]
+		[Trait(MainData.Explanation, "조건 두 가지 동시 사용, 300을 뺀 3XX 리다이렉트 코드, 5XX 오류 코드, '/'가 든 ErrorDocument 키가 허용되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		public void TestWebsiteValidForms()
+		{
+			TestId = 34;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			var Rules = new List<RoutingRule>()
+			{
+				// 조건 두 가지를 함께 쓸 수 있다
+				new()
+				{
+					Condition = new RoutingRuleCondition() { KeyPrefixEquals = "docs/", HttpErrorCodeReturnedEquals = "404" },
+					Redirect = new RoutingRuleRedirect() { HostName = "example.com" },
+				},
+				// 리다이렉트 코드는 300 을 뺀 3XX, 오류 코드는 4XX·5XX
+				new()
+				{
+					Condition = new RoutingRuleCondition() { HttpErrorCodeReturnedEquals = "503" },
+					Redirect = new RoutingRuleRedirect() { HostName = "example.com", HttpRedirectCode = "307" },
+				},
+			};
+			client.PutBucketWebsite(bucketName, new WebsiteConfiguration()
+			{
+				IndexDocumentSuffix = "index.html",
+				// 오류 문서 키에는 / 를 쓸 수 있다(인덱스 접미어와 다르다)
+				ErrorDocument = "errors/404.html",
+				RoutingRules = Rules,
+			});
+
+			var Response = client.GetBucketWebsite(bucketName).WebsiteConfiguration;
+			Assert.Equal("errors/404.html", Response.ErrorDocument);
+			CheckRoutingRules(Rules, Response.RoutingRules);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "RedirectAllRequestsTo의 HostName이 비어있으면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestWebsiteRedirectAllEmptyHost()
+		{
+			TestId = 35;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			CheckPutWebsiteFailed(client, bucketName, new WebsiteConfiguration()
+			{
+				RedirectAllRequestsTo = new RoutingRuleRedirect() { HostName = "" },
+			}, MainData.INVALID_REQUEST);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "RedirectAllRequestsTo와 ErrorDocument를 함께 설정하면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestWebsiteRedirectAllWithErrorDocument()
+		{
+			TestId = 36;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			CheckPutWebsiteFailed(client, bucketName, new WebsiteConfiguration()
+			{
+				RedirectAllRequestsTo = new RoutingRuleRedirect() { HostName = "example.com" },
+				ErrorDocument = "error.html",
+			}, MainData.INVALID_ARGUMENT);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "RoutingRule Redirect의 Protocol이 http/https가 아니면 실패하는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestWebsiteRoutingRuleInvalidProtocol()
+		{
+			TestId = 37;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			CheckPutWebsiteFailed(client, bucketName, new WebsiteConfiguration()
+			{
+				IndexDocumentSuffix = "index.html",
+				RoutingRules =
+				[
+					new() { Redirect = new RoutingRuleRedirect() { HostName = "example.com", Protocol = "ftp" } },
+				],
+			}, MainData.INVALID_REQUEST);
+		}
+
+		[Fact]
+		[Trait(MainData.Major, "Website")]
+		[Trait(MainData.Minor, "ERROR")]
+		[Trait(MainData.Explanation, "RoutingRule의 리다이렉트 코드 300과 오류 코드 600이 거부되는지 확인")]
+		[Trait(MainData.Result, MainData.ResultFailure)]
+		public void TestWebsiteRoutingRuleCodeOutOfRange()
+		{
+			TestId = 38;
+			var client = GetClient();
+			var bucketName = GetNewBucket(client);
+
+			var InvalidRules = new List<RoutingRule>()
+			{
+				// 300 은 리다이렉트 코드로 쓸 수 없다
+				new() { Redirect = new RoutingRuleRedirect() { HostName = "example.com", HttpRedirectCode = "300" } },
+				// 오류 코드는 4XX·5XX 만
+				new()
+				{
+					Condition = new RoutingRuleCondition() { HttpErrorCodeReturnedEquals = "600" },
+					Redirect = new RoutingRuleRedirect() { HostName = "example.com" },
+				},
+			};
+			foreach (var Rule in InvalidRules)
+			{
+				CheckPutWebsiteFailed(client, bucketName,
+					new WebsiteConfiguration() { IndexDocumentSuffix = "index.html", RoutingRules = [Rule] },
+					MainData.INVALID_REQUEST);
+			}
+		}
+
+		#endregion
+
 		[SkippableFact]
 		[Trait(MainData.Major, "Website")]
 		[Trait(MainData.Minor, "Access")]
