@@ -17,10 +17,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.TimeZone;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -36,6 +36,8 @@ import software.amazon.awssdk.services.s3.model.ExpirationStatus;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.LifecycleRule;
 import software.amazon.awssdk.services.s3.model.LifecycleRuleFilter;
+import software.amazon.awssdk.services.s3.model.NoncurrentVersionTransition;
+import software.amazon.awssdk.services.s3.model.Transition;
 
 public class LifeCycle extends TestBase {
 	@Test
@@ -191,12 +193,8 @@ public class LifeCycle extends TestBase {
 		var rules = new ArrayList<LifecycleRule>();
 		rules.add(LifecycleRule.builder()
 				.id("rule1")
-				.expiration(e -> e
-						.date(new Calendar.Builder()
-								.setDate(2099, 10, 10)
-								.setTimeZone(TimeZone.getTimeZone("GMT"))
-								.build()
-								.toInstant()))
+				// 만료 날짜는 UTC 자정이어야 한다
+				.expiration(e -> e.date(LocalDate.of(2099, 11, 10).atStartOfDay(ZoneOffset.UTC).toInstant()))
 				.filter(f -> f.prefix("test1/"))
 				.status(ExpirationStatus.ENABLED).build());
 
@@ -212,11 +210,8 @@ public class LifeCycle extends TestBase {
 		var rules = new ArrayList<LifecycleRule>();
 		rules.add(LifecycleRule.builder()
 				.id("rule1")
-				.expiration(e -> e
-						.date(new Calendar.Builder()
-								.setDate(2099, 10, 10)
-								.build()
-								.toInstant()))
+				// UTC 자정이 아닌 시각은 거부된다 (실행 환경 시간대와 무관하게 UTC 15:00 으로 고정)
+				.expiration(e -> e.date(LocalDate.of(2099, 11, 10).atTime(15, 0).toInstant(ZoneOffset.UTC)))
 				.filter(f -> f.prefix("test1/"))
 				.status(ExpirationStatus.ENABLED).build());
 
@@ -490,6 +485,10 @@ public class LifeCycle extends TestBase {
 		return software.amazon.awssdk.services.s3.model.Tag.builder().key(key).value(value).build();
 	}
 
+	private static Transition transition(int days, String storageClass) {
+		return Transition.builder().days(days).storageClass(storageClass).build();
+	}
+
 	@Test
 	@Tag("Get")
 	public void testLifecycleGetNotExist() {
@@ -614,7 +613,7 @@ public class LifeCycle extends TestBase {
 		var bucketName = createBucket(client, 30);
 
 		putRules(client, bucketName, rule()
-				.transitions(t -> t.days(30).storageClass("STANDARD_IA"), t -> t.days(60).storageClass("GLACIER"))
+				.transitions(transition(30, "STANDARD_IA"), transition(60, "GLACIER"))
 				.expiration(e -> e.days(90)).build());
 
 		var rules = getRules(client, bucketName);
@@ -637,11 +636,11 @@ public class LifeCycle extends TestBase {
 
 		// STANDARD 로는 전환할 수 없다
 		assertPutRulesError(client, bucketName,
-				rule().transitions(t -> t.days(30).storageClass("STANDARD")).build(),
+				rule().transitions(transition(30, "STANDARD")).build(),
 				HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT);
 		// 없는 스토리지 클래스
 		assertPutRulesError(client, bucketName,
-				rule().transitions(t -> t.days(30).storageClass("INVALID")).build(),
+				rule().transitions(transition(30, "INVALID")).build(),
 				HttpStatus.SC_BAD_REQUEST, MainData.MALFORMED_XML);
 	}
 
@@ -653,10 +652,10 @@ public class LifeCycle extends TestBase {
 
 		// 만료일은 전환일보다 커야 한다
 		assertPutRulesError(client, bucketName,
-				rule().transitions(t -> t.days(30).storageClass("STANDARD_IA")).expiration(e -> e.days(30)).build(),
+				rule().transitions(transition(30, "STANDARD_IA")).expiration(e -> e.days(30)).build(),
 				HttpStatus.SC_BAD_REQUEST, MainData.INVALID_ARGUMENT);
 		putRules(client, bucketName,
-				rule().transitions(t -> t.days(30).storageClass("STANDARD_IA")).expiration(e -> e.days(31)).build());
+				rule().transitions(transition(30, "STANDARD_IA")).expiration(e -> e.days(31)).build());
 	}
 
 	@Test
@@ -666,7 +665,8 @@ public class LifeCycle extends TestBase {
 		var bucketName = createBucket(client, 34);
 
 		putRules(client, bucketName,
-				rule().noncurrentVersionTransitions(t -> t.noncurrentDays(30).storageClass("STANDARD_IA")).build());
+				rule().noncurrentVersionTransitions(NoncurrentVersionTransition.builder()
+						.noncurrentDays(30).storageClass("STANDARD_IA").build()).build());
 
 		var transitions = getRules(client, bucketName).get(0).noncurrentVersionTransitions();
 		assertEquals(1, transitions.size());

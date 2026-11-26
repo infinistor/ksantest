@@ -27,21 +27,19 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.TreeMap;
 
 import org.apache.hc.core5.http.HttpStatus;
@@ -800,18 +798,13 @@ public class TestBase {
 		return bucketName;
 	}
 
-	public Date getTimeToAddSeconds(int seconds) {
-		Calendar today = Calendar.getInstance();
-		today.add(Calendar.SECOND, seconds);
-		return new Date(today.getTimeInMillis());
+	public Instant getTimeToAddSeconds(int seconds) {
+		return Instant.now().plusSeconds(seconds);
 	}
 
 	public String getTimeToAddMinutes(int minutes) {
-		var myFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		myFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-		var time = Calendar.getInstance();
-		time.add(Calendar.MINUTE, minutes);
-		return myFormat.format(time.getTime());
+		return DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
+				.format(Instant.now().plus(Duration.ofMinutes(minutes)));
 	}
 
 	protected static class SigV4Post {
@@ -3187,10 +3180,8 @@ public class TestBase {
 		}
 	}
 
-	public Date getExpiredDate(int days) {
-		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.DATE, days);
-		return cal.getTime();
+	public Instant getExpiredDate(int days) {
+		return Instant.now().plus(Duration.ofDays(days));
 	}
 
 	public Instant getExpiredDate(Instant day, int days) {

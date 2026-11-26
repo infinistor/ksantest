@@ -17,8 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.MalformedURLException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
@@ -556,11 +557,10 @@ public class CopyObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
-				.copySourceIfModifiedSince(days.toInstant())
+				.copySourceIfModifiedSince(days)
 				.destinationBucket(bucketName).destinationKey(target));
 		var response = client.getObject(g -> g.bucket(bucketName).key(target));
 		assertEquals(source, getBody(response));
@@ -603,11 +603,10 @@ public class CopyObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
 
-		var days = Calendar.getInstance();
-		days.set(2100, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(2100, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
-				.copySourceIfUnmodifiedSince(days.toInstant())
+				.copySourceIfUnmodifiedSince(days)
 				.destinationBucket(bucketName).destinationKey(target));
 		var response = client.getObject(g -> g.bucket(bucketName).key(target));
 		assertEquals(source, getBody(response));
@@ -624,12 +623,11 @@ public class CopyObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
-						.copySourceIfUnmodifiedSince(days.toInstant())
+						.copySourceIfUnmodifiedSince(days)
 						.destinationBucket(bucketName).destinationKey(target)));
 
 		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
@@ -648,12 +646,11 @@ public class CopyObject extends TestBase {
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		// copy-source-if-match: true, copy-source-if-unmodified-since: false -> 200 OK
 		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
-				.copySourceIfMatch(eTag).copySourceIfUnmodifiedSince(days.toInstant())
+				.copySourceIfMatch(eTag).copySourceIfUnmodifiedSince(days)
 				.destinationBucket(bucketName).destinationKey(target));
 		var response = client.getObject(g -> g.bucket(bucketName).key(target));
 		assertEquals(source, getBody(response));
@@ -671,13 +668,12 @@ public class CopyObject extends TestBase {
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source)).eTag();
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		// copy-source-if-none-match: false, copy-source-if-modified-since: true -> 412
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(source)
-						.copySourceIfNoneMatch(eTag).copySourceIfModifiedSince(days.toInstant())
+						.copySourceIfNoneMatch(eTag).copySourceIfModifiedSince(days)
 						.destinationBucket(bucketName).destinationKey(target)));
 
 		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
@@ -1489,10 +1485,8 @@ public class CopyObject extends TestBase {
 		var sourceKey = "testCopyObjectReplaceTagsSource";
 		var targetKey = "testCopyObjectReplaceTagsTarget";
 
-		var sourceTags = Tagging.builder().tagSet(t -> t.key("tag1").value("value1").build()).build();
-		var targetTags = Tagging.builder().tagSet(
-				t -> t.key("tag2").value("value2").build(),
-				t -> t.key("tag3").value("value3").build()).build();
+		var sourceTags = Tagging.builder().tagSet(tag("tag1", "value1")).build();
+		var targetTags = Tagging.builder().tagSet(tag("tag2", "value2"), tag("tag3", "value3")).build();
 
 		client.putObject(p -> p.bucket(bucketName).key(sourceKey).tagging(sourceTags),
 				RequestBody.fromString(sourceKey));
@@ -1519,9 +1513,7 @@ public class CopyObject extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(sourceKey), RequestBody.fromString(sourceKey));
 
 		// 공백, '/', '+', '='는 x-amz-tagging 헤더에서 URL 인코딩되어 전송되므로 서버가 디코딩해서 저장해야 한다
-		var targetTags = Tagging.builder().tagSet(
-				t -> t.key("k 1").value("a/b+c d").build(),
-				t -> t.key("k2").value("x=y").build()).build();
+		var targetTags = Tagging.builder().tagSet(tag("k 1", "a/b+c d"), tag("k2", "x=y")).build();
 
 		client.copyObject(c -> c.sourceBucket(bucketName).sourceKey(sourceKey).destinationBucket(bucketName)
 				.destinationKey(targetKey).taggingDirective(TaggingDirective.REPLACE).tagging(targetTags));
@@ -1714,5 +1706,10 @@ public class CopyObject extends TestBase {
 			altClient.deleteBucket(d -> d.bucket(altBucketName));
 			deleteBucketList(altBucketName);
 		}
+	}
+
+	// JUnit @Tag 와 이름이 겹쳐 S3 Tag 는 전체 이름으로 만든다
+	private static software.amazon.awssdk.services.s3.model.Tag tag(String key, String value) {
+		return software.amazon.awssdk.services.s3.model.Tag.builder().key(key).value(value).build();
 	}
 }

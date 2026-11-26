@@ -16,8 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -116,10 +117,9 @@ public class GetObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 		var response = client
-				.getObject(g -> g.bucket(bucketName).key(key).ifModifiedSince(days.toInstant()));
+				.getObject(g -> g.bucket(bucketName).key(key).ifModifiedSince(days));
 		var body = getBody(response);
 		assertEquals("bar", body);
 	}
@@ -155,11 +155,10 @@ public class GetObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		var e = assertThrows(AwsServiceException.class, () -> client
-				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant())));
+				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(days)));
 
 		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
 		assertEquals(MainData.PRECONDITION_FAILED, e.awsErrorDetails().errorCode());
@@ -174,10 +173,9 @@ public class GetObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var days = Calendar.getInstance();
-		days.set(2100, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(2100, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 		var response = client
-				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant()));
+				.getObject(g -> g.bucket(bucketName).key(key).ifUnmodifiedSince(days));
 		var body = getBody(response);
 		assertEquals("bar", body);
 	}
@@ -192,12 +190,11 @@ public class GetObject extends TestBase {
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		// If-Match: true, If-Unmodified-Since: false -> 200 OK
 		var response = client.getObject(
-				g -> g.bucket(bucketName).key(key).ifMatch(eTag).ifUnmodifiedSince(days.toInstant()));
+				g -> g.bucket(bucketName).key(key).ifMatch(eTag).ifUnmodifiedSince(days));
 		assertEquals("bar", getBody(response));
 	}
 
@@ -211,12 +208,11 @@ public class GetObject extends TestBase {
 
 		var eTag = client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar")).eTag();
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		// If-None-Match: false, If-Modified-Since: true -> 304 Not Modified
 		var e = assertThrows(AwsServiceException.class, () -> client.getObject(
-				g -> g.bucket(bucketName).key(key).ifNoneMatch(eTag).ifModifiedSince(days.toInstant())));
+				g -> g.bucket(bucketName).key(key).ifNoneMatch(eTag).ifModifiedSince(days)));
 		assertEquals(HttpStatus.SC_NOT_MODIFIED, e.statusCode());
 	}
 
@@ -324,9 +320,8 @@ public class GetObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
-		var response = client.headObject(h -> h.bucket(bucketName).key(key).ifModifiedSince(days.toInstant()));
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
+		var response = client.headObject(h -> h.bucket(bucketName).key(key).ifModifiedSince(days));
 		assertEquals(3, response.contentLength());
 	}
 
@@ -360,11 +355,10 @@ public class GetObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		var e = assertThrows(AwsServiceException.class,
-				() -> client.headObject(h -> h.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant())));
+				() -> client.headObject(h -> h.bucket(bucketName).key(key).ifUnmodifiedSince(days)));
 		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());
 	}
 
@@ -378,10 +372,9 @@ public class GetObject extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key), RequestBody.fromString("bar"));
 
-		var days = Calendar.getInstance();
-		days.set(2100, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(2100, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 		var response = client
-				.headObject(h -> h.bucket(bucketName).key(key).ifUnmodifiedSince(days.toInstant()));
+				.headObject(h -> h.bucket(bucketName).key(key).ifUnmodifiedSince(days));
 		assertEquals(3, response.contentLength());
 	}
 

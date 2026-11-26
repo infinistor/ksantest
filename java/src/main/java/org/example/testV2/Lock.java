@@ -16,10 +16,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.TimeZone;
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.example.Data.MainData;
@@ -392,8 +392,7 @@ public class Lock extends TestBase {
 		var versionId = response.versionId();
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key)
 				.retention(r -> r.mode(ObjectLockRetentionMode.GOVERNANCE)
-						.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-								.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())));
+						.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())));
 
 		client.deleteObject(d -> d.bucket(bucketName).key(key).versionId(versionId).bypassGovernanceRetention(true));
 	}
@@ -408,8 +407,7 @@ public class Lock extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(key));
 
 		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 
 		var e = assertThrows(AwsServiceException.class, () -> client
@@ -429,8 +427,8 @@ public class Lock extends TestBase {
 
 		client.putObject(p -> p.bucket(bucketName).key(key).build(), RequestBody.fromString(key));
 
-		var retention = ObjectLockRetention.builder().mode("invalid").retainUntilDate(new Calendar.Builder()
-				.setDate(2030, 1, 1).setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant()).build();
+		var retention = ObjectLockRetention.builder().mode("invalid")
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant()).build();
 
 		var e = assertThrows(AwsServiceException.class, () -> client
 				.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention)));
@@ -451,8 +449,7 @@ public class Lock extends TestBase {
 		var versionId = putResponse.versionId();
 
 		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention));
@@ -491,8 +488,7 @@ public class Lock extends TestBase {
 		var versionId = putResponse.versionId();
 
 		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention));
@@ -523,8 +519,7 @@ public class Lock extends TestBase {
 		var versionId = putResponse.versionId();
 
 		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention));
@@ -548,14 +543,12 @@ public class Lock extends TestBase {
 		var versionId = putResponse.versionId();
 
 		var retention1 = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention1));
 
 		var retention2 = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 3, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 4, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention2));
 
@@ -579,14 +572,12 @@ public class Lock extends TestBase {
 		var versionId = putResponse.versionId();
 
 		var retention1 = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 3, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 4, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention1));
 
 		var retention2 = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 
 		var e = assertThrows(AwsServiceException.class,
@@ -611,14 +602,12 @@ public class Lock extends TestBase {
 		var versionId = putResponse.versionId();
 
 		var retention1 = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 3, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 4, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention1));
 
 		var retention2 = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 		client.putObjectRetention(
 				p -> p.bucket(bucketName).key(key).retention(retention2).bypassGovernanceRetention(true));
@@ -643,8 +632,7 @@ public class Lock extends TestBase {
 		var versionId = putResponse.versionId();
 
 		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention));
 
@@ -669,8 +657,7 @@ public class Lock extends TestBase {
 		var versionId = putResponse.versionId();
 
 		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention));
 
@@ -692,8 +679,7 @@ public class Lock extends TestBase {
 			var versionId = putResponse.versionId();
 
 			var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-					.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-							.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+					.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 					.build();
 			client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention).versionId(versionId));
 
@@ -847,8 +833,7 @@ public class Lock extends TestBase {
 				p -> p.bucket(bucketName).key(key).legalHold(l -> l.status(ObjectLockLegalHoldStatus.ON)));
 
 		var retention = ObjectLockRetention.builder().mode(ObjectLockRetentionMode.GOVERNANCE)
-				.retainUntilDate(new Calendar.Builder().setDate(2030, 1, 1)
-						.setTimeZone(TimeZone.getTimeZone(("GMT"))).build().toInstant())
+				.retainUntilDate(LocalDate.of(2030, 2, 1).atStartOfDay(ZoneOffset.UTC).toInstant())
 				.build();
 		client.putObjectRetention(p -> p.bucket(bucketName).key(key).retention(retention));
 

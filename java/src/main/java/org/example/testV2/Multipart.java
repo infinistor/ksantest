@@ -14,9 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletionException;
@@ -1097,11 +1098,10 @@ public class Multipart extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
 		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		var partResponse = client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
-				.copySourceIfModifiedSince(days.toInstant())
+				.copySourceIfModifiedSince(days)
 				.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1));
 
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(target).uploadId(uploadId)
@@ -1153,11 +1153,10 @@ public class Multipart extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
 		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
 
-		var days = Calendar.getInstance();
-		days.set(2100, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(2100, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		var partResponse = client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
-				.copySourceIfUnmodifiedSince(days.toInstant())
+				.copySourceIfUnmodifiedSince(days)
 				.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1));
 
 		client.completeMultipartUpload(c -> c.bucket(bucketName).key(target).uploadId(uploadId)
@@ -1180,12 +1179,11 @@ public class Multipart extends TestBase {
 		client.putObject(p -> p.bucket(bucketName).key(source), RequestBody.fromString(source));
 		var uploadId = client.createMultipartUpload(c -> c.bucket(bucketName).key(target)).uploadId();
 
-		var days = Calendar.getInstance();
-		days.set(1994, 8, 29, 19, 43, 31);
+		var days = LocalDateTime.of(1994, 9, 29, 19, 43, 31).toInstant(ZoneOffset.UTC);
 
 		var e = assertThrows(AwsServiceException.class,
 				() -> client.uploadPartCopy(c -> c.sourceBucket(bucketName).sourceKey(source)
-						.copySourceIfUnmodifiedSince(days.toInstant())
+						.copySourceIfUnmodifiedSince(days)
 						.destinationBucket(bucketName).destinationKey(target).uploadId(uploadId).partNumber(1)));
 
 		assertEquals(HttpStatus.SC_PRECONDITION_FAILED, e.statusCode());

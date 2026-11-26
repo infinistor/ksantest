@@ -18,7 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
-import java.util.Calendar;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 
@@ -120,7 +121,7 @@ public class PutObject extends TestBase {
 		var bucketName = createBucket(client, 6);
 
 		var key = "testObjectWriteExpires";
-		var expires = getTimeToAddSeconds(6000).toInstant();
+		var expires = getTimeToAddSeconds(6000);
 
 		client.putObject(p -> p.bucket(bucketName).key(key).expires(expires).contentType("text/plain")
 				.contentLength((long) key.length()), RequestBody.fromString(key));
@@ -338,8 +339,7 @@ public class PutObject extends TestBase {
 
 		var key = "testObjectLockUploadingObj";
 		var md5 = Utils.getMD5(key);
-		var days = Calendar.getInstance();
-		days.set(2030, 1, 1, 0, 0, 0);
+		var days = LocalDateTime.of(2030, 2, 1, 0, 0, 0).toInstant(ZoneOffset.UTC);
 
 		var putResponse = client.putObject(p -> p
 				.bucket(bucketName)
@@ -348,13 +348,13 @@ public class PutObject extends TestBase {
 				.contentType("text/plain")
 				.contentLength((long) key.length())
 				.objectLockMode(ObjectLockMode.GOVERNANCE)
-				.objectLockRetainUntilDate(days.toInstant())
+				.objectLockRetainUntilDate(days)
 				.objectLockLegalHoldStatus(ObjectLockLegalHoldStatus.ON),
 				RequestBody.fromString(key));
 
 		var response = client.headObject(h -> h.bucket(bucketName).key(key));
 		assertEquals(ObjectLockMode.GOVERNANCE.toString(), response.objectLockMode().toString());
-		assertEquals(days.toInstant(), response.objectLockRetainUntilDate());
+		assertEquals(days, response.objectLockRetainUntilDate());
 		assertEquals(ObjectLockLegalHoldStatus.ON.toString(), response.objectLockLegalHoldStatus().toString());
 
 		var legalHold = ObjectLockLegalHold.builder().status(ObjectLockLegalHoldStatus.OFF).build();
