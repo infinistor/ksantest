@@ -295,6 +295,8 @@ class TestCors(S3TestBase):
         assert headers.get("access-control-allow-origin") is None
 
     @pytest.mark.tag("Object")
+    # KSAN 알려진 실패(ifs32, 일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 일반 요청의 CORS 헤더를 s3gw 와 같게 낸다.
+    # Access-Control-Allow-Methods 는 "GET,HEAD"(쉼표만)다. AWS 는 "GET, HEAD" 다. 확인은 test_cors_scp_compat.
     def test_cors_object_request(self):
         client = self.get_client()
         bucket_name = self._create_public_cors_bucket(client, 8)
@@ -324,6 +326,44 @@ class TestCors(S3TestBase):
         )
         assert code == 200
         assert headers.get("access-control-allow-origin") == "http://a.example.com"
+
+    @pytest.mark.tag("Object")
+    # KSAN(ifs32) SCP 호환 케이스: 일반 요청의 CORS 헤더가 s3gw(운영계)와 같은지 확인한다.
+    # Origin 이 맞는 첫 규칙의 메서드·허용 헤더·노출 헤더를 요청 메서드와 상관없이 붙이고 vary 에 Origin 이 있다.
+    # 규칙에 HEAD 가 없어도 HeadBucket·HeadObject 에 헤더가 붙어야 브라우저 콘솔의 버킷 연결 확인이 된다.
+    # AWS 는 규칙에 없는 메서드(HEAD)에는 CORS 헤더를 주지 않고 일반 요청에는 Allow-Headers 를 주지 않아 AWS 에서는 실패한다.
+    def test_cors_scp_compat(self):
+        client = self.get_client()
+        bucket_name = self._create_public_cors_bucket(client, 18)
+        key = "test_cors_scp_compat"
+        client.put_object(Bucket=bucket_name, Key=key, Body=b"cors", ACL="public-read")
+        methods = ["PUT", "POST", "GET"]
+        allow_headers = ["x-amz-content-sha256", "x-amz-user-agent", "x-amz-date", "authorization",
+                         "Content-Type", "Content-MD5", "x-amz-acl"]
+        expose_headers = ["x-amz-meta-custom-header", "x-amz-request-id", "x-amz-id-2", "ETag", "date",
+                          "x-amz-server-side-encryption"]
+        rules = [self._cors_rule(methods, ["*"], AllowedHeaders=allow_headers, ExposeHeaders=expose_headers)]
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration={"CORSRules": rules})
+
+        # HEAD·GET 버킷(연결 확인·목록), HEAD·GET 오브젝트
+        for method, target in (("HEAD", None), ("GET", None), ("HEAD", key), ("GET", key)):
+            what = f"{method} {'bucket' if target is None else 'object'}"
+            code, headers = self._cors_request(method, bucket_name, {"Origin": "http://console.example.com"}, target)
+            assert code == 200, what
+            assert headers.get("access-control-allow-origin") == "*", what
+            assert self._cors_set(headers.get("access-control-allow-methods")) == self._cors_set(methods), what
+            assert self._cors_set(headers.get("access-control-allow-headers")) == self._cors_set(allow_headers), what
+            assert self._cors_set(headers.get("access-control-expose-headers")) == self._cors_set(expose_headers), what
+            assert "origin" in self._cors_set(headers.get("vary")), what
+
+    @staticmethod
+    def _cors_set(value) -> set:
+        """쉼표로 나눈 CORS 헤더 값을 소문자 집합으로 (구분자 "," 와 ", " 를 같게 본다)"""
+        if value is None:
+            return set()
+        if isinstance(value, (list, tuple)):
+            value = ",".join(value)
+        return {v.strip().lower() for v in value.split(",") if v.strip()}
 
     @pytest.mark.tag("Error")
     # KSAN 알려진 실패(일부러 다르게 동작, 고치지 않음): PutBucketCors 는 SCP 연동 때문에 규칙 내용을 검사하지 않고 그대로 저장한다.

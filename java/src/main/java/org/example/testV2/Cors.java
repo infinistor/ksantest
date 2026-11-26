@@ -400,6 +400,8 @@ public class Cors extends TestBase {
 
 	@Test
 	@Tag("Object")
+	// KSAN 알려진 실패(ifs32, 일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 일반 요청의 CORS 헤더를 s3gw 와 같게 낸다.
+	// Access-Control-Allow-Methods 는 "GET,HEAD"(쉼표만)다. AWS 는 "GET, HEAD" 다. 확인은 testCorsScpCompat.
 	public void testCorsObjectRequest() {
 		var client = getClient();
 		var bucketName = createBucketCannedAcl(client, 8);
@@ -438,6 +440,57 @@ public class Cors extends TestBase {
 		var response = corsRequest("OPTIONS", bucketName, headers, key);
 		assertEquals(200, response.statusCode());
 		assertEquals("http://a.example.com", response.header("access-control-allow-origin"));
+	}
+
+	@Test
+	@Tag("Object")
+	// KSAN(ifs32) SCP 호환 케이스: 일반 요청의 CORS 헤더가 s3gw(운영계)와 같은지 확인한다.
+	// Origin 이 맞는 첫 규칙의 메서드·허용 헤더·노출 헤더를 요청 메서드와 상관없이 붙이고 vary 에 Origin 이 있다.
+	// 규칙에 HEAD 가 없어도 HeadBucket·HeadObject 에 헤더가 붙어야 브라우저 콘솔의 버킷 연결 확인이 된다.
+	// AWS 는 규칙에 없는 메서드(HEAD)에는 CORS 헤더를 주지 않고 일반 요청에는 Allow-Headers 를 주지 않아 AWS 에서는 실패한다.
+	public void testCorsScpCompat() {
+		var client = getClient();
+		var bucketName = createBucketCannedAcl(client, 18);
+		client.putBucketAcl(p -> p.bucket(bucketName).acl(BucketCannedACL.PUBLIC_READ));
+		var key = "testCorsScpCompat";
+		client.putObject(p -> p.bucket(bucketName).key(key).acl(ObjectCannedACL.PUBLIC_READ),
+				RequestBody.fromString("cors"));
+		var methods = List.of("PUT", "POST", "GET");
+		var allowHeaders = List.of("x-amz-content-sha256", "x-amz-user-agent", "x-amz-date", "authorization",
+				"Content-Type", "Content-MD5", "x-amz-acl");
+		var exposeHeaders = List.of("x-amz-meta-custom-header", "x-amz-request-id", "x-amz-id-2", "ETag", "date",
+				"x-amz-server-side-encryption");
+		var rules = List.of(CORSRule.builder().allowedMethods(methods).allowedOrigins(List.of("*"))
+				.allowedHeaders(allowHeaders).exposeHeaders(exposeHeaders).build());
+		client.putBucketCors(p -> p.bucket(bucketName).corsConfiguration(c -> c.corsRules(rules)));
+
+		var headers = new HashMap<String, String>();
+		headers.put("Origin", "http://console.example.com");
+		// HEAD·GET 버킷(연결 확인·목록), HEAD·GET 오브젝트
+		for (var target : new String[][] { { "HEAD", null }, { "GET", null }, { "HEAD", key }, { "GET", key } }) {
+			var response = corsRequest(target[0], bucketName, headers, target[1]);
+			var what = target[0] + " " + (target[1] == null ? "bucket" : "object");
+			assertEquals(200, response.statusCode(), what);
+			assertEquals("*", response.header("access-control-allow-origin"), what);
+			assertEquals(corsSet(methods), corsSet(response.header("access-control-allow-methods")), what);
+			assertEquals(corsSet(allowHeaders), corsSet(response.header("access-control-allow-headers")), what);
+			assertEquals(corsSet(exposeHeaders), corsSet(response.header("access-control-expose-headers")), what);
+			assertEquals(true, corsSet(response.header("vary")).contains("origin"), what);
+		}
+	}
+
+	/** 쉼표로 나눈 CORS 헤더 값을 소문자 집합으로 (구분자 "," 와 ", " 를 같게 본다) */
+	private static java.util.Set<String> corsSet(String value) {
+		var set = new java.util.TreeSet<String>();
+		if (value != null)
+			for (var v : value.split(","))
+				if (!v.isBlank())
+					set.add(v.trim().toLowerCase());
+		return set;
+	}
+
+	private static java.util.Set<String> corsSet(List<String> values) {
+		return corsSet(String.join(",", values));
 	}
 
 	@Test

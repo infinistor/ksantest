@@ -367,6 +367,8 @@ namespace s3tests.Test
 		[Trait(MainData.Minor, "Object")]
 		[Trait(MainData.Explanation, "오브젝트에 대한 GET/HEAD/preflight 요청에 cors 헤더가 규칙대로 내려오는지 확인")]
 		[Trait(MainData.Result, MainData.ResultSuccess)]
+		// KSAN 알려진 실패(ifs32, 일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 일반 요청의 CORS 헤더를 s3gw 와 같게 낸다.
+		// Access-Control-Allow-Methods 는 "GET,HEAD"(쉼표만)다. AWS 는 "GET, HEAD" 다. 확인은 TestCorsScpCompat.
 		public void TestCorsObjectRequest()
 		{
 			TestId = 8;
@@ -398,6 +400,49 @@ namespace s3tests.Test
 			Assert.Equal(HttpStatusCode.OK, code);
 			Assert.Equal("http://a.example.com", Header(headers, "access-control-allow-origin"));
 		}
+
+		[Fact]
+		[Trait(MainData.Major, "Cors")]
+		[Trait(MainData.Minor, "Object")]
+		[Trait(MainData.Explanation, "KSAN(ifs32) SCP 호환: HEAD·GET 버킷과 오브젝트 요청의 CORS 헤더가 s3gw 와 같은지 확인")]
+		[Trait(MainData.Result, MainData.ResultSuccess)]
+		// KSAN(ifs32) SCP 호환 케이스: 일반 요청의 CORS 헤더가 s3gw(운영계)와 같은지 확인한다.
+		// Origin 이 맞는 첫 규칙의 메서드·허용 헤더·노출 헤더를 요청 메서드와 상관없이 붙이고 vary 에 Origin 이 있다.
+		// 규칙에 HEAD 가 없어도 HeadBucket·HeadObject 에 헤더가 붙어야 브라우저 콘솔의 버킷 연결 확인이 된다.
+		// AWS 는 규칙에 없는 메서드(HEAD)에는 CORS 헤더를 주지 않고 일반 요청에는 Allow-Headers 를 주지 않아 AWS 에서는 실패한다.
+		public void TestCorsScpCompat()
+		{
+			TestId = 18;
+			var client = GetClient();
+			var bucketName = GetNewBucketCannedAcl(client, S3CannedACL.PublicRead);
+			var key = "test_cors_scp_compat";
+			client.PutObject(bucketName, key, body: "cors", acl: S3CannedACL.PublicRead);
+			var methods = new List<string> { "PUT", "POST", "GET" };
+			var allowHeaders = new List<string> { "x-amz-content-sha256", "x-amz-user-agent", "x-amz-date", "authorization",
+				"Content-Type", "Content-MD5", "x-amz-acl" };
+			var exposeHeaders = new List<string> { "x-amz-meta-custom-header", "x-amz-request-id", "x-amz-id-2", "ETag", "date",
+				"x-amz-server-side-encryption" };
+			PutCors(client, bucketName, [CorsRule(methods, ["*"], allowedHeaders: allowHeaders, exposeHeaders: exposeHeaders)]);
+
+			// HEAD·GET 버킷(연결 확인·목록), HEAD·GET 오브젝트
+			foreach (var (method, target) in new (string, string)[] { ("HEAD", null), ("GET", null), ("HEAD", key), ("GET", key) })
+			{
+				var what = method + (target == null ? " bucket" : " object");
+				var (code, headers) = CorsRequest(method, bucketName, [new("Origin", "http://console.example.com")], target);
+				Assert.True(code == HttpStatusCode.OK, $"{what}: status {code}");
+				Assert.True(Header(headers, "access-control-allow-origin") == "*", $"{what}: allow-origin {Header(headers, "access-control-allow-origin")}");
+				Assert.True(CorsSet(methods).SetEquals(CorsSet(Header(headers, "access-control-allow-methods"))), $"{what}: allow-methods {Header(headers, "access-control-allow-methods")}");
+				Assert.True(CorsSet(allowHeaders).SetEquals(CorsSet(Header(headers, "access-control-allow-headers"))), $"{what}: allow-headers {Header(headers, "access-control-allow-headers")}");
+				Assert.True(CorsSet(exposeHeaders).SetEquals(CorsSet(Header(headers, "access-control-expose-headers"))), $"{what}: expose-headers {Header(headers, "access-control-expose-headers")}");
+				Assert.True(CorsSet(Header(headers, "vary")).Contains("origin"), $"{what}: vary {Header(headers, "vary")}");
+			}
+		}
+
+		/// <summary>쉼표로 나눈 CORS 헤더 값을 소문자 집합으로 (구분자 "," 와 ", " 를 같게 본다)</summary>
+		private static HashSet<string> CorsSet(string value)
+			=> value == null ? [] : [.. System.Linq.Enumerable.Where(System.Linq.Enumerable.Select(value.Split(','), v => v.Trim().ToLowerInvariant()), v => v.Length > 0)];
+
+		private static HashSet<string> CorsSet(IEnumerable<string> values) => CorsSet(string.Join(",", values));
 
 		[Fact]
 		[Trait(MainData.Major, "Cors")]

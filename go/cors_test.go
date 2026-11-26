@@ -357,6 +357,8 @@ func TestCorsRuleOrder(t *testing.T) {
 }
 
 // 오브젝트에 대한 GET/HEAD/preflight 요청에 cors 헤더가 담기는지 확인
+// KSAN 알려진 실패(ifs32, 일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 일반 요청의 CORS 헤더를 s3gw 와 같게 낸다.
+// Access-Control-Allow-Methods 는 "GET,HEAD"(쉼표만)다. AWS 는 "GET, HEAD" 다. 확인은 TestCorsScpCompat.
 func TestCorsObjectRequest(t *testing.T) {
 	t.Parallel()
 	s := newSuite(t)
@@ -388,6 +390,81 @@ func TestCorsObjectRequest(t *testing.T) {
 	// 오브젝트 키에 대한 preflight
 	status, headers := corsRequest(t, s, "OPTIONS", bucket, key, map[string]string{"Origin": "http://a.example.com", "Access-Control-Request-Method": "GET"})
 	assertCorsResponse(t, status, headers, 200, map[string]string{"Access-Control-Allow-Origin": "http://a.example.com"})
+}
+
+// KSAN(ifs32) SCP 호환 케이스: 일반 요청의 CORS 헤더가 s3gw(운영계)와 같은지 확인한다.
+// Origin 이 맞는 첫 규칙의 메서드·허용 헤더·노출 헤더를 요청 메서드와 상관없이 붙이고 vary 에 Origin 이 있다.
+// 규칙에 HEAD 가 없어도 HeadBucket·HeadObject 에 헤더가 붙어야 브라우저 콘솔의 버킷 연결 확인이 된다.
+// AWS 는 규칙에 없는 메서드(HEAD)에는 CORS 헤더를 주지 않고 일반 요청에는 Allow-Headers 를 주지 않아 AWS 에서는 실패한다.
+func TestCorsScpCompat(t *testing.T) {
+	t.Parallel()
+	s := newSuite(t)
+	bucket := publicBucket(t, s, 18)
+	key := "test_cors_scp_compat"
+	_, err := s.client.PutObject(context.Background(), &s3.PutObjectInput{
+		Bucket: aws.String(bucket), Key: aws.String(key), Body: strings.NewReader("cors"), ACL: types.ObjectCannedACLPublicRead,
+	})
+	if err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+	methods := []string{"PUT", "POST", "GET"}
+	allowHeaders := []string{"x-amz-content-sha256", "x-amz-user-agent", "x-amz-date", "authorization", "Content-Type", "Content-MD5", "x-amz-acl"}
+	exposeHeaders := []string{"x-amz-meta-custom-header", "x-amz-request-id", "x-amz-id-2", "ETag", "date", "x-amz-server-side-encryption"}
+	putCors(t, s, bucket, []types.CORSRule{{
+		AllowedMethods: methods, AllowedOrigins: []string{"*"}, AllowedHeaders: allowHeaders, ExposeHeaders: exposeHeaders,
+	}})
+
+	// HEAD·GET 버킷(연결 확인·목록), HEAD·GET 오브젝트
+	for _, c := range []struct{ method, key string }{{"HEAD", ""}, {"GET", ""}, {"HEAD", key}, {"GET", key}} {
+		what := c.method + " object"
+		if c.key == "" {
+			what = c.method + " bucket"
+		}
+		status, headers := corsRequest(t, s, c.method, bucket, c.key, map[string]string{"Origin": "http://console.example.com"})
+		if status != 200 {
+			t.Fatalf("%s: status = %d, want 200", what, status)
+		}
+		if got := headers.Get("Access-Control-Allow-Origin"); got != "*" {
+			t.Fatalf("%s: Access-Control-Allow-Origin = %q, want *", what, got)
+		}
+		for name, want := range map[string][]string{
+			"Access-Control-Allow-Methods":  methods,
+			"Access-Control-Allow-Headers":  allowHeaders,
+			"Access-Control-Expose-Headers": exposeHeaders,
+		} {
+			if got := corsSet(headers.Values(name)...); !equalSet(got, corsSet(want...)) {
+				t.Fatalf("%s: %s = %q, want %q", what, name, headers.Values(name), want)
+			}
+		}
+		if !corsSet(headers.Values("Vary")...)["origin"] {
+			t.Fatalf("%s: Vary = %q, want Origin in it", what, headers.Values("Vary"))
+		}
+	}
+}
+
+// corsSet은 쉼표로 나눈 CORS 헤더 값을 소문자 집합으로 만든다 (구분자 "," 와 ", " 를 같게 본다).
+func corsSet(values ...string) map[string]bool {
+	set := map[string]bool{}
+	for _, v := range values {
+		for _, p := range strings.Split(v, ",") {
+			if p = strings.ToLower(strings.TrimSpace(p)); p != "" {
+				set[p] = true
+			}
+		}
+	}
+	return set
+}
+
+func equalSet(a, b map[string]bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k := range a {
+		if !b[k] {
+			return false
+		}
+	}
+	return true
 }
 
 // 지원하지 않는 메서드로 cors 설정 시 실패하는지 확인

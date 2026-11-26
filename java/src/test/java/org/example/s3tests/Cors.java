@@ -128,9 +128,21 @@ class Cors {
 	 */
 	@Test
 	@Tag("Object")
+	// KSAN 알려진 실패(ifs32, 일부러 다르게 동작, 고치지 않음): SCP 연동 때문에 일반 요청의 CORS 헤더를 s3gw 와 같게 낸다.
+	// Access-Control-Allow-Methods 는 "GET,HEAD"(쉼표만)다. AWS 는 "GET, HEAD" 다. 확인은 testCorsScpCompat.
 	void testCorsObjectRequest() {
 		test.testCorsObjectRequest();
 		testV2.testCorsObjectRequest();
+	}
+
+	/**
+	 * KSAN(ifs32) SCP 호환: 일반 요청(HEAD·GET 버킷과 오브젝트)의 CORS 헤더가 s3gw 와 같은지 확인.
+	 * 규칙에 HEAD 가 없어도 헤더가 붙고 Allow-Headers 도 붙는다. AWS 에서는 실패한다. (V2 만 실행)
+	 */
+	@Test
+	@Tag("Object")
+	void testCorsScpCompat() {
+		testV2.testCorsScpCompat();
 	}
 
 	/**
